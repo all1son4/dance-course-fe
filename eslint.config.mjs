@@ -31,8 +31,6 @@ export default defineConfig([
       "simple-import-sort/exports": "error",
     },
   },
-
-  // Игноры (доки Next тоже так делают через globalIgnores)
   globalIgnores([
     ".next/**",
     "out/**",
@@ -40,5 +38,9 @@ export default defineConfig([
     "dist/**",
     "coverage/**",
     "next-env.d.ts",
+    ".lintstagedrc.*",
+    ".prettierrc.*",
+    "*.config.*",
+    "**/*.config.*",
   ]),
 ]);

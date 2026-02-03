@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm run lint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "fix": "npm run lint:fix && npm run format"
   },
   "dependencies": {
     "next": "16.1.4",
