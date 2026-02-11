@@ -2,10 +2,12 @@ import styled from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
-export const CardContainer = styled.div`
-  ${glass({
-    radius: "100px",
-  })}
+export const CardContainer = styled.div<{ $bgColor?: string }>`
+  ${({ $bgColor }) =>
+    glass({
+      radius: "100px",
+      bgParam: $bgColor,
+    })}
 
   min-width: 460px;
   width: 100%;

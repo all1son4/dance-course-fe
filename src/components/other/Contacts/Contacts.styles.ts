@@ -2,17 +2,18 @@ import { styled } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
-export const Container = styled.div`
+export const Container = styled.div<{ $bgColor?: string }>`
   padding: 80px;
   box-sizing: border-box;
   display: flex;
   gap: 150px;
   align-items: center;
 
-  ${glass({
-    radius: "100px",
-    bgParam: "rgba(255, 255, 255, 0.5)",
-  })}
+  ${({ $bgColor }) =>
+    glass({
+      radius: "100px",
+      bgParam: $bgColor ? $bgColor : `rgba(255, 255, 255, 0.5)`,
+    })}
 `;
 
 export const TextBox = styled.div`

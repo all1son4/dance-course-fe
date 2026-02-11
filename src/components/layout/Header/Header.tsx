@@ -19,8 +19,8 @@ export default function Header() {
         <Right>
           <TopMenu
             items={[
-              { label: "Offline курсы", href: "#offline" },
-              { label: "Online курсы", href: "#online" },
+              { label: "Offline курсы", href: "/offline" },
+              { label: "Online курсы", href: "/online" },
               { label: "Контакты", href: "#contacts" },
             ]}
           />

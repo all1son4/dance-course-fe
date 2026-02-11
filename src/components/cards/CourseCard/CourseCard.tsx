@@ -15,7 +15,7 @@ import { TCourseCard } from "./CourseCard.types";
 
 export default function ContactCard(course: TCourseCard) {
   return (
-    <CardContainer>
+    <CardContainer $bgColor={course.bgColor}>
       <IconBox>{course.icon}</IconBox>
       <TitleBox>
         <Title>{course.title}</Title>
@@ -23,7 +23,7 @@ export default function ContactCard(course: TCourseCard) {
       </TitleBox>
       <ContentBox>
         <Content>{course.cardContent}</Content>
-        <Button buttonText="Подробнее" width="200px" />
+        <Button buttonText="Подробнее" width="200px" onClick={course.onClick} />
       </ContentBox>
     </CardContainer>
   );

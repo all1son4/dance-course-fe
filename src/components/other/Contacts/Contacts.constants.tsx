@@ -22,6 +22,6 @@ export const contactsArray: TContact[] = [
     icon: <Telegram />,
     title: "Telgram",
     text: "@annastrok_dance",
-    link: "t.me/annastrok_dance",
+    link: "https://t.me/annastrok_dance",
   },
 ];

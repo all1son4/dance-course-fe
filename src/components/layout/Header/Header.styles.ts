@@ -11,7 +11,7 @@ export const HeaderWrap = styled.header`
   z-index: 50;
   padding: 0 50px;
   width: 100%;
-  max-width: 1440px;
+  max-width: 100%;
   margin: 0 auto;
   background: transparent;
 `;

@@ -110,6 +110,7 @@ export const PrivacyPolicy = styled(Link)`
   line-height: 120%;
   letter-spacing: 0;
   text-decoration: underline;
+  text-underline-offset: 2px;
   margin: 0;
   color: rgba(72, 72, 72, 1);
   transition: all 0.2s ease;

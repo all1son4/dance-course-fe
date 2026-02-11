@@ -2,7 +2,7 @@
 
 import type { ButtonHTMLAttributes, ElementType } from "react";
 
-import { StyledButton } from "./Button.styles";
+import { ButtonLinkWrapper, StyledButton } from "./Button.styles";
 import { ButtonProps } from "./Button.types";
 
 export default function Button<T extends ElementType = "button">({
@@ -10,9 +10,11 @@ export default function Button<T extends ElementType = "button">({
   width = "100%",
   buttonText = "",
   size = "lg",
+  href = "",
+  target = "_self",
   ...rest
 }: ButtonProps<T>) {
-  return (
+  const buttonReturnContent = (
     <StyledButton
       $variant={variant}
       $width={width}
@@ -21,5 +23,13 @@ export default function Button<T extends ElementType = "button">({
     >
       {buttonText}
     </StyledButton>
+  );
+
+  return !!href ? (
+    <ButtonLinkWrapper href={href} target={target}>
+      {buttonReturnContent}
+    </ButtonLinkWrapper>
+  ) : (
+    buttonReturnContent
   );
 }

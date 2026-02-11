@@ -1,3 +1,4 @@
+import Link from "next/link";
 import styled, { css } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
@@ -55,6 +56,14 @@ const variantStyles = {
     }
   `,
 };
+
+export const ButtonLinkWrapper = styled(Link)`
+  display: flex;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+`;
 
 export const StyledButton = styled.button<StyledProps>`
   appearance: none;

@@ -12,9 +12,9 @@ import {
   Title,
 } from "./Contacts.styles";
 
-export default function Contacts() {
+export default function Contacts({ bgColor }: { bgColor?: string }) {
   return (
-    <Container>
+    <Container $bgColor={bgColor} id="contacts">
       <TextBox>
         <Title>Контакты</Title>
         <ParagraphsBox>

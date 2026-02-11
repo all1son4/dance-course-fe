@@ -1,9 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { styled } from "styled-components";
 
-import { Button, ContactCard, Contacts, FAQ } from "@/components";
-import CourseCard from "@/components/cards/CourseCard";
+import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
 import { glass } from "@/styles/mixins/glass";
 import { Insta, Logo, Map, Quote, TelegramGlass } from "@/svg";
 import { MainPageBackgroundPhoto } from "@/svg/MainPageBackgroundPhoto";
@@ -15,12 +15,13 @@ const IntroduceSection = styled.section`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0 25px;
 `;
 
 const AbsolutePageImage = styled.div`
   position: absolute;
   top: 0;
-  left: 30%;
+  left: 34%;
   z-index: 20;
 `;
 
@@ -237,7 +238,7 @@ const CourseOptionsBox = styled.div`
 
 const CourseList = styled.ul`
   list-style: numeric;
-  padding: 0;
+  padding: 0 0 0 16px;
   margin: 0;
 
   display: flex;
@@ -257,15 +258,16 @@ const CourseList = styled.ul`
 `;
 
 const FAQSection = styled.section`
-  padding: 50px 0 100px;
+  padding: 50px 50px 100px;
   display: flex;
 `;
 
-const ContactsSection = styled.section`
+const ContactSection = styled.section`
   padding: 0 50px 100px;
 `;
 
 export default function Home() {
+  const router = useRouter();
   return (
     <>
       <IntroduceSection>
@@ -284,8 +286,12 @@ export default function Home() {
           <InteractiveBox>
             <InteractiveHint>Выбирайте свой формат обучения</InteractiveHint>
             <ButtonsBox>
-              <Button buttonText="Online" />
-              <Button buttonText="Offline" variant="secondary" />
+              <Button buttonText="Online" onClick={() => router.push("/online")} />
+              <Button
+                buttonText="Offline"
+                variant="secondary"
+                onClick={() => router.push("/offline")}
+              />
             </ButtonsBox>
           </InteractiveBox>
         </MainTextBox>
@@ -377,6 +383,7 @@ export default function Home() {
                 </li>
               </CourseList>
             }
+            onClick={() => router.push("/offline")}
           />
           <CourseCard
             icon={<TelegramGlass />}
@@ -391,15 +398,16 @@ export default function Home() {
                 <li>Разборы хореографий</li>
               </CourseList>
             }
+            onClick={() => router.push("/online")}
           />
         </CourseOptionsBox>
       </CourseSection>
       <FAQSection>
         <FAQ />
       </FAQSection>
-      <ContactsSection>
+      <ContactSection>
         <Contacts />
-      </ContactsSection>
+      </ContactSection>
     </>
   );
 }

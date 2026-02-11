@@ -7,6 +7,8 @@ export type ButtonBaseProps = {
   variant?: ButtonVariant;
   width?: string;
   buttonText?: string;
+  href?: string;
+  target?: string;
   size?: "lg" | "sm";
 };
 

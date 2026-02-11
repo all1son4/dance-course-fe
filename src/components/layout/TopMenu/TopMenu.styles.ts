@@ -9,7 +9,7 @@ export const Nav = styled.nav`
   color: rgba(0, 0, 0, 1);
 `;
 
-export const NavLink = styled(Link)`
+export const NavLink = styled(Link)<{ $selected: boolean }>`
   font-size: 16px;
   text-decoration: none;
   padding: 6px 0;
@@ -23,6 +23,12 @@ export const NavLink = styled(Link)`
   letter-spacing: 0;
 
   transition: all 0.2s ease;
+
+  ${({ $selected }) =>
+    $selected &&
+    `
+    color: rgba(124, 0, 2, 1);
+  `}
 
   &:hover {
     text-decoration: none;
