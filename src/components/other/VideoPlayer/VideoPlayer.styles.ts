@@ -85,8 +85,21 @@ export const VideoWrap = styled.div<VideoWrapProps>`
 
   .plyr,
   .plyr__video-wrapper,
+  .plyr__video-embed,
+  .plyr__video-embed iframe,
   video {
     border-radius: ${({ $radius }) => $radius};
+  }
+
+  .plyr,
+  .plyr__video-wrapper {
+    width: 100%;
+    height: 100%;
+  }
+
+  .plyr__video-wrapper {
+    position: relative;
+    padding-bottom: 0 !important;
   }
 
   video {
@@ -94,6 +107,22 @@ export const VideoWrap = styled.div<VideoWrapProps>`
     height: 100%;
     display: block;
     object-fit: cover;
+  }
+
+  .plyr__video-embed,
+  .plyr__video-embed iframe {
+    width: 100%;
+    height: 100%;
+  }
+
+  .plyr__video-embed {
+    position: absolute;
+    inset: 0;
+  }
+
+  .plyr__video-embed iframe {
+    position: absolute;
+    inset: 0;
   }
 
   /* скрываем встроенную оверлей кнопку */
@@ -108,4 +137,16 @@ export const VideoWrap = styled.div<VideoWrapProps>`
   .plyr__control {
     display: none !important;
   }
+`;
+
+export const PosterOverlay = styled.div<{ $src: string; $isVisible: boolean }>`
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background-image: url(${({ $src }) => $src});
+  background-position: center;
+  background-size: cover;
+  transition: opacity 220ms ease;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  pointer-events: none;
 `;

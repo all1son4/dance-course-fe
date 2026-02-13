@@ -5,12 +5,42 @@ import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { Play } from "@/svg";
 
-import { CenterButton, VideoWrap } from "./VideoPlayer.styles";
+import { CenterButton, PosterOverlay, VideoWrap } from "./VideoPlayer.styles";
 import type { TVideoPlayerProps } from "./VideoPlayer.types";
 
 type PlayerApi = {
   play: () => Promise<void> | void;
   pause: () => void;
+};
+
+const getYoutubeId = (value: string) => {
+  if (!value) return null;
+  const trimmed = value.trim();
+  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+
+  try {
+    const url = new URL(trimmed);
+    const host = url.hostname.replace("www.", "");
+
+    if (host === "youtu.be") {
+      return url.pathname.replace("/", "");
+    }
+
+    if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+      const idFromQuery = url.searchParams.get("v");
+      if (idFromQuery) return idFromQuery;
+
+      const parts = url.pathname.split("/").filter(Boolean);
+      const embedIndex = parts.findIndex((part) => part === "embed");
+      if (embedIndex >= 0 && parts[embedIndex + 1]) {
+        return parts[embedIndex + 1];
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
 };
 
 export default function VideoPlayer({
@@ -31,10 +61,15 @@ export default function VideoPlayer({
   playsInline = true,
 }: TVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const embedRef = useRef<HTMLDivElement | null>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+
+  const youtubeId = useMemo(() => getYoutubeId(src), [src]);
+  const isYoutube = Boolean(youtubeId);
 
   const options = useMemo<Plyr.Options>(
     () => ({
@@ -42,20 +77,35 @@ export default function VideoPlayer({
       clickToPlay: false,
       muted,
       ...(loop ? { loop: { active: true } } : {}),
+      ...(isYoutube
+        ? {
+            youtube: {
+              noCookie: true,
+              rel: 0,
+              modestbranding: 1,
+              controls: 0,
+              disablekb: 1,
+              playsinline: 1,
+            },
+          }
+        : {}),
     }),
-    [loop, muted],
+    [isYoutube, loop, muted],
   );
 
   useEffect(() => {
     setIsReady(false);
     setIsPlaying(false);
+    setHasStarted(false);
   }, [src]);
 
   useEffect(() => {
     let mounted = true;
     const video = videoRef.current;
+    const embed = embedRef.current;
 
-    if (!video) return undefined;
+    if (!isYoutube && !video) return undefined;
+    if (isYoutube && !embed) return undefined;
 
     const handleLoadedMetadata = () => {
       if (!mounted) return;
@@ -65,6 +115,7 @@ export default function VideoPlayer({
     const handlePlay = () => {
       if (!mounted) return;
       setIsPlaying(true);
+      setHasStarted(true);
     };
 
     const handlePause = () => {
@@ -77,16 +128,26 @@ export default function VideoPlayer({
       setIsPlaying(false);
     };
 
-    video.addEventListener("loadedmetadata", handleLoadedMetadata);
-    video.addEventListener("play", handlePlay);
-    video.addEventListener("pause", handlePause);
-    video.addEventListener("ended", handleEnded);
+    let eventTarget: HTMLElement | null = null;
 
-    if (video.readyState >= 1) {
-      setIsReady(true);
-    }
-    if (!video.paused) {
-      setIsPlaying(true);
+    const attachMediaEvents = (target: HTMLElement) => {
+      eventTarget = target;
+      target.addEventListener("play", handlePlay);
+      target.addEventListener("pause", handlePause);
+      target.addEventListener("ended", handleEnded);
+    };
+
+    if (!isYoutube && video) {
+      video.addEventListener("loadedmetadata", handleLoadedMetadata);
+      attachMediaEvents(video);
+
+      if (video.readyState >= 1) {
+        setIsReady(true);
+      }
+      if (!video.paused) {
+        setIsPlaying(true);
+        setHasStarted(true);
+      }
     }
 
     const init = async () => {
@@ -105,7 +166,18 @@ export default function VideoPlayer({
           plyrRef.current = null;
         }
 
-        plyrRef.current = new PlyrCtor(video, options);
+        const target = isYoutube ? embed : video;
+        if (!target) return;
+
+        plyrRef.current = new PlyrCtor(target, options);
+
+        if (isYoutube) {
+          const container = plyrRef.current.elements.container;
+          if (container) {
+            attachMediaEvents(container);
+          }
+          setIsReady(true);
+        }
       } catch {
         // ignore - fallback to native video API
       }
@@ -116,10 +188,15 @@ export default function VideoPlayer({
     return () => {
       mounted = false;
 
-      video.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      video.removeEventListener("play", handlePlay);
-      video.removeEventListener("pause", handlePause);
-      video.removeEventListener("ended", handleEnded);
+      if (!isYoutube && video) {
+        video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      }
+
+      if (eventTarget) {
+        eventTarget.removeEventListener("play", handlePlay);
+        eventTarget.removeEventListener("pause", handlePause);
+        eventTarget.removeEventListener("ended", handleEnded);
+      }
 
       if (plyrRef.current) {
         try {
@@ -130,7 +207,7 @@ export default function VideoPlayer({
         plyrRef.current = null;
       }
     };
-  }, [options, src]);
+  }, [options, src, isYoutube]);
 
   const handlePlay = () => {
     const api = (plyrRef.current ?? videoRef.current) as PlayerApi | null;
@@ -193,6 +270,9 @@ export default function VideoPlayer({
       $buttonSize={buttonSize}
       $iconSize={iconSize}
     >
+      {poster && isYoutube && (
+        <PosterOverlay $src={poster} $isVisible={!hasStarted} aria-hidden />
+      )}
       <CenterButton
         type="button"
         aria-label={playLabel}
@@ -204,17 +284,25 @@ export default function VideoPlayer({
         <Play />
       </CenterButton>
 
-      <video
-        ref={videoRef}
-        playsInline={playsInline}
-        preload={preload}
-        poster={poster}
-        loop={loop}
-        muted={muted}
-        controls={false}
-      >
-        <source src={src} type={type} />
-      </video>
+      {isYoutube ? (
+        <div
+          ref={embedRef}
+          data-plyr-provider="youtube"
+          data-plyr-embed-id={youtubeId ?? undefined}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          playsInline={playsInline}
+          preload={preload}
+          poster={poster}
+          loop={loop}
+          muted={muted}
+          controls={false}
+        >
+          <source src={src} type={type} />
+        </video>
+      )}
     </VideoWrap>
   );
 }

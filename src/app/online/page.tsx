@@ -189,7 +189,7 @@ export default function Online() {
             topRowContent={course.topRowContent}
             bottomRowContent={course.bottomRowContent}
             buttonText={course.buttonText}
-            buttonOnClick={() => {}}
+            buttonOnClick={() => router.push(course.buttonHref || "")}
           />
         ))}
       </CoursesSection>

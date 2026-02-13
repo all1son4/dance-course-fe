@@ -59,7 +59,7 @@ const variantStyles = {
 
 export const ButtonLinkWrapper = styled(Link)`
   display: flex;
-  text-decoration: none;
+  text-decoration: none !important;
   background: transparent;
   border: none;
   padding: 0;

@@ -117,23 +117,29 @@ const ButtonBox = styled.div`
   width: 100%;
 `;
 
+const SpecianWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0 0 100px 0;
+  padding: 100px;
+  border-radius: 100px;
+  // background: linear-gradient(165.84deg, #FFFFFF 1.66%, #E9E9E9 53.89%);
+  background: rgba(255, 255, 255, 1);
+`;
+
 const VideoSection = styled.section`
   display: flex;
   width: 100%;
-  padding: 100px;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 1);
-  border-radius: 100px 100px 0 0;
-  margin: 0 0 -1px 0;
 `;
 
 const AboutCourseSection = styled.section`
   display: flex;
   width: 100%;
-  padding: 50px 100px;
+  padding: 150px 0 0 0;
   box-sizing: border-box;
   justify-content: space-between;
-  background: rgba(255, 255, 255, 1);
 `;
 
 const AboutCourseCards = styled.div`
@@ -156,11 +162,10 @@ const AboutCourseTitle = styled.h2`
 
 const CourseProgramSection = styled.section`
   display: flex;
-  padding: 100px;
+  padding: 150px 0 0 0;
   box-sizing: border-box;
   justify-content: space-between;
   width: 100%;
-  background: rgba(255, 255, 255, 1);
   gap: 40px;
 `;
 
@@ -189,11 +194,8 @@ const CourseProgramImage = styled(Image)`
 
 export const ContactSection = styled.section`
   display: flex;
-  padding: 50px 100px 100px;
-  margin: 0 0 100px 0;
+  padding: 150px 0 0 0;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 1);
-  border-radius: 0 0 100px 100px;
 `;
 
 const CourseProgramButtonBox = styled.div`
@@ -246,44 +248,46 @@ export default function FirstTouch() {
         </IconBox>
       </IntroductionSection>
 
-      <VideoSection>
-        <VideoPlayer
-          src="/videos/introduction_first_touch.mp4"
-          playLabel="Воспроизвести видео"
-          poster="/images/first_touch_poster.png"
-        />
-      </VideoSection>
-      <AboutCourseSection>
-        <AboutCourseTitle>Что ждет тебя на курсе</AboutCourseTitle>
-        <AboutCourseCards>
-          {onlineSuggestions.map((suggestion) => (
-            <TextContentCard
-              key={suggestion.id}
-              icon={suggestion.icon}
-              title={suggestion.title}
-              text={suggestion.text}
-            />
-          ))}
-        </AboutCourseCards>
-      </AboutCourseSection>
-      <CourseProgramSection id="course-program">
-        <CourseProgramTextBox>
-          <CourseProgramTitle>Программа курса</CourseProgramTitle>
-          <RoadmapContainer />
-          <CourseProgramButtonBox>
-            <Button buttonText="Купить за 350 PLN / 80 €" />
-          </CourseProgramButtonBox>
-        </CourseProgramTextBox>
-        <CourseProgramImage
-          src={"/images/first_touch_program_photo.png"}
-          alt="first_touch_program_photo"
-          width={473}
-          height={709}
-        />
-      </CourseProgramSection>
-      <ContactSection>
-        <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
-      </ContactSection>
+      <SpecianWrapper>
+        <VideoSection>
+          <VideoPlayer
+            src="/videos/introduction_first_touch.mp4"
+            playLabel="Воспроизвести видео"
+            poster="/images/first_touch_poster.png"
+          />
+        </VideoSection>
+        <AboutCourseSection>
+          <AboutCourseTitle>Что ждет тебя на курсе</AboutCourseTitle>
+          <AboutCourseCards>
+            {onlineSuggestions.map((suggestion) => (
+              <TextContentCard
+                key={suggestion.id}
+                icon={suggestion.icon}
+                title={suggestion.title}
+                text={suggestion.text}
+              />
+            ))}
+          </AboutCourseCards>
+        </AboutCourseSection>
+        <CourseProgramSection id="course-program">
+          <CourseProgramTextBox>
+            <CourseProgramTitle>Программа курса</CourseProgramTitle>
+            <RoadmapContainer />
+            <CourseProgramButtonBox>
+              <Button buttonText="Купить за 350 PLN / 80 €" />
+            </CourseProgramButtonBox>
+          </CourseProgramTextBox>
+          <CourseProgramImage
+            src={"/images/first_touch_program_photo.png"}
+            alt="first_touch_program_photo"
+            width={473}
+            height={709}
+          />
+        </CourseProgramSection>
+        <ContactSection>
+          <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
+        </ContactSection>
+      </SpecianWrapper>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import ChoreoCard from "./cards/ChoreoCard";
 import ContactCard from "./cards/ContactCard";
 import CourseCard from "./cards/CourseCard";
 import InteractiveCard from "./cards/InteractiveCard";
@@ -14,6 +15,7 @@ import VideoPlayer from "./other/VideoPlayer";
 
 export {
   Button,
+  ChoreoCard,
   ContactCard,
   Contacts,
   CourseCard,

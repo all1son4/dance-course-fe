@@ -27,12 +27,12 @@ export const IconBox = styled.div`
   align-items: center;
   position: absolute;
   left: -20.5px;
-  top: -11px;
+  top: -11.5px;
   z-index: 20;
 
-  & svg circle:first-of-type {
-    fill: rgba(255, 255, 255, 1);
-  }
+  // & svg circle:first-of-type {
+  //   fill: rgba(255, 255, 255, 1);
+  // }
 `;
 
 export const ItemTitle = styled.p`

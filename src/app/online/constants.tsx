@@ -7,7 +7,7 @@ export type TInteractiveCard = {
   topRowContent?: ReactNode;
   bottomRowContent?: ReactNode;
   buttonText?: string;
-  buttonOnClick?: () => void;
+  buttonHref?: string;
 };
 
 const Content = styled.div`
@@ -67,6 +67,7 @@ export const onlineCoursesArray: TInteractiveCard[] = [
       </DateBox>
     ),
     buttonText: "Подробнее о курсе",
+    buttonHref: "/online/first-touch",
   },
   {
     id: 2,
@@ -90,5 +91,6 @@ export const onlineCoursesArray: TInteractiveCard[] = [
       </DateBox>
     ),
     buttonText: "Подробнее о курсе",
+    buttonHref: "/online/online-choreo",
   },
 ];
