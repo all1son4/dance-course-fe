@@ -1,8 +1,12 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
 export const OnlineTelegramBig: FC<IIconProps> = ({ width = 453, height = 474 }) => {
+  const uniqueId = useId();
+  const patternId = `${uniqueId}-pattern`;
+  const imageId = `${uniqueId}-image`;
+
   return (
     <svg
       width={width}
@@ -12,21 +16,21 @@ export const OnlineTelegramBig: FC<IIconProps> = ({ width = 453, height = 474 })
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
     >
-      <rect width="452.821" height="474.001" fill="url(#pattern0_184_1176)" />
+      <rect width="452.821" height="474.001" fill={`url(#${patternId})`} />
       <defs>
         <pattern
-          id="pattern0_184_1176"
+          id={patternId}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
           <use
-            xlinkHref="#image0_184_1176"
+            xlinkHref={`#${imageId}`}
             transform="matrix(0.000976562 0 0 0.000932927 0 -0.00378034)"
           />
         </pattern>
         <image
-          id="image0_184_1176"
+          id={imageId}
           width="1024"
           height="1080"
           preserveAspectRatio="none"

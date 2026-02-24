@@ -16,6 +16,26 @@ const IntroduceSection = styled.section`
   align-items: center;
   justify-content: space-between;
   padding: 0 25px;
+
+  @media (max-width: 1440px) {
+    padding: 0 20px;
+  }
+
+  @media (max-width: 1240px) {
+    min-height: 750px;
+    padding: 0 20px 0 30px;
+  }
+
+  @media (max-width: 920px) {
+    padding: 10px 20px 0;
+    min-height: 600px;
+  }
+
+  @media (max-width: 767px) {
+    min-height: unset;
+    flex-direction: column-reverse;
+    padding: 16px 20px 60px;
+  }
 `;
 
 const AbsolutePageImage = styled.div`
@@ -23,11 +43,72 @@ const AbsolutePageImage = styled.div`
   top: 0;
   left: 34%;
   z-index: 20;
+
+  @media (max-width: 1440px) {
+    width: 52%;
+  }
+
+  @media (max-width: 1240px) {
+    display: none;
+  }
 `;
 
 const AbsolutePageLogo = styled.div`
   position: relative;
   z-index: 25;
+
+  & svg:first-of-type {
+    display: none;
+  }
+
+  @media (max-width: 1240px) {
+    display: flex;
+    flex-direction: column-reverse;
+    & svg:first-of-type {
+      position: relative;
+      display: flex;
+      height: 750px;
+      max-width: 550px;
+    }
+
+    & svg:last-of-type {
+      display: none;
+    }
+  }
+
+  @media (max-width: 1110px) {
+    & svg:first-of-type {
+      position: relative;
+      max-width: 480px;
+    }
+  }
+
+  @media (max-width: 920px) {
+    & svg:first-of-type {
+      height: 600px;
+      max-width: 420px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    & svg:first-of-type {
+      height: auto;
+      max-width: 65%;
+      margin: 0 auto;
+    }
+  }
+
+  @media (max-width: 680px) {
+    & svg:first-of-type {
+      max-width: 80%;
+    }
+  }
+
+  @media (max-width: 450px) {
+    & svg:first-of-type {
+      max-width: 100%;
+    }
+  }
 `;
 
 const MainTextBox = styled.div`
@@ -39,6 +120,15 @@ const MainTextBox = styled.div`
   box-sizing: border-box;
   z-index: 25;
   max-width: 450px;
+
+  @media (max-width: 920px) {
+    max-width: 300px;
+  }
+
+  @media (max-width: 767px) {
+     max-width: 100%;
+    }
+  }
 `;
 
 const MainTitle = styled.h1`
@@ -48,7 +138,11 @@ const MainTitle = styled.h1`
   line-height: 130%;
   letter-spacing: 0;
   margin: 0 0 20px 0;
-  color: #000000;
+  color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 920px) {
+    font-size: 50px;
+  }
 `;
 
 const DescriptionBox = styled.div`
@@ -58,6 +152,10 @@ const DescriptionBox = styled.div`
   padding: 0;
   margin: 0 0 40px 0;
   box-sizing: border-box;
+
+  @media (max-width: 920px) {
+    margin: 0 0 20px 0;
+  }
 `;
 
 const DescriptionTitle = styled.p`
@@ -98,6 +196,11 @@ const InteractiveHint = styled.p`
 const ButtonsBox = styled.div`
   display: flex;
   gap: 20px;
+
+  @media (max-width: 450px) {
+    flex-direction: column;
+    gap: 15px;
+  }
 `;
 
 const AboutMeSection = styled.section`
@@ -106,6 +209,18 @@ const AboutMeSection = styled.section`
   padding: 100px;
   background: rgba(255, 255, 255, 1);
   border-radius: 100px;
+  gap: 20px;
+
+  @media (max-width: 1100px) {
+    padding: 50px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 20px;
+    flex-direction: column;
+    border-radius: 40px;
+    gap: 40px;
+  }
 `;
 
 const AboutMeTextBox = styled.div`
@@ -113,6 +228,18 @@ const AboutMeTextBox = styled.div`
   flex-direction: column;
   max-width: 505px;
   align-items: flex-start;
+
+  @media (max-width: 1240px) {
+    max-width: 420px;
+  }
+
+  @media (max-width: 1110px) {
+    max-width: 340px;
+  }
+
+  @media (max-width: 880px) {
+    max-width: 100%;
+  }
 `;
 
 const AboutMeTitle = styled.h2`
@@ -123,12 +250,21 @@ const AboutMeTitle = styled.h2`
   letter-spacing: 0;
   margin: 0 0 40px 0;
   color: #000000;
+
+  @media (max-width: 880px) {
+    font-size: 40px;
+    margin: 0 0 30px 0;
+  }
 `;
 
 const AboutMeParagraphs = styled.div`
   display: flex;
   flex-direction: column;
   margin: 40px 0 30px 0;
+
+  @media (max-width: 880px) {
+    margin: 30px 0;
+  }
 `;
 
 const AboutMeParagraph = styled.p`
@@ -138,7 +274,7 @@ const AboutMeParagraph = styled.p`
   line-height: 150%;
   letter-spacing: 0;
   margin: 0 0 14px 0;
-  color: #000000;
+  color: rgba(0, 0, 0, 1);
 
   &:last-of-type {
     margin: 0;
@@ -180,6 +316,10 @@ const AboutMeImageBox = styled.div`
   flex-direction: column;
   position: relative;
   max-width: 560px;
+
+  @media (max-width: 880px) {
+    margin: 0 auto;
+  }
 `;
 
 const StyledImage = styled.img`
@@ -187,6 +327,10 @@ const StyledImage = styled.img`
   height: auto;
   border-radius: 100px;
   object-fit: cover;
+
+  @media (max-width: 767px) {
+    border-radius: 40px;
+  }
 `;
 
 const ImageDescriptionBox = styled.div`
@@ -200,6 +344,25 @@ const IconPositionWrap = styled.div`
   z-index: 10;
   left: -36px;
   top: -120px;
+
+  @media (max-width: 1240px) {
+    left: 60px;
+    top: -135px;
+  }
+
+  @media (max-width: 1240px) {
+    left: 30px;
+    top: -220px;
+
+    & svg {
+      width: 50px;
+      height: auto;
+    }
+  }
+
+  @media (max-width: 450px) {
+    top: -180px;
+  }
 `;
 
 const ImageDescriptionCard = styled.div`
@@ -212,14 +375,49 @@ const ImageDescriptionCard = styled.div`
     radius: "100px",
     bgParam: "rgba(228, 228, 228, 0.4)",
   })}
+
+  @media (max-width: 1240px) {
+    margin: -106px 0 0 0;
+  }
+
+  @media (max-width: 767px) {
+    padding: 30px;
+    margin: -200px 0 0 0;
+    border-radius: 40px !important;
+  }
+
+  @media (max-width: 450px) {
+    margin: -160px 0 0 0;
+    & p {
+      font-size: 15px;
+    }
+  }
 `;
 
 const CourseSection = styled.section`
   padding: 100px 50px;
-  box-sizing: border-box:
-  dispaly: flex;
+  box-sizing: border-box;
+  display: flex;
   flex-direction: column;
   gap: 80px;
+
+  @media (max-width: 1240px) {
+    padding: 100px 0;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 100px 20px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 60px 20px;
+    gap: 30px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 20px;
+    gap: 30px;
+  }
 `;
 
 const CourseTitle = styled.h2`
@@ -228,12 +426,70 @@ const CourseTitle = styled.h2`
   font-size: 55px;
   line-height: 120%;
   letter-spacing: 0;
+  margin: 0;
+  color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 880px) {
+    font-size: 40px;
+  }
 `;
 
 const CourseOptionsBox = styled.div`
   display: flex;
   gap: 40px;
   align-items: stretch;
+
+  @media (max-width: 1100px) {
+    & .courseCardContainer {
+      padding: 40px;
+      min-width: unset;
+      max-width: 100%;
+    }
+    gap: 20px;
+
+    & > .courseCardContainer:first-of-type .courseCardIconBox {
+      top: -30px;
+      right: 30px;
+      & svg {
+        width: 76px;
+        height: 122px;
+      }
+    }
+
+    & > .courseCardContainer:last-of-type .courseCardIconBox {
+      top: -24px;
+      right: 3px;
+      & svg {
+        width: 94px;
+        height: 104px;
+      }
+    }
+  }
+
+  @media (max-width: 880px) {
+    & .courseCardContainer {
+      border-radius: 40px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    & .courseCardContainer {
+      padding: 30px;
+      gap: 30px;
+    }
+
+    .courseCardTitle {
+      font-size: 28px;
+    }
+    & .courseCardButton {
+      max-width: 100%;
+    }
+  }
+
+  @media (max-width: 680px) {
+    flex-direction: column;
+    gap: 40px;
+  }
 `;
 
 const CourseList = styled.ul`
@@ -260,10 +516,38 @@ const CourseList = styled.ul`
 const FAQSection = styled.section`
   padding: 50px 50px 100px;
   display: flex;
+
+  @media (max-width: 1240px) {
+    padding: 50px 0 100px;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 50px 20px 100px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 20px 60px;
+  }
+
+  @media (max-width: 680px) {
+    padding: 40px 20px;
+  }
 `;
 
 const ContactSection = styled.section`
   padding: 0 50px 100px;
+
+  @media (max-width: 1240px) {
+    padding: 0 0 100px;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 0 20px 100px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 0 20px 60px;
+  }
 `;
 
 export default function Home() {
@@ -287,15 +571,12 @@ export default function Home() {
             <InteractiveHint>Выбирайте свой формат обучения</InteractiveHint>
             <ButtonsBox>
               <Button buttonText="Online" onClick={() => router.push("/online")} />
-              <Button
-                buttonText="Offline"
-                variant="secondary"
-                onClick={() => router.push("/offline")}
-              />
+              <Button buttonText="Offline" onClick={() => router.push("/offline")} />
             </ButtonsBox>
           </InteractiveBox>
         </MainTextBox>
         <AbsolutePageLogo>
+          <MainPageBackgroundPhoto />
           <Logo width={350} height={77} />
         </AbsolutePageLogo>
       </IntroduceSection>
@@ -322,16 +603,43 @@ export default function Home() {
 
           <AboutMeList>
             <li>
-              2-е место Frame Solo Pro на <a href="#">@stage_18</a> в Праге.
+              2-е место Frame Solo Pro на{" "}
+              <a
+                href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
+                target="_blank"
+              >
+                @stage_18
+              </a>{" "}
+              в Праге.
             </li>
             <li>
-              2-е место Frame Up Team на <a href="#">@stage_18</a> в Праге.
+              2-е место Frame Up Team на{" "}
+              <a
+                href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
+                target="_blank"
+              >
+                @stage_18
+              </a>{" "}
+              в Праге.
             </li>
             <li>
-              Топ 10 Team на <a href="#">@worldofdancepoland</a> в Кракове.
+              Топ 10 Team на{" "}
+              <a
+                href="https://www.instagram.com/worldofdancepoland?igsh=MWtsMWo5cmxyYWd3dQ=="
+                target="_blank"
+              >
+                @worldofdancepoland
+              </a>{" "}
+              в Кракове.
             </li>
             <li>
-              Гран-при Solo на <a href="#">@dib.gala</a>
+              Гран-при Solo на{" "}
+              <a
+                href="https://www.instagram.com/dib.gala?igsh=MWZ3eXgwYnFrMWU2dA=="
+                target="_blank"
+              >
+                @dib.gala
+              </a>
             </li>
           </AboutMeList>
         </AboutMeTextBox>

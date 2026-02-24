@@ -1,8 +1,12 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
 export const TelegramChoreo: FC<IIconProps> = ({ width = 401, height = 421 }) => {
+  const uniqueId = useId();
+  const patternId = `${uniqueId}-pattern`;
+  const imageId = `${uniqueId}-image`;
+
   return (
     <svg
       width={width}
@@ -12,21 +16,21 @@ export const TelegramChoreo: FC<IIconProps> = ({ width = 401, height = 421 }) =>
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
     >
-      <rect width="400.54" height="420.182" fill="url(#pattern0_187_2233)" />
+      <rect width="400.54" height="420.182" fill={`url(#${patternId})`} />
       <defs>
         <pattern
-          id="pattern0_187_2233"
+          id={patternId}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
           <use
-            xlinkHref="#image0_187_2233"
+            xlinkHref={`#${imageId}`}
             transform="matrix(0.000976562 0 0 0.000930912 0 -0.0818846)"
           />
         </pattern>
         <image
-          id="image0_187_2233"
+          id={imageId}
           width="1024"
           height="1536"
           preserveAspectRatio="none"

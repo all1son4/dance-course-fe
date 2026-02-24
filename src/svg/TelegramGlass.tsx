@@ -1,8 +1,12 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
 export const TelegramGlass: FC<IIconProps> = ({ width = 169, height = 190 }) => {
+  const uniqueId = useId();
+  const patternId = `${uniqueId}-pattern`;
+  const imageId = `${uniqueId}-image`;
+
   return (
     <svg
       width={width}
@@ -12,21 +16,21 @@ export const TelegramGlass: FC<IIconProps> = ({ width = 169, height = 190 }) => 
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
     >
-      <rect width="168.178" height="189.051" fill="url(#pattern0_334_776)" />
+      <rect width="168.178" height="189.051" fill={`url(#${patternId})`} />
       <defs>
         <pattern
-          id="pattern0_334_776"
+          id={patternId}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
           <use
-            xlinkHref="#image0_334_776"
+            xlinkHref={`#${imageId}`}
             transform="matrix(0.00125654 0 0 0.0011178 -0.234141 -0.317533)"
           />
         </pattern>
         <image
-          id="image0_334_776"
+          id={imageId}
           width="1024"
           height="1536"
           preserveAspectRatio="none"

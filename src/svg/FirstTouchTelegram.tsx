@@ -1,8 +1,12 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
 export const FirstTouchTelegram: FC<IIconProps> = ({ width = 356, height = 534 }) => {
+  const uniqueId = useId();
+  const patternId = `${uniqueId}-pattern`;
+  const imageId = `${uniqueId}-image`;
+
   return (
     <svg
       width={width}
@@ -12,18 +16,18 @@ export const FirstTouchTelegram: FC<IIconProps> = ({ width = 356, height = 534 }
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
     >
-      <rect width="356.006" height="534.009" fill="url(#pattern0_187_1627)" />
+      <rect width="356.006" height="534.009" fill={`url(#${patternId})`} />
       <defs>
         <pattern
-          id="pattern0_187_1627"
+          id={patternId}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
-          <use xlinkHref="#image0_187_1627" transform="scale(0.000976562 0.000651042)" />
+          <use xlinkHref={`#${imageId}`} transform="scale(0.000976562 0.000651042)" />
         </pattern>
         <image
-          id="image0_187_1627"
+          id={imageId}
           width="1024"
           height="1536"
           preserveAspectRatio="none"

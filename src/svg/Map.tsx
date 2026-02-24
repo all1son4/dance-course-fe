@@ -1,8 +1,12 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
 export const Map: FC<IIconProps> = ({ width = 132, height = 210 }) => {
+  const uniqueId = useId();
+  const patternId = `${uniqueId}-pattern`;
+  const imageId = `${uniqueId}-image`;
+
   return (
     <svg
       width={width}
@@ -12,21 +16,21 @@ export const Map: FC<IIconProps> = ({ width = 132, height = 210 }) => {
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
     >
-      <rect width="131.017" height="209.107" fill="url(#pattern0_334_1281)" />
+      <rect width="131.017" height="209.107" fill={`url(#${patternId})`} />
       <defs>
         <pattern
-          id="pattern0_334_1281"
+          id={patternId}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
           <use
-            xlinkHref="#image0_334_1281"
+            xlinkHref={`#${imageId}`}
             transform="matrix(0.00145669 0 0 0.0009127 -0.328091 -0.21574)"
           />
         </pattern>
         <image
-          id="image0_334_1281"
+          id={imageId}
           width="1024"
           height="1536"
           preserveAspectRatio="none"

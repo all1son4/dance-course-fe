@@ -7,4 +7,8 @@ export const Root = styled.div`
   box-sizing: border-box;
   position: relative;
   padding: 0 50px;
+
+  @media (max-width: 1024px) {
+    padding: 0;
+  }
 `;

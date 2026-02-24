@@ -4,6 +4,21 @@ export const FAQContainer = styled.div`
   display: grid;
   grid-template-columns: 400px 1fr;
   gap: 100px;
+
+  @media (max-width: 1100px) {
+    gap: 40px;
+  }
+
+  @media (max-width: 880px) {
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 680px) {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
 `;
 
 export const Title = styled.h2`
@@ -12,7 +27,11 @@ export const Title = styled.h2`
   font-size: 55px;
   line-height: 120%;
   margin: 0;
-  color: #000;
+  color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 880px) {
+    font-size: 40px;
+  }
 `;
 
 export const QuestionsList = styled.ul`
@@ -29,6 +48,17 @@ export const QuestionsList = styled.ul`
     padding: 32px 0 0;
     border-bottom: none;
   }
+
+  @media (max-width: 880px) {
+    & li:first-of-type {
+      padding: 0 0 20px;
+    }
+
+    & li:last-of-type {
+      padding: 20px 0 0;
+      border-bottom: none;
+    }
+  }
 `;
 
 export const QuestionItem = styled.li`
@@ -38,6 +68,10 @@ export const QuestionItem = styled.li`
   margin: 0;
   width: 100%;
   border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+
+  @media (max-width: 880px) {
+    padding: 20px 0;
+  }
 `;
 
 export const QuestionBox = styled.div<{ $isOpened: boolean }>`
@@ -86,6 +120,10 @@ export const Question = styled.p`
   line-height: 100%;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 880px) {
+    font-size: 17px;
+  }
 `;
 
 export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
@@ -109,4 +147,8 @@ export const Answer = styled.p`
   line-height: 150%;
   margin: 0;
   color: rgba(56, 56, 56, 1);
+
+  @media (max-width: 880px) {
+    font-size: 15px;
+  }
 `;

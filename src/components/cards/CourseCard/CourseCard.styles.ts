@@ -48,6 +48,11 @@ export const ContentBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 36px;
+
+  @media (max-width: 920px) {
+    justify-content: space-between;
+    height: 100%;
+  }
 `;
 
 export const Content = styled.div`

@@ -1,45 +1,79 @@
 "use client";
 
 import Link from "next/link";
+import { Fragment, useState } from "react";
 
 import { TopMenu } from "@/components";
-import { EnglishFlag, Logo, PolishFlag, RussianFlag } from "@/svg";
+import { EnglishFlag, Logo, MenuButton, PolishFlag, RussianFlag } from "@/svg";
 
 import LanguageSelect from "../LanguageSelect";
-import { Brand, Divider, HeaderWrap, Pill, Right } from "./Header.styles";
+import {
+  Bottom,
+  Brand,
+  Divider,
+  HeaderWrap,
+  IconBox,
+  Pill,
+  Right,
+} from "./Header.styles";
 
 export default function Header() {
+  const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const headerInteractiveContent = [
+    {
+      key: "menu",
+      node: (
+        <TopMenu
+          items={[
+            { label: "Offline курсы", href: "/offline" },
+            { label: "Online курсы", href: "/online" },
+            { label: "Контакты", href: "#contacts" },
+          ]}
+        />
+      ),
+    },
+    { key: "divider", node: <Divider aria-hidden /> },
+    {
+      key: "language",
+      node: (
+        <LanguageSelect
+          value="ru"
+          options={[
+            { code: "ru", label: "Русский", flag: <RussianFlag /> },
+            { code: "en", label: "English", flag: <EnglishFlag /> },
+            { code: "pl", label: "Polski", flag: <PolishFlag /> },
+          ]}
+          onChange={(code) => {
+            // TODO: hook to i18n router / next-intl, etc.
+            // For now just log.
+            // eslint-disable-next-line no-console
+            console.log("Language changed:", code);
+          }}
+        />
+      ),
+    },
+  ];
   return (
     <HeaderWrap>
-      <Pill>
+      <Pill $isOpen={menuIsOpen}>
         <Brand href="/" aria-label="Anna Strok — Home">
           <Logo />
         </Brand>
 
+        <IconBox onClick={() => setMenuIsOpen(!menuIsOpen)} $isOpen={menuIsOpen}>
+          <MenuButton />
+        </IconBox>
+
         <Right>
-          <TopMenu
-            items={[
-              { label: "Offline курсы", href: "/offline" },
-              { label: "Online курсы", href: "/online" },
-              { label: "Контакты", href: "#contacts" },
-            ]}
-          />
-          <Divider aria-hidden />
-          <LanguageSelect
-            value="ru"
-            options={[
-              { code: "ru", label: "Русский", flag: <RussianFlag /> },
-              { code: "en", label: "English", flag: <EnglishFlag /> },
-              { code: "pl", label: "Polski", flag: <PolishFlag /> },
-            ]}
-            onChange={(code) => {
-              // TODO: hook to i18n router / next-intl, etc.
-              // For now just log.
-              // eslint-disable-next-line no-console
-              console.log("Language changed:", code);
-            }}
-          />
+          {headerInteractiveContent.map((item) => (
+            <Fragment key={item.key}>{item.node}</Fragment>
+          ))}
         </Right>
+        <Bottom $isOpen={menuIsOpen}>
+          {headerInteractiveContent.map((item) => (
+            <Fragment key={item.key}>{item.node}</Fragment>
+          ))}
+        </Bottom>
       </Pill>
     </HeaderWrap>
   );

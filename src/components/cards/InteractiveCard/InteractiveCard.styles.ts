@@ -11,6 +11,10 @@ export const CardContainer = styled.div`
   position: relative;
 
   ${glass({ radius: "50px" })}
+
+  @media (max-width: 880px) {
+    border-radius: 40px !important;
+  }
 `;
 
 export const TitleBlock = styled.div`
@@ -19,6 +23,14 @@ export const TitleBlock = styled.div`
   box-sizing: border-box;
   width: 100%;
   padding: 40px;
+
+  @media (max-width: 880px) {
+    padding: 30px;
+  }
+
+  @media (max-width: 550px) {
+    padding: 20px 30px;
+  }
 `;
 
 export const Title = styled.p`
@@ -28,6 +40,10 @@ export const Title = styled.p`
   line-height: 100%;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 880px) {
+    font-size: 28px;
+  }
 `;
 
 export const ContentWrapper = styled.div`
@@ -40,6 +56,14 @@ export const ContentWrapper = styled.div`
 
   flex: 1;
   min-height: 0;
+
+  @media (max-width: 880px) {
+    padding: 30px 20px;
+  }
+
+  @media (max-width: 550px) {
+    padding: 20px;
+  }
 `;
 
 export const TopInfoRow = styled.div`
@@ -66,6 +90,10 @@ export const Divider = styled.div`
   height: 1px;
   background: rgba(209, 211, 218, 1);
   margin: 40px 0;
+
+  @media (max-width: 880px) {
+    margin: 30px 0;
+  }
 `;
 
 export const ButtonBox = styled.div`

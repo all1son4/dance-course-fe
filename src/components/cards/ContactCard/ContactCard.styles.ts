@@ -32,6 +32,7 @@ export const CardLinkContainer = styled(Link)`
 
 export const IconBox = styled.div`
   display: flex;
+  width: 44px;
 `;
 
 export const ContactBlockText = styled.div`

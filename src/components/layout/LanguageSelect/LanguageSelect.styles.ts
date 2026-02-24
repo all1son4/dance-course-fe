@@ -14,6 +14,7 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   padding: 6px 0;
   box-sizing: border-box;
   margin: 0;
+  position: relative;
 
   display: flex;
   align-items: center;
@@ -46,6 +47,10 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
       }
     }
   }
+
+  @media (max-width: 767px) {
+    padding: 0;
+  }
 `;
 
 export const Flag = styled.span`
@@ -56,9 +61,14 @@ export const TriggerLabel = styled.span`
   font-weight: 500;
   font-style: normal;
   font-size: 15px;
+  position: relative;
 
   line-height: 100%;
   letter-spacing: 0;
+
+  @media (max-width: 767px) {
+    font-size: 17px;
+  }
 `;
 
 export const Menu = styled.div`
@@ -69,8 +79,10 @@ export const Menu = styled.div`
   width: 180px;
   box-sizing: border-box;
   padding: 30px;
+
   ${glass({
     radius: "30px",
+    bgParam: "rgba(255, 255, 255, 0.5)",
   })}
 
   display: flex;
@@ -93,6 +105,10 @@ export const Item = styled.button<{ selected?: boolean }>`
   font-weight: 500;
   font-style: normal;
   font-size: 15px;
+
+  @media (max-width: 767px) {
+    font-size: 17px;
+  }
 
   line-height: 100%;
   letter-spacing: 0;
@@ -131,4 +147,8 @@ export const Item = styled.button<{ selected?: boolean }>`
 
 export const ItemLabel = styled.span`
   font-size: 15px;
+
+  @media (max-width: 767px) {
+    font-size: 17px;
+  }
 `;

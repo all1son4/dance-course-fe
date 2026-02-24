@@ -137,6 +137,13 @@ export const VideoWrap = styled.div<VideoWrapProps>`
   .plyr__control {
     display: none !important;
   }
+
+  .plyr__poster {
+    top: unset !important;
+    left: unset !important;
+    right: unset !important;
+    bottom: unset !important;
+  }
 `;
 
 export const PosterOverlay = styled.div<{ $src: string; $isVisible: boolean }>`

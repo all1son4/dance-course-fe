@@ -13,8 +13,18 @@ export const CardContainer = styled.div`
   max-width: 100%;
 
   ${glass({
-    radius: "30px",
+    radius: "60px",
   })}
+
+  @media (max-width: 880px) {
+    border-radius: 40px !important;
+  }
+
+  @media (max-width: 450px) {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
 `;
 
 export const IconBox = styled.div`

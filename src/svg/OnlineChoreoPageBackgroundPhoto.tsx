@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
@@ -6,6 +6,10 @@ export const OnlineChoreoPageBackgroundPhoto: FC<IIconProps> = ({
   width = 794,
   height = 989,
 }) => {
+  const uniqueId = useId();
+  const patternId = `${uniqueId}-pattern`;
+  const imageId = `${uniqueId}-image`;
+
   return (
     <svg
       width={width}
@@ -19,19 +23,19 @@ export const OnlineChoreoPageBackgroundPhoto: FC<IIconProps> = ({
         width="629.406"
         height="944.292"
         transform="matrix(-0.982789 -0.184729 -0.184729 0.982789 793.012 60.2063)"
-        fill="url(#pattern0_187_2230)"
+        fill={`url(#${patternId})`}
       />
       <defs>
         <pattern
-          id="pattern0_187_2230"
+          id={patternId}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
-          <use xlinkHref="#image0_187_2230" transform="scale(0.000580383 0.000386847)" />
+          <use xlinkHref={`#${imageId}`} transform="scale(0.000580383 0.000386847)" />
         </pattern>
         <image
-          id="image0_187_2230"
+          id={imageId}
           width="1723"
           height="2585"
           preserveAspectRatio="none"

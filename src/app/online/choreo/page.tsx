@@ -13,9 +13,34 @@ const IntroductionSection = styled.section`
   display: flex;
   align-items: center;
   min-height: 914px;
-  padding: 0;
+  padding: 0 25px;
   box-sizing: border-box;
   width: 100%;
+
+  @media (max-width: 1240px) {
+    min-height: 800px;
+    padding: 40px 20px 0;
+  }
+
+  @media (max-width: 1140px) {
+    min-height: 740px;
+    padding: 100px 20px 0;
+  }
+
+  @media (max-width: 920px) {
+    padding: 60px 20px 0;
+  }
+
+  @media (max-width: 767px) {
+    min-height: unset;
+    flex-direction: column;
+    padding: 100px 20px 0;
+
+    & #desktop-only-image-box,
+    & #desktop-only-icon-box {
+      display: none;
+    }
+  }
 `;
 
 const TextBox = styled.div`
@@ -26,6 +51,76 @@ const TextBox = styled.div`
   position: relative;
   z-index: 15;
   padding: 0 0 0 25px;
+
+  @media (max-width: 1240px) {
+    max-width: 520px;
+
+    & p {
+      max-width: 440px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    padding: 0;
+  }
+
+  @media (max-width: 880px) {
+    max-width: 460px;
+    & p {
+      max-width: 400px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    max-width: 100%;
+    & p {
+      max-width: 100%;
+    }
+  }
+`;
+
+const MobileImagesBox = styled.div`
+  position: relative;
+  display: none;
+
+  @media (max-width: 767px) {
+    display: flex;
+    width: 100%;
+
+    & #mobile-only-image-box {
+      position: relative;
+      display: flex;
+      width: 100%;
+      max-width: 100%;
+      justify-content: center;
+      top: unset;
+      right: unset;
+      bottom: unset;
+      margin: -18% 0 0 0;
+      & svg {
+        width: 100%;
+        height: auto;
+      }
+    }
+
+    & #mobile-only-icon-box {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+      top: unset;
+      right: unset;
+      bottom: unset;
+      width: 100%;
+      max-width: 100%;
+      height: 100%;
+      margin: 20px 0 0 0;
+      & svg {
+        top: unset;
+        width: 50%;
+        height: auto;
+      }
+    }
+  }
 `;
 
 const Title = styled.h1`
@@ -36,6 +131,11 @@ const Title = styled.h1`
   letter-spacing: 0;
   margin: 0 0 40px;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 920px) {
+    font-size: 50px;
+    word-wrap: break-word;
+  }
 `;
 
 const Description = styled.div`
@@ -60,6 +160,23 @@ const ImageBox = styled.div`
   bottom: -70px;
   right: 1.5%;
   z-index: 10;
+
+  @media (max-width: 1240px) {
+    max-width: 640px;
+    bottom: -100px;
+    right: 0;
+  }
+
+  @media (max-width: 1140px) {
+    max-width: 540px;
+    bottom: -150px;
+  }
+
+  @media (max-width: 880px) {
+    max-width: 490px;
+    bottom: -160px;
+    right: -10px;
+  }
 `;
 
 const IconBox = styled.div`
@@ -67,6 +184,22 @@ const IconBox = styled.div`
   top: 139px;
   right: 1%;
   z-index: 15;
+
+  @media (max-width: 1240px) {
+    top: 90px;
+    max-width: 320px;
+    right: 0;
+  }
+
+  @media (max-width: 1140px) {
+    top: 120px;
+    max-width: 260px;
+  }
+
+  @media (max-width: 880px) {
+    top: 120px;
+    max-width: 240px;
+  }
 `;
 
 const DateBox = styled.div`
@@ -98,17 +231,31 @@ const Date = styled.p`
 const ButtonBox = styled.div`
   display: flex;
   width: 100%;
+  max-width: 300px;
+
+  @media (max-width: 450px) {
+    max-width: 100%;
+  }
 `;
 
-const SpecianWrapper = styled.div`
+const SpecialWrapper = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
   margin: 0 0 100px 0;
   padding: 100px;
   border-radius: 100px;
-  // background: linear-gradient(165.84deg, #FFFFFF 1.66%, #E9E9E9 53.89%);
   background: rgba(255, 255, 255, 1);
+
+  @media (max-width: 1024px) {
+    padding: 50px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 20px;
+    border-radius: 40px;
+    margin: 0 0 60px 0;
+  }
 `;
 
 const AboutChoreoSection = styled.section`
@@ -117,6 +264,13 @@ const AboutChoreoSection = styled.section`
   padding: 0 0 50px 0;
   box-sizing: border-box;
   justify-content: space-between;
+  gap: 40px;
+
+  @media (max-width: 880px) {
+    flex-direction: column;
+    gap: 30px;
+    padding: 0;
+  }
 `;
 
 const AboutChoreoCards = styled.div`
@@ -125,6 +279,10 @@ const AboutChoreoCards = styled.div`
   gap: 20px;
   max-width: 600px;
   width: 100%;
+
+  @media (max-width: 880px) {
+    max-width: 100%;
+  }
 `;
 
 const AboutChoreoTitle = styled.h2`
@@ -135,12 +293,21 @@ const AboutChoreoTitle = styled.h2`
   letter-spacing: 0;
   margin: 0;
   max-width: 420px;
+
+  @media (max-width: 1240px) {
+    max-width: 360px;
+  }
+
+  @media (max-width: 880px) {
+    max-width: 100%;
+    font-size: 40px;
+  }
 `;
 
 export const ChoreoSection = styled.section`
   display: flex;
   width: 100%;
-  padding: 100px 100px 150px 100px;
+  padding: 100px 0 150px;
   box-sizing: border-box;
   justify-content: center;
   align-items: stretch;
@@ -148,6 +315,18 @@ export const ChoreoSection = styled.section`
 
   & > div {
     max-width: 485px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 0;
+  }
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+
+    & > div {
+      max-width: 100%;
+    }
   }
 `;
 
@@ -175,19 +354,29 @@ export default function FirstTouch() {
           </DateBox>
 
           <ButtonBox>
-            <Button buttonText="Выбрать хореографию" />
+            <Button buttonText="Выбрать хореографию" href="#choreo-section" />
           </ButtonBox>
         </TextBox>
 
-        <ImageBox>
+        <MobileImagesBox>
+          <ImageBox id="mobile-only-image-box">
+            <OnlineChoreoPageBackgroundPhoto />
+          </ImageBox>
+
+          <IconBox id="mobile-only-icon-box">
+            <TelegramChoreo />
+          </IconBox>
+        </MobileImagesBox>
+
+        <ImageBox id="desktop-only-image-box">
           <OnlineChoreoPageBackgroundPhoto />
         </ImageBox>
 
-        <IconBox>
+        <IconBox id="desktop-only-icon-box">
           <TelegramChoreo />
         </IconBox>
       </IntroductionSection>
-      <SpecianWrapper>
+      <SpecialWrapper>
         <AboutChoreoSection>
           <AboutChoreoTitle>Что ждет тебя на курсе</AboutChoreoTitle>
           <AboutChoreoCards>
@@ -201,7 +390,7 @@ export default function FirstTouch() {
             ))}
           </AboutChoreoCards>
         </AboutChoreoSection>
-        <ChoreoSection>
+        <ChoreoSection id="choreo-section">
           {choreos.map((choreo) => (
             <ChoreoCard
               key={choreo.id}
@@ -214,7 +403,7 @@ export default function FirstTouch() {
           ))}
         </ChoreoSection>
         <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
-      </SpecianWrapper>
+      </SpecialWrapper>
     </>
   );
 }

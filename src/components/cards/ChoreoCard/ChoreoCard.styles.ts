@@ -12,6 +12,18 @@ export const CardContainer = styled.div`
   ${glass({
     radius: "40px",
   })}
+
+  @media (max-width: 650px) {
+    & > div:first-of-type button {
+      width: 55px;
+      height: 55px;
+    }
+
+    & > div:first-of-type button svg {
+      width: 32px;
+      height: 32px;
+    }
+  }
 `;
 
 export const InteractiveBox = styled.div`
@@ -19,6 +31,10 @@ export const InteractiveBox = styled.div`
   flex-direction: column;
   padding: 30px 40px;
   box-sizing: border-box;
+
+  @media (max-width: 880px) {
+    padding: 30px 20px;
+  }
 `;
 
 export const CardTitle = styled.p`
@@ -29,6 +45,11 @@ export const CardTitle = styled.p`
   letter-spacing: 0;
   margin: 0 0 40px 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 880px) {
+    font-size: 28px;
+    margin: 0 0 30px 0;
+  }
 `;
 
 export const ButtonBox = styled.div`

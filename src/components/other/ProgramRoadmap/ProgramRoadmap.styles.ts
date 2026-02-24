@@ -19,6 +19,14 @@ export const RoadmapItem = styled.div`
     padding: 0 0 0 65px;
     border-left: none;
   }
+
+  @media (max-width: 450px) {
+    padding: 0 0 40px 35px;
+
+    &:last-of-type {
+      padding: 0 0 0 35px;
+    }
+  }
 `;
 
 export const IconBox = styled.div`

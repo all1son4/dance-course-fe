@@ -7,6 +7,15 @@ export const Nav = styled.nav`
   gap: 40px;
   justify-content: center;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 1024px) {
+    gap: 20px;
+  }
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 export const NavLink = styled(Link)<{ $selected: boolean }>`
@@ -33,5 +42,10 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   &:hover {
     text-decoration: none;
     color: rgba(124, 0, 2, 1);
+  }
+
+  @media (max-width: 767px) {
+    padding: 0;
+    font-size: 17px;
   }
 `;

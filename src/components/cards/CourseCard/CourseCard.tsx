@@ -15,15 +15,20 @@ import { TCourseCard } from "./CourseCard.types";
 
 export default function ContactCard(course: TCourseCard) {
   return (
-    <CardContainer $bgColor={course.bgColor}>
-      <IconBox>{course.icon}</IconBox>
+    <CardContainer $bgColor={course.bgColor} className="courseCardContainer">
+      <IconBox className="courseCardIconBox">{course.icon}</IconBox>
       <TitleBox>
-        <Title>{course.title}</Title>
-        <Subtitle>{course.subtitle}</Subtitle>
+        <Title className="courseCardTitle">{course.title}</Title>
+        <Subtitle className="courseCardSubtitle">{course.subtitle}</Subtitle>
       </TitleBox>
       <ContentBox>
-        <Content>{course.cardContent}</Content>
-        <Button buttonText="Подробнее" width="200px" onClick={course.onClick} />
+        <Content className="courseCardContent">{course.cardContent}</Content>
+        <Button
+          className="courseCardButton"
+          buttonText="Подробнее"
+          width="200px"
+          onClick={course.onClick}
+        />
       </ContentBox>
     </CardContainer>
   );

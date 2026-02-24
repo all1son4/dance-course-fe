@@ -91,6 +91,6 @@ export const onlineCoursesArray: TInteractiveCard[] = [
       </DateBox>
     ),
     buttonText: "Подробнее о курсе",
-    buttonHref: "/online/online-choreo",
+    buttonHref: "/online/choreo",
   },
 ];

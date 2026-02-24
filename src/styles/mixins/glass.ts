@@ -34,8 +34,8 @@ export const glass = ({
 
     background: ${bgParam};
 
-    backdrop-filter: blur(${frostPx}px) saturate(115%);
-    -webkit-backdrop-filter: blur(${frostPx}px) saturate(115%);
+    backdrop-filter: blur(${frostPx}px);
+    -webkit-backdrop-filter: blur(${frostPx}px);
 
     box-shadow:
       0 ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, ${shadowOpacity}),

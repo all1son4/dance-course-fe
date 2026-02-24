@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
@@ -6,6 +6,10 @@ export const MainPageBackgroundPhoto: FC<IIconProps> = ({
   width = 775,
   height = 900,
 }) => {
+  const uniqueId = useId();
+  const patternId = `${uniqueId}-pattern`;
+  const imageId = `${uniqueId}-image`;
+
   return (
     <svg
       width={width}
@@ -19,19 +23,19 @@ export const MainPageBackgroundPhoto: FC<IIconProps> = ({
         width="774.252"
         height="1161.58"
         transform="matrix(-1 0 0 1 774.252 -196.788)"
-        fill="url(#pattern0_109_343)"
+        fill={`url(#${patternId})`}
       />
       <defs>
         <pattern
-          id="pattern0_109_343"
+          id={patternId}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
-          <use xlinkHref="#image0_109_343" transform="scale(0.00051361 0.000342349)" />
+          <use xlinkHref={`#${imageId}`} transform="scale(0.00051361 0.000342349)" />
         </pattern>
         <image
-          id="image0_109_343"
+          id={imageId}
           width="1947"
           height="2921"
           preserveAspectRatio="none"

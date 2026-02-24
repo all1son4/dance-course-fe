@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useId } from "react";
 
 import { IIconProps } from "@/types/icons";
 
@@ -6,6 +6,12 @@ export const FirstTouchPageBackgroundPhoto: FC<IIconProps> = ({
   width = 660,
   height = 826,
 }) => {
+  const uniqueId = useId();
+  const patternId0 = `${uniqueId}-pattern-0`;
+  const patternId1 = `${uniqueId}-pattern-1`;
+  const imageId0 = `${uniqueId}-image-0`;
+  const imageId1 = `${uniqueId}-image-1`;
+
   return (
     <svg
       width={width}
@@ -15,33 +21,33 @@ export const FirstTouchPageBackgroundPhoto: FC<IIconProps> = ({
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
     >
-      <path d="M0 -163.589H659.383V825.32H0V-163.589Z" fill="url(#pattern0_187_1729)" />
+      <path d="M0 -163.589H659.383V825.32H0V-163.589Z" fill={`url(#${patternId0})`} />
       <path
         d="M52.0404 125.59H622.586V795.843H52.0404V125.59Z"
-        fill="url(#pattern1_187_1729)"
+        fill={`url(#${patternId1})`}
       />
       <defs>
         <pattern
-          id="pattern0_187_1729"
+          id={patternId0}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
-          <use xlinkHref="#image0_187_1729" transform="scale(0.00050025 0.000333556)" />
+          <use xlinkHref={`#${imageId0}`} transform="scale(0.00050025 0.000333556)" />
         </pattern>
         <pattern
-          id="pattern1_187_1729"
+          id={patternId1}
           patternContentUnits="objectBoundingBox"
           width="1"
           height="1"
         >
           <use
-            xlinkHref="#image1_187_1729"
+            xlinkHref={`#${imageId1}`}
             transform="matrix(0.000502107 0 0 0.000334794 -0.00306349 -0.0022598)"
           />
         </pattern>
         <image
-          id="image0_187_1729"
+          id={imageId0}
           width="1999"
           height="2998"
           preserveAspectRatio="none"

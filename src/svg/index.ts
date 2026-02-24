@@ -6,6 +6,7 @@ export * from "./Insta";
 export * from "./Logo";
 export * from "./MainPageBackgroundPhoto";
 export * from "./Map";
+export * from "./MenuButton";
 export * from "./OfflinePageBackgroundPhoto";
 export * from "./OnlineCalendar";
 export * from "./OnlineChoreoPageBackgroundPhoto";

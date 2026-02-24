@@ -19,9 +19,35 @@ const IntroductionSection = styled.section`
   display: flex;
   align-items: center;
   min-height: 914px;
-  padding: 0;
+  padding: 0 25px;
   box-sizing: border-box;
   width: 100%;
+
+  @media (max-width: 1240px) {
+    padding: 0 20px;
+    min-height: 800px;
+  }
+
+  @media (max-width: 1100px) {
+    min-height: 740px;
+    padding: 40px 20px 0;
+  }
+
+  @media (max-width: 920px) {
+    min-height: 780px;
+    padding: 80px 20px 0;
+  }
+
+  @media (max-width: 767px) {
+    min-height: unset;
+    flex-direction: column;
+    padding: 100px 20px 0;
+
+    & #desktop-only-image-box,
+    & #desktop-only-icon-box {
+      display: none;
+    }
+  }
 `;
 
 const TextBox = styled.div`
@@ -32,6 +58,109 @@ const TextBox = styled.div`
   position: relative;
   z-index: 15;
   padding: 0 0 0 25px;
+
+  @media (max-width: 1240px) {
+    max-width: 500px;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 0;
+    max-width: 480px;
+  }
+
+  @media (max-width: 920px) {
+    max-width: 410px;
+
+    & p {
+      max-width: 390px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    max-width: 100%;
+    & p {
+      max-width: 100%;
+    }
+  }
+`;
+
+const MobileImagesBox = styled.div`
+  display: none;
+  position: relative;
+
+  @media (max-width: 767px) {
+    display: flex;
+    width: 100%;
+
+    & #mobile-only-image-box {
+      position: relative;
+      display: flex;
+      width: 100%;
+      max-width: 100%;
+      justify-content: center;
+      top: unset;
+      right: unset;
+      bottom: unset;
+      margin: -100px 0 0 -60px;
+      & svg {
+        max-width: 100%;
+        width: 90%;
+        height: 100%;
+      }
+    }
+
+    & #mobile-only-icon-box {
+      display: flex;
+      width: 100%;
+      max-width: 100%;
+      justify-content: flex-end;
+      top: unset;
+      right: unset;
+      bottom: unset;
+      margin: 20px 0 0 0;
+      & svg {
+        max-width: 100%;
+        width: 50%;
+        height: fit-content;
+      }
+    }
+  }
+
+  @media (max-width: 570px) {
+    & #mobile-only-image-box {
+      margin: -70px 0 0 -40px;
+      & svg {
+        max-width: 100%;
+        width: 90%;
+        height: 100%;
+      }
+    }
+
+    & #mobile-only-icon-box {
+      margin: 40px 0 0 0;
+      & svg {
+        max-width: 100%;
+        width: 48%;
+      }
+    }
+  }
+
+  @media (max-width: 450px) {
+    & #mobile-only-image-box {
+      margin: -60px 0 0 -20px;
+      & svg {
+        width: 100%;
+      }
+    }
+
+    & #mobile-only-icon-box {
+      margin: 40px 0 0 0;
+      & svg {
+        max-width: 100%;
+        width: 48%;
+      }
+    }
+  }
 `;
 
 const Title = styled.h1`
@@ -42,6 +171,14 @@ const Title = styled.h1`
   letter-spacing: 0;
   margin: 0 0 40px;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 920px) {
+    font-size: 50px;
+  }
+
+  @media (max-width: 767px) {
+    margin: 0 0 30px;
+  }
 `;
 
 const Subtitle = styled.p`
@@ -76,6 +213,28 @@ const ImageBox = styled.div`
   bottom: 88px;
   right: 10%;
   z-index: 10;
+
+  @media (max-width: 1440px) {
+    right: 8%;
+  }
+
+  @media (max-width: 1240px) {
+    max-width: 500px;
+    height: 100%;
+    bottom: 0;
+  }
+
+  @media (max-width: 1100px) {
+    max-width: 470px;
+    height: 100%;
+    bottom: 50px;
+    right: 6%;
+  }
+
+  @media (max-width: 920px) {
+    max-width: 380px;
+    bottom: 80px;
+  }
 `;
 
 const IconBox = styled.div`
@@ -83,6 +242,26 @@ const IconBox = styled.div`
   top: 178px;
   right: 1.5%;
   z-index: 15;
+
+  @media (max-width: 1440px) {
+    right: 0;
+  }
+
+  @media (max-width: 1240px) {
+    max-width: 280px;
+    height: 100%;
+    top: 150px;
+  }
+
+  @media (max-width: 1100px) {
+    max-width: 250px;
+    top: 110px;
+  }
+
+  @media (max-width: 920px) {
+    top: 70px;
+    max-width: 210px;
+  }
 `;
 
 const DateBox = styled.div`
@@ -115,23 +294,68 @@ const ButtonBox = styled.div`
   display: flex;
   gap: 20px;
   width: 100%;
+
+  @media (max-width: 920px) {
+    flex-direction: column;
+    max-width: 300px;
+  }
+
+  @media (max-width: 767px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 100%;
+  }
+
+  @media (max-width: 625px) {
+    display: flex;
+    flex-direction: column;
+    max-width: 100%;
+  }
 `;
 
-const SpecianWrapper = styled.div`
+const SpecialWrapper = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
   margin: 0 0 100px 0;
   padding: 100px;
   border-radius: 100px;
-  // background: linear-gradient(165.84deg, #FFFFFF 1.66%, #E9E9E9 53.89%);
   background: rgba(255, 255, 255, 1);
+
+  @media (max-width: 1100px) {
+    padding: 50px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 20px;
+    border-radius: 40px;
+    margin: 0 0 60px 0;
+  }
 `;
 
 const VideoSection = styled.section`
   display: flex;
   width: 100%;
   box-sizing: border-box;
+  border-radius: 100px;
+  overflow: hidden;
+  position: relative;
+
+  @media (max-width: 880px) {
+    border-radius: 40px;
+  }
+
+  @media (max-width: 650px) {
+    & button {
+      width: 55px;
+      height: 55px;
+    }
+
+    & button svg {
+      width: 32px;
+      height: 32px;
+    }
+  }
 `;
 
 const AboutCourseSection = styled.section`
@@ -140,6 +364,16 @@ const AboutCourseSection = styled.section`
   padding: 150px 0 0 0;
   box-sizing: border-box;
   justify-content: space-between;
+  gap: 40px;
+
+  @media (max-width: 920px) {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 0 0 0;
+  }
 `;
 
 const AboutCourseCards = styled.div`
@@ -148,6 +382,10 @@ const AboutCourseCards = styled.div`
   gap: 20px;
   max-width: 600px;
   width: 100%;
+
+  @media (max-width: 920px) {
+    max-width: 100%;
+  }
 `;
 
 const AboutCourseTitle = styled.h2`
@@ -158,6 +396,14 @@ const AboutCourseTitle = styled.h2`
   letter-spacing: 0;
   margin: 0;
   max-width: 420px;
+
+  @media (max-width: 920px) {
+    max-width: 100%;
+  }
+
+  @media (max-width: 880px) {
+    font-size: 40px;
+  }
 `;
 
 const CourseProgramSection = styled.section`
@@ -167,6 +413,15 @@ const CourseProgramSection = styled.section`
   justify-content: space-between;
   width: 100%;
   gap: 40px;
+
+  @media (max-width: 920px) {
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 40px 0 0 0;
+  }
 `;
 
 const CourseProgramTextBox = styled.div`
@@ -174,6 +429,10 @@ const CourseProgramTextBox = styled.div`
   flex-direction: column;
   max-width: 568px;
   width: 100%;
+
+  @media (max-width: 920px) {
+    max-width: 100%;
+  }
 `;
 
 const CourseProgramTitle = styled.h2`
@@ -184,18 +443,44 @@ const CourseProgramTitle = styled.h2`
   letter-spacing: 0;
   margin: 0 0 80px 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 920px) {
+    margin: 0 0 36px 0;
+  }
+
+  @media (max-width: 880px) {
+    font-size: 40px;
+  }
 `;
 
 const CourseProgramImage = styled(Image)`
   width: 100%;
   max-width: 473px;
   border-radius: 100px;
+  height: fit-content;
+
+  @media (max-width: 1240px) {
+    max-width: 380px;
+  }
+
+  @media (max-width: 920px) {
+    max-width: 550px;
+    margin: 0 auto;
+  }
+
+  @media (max-width: 767px) {
+    border-radius: 40px;
+  }
 `;
 
-export const ContactSection = styled.section`
+const ContactSection = styled.section`
   display: flex;
   padding: 150px 0 0 0;
   box-sizing: border-box;
+
+  @media (max-width: 880px) {
+    padding: 40px 0 0 0;
+  }
 `;
 
 const CourseProgramButtonBox = styled.div`
@@ -203,6 +488,19 @@ const CourseProgramButtonBox = styled.div`
   margin: 60px 0 0 85px;
   width: 100%;
   max-width: 310px;
+
+  @media (max-width: 880px) {
+    margin: 40px 0 0 85px;
+  }
+
+  @media (max-width: 450px) {
+    margin: 60px 0 0 55px;
+    max-width: 280px;
+  }
+
+  @media (max-width: 380px) {
+    max-width: 260px;
+  }
 `;
 
 export default function FirstTouch() {
@@ -239,21 +537,32 @@ export default function FirstTouch() {
           </ButtonBox>
         </TextBox>
 
-        <ImageBox>
+        <MobileImagesBox>
+          <ImageBox id="mobile-only-image-box">
+            <FirstTouchPageBackgroundPhoto />
+          </ImageBox>
+
+          <IconBox id="mobile-only-icon-box">
+            <FirstTouchTelegram />
+          </IconBox>
+        </MobileImagesBox>
+
+        <ImageBox id="desktop-only-image-box">
           <FirstTouchPageBackgroundPhoto />
         </ImageBox>
 
-        <IconBox>
+        <IconBox id="desktop-only-icon-box">
           <FirstTouchTelegram />
         </IconBox>
       </IntroductionSection>
 
-      <SpecianWrapper>
+      <SpecialWrapper>
         <VideoSection>
           <VideoPlayer
             src="/videos/introduction_first_touch.mp4"
             playLabel="Воспроизвести видео"
             poster="/images/first_touch_poster.png"
+            radius="0px"
           />
         </VideoSection>
         <AboutCourseSection>
@@ -287,7 +596,7 @@ export default function FirstTouch() {
         <ContactSection>
           <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
         </ContactSection>
-      </SpecianWrapper>
+      </SpecialWrapper>
     </>
   );
 }
