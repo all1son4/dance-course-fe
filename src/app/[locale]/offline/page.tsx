@@ -137,7 +137,7 @@ const Title = styled.h1`
   color: rgba(0, 0, 0, 1);
 
   @media (max-width: 767px) {
-    font-size: 50px;
+    font-size: 38px;
   }
 `;
 

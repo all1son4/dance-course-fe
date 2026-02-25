@@ -44,6 +44,29 @@ const getYoutubeId = (value: string) => {
   return null;
 };
 
+const getInstagramPostUrl = (value: string) => {
+  if (!value) return null;
+
+  try {
+    const url = new URL(value.trim());
+    const host = url.hostname.replace("www.", "");
+    if (host !== "instagram.com" && host !== "instagr.am") return null;
+
+    const parts = url.pathname.split("/").filter(Boolean);
+    const type = parts[0];
+    const id = parts[1];
+
+    if (!id) return null;
+    if (type === "reel" || type === "p" || type === "tv") {
+      return `https://www.instagram.com/${type}/${id}/`;
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
+};
+
 export default function VideoPlayer({
   src,
   type = "video/mp4",
@@ -71,7 +94,9 @@ export default function VideoPlayer({
   const [hasStarted, setHasStarted] = useState(false);
 
   const youtubeId = useMemo(() => getYoutubeId(src), [src]);
+  const instagramPostUrl = useMemo(() => getInstagramPostUrl(src), [src]);
   const isYoutube = Boolean(youtubeId);
+  const isInstagram = Boolean(instagramPostUrl);
   const resolvedPlayLabel = playLabel ?? t("playVideo");
 
   const options = useMemo<Plyr.Options>(
@@ -106,6 +131,11 @@ export default function VideoPlayer({
     let mounted = true;
     const video = videoRef.current;
     const embed = embedRef.current;
+
+    if (isInstagram) {
+      setIsReady(true);
+      return undefined;
+    }
 
     if (!isYoutube && !video) return undefined;
     if (isYoutube && !embed) return undefined;
@@ -210,9 +240,17 @@ export default function VideoPlayer({
         plyrRef.current = null;
       }
     };
-  }, [options, src, isYoutube]);
+  }, [isInstagram, options, src, isYoutube]);
 
   const handlePlay = () => {
+    if (isInstagram) {
+      if (instagramPostUrl) {
+        window.open(instagramPostUrl, "_blank", "noopener,noreferrer");
+      }
+      playButtonRef.current?.blur();
+      return;
+    }
+
     const api = (plyrRef.current ?? videoRef.current) as PlayerApi | null;
     if (!api) return;
 
@@ -273,8 +311,12 @@ export default function VideoPlayer({
       $buttonSize={buttonSize}
       $iconSize={iconSize}
     >
-      {poster && isYoutube && (
-        <PosterOverlay $src={poster} $isVisible={!hasStarted} aria-hidden />
+      {poster && (isYoutube || isInstagram) && (
+        <PosterOverlay
+          $src={poster}
+          $isVisible={isInstagram || !hasStarted}
+          aria-hidden
+        />
       )}
       <CenterButton
         type="button"
@@ -293,6 +335,8 @@ export default function VideoPlayer({
           data-plyr-provider="youtube"
           data-plyr-embed-id={youtubeId ?? undefined}
         />
+      ) : isInstagram ? (
+        <div className="instagram-fallback" aria-hidden />
       ) : (
         <video
           ref={videoRef}

@@ -22,7 +22,6 @@ export default function Contacts({ bgColor }: { bgColor?: string }) {
         <Title>{t("title")}</Title>
         <ParagraphsBox>
           <Paragraph>{t("description.one")}</Paragraph>
-          <Paragraph>{t("description.two")}</Paragraph>
         </ParagraphsBox>
       </TextBox>
       <IconsBox>

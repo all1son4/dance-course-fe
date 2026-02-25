@@ -26,7 +26,7 @@ export default function Button<T extends ElementType = "button">({
   );
 
   return !!href ? (
-    <ButtonLinkWrapper href={href} target={target}>
+    <ButtonLinkWrapper href={href} target={target} $width={width}>
       {buttonReturnContent}
     </ButtonLinkWrapper>
   ) : (

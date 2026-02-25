@@ -135,6 +135,9 @@ const Title = styled.h1`
     font-size: 50px;
     word-wrap: break-word;
   }
+  @media (max-width: 767px) {
+    font-size: 38px;
+  }
 `;
 
 const Description = styled.div`

@@ -178,6 +178,7 @@ const Title = styled.h1`
 
   @media (max-width: 767px) {
     margin: 0 0 30px;
+    font-size: 38px;
   }
 `;
 
@@ -564,7 +565,7 @@ export default function FirstTouch() {
       <SpecialWrapper>
         <VideoSection>
           <VideoPlayer
-            src="/videos/introduction_first_touch.mp4"
+            src={t("hero.introductionVideoSrc")}
             playLabel={t("hero.playLabel")}
             poster="/images/first_touch_poster.png"
             radius="0px"
@@ -592,7 +593,7 @@ export default function FirstTouch() {
             </CourseProgramButtonBox>
           </CourseProgramTextBox>
           <CourseProgramImage
-            src={"/images/first_touch_program_photo.png"}
+            src={"/images/first_touch_program_photo.jpg"}
             alt={t("program.imageAlt")}
             width={473}
             height={709}

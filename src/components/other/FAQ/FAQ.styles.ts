@@ -75,8 +75,10 @@ export const QuestionItem = styled.li`
 `;
 
 export const QuestionBox = styled.div<{ $isOpened: boolean }>`
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr 16.5px;
+  width: 100%;
+  gap: 16px;
   align-items: center;
   padding: 6px 0;
   cursor: pointer;
@@ -152,5 +154,19 @@ export const Answer = styled.p`
 
   @media (max-width: 880px) {
     font-size: 15px;
+  }
+`;
+
+export const AnswerLink = styled.a`
+  color: rgba(56, 56, 56, 1);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: opacity color 0.2s ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: rgba(124, 0, 2, 1);
+      opacity: 0;
+    }
   }
 `;

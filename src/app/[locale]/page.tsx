@@ -33,7 +33,7 @@ const IntroduceSection = styled.section`
   @media (max-width: 767px) {
     min-height: unset;
     flex-direction: column-reverse;
-    padding: 16px 20px 60px;
+    padding: 8px 20px 60px;
   }
 `;
 
@@ -140,6 +140,10 @@ const MainTitle = styled.h1`
 
   @media (max-width: 920px) {
     font-size: 50px;
+  }
+
+  @media (max-width: 767px) {
+    font-size: 38px;
   }
 `;
 

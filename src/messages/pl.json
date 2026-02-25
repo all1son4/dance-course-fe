@@ -50,8 +50,7 @@
   "Contacts": {
     "title": "Kontakt",
     "description": {
-      "one": "Jeśli masz pytania lub chcesz dowiedzieć się więcej o moich zajęciach, skontaktuj się ze mną w dowolny wygodny sposób.",
-      "two": "Jestem otwarta na współpracę i chętnie rozważę pomysły na wydarzenia oraz warsztaty taneczne."
+      "one": "Jeśli masz pytania lub chcesz dowiedzieć się więcej o moich zajęciach, skontaktuj się ze mną w dowolny wygodny sposób."
     },
     "cards": {
       "phone": "Numer telefonu (Polska)",
@@ -96,7 +95,8 @@
       },
       "9": {
         "question": "Czy mogę przyjść na zajęcia próbne?",
-        "answer": "Tak, zajęcia próbne są dostępne. To najlepszy sposób, aby poczuć styl i atmosferę oraz sprawdzić, czy ten format jest dla Ciebie."
+        "answer": "Tak, zajęcia próbne są dostępne. To najlepszy sposób, aby poczuć styl i atmosferę oraz sprawdzić, czy ten format jest dla Ciebie. Rejestracja jest dostępna tutaj:",
+        "linkLabel": "Otwórz formularz rejestracyjny"
       },
       "10": {
         "question": "Czy Frame Up jest odpowiedni w każdym wieku?",
@@ -176,7 +176,7 @@
         "subtitle": "Warszawa, Polska",
         "items": {
           "1": {
-            "highlight": "From zero",
+            "highlight": "Beginners",
             "text": "dla początkujących"
           },
           "2": {
@@ -197,7 +197,7 @@
             "prefix": "Kurs dla początkujących",
             "highlight": "First Touch"
           },
-          "2": "Analizy choreografii"
+          "2": "Samouczki choreograficzne"
         }
       }
     }
@@ -224,9 +224,9 @@
         "button": "Więcej o kursie"
       },
       "choreo": {
-        "title": "Wideo-analizy moich choreografii",
+        "title": "Samouczki choreograficzne",
         "description": {
-          "1": "Analizy choreografii online dla tancerzy, którzy chcą głębi, struktury i wyrazistego tańca.",
+          "1": "Samouczki choreograficzne online dla tancerzy, którzy chcą głębi, struktury i wyrazistego tańca.",
           "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
         },
         "startLabel": "Start kursu",
@@ -259,7 +259,7 @@
         "button": "Zapisz się"
       },
       "fromZero": {
-        "title": "From zero",
+        "title": "Beginners",
         "description": "Idealnie, jeśli dopiero zaczynasz. Pracujemy nad bazową techniką, plastyką, postawą, rytmem i pewnością ruchu.",
         "schedule": {
           "1": "Poniedziałek 20:30-22:00",
@@ -270,7 +270,7 @@
       },
       "advanced": {
         "title": "Advanced",
-        "description": "Dla osób, które chcą pracować nad detalem, dynamiką i głębszym rozumieniem stylu, muzykalnością oraz ekspresją.",
+        "description": "Dla osób, które dążą do detalu, dynamiki i głębszego rozumienia stylu, chcą rozwijać muzykalność oraz pracować nad techniką, ekspresją i zapamiętywaniem choreografii na bardziej zaawansowanym poziomie.",
         "schedule": {
           "1": "Poniedziałek 19:00-20:30",
           "2": "Środa 19:00-20:30"
@@ -301,7 +301,7 @@
             "prefix": "Kurs dla początkujących",
             "highlight": "First Touch"
           },
-          "2": "Analizy choreografii"
+          "2": "Samouczki choreograficzne"
         }
       }
     }
@@ -315,10 +315,11 @@
         "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
       },
       "startLabel": "Start kursu",
-      "startDate": "1 lutego 2026",
-      "buyButton": "Kup za 350 PLN / 80 €",
+      "startDate": "2 Marca 2026",
+      "buyButton": "Kup za 250 PLN / 50 €",
       "programButton": "Program kursu",
-      "playLabel": "Odtwórz wideo"
+      "playLabel": "Odtwórz wideo",
+      "introductionVideoSrc": "/videos/introduction_first_touch_en.mp4"
     },
     "about": {
       "title": "Co czeka Cię na kursie"
@@ -347,15 +348,15 @@
     },
     "program": {
       "title": "Program kursu",
-      "buyButton": "Kup za 350 PLN / 80 €",
+      "buyButton": "Kup za 250 PLN / 50 €",
       "imageAlt": "Zdjęcie programu kursu First Touch"
     }
   },
   "ChoreoPage": {
     "hero": {
-      "title": "Wideo-analizy moich choreografii",
+      "title": "Samouczki choreograficzne",
       "description": {
-        "1": "Analizy choreografii online dla poziomu średniego i kontynuującego.",
+        "1": "Samouczki choreograficzne online dla poziomu średniego i kontynuującego.",
         "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
       },
       "startLabel": "Start kursu",
@@ -367,7 +368,7 @@
     },
     "suggestions": {
       "1": {
-        "title": "Analizy choreografii dla poziomu średniego i kontynuującego",
+        "title": "Samouczki choreograficzne dla poziomu średniego i kontynuującego",
         "text": "Otrzymujesz dostęp do wyrazistych sekwencji, techniki i ekspresji."
       },
       "2": {

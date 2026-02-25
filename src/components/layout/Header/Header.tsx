@@ -1,7 +1,8 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 
 import { TopMenu } from "@/components";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -24,7 +25,78 @@ export default function Header() {
   const t = useTranslations("Header");
   const locale = useLocale();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const search = searchParams.toString();
   const router = useRouter();
+  const previousRouteRef = useRef({ pathname, search });
+
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    return () => {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "auto";
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    const routeChanged =
+      previousRouteRef.current.pathname !== pathname ||
+      previousRouteRef.current.search !== search;
+
+    if (routeChanged) {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+
+    previousRouteRef.current = { pathname, search };
+  }, [pathname, search]);
+
+  useEffect(() => {
+    const onAnchorClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const target = event.target as Element | null;
+      const link = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!link) return;
+      if (link.target && link.target !== "_self") return;
+
+      let url: URL;
+      try {
+        url = new URL(link.href, window.location.href);
+      } catch {
+        return;
+      }
+
+      if (!url.hash || url.hash === "#") return;
+
+      const samePage =
+        url.origin === window.location.origin &&
+        url.pathname === window.location.pathname &&
+        url.search === window.location.search;
+      if (!samePage) return;
+
+      const hash = decodeURIComponent(url.hash.slice(1));
+      const element = document.getElementById(hash);
+      if (!element) return;
+
+      event.preventDefault();
+      window.history.pushState({}, "", `#${hash}`);
+      element.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "start",
+      });
+    };
+
+    const options = { capture: true } as const;
+    document.addEventListener("click", onAnchorClick, options);
+    return () => document.removeEventListener("click", onAnchorClick, options);
+  }, []);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -33,7 +105,7 @@ export default function Header() {
       router.prefetch("/offline");
       router.prefetch("/online/first-touch");
       router.prefetch("/online/choreo");
-    }, 250);
+    }, 200);
 
     return () => window.clearTimeout(timeoutId);
   }, [router]);
@@ -63,6 +135,7 @@ export default function Header() {
       key: "menu",
       node: (
         <TopMenu
+          setMenuIsOpen={setMenuIsOpen}
           items={[
             { label: t("menu.offline"), href: "/offline" },
             { label: t("menu.online"), href: "/online" },

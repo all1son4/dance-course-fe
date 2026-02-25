@@ -88,7 +88,11 @@ const Title = styled.h1`
   }
 
   @media (max-width: 920px) {
-    font-size: 50px;
+    font-size: 40px;
+  }
+
+  @media (max-width: 767px) {
+    font-size: 38px;
   }
 `;
 

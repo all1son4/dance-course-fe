@@ -113,6 +113,14 @@ export const VideoWrap = styled.div<VideoWrapProps>`
     object-fit: cover;
   }
 
+  .instagram-fallback {
+    width: 100%;
+    height: 100%;
+    display: block;
+    background: #000;
+    border-radius: ${({ $radius }) => $radius};
+  }
+
   .plyr__video-embed,
   .plyr__video-embed iframe {
     width: 100%;

@@ -61,12 +61,14 @@ const variantStyles = {
   `,
 };
 
-export const ButtonLinkWrapper = styled(Link)`
+export const ButtonLinkWrapper = styled(Link)<{ $width: string }>`
   display: flex;
   text-decoration: none !important;
   background: transparent;
   border: none;
   padding: 0;
+  width: 100%;
+  max-width: ${({ $width }) => $width};
 `;
 
 export const StyledButton = styled.button<StyledProps>`

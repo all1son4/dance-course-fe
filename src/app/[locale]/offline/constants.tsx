@@ -130,6 +130,8 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
       </PriceBox>
     ),
     buttonText: t("cards.common.button"),
+    buttonHref:
+      "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/viewform?pli=1&pli=1&edit_requested=true",
   },
   {
     id: 2,
@@ -175,6 +177,8 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
       </PriceBox>
     ),
     buttonText: t("cards.common.button"),
+    buttonHref:
+      "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/viewform?pli=1&pli=1&edit_requested=true",
   },
   {
     id: 3,
@@ -195,5 +199,6 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
       </PriceBox>
     ),
     buttonText: t("cards.common.button"),
+    buttonHref: "https://www.instagram.com/anna.strok_dance",
   },
 ];

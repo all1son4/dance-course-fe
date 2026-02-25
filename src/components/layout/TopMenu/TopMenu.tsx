@@ -7,13 +7,24 @@ import { usePathname } from "@/i18n/navigation";
 import { Nav, NavLink } from "./TopMenu.styles";
 import { TopMenuItem } from "./TopMenu.types";
 
-export default function TopMenu({ items }: { items: TopMenuItem[] }) {
+export default function TopMenu({
+  items,
+  setMenuIsOpen,
+}: {
+  items: TopMenuItem[];
+  setMenuIsOpen: (isOpen: boolean) => void;
+}) {
   const t = useTranslations("Header");
   const pathname = usePathname();
   return (
     <Nav aria-label={t("menu.ariaLabel")}>
       {items.map((item) => (
-        <NavLink key={item.href} href={item.href} $selected={pathname === item.href}>
+        <NavLink
+          key={item.href}
+          href={item.href}
+          $selected={pathname === item.href}
+          onClick={() => setMenuIsOpen(false)}
+        >
           {item.label}
         </NavLink>
       ))}

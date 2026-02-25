@@ -66,7 +66,7 @@ export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
 export const getChoreos = (t: Translate): TChoreoCard[] => [
   {
     id: 1,
-    videoSrc: "https://www.youtube.com/watch?v=-j9AeFGpCpg",
+    videoSrc: "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2",
     postrSrc: "/images/still_alive_poster.png",
     title: "Still Alive",
     firstButtonOptions: {
@@ -78,7 +78,7 @@ export const getChoreos = (t: Translate): TChoreoCard[] => [
   },
   {
     id: 2,
-    videoSrc: "https://www.youtube.com/watch?v=-j9AeFGpCpg",
+    videoSrc: "https://www.instagram.com/reel/DKw36jmNp5D/?igsh=MWg4NDA0cWx6dnpnNQ==",
     postrSrc: "/images/her_lies_poster.png",
     title: "Her Lies",
     firstButtonOptions: {

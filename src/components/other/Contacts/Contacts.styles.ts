@@ -8,7 +8,6 @@ export const Container = styled.div<{ $bgColor?: string }>`
   display: flex;
   width: 100%;
   gap: 150px;
-  align-items: center;
 
   ${({ $bgColor }) =>
     glass({
