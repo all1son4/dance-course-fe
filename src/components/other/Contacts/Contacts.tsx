@@ -1,8 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { ContactCard } from "@/components";
 
-import { contactsArray } from "./Contacts.constants";
+import { getContactsArray } from "./Contacts.constants";
 import {
   Container,
   IconsBox,
@@ -13,19 +15,16 @@ import {
 } from "./Contacts.styles";
 
 export default function Contacts({ bgColor }: { bgColor?: string }) {
+  const t = useTranslations("Contacts");
+  const contactsArray = getContactsArray((key) => t(key));
+
   return (
     <Container $bgColor={bgColor} id="contacts">
       <TextBox>
-        <Title>Контакты</Title>
+        <Title>{t("title")}</Title>
         <ParagraphsBox>
-          <Paragraph>
-            Если у вас есть вопросы или вы хотите узнать больше о моих классах, свяжитесь
-            со мной любым удобным для вас способом.
-          </Paragraph>
-          <Paragraph>
-            Я всегда открыта к сотрудничеству и с радостью рассмотрю идеи для проведения
-            мероприятий или танцевальных мастер-классов.
-          </Paragraph>
+          <Paragraph>{t("description.one")}</Paragraph>
+          <Paragraph>{t("description.two")}</Paragraph>
         </ParagraphsBox>
       </TextBox>
       <IconsBox>

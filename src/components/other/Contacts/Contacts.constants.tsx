@@ -2,25 +2,27 @@ import { Insta, Phone, Telegram } from "@/svg";
 
 import { TContact } from "./Contacts.types";
 
-export const contactsArray: TContact[] = [
+type Translate = (key: string) => string;
+
+export const getContactsArray = (t: Translate): TContact[] => [
   {
     id: 1,
     icon: <Phone />,
-    title: "Phone number (Poland)",
+    title: t("cards.phone"),
     text: "+48 571 571 214",
     link: "tel:+48571571214",
   },
   {
     id: 2,
     icon: <Insta />,
-    title: "Instagram",
+    title: t("cards.instagram"),
     text: "anna.strok_dance",
     link: "https://www.instagram.com/anna.strok_dance",
   },
   {
     id: 3,
     icon: <Telegram />,
-    title: "Telgram",
+    title: t("cards.telegram"),
     text: "@annastrok_dance",
     link: "https://t.me/annastrok_dance",
   },

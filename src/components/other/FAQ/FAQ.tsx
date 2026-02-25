@@ -1,10 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { Chevron } from "@/svg";
 
-import { questionsArray } from "./FAQ.constants";
+import { getQuestionsArray } from "./FAQ.constants";
 import {
   Answer,
   AnswerWrap,
@@ -17,7 +18,9 @@ import {
 } from "./FAQ.styles";
 
 export default function FAQ() {
+  const t = useTranslations("FAQ");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const questionsArray = getQuestionsArray((key) => t(key));
 
   const onItemClickHandler = (id: number) => {
     setSelectedId((prev) => (prev === id ? null : id));
@@ -25,7 +28,7 @@ export default function FAQ() {
 
   return (
     <FAQContainer>
-      <Title>Вопросы и ответы</Title>
+      <Title>{t("title")}</Title>
 
       <QuestionsList>
         {questionsArray.map((q, index) => {

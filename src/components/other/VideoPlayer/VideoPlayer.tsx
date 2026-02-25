@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type Plyr from "plyr";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
@@ -55,11 +56,12 @@ export default function VideoPlayer({
   radius = "100px",
   buttonSize = "95px",
   iconSize = "40px",
-  playLabel = "Play video",
+  playLabel,
   loop = false,
   muted = false,
   playsInline = true,
 }: TVideoPlayerProps) {
+  const t = useTranslations("Common");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const embedRef = useRef<HTMLDivElement | null>(null);
   const plyrRef = useRef<Plyr | null>(null);
@@ -70,6 +72,7 @@ export default function VideoPlayer({
 
   const youtubeId = useMemo(() => getYoutubeId(src), [src]);
   const isYoutube = Boolean(youtubeId);
+  const resolvedPlayLabel = playLabel ?? t("playVideo");
 
   const options = useMemo<Plyr.Options>(
     () => ({
@@ -275,7 +278,7 @@ export default function VideoPlayer({
       )}
       <CenterButton
         type="button"
-        aria-label={playLabel}
+        aria-label={resolvedPlayLabel}
         disabled={!isReady}
         onClick={handlePlay}
         $isPlaying={isPlaying}

@@ -12,6 +12,8 @@ export type TInteractiveCard = {
   buttonOnClick?: () => void;
 };
 
+type Translate = (key: string) => string;
+
 const Content = styled.div`
   display: flex;
   flex-direction: column;
@@ -83,15 +85,14 @@ export const Frequency = styled.p`
   color: rgba(72, 72, 72, 1);
 `;
 
-export const offlineCoursesArray: TInteractiveCard[] = [
+export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
   {
     id: 1,
-    title: "From zero",
+    title: t("cards.fromZero.title"),
     topRowContent: (
       <Content>
         <CommonText style={{ marginBottom: 26 }}>
-          Идеально, если вы только начинаете. Мы работаем над базовой техникой, пластикой,
-          осанкой, чувством ритма и уверенностью в движении.
+          {t("cards.fromZero.description")}
         </CommonText>
 
         <Section style={{ marginBottom: 26 }}>
@@ -99,13 +100,13 @@ export const offlineCoursesArray: TInteractiveCard[] = [
             <IconCell>
               <SmallClock />
             </IconCell>
-            <BoldText>Расписание</BoldText>
+            <BoldText>{t("cards.common.schedule")}</BoldText>
 
             <div />
-            <CommonText>Понедельник 20:30–22:00</CommonText>
+            <CommonText>{t("cards.fromZero.schedule.1")}</CommonText>
 
             <div />
-            <CommonText>Пятница 19:00–20:30</CommonText>
+            <CommonText>{t("cards.fromZero.schedule.2")}</CommonText>
           </Grid>
         </Section>
 
@@ -114,30 +115,29 @@ export const offlineCoursesArray: TInteractiveCard[] = [
             <IconCell>
               <SmallMap />
             </IconCell>
-            <BoldText>Место проведения</BoldText>
+            <BoldText>{t("cards.common.location")}</BoldText>
 
             <div />
-            <CommonText>Warsaw, Mikołaja Drygały 5</CommonText>
+            <CommonText>{t("cards.common.locationValue")}</CommonText>
           </Grid>
         </Section>
       </Content>
     ),
     bottomRowContent: (
       <PriceBox>
-        <Price>500 PLN</Price>
-        <Frequency>/ в месяц</Frequency>
+        <Price>{t("cards.fromZero.price")}</Price>
+        <Frequency>{t("cards.fromZero.priceSuffix")}</Frequency>
       </PriceBox>
     ),
-    buttonText: "Записаться",
+    buttonText: t("cards.common.button"),
   },
   {
     id: 2,
-    title: "Advanced",
+    title: t("cards.advanced.title"),
     topRowContent: (
       <Content>
         <CommonText style={{ marginBottom: 26 }}>
-          Для тех, кто стремится к деталям, динамике и глубокому пониманию стиля, хочет
-          улучшать музыкальность и работать над выразительностью.
+          {t("cards.advanced.description")}
         </CommonText>
 
         <Section style={{ marginBottom: 26 }}>
@@ -145,13 +145,13 @@ export const offlineCoursesArray: TInteractiveCard[] = [
             <IconCell>
               <SmallClock />
             </IconCell>
-            <BoldText>Расписание</BoldText>
+            <BoldText>{t("cards.common.schedule")}</BoldText>
 
             <div />
-            <CommonText>Понедельник 19:00–20:30</CommonText>
+            <CommonText>{t("cards.advanced.schedule.1")}</CommonText>
 
             <div />
-            <CommonText>Среда 19:00–20:30</CommonText>
+            <CommonText>{t("cards.advanced.schedule.2")}</CommonText>
           </Grid>
         </Section>
 
@@ -160,44 +160,40 @@ export const offlineCoursesArray: TInteractiveCard[] = [
             <IconCell>
               <SmallMap />
             </IconCell>
-            <BoldText>Место проведения</BoldText>
+            <BoldText>{t("cards.common.location")}</BoldText>
 
             <div />
-            <CommonText>Warsaw, Mikołaja Drygały 5</CommonText>
+            <CommonText>{t("cards.common.locationValue")}</CommonText>
           </Grid>
         </Section>
       </Content>
     ),
     bottomRowContent: (
       <PriceBox>
-        <Price>500 PLN</Price>
-        <Frequency>/ в месяц</Frequency>
+        <Price>{t("cards.advanced.price")}</Price>
+        <Frequency>{t("cards.advanced.priceSuffix")}</Frequency>
       </PriceBox>
     ),
-    buttonText: "Записаться",
+    buttonText: t("cards.common.button"),
   },
   {
     id: 3,
-    title: "Impro room",
+    title: t("cards.impro.title"),
     topRowContent: (
       <Content>
-        <CommonText style={{ marginBottom: 16 }}>Практики по импровизации.</CommonText>
-        <BoldText style={{ marginBottom: 16 }}>
-          В этой группе нет определённого расписания.
-        </BoldText>
-        <CommonText>
-          Каждый месяц мы решаем, когда и где встречаемся и практикуем разные упражнения,
-          исследуем нюансы, детали, взаимодействие с музыкой и тишиной, создаём
-          собственный танцевальный язык.
+        <CommonText style={{ marginBottom: 16 }}>
+          {t("cards.impro.description")}
         </CommonText>
+        <BoldText style={{ marginBottom: 16 }}>{t("cards.impro.note")}</BoldText>
+        <CommonText>{t("cards.impro.details")}</CommonText>
       </Content>
     ),
     bottomRowContent: (
       <PriceBox>
-        <Price>50 PLN</Price>
-        <Frequency>/ за занятие</Frequency>
+        <Price>{t("cards.impro.price")}</Price>
+        <Frequency>{t("cards.impro.priceSuffix")}</Frequency>
       </PriceBox>
     ),
-    buttonText: "Записаться",
+    buttonText: t("cards.common.button"),
   },
 ];

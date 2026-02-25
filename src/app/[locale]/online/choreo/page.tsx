@@ -1,12 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, Contacts, TextContentCard } from "@/components";
 import ChoreoCard from "@/components/cards/ChoreoCard";
 import { OnlineChoreoPageBackgroundPhoto, TelegramChoreo } from "@/svg";
 
-import { choreos, onlineSuggestions } from "./contstants";
+import { getChoreos, getOnlineSuggestions } from "./contstants";
 
 const IntroductionSection = styled.section`
   position: relative;
@@ -331,30 +332,28 @@ export const ChoreoSection = styled.section`
 `;
 
 export default function FirstTouch() {
+  const t = useTranslations("ChoreoPage");
+  const onlineSuggestions = getOnlineSuggestions((key) => t(key));
+  const choreos = getChoreos((key) => t(key));
+
   return (
     <>
       <IntroductionSection>
         <TextBox>
-          <Title>Видео‑разборы моих хореографий</Title>
+          <Title>{t("hero.title")}</Title>
 
           <Description>
-            <DescriptionParagraph>
-              Онлайн-разборы моих хореографий для тех, кто хочет глубины, структуры и
-              выразительного танца.
-            </DescriptionParagraph>
-            <DescriptionParagraph>
-              Учим вместе онлайн: можно пересматривать и повторять столько раз, сколько
-              нужно, чтобы уверенно собрать всё в музыку.
-            </DescriptionParagraph>
+            <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+            <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
           </Description>
 
           <DateBox>
-            <From>Старт курса</From>
-            <Date>В любое время</Date>
+            <From>{t("hero.startLabel")}</From>
+            <Date>{t("hero.startValue")}</Date>
           </DateBox>
 
           <ButtonBox>
-            <Button buttonText="Выбрать хореографию" href="#choreo-section" />
+            <Button buttonText={t("hero.button")} href="#choreo-section" />
           </ButtonBox>
         </TextBox>
 
@@ -378,7 +377,7 @@ export default function FirstTouch() {
       </IntroductionSection>
       <SpecialWrapper>
         <AboutChoreoSection>
-          <AboutChoreoTitle>Что ждет тебя на курсе</AboutChoreoTitle>
+          <AboutChoreoTitle>{t("about.title")}</AboutChoreoTitle>
           <AboutChoreoCards>
             {onlineSuggestions.map((suggestion) => (
               <TextContentCard

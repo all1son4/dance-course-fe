@@ -1,6 +1,6 @@
-import Link from "next/link";
 import styled from "styled-components";
 
+import { Link } from "@/i18n/navigation";
 import { glass } from "@/styles/mixins/glass";
 
 export const HeaderWrap = styled.header`

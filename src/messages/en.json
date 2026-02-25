@@ -1,0 +1,395 @@
+{
+  "Metadata": {
+    "title": {
+      "default": "Dance Platform",
+      "template": "%s · Dance Platform"
+    },
+    "description": "Frame Up dance course platform",
+    "applicationName": "Dance Platform"
+  },
+  "Header": {
+    "aria": {
+      "home": "Anna Strok — Home"
+    },
+    "menu": {
+      "offline": "Offline Courses",
+      "online": "Online Courses",
+      "contacts": "Contacts",
+      "ariaLabel": "Primary navigation"
+    },
+    "language": {
+      "ariaLabel": "Language",
+      "optionsAriaLabel": "Language options",
+      "ru": "Russian",
+      "en": "English",
+      "pl": "Polish"
+    }
+  },
+  "Common": {
+    "details": "Details",
+    "playVideo": "Play video"
+  },
+  "Footer": {
+    "address": {
+      "name": "Hanna Karzhova",
+      "street": "ul. Jana Kazimierza, nr 64A, lok. 660",
+      "city": "Warsaw 01-248",
+      "nip": "Tax ID 5273113119"
+    },
+    "contact": {
+      "email": "kroxxxxx92@gmail.com",
+      "phone": "+48 571 571 214"
+    },
+    "support": {
+      "title": "Have a question? We are here",
+      "button": "Contact support"
+    },
+    "copyright": "© 2026 Dance Platform. All rights reserved",
+    "privacyPolicy": "Privacy policy"
+  },
+  "Contacts": {
+    "title": "Contacts",
+    "description": {
+      "one": "If you have questions or want to learn more about my classes, reach out in any way that is convenient for you.",
+      "two": "I am always open to collaboration and happy to discuss ideas for events or dance workshops."
+    },
+    "cards": {
+      "phone": "Phone number (Poland)",
+      "instagram": "Instagram",
+      "telegram": "Telegram"
+    }
+  },
+  "FAQ": {
+    "title": "Questions and answers",
+    "items": {
+      "1": {
+        "question": "Is Frame Up suitable if I have never danced before?",
+        "answer": "Yes, this style is perfect for beginners. We move step by step, paying attention to technique, body flow and confidence. The main thing is your desire to try and enjoy the process."
+      },
+      "2": {
+        "question": "What should I bring to class?",
+        "answer": "Wear comfortable clothes that let you move freely, bring socks or soft shoes, and a bottle of water. I will guide you through everything else on site."
+      },
+      "3": {
+        "question": "Can I join in the middle of a month or course?",
+        "answer": "Yes, you can start at any time. I will help you integrate quickly and catch up with the program."
+      },
+      "4": {
+        "question": "Is Frame Up right for me if I feel shy or afraid to move?",
+        "answer": "Frame Up helps you open up naturally. Classes are held in a safe atmosphere where every woman feels support and respect. Shyness usually fades after the first sessions."
+      },
+      "5": {
+        "question": "What is the difference between offline and online classes?",
+        "answer": "Offline gives you group energy, live emotions and personal corrections. Online gives flexibility, comfort at home and learning at your own pace. Both formats bring real results."
+      },
+      "6": {
+        "question": "What skill levels are available?",
+        "answer": "There are groups for beginners, intermediate dancers and students who want to go deeper into technique and performance. I will help you choose the right level."
+      },
+      "7": {
+        "question": "Can I train if I am not flexible?",
+        "answer": "Flexibility is a skill that can be developed. Frame Up gently helps you open your body, improve mobility and feel more feminine."
+      },
+      "8": {
+        "question": "How do classes usually look?",
+        "answer": "We warm up the body, study technique, work on body flow, posture and musicality, and then learn choreography. Every class is a mix of energy, emotion and creativity."
+      },
+      "9": {
+        "question": "Can I attend a trial class?",
+        "answer": "Yes, a trial class is available. It is the best way to feel the style, atmosphere and understand if this format is right for you."
+      },
+      "10": {
+        "question": "Is Frame Up suitable for any age?",
+        "answer": "Absolutely. Frame Up is about femininity, confidence and joy of movement, not age limits."
+      }
+    }
+  },
+  "Roadmap": {
+    "items": {
+      "1": {
+        "title": "Lesson 1: Footwork fundamentals",
+        "description": "We start with the basics of foot placement, both in heels and without heels. You learn to feel support, distribute body weight and stay stable in every movement. This is the foundation of body flow and expression."
+      },
+      "2": {
+        "title": "Lesson 2: Living body — waves and spine",
+        "description": "We open the body to flow. You explore soft waves, spinal mobility and torso control. You learn to connect breath with movement so the dance feels alive, fluid and sensual."
+      },
+      "3": {
+        "title": "Lesson 3: Legs — en l'air, swings, kicks",
+        "description": "We develop leg strength and expression. You master core elements and learn to execute them technically, clearly and with character. We focus on lines, amplitude and control."
+      },
+      "4": {
+        "title": "Lesson 4: Performance — gaze and emotion",
+        "description": "Dance is not only technique, but also story. You learn to work with performance quality: gaze, facial expression and inner state. How to convey emotion, engage the viewer and feel confident on stage and in class."
+      },
+      "5": {
+        "title": "Lesson 5: Putting it all into choreography",
+        "description": "We combine everything you have learned into your first full choreography. You dance, feel and enjoy. This is the point where technique becomes art and movement becomes personal style."
+      }
+    }
+  },
+  "HomePage": {
+    "hero": {
+      "title": "Frame Up",
+      "subtitle": "Discover yourself in Frame Up style",
+      "description": "Learn to dance beautifully, boldly and sensually in an atmosphere of freedom and feminine strength.",
+      "hint": "Choose your learning format",
+      "buttons": {
+        "online": "Online",
+        "offline": "Offline"
+      }
+    },
+    "about": {
+      "title": "About me",
+      "instagram": "Instagram",
+      "bio": {
+        "1": "I am Anna Strok, a professional dancer and teacher with many years of teaching experience and a clear artistic style.",
+        "2": "I am the creator and organizer of Total Strip Weekend in Minsk, the largest frame up strip and high heels championship in Belarus, which gathered hundreds of dancers and became an important event for the dance community."
+      },
+      "achievements": {
+        "stage18Solo": {
+          "prefix": "2nd place Frame Solo Pro at",
+          "suffix": "in Prague."
+        },
+        "stage18Team": {
+          "prefix": "2nd place Frame Up Team at",
+          "suffix": "in Prague."
+        },
+        "wod": {
+          "prefix": "Top 10 Team at",
+          "suffix": "in Krakow."
+        },
+        "dib": {
+          "prefix": "Grand Prix Solo at"
+        }
+      },
+      "quote": {
+        "1": "Today I develop Frame Up in Poland: I lead groups where women open up through movement, and I continue to learn from European masters to grow together with my students.",
+        "2": "My goal is to strengthen Frame Up culture and inspire women to be bold, free and expressive by creating a space where each woman can feel her strength, beauty and creative energy."
+      },
+      "imageAlt": "Photo of Anna Strok"
+    },
+    "courses": {
+      "title": "Courses",
+      "offline": {
+        "title": "Offline courses",
+        "subtitle": "Warsaw, Poland",
+        "items": {
+          "1": {
+            "highlight": "From zero",
+            "text": "for beginners"
+          },
+          "2": {
+            "highlight": "Advanced group",
+            "text": "for intermediate level"
+          },
+          "3": {
+            "highlight": "Impro room",
+            "text": "improvisation practice"
+          }
+        }
+      },
+      "online": {
+        "title": "Online courses",
+        "subtitle": "In Telegram",
+        "items": {
+          "1": {
+            "prefix": "Beginner course",
+            "highlight": "First Touch"
+          },
+          "2": "Choreography breakdowns"
+        }
+      }
+    }
+  },
+  "OnlinePage": {
+    "hero": {
+      "title": "Online courses",
+      "location": "In Telegram",
+      "description": {
+        "1": "Not everyone has the opportunity or confidence to come to a dance studio, and that is absolutely normal. Dance should bring joy, not stress.",
+        "2": "If you are not ready for offline classes yet, live in another city, or simply want to begin in a comfortable setting, you can start with my online courses."
+      }
+    },
+    "cards": {
+      "firstTouch": {
+        "title": "Beginner course \"First Touch\"",
+        "description": {
+          "1": "Your first touch with Frame Up Strip.",
+          "2": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
+          "3": "We work on basic technique, feet, emotions, and by the end you will learn your first choreography."
+        },
+        "startLabel": "Course starts",
+        "startValue": "February 1, 2026",
+        "button": "Learn more"
+      },
+      "choreo": {
+        "title": "Video breakdowns of my choreographies",
+        "description": {
+          "1": "Online choreography breakdowns for dancers who want depth, structure and expressive movement.",
+          "2": "Learn online with unlimited replay so you can confidently build everything into the music."
+        },
+        "startLabel": "Course starts",
+        "startValue": "Anytime",
+        "button": "Learn more"
+      }
+    },
+    "studio": {
+      "title": "Dancing in a studio feels completely different",
+      "paragraphs": {
+        "1": "In the studio you feel the energy of people around you, catch rhythm faster and open up with more confidence. Every movement becomes stronger when the group supports and inspires you.",
+        "2": "Offline classes help you feel your body deeper, improve technique and get the emotional charge that online often misses. You do not just repeat movements - you live the dance.",
+        "3": "Join studio classes and allow yourself more sensations, freedom and strength."
+      },
+      "button": "More about groups",
+      "imageAlt": "Studio class photo"
+    }
+  },
+  "OfflinePage": {
+    "hero": {
+      "title": "Offline courses",
+      "location": "Warsaw, Poland",
+      "description": "Everyone comes to Frame Up with a different story. Some wear heels for the first time, others already dance confidently and want to grow further. That is why classes are split by levels for comfortable progress without stress."
+    },
+    "cards": {
+      "common": {
+        "schedule": "Schedule",
+        "location": "Location",
+        "locationValue": "Warsaw, Mikołaja Drygały 5",
+        "button": "Join"
+      },
+      "fromZero": {
+        "title": "From zero",
+        "description": "Ideal if you are just starting. We focus on basic technique, body flow, posture, rhythm and confidence in movement.",
+        "schedule": {
+          "1": "Monday 20:30-22:00",
+          "2": "Friday 19:00-20:30"
+        },
+        "price": "500 PLN",
+        "priceSuffix": "/ per month"
+      },
+      "advanced": {
+        "title": "Advanced",
+        "description": "For dancers who aim for detail, dynamics and deeper style understanding, and want to improve musicality and expression.",
+        "schedule": {
+          "1": "Monday 19:00-20:30",
+          "2": "Wednesday 19:00-20:30"
+        },
+        "price": "500 PLN",
+        "priceSuffix": "/ per month"
+      },
+      "impro": {
+        "title": "Impro room",
+        "description": "Improvisation practice.",
+        "note": "This group has no fixed schedule.",
+        "details": "Every month we decide when and where to meet, practice different exercises, explore details and nuances, and build our own dance language.",
+        "price": "50 PLN",
+        "priceSuffix": "/ per class"
+      }
+    },
+    "promo": {
+      "title": "Cannot attend offline classes?",
+      "description": {
+        "1": "Not everyone has the opportunity or confidence to come to a studio, and that is normal. Dance should bring joy, not stress.",
+        "2": "If you are not ready for offline classes yet, live in another city or want to begin in comfort, there is an online alternative for you."
+      },
+      "card": {
+        "title": "Online courses",
+        "subtitle": "In Telegram",
+        "items": {
+          "1": {
+            "prefix": "Beginner course",
+            "highlight": "First Touch"
+          },
+          "2": "Choreography breakdowns"
+        }
+      }
+    }
+  },
+  "FirstTouchPage": {
+    "hero": {
+      "title": "Course \"First Touch\"",
+      "subtitle": "Your first touch with Frame Up Strip.",
+      "description": {
+        "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
+        "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
+      },
+      "startLabel": "Course starts",
+      "startDate": "February 1, 2026",
+      "buyButton": "Buy for 350 PLN / 80 €",
+      "programButton": "Course program",
+      "playLabel": "Play video"
+    },
+    "about": {
+      "title": "What awaits you in this course"
+    },
+    "suggestions": {
+      "1": {
+        "title": "Online group with my personal guidance",
+        "text": "You do not learn alone - I guide you step by step, correct technique and help you develop body expression."
+      },
+      "2": {
+        "title": "Homework with feedback",
+        "text": "Each task consolidates the material. You receive comments, recommendations and support to grow faster."
+      },
+      "3": {
+        "title": "5 well-designed lessons that build your foundation",
+        "text": "From feet and waves to performance and first choreography - you get a complete base for confident movement in Frame Up and related styles."
+      },
+      "4": {
+        "title": "Course access for 1.5 months",
+        "text": "Enough time to study at your own pace, revisit materials and polish movement quality."
+      },
+      "5": {
+        "title": "Instant access via private Telegram chats",
+        "text": "No extra platforms and no complicated dashboards. Everything is available in a convenient format."
+      }
+    },
+    "program": {
+      "title": "Course program",
+      "buyButton": "Buy for 350 PLN / 80 €",
+      "imageAlt": "First Touch program photo"
+    }
+  },
+  "ChoreoPage": {
+    "hero": {
+      "title": "Video breakdowns of my choreographies",
+      "description": {
+        "1": "Online choreography breakdowns for intermediate and continuing dancers who want depth, structure and expressive dance.",
+        "2": "Learn online with replay support to confidently assemble choreography into music."
+      },
+      "startLabel": "Course starts",
+      "startValue": "Anytime",
+      "button": "Choose choreography"
+    },
+    "about": {
+      "title": "What awaits you in this course"
+    },
+    "suggestions": {
+      "1": {
+        "title": "Choreography breakdowns for intermediate and continuing level",
+        "text": "Get access to expressive combinations, technique and performance quality."
+      },
+      "2": {
+        "title": "Clear structure and detailed explanations",
+        "text": "Every movement is broken down clearly so you understand what to do, how and why."
+      },
+      "3": {
+        "title": "Access to materials for 1 month",
+        "text": "A convenient format that gives you time to learn, repeat and consolidate everything at your own pace."
+      },
+      "4": {
+        "title": "Instant access via private Telegram chats",
+        "text": "No extra platforms - all course materials in one place right after payment."
+      },
+      "5": {
+        "title": "Participation formats: mentored or self-paced",
+        "text": "Choose what fits you: guidance and feedback, or a free self-paced format."
+      }
+    },
+    "pricing": {
+      "withoutMentor": "Without mentor 60 PLN / 15 €",
+      "withMentor": "With mentor 100 PLN / 25 €"
+    }
+  }
+}

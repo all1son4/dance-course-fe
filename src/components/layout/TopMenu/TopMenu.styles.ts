@@ -1,5 +1,6 @@
-import Link from "next/link";
 import styled from "styled-components";
+
+import { Link } from "@/i18n/navigation";
 
 export const Nav = styled.nav`
   display: flex;

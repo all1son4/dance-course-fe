@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/components";
 import { FirstTouchPageBackgroundPhoto, FirstTouchTelegram } from "@/svg";
 
-import { onlineSuggestions } from "./constants";
+import { getOnlineSuggestions } from "./constants";
 
 const IntroductionSection = styled.section`
   position: relative;
@@ -504,33 +505,30 @@ const CourseProgramButtonBox = styled.div`
 `;
 
 export default function FirstTouch() {
+  const t = useTranslations("FirstTouchPage");
+  const onlineSuggestions = getOnlineSuggestions((key) => t(key));
+
   return (
     <>
       <IntroductionSection>
         <TextBox>
-          <Title>Курс “First Touch”</Title>
-          <Subtitle>Твое первое прикосновение к Frame Up Strip..</Subtitle>
+          <Title>{t("hero.title")}</Title>
+          <Subtitle>{t("hero.subtitle")}</Subtitle>
 
           <Description>
-            <DescriptionParagraph>
-              Курс для тех, кто никогда не танцевал, но хочет научиться чувствовать тело,
-              уверенность и движение.
-            </DescriptionParagraph>
-            <DescriptionParagraph>
-              Мы будем работать над базовой техникой, стопами, эмоциями и в конце выучим
-              вашу первую хореографию.
-            </DescriptionParagraph>
+            <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+            <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
           </Description>
 
           <DateBox>
-            <From>Старт курса</From>
-            <Date>1 февраля 2026 г.</Date>
+            <From>{t("hero.startLabel")}</From>
+            <Date>{t("hero.startDate")}</Date>
           </DateBox>
 
           <ButtonBox>
-            <Button buttonText="Купить за 350 PLN / 80 €" />
+            <Button buttonText={t("hero.buyButton")} />
             <Button
-              buttonText="Программа курса"
+              buttonText={t("hero.programButton")}
               variant="secondary"
               href="#course-program"
             />
@@ -560,13 +558,13 @@ export default function FirstTouch() {
         <VideoSection>
           <VideoPlayer
             src="/videos/introduction_first_touch.mp4"
-            playLabel="Воспроизвести видео"
+            playLabel={t("hero.playLabel")}
             poster="/images/first_touch_poster.png"
             radius="0px"
           />
         </VideoSection>
         <AboutCourseSection>
-          <AboutCourseTitle>Что ждет тебя на курсе</AboutCourseTitle>
+          <AboutCourseTitle>{t("about.title")}</AboutCourseTitle>
           <AboutCourseCards>
             {onlineSuggestions.map((suggestion) => (
               <TextContentCard
@@ -580,15 +578,15 @@ export default function FirstTouch() {
         </AboutCourseSection>
         <CourseProgramSection id="course-program">
           <CourseProgramTextBox>
-            <CourseProgramTitle>Программа курса</CourseProgramTitle>
+            <CourseProgramTitle>{t("program.title")}</CourseProgramTitle>
             <RoadmapContainer />
             <CourseProgramButtonBox>
-              <Button buttonText="Купить за 350 PLN / 80 €" />
+              <Button buttonText={t("program.buyButton")} />
             </CourseProgramButtonBox>
           </CourseProgramTextBox>
           <CourseProgramImage
             src={"/images/first_touch_program_photo.png"}
-            alt="first_touch_program_photo"
+            alt={t("program.imageAlt")}
             width={473}
             height={709}
           />

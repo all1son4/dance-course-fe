@@ -1,9 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
 import { Fragment, useState } from "react";
 
 import { TopMenu } from "@/components";
+import { usePathname, useRouter } from "@/i18n/navigation";
+import { routing } from "@/i18n/routing";
 import { EnglishFlag, Logo, MenuButton, PolishFlag, RussianFlag } from "@/svg";
 
 import LanguageSelect from "../LanguageSelect";
@@ -19,15 +21,34 @@ import {
 
 export default function Header() {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const t = useTranslations("Header");
+  const locale = useLocale();
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const languageOptions = [
+    { code: "ru", label: t("language.ru"), flag: <RussianFlag /> },
+    { code: "en", label: t("language.en"), flag: <EnglishFlag /> },
+    { code: "pl", label: t("language.pl"), flag: <PolishFlag /> },
+  ];
+
+  const onLanguageChange = (code: string) => {
+    if (!routing.locales.includes(code as (typeof routing.locales)[number])) return;
+    router.replace(pathname, {
+      locale: code as (typeof routing.locales)[number],
+      scroll: false,
+    });
+  };
+
   const headerInteractiveContent = [
     {
       key: "menu",
       node: (
         <TopMenu
           items={[
-            { label: "Offline курсы", href: "/offline" },
-            { label: "Online курсы", href: "/online" },
-            { label: "Контакты", href: "#contacts" },
+            { label: t("menu.offline"), href: "/offline" },
+            { label: t("menu.online"), href: "/online" },
+            { label: t("menu.contacts"), href: "#contacts" },
           ]}
         />
       ),
@@ -37,18 +58,9 @@ export default function Header() {
       key: "language",
       node: (
         <LanguageSelect
-          value="ru"
-          options={[
-            { code: "ru", label: "Русский", flag: <RussianFlag /> },
-            { code: "en", label: "English", flag: <EnglishFlag /> },
-            { code: "pl", label: "Polski", flag: <PolishFlag /> },
-          ]}
-          onChange={(code) => {
-            // TODO: hook to i18n router / next-intl, etc.
-            // For now just log.
-            // eslint-disable-next-line no-console
-            console.log("Language changed:", code);
-          }}
+          value={locale}
+          options={languageOptions}
+          onChange={onLanguageChange}
         />
       ),
     },
@@ -56,7 +68,7 @@ export default function Header() {
   return (
     <HeaderWrap>
       <Pill $isOpen={menuIsOpen}>
-        <Brand href="/" aria-label="Anna Strok — Home">
+        <Brand href="/" aria-label={t("aria.home")}>
           <Logo />
         </Brand>
 
@@ -78,6 +90,3 @@ export default function Header() {
     </HeaderWrap>
   );
 }
-
-// Convenience re-export for Link typing usage in styles if needed
-export type { Link };

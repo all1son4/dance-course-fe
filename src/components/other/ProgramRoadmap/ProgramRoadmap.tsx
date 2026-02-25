@@ -1,8 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { RoadmapPoint } from "@/svg";
 
-import { roadmapItems } from "./ProgramRoadmap.constants";
+import { getRoadmapItems } from "./ProgramRoadmap.constants";
 import {
   IconBox,
   ItemDescription,
@@ -12,6 +14,9 @@ import {
 } from "./ProgramRoadmap.styles";
 
 export default function ProgramRoadmap() {
+  const t = useTranslations("Roadmap");
+  const roadmapItems = getRoadmapItems((key) => t(key));
+
   return (
     <RoadmapContainer>
       {roadmapItems.map((item) => (

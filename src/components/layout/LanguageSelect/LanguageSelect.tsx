@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Chevron } from "@/svg";
@@ -24,6 +25,7 @@ export default function LanguageSelect({
   options: LanguageOption[];
   onChange: (code: string) => void;
 }) {
+  const t = useTranslations("Header");
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -54,7 +56,7 @@ export default function LanguageSelect({
     <MenuWrap ref={wrapRef}>
       <Trigger
         type="button"
-        aria-label="Language"
+        aria-label={t("language.ariaLabel")}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
@@ -66,7 +68,7 @@ export default function LanguageSelect({
       </Trigger>
 
       {open && (
-        <Menu role="menu" aria-label="Language options">
+        <Menu role="menu" aria-label={t("language.optionsAriaLabel")}>
           {options.map((opt) => (
             <Item
               key={opt.code}

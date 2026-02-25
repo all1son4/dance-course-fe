@@ -1,9 +1,10 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
+import { useRouter } from "@/i18n/navigation";
 import { glass } from "@/styles/mixins/glass";
 import { Insta, Logo, Map, Quote, TelegramGlass } from "@/svg";
 import { MainPageBackgroundPhoto } from "@/svg/MainPageBackgroundPhoto";
@@ -551,6 +552,7 @@ const ContactSection = styled.section`
 `;
 
 export default function Home() {
+  const t = useTranslations("HomePage");
   const router = useRouter();
   return (
     <>
@@ -559,19 +561,22 @@ export default function Home() {
           <MainPageBackgroundPhoto />
         </AbsolutePageImage>
         <MainTextBox>
-          <MainTitle>Frame Up</MainTitle>
+          <MainTitle>{t("hero.title")}</MainTitle>
           <DescriptionBox>
-            <DescriptionTitle>Раскрой себя в стиле frame up</DescriptionTitle>
-            <DescriptionText>
-              Учись танцевать красиво, смело и чувственно,в атмосфере полной свободы и
-              женской силы
-            </DescriptionText>
+            <DescriptionTitle>{t("hero.subtitle")}</DescriptionTitle>
+            <DescriptionText>{t("hero.description")}</DescriptionText>
           </DescriptionBox>
           <InteractiveBox>
-            <InteractiveHint>Выбирайте свой формат обучения</InteractiveHint>
+            <InteractiveHint>{t("hero.hint")}</InteractiveHint>
             <ButtonsBox>
-              <Button buttonText="Online" onClick={() => router.push("/online")} />
-              <Button buttonText="Offline" onClick={() => router.push("/offline")} />
+              <Button
+                buttonText={t("hero.buttons.online")}
+                onClick={() => router.push("/online")}
+              />
+              <Button
+                buttonText={t("hero.buttons.offline")}
+                onClick={() => router.push("/offline")}
+              />
             </ButtonsBox>
           </InteractiveBox>
         </MainTextBox>
@@ -582,58 +587,51 @@ export default function Home() {
       </IntroduceSection>
       <AboutMeSection>
         <AboutMeTextBox>
-          <AboutMeTitle>Обо мне</AboutMeTitle>
+          <AboutMeTitle>{t("about.title")}</AboutMeTitle>
           <ContactCard
             icon={<Insta />}
-            title="Instagram"
+            title={t("about.instagram")}
             text="anna.strok_dance"
             link="https://www.instagram.com/anna.strok_dance"
           />
           <AboutMeParagraphs>
-            <AboutMeParagraph>
-              Я Анна Строк, профессиональная танцовщица и преподаватель с многолетним
-              опытом преподавания и четким художественным стилем.
-            </AboutMeParagraph>
-            <AboutMeParagraph>
-              Я являюсь создателем и организатором Total Strip Weekend в Минске —
-              крупнейшего в Беларуси чемпионата по frame up strip и high heels, который
-              собирал сотни танцоров и стал важным событием в танцевальном сообществе.
-            </AboutMeParagraph>
+            <AboutMeParagraph>{t("about.bio.1")}</AboutMeParagraph>
+            <AboutMeParagraph>{t("about.bio.2")}</AboutMeParagraph>
           </AboutMeParagraphs>
 
           <AboutMeList>
             <li>
-              2-е место Frame Solo Pro на{" "}
+              {t("about.achievements.stage18Solo.prefix")}{" "}
               <a
                 href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
                 target="_blank"
               >
                 @stage_18
               </a>{" "}
-              в Праге.
+              {t("about.achievements.stage18Solo.suffix")}
             </li>
             <li>
-              2-е место Frame Up Team на{" "}
+              {t("about.achievements.stage18Team.prefix")}{" "}
               <a
                 href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
                 target="_blank"
               >
                 @stage_18
               </a>{" "}
-              в Праге.
+              {t("about.achievements.stage18Team.suffix")}
             </li>
             <li>
-              Топ 10 Team на{" "}
+              {t("about.achievements.wod.prefix")}{" "}
               <a
                 href="https://www.instagram.com/worldofdancepoland?igsh=MWtsMWo5cmxyYWd3dQ=="
                 target="_blank"
               >
                 @worldofdancepoland
               </a>{" "}
-              в Кракове.
+              {t("about.achievements.wod.suffix")}
             </li>
             <li>
-              Гран-при Solo на{" "}
+              {t("about.achievements.dib.prefix")}{" "}
               <a
                 href="https://www.instagram.com/dib.gala?igsh=MWZ3eXgwYnFrMWU2dA=="
                 target="_blank"
@@ -646,7 +644,7 @@ export default function Home() {
         <AboutMeImageBox>
           <StyledImage
             src={"/images/main_page_second.png"}
-            alt="About Me"
+            alt={t("about.imageAlt")}
             width={560}
             height={635}
           />
@@ -655,39 +653,38 @@ export default function Home() {
               <Quote />
             </IconPositionWrap>
             <ImageDescriptionCard>
-              <AboutMeParagraph>
-                Сегодня я развиваю Frame Up в Польше: веду группы, где женщины
-                раскрываются через движение, и продолжаю учиться у европейских мастеров,
-                чтобы расти вместе со своими ученицами.
-              </AboutMeParagraph>
-              <AboutMeParagraph>
-                Моя цель — укреплять культуру Frame Up и вдохновлять женщин на смелость,
-                свободу и самовыражение, создавая пространство, где каждая может
-                почувствовать свою силу, красоту и творческую энергию.
-              </AboutMeParagraph>
+              <AboutMeParagraph>{t("about.quote.1")}</AboutMeParagraph>
+              <AboutMeParagraph>{t("about.quote.2")}</AboutMeParagraph>
             </ImageDescriptionCard>
           </ImageDescriptionBox>
         </AboutMeImageBox>
       </AboutMeSection>
       <CourseSection>
-        <CourseTitle>Курсы</CourseTitle>
+        <CourseTitle>{t("courses.title")}</CourseTitle>
         <CourseOptionsBox>
           <CourseCard
             icon={<Map />}
-            title="Offline курсы"
-            subtitle="Warsaw, Poland"
+            title={t("courses.offline.title")}
+            subtitle={t("courses.offline.subtitle")}
             cardContent={
               <CourseList>
                 <li>
-                  <span style={{ fontWeight: 600 }}>From zero</span> — для начинающих
+                  <span style={{ fontWeight: 600 }}>
+                    {t("courses.offline.items.1.highlight")}
+                  </span>{" "}
+                  - {t("courses.offline.items.1.text")}
                 </li>
                 <li>
-                  <span style={{ fontWeight: 600 }}>Advanced group</span> — для среднего
-                  уровня
+                  <span style={{ fontWeight: 600 }}>
+                    {t("courses.offline.items.2.highlight")}
+                  </span>{" "}
+                  - {t("courses.offline.items.2.text")}
                 </li>
                 <li>
-                  <span style={{ fontWeight: 600 }}>Impro room</span> — практики по
-                  импровизации
+                  <span style={{ fontWeight: 600 }}>
+                    {t("courses.offline.items.3.highlight")}
+                  </span>{" "}
+                  - {t("courses.offline.items.3.text")}
                 </li>
               </CourseList>
             }
@@ -695,15 +692,17 @@ export default function Home() {
           />
           <CourseCard
             icon={<TelegramGlass />}
-            title="Online курсы"
-            subtitle="В TelegramGlass"
+            title={t("courses.online.title")}
+            subtitle={t("courses.online.subtitle")}
             cardContent={
               <CourseList>
                 <li>
-                  Курс для начинающих{" "}
-                  <span style={{ fontWeight: 600 }}>&quot;First Touch&quot;</span>
+                  {t("courses.online.items.1.prefix")}{" "}
+                  <span style={{ fontWeight: 600 }}>
+                    &quot;{t("courses.online.items.1.highlight")}&quot;
+                  </span>
                 </li>
-                <li>Разборы хореографий</li>
+                <li>{t("courses.online.items.2")}</li>
               </CourseList>
             }
             onClick={() => router.push("/online")}

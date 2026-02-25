@@ -1,12 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Contacts, CourseCard, InteractiveCard } from "@/components";
+import { useRouter } from "@/i18n/navigation";
 import { OfflinePageBackgroundPhoto, TelegramGlass, WarsawMap } from "@/svg";
 
-import { offlineCoursesArray } from "./constants";
+import { getOfflineCoursesArray } from "./constants";
 
 const IntroductionSection = styled.section`
   position: relative;
@@ -442,18 +443,17 @@ const ContactSection = styled.section`
 `;
 
 export default function Offline() {
+  const t = useTranslations("OfflinePage");
   const router = useRouter();
+  const offlineCoursesArray = getOfflineCoursesArray((key) => t(key));
+
   return (
     <>
       <IntroductionSection>
         <TextBox>
-          <Title>Offline курсы</Title>
-          <Location>Warsaw, Poland</Location>
-          <Description>
-            Каждый приходит в Frame Up со своей историей — кто‑то впервые встаёт на
-            каблуки, а кто‑то уже уверенно танцует и хочет расти дальше. Поэтому занятия
-            разделены на уровни, чтобы вы могли развиваться комфортно и без стресса.
-          </Description>
+          <Title>{t("hero.title")}</Title>
+          <Location>{t("hero.location")}</Location>
+          <Description>{t("hero.description")}</Description>
         </TextBox>
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
@@ -484,31 +484,26 @@ export default function Offline() {
       </CoursesSection>
       <PromoteOnlineSection>
         <TextBlock>
-          <PromoteTitle>Не можете посещать офлайн‑занятия?</PromoteTitle>
+          <PromoteTitle>{t("promo.title")}</PromoteTitle>
           <Paragraphs>
-            <Paragraph>
-              Не у всех есть возможность или смелость прийти на занятия в студию — и это
-              абсолютно нормально. Танец должен быть в радость, а не в стресс.
-            </Paragraph>
-            <Paragraph>
-              Если вы чувствуете, что пока не готовы к офлайну, живёте в другом городе или
-              просто хотите начать в комфортной обстановке, у вас есть альтернатива
-              занятий на моих онлайн курсах.
-            </Paragraph>
+            <Paragraph>{t("promo.description.1")}</Paragraph>
+            <Paragraph>{t("promo.description.2")}</Paragraph>
           </Paragraphs>
         </TextBlock>
         <CardBlock>
           <CourseCard
             icon={<TelegramGlass width={115} height={130} />}
-            title="Online курсы"
-            subtitle="В TelegramGlass"
+            title={t("promo.card.title")}
+            subtitle={t("promo.card.subtitle")}
             cardContent={
               <CourseList>
                 <li>
-                  Курс для начинающих{" "}
-                  <span style={{ fontWeight: 600 }}>&quot;First Touch&quot;</span>
+                  {t("promo.card.items.1.prefix")}{" "}
+                  <span style={{ fontWeight: 600 }}>
+                    &quot;{t("promo.card.items.1.highlight")}&quot;
+                  </span>
                 </li>
-                <li>Разборы хореографий</li>
+                <li>{t("promo.card.items.2")}</li>
               </CourseList>
             }
             onClick={() => router.push("/online")}

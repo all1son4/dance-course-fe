@@ -1,0 +1,395 @@
+{
+  "Metadata": {
+    "title": {
+      "default": "Dance Platform",
+      "template": "%s · Dance Platform"
+    },
+    "description": "Platforma kursów tańca Frame Up",
+    "applicationName": "Dance Platform"
+  },
+  "Header": {
+    "aria": {
+      "home": "Anna Strok — Strona główna"
+    },
+    "menu": {
+      "offline": "Kursy offline",
+      "online": "Kursy online",
+      "contacts": "Kontakt",
+      "ariaLabel": "Nawigacja główna"
+    },
+    "language": {
+      "ariaLabel": "Język",
+      "optionsAriaLabel": "Opcje języka",
+      "ru": "Rosyjski",
+      "en": "Angielski",
+      "pl": "Polski"
+    }
+  },
+  "Common": {
+    "details": "Szczegóły",
+    "playVideo": "Odtwórz wideo"
+  },
+  "Footer": {
+    "address": {
+      "name": "Hanna Karzhova",
+      "street": "ul. Jana Kazimierza, nr 64A, lok. 660",
+      "city": "Warszawa 01-248",
+      "nip": "NIP 5273113119"
+    },
+    "contact": {
+      "email": "kroxxxxx92@gmail.com",
+      "phone": "+48 571 571 214"
+    },
+    "support": {
+      "title": "Masz pytanie? Jesteśmy obok",
+      "button": "Napisz do wsparcia"
+    },
+    "copyright": "© 2026 Dance Platform. Wszelkie prawa zastrzeżone",
+    "privacyPolicy": "Polityka prywatności"
+  },
+  "Contacts": {
+    "title": "Kontakt",
+    "description": {
+      "one": "Jeśli masz pytania lub chcesz dowiedzieć się więcej o moich zajęciach, skontaktuj się ze mną w dowolny wygodny sposób.",
+      "two": "Jestem otwarta na współpracę i chętnie rozważę pomysły na wydarzenia oraz warsztaty taneczne."
+    },
+    "cards": {
+      "phone": "Numer telefonu (Polska)",
+      "instagram": "Instagram",
+      "telegram": "Telegram"
+    }
+  },
+  "FAQ": {
+    "title": "Pytania i odpowiedzi",
+    "items": {
+      "1": {
+        "question": "Czy Frame Up jest dla mnie, jeśli nigdy nie tańczyłam?",
+        "answer": "Tak, ten styl świetnie nadaje się dla początkujących. Pracujemy krok po kroku nad techniką, plastyką i pewnością siebie. Najważniejsze są chęć i radość z procesu."
+      },
+      "2": {
+        "question": "Co zabrać na trening?",
+        "answer": "Wygodny strój, w którym czujesz się swobodnie, skarpetki lub miękkie obuwie i butelkę wody. Resztę wyjaśnię i pokażę na miejscu."
+      },
+      "3": {
+        "question": "Czy mogę dołączyć w trakcie miesiąca lub kursu?",
+        "answer": "Tak, możesz zacząć w dowolnym momencie. Pomogę Ci szybko wejść do grupy i nadrobić program."
+      },
+      "4": {
+        "question": "Czy Frame Up jest dla mnie, jeśli się wstydzę lub boję się ruchu?",
+        "answer": "Frame Up pomaga się otworzyć. Zajęcia odbywają się w bezpiecznej atmosferze, gdzie każda kobieta czuje wsparcie i szacunek. Nieśmiałość zwykle znika po pierwszych treningach."
+      },
+      "5": {
+        "question": "Jaka jest różnica między zajęciami offline i online?",
+        "answer": "Offline to energia grupy, żywe emocje i indywidualna korekta. Online to elastyczność, komfort domu i nauka we własnym tempie. Oba formaty dają efekty."
+      },
+      "6": {
+        "question": "Jakie poziomy zaawansowania są dostępne?",
+        "answer": "Są grupy dla początkujących, średniozaawansowanych oraz osób, które chcą wejść głębiej w technikę i występy. Pomogę dobrać właściwy poziom."
+      },
+      "7": {
+        "question": "Czy mogę ćwiczyć, jeśli nie mam plastyki?",
+        "answer": "Plastyka to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się bardziej kobieco."
+      },
+      "8": {
+        "question": "Jak wyglądają zajęcia?",
+        "answer": "Rozgrzewamy ciało, uczymy się techniki, pracujemy nad plastyką, postawą i muzykalnością, a następnie uczymy choreografii. Każde zajęcia to połączenie energii, emocji i kreatywności."
+      },
+      "9": {
+        "question": "Czy mogę przyjść na zajęcia próbne?",
+        "answer": "Tak, zajęcia próbne są dostępne. To najlepszy sposób, aby poczuć styl i atmosferę oraz sprawdzić, czy ten format jest dla Ciebie."
+      },
+      "10": {
+        "question": "Czy Frame Up jest odpowiedni w każdym wieku?",
+        "answer": "Zdecydowanie tak. Frame Up to kobiecość, pewność siebie i przyjemność z ruchu, a nie ograniczenia wiekowe."
+      }
+    }
+  },
+  "Roadmap": {
+    "items": {
+      "1": {
+        "title": "Lekcja 1: Praca stóp",
+        "description": "Poznajemy podstawy ustawienia stopy, zarówno w obcasach, jak i bez nich. Uczysz się czuć oparcie, rozkładać ciężar ciała i utrzymywać stabilność w każdym ruchu. To fundament plastyki i wyrazu."
+      },
+      "2": {
+        "title": "Lekcja 2: Żywe ciało — fale i kręgosłup",
+        "description": "Otwieramy ciało na przepływ. Poznajesz miękkie fale, pracę kręgosłupa i ruchomość tułowia. Uczysz się łączyć oddech z ruchem, aby taniec był żywy, płynny i zmysłowy."
+      },
+      "3": {
+        "title": "Lekcja 3: Nogi — en l'air, wymachy, kiki",
+        "description": "Rozwijamy siłę i ekspresję nóg. Opanowujesz podstawowe elementy i uczysz się wykonywać je technicznie, efektownie i z charakterem. Pracujemy nad linią, amplitudą i kontrolą."
+      },
+      "4": {
+        "title": "Lekcja 4: Wyraz w tańcu — spojrzenie i emocja",
+        "description": "Taniec to nie tylko technika, ale też historia. Uczysz się pracować nad wyrazem: spojrzeniem, mimiką i stanem wewnętrznym. Jak przekazać emocję, przyciągnąć widza i czuć pewność na sali i scenie."
+      },
+      "5": {
+        "title": "Lekcja 5: Składamy wszystko w choreografię",
+        "description": "Łączymy wszystko, czego się nauczyłaś, w pierwszą pełną choreografię. Tańczysz, przeżywasz i czerpiesz radość. To moment, gdy technika staje się sztuką, a ruch staje się Twoim stylem."
+      }
+    }
+  },
+  "HomePage": {
+    "hero": {
+      "title": "Frame Up",
+      "subtitle": "Odkryj siebie w stylu Frame Up",
+      "description": "Ucz się tańczyć pięknie, odważnie i zmysłowo w atmosferze wolności i kobiecej siły.",
+      "hint": "Wybierz format nauki",
+      "buttons": {
+        "online": "Online",
+        "offline": "Offline"
+      }
+    },
+    "about": {
+      "title": "O mnie",
+      "instagram": "Instagram",
+      "bio": {
+        "1": "Jestem Anna Strok, profesjonalna tancerka i instruktorka z wieloletnim doświadczeniem oraz wyraźnym stylem artystycznym.",
+        "2": "Jestem twórczynią i organizatorką Total Strip Weekend w Mińsku - największych na Białorusi mistrzostw frame up strip i high heels, które gromadziły setki tancerzy i stały się ważnym wydarzeniem dla społeczności tanecznej."
+      },
+      "achievements": {
+        "stage18Solo": {
+          "prefix": "2. miejsce Frame Solo Pro na",
+          "suffix": "w Pradze."
+        },
+        "stage18Team": {
+          "prefix": "2. miejsce Frame Up Team na",
+          "suffix": "w Pradze."
+        },
+        "wod": {
+          "prefix": "Top 10 Team na",
+          "suffix": "w Krakowie."
+        },
+        "dib": {
+          "prefix": "Grand Prix Solo na"
+        }
+      },
+      "quote": {
+        "1": "Dziś rozwijam Frame Up w Polsce: prowadzę grupy, w których kobiety otwierają się przez ruch, i dalej uczę się od europejskich mistrzów, aby rozwijać się razem z moimi uczennicami.",
+        "2": "Moim celem jest wzmacnianie kultury Frame Up i inspirowanie kobiet do odwagi, wolności oraz ekspresji, tworząc przestrzeń, w której każda może poczuć swoją siłę, piękno i energię twórczą."
+      },
+      "imageAlt": "Zdjęcie Anny Strok"
+    },
+    "courses": {
+      "title": "Kursy",
+      "offline": {
+        "title": "Kursy offline",
+        "subtitle": "Warszawa, Polska",
+        "items": {
+          "1": {
+            "highlight": "From zero",
+            "text": "dla początkujących"
+          },
+          "2": {
+            "highlight": "Advanced group",
+            "text": "dla poziomu średniego"
+          },
+          "3": {
+            "highlight": "Impro room",
+            "text": "praktyka improwizacji"
+          }
+        }
+      },
+      "online": {
+        "title": "Kursy online",
+        "subtitle": "W Telegramie",
+        "items": {
+          "1": {
+            "prefix": "Kurs dla początkujących",
+            "highlight": "First Touch"
+          },
+          "2": "Analizy choreografii"
+        }
+      }
+    }
+  },
+  "OnlinePage": {
+    "hero": {
+      "title": "Kursy online",
+      "location": "W Telegramie",
+      "description": {
+        "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia - i to jest całkowicie normalne. Taniec ma dawać radość, a nie stres.",
+        "2": "Jeśli jeszcze nie jesteś gotowa na zajęcia offline, mieszkasz w innym mieście albo chcesz zacząć w komfortowych warunkach, możesz rozpocząć od moich kursów online."
+      }
+    },
+    "cards": {
+      "firstTouch": {
+        "title": "Kurs dla początkujących \"First Touch\"",
+        "description": {
+          "1": "Twoje pierwsze spotkanie z Frame Up Strip.",
+          "2": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się świadomości ciała, pewności siebie i ruchu.",
+          "3": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
+        },
+        "startLabel": "Start kursu",
+        "startValue": "1 lutego 2026",
+        "button": "Więcej o kursie"
+      },
+      "choreo": {
+        "title": "Wideo-analizy moich choreografii",
+        "description": {
+          "1": "Analizy choreografii online dla tancerzy, którzy chcą głębi, struktury i wyrazistego tańca.",
+          "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
+        },
+        "startLabel": "Start kursu",
+        "startValue": "W dowolnym momencie",
+        "button": "Więcej o kursie"
+      }
+    },
+    "studio": {
+      "title": "Taniec w studiu to zupełnie inne odczucia",
+      "paragraphs": {
+        "1": "W studiu czujesz energię ludzi obok, szybciej łapiesz rytm i odważniej się otwierasz. Każdy ruch staje się pewniejszy, gdy wspiera Cię grupa.",
+        "2": "Zajęcia offline pomagają głębiej poczuć ciało, poprawić technikę i dostać emocjonalny impuls, którego często brakuje online. Tutaj nie tylko powtarzasz ruch - przeżywasz taniec.",
+        "3": "Przyjdź do studia i pozwól sobie na więcej odczuć, wolności i siły."
+      },
+      "button": "Więcej o grupach",
+      "imageAlt": "Zdjęcie ze studia"
+    }
+  },
+  "OfflinePage": {
+    "hero": {
+      "title": "Kursy offline",
+      "location": "Warszawa, Polska",
+      "description": "Każdy przychodzi do Frame Up ze swoją historią - ktoś pierwszy raz zakłada obcasy, a ktoś już tańczy pewnie i chce iść dalej. Dlatego zajęcia są podzielone na poziomy, aby rozwijać się komfortowo i bez stresu."
+    },
+    "cards": {
+      "common": {
+        "schedule": "Grafik",
+        "location": "Miejsce",
+        "locationValue": "Warszawa, Mikołaja Drygały 5",
+        "button": "Zapisz się"
+      },
+      "fromZero": {
+        "title": "From zero",
+        "description": "Idealnie, jeśli dopiero zaczynasz. Pracujemy nad bazową techniką, plastyką, postawą, rytmem i pewnością ruchu.",
+        "schedule": {
+          "1": "Poniedziałek 20:30-22:00",
+          "2": "Piątek 19:00-20:30"
+        },
+        "price": "500 PLN",
+        "priceSuffix": "/ miesięcznie"
+      },
+      "advanced": {
+        "title": "Advanced",
+        "description": "Dla osób, które chcą pracować nad detalem, dynamiką i głębszym rozumieniem stylu, muzykalnością oraz ekspresją.",
+        "schedule": {
+          "1": "Poniedziałek 19:00-20:30",
+          "2": "Środa 19:00-20:30"
+        },
+        "price": "500 PLN",
+        "priceSuffix": "/ miesięcznie"
+      },
+      "impro": {
+        "title": "Impro room",
+        "description": "Praktyka improwizacji.",
+        "note": "W tej grupie nie ma stałego grafiku.",
+        "details": "Co miesiąc ustalamy, kiedy i gdzie się spotykamy, ćwiczymy różne zadania, badamy niuanse i tworzymy własny język ruchu.",
+        "price": "50 PLN",
+        "priceSuffix": "/ za zajęcia"
+      }
+    },
+    "promo": {
+      "title": "Nie możesz uczestniczyć w zajęciach offline?",
+      "description": {
+        "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia - i to jest normalne. Taniec powinien dawać radość, a nie stres.",
+        "2": "Jeśli nie jesteś jeszcze gotowa na offline, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
+      },
+      "card": {
+        "title": "Kursy online",
+        "subtitle": "W Telegramie",
+        "items": {
+          "1": {
+            "prefix": "Kurs dla początkujących",
+            "highlight": "First Touch"
+          },
+          "2": "Analizy choreografii"
+        }
+      }
+    }
+  },
+  "FirstTouchPage": {
+    "hero": {
+      "title": "Kurs \"First Touch\"",
+      "subtitle": "Twoje pierwsze spotkanie z Frame Up Strip.",
+      "description": {
+        "1": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czucia ciała, pewności siebie i ruchu.",
+        "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
+      },
+      "startLabel": "Start kursu",
+      "startDate": "1 lutego 2026",
+      "buyButton": "Kup za 350 PLN / 80 €",
+      "programButton": "Program kursu",
+      "playLabel": "Odtwórz wideo"
+    },
+    "about": {
+      "title": "Co czeka Cię na kursie"
+    },
+    "suggestions": {
+      "1": {
+        "title": "Grupa online z moim osobistym wsparciem",
+        "text": "Nie uczysz się sama - prowadzę Cię krok po kroku, koryguję technikę i pomagam rozwinąć ekspresję ciała."
+      },
+      "2": {
+        "title": "Zadania domowe z omówieniem i feedbackiem",
+        "text": "Każde zadanie utrwala materiał. Otrzymujesz komentarze, rekomendacje i wsparcie, żeby rozwijać się szybciej."
+      },
+      "3": {
+        "title": "5 przemyślanych lekcji budujących fundament",
+        "text": "Od pracy stóp i fal po ekspresję i pierwszą choreografię - dostajesz pełną bazę, by pewnie poruszać się w Frame Up i pokrewnych stylach."
+      },
+      "4": {
+        "title": "Dostęp do kursu przez 1,5 miesiąca",
+        "text": "Wystarczająco czasu, by przejść materiał we własnym tempie, wracać do lekcji i dopracować ruch."
+      },
+      "5": {
+        "title": "Szybki dostęp przez zamknięte czaty Telegram",
+        "text": "Bez dodatkowych platform i skomplikowanych paneli. Wszystko masz pod ręką w wygodnym formacie."
+      }
+    },
+    "program": {
+      "title": "Program kursu",
+      "buyButton": "Kup za 350 PLN / 80 €",
+      "imageAlt": "Zdjęcie programu kursu First Touch"
+    }
+  },
+  "ChoreoPage": {
+    "hero": {
+      "title": "Wideo-analizy moich choreografii",
+      "description": {
+        "1": "Analizy choreografii online dla poziomu średniego i kontynuującego.",
+        "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
+      },
+      "startLabel": "Start kursu",
+      "startValue": "W dowolnym momencie",
+      "button": "Wybierz choreografię"
+    },
+    "about": {
+      "title": "Co czeka Cię na kursie"
+    },
+    "suggestions": {
+      "1": {
+        "title": "Analizy choreografii dla poziomu średniego i kontynuującego",
+        "text": "Otrzymujesz dostęp do wyrazistych sekwencji, techniki i ekspresji."
+      },
+      "2": {
+        "title": "Przejrzysta struktura i szczegółowe wyjaśnienia",
+        "text": "Każdy ruch jest rozłożony krok po kroku, więc dokładnie wiesz, co robisz i dlaczego."
+      },
+      "3": {
+        "title": "Dostęp do materiałów przez 1 miesiąc",
+        "text": "Wygodny format: masz czas, by przejść, powtórzyć i utrwalić materiał we własnym tempie."
+      },
+      "4": {
+        "title": "Szybki dostęp przez zamknięte czaty Telegram",
+        "text": "Bez zbędnych platform - całe szkolenie w jednym miejscu od razu po płatności."
+      },
+      "5": {
+        "title": "Formaty udziału: z mentorem lub samodzielnie",
+        "text": "Wybierz to, co dla Ciebie najlepsze: wsparcie i feedback albo swobodne tempo bez opieki."
+      }
+    },
+    "pricing": {
+      "withoutMentor": "Bez mentora 60 PLN / 15 €",
+      "withMentor": "Z mentorem 100 PLN / 25 €"
+    }
+  }
+}

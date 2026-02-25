@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, Contacts, InteractiveCard } from "@/components";
+import { useRouter } from "@/i18n/navigation";
 import { OnlinePageBackgroundPhoto, OnlineTelegramBig } from "@/svg";
 
-import { onlineCoursesArray } from "./constants";
+import { getOnlineCoursesArray } from "./constants";
 
 const IntroductionSection = styled.section`
   position: relative;
@@ -380,23 +381,19 @@ const ContactSection = styled.section`
 `;
 
 export default function Online() {
+  const t = useTranslations("OnlinePage");
   const router = useRouter();
+  const onlineCoursesArray = getOnlineCoursesArray((key) => t(key));
+
   return (
     <>
       <IntroductionSection>
         <TextBox>
-          <Title>Online курсы</Title>
-          <Location>В Telegram</Location>
+          <Title>{t("hero.title")}</Title>
+          <Location>{t("hero.location")}</Location>
           <Description>
-            <DescriptionParagraph>
-              Не у всех есть возможность или смелость прийти на занятия в студию — и это
-              абсолютно нормально. Танец должен быть в радость, а не в стресс.
-            </DescriptionParagraph>
-            <DescriptionParagraph>
-              Если вы чувствуете, что пока не готовы к офлайну, живёте в другом городе или
-              просто хотите начать в комфортной обстановке, у вас есть альтернатива
-              занятий на моих онлайн курсах.
-            </DescriptionParagraph>
+            <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+            <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
           </Description>
         </TextBox>
         <MobileImagesBox>
@@ -428,24 +425,14 @@ export default function Online() {
       </CoursesSection>
       <StudioDanceSection>
         <StudioDanceTextBox>
-          <StudioDanceTitle>Танец в студии — это совсем другие ощущения</StudioDanceTitle>
+          <StudioDanceTitle>{t("studio.title")}</StudioDanceTitle>
           <StudioDanceParagraphs>
-            <StudioDanceParagraph>
-              В студии вы чувствуете энергию людей рядом, ловите ритм быстрее и
-              раскрываетесь смелее. Каждое движение становится увереннее, когда рядом
-              группа, которая поддерживает, вдохновляет и идёт с вами в одном темпе.
-            </StudioDanceParagraph>
-            <StudioDanceParagraph>
-              Офлайн‑занятия помогают прочувствовать тело глубже, прокачать технику и
-              получить тот самый эмоциональный заряд, которого не хватает онлайн. Здесь вы
-              не просто повторяете движения — вы проживаете танец.
-            </StudioDanceParagraph>
-            <StudioDanceParagraph>
-              Приходите в студию и позвольте себе больше ощущений, свободы и силы.
-            </StudioDanceParagraph>
+            <StudioDanceParagraph>{t("studio.paragraphs.1")}</StudioDanceParagraph>
+            <StudioDanceParagraph>{t("studio.paragraphs.2")}</StudioDanceParagraph>
+            <StudioDanceParagraph>{t("studio.paragraphs.3")}</StudioDanceParagraph>
           </StudioDanceParagraphs>
           <Button
-            buttonText="Подробнее о группах"
+            buttonText={t("studio.button")}
             width="284px"
             onClick={() => router.push("/offline")}
           />
@@ -454,7 +441,7 @@ export default function Online() {
           src={"/images/online_page_photo.png"}
           width={502}
           height={628}
-          alt="online_page_photo"
+          alt={t("studio.imageAlt")}
         />
       </StudioDanceSection>
       <ContactSection>
