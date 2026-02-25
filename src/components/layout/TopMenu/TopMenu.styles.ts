@@ -19,7 +19,7 @@ export const Nav = styled.nav`
   }
 `;
 
-export const NavLink = styled(Link)<{ $selected: boolean }>`
+export const NavLink = styled(Link).attrs({ prefetch: false })<{ $selected: boolean }>`
   font-size: 16px;
   text-decoration: none;
   padding: 6px 0;
@@ -32,7 +32,7 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   line-height: 100%;
   letter-spacing: 0;
 
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 
   ${({ $selected }) =>
     $selected &&
@@ -40,9 +40,11 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
     color: rgba(124, 0, 2, 1);
   `}
 
-  &:hover {
-    text-decoration: none;
-    color: rgba(124, 0, 2, 1);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      text-decoration: none;
+      color: rgba(124, 0, 2, 1);
+    }
   }
 
   @media (max-width: 767px) {

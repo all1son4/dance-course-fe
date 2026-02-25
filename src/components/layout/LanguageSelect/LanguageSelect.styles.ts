@@ -21,29 +21,31 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   justify-content: center;
   gap: 10px;
 
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 
   color: ${(props) => (props.$isOpen ? "rgba(124, 0, 2, 1)" : "#000000")};
 
   & span {
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
   }
 
   & > svg {
     & path {
       stroke: ${(props) => (props.$isOpen ? "rgba(124, 0, 2, 1)" : "#000000")};
-      transition: all 0.2s ease;
+      transition: stroke 0.2s ease;
     }
   }
 
-  &:hover {
-    & span {
-      color: rgba(124, 0, 2, 1);
-    }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      & span {
+        color: rgba(124, 0, 2, 1);
+      }
 
-    & > svg {
-      & path {
-        stroke: rgba(124, 0, 2, 1);
+      & > svg {
+        & path {
+          stroke: rgba(124, 0, 2, 1);
+        }
       }
     }
   }
@@ -82,7 +84,7 @@ export const Menu = styled.div`
 
   ${glass({
     radius: "30px",
-    bgParam: "rgba(255, 255, 255, 0.5)",
+    bgParam: "rgba(255, 255, 255, 0.95)",
   })}
 
   display: flex;
@@ -113,35 +115,36 @@ export const Item = styled.button<{ selected?: boolean }>`
   line-height: 100%;
   letter-spacing: 0;
   color: #000000;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
 
   opacity: ${(props) => (props.selected ? 0.4 : 1)};
 
   & span {
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
   }
 
   & > svg {
     & path {
-      transition: all 0.2s ease;
+      transition: stroke 0.2s ease;
     }
   }
 
   ${(props) =>
     !props.selected &&
     `
-   &:hover {
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        & span {
+          color: rgba(124, 0, 2, 1);
+        }
 
-    & span {
-       color: rgba(124, 0, 2, 1);
-    }
-
-    & > svg { 
-      & path {
-        stroke: rgba(124, 0, 2, 1);
+        & > svg {
+          & path {
+            stroke: rgba(124, 0, 2, 1);
+          }
+        }
       }
     }
-  }
 `}
 `;
 

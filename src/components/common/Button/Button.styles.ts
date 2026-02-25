@@ -34,11 +34,13 @@ const variantStyles = {
     })}
     color: rgba(255, 255, 255, 1);
 
-    &:hover {
-      ${glass({
-        radius: "100px",
-        bgParam: "rgba(11, 11, 11, 1)",
-      })}
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        ${glass({
+          radius: "100px",
+          bgParam: "rgba(11, 11, 11, 1)",
+        })}
+      }
     }
   `,
   secondary: css`
@@ -47,17 +49,19 @@ const variantStyles = {
     })}
     color: #000000;
 
-    &:hover {
-      ${glass({
-        radius: "100px",
-        bgParam: "rgba(11, 11, 11, 1)",
-      })}
-      color: rgba(255, 255, 255, 1);
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        ${glass({
+          radius: "100px",
+          bgParam: "rgba(11, 11, 11, 1)",
+        })}
+        color: rgba(255, 255, 255, 1);
+      }
     }
   `,
 };
 
-export const ButtonLinkWrapper = styled(Link)`
+export const ButtonLinkWrapper = styled(Link).attrs({ prefetch: false })`
   display: flex;
   text-decoration: none !important;
   background: transparent;
@@ -77,13 +81,23 @@ export const StyledButton = styled.button<StyledProps>`
   user-select: none;
   white-space: nowrap;
 
-  transition: all 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
 
   ${({ $size }) => sizeStyles[$size]};
   width: 100%;
   max-width: ${({ $width }) => $width};
 
   ${({ $variant }) => variantStyles[$variant]};
+
+  @media (hover: none) and (pointer: coarse) {
+    &:active:not(:disabled) {
+      transform: scale(0.95);
+    }
+  }
 
   &:disabled {
     opacity: 0.6;

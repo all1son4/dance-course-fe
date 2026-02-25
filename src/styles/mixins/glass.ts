@@ -41,7 +41,9 @@ export const glass = ({
       0 ${shadowY}px ${shadowBlur}px rgba(0, 0, 0, ${shadowOpacity}),
       inset 0 1px 0 rgba(255, 255, 255, 0.35);
 
-    transition: all 0.2s ease;
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease;
 
     &::after {
       content: "";
@@ -51,7 +53,7 @@ export const glass = ({
       pointer-events: none;
       padding: ${borderWidthPx}px;
 
-      transition: all 0.2s ease;
+      transition: opacity 0.2s ease;
 
       background:
         linear-gradient(

@@ -20,12 +20,14 @@ export const CardLinkContainer = styled(Link)`
   text-decoration: none !important;
 
   & svg rect {
-    transition: all 0.2s ease;
+    transition: fill 0.2s ease;
   }
 
-  &:hover {
-    & svg rect {
-      fill: rgba(0, 0, 0, 1);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      & svg rect {
+        fill: rgba(0, 0, 0, 1);
+      }
     }
   }
 `;

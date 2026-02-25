@@ -1,10 +1,7 @@
-"use client";
-
 import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Contacts, CourseCard, InteractiveCard } from "@/components";
-import { useRouter } from "@/i18n/navigation";
 import { OfflinePageBackgroundPhoto, TelegramGlass, WarsawMap } from "@/svg";
 
 import { getOfflineCoursesArray } from "./constants";
@@ -444,7 +441,7 @@ const ContactSection = styled.section`
 
 export default function Offline() {
   const t = useTranslations("OfflinePage");
-  const router = useRouter();
+  const commonT = useTranslations("Common");
   const offlineCoursesArray = getOfflineCoursesArray((key) => t(key));
 
   return (
@@ -478,7 +475,6 @@ export default function Offline() {
             topRowContent={course.topRowContent}
             bottomRowContent={course.bottomRowContent}
             buttonText={course.buttonText}
-            buttonOnClick={() => {}}
           />
         ))}
       </CoursesSection>
@@ -506,7 +502,8 @@ export default function Offline() {
                 <li>{t("promo.card.items.2")}</li>
               </CourseList>
             }
-            onClick={() => router.push("/online")}
+            buttonText={commonT("details")}
+            buttonHref="/online"
             bgColor="rgba(200, 204, 210, 0.4)"
           />
         </CardBlock>

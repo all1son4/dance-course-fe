@@ -34,10 +34,16 @@ export default function Header() {
 
   const onLanguageChange = (code: string) => {
     if (!routing.locales.includes(code as (typeof routing.locales)[number])) return;
+    if (code === locale) return;
+
+    // Persist locale for localePrefix='never' so next navigations don't fall back.
+    document.cookie = `NEXT_LOCALE=${code}; Path=/; Max-Age=31536000; SameSite=Lax`;
+
     router.replace(pathname, {
       locale: code as (typeof routing.locales)[number],
       scroll: false,
     });
+    router.refresh();
   };
 
   const headerInteractiveContent = [

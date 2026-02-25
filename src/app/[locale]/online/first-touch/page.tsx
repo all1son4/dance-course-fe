@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
@@ -115,6 +113,7 @@ const MobileImagesBox = styled.div`
       width: 100%;
       max-width: 100%;
       justify-content: flex-end;
+      align-items: flex-start;
       top: unset;
       right: unset;
       bottom: unset;
@@ -589,6 +588,7 @@ export default function FirstTouch() {
             alt={t("program.imageAlt")}
             width={473}
             height={709}
+            sizes="(max-width: 920px) 100vw, 473px"
           />
         </CourseProgramSection>
         <ContactSection>

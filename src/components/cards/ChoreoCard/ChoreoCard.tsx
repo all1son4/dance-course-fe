@@ -1,5 +1,3 @@
-"use client";
-
 import { Button, VideoPlayer } from "@/components";
 
 import { ButtonBox, CardContainer, CardTitle, InteractiveBox } from "./ChoreoCard.styles";

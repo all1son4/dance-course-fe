@@ -1,7 +1,3 @@
-"use client";
-
-import { useTranslations } from "next-intl";
-
 import { Button } from "@/components";
 
 import {
@@ -16,8 +12,6 @@ import {
 import { TCourseCard } from "./CourseCard.types";
 
 export default function ContactCard(course: TCourseCard) {
-  const t = useTranslations("Common");
-
   return (
     <CardContainer $bgColor={course.bgColor} className="courseCardContainer">
       <IconBox className="courseCardIconBox">{course.icon}</IconBox>
@@ -29,9 +23,9 @@ export default function ContactCard(course: TCourseCard) {
         <Content className="courseCardContent">{course.cardContent}</Content>
         <Button
           className="courseCardButton"
-          buttonText={t("details")}
+          buttonText={course.buttonText}
           width="200px"
-          onClick={course.onClick}
+          href={course.buttonHref}
         />
       </ContentBox>
     </CardContainer>

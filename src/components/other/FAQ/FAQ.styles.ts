@@ -104,12 +104,14 @@ export const QuestionBox = styled.div<{ $isOpened: boolean }>`
     `}
   }
 
-  &:hover > p {
-    color: rgba(124, 0, 2, 1);
-  }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover > p {
+      color: rgba(124, 0, 2, 1);
+    }
 
-  &:hover svg path {
-    stroke: rgba(124, 0, 2, 1);
+    &:hover svg path {
+      stroke: rgba(124, 0, 2, 1);
+    }
   }
 `;
 

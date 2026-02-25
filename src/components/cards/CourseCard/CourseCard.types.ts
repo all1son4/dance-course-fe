@@ -5,7 +5,8 @@ export type TCourseCard = {
   title?: string;
   subtitle?: string;
   cardContent?: ReactNode | string;
-  onClick?: () => void;
+  buttonText?: string;
+  buttonHref?: string;
   iconSize?: {
     width: number;
     height: number;

@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 
 import { Footer, Header, PageContainer } from "@/components";
 import { routing } from "@/i18n/routing";
+import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -62,13 +63,15 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
   return (
     <html lang={locale}>
       <body className={`${manrope.variable}`}>
-        <NextIntlClientProvider messages={messages}>
-          <Header />
-          <main>
-            <PageContainer>{children}</PageContainer>
-          </main>
-          <Footer />
-        </NextIntlClientProvider>
+        <StyledComponentsRegistry>
+          <NextIntlClientProvider messages={messages}>
+            <Header />
+            <main>
+              <PageContainer>{children}</PageContainer>
+            </main>
+            <Footer />
+          </NextIntlClientProvider>
+        </StyledComponentsRegistry>
       </body>
     </html>
   );

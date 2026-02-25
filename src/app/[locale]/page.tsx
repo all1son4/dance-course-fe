@@ -1,10 +1,8 @@
-"use client";
-
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
-import { useRouter } from "@/i18n/navigation";
 import { glass } from "@/styles/mixins/glass";
 import { Insta, Logo, Map, Quote, TelegramGlass } from "@/svg";
 import { MainPageBackgroundPhoto } from "@/svg/MainPageBackgroundPhoto";
@@ -302,10 +300,12 @@ const AboutMeList = styled.ul`
     & a {
       text-underline-offset: 2px;
       text-decoration: underline;
-      transition: all 0.2s ease;
+      transition: color 0.2s ease;
 
-      &:hover {
-        color: rgba(124, 0, 2, 1);
+      @media (hover: hover) and (pointer: fine) {
+        &:hover {
+          color: rgba(124, 0, 2, 1);
+        }
       }
     }
     margin: 0;
@@ -323,7 +323,7 @@ const AboutMeImageBox = styled.div`
   }
 `;
 
-const StyledImage = styled.img`
+const StyledImage = styled(Image)`
   width: 100%;
   height: auto;
   border-radius: 100px;
@@ -553,7 +553,8 @@ const ContactSection = styled.section`
 
 export default function Home() {
   const t = useTranslations("HomePage");
-  const router = useRouter();
+  const commonT = useTranslations("Common");
+
   return (
     <>
       <IntroduceSection>
@@ -569,14 +570,8 @@ export default function Home() {
           <InteractiveBox>
             <InteractiveHint>{t("hero.hint")}</InteractiveHint>
             <ButtonsBox>
-              <Button
-                buttonText={t("hero.buttons.online")}
-                onClick={() => router.push("/online")}
-              />
-              <Button
-                buttonText={t("hero.buttons.offline")}
-                onClick={() => router.push("/offline")}
-              />
+              <Button buttonText={t("hero.buttons.online")} href="/online" />
+              <Button buttonText={t("hero.buttons.offline")} href="/offline" />
             </ButtonsBox>
           </InteractiveBox>
         </MainTextBox>
@@ -647,6 +642,7 @@ export default function Home() {
             alt={t("about.imageAlt")}
             width={560}
             height={635}
+            sizes="(max-width: 880px) 100vw, 560px"
           />
           <ImageDescriptionBox>
             <IconPositionWrap>
@@ -688,7 +684,8 @@ export default function Home() {
                 </li>
               </CourseList>
             }
-            onClick={() => router.push("/offline")}
+            buttonText={commonT("details")}
+            buttonHref="/offline"
           />
           <CourseCard
             icon={<TelegramGlass />}
@@ -705,7 +702,8 @@ export default function Home() {
                 <li>{t("courses.online.items.2")}</li>
               </CourseList>
             }
-            onClick={() => router.push("/online")}
+            buttonText={commonT("details")}
+            buttonHref="/online"
           />
         </CourseOptionsBox>
       </CourseSection>

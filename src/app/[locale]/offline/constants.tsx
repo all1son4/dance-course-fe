@@ -9,7 +9,7 @@ export type TInteractiveCard = {
   topRowContent?: ReactNode;
   bottomRowContent?: ReactNode;
   buttonText?: string;
-  buttonOnClick?: () => void;
+  buttonHref?: string;
 };
 
 type Translate = (key: string) => string;

@@ -1,5 +1,3 @@
-"use client";
-
 import { CardContainer, IconBox, Text, TextBox, Title } from "./TextContentCard.styles";
 import { TTextContentCard } from "./TextContentCard.types";
 

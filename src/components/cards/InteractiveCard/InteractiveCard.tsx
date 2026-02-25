@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components";
 
 import {
@@ -32,7 +30,7 @@ export default function InteractiveCard(card: TInteractiveCard) {
           )}
           {card.buttonText && (
             <ButtonBox>
-              <Button buttonText={card.buttonText} onClick={card?.buttonOnClick} />
+              <Button buttonText={card.buttonText} href={card.buttonHref} />
             </ButtonBox>
           )}
         </BottomBlock>

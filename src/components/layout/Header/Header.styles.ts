@@ -49,7 +49,6 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
     justify-content: flex-start;
     gap: 30px;
     height: auto;
-    // overflow: hidden;
 
     ${glass({
       radius: "40px",
@@ -60,11 +59,13 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
   }
 `;
 
-export const Brand = styled(Link)`
+export const Brand = styled(Link).attrs({ prefetch: false })`
   display: flex;
 
-  &:hover {
-    text-decoration: none;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      text-decoration: none;
+    }
   }
 `;
 
@@ -96,11 +97,11 @@ export const IconBox = styled.div<{ $isOpen: boolean }>`
   }
 
   & svg path:nth-child(1) {
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease;
   }
 
   & svg path:nth-child(3) {
-    transition: all 0.2s ease;
+    transition: transform 0.2s ease;
   }
 
   ${({ $isOpen }) =>
@@ -134,7 +135,10 @@ export const Bottom = styled.div<{ $isOpen: boolean }>`
     display: flex;
     opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
     transform: ${({ $isOpen }) => ($isOpen ? "translateY(0)" : "translateY(-6px)")};
-    transition: all 200ms ease;
+    transition:
+      opacity 200ms ease,
+      transform 200ms ease;
+    will-change: opacity, transform;
     pointer-events: ${({ $isOpen }) => ($isOpen ? "all" : "none")};
   }
 `;

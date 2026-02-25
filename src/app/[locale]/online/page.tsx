@@ -1,11 +1,8 @@
-"use client";
-
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, Contacts, InteractiveCard } from "@/components";
-import { useRouter } from "@/i18n/navigation";
 import { OnlinePageBackgroundPhoto, OnlineTelegramBig } from "@/svg";
 
 import { getOnlineCoursesArray } from "./constants";
@@ -382,7 +379,6 @@ const ContactSection = styled.section`
 
 export default function Online() {
   const t = useTranslations("OnlinePage");
-  const router = useRouter();
   const onlineCoursesArray = getOnlineCoursesArray((key) => t(key));
 
   return (
@@ -419,7 +415,7 @@ export default function Online() {
             topRowContent={course.topRowContent}
             bottomRowContent={course.bottomRowContent}
             buttonText={course.buttonText}
-            buttonOnClick={() => router.push(course.buttonHref || "")}
+            buttonHref={course.buttonHref}
           />
         ))}
       </CoursesSection>
@@ -431,17 +427,14 @@ export default function Online() {
             <StudioDanceParagraph>{t("studio.paragraphs.2")}</StudioDanceParagraph>
             <StudioDanceParagraph>{t("studio.paragraphs.3")}</StudioDanceParagraph>
           </StudioDanceParagraphs>
-          <Button
-            buttonText={t("studio.button")}
-            width="284px"
-            onClick={() => router.push("/offline")}
-          />
+          <Button buttonText={t("studio.button")} width="284px" href="/offline" />
         </StudioDanceTextBox>
         <StudioDanceImage
           src={"/images/online_page_photo.png"}
           width={502}
           height={628}
           alt={t("studio.imageAlt")}
+          sizes="(max-width: 880px) 100vw, 502px"
         />
       </StudioDanceSection>
       <ContactSection>

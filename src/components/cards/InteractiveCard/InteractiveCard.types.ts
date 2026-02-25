@@ -5,5 +5,5 @@ export type TInteractiveCard = {
   topRowContent?: ReactNode;
   bottomRowContent?: ReactNode;
   buttonText?: string;
-  buttonOnClick?: () => void;
+  buttonHref?: string;
 };

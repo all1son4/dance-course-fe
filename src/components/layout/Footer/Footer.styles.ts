@@ -192,9 +192,11 @@ export const PrivacyPolicy = styled(Link)`
   text-underline-offset: 2px;
   margin: 0;
   color: rgba(72, 72, 72, 1);
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 
-  &:hover {
-    color: #000000;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #000000;
+    }
   }
 `;

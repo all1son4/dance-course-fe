@@ -47,8 +47,10 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
   opacity: ${({ $isPlaying }) => ($isPlaying ? 0 : 1)};
   pointer-events: ${({ $isPlaying }) => ($isPlaying ? "none" : "auto")};
 
-  &:hover {
-    transform: translate(-50%, -50%) scale(1.03);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      transform: translate(-50%, -50%) scale(1.03);
+    }
   }
 
   &:active {
@@ -66,8 +68,10 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
     transform: translate(-50%, -50%);
   }
 
-  &:disabled:hover {
-    transform: translate(-50%, -50%);
+  @media (hover: hover) and (pointer: fine) {
+    &:disabled:hover {
+      transform: translate(-50%, -50%);
+    }
   }
 `;
 
