@@ -71,7 +71,7 @@ export default function VideoPlayer({
   src,
   type = "video/mp4",
   poster,
-  preload = "metadata",
+  preload = "none",
   className,
   maxWidth = "100%",
   width = "100%",
@@ -173,6 +173,7 @@ export default function VideoPlayer({
     if (!isYoutube && video) {
       video.addEventListener("loadedmetadata", handleLoadedMetadata);
       attachMediaEvents(video);
+      setIsReady(true);
 
       if (video.readyState >= 1) {
         setIsReady(true);

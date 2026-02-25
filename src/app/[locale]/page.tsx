@@ -591,6 +591,7 @@ export default function Home() {
             height={900}
             className="hero-mobile-bg"
             sizes="(max-width: 450px) 100vw, (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
+            priority
           />
           <div className="hero-brand-logo">
             <Logo width={350} height={77} />
@@ -655,7 +656,7 @@ export default function Home() {
         </AboutMeTextBox>
         <AboutMeImageBox>
           <StyledImage
-            src={"/images/main_page_second.png"}
+            src={"/images/main_page_second.webp"}
             alt={t("about.imageAlt")}
             width={560}
             height={635}

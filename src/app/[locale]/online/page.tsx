@@ -421,6 +421,7 @@ export default function Online() {
             width={598}
             height={846}
             sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
+            priority
           />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
@@ -455,7 +456,7 @@ export default function Online() {
           <Button buttonText={t("studio.button")} width="284px" href="/offline" />
         </StudioDanceTextBox>
         <StudioDanceImage
-          src={"/images/online_page_photo.png"}
+          src={"/images/online_page_photo.webp"}
           width={502}
           height={628}
           alt={t("studio.imageAlt")}

@@ -476,6 +476,7 @@ export default function Offline() {
             width={558}
             height={738}
             sizes="(max-width: 767px) 0px, (max-width: 880px) 400px, (max-width: 960px) 460px, (max-width: 1240px) 500px, 558px"
+            priority
           />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">

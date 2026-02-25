@@ -67,7 +67,7 @@ export const getChoreos = (t: Translate): TChoreoCard[] => [
   {
     id: 1,
     videoSrc: "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2",
-    postrSrc: "/images/still_alive_poster.png",
+    postrSrc: "/images/still_alive_poster.webp",
     title: "Still Alive",
     firstButtonOptions: {
       text: t("pricing.withoutMentor"),
@@ -79,7 +79,7 @@ export const getChoreos = (t: Translate): TChoreoCard[] => [
   {
     id: 2,
     videoSrc: "https://www.instagram.com/reel/DKw36jmNp5D/?igsh=MWg4NDA0cWx6dnpnNQ==",
-    postrSrc: "/images/her_lies_poster.png",
+    postrSrc: "/images/her_lies_poster.webp",
     title: "Her Lies",
     firstButtonOptions: {
       text: t("pricing.withoutMentor"),

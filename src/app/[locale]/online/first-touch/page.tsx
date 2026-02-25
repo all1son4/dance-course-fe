@@ -562,6 +562,7 @@ export default function FirstTouch() {
             width={660}
             height={826}
             sizes="(max-width: 767px) 0px, (max-width: 920px) 380px, (max-width: 1100px) 470px, (max-width: 1240px) 500px, 660px"
+            priority
           />
         </ImageBox>
 
@@ -580,7 +581,7 @@ export default function FirstTouch() {
           <VideoPlayer
             src={t("hero.introductionVideoSrc")}
             playLabel={t("hero.playLabel")}
-            poster="/images/first_touch_poster.png"
+            poster="/images/first_touch_poster.webp"
             radius="0px"
           />
         </VideoSection>
@@ -606,7 +607,7 @@ export default function FirstTouch() {
             </CourseProgramButtonBox>
           </CourseProgramTextBox>
           <CourseProgramImage
-            src={"/images/first_touch_program_photo.jpg"}
+            src={"/images/first_touch_program_photo.webp"}
             alt={t("program.imageAlt")}
             width={473}
             height={709}

@@ -1,5 +1,5 @@
 import "../globals.css";
-import "plyr/dist/plyr.css";
+import "@/styles/vendor/plyr.css";
 
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
@@ -17,6 +17,12 @@ const manrope = Manrope({
   subsets: ["latin"],
   display: "swap",
 });
+
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000");
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -46,7 +52,7 @@ export async function generateMetadata({
     },
     description: t("description"),
     applicationName: t("applicationName"),
-    metadataBase: new URL("http://localhost:3000"),
+    metadataBase: new URL(siteUrl),
   };
 }
 
