@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, Contacts, InteractiveCard } from "@/components";
-import { OnlinePageBackgroundPhoto, OnlineTelegramBig } from "@/svg";
+import SvgAsset from "@/components/common/SvgAsset";
 
 import { getOnlineCoursesArray } from "./constants";
 
@@ -121,7 +121,7 @@ const ImageBox = styled.div`
 
   @media (max-width: 1140px) {
     right: 10%;
-    & svg {
+    & :is(svg, img) {
       width: 550px;
       height: auto;
     }
@@ -130,7 +130,7 @@ const ImageBox = styled.div`
   @media (max-width: 920px) {
     right: 7%;
     bottom: -62px;
-    & svg {
+    & :is(svg, img) {
       width: 400px;
       height: auto;
     }
@@ -153,7 +153,7 @@ const IconBox = styled.div`
 
   @media (max-width: 1140px) {
     top: 220px;
-    & svg {
+    & :is(svg, img) {
       width: 350px;
       height: auto;
     }
@@ -161,7 +161,7 @@ const IconBox = styled.div`
 
   @media (max-width: 920px) {
     top: 200px;
-    & svg {
+    & :is(svg, img) {
       width: 250px;
       height: auto;
     }
@@ -185,7 +185,7 @@ const MobileImagesBox = styled.div`
       bottom: unset;
       width: 100%;
       margin: -150px 0 0 0;
-      & svg {
+      & :is(svg, img) {
         margin: 0 0 0 -100px;
         width: 100%;
       }
@@ -198,7 +198,7 @@ const MobileImagesBox = styled.div`
       right: 0;
       width: 100%;
 
-      & svg {
+      & :is(svg, img) {
         width: 65%;
       }
     }
@@ -207,13 +207,13 @@ const MobileImagesBox = styled.div`
   @media (max-width: 550px) {
     & #mobile-only-image-box {
       margin: -120px 0 0 0;
-      & svg {
+      & :is(svg, img) {
         margin: 0 0 0 -80px;
       }
     }
 
     & #mobile-only-icon-box {
-      & svg {
+      & :is(svg, img) {
         width: 62%;
       }
     }
@@ -223,7 +223,7 @@ const MobileImagesBox = styled.div`
     & #mobile-only-image-box {
       margin: -80px 0 0 0;
 
-      & svg {
+      & :is(svg, img) {
         margin: 0 0 0 -60px;
       }
     }
@@ -394,17 +394,17 @@ export default function Online() {
         </TextBox>
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
-            <OnlinePageBackgroundPhoto />
+            <SvgAsset src="/svg/OnlinePageBackgroundPhoto.svg" width={598} height={846} />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
-            <OnlineTelegramBig />
+            <SvgAsset src="/svg/OnlineTelegramBig.svg" width={453} height={474} />
           </IconBox>
         </MobileImagesBox>
         <ImageBox id="desktop-only-image-box">
-          <OnlinePageBackgroundPhoto />
+          <SvgAsset src="/svg/OnlinePageBackgroundPhoto.svg" width={598} height={846} />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
-          <OnlineTelegramBig />
+          <SvgAsset src="/svg/OnlineTelegramBig.svg" width={453} height={474} />
         </IconBox>
       </IntroductionSection>
       <CoursesSection>

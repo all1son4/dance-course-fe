@@ -59,7 +59,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
   }
 `;
 
-export const Brand = styled(Link).attrs({ prefetch: false })`
+export const Brand = styled(Link)`
   display: flex;
 
   @media (hover: hover) and (pointer: fine) {

@@ -9,7 +9,7 @@ import {
   TextContentCard,
   VideoPlayer,
 } from "@/components";
-import { FirstTouchPageBackgroundPhoto, FirstTouchTelegram } from "@/svg";
+import SvgAsset from "@/components/common/SvgAsset";
 
 import { getOnlineSuggestions } from "./constants";
 
@@ -101,7 +101,7 @@ const MobileImagesBox = styled.div`
       right: unset;
       bottom: unset;
       margin: -100px 0 0 -60px;
-      & svg {
+      & :is(svg, img) {
         max-width: 100%;
         width: 90%;
         height: 100%;
@@ -118,7 +118,7 @@ const MobileImagesBox = styled.div`
       right: unset;
       bottom: unset;
       margin: 20px 0 0 0;
-      & svg {
+      & :is(svg, img) {
         max-width: 100%;
         width: 50%;
         height: fit-content;
@@ -129,7 +129,7 @@ const MobileImagesBox = styled.div`
   @media (max-width: 570px) {
     & #mobile-only-image-box {
       margin: -70px 0 0 -40px;
-      & svg {
+      & :is(svg, img) {
         max-width: 100%;
         width: 90%;
         height: 100%;
@@ -138,7 +138,7 @@ const MobileImagesBox = styled.div`
 
     & #mobile-only-icon-box {
       margin: 40px 0 0 0;
-      & svg {
+      & :is(svg, img) {
         max-width: 100%;
         width: 48%;
       }
@@ -148,14 +148,14 @@ const MobileImagesBox = styled.div`
   @media (max-width: 450px) {
     & #mobile-only-image-box {
       margin: -60px 0 0 -20px;
-      & svg {
+      & :is(svg, img) {
         width: 100%;
       }
     }
 
     & #mobile-only-icon-box {
       margin: 40px 0 0 0;
-      & svg {
+      & :is(svg, img) {
         max-width: 100%;
         width: 48%;
       }
@@ -536,20 +536,28 @@ export default function FirstTouch() {
 
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
-            <FirstTouchPageBackgroundPhoto />
+            <SvgAsset
+              src="/svg/FirstTouchPageBackgroundPhoto.svg"
+              width={660}
+              height={826}
+            />
           </ImageBox>
 
           <IconBox id="mobile-only-icon-box">
-            <FirstTouchTelegram />
+            <SvgAsset src="/svg/FirstTouchTelegram.svg" width={356} height={534} />
           </IconBox>
         </MobileImagesBox>
 
         <ImageBox id="desktop-only-image-box">
-          <FirstTouchPageBackgroundPhoto />
+          <SvgAsset
+            src="/svg/FirstTouchPageBackgroundPhoto.svg"
+            width={660}
+            height={826}
+          />
         </ImageBox>
 
         <IconBox id="desktop-only-icon-box">
-          <FirstTouchTelegram />
+          <SvgAsset src="/svg/FirstTouchTelegram.svg" width={356} height={534} />
         </IconBox>
       </IntroductionSection>
 

@@ -19,7 +19,7 @@ export const Nav = styled.nav`
   }
 `;
 
-export const NavLink = styled(Link).attrs({ prefetch: false })<{ $selected: boolean }>`
+export const NavLink = styled(Link)<{ $selected: boolean }>`
   font-size: 16px;
   text-decoration: none;
   padding: 6px 0;

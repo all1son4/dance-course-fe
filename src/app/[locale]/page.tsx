@@ -3,9 +3,9 @@ import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
+import SvgAsset from "@/components/common/SvgAsset";
 import { glass } from "@/styles/mixins/glass";
-import { Insta, Logo, Map, Quote, TelegramGlass } from "@/svg";
-import { MainPageBackgroundPhoto } from "@/svg/MainPageBackgroundPhoto";
+import { Insta, Logo, Quote } from "@/svg";
 
 const IntroduceSection = styled.section`
   position: relative;
@@ -56,41 +56,41 @@ const AbsolutePageLogo = styled.div`
   position: relative;
   z-index: 25;
 
-  & svg:first-of-type {
+  & .hero-mobile-bg {
     display: none;
   }
 
   @media (max-width: 1240px) {
     display: flex;
     flex-direction: column-reverse;
-    & svg:first-of-type {
+    & .hero-mobile-bg {
       position: relative;
       display: flex;
       height: 750px;
       max-width: 550px;
     }
 
-    & svg:last-of-type {
+    & .hero-brand-logo {
       display: none;
     }
   }
 
   @media (max-width: 1110px) {
-    & svg:first-of-type {
+    & .hero-mobile-bg {
       position: relative;
       max-width: 480px;
     }
   }
 
   @media (max-width: 920px) {
-    & svg:first-of-type {
+    & .hero-mobile-bg {
       height: 600px;
       max-width: 420px;
     }
   }
 
   @media (max-width: 767px) {
-    & svg:first-of-type {
+    & .hero-mobile-bg {
       height: auto;
       max-width: 65%;
       margin: 0 auto;
@@ -98,13 +98,13 @@ const AbsolutePageLogo = styled.div`
   }
 
   @media (max-width: 680px) {
-    & svg:first-of-type {
+    & .hero-mobile-bg {
       max-width: 80%;
     }
   }
 
   @media (max-width: 450px) {
-    & svg:first-of-type {
+    & .hero-mobile-bg {
       max-width: 100%;
     }
   }
@@ -125,8 +125,7 @@ const MainTextBox = styled.div`
   }
 
   @media (max-width: 767px) {
-     max-width: 100%;
-    }
+    max-width: 100%;
   }
 `;
 
@@ -355,7 +354,7 @@ const IconPositionWrap = styled.div`
     left: 30px;
     top: -220px;
 
-    & svg {
+    & :is(svg, img) {
       width: 50px;
       height: auto;
     }
@@ -451,7 +450,7 @@ const CourseOptionsBox = styled.div`
     & > .courseCardContainer:first-of-type .courseCardIconBox {
       top: -30px;
       right: 30px;
-      & svg {
+      & :is(svg, img) {
         width: 76px;
         height: 122px;
       }
@@ -460,7 +459,7 @@ const CourseOptionsBox = styled.div`
     & > .courseCardContainer:last-of-type .courseCardIconBox {
       top: -24px;
       right: 3px;
-      & svg {
+      & :is(svg, img) {
         width: 94px;
         height: 104px;
       }
@@ -559,7 +558,7 @@ export default function Home() {
     <>
       <IntroduceSection>
         <AbsolutePageImage>
-          <MainPageBackgroundPhoto />
+          <SvgAsset src="/svg/MainPageBackgroundPhoto.svg" width={775} height={900} />
         </AbsolutePageImage>
         <MainTextBox>
           <MainTitle>{t("hero.title")}</MainTitle>
@@ -576,8 +575,15 @@ export default function Home() {
           </InteractiveBox>
         </MainTextBox>
         <AbsolutePageLogo>
-          <MainPageBackgroundPhoto />
-          <Logo width={350} height={77} />
+          <SvgAsset
+            src="/svg/MainPageBackgroundPhoto.svg"
+            width={775}
+            height={900}
+            className="hero-mobile-bg"
+          />
+          <div className="hero-brand-logo">
+            <Logo width={350} height={77} />
+          </div>
         </AbsolutePageLogo>
       </IntroduceSection>
       <AboutMeSection>
@@ -659,7 +665,7 @@ export default function Home() {
         <CourseTitle>{t("courses.title")}</CourseTitle>
         <CourseOptionsBox>
           <CourseCard
-            icon={<Map />}
+            icon={<SvgAsset src="/svg/Map.svg" width={132} height={210} />}
             title={t("courses.offline.title")}
             subtitle={t("courses.offline.subtitle")}
             cardContent={
@@ -688,7 +694,7 @@ export default function Home() {
             buttonHref="/offline"
           />
           <CourseCard
-            icon={<TelegramGlass />}
+            icon={<SvgAsset src="/svg/TelegramGlass.svg" width={169} height={190} />}
             title={t("courses.online.title")}
             subtitle={t("courses.online.subtitle")}
             cardContent={

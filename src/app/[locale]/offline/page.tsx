@@ -2,7 +2,7 @@ import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Contacts, CourseCard, InteractiveCard } from "@/components";
-import { OfflinePageBackgroundPhoto, TelegramGlass, WarsawMap } from "@/svg";
+import SvgAsset from "@/components/common/SvgAsset";
 
 import { getOfflineCoursesArray } from "./constants";
 
@@ -84,7 +84,7 @@ const MobileImagesBox = styled.div`
       right: unset;
       bottom: unset;
       margin: 10px 0 0 0;
-      & svg {
+      & :is(svg, img) {
         margin: 0 0 0 -40px;
         width: 100%;
         height: auto;
@@ -101,7 +101,7 @@ const MobileImagesBox = styled.div`
       width: 100%;
       height: 100%;
 
-      & svg {
+      & :is(svg, img) {
         top: unset;
         margin: 0 -50% 0 0;
         width: 95%;
@@ -116,7 +116,7 @@ const MobileImagesBox = styled.div`
     margin: 0;
   }
     & #mobile-only-icon-box {
-      & svg {
+      & :is(svg, img) {
         top: unset;
         margin: 0 0 0 48%;
         width: 100%;
@@ -160,7 +160,7 @@ const ImageBox = styled.div`
   z-index: 10;
 
   @media (max-width: 1240px) {
-    & svg {
+    & :is(svg, img) {
       right: 4%;
       max-width: 500px;
     }
@@ -168,21 +168,21 @@ const ImageBox = styled.div`
 
   @media (max-width: 1100px) {
     top: 48px;
-    & svg {
+    & :is(svg, img) {
       right: 0;
       max-width: 480px;
     }
   }
 
   @media (max-width: 960px) {
-    & svg {
+    & :is(svg, img) {
       max-width: 460px;
     }
   }
 
   @media (max-width: 880px) {
     right: 9%;
-    & svg {
+    & :is(svg, img) {
       max-width: 400px;
     }
   }
@@ -195,14 +195,14 @@ const IconBox = styled.div`
   z-index: 15;
 
   @media (max-width: 1240px) {
-    & svg {
+    & :is(svg, img) {
       right: 2%;
       max-width: 330px;
     }
   }
 
   @media (max-width: 1100px) {
-    & svg {
+    & :is(svg, img) {
       right: 0;
       max-width: 310px;
     }
@@ -210,7 +210,7 @@ const IconBox = styled.div`
 
   @media (max-width: 960px) {
     bottom: 0;
-    & svg {
+    & :is(svg, img) {
       right: 0;
       max-width: 310px;
     }
@@ -218,7 +218,7 @@ const IconBox = styled.div`
 
   @media (max-width: 880px) {
     bottom: -20px;
-    & svg {
+    & :is(svg, img) {
       top: 20px;
       right: 0;
       max-width: 250px;
@@ -281,7 +281,7 @@ const PromoteOnlineSection = styled.section`
     & .courseCardIconBox {
       top: -24px;
       right: 3px;
-      & svg {
+      & :is(svg, img) {
         width: 94px;
         height: 104px;
       }
@@ -454,17 +454,21 @@ export default function Offline() {
         </TextBox>
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
-            <OfflinePageBackgroundPhoto />
+            <SvgAsset
+              src="/svg/OfflinePageBackgroundPhoto.svg"
+              width={558}
+              height={738}
+            />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
-            <WarsawMap />
+            <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} />
           </IconBox>
         </MobileImagesBox>
         <ImageBox id="desktop-only-image-box">
-          <OfflinePageBackgroundPhoto />
+          <SvgAsset src="/svg/OfflinePageBackgroundPhoto.svg" width={558} height={738} />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
-          <WarsawMap />
+          <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} />
         </IconBox>
       </IntroductionSection>
       <CoursesSection>
@@ -488,7 +492,7 @@ export default function Offline() {
         </TextBlock>
         <CardBlock>
           <CourseCard
-            icon={<TelegramGlass width={115} height={130} />}
+            icon={<SvgAsset src="/svg/TelegramGlass.svg" width={115} height={130} />}
             title={t("promo.card.title")}
             subtitle={t("promo.card.subtitle")}
             cardContent={

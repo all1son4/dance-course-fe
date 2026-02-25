@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { TopMenu } from "@/components";
 import { usePathname, useRouter } from "@/i18n/navigation";
@@ -25,6 +25,18 @@ export default function Header() {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      router.prefetch("/");
+      router.prefetch("/online");
+      router.prefetch("/offline");
+      router.prefetch("/online/first-touch");
+      router.prefetch("/online/choreo");
+    }, 250);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [router]);
 
   const languageOptions = [
     { code: "ru", label: t("language.ru"), flag: <RussianFlag /> },

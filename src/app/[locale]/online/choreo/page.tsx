@@ -3,7 +3,7 @@ import { styled } from "styled-components";
 
 import { Button, Contacts, TextContentCard } from "@/components";
 import ChoreoCard from "@/components/cards/ChoreoCard";
-import { OnlineChoreoPageBackgroundPhoto, TelegramChoreo } from "@/svg";
+import SvgAsset from "@/components/common/SvgAsset";
 
 import { getChoreos, getOnlineSuggestions } from "./contstants";
 
@@ -96,7 +96,7 @@ const MobileImagesBox = styled.div`
       right: unset;
       bottom: unset;
       margin: -18% 0 0 0;
-      & svg {
+      & :is(svg, img) {
         width: 100%;
         height: auto;
       }
@@ -113,7 +113,7 @@ const MobileImagesBox = styled.div`
       max-width: 100%;
       height: 100%;
       margin: 20px 0 0 0;
-      & svg {
+      & :is(svg, img) {
         top: unset;
         width: 50%;
         height: auto;
@@ -357,20 +357,28 @@ export default function FirstTouch() {
 
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
-            <OnlineChoreoPageBackgroundPhoto />
+            <SvgAsset
+              src="/svg/OnlineChoreoPageBackgroundPhoto.svg"
+              width={794}
+              height={989}
+            />
           </ImageBox>
 
           <IconBox id="mobile-only-icon-box">
-            <TelegramChoreo />
+            <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} />
           </IconBox>
         </MobileImagesBox>
 
         <ImageBox id="desktop-only-image-box">
-          <OnlineChoreoPageBackgroundPhoto />
+          <SvgAsset
+            src="/svg/OnlineChoreoPageBackgroundPhoto.svg"
+            width={794}
+            height={989}
+          />
         </ImageBox>
 
         <IconBox id="desktop-only-icon-box">
-          <TelegramChoreo />
+          <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} />
         </IconBox>
       </IntroductionSection>
       <SpecialWrapper>

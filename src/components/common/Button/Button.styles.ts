@@ -61,7 +61,7 @@ const variantStyles = {
   `,
 };
 
-export const ButtonLinkWrapper = styled(Link).attrs({ prefetch: false })`
+export const ButtonLinkWrapper = styled(Link)`
   display: flex;
   text-decoration: none !important;
   background: transparent;
