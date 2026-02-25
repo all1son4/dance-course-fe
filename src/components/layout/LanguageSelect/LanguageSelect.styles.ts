@@ -5,6 +5,7 @@ import { glass } from "@/styles/mixins/glass";
 export const MenuWrap = styled.div`
   position: relative;
   display: flex;
+  z-index: 110;
 `;
 
 export const Trigger = styled.button<{ $isOpen: boolean }>`
@@ -79,6 +80,7 @@ export const Menu = styled.div`
   position: absolute !important;
   right: -38px;
   top: calc(100% + 8px);
+  z-index: 120;
 
   width: 180px;
   box-sizing: border-box;
@@ -92,6 +94,11 @@ export const Menu = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+
+  @media (max-width: 767px) {
+    left: 0;
+    right: auto;
+  }
 `;
 
 export const Item = styled.button<{ selected?: boolean }>`

@@ -361,29 +361,40 @@ export default function FirstTouch() {
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
             <SvgAsset
-              src="/svg/OnlineChoreoPageBackgroundPhoto.svg"
+              src="/svg/OnlineChoreoPageBackgroundPhoto.webp"
               width={794}
               height={989}
+              sizes="(max-width: 767px) 100vw, 0px"
               priority
             />
           </ImageBox>
 
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} priority />
+            <SvgAsset
+              src="/svg/TelegramChoreo.webp"
+              width={401}
+              height={421}
+              sizes="(max-width: 767px) 50vw, 0px"
+            />
           </IconBox>
         </MobileImagesBox>
 
         <ImageBox id="desktop-only-image-box">
           <SvgAsset
-            src="/svg/OnlineChoreoPageBackgroundPhoto.svg"
+            src="/svg/OnlineChoreoPageBackgroundPhoto.webp"
             width={794}
             height={989}
-            priority
+            sizes="(max-width: 767px) 0px, (max-width: 880px) 490px, (max-width: 1140px) 540px, (max-width: 1240px) 640px, 794px"
           />
         </ImageBox>
 
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} priority />
+          <SvgAsset
+            src="/svg/TelegramChoreo.webp"
+            width={401}
+            height={421}
+            sizes="(max-width: 767px) 0px, (max-width: 880px) 240px, (max-width: 1140px) 260px, (max-width: 1240px) 320px, 401px"
+          />
         </IconBox>
       </IntroductionSection>
       <SpecialWrapper>

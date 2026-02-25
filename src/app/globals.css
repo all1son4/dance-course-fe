@@ -43,6 +43,11 @@ canvas,
 svg {
   display: block;
   max-width: 100%;
+  background-color: transparent;
+}
+
+img[data-nimg] {
+  background-color: transparent !important;
 }
 
 /* Form elements inherit font */

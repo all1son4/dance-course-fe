@@ -454,26 +454,37 @@ export default function Offline() {
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
             <SvgAsset
-              src="/svg/OfflinePageBackgroundPhoto.svg"
+              src="/svg/OfflinePageBackgroundPhoto.webp"
               width={558}
               height={738}
+              sizes="(max-width: 767px) 100vw, 0px"
               priority
             />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} priority />
+            <SvgAsset
+              src="/svg/WarsawMap.webp"
+              width={379}
+              height={568}
+              sizes="(max-width: 550px) 58vw, (max-width: 767px) 95vw, 0px"
+            />
           </IconBox>
         </MobileImagesBox>
         <ImageBox id="desktop-only-image-box">
           <SvgAsset
-            src="/svg/OfflinePageBackgroundPhoto.svg"
+            src="/svg/OfflinePageBackgroundPhoto.webp"
             width={558}
             height={738}
-            priority
+            sizes="(max-width: 767px) 0px, (max-width: 880px) 400px, (max-width: 960px) 460px, (max-width: 1240px) 500px, 558px"
           />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} priority />
+          <SvgAsset
+            src="/svg/WarsawMap.webp"
+            width={379}
+            height={568}
+            sizes="(max-width: 767px) 0px, (max-width: 880px) 250px, (max-width: 1100px) 310px, 379px"
+          />
         </IconBox>
       </IntroductionSection>
       <CoursesSection>
@@ -497,7 +508,7 @@ export default function Offline() {
         </TextBlock>
         <CardBlock>
           <CourseCard
-            icon={<SvgAsset src="/svg/TelegramGlass.svg" width={115} height={130} />}
+            icon={<SvgAsset src="/svg/TelegramGlass.webp" width={115} height={130} />}
             title={t("promo.card.title")}
             subtitle={t("promo.card.subtitle")}
             cardContent={

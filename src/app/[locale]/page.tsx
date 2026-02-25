@@ -563,9 +563,10 @@ export default function Home() {
       <IntroduceSection>
         <AbsolutePageImage>
           <SvgAsset
-            src="/svg/MainPageBackgroundPhoto.svg"
+            src="/svg/MainPageBackgroundPhoto.webp"
             width={775}
             height={900}
+            sizes="(max-width: 1240px) 0px, (max-width: 1440px) 52vw, 775px"
             priority
           />
         </AbsolutePageImage>
@@ -585,11 +586,11 @@ export default function Home() {
         </MainTextBox>
         <AbsolutePageLogo>
           <SvgAsset
-            src="/svg/MainPageBackgroundPhoto.svg"
+            src="/svg/MainPageBackgroundPhoto.webp"
             width={775}
             height={900}
             className="hero-mobile-bg"
-            priority
+            sizes="(max-width: 450px) 100vw, (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
           />
           <div className="hero-brand-logo">
             <Logo width={350} height={77} />
@@ -675,7 +676,7 @@ export default function Home() {
         <CourseTitle>{t("courses.title")}</CourseTitle>
         <CourseOptionsBox>
           <CourseCard
-            icon={<SvgAsset src="/svg/Map.svg" width={132} height={210} />}
+            icon={<SvgAsset src="/svg/Map.webp" width={132} height={210} />}
             title={t("courses.offline.title")}
             subtitle={t("courses.offline.subtitle")}
             cardContent={
@@ -704,7 +705,7 @@ export default function Home() {
             buttonHref="/offline"
           />
           <CourseCard
-            icon={<SvgAsset src="/svg/TelegramGlass.svg" width={169} height={190} />}
+            icon={<SvgAsset src="/svg/TelegramGlass.webp" width={169} height={190} />}
             title={t("courses.online.title")}
             subtitle={t("courses.online.subtitle")}
             cardContent={

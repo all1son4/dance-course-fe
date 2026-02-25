@@ -55,13 +55,14 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
     })}
 
     max-height: ${({ $isOpen }) => ($isOpen ? "420px" : "59px")};
+    overflow: visible;
     transition: max-height 220ms ease;
 
     /* Safari often stutters on max-height + backdrop-filter in fixed header */
     @supports (-webkit-touch-callout: none) {
       transition: max-height 160ms cubic-bezier(0.2, 0, 0, 1);
       will-change: max-height;
-      contain: layout paint;
+      contain: layout style;
     }
   }
 `;
@@ -140,6 +141,7 @@ export const Bottom = styled.div<{ $isOpen: boolean }>`
 
   @media (max-width: 767px) {
     display: flex;
+    z-index: 60;
     opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
     transform: ${({ $isOpen }) => ($isOpen ? "translateY(0)" : "translateY(-6px)")};
     transition:

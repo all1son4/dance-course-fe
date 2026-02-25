@@ -1,7 +1,12 @@
 import Image from "next/image";
 
-const BLUR_PLACEHOLDER =
-  "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSI5IiB2aWV3Qm94PSIwIDAgMTYgOSI+PHJlY3Qgd2lkdGg9IjE2IiBoZWlnaHQ9IjkiIGZpbGw9IiNlOWVhZWUiLz48L3N2Zz4=";
+const HERO_IMAGE_SOURCES = new Set([
+  "/svg/MainPageBackgroundPhoto.webp",
+  "/svg/OnlinePageBackgroundPhoto.webp",
+  "/svg/OfflinePageBackgroundPhoto.webp",
+  "/svg/FirstTouchPageBackgroundPhoto.webp",
+  "/svg/OnlineChoreoPageBackgroundPhoto.webp",
+]);
 
 type SvgAssetProps = {
   src: string;
@@ -22,6 +27,9 @@ export default function SvgAsset({
   loading = "lazy",
   sizes = "100vw",
 }: SvgAssetProps) {
+  const shouldSkipOptimization = src.toLowerCase().endsWith(".svg");
+  const isHeroImage = HERO_IMAGE_SOURCES.has(src);
+
   return (
     <Image
       src={src}
@@ -29,14 +37,16 @@ export default function SvgAsset({
       height={height}
       alt=""
       aria-hidden
-      unoptimized
+      unoptimized={shouldSkipOptimization}
       className={className}
       priority={priority}
       loading={priority ? undefined : loading}
       sizes={sizes}
-      placeholder="blur"
-      blurDataURL={BLUR_PLACEHOLDER}
-      decoding="async"
+      placeholder="empty"
+      decoding={priority ? "sync" : "async"}
+      fetchPriority={priority ? "high" : "auto"}
+      quality={isHeroImage ? 68 : 72}
+      style={{ backgroundColor: "transparent" }}
     />
   );
 }
