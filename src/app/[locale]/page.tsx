@@ -562,7 +562,12 @@ export default function Home() {
     <>
       <IntroduceSection>
         <AbsolutePageImage>
-          <SvgAsset src="/svg/MainPageBackgroundPhoto.svg" width={775} height={900} />
+          <SvgAsset
+            src="/svg/MainPageBackgroundPhoto.svg"
+            width={775}
+            height={900}
+            priority
+          />
         </AbsolutePageImage>
         <MainTextBox>
           <MainTitle>{t("hero.title")}</MainTitle>
@@ -584,6 +589,7 @@ export default function Home() {
             width={775}
             height={900}
             className="hero-mobile-bg"
+            priority
           />
           <div className="hero-brand-logo">
             <Logo width={350} height={77} />

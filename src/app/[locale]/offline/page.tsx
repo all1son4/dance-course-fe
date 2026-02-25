@@ -116,11 +116,10 @@ const MobileImagesBox = styled.div`
     margin: 0;
   }
     & #mobile-only-icon-box {
+    justify-content: flex-end;
       & :is(svg, img) {
-        top: unset;
-        margin: 0 0 0 48%;
-        width: 100%;
-        height: auto;
+        margin: 0;
+        width: 58%;
       }
     }
   }
@@ -458,17 +457,23 @@ export default function Offline() {
               src="/svg/OfflinePageBackgroundPhoto.svg"
               width={558}
               height={738}
+              priority
             />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} />
+            <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} priority />
           </IconBox>
         </MobileImagesBox>
         <ImageBox id="desktop-only-image-box">
-          <SvgAsset src="/svg/OfflinePageBackgroundPhoto.svg" width={558} height={738} />
+          <SvgAsset
+            src="/svg/OfflinePageBackgroundPhoto.svg"
+            width={558}
+            height={738}
+            priority
+          />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} />
+          <SvgAsset src="/svg/WarsawMap.svg" width={379} height={568} priority />
         </IconBox>
       </IntroductionSection>
       <CoursesSection>

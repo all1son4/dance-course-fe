@@ -30,6 +30,8 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   }
 
   & > svg {
+    transition: transform 0.2s ease;
+    transform: rotate(${(props) => (props.$isOpen ? "180deg" : "0deg")});
     & path {
       stroke: ${(props) => (props.$isOpen ? "rgba(124, 0, 2, 1)" : "#000000")};
       transition: stroke 0.2s ease;

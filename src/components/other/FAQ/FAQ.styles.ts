@@ -137,10 +137,25 @@ export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
     grid-template-rows 200ms ease,
     padding-top 200ms ease;
   padding-top: ${({ $isOpened }) => ($isOpened ? "16px" : "0px")};
+  overflow: hidden;
 
   & > * {
     overflow: hidden;
     min-height: 0;
+  }
+
+  @supports (-webkit-touch-callout: none) {
+    display: block;
+    max-height: ${({ $isOpened }) => ($isOpened ? "420px" : "0px")};
+    transition:
+      max-height 180ms ease,
+      padding-top 180ms ease;
+    will-change: max-height;
+
+    & > * {
+      opacity: ${({ $isOpened }) => ($isOpened ? 1 : 0)};
+      transition: opacity 160ms ease;
+    }
   }
 `;
 
@@ -161,12 +176,11 @@ export const AnswerLink = styled.a`
   color: rgba(56, 56, 56, 1);
   text-decoration: underline;
   text-underline-offset: 2px;
-  transition: opacity color 0.2s ease;
+  transition: color 0.2s ease;
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       color: rgba(124, 0, 2, 1);
-      opacity: 0;
     }
   }
 `;

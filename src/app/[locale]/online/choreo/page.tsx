@@ -364,11 +364,12 @@ export default function FirstTouch() {
               src="/svg/OnlineChoreoPageBackgroundPhoto.svg"
               width={794}
               height={989}
+              priority
             />
           </ImageBox>
 
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} />
+            <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} priority />
           </IconBox>
         </MobileImagesBox>
 
@@ -377,11 +378,12 @@ export default function FirstTouch() {
             src="/svg/OnlineChoreoPageBackgroundPhoto.svg"
             width={794}
             height={989}
+            priority
           />
         </ImageBox>
 
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} />
+          <SvgAsset src="/svg/TelegramChoreo.svg" width={401} height={421} priority />
         </IconBox>
       </IntroductionSection>
       <SpecialWrapper>

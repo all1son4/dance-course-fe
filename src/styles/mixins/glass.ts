@@ -25,6 +25,9 @@ export const glass = ({
   const shadowOpacity = 0.1 + k * 0.1;
   const shadowY = 10 + k * 14;
   const shadowBlur = 30 + k * 50;
+  const safariFrostPx = Math.max(1, Math.round(frostPx * 0.6));
+  const safariShadowY = Math.max(4, Math.round(shadowY * 0.7));
+  const safariShadowBlur = Math.max(16, Math.round(shadowBlur * 0.65));
 
   const b = (v: number) => Math.min(1, Math.max(0, v * sparkleBoost));
 
@@ -79,6 +82,21 @@ export const glass = ({
         linear-gradient(#000 0 0) content-box,
         linear-gradient(#000 0 0);
       mask-composite: exclude;
+    }
+
+    /* Safari-specific perf mode: reduce expensive blur + mask composition cost */
+    @supports (-webkit-touch-callout: none) {
+      backdrop-filter: blur(${safariFrostPx}px);
+      -webkit-backdrop-filter: blur(${safariFrostPx}px);
+
+      box-shadow:
+        0 ${safariShadowY}px ${safariShadowBlur}px rgba(0, 0, 0, ${shadowOpacity}),
+        inset 0 1px 0 rgba(255, 255, 255, 0.28),
+        inset 0 0 0 ${borderWidthPx}px rgba(255, 255, 255, ${b(0.35 * borderOpacity)});
+
+      &::after {
+        display: none;
+      }
     }
   `;
 };

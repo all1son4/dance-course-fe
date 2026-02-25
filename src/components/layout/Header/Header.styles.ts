@@ -56,6 +56,13 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
 
     max-height: ${({ $isOpen }) => ($isOpen ? "420px" : "59px")};
     transition: max-height 220ms ease;
+
+    /* Safari often stutters on max-height + backdrop-filter in fixed header */
+    @supports (-webkit-touch-callout: none) {
+      transition: max-height 160ms cubic-bezier(0.2, 0, 0, 1);
+      will-change: max-height;
+      contain: layout paint;
+    }
   }
 `;
 

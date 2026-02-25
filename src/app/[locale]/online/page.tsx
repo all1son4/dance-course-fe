@@ -398,17 +398,32 @@ export default function Online() {
         </TextBox>
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
-            <SvgAsset src="/svg/OnlinePageBackgroundPhoto.svg" width={598} height={846} />
+            <SvgAsset
+              src="/svg/OnlinePageBackgroundPhoto.svg"
+              width={598}
+              height={846}
+              priority
+            />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset src="/svg/OnlineTelegramBig.svg" width={453} height={474} />
+            <SvgAsset
+              src="/svg/OnlineTelegramBig.svg"
+              width={453}
+              height={474}
+              priority
+            />
           </IconBox>
         </MobileImagesBox>
         <ImageBox id="desktop-only-image-box">
-          <SvgAsset src="/svg/OnlinePageBackgroundPhoto.svg" width={598} height={846} />
+          <SvgAsset
+            src="/svg/OnlinePageBackgroundPhoto.svg"
+            width={598}
+            height={846}
+            priority
+          />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset src="/svg/OnlineTelegramBig.svg" width={453} height={474} />
+          <SvgAsset src="/svg/OnlineTelegramBig.svg" width={453} height={474} priority />
         </IconBox>
       </IntroductionSection>
       <CoursesSection>

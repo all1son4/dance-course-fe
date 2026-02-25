@@ -541,11 +541,17 @@ export default function FirstTouch() {
               src="/svg/FirstTouchPageBackgroundPhoto.svg"
               width={660}
               height={826}
+              priority
             />
           </ImageBox>
 
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset src="/svg/FirstTouchTelegram.svg" width={356} height={534} />
+            <SvgAsset
+              src="/svg/FirstTouchTelegram.svg"
+              width={356}
+              height={534}
+              priority
+            />
           </IconBox>
         </MobileImagesBox>
 
@@ -554,11 +560,12 @@ export default function FirstTouch() {
             src="/svg/FirstTouchPageBackgroundPhoto.svg"
             width={660}
             height={826}
+            priority
           />
         </ImageBox>
 
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset src="/svg/FirstTouchTelegram.svg" width={356} height={534} />
+          <SvgAsset src="/svg/FirstTouchTelegram.svg" width={356} height={534} priority />
         </IconBox>
       </IntroductionSection>
 
