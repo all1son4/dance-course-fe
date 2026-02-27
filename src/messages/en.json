@@ -392,5 +392,48 @@
       "withoutMentor": "Without mentor 60 PLN / 15 €",
       "withMentor": "With mentor 100 PLN / 25 €"
     }
+  },
+  "PrivacyPolicyPage": {
+    "title": "Privacy Policy (GDPR)",
+    "description": "The controller of your personal data is Hanna Karzhova.\nul. Jana Kazimierza 64A/660, 01-248 Warsaw\nTax ID (NIP): 5273113119\nE-mail: kroxxxxx92@gmail.com",
+    "contactLine": "For matters related to personal data processing, please contact: kroxxxxx92@gmail.com",
+    "items": {
+      "1": {
+        "title": "1. Purposes of processing",
+        "text": "Personal data is processed for the purpose of:\na) registration for and participation in dance classes and dance events (offline);\nb) organizational communication (e.g., schedule, changes, technical information), including contact via social media;\nc) processing orders for the online course, i.e., entering into and performing the agreement, handling payments, and providing access to digital content (the course);\nd) handling inquiries, customer support, and complaints;\ne) accounting and tax settlements (if applicable);\nf) ensuring the security of services, preventing abuse, and establishing, pursuing, or defending claims."
+      },
+      "2": {
+        "title": "2. Legal basis for processing",
+        "text": "Processing is carried out on the basis of:\na) Article 6(1)(b) GDPR — performance of a contract (classes/events and purchase and access to the online course);\nb) Article 6(1)(c) GDPR — compliance with legal obligations (e.g., accounting and tax obligations, if applicable);\nc) Article 6(1)(f) GDPR — legitimate interests of the controller (handling claims, security, preventing abuse);\nd) Article 6(1)(a) GDPR — consent, only where required (e.g., newsletter/marketing communication)."
+      },
+      "3": {
+        "title": "3. Scope of collected data",
+        "text": "Collected data may include: first and last name, phone number, email address, usernames on social media platforms, as well as data necessary to process orders and communicate.\nIn the case of purchasing an online course, additional data may be processed: order-related data (course name, purchase date, payment status), technical and usage data (IP address, system logs), and — if applicable — data required for accounting documents (VAT ID / invoicing details).\nAs a rule, payment data is processed by the payment provider — the controller may only receive information about the payment status."
+      },
+      "4": {
+        "title": "4. Data recipients / processors",
+        "text": "Data may be transferred to entities supporting the controller in providing services, in particular:\n- payment system providers (Stripe),\n- hosting / course delivery platform (Telegram) / tools used to provide access to materials,\n- email, communication, and customer support tools (Gmail),\n- accounting services (if applicable),\n- IT support.\nData is not sold or shared with third parties for their own marketing purposes. It may also be disclosed to public authorities only where required by law."
+      },
+      "5": {
+        "title": "5. Transfers of data outside the EEA",
+        "text": "If you use providers based outside the European Economic Area (e.g., certain cloud services), personal data may be transferred outside the EEA only in accordance with the GDPR (e.g., based on Standard Contractual Clauses) and with appropriate safeguards in place."
+      },
+      "6": {
+        "title": "6. Data retention",
+        "text": "Personal data will be stored:\na) for the period necessary to perform the agreement (classes/events or access to the online course);\nb) thereafter for the period required by law (in particular accounting/tax regulations, if applicable) or until the limitation period for claims expires;\nc) where processing is based on consent — until the consent is withdrawn (without affecting the lawfulness of processing before withdrawal)."
+      },
+      "7": {
+        "title": "7. Rights of the data subject",
+        "text": "You have the right to access your data, rectify it, erase it, restrict processing, object to processing, data portability, and to lodge a complaint with the President of the Personal Data Protection Office (PUODO).\nWhere processing is based on consent, you have the right to withdraw your consent at any time."
+      },
+      "8": {
+        "title": "8. Voluntary provision of data",
+        "text": "Providing personal data is voluntary; however, it is necessary to participate in classes or events and to process an order for the online course and provide access to digital content."
+      },
+      "9": {
+        "title": "9. Automated decision-making / profiling",
+        "text": "Personal data is not subject to automated decision-making or profiling."
+      }
+    }
   }
 }

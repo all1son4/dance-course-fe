@@ -52,7 +52,7 @@ export default function Footer() {
       <Divider />
       <BottomRow>
         <CopyRight>{t("copyright")}</CopyRight>
-        <PrivacyPolicy href="#">{t("privacyPolicy")}</PrivacyPolicy>
+        <PrivacyPolicy href="/privacy-policy">{t("privacyPolicy")}</PrivacyPolicy>
       </BottomRow>
     </FooterBox>
   );

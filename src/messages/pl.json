@@ -392,5 +392,48 @@
       "withoutMentor": "Bez mentora 60 PLN / 15 €",
       "withMentor": "Z mentorem 100 PLN / 25 €"
     }
+  },
+  "PrivacyPolicyPage": {
+    "title": "Polityka prywatności (RODO)",
+    "description": "Administratorem Twoich danych osobowych jest Hanna Karzhova.\nul. Jana Kazimierza 64A/660, 01-248 Warszawa\nNIP: 5273113119\nE-mail: kroxxxxx92@gmail.com",
+    "contactLine": "W sprawach związanych z przetwarzaniem danych prosimy o kontakt: kroxxxxx92@gmail.com",
+    "items": {
+      "1": {
+        "title": "1. Cele przetwarzania danych",
+        "text": "Dane osobowe przetwarzane są w celu:\na) rejestracji i udziału w zajęciach tanecznych oraz wydarzeniach tanecznych (offline),\nb) komunikacji organizacyjnej (harmonogram, zmiany, informacje techniczne), w tym kontaktu za pośrednictwem mediów społecznościowych,\nc) realizacji zamówienia kursu online, tj. zawarcia i wykonania umowy, obsługi płatności oraz udostępnienia dostępu do treści cyfrowych (kursu),\nd) obsługi zapytań, wsparcia klienta i reklamacji,\ne) rozliczeń księgowych i podatkowych (jeśli dotyczy),\nf) zapewnienia bezpieczeństwa usług, zapobiegania nadużyciom oraz dochodzenia lub obrony roszczeń."
+      },
+      "2": {
+        "title": "2. Podstawa prawna przetwarzania",
+        "text": "Przetwarzanie odbywa się na podstawie:\na) art. 6 ust. 1 lit. b RODO — wykonanie umowy (zajęcia/wydarzenia oraz zakup i dostęp do kursu online),\nb) art. 6 ust. 1 lit. c RODO — wypełnienie obowiązków prawnych (np. rachunkowo-podatkowych, jeśli dotyczy),\nc) art. 6 ust. 1 lit. f RODO — prawnie uzasadniony interes administratora (obsługa roszczeń, bezpieczeństwo, przeciwdziałanie nadużyciom),\nd) art. 6 ust. 1 lit. a RODO — dobrowolna zgoda wyłącznie w zakresie, w jakim jest ona wymagana (np. newsletter/komunikacja marketingowa)."
+      },
+      "3": {
+        "title": "3. Zakres zbieranych danych",
+        "text": "Zbierane dane mogą obejmować: imię i nazwisko, numer telefonu, e-mail, nazwy użytkownika w serwisach społecznościowych, a także dane niezbędne do realizacji zamówienia i komunikacji.\nW przypadku zakupu kursu online mogą być przetwarzane dodatkowo: dane dotyczące zamówienia (nazwa kursu, data zakupu, status płatności), dane techniczne i eksploatacyjne (adres IP, logi systemowe) oraz — jeśli dotyczy — dane do dokumentów księgowych (NIP / dane do faktury).\nDane płatnicze są co do zasady przetwarzane przez dostawcę płatności — administrator może otrzymywać jedynie informacje o statusie płatności."
+      },
+      "4": {
+        "title": "4. Odbiorcy danych / podmioty przetwarzające",
+        "text": "Dane mogą być przekazywane podmiotom wspierającym administratora w świadczeniu usług, w szczególności dostawcom:\n- systemów płatności (Stripe),\n- hostingu / platformy kursowej (Telegram) / narzędzi do udostępniania materiałów,\n- narzędzi e-mail, komunikacji i obsługi klienta (Gmail),\n- księgowości (jeśli dotyczy),\n- wsparcia IT.\nDane nie są sprzedawane ani udostępniane osobom trzecim do własnych celów marketingowych. Mogą być również udostępnione organom publicznym wyłącznie, gdy wymagają tego przepisy prawa."
+      },
+      "5": {
+        "title": "5. Przekazywanie danych poza EOG",
+        "text": "Jeżeli korzystasz z dostawców mających siedzibę poza Europejskim Obszarem Gospodarczym (np. niektóre usługi chmurowe), dane mogą być przekazywane poza EOG wyłącznie na zasadach przewidzianych w RODO (np. standardowe klauzule umowne) oraz z zapewnieniem odpowiednich zabezpieczeń."
+      },
+      "6": {
+        "title": "6. Dane będą przechowywane",
+        "text": "Dane osobowe będą przechowywane:\na) przez okres niezbędny do realizacji umowy (zajęcia/wydarzenia lub dostęp do kursu online),\nb) następnie przez okres wymagany przepisami prawa (w szczególności podatkowo-księgowymi, jeśli dotyczy) lub do czasu przedawnienia roszczeń,\nc) w przypadku przetwarzania na podstawie zgody — do czasu jej wycofania (bez wpływu na zgodność przetwarzania przed wycofaniem)."
+      },
+      "7": {
+        "title": "7. Prawa osoby, której dane dotyczą",
+        "text": "Przysługuje Ci prawo dostępu do danych, ich sprostowania, usunięcia, ograniczenia przetwarzania, wniesienia sprzeciwu, przenoszenia danych oraz złożenia skargi do Prezesa Urzędu Ochrony Danych Osobowych (PUODO).\nJeżeli przetwarzanie odbywa się na podstawie zgody — masz prawo wycofać zgodę w dowolnym momencie."
+      },
+      "8": {
+        "title": "8. Dobrowolność podania danych",
+        "text": "Podanie danych jest dobrowolne, jednak konieczne do udziału w zajęciach lub wydarzeniach oraz do realizacji zamówienia kursu online i udostępnienia dostępu do treści cyfrowych."
+      },
+      "9": {
+        "title": "9. Zautomatyzowane podejmowanie decyzji / profilowanie",
+        "text": "Dane osobowe nie są poddawane zautomatyzowanemu podejmowaniu decyzji ani profilowaniu."
+      }
+    }
   }
 }
