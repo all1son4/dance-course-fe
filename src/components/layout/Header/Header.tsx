@@ -98,6 +98,18 @@ export default function Header() {
     return () => document.removeEventListener("click", onAnchorClick, options);
   }, []);
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      router.prefetch("/");
+      router.prefetch("/online");
+      router.prefetch("/offline");
+      router.prefetch("/online/first-touch");
+      router.prefetch("/online/choreo");
+    }, 200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [router]);
+
   const languageOptions = [
     { code: "ru", label: t("language.ru"), flag: <RussianFlag /> },
     { code: "en", label: t("language.en"), flag: <EnglishFlag /> },
