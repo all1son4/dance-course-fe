@@ -29,6 +29,11 @@
     "details": "Szczegóły",
     "playVideo": "Odtwórz wideo"
   },
+  "NotFoundPage": {
+    "title": "Wygląda na to, że ta strona nie istnieje",
+    "backHome": "Wróć na stronę główną",
+    "imageAlt": "Ilustracja błędu 404"
+  },
   "Footer": {
     "address": {
       "name": "Hanna Karzhova",

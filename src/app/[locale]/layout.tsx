@@ -1,8 +1,4 @@
-import "../globals.css";
-import "@/styles/vendor/plyr.css";
-
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
@@ -10,13 +6,6 @@ import type { ReactNode } from "react";
 
 import { Footer, Header, PageContainer } from "@/components";
 import { routing } from "@/i18n/routing";
-import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 const siteUrl =
   process.env.NEXT_PUBLIC_SITE_URL ??
@@ -67,18 +56,12 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
-      <body className={`${manrope.variable}`}>
-        <StyledComponentsRegistry>
-          <NextIntlClientProvider messages={messages}>
-            <Header />
-            <main>
-              <PageContainer>{children}</PageContainer>
-            </main>
-            <Footer />
-          </NextIntlClientProvider>
-        </StyledComponentsRegistry>
-      </body>
-    </html>
+    <NextIntlClientProvider messages={messages}>
+      <Header />
+      <main>
+        <PageContainer>{children}</PageContainer>
+      </main>
+      <Footer />
+    </NextIntlClientProvider>
   );
 }

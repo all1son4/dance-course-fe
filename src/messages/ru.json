@@ -29,6 +29,11 @@
     "details": "Подробнее",
     "playVideo": "Воспроизвести видео"
   },
+  "NotFoundPage": {
+    "title": "Кажется, этой страницы не существует",
+    "backHome": "Вернуться на главную",
+    "imageAlt": "Иллюстрация ошибки 404"
+  },
   "Footer": {
     "address": {
       "name": "Hanna Karzhova",

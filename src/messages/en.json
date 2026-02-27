@@ -29,6 +29,11 @@
     "details": "Details",
     "playVideo": "Play video"
   },
+  "NotFoundPage": {
+    "title": "Looks like this page does not exist",
+    "backHome": "Back to home",
+    "imageAlt": "404 error illustration"
+  },
   "Footer": {
     "address": {
       "name": "Hanna Karzhova",
