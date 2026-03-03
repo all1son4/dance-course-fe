@@ -25,7 +25,7 @@ export const Title = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   margin: 0;
   color: rgba(0, 0, 0, 1);
 
@@ -121,7 +121,7 @@ export const Question = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 20px;
-  line-height: 100%;
+  line-height: 110%;
   margin: 0;
   color: rgba(0, 0, 0, 1);
 

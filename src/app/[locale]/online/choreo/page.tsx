@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, Contacts, TextContentCard } from "@/components";
@@ -126,7 +126,7 @@ const Title = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0 0 40px;
   color: rgba(0, 0, 0, 1);
@@ -224,7 +224,7 @@ const Date = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 30px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
@@ -291,7 +291,7 @@ const AboutChoreoTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   max-width: 420px;
@@ -333,9 +333,10 @@ export const ChoreoSection = styled.section`
 `;
 
 export default function FirstTouch() {
+  const locale = useLocale();
   const t = useTranslations("ChoreoPage");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
-  const choreos = getChoreos((key) => t(key));
+  const choreos = getChoreos(locale, (key) => t(key));
 
   return (
     <>

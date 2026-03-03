@@ -39,7 +39,7 @@ export const ErrorText = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 26px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   text-align: center;
   margin: 10px 0 30px;
@@ -47,6 +47,11 @@ export const ErrorText = styled.p`
 
   @media (max-width: 767px) {
     font-size: 22px;
+    margin: 10px 0 20px;
+  }
+
+  @media (max-width: 450px) {
+    font-size: 20px;
     margin: 10px 0 20px;
   }
 `;

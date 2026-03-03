@@ -72,7 +72,7 @@ export const Contact = styled.div`
     font-weight: 400;
     font-style: normal;
     font-size: 13px;
-    line-height: 120%;
+    line-height: 110%;
     letter-spacing: 0;
     margin: 0;
     color: rgba(72, 72, 72, 1);
@@ -83,7 +83,7 @@ export const AddressItem = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 13px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(72, 72, 72, 1);
@@ -131,7 +131,7 @@ export const SupportText = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 20px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   text-align: right;
   margin: 0;
@@ -176,7 +176,7 @@ export const CopyRight = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 13px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(72, 72, 72, 1);
@@ -186,7 +186,7 @@ export const PrivacyPolicy = styled(Link)`
   font-weight: 400;
   font-style: normal;
   font-size: 13px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   text-decoration: underline;
   text-underline-offset: 2px;

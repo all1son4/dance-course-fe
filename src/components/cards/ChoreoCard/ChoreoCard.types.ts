@@ -3,9 +3,11 @@ export type TChoreoCard = {
   postrSrc: string;
   title?: string;
   firstButtonOptions?: {
+    href?: string;
     text?: string;
   };
   secondButtonOptions?: {
+    href?: string;
     text?: string;
   };
 };

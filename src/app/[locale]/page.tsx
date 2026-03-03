@@ -163,7 +163,7 @@ const DescriptionBox = styled.div`
 const DescriptionTitle = styled.p`
   font-weight: 600;
   font-size: 17px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: #000000;
@@ -248,7 +248,7 @@ const AboutMeTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0 0 40px 0;
   color: #000000;
@@ -428,7 +428,7 @@ const CourseTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);

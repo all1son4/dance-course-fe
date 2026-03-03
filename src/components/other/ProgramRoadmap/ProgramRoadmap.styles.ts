@@ -47,7 +47,7 @@ export const ItemTitle = styled.p`
   font-weight: 600;
   font-style: semibold;
   font-size: 17px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);

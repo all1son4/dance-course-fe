@@ -29,7 +29,7 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   font-style: normal;
   font-size: 15px;
 
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
 
   transition: color 0.2s ease;

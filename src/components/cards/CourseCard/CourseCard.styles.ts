@@ -30,7 +30,7 @@ export const Title = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 36px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
 `;

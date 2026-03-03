@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import {
@@ -10,6 +10,11 @@ import {
   VideoPlayer,
 } from "@/components";
 import SvgAsset from "@/components/common/SvgAsset";
+import {
+  buildCheckoutHref,
+  DEFAULT_CHECKOUT_PRODUCT,
+  getDefaultProductOffer,
+} from "@/constants/sellable-products";
 
 import { getOnlineSuggestions } from "./constants";
 
@@ -167,7 +172,7 @@ const Title = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0 0 40px;
   color: rgba(0, 0, 0, 1);
@@ -186,7 +191,7 @@ const Subtitle = styled.p`
   font-weight: 600;
   font-style: normal;
   font-size: 17px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   color: rgba(0, 0, 0, 1);
   margin: 0 0 20px 0;
@@ -285,7 +290,7 @@ const Date = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 30px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
@@ -393,7 +398,7 @@ const AboutCourseTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   max-width: 420px;
@@ -440,7 +445,7 @@ const CourseProgramTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 50px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0 0 80px 0;
   color: rgba(0, 0, 0, 1);
@@ -505,8 +510,14 @@ const CourseProgramButtonBox = styled.div`
 `;
 
 export default function FirstTouch() {
+  const locale = useLocale();
   const t = useTranslations("FirstTouchPage");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
+  const checkoutHref = buildCheckoutHref({
+    locale,
+    offerId: getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT).id,
+    productId: DEFAULT_CHECKOUT_PRODUCT.id,
+  });
 
   return (
     <>
@@ -526,7 +537,7 @@ export default function FirstTouch() {
           </DateBox>
 
           <ButtonBox>
-            <Button buttonText={t("hero.buyButton")} />
+            <Button buttonText={t("hero.buyButton")} href={checkoutHref} />
             <Button
               buttonText={t("hero.programButton")}
               variant="secondary"
@@ -603,7 +614,7 @@ export default function FirstTouch() {
             <CourseProgramTitle>{t("program.title")}</CourseProgramTitle>
             <RoadmapContainer />
             <CourseProgramButtonBox>
-              <Button buttonText={t("program.buyButton")} />
+              <Button buttonText={t("program.buyButton")} href={checkoutHref} />
             </CourseProgramButtonBox>
           </CourseProgramTextBox>
           <CourseProgramImage

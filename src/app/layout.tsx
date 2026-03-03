@@ -5,6 +5,7 @@ import { Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 
 import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
+import { StoreProvider } from "@/stores";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -16,7 +17,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru">
       <body className={manrope.variable}>
-        <StyledComponentsRegistry>{children}</StyledComponentsRegistry>
+        <StyledComponentsRegistry>
+          <StoreProvider>{children}</StoreProvider>
+        </StyledComponentsRegistry>
       </body>
     </html>
   );

@@ -20,10 +20,16 @@ export default function ChoreoCard(choreo: TChoreoCard) {
         <CardTitle>{choreo.title}</CardTitle>
         <ButtonBox>
           {choreo.firstButtonOptions?.text && (
-            <Button buttonText={choreo.firstButtonOptions.text} />
+            <Button
+              buttonText={choreo.firstButtonOptions.text}
+              href={choreo.firstButtonOptions.href}
+            />
           )}
           {choreo.secondButtonOptions?.text && (
-            <Button buttonText={choreo.secondButtonOptions.text} />
+            <Button
+              buttonText={choreo.secondButtonOptions.text}
+              href={choreo.secondButtonOptions.href}
+            />
           )}
         </ButtonBox>
       </InteractiveBox>

@@ -1,3 +1,4 @@
+export * from "./CheckboxIcon";
 export * from "./Chevron";
 export * from "./EnglishFlag";
 export * from "./Insta";

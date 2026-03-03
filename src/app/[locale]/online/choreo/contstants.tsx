@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import {
   OnlineCalendar,
   OnlineGroup,
@@ -21,9 +22,11 @@ export type TChoreoCard = {
   postrSrc: string;
   title?: string;
   firstButtonOptions?: {
+    href?: string;
     text?: string;
   };
   secondButtonOptions?: {
+    href?: string;
     text?: string;
   };
 };
@@ -63,29 +66,54 @@ export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
   },
 ];
 
-export const getChoreos = (t: Translate): TChoreoCard[] => [
-  {
-    id: 1,
-    videoSrc: "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2",
-    postrSrc: "/images/still_alive_poster.webp",
-    title: "Still Alive",
-    firstButtonOptions: {
-      text: t("pricing.withoutMentor"),
+export const getChoreos = (locale: string, t: Translate): TChoreoCard[] => {
+  const stillAlive = SELLABLE_PRODUCTS["choreo-still-alive"];
+  const herLies = SELLABLE_PRODUCTS["choreo-her-lies"];
+
+  return [
+    {
+      id: 1,
+      videoSrc: "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2",
+      postrSrc: "/images/still_alive_poster.webp",
+      title: "Still Alive",
+      firstButtonOptions: {
+        href: buildCheckoutHref({
+          locale,
+          offerId: stillAlive.offers[0]?.id,
+          productId: stillAlive.id,
+        }),
+        text: t("pricing.withoutMentor"),
+      },
+      secondButtonOptions: {
+        href: buildCheckoutHref({
+          locale,
+          offerId: stillAlive.offers[1]?.id,
+          productId: stillAlive.id,
+        }),
+        text: t("pricing.withMentor"),
+      },
     },
-    secondButtonOptions: {
-      text: t("pricing.withMentor"),
+    {
+      id: 2,
+      videoSrc: "https://www.instagram.com/reel/DKw36jmNp5D/?igsh=MWg4NDA0cWx6dnpnNQ==",
+      postrSrc: "/images/her_lies_poster.webp",
+      title: "Her Lies",
+      firstButtonOptions: {
+        href: buildCheckoutHref({
+          locale,
+          offerId: herLies.offers[0]?.id,
+          productId: herLies.id,
+        }),
+        text: t("pricing.withoutMentor"),
+      },
+      secondButtonOptions: {
+        href: buildCheckoutHref({
+          locale,
+          offerId: herLies.offers[1]?.id,
+          productId: herLies.id,
+        }),
+        text: t("pricing.withMentor"),
+      },
     },
-  },
-  {
-    id: 2,
-    videoSrc: "https://www.instagram.com/reel/DKw36jmNp5D/?igsh=MWg4NDA0cWx6dnpnNQ==",
-    postrSrc: "/images/her_lies_poster.webp",
-    title: "Her Lies",
-    firstButtonOptions: {
-      text: t("pricing.withoutMentor"),
-    },
-    secondButtonOptions: {
-      text: t("pricing.withMentor"),
-    },
-  },
-];
+  ];
+};

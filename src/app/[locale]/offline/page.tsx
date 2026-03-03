@@ -130,7 +130,7 @@ const Title = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
@@ -392,7 +392,7 @@ const PromoteTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
@@ -496,6 +496,7 @@ export default function Offline() {
             topRowContent={course.topRowContent}
             bottomRowContent={course.bottomRowContent}
             buttonText={course.buttonText}
+            buttonHref={course.buttonHref}
           />
         ))}
       </CoursesSection>

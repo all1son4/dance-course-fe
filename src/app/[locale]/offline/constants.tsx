@@ -34,7 +34,7 @@ const BoldText = styled.p`
   font-weight: 600;
   font-style: normal;
   font-size: 17px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
@@ -69,7 +69,7 @@ export const Price = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 30px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);

@@ -73,7 +73,7 @@ const Title = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
@@ -310,7 +310,7 @@ const StudioDanceTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 55px;
-  line-height: 120%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0 0 40px 0;
   color: rgba(0, 0, 0, 1);

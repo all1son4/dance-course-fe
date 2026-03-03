@@ -398,6 +398,105 @@
       "withMentor": "With mentor 100 PLN / 25 €"
     }
   },
+  "PaymentPage": {
+    "title": "Checkout",
+    "description": "Review your order details and complete payment. After purchase, you will receive access and further instructions.",
+    "personalDataTitle": "Customer details",
+    "summary": {
+      "currencyLabel": "Payment currency",
+      "amountLabel": "Payment amount"
+    },
+    "inputs": {
+      "name": {
+        "label": "First name",
+        "placeholder": "First name"
+      },
+      "lastName": {
+        "label": "Last name",
+        "placeholder": "Last name"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "emailname@mail.com"
+      },
+      "nickname": {
+        "label": "Telegram username",
+        "placeholder": "@yournickname"
+      }
+    },
+    "agreements": {
+      "immediateAccessConsent": "I agree to the start of the service / delivery of access to digital content (online course) immediately after payment and before the 14-day withdrawal period expires.",
+      "withdrawalNoticeAcknowledgement": "I acknowledge that after receiving immediate access to digital content, I lose the right to withdraw from the agreement within 14 days.",
+      "privacyPolicyAcknowledgement": "I declare that I have read the privacy policy.",
+      "digitalContentAgreement": "I accept the terms and conclude the agreement for the delivery of digital content."
+    }
+  },
+  "StripePaymentTabs": {
+    "title": "Payment method",
+    "description": "Secure payment via Stripe",
+    "button": {
+      "pay": "Pay",
+      "processing": "Processing..."
+    },
+    "status": {
+      "preparing": "Preparing secure payment with Stripe...",
+      "succeeded": "Payment completed successfully.",
+      "confirmed": "Payment details are confirmed. Stripe will finish the payment if an extra step is required."
+    },
+    "placeholder": {
+      "missingPublishableKey": "Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to .env and restart the dev server.",
+      "awaitingClientSecret": "Stripe is ready. The Payment Element will appear here automatically after receiving the clientSecret."
+    },
+    "errors": {
+      "missingClientSecret": "Stripe did not return a client secret.",
+      "missingSecretKey": "STRIPE_SECRET_KEY is missing. Add it to .env and restart the server.",
+      "paymentIntentFailed": "Failed to prepare the Stripe payment. Check your Stripe settings.",
+      "paymentIntentRequestFailed": "Failed to prepare the payment. Please try again.",
+      "confirmPaymentFailed": "Failed to complete the payment. Please try again."
+    }
+  },
+  "CurrencySwitch": {
+    "ariaLabel": "Currency switch"
+  },
+  "SellableProducts": {
+    "firstTouch": {
+      "title": "Beginner course \"First Touch\"",
+      "description": {
+        "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
+        "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
+      },
+      "accessNote": "Access to materials for 1.5 months via a private Telegram chat.",
+      "offers": {
+        "standard": "Standard access"
+      }
+    },
+    "choreoStillAlive": {
+      "title": "Choreography breakdown \"Still Alive\"",
+      "description": {
+        "1": "An online breakdown of the Still Alive choreography for dancers who want depth, structure and expressive movement.",
+        "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
+        "3": "Choose between a self-paced format or participation with mentor support and feedback."
+      },
+      "accessNote": "Access to materials for 30 days via a private Telegram chat.",
+      "offers": {
+        "withoutMentor": "Without mentor",
+        "withMentor": "With mentor"
+      }
+    },
+    "choreoHerLies": {
+      "title": "Choreography breakdown \"Her Lies\"",
+      "description": {
+        "1": "An online breakdown of the Her Lies choreography for dancers who want depth, structure and expressive movement.",
+        "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
+        "3": "Choose between a self-paced format or participation with mentor support and feedback."
+      },
+      "accessNote": "Access to materials for 30 days via a private Telegram chat.",
+      "offers": {
+        "withoutMentor": "Without mentor",
+        "withMentor": "With mentor"
+      }
+    }
+  },
   "PrivacyPolicyPage": {
     "title": "Privacy Policy (GDPR)",
     "description": "The controller of your personal data is Hanna Karzhova.\nul. Jana Kazimierza 64A/660, 01-248 Warsaw\nTax ID (NIP): 5273113119\nE-mail: kroxxxxx92@gmail.com",

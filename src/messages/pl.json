@@ -398,6 +398,105 @@
       "withMentor": "Z mentorem 100 PLN / 25 €"
     }
   },
+  "PaymentPage": {
+    "title": "Płatność",
+    "description": "Sprawdź szczegóły zamówienia i dokończ płatność. Po zakupie otrzymasz dostęp oraz dalsze instrukcje.",
+    "personalDataTitle": "Dane kupującego",
+    "summary": {
+      "currencyLabel": "Waluta płatności",
+      "amountLabel": "Kwota płatności"
+    },
+    "inputs": {
+      "name": {
+        "label": "Imię",
+        "placeholder": "Imię"
+      },
+      "lastName": {
+        "label": "Nazwisko",
+        "placeholder": "Nazwisko"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "emailname@mail.com"
+      },
+      "nickname": {
+        "label": "Nick w Telegramie",
+        "placeholder": "@yournickname"
+      }
+    },
+    "agreements": {
+      "immediateAccessConsent": "Wyrażam zgodę na rozpoczęcie świadczenia usługi / udostępnienie treści cyfrowych (kursu online) natychmiast po opłaceniu, przed upływem 14-dniowego terminu odstąpienia od umowy.",
+      "withdrawalNoticeAcknowledgement": "Przyjmuję do wiadomości, że po uzyskaniu natychmiastowego dostępu do treści cyfrowych tracę prawo do odstąpienia od umowy w ciągu 14 dni.",
+      "privacyPolicyAcknowledgement": "Oświadczam, że zapoznałam się z polityką prywatności.",
+      "digitalContentAgreement": "Akceptuję warunki i zawieram umowę o dostarczenie treści cyfrowych."
+    }
+  },
+  "StripePaymentTabs": {
+    "title": "Metoda płatności",
+    "description": "Bezpieczna płatność przez Stripe",
+    "button": {
+      "pay": "Zapłać",
+      "processing": "Przetwarzanie..."
+    },
+    "status": {
+      "preparing": "Przygotowujemy bezpieczną płatność przez Stripe...",
+      "succeeded": "Płatność zakończona pomyślnie.",
+      "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok."
+    },
+    "placeholder": {
+      "missingPublishableKey": "Dodaj NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY do .env i uruchom ponownie dev server.",
+      "awaitingClientSecret": "Stripe jest gotowy. Payment Element pojawi się tutaj automatycznie po otrzymaniu clientSecret."
+    },
+    "errors": {
+      "missingClientSecret": "Stripe nie zwrócił client secret.",
+      "missingSecretKey": "Brakuje STRIPE_SECRET_KEY. Dodaj go do .env i uruchom ponownie serwer.",
+      "paymentIntentFailed": "Nie udało się przygotować płatności Stripe. Sprawdź ustawienia Stripe.",
+      "paymentIntentRequestFailed": "Nie udało się przygotować płatności. Spróbuj ponownie.",
+      "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie."
+    }
+  },
+  "CurrencySwitch": {
+    "ariaLabel": "Przełącznik waluty"
+  },
+  "SellableProducts": {
+    "firstTouch": {
+      "title": "Kurs dla początkujących \"First Touch\"",
+      "description": {
+        "1": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czucia ciała, pewności siebie i ruchu.",
+        "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
+      },
+      "accessNote": "Dostęp do materiałów przez 1,5 miesiąca przez prywatny czat Telegram.",
+      "offers": {
+        "standard": "Dostęp standardowy"
+      }
+    },
+    "choreoStillAlive": {
+      "title": "Analiza choreografii \"Still Alive\"",
+      "description": {
+        "1": "Analiza online choreografii Still Alive dla osób, które chcą głębi, struktury i wyrazistego tańca.",
+        "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
+        "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
+      },
+      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny czat Telegram.",
+      "offers": {
+        "withoutMentor": "Bez mentora",
+        "withMentor": "Z mentorem"
+      }
+    },
+    "choreoHerLies": {
+      "title": "Analiza choreografii \"Her Lies\"",
+      "description": {
+        "1": "Analiza online choreografii Her Lies dla osób, które chcą głębi, struktury i wyrazistego tańca.",
+        "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
+        "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
+      },
+      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny czat Telegram.",
+      "offers": {
+        "withoutMentor": "Bez mentora",
+        "withMentor": "Z mentorem"
+      }
+    }
+  },
   "PrivacyPolicyPage": {
     "title": "Polityka prywatności (RODO)",
     "description": "Administratorem Twoich danych osobowych jest Hanna Karzhova.\nul. Jana Kazimierza 64A/660, 01-248 Warszawa\nNIP: 5273113119\nE-mail: kroxxxxx92@gmail.com",

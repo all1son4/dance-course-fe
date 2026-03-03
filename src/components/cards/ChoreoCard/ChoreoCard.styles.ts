@@ -41,7 +41,7 @@ export const CardTitle = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 30px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 0 0 40px 0;
   color: rgba(0, 0, 0, 1);

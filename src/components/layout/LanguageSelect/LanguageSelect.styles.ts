@@ -68,7 +68,7 @@ export const TriggerLabel = styled.span`
   font-size: 15px;
   position: relative;
 
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
 
   @media (max-width: 767px) {
@@ -121,7 +121,7 @@ export const Item = styled.button<{ selected?: boolean }>`
     font-size: 17px;
   }
 
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   color: #000000;
   transition: opacity 0.2s ease;
