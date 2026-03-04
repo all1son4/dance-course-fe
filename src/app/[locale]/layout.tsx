@@ -58,7 +58,7 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
   return (
     <NextIntlClientProvider messages={messages}>
       <Header />
-      <main>
+      <main lang={locale}>
         <PageContainer>{children}</PageContainer>
       </main>
       <Footer />

@@ -61,17 +61,7 @@ const variantStyles = {
   `,
 };
 
-export const ButtonLinkWrapper = styled(Link)<{ $width: string }>`
-  display: flex;
-  text-decoration: none !important;
-  background: transparent;
-  border: none;
-  padding: 0;
-  width: 100%;
-  max-width: ${({ $width }) => $width};
-`;
-
-export const StyledButton = styled.button<StyledProps>`
+const controlStyles = css<StyledProps>`
   appearance: none;
   border: none;
   padding: 14px 40px;
@@ -80,8 +70,10 @@ export const StyledButton = styled.button<StyledProps>`
   align-items: center;
   justify-content: center;
 
+  cursor: pointer;
   user-select: none;
   white-space: nowrap;
+  text-decoration: none !important;
 
   transition:
     transform 0.15s ease,
@@ -106,4 +98,12 @@ export const StyledButton = styled.button<StyledProps>`
     cursor: not-allowed;
     transform: none;
   }
+`;
+
+export const ButtonLinkWrapper = styled(Link)<StyledProps>`
+  ${controlStyles}
+`;
+
+export const StyledButton = styled.button<StyledProps>`
+  ${controlStyles}
 `;

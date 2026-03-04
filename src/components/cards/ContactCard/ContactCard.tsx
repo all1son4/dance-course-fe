@@ -19,7 +19,7 @@ export default function ContactCard(contact: TContactCard) {
     </>
   );
   return contact.link ? (
-    <CardLinkContainer target="_blank" href={contact.link}>
+    <CardLinkContainer target="_blank" rel="noopener noreferrer" href={contact.link}>
       {fullContent}
     </CardLinkContainer>
   ) : (

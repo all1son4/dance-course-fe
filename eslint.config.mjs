@@ -1,3 +1,17 @@
+if (typeof globalThis.structuredClone !== "function") {
+  globalThis.structuredClone = (value) => JSON.parse(JSON.stringify(value));
+}
+
+if (typeof AbortSignal !== "undefined" && !AbortSignal.prototype.throwIfAborted) {
+  AbortSignal.prototype.throwIfAborted = function throwIfAborted() {
+    if (!this.aborted) {
+      return;
+    }
+
+    throw this.reason ?? new Error("Operation aborted");
+  };
+}
+
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";

@@ -20,6 +20,35 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Stripe Payments
+
+The checkout uses Stripe `PaymentIntent`s and expects these environment variables:
+
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `GOOGLE_SERVICE_ACCOUNT_EMAIL`
+- `GOOGLE_PRIVATE_KEY`
+- `GOOGLE_SHEETS_SPREADSHEET_ID`
+
+Optional Google Sheets env variables:
+
+- `GOOGLE_SHEETS_PAYMENTS_SHEET_NAME` (defaults to `Payments`)
+- `GOOGLE_SHEETS_EVENTS_SHEET_NAME` (defaults to `StripeEvents`)
+
+The server exposes:
+
+- `POST /api/stripe/payment-intent`
+- `POST /api/stripe/payment-intent/status`
+- `POST /api/stripe/payment-intent/cancel`
+- `POST /api/stripe/webhook`
+
+For local webhook testing with the Stripe CLI:
+
+```bash
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

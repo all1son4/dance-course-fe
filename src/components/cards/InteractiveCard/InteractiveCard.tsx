@@ -14,6 +14,9 @@ import {
 import { TInteractiveCard } from "./InteractiveCard.types";
 
 export default function InteractiveCard(card: TInteractiveCard) {
+  const hasTopRow = Boolean(card.topRowContent);
+  const isTopRowCollapsed = Boolean(card.collapseTopRow);
+
   return (
     <CardContainer>
       <TitleBlock>
@@ -21,10 +24,12 @@ export default function InteractiveCard(card: TInteractiveCard) {
       </TitleBlock>
 
       <ContentWrapper>
-        {card?.topRowContent && <TopInfoRow>{card.topRowContent}</TopInfoRow>}
+        {hasTopRow ? (
+          <TopInfoRow $isCollapsed={isTopRowCollapsed}>{card.topRowContent}</TopInfoRow>
+        ) : null}
 
         <BottomBlock>
-          <Divider />
+          {hasTopRow ? <Divider $isCollapsed={isTopRowCollapsed} /> : null}
           {card?.bottomRowContent && (
             <BottomInfoRow>{card.bottomRowContent}</BottomInfoRow>
           )}

@@ -26,6 +26,11 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
 
   color: ${(props) => (props.$isOpen ? "rgba(124, 0, 2, 1)" : "#000000")};
 
+  &:disabled {
+    cursor: wait;
+    opacity: 0.8;
+  }
+
   & span {
     transition: color 0.2s ease;
   }
@@ -101,7 +106,7 @@ export const Menu = styled.div`
   }
 `;
 
-export const Item = styled.button<{ selected?: boolean }>`
+export const Item = styled.button<{ $selected?: boolean }>`
   appearance: none;
   border: 0;
   background: transparent;
@@ -126,7 +131,11 @@ export const Item = styled.button<{ selected?: boolean }>`
   color: #000000;
   transition: opacity 0.2s ease;
 
-  opacity: ${(props) => (props.selected ? 0.4 : 1)};
+  opacity: ${(props) => (props.$selected ? 0.4 : 1)};
+
+  &:disabled {
+    cursor: wait;
+  }
 
   & span {
     transition: color 0.2s ease;
@@ -139,7 +148,7 @@ export const Item = styled.button<{ selected?: boolean }>`
   }
 
   ${(props) =>
-    !props.selected &&
+    !props.$selected &&
     `
     @media (hover: hover) and (pointer: fine) {
       &:hover {

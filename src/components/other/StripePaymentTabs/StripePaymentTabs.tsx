@@ -51,9 +51,11 @@ const getStripePromise = (publishableKey: string) => {
 };
 
 const createPaymentElementOptions = (
+  billingCountry?: string | null,
   billingEmail?: string | null,
   billingName?: string | null,
 ): StripePaymentElementOptions => {
+  const trimmedCountry = billingCountry?.trim().toUpperCase();
   const trimmedEmail = billingEmail?.trim();
   const trimmedName = billingName?.trim();
 
@@ -64,6 +66,9 @@ const createPaymentElementOptions = (
     },
     defaultValues: {
       billingDetails: {
+        address: {
+          country: trimmedCountry || undefined,
+        },
         email: trimmedEmail || undefined,
         name: trimmedName || undefined,
       },
@@ -119,7 +124,7 @@ const createElementsOptions = (
         boxShadow: "none",
         outline: "none",
       },
-      ".Tab:focusVisible": {
+      ".Tab:focus-visible": {
         borderColor: "rgba(0, 0, 0, 1)",
         boxShadow: "none",
         outline: "none",
@@ -139,7 +144,7 @@ const createElementsOptions = (
         boxShadow: "none",
         outline: "none",
       },
-      ".Tab--selected:focusVisible": {
+      ".Tab--selected:focus-visible": {
         borderColor: "rgba(0, 0, 0, 1)",
         boxShadow: "none",
         outline: "none",
@@ -215,20 +220,46 @@ const getStripeLocale = (locale: string): StripeElementsOptions["locale"] => {
 };
 
 type StripePaymentFormProps = {
+  billingCountry?: string | null;
   billingEmail?: string | null;
   billingName?: string | null;
   confirmFailedText: string;
   confirmedText: string;
+  paymentIntentId?: string | null;
   payButtonText: string;
   processingText: string;
   successText: string;
 };
 
+const getConfirmedStatus = async (paymentIntentId: string) => {
+  const response = await fetch("/api/stripe/payment-intent/status", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      paymentIntentId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error("payment_intent_status_failed");
+  }
+
+  return (await response.json()) as {
+    outcome: "canceled" | "failed" | "processing" | "requires_action" | "succeeded";
+    paymentIntentId: string;
+    status: string;
+  };
+};
+
 const StripePaymentForm = ({
+  billingCountry,
   billingEmail,
   billingName,
   confirmFailedText,
   confirmedText,
+  paymentIntentId,
   payButtonText,
   processingText,
   successText,
@@ -237,7 +268,7 @@ const StripePaymentForm = ({
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentElementOptions] = useState(() =>
-    createPaymentElementOptions(billingEmail, billingName),
+    createPaymentElementOptions(billingCountry, billingEmail, billingName),
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
@@ -265,6 +296,25 @@ const StripePaymentForm = ({
         return;
       }
 
+      const resolvedPaymentIntentId = paymentIntent?.id ?? paymentIntentId ?? "";
+
+      if (resolvedPaymentIntentId) {
+        const { outcome } = await getConfirmedStatus(resolvedPaymentIntentId);
+
+        if (outcome === "succeeded") {
+          setSubmitSuccess(successText);
+          return;
+        }
+
+        if (outcome === "failed" || outcome === "canceled") {
+          setSubmitError(confirmFailedText);
+          return;
+        }
+
+        setSubmitSuccess(confirmedText);
+        return;
+      }
+
       if (paymentIntent?.status === "succeeded") {
         setSubmitSuccess(successText);
         return;
@@ -284,8 +334,16 @@ const StripePaymentForm = ({
         <PaymentElement options={paymentElementOptions} />
       </PaymentElementShell>
       <Actions>
-        {submitError ? <ErrorText>{submitError}</ErrorText> : null}
-        {submitSuccess ? <StatusText>{submitSuccess}</StatusText> : null}
+        {submitError ? (
+          <ErrorText role="alert" aria-live="assertive">
+            {submitError}
+          </ErrorText>
+        ) : null}
+        {submitSuccess ? (
+          <StatusText role="status" aria-live="polite" aria-atomic="true">
+            {submitSuccess}
+          </StatusText>
+        ) : null}
         <Button
           buttonText={isSubmitting ? processingText : payButtonText}
           disabled={!stripe || !elements || isSubmitting}
@@ -299,10 +357,12 @@ const StripePaymentForm = ({
 };
 
 export const StripePaymentTabs = ({
+  billingCountry,
   billingEmail,
   billingName,
   clientSecret,
   errorMessage,
+  paymentIntentId,
   publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
 }: StripePaymentTabsProps) => {
   const locale = useLocale();
@@ -326,7 +386,7 @@ export const StripePaymentTabs = ({
   })();
 
   return (
-    <Card>
+    <Card aria-busy={!isReady}>
       <Header>
         <Title>{t("title")}</Title>
         <Description>{t("description")}</Description>
@@ -338,17 +398,19 @@ export const StripePaymentTabs = ({
           stripe={getStripePromise(publishableKey)}
         >
           <StripePaymentForm
+            billingCountry={billingCountry}
             billingEmail={billingEmail}
             billingName={billingName}
             confirmFailedText={t("errors.confirmPaymentFailed")}
             confirmedText={t("status.confirmed")}
+            paymentIntentId={paymentIntentId}
             payButtonText={t("button.pay")}
             processingText={t("button.processing")}
             successText={t("status.succeeded")}
           />
         </Elements>
       ) : (
-        <LoadingState>
+        <LoadingState role="status" aria-live="polite" aria-atomic="true">
           <LoadingTabs>
             <LoadingTab />
             <LoadingTab />
@@ -366,7 +428,11 @@ export const StripePaymentTabs = ({
         </LoadingState>
       )}
 
-      {!isReady && errorText ? <ErrorText>{errorText}</ErrorText> : null}
+      {!isReady && errorText ? (
+        <ErrorText role="alert" aria-live="assertive">
+          {errorText}
+        </ErrorText>
+      ) : null}
     </Card>
   );
 };

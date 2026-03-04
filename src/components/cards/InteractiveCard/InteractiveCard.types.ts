@@ -6,4 +6,5 @@ export type TInteractiveCard = {
   bottomRowContent?: ReactNode;
   buttonText?: string;
   buttonHref?: string;
+  collapseTopRow?: boolean;
 };

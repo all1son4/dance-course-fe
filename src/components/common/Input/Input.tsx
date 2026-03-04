@@ -11,6 +11,7 @@ import {
   InputWrapper,
   Label,
   MaskedInputField,
+  SelectField,
   TextInputField,
 } from "./Input.styles";
 import { TInput } from "./Input.types";
@@ -29,11 +30,13 @@ export const Input: FC<TInput> = ({
   errorMessage = "",
   inputMask = null,
   id,
+  selectOptions,
 }) => {
   const hasError = Boolean(errorMessage);
   const hasValue = String(value).length > 0;
   const inputId = id ?? name;
   const errorMessageId = hasError ? `${inputId}-error` : undefined;
+  const isSelect = Boolean(selectOptions?.length);
 
   const commonFieldProps = {
     "aria-describedby": errorMessageId,
@@ -43,21 +46,36 @@ export const Input: FC<TInput> = ({
     name,
     onBlur,
     onChange,
-    placeholder: label ? placeholder : undefined,
-    type,
     value,
     $hasError: hasError,
     $variant: variant,
+  };
+
+  const inputFieldProps = {
+    ...commonFieldProps,
+    placeholder: label ? placeholder : undefined,
+    type,
   };
 
   return (
     <InputBox>
       <InputWrapper $width={width}>
         {label && <Label htmlFor={inputId}>{label}</Label>}
-        {inputMask ? (
-          <MaskedInputField {...resolveMaskOptions(inputMask)} {...commonFieldProps} />
+        {isSelect ? (
+          <SelectField {...commonFieldProps} $hasValue={hasValue}>
+            <option value="" disabled hidden>
+              {placeholder || label}
+            </option>
+            {selectOptions?.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </SelectField>
+        ) : inputMask ? (
+          <MaskedInputField {...resolveMaskOptions(inputMask)} {...inputFieldProps} />
         ) : (
-          <TextInputField {...commonFieldProps} />
+          <TextInputField {...inputFieldProps} />
         )}
         {!label && !hasValue && placeholder && <Placeholder text={placeholder} />}
       </InputWrapper>

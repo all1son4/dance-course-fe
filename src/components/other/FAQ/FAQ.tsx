@@ -34,15 +34,29 @@ export default function FAQ() {
       <QuestionsList>
         {questionsArray.map((q, index) => {
           const isOpened = q.id === selectedId;
+          const answerId = `faq-answer-${q.id}`;
+          const questionId = `faq-question-${q.id}`;
 
           return (
             <QuestionItem key={`${index}-${q.id}`}>
-              <QuestionBox onClick={() => onItemClickHandler(q.id)} $isOpened={isOpened}>
+              <QuestionBox
+                id={questionId}
+                type="button"
+                aria-controls={answerId}
+                aria-expanded={isOpened}
+                onClick={() => onItemClickHandler(q.id)}
+                $isOpened={isOpened}
+              >
                 <Question>{q.question}</Question>
                 <Chevron width={20} height={10} />
               </QuestionBox>
 
-              <AnswerWrap $isOpened={isOpened}>
+              <AnswerWrap
+                id={answerId}
+                role="region"
+                aria-labelledby={questionId}
+                $isOpened={isOpened}
+              >
                 <Answer>
                   {q.answer}
                   {q.link && (

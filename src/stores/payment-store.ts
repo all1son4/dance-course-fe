@@ -4,14 +4,18 @@ import { ValidationError } from "yup";
 import {
   INITIAL_AGREEMENTS,
   INITIAL_CUSTOMER_DATA,
-  normalizeTelegramNickname,
+  normalizePaymentCustomerFieldValue,
   PAYMENT_INPUTS,
   type PaymentAgreementFieldName,
   type PaymentAgreementState,
   type PaymentCustomerData,
   type PaymentCustomerFieldName,
 } from "@/app/[locale]/payment/payment.constants";
-import { paymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
+import {
+  getPaymentCustomerSchema,
+  type PaymentValidationLocale,
+  resolvePaymentValidationLocale,
+} from "@/app/[locale]/payment/payment.validation";
 import {
   DEFAULT_CHECKOUT_CURRENCY,
   DEFAULT_CHECKOUT_PRODUCT,
@@ -26,6 +30,7 @@ import {
 type PaymentCustomerErrors = Partial<Record<PaymentCustomerFieldName, string>>;
 type PaymentCustomerTouched = Partial<Record<PaymentCustomerFieldName, boolean>>;
 type StripeClientSecrets = Partial<Record<SupportedCheckoutCurrency, string>>;
+type StripePaymentIntentIds = Partial<Record<SupportedCheckoutCurrency, string>>;
 type StripeIntentErrors = Partial<
   Record<SupportedCheckoutCurrency, StripeIntentErrorCode | null>
 >;
@@ -35,16 +40,27 @@ type StripeIntentErrorCode =
   | "payment_intent_failed"
   | "payment_intent_request_failed";
 
+const createCheckoutSessionId = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `checkout_${Date.now()}_${Math.random().toString(36).slice(2, 12)}`;
+};
+
 export class PaymentStore {
+  checkoutSessionId = createCheckoutSessionId();
   customerData: PaymentCustomerData = { ...INITIAL_CUSTOMER_DATA };
   customerErrors: PaymentCustomerErrors = {};
   touchedFields: PaymentCustomerTouched = {};
   agreements: PaymentAgreementState = { ...INITIAL_AGREEMENTS };
+  validationLocale: PaymentValidationLocale = "ru";
   selectedCurrency: SupportedCheckoutCurrency = DEFAULT_CHECKOUT_CURRENCY;
   selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
   selectedProductId = DEFAULT_CHECKOUT_PRODUCT.id;
   checkoutCurrencyInitialized = false;
   stripeClientSecrets: StripeClientSecrets = {};
+  stripePaymentIntentIds: StripePaymentIntentIds = {};
   stripeIntentErrors: StripeIntentErrors = {};
   pendingStripeCurrencies = new Set<SupportedCheckoutCurrency>();
 
@@ -63,7 +79,7 @@ export class PaymentStore {
   }
 
   get isCustomerDataValid() {
-    return paymentCustomerSchema.isValidSync(this.customerData);
+    return this.customerSchema.isValidSync(this.customerData);
   }
 
   get canShowStripe() {
@@ -97,6 +113,10 @@ export class PaymentStore {
     return this.getStripeIntentError(this.selectedCurrency);
   }
 
+  get stripePaymentIntentId() {
+    return this.getStripePaymentIntentId(this.selectedCurrency);
+  }
+
   configureCheckoutSelection({
     offerId,
     productId,
@@ -117,7 +137,7 @@ export class PaymentStore {
 
     this.selectedProductId = nextProduct.id;
     this.selectedOfferId = nextOffer.id;
-    this.clearStripeIntentState();
+    this.clearStripeIntentState(true);
   }
 
   initializeCheckoutCurrency(currency: SupportedCheckoutCurrency) {
@@ -142,12 +162,31 @@ export class PaymentStore {
   }
 
   setCustomerField(fieldName: PaymentCustomerFieldName, value: string) {
-    this.customerData[fieldName] =
-      fieldName === "nickname" ? normalizeTelegramNickname(value) : value;
+    const nextValue = normalizePaymentCustomerFieldValue(fieldName, value);
+    const hasValueChanged = this.customerData[fieldName] !== nextValue;
+
+    if (hasValueChanged) {
+      this.customerData[fieldName] = nextValue;
+
+      if (this.hasStripeIntentState) {
+        this.clearStripeIntentState(true);
+      }
+    }
 
     if (this.touchedFields[fieldName]) {
       this.validateCustomerField(fieldName);
     }
+  }
+
+  setValidationLocale(locale: string | null | undefined) {
+    const nextLocale = resolvePaymentValidationLocale(locale);
+
+    if (nextLocale === this.validationLocale) {
+      return;
+    }
+
+    this.validationLocale = nextLocale;
+    this.revalidateTouchedFields();
   }
 
   touchCustomerField(fieldName: PaymentCustomerFieldName) {
@@ -169,6 +208,12 @@ export class PaymentStore {
     const resolvedCurrency = getResolvedCheckoutCurrency(currency);
 
     return this.stripeIntentErrors[resolvedCurrency] ?? null;
+  }
+
+  getStripePaymentIntentId(currency: SupportedCheckoutCurrency) {
+    const resolvedCurrency = getResolvedCheckoutCurrency(currency);
+
+    return this.stripePaymentIntentIds[resolvedCurrency] ?? "";
   }
 
   async ensureStripePaymentIntent(
@@ -194,6 +239,7 @@ export class PaymentStore {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          checkoutSessionId: this.checkoutSessionId,
           customerData: this.customerData,
           currency: resolvedCurrency,
           offerId: this.selectedOffer.id,
@@ -204,6 +250,7 @@ export class PaymentStore {
       const data = (await response.json()) as {
         clientSecret?: string;
         errorCode?: StripeIntentErrorCode;
+        paymentIntentId?: string;
       };
 
       if (!response.ok) {
@@ -219,6 +266,10 @@ export class PaymentStore {
           ...this.stripeClientSecrets,
           [resolvedCurrency]: data.clientSecret ?? "",
         };
+        this.stripePaymentIntentIds = {
+          ...this.stripePaymentIntentIds,
+          [resolvedCurrency]: data.paymentIntentId ?? "",
+        };
         this.setStripeIntentError(resolvedCurrency, null);
       });
     } catch (error) {
@@ -232,6 +283,10 @@ export class PaymentStore {
           ...this.stripeClientSecrets,
           [resolvedCurrency]: "",
         };
+        this.stripePaymentIntentIds = {
+          ...this.stripePaymentIntentIds,
+          [resolvedCurrency]: "",
+        };
         this.setStripeIntentError(resolvedCurrency, errorCode);
       });
     } finally {
@@ -241,7 +296,7 @@ export class PaymentStore {
 
   validateCustomerField(fieldName: PaymentCustomerFieldName) {
     try {
-      paymentCustomerSchema.validateSyncAt(fieldName, this.customerData);
+      this.customerSchema.validateSyncAt(fieldName, this.customerData);
       this.clearFieldError(fieldName);
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -257,7 +312,7 @@ export class PaymentStore {
     this.markAllFieldsTouched();
 
     try {
-      paymentCustomerSchema.validateSync(this.customerData, {
+      this.customerSchema.validateSync(this.customerData, {
         abortEarly: false,
       });
       this.customerErrors = {};
@@ -283,17 +338,32 @@ export class PaymentStore {
   }
 
   resetCheckoutForm() {
+    this.checkoutSessionId = createCheckoutSessionId();
     this.customerData = { ...INITIAL_CUSTOMER_DATA };
     this.customerErrors = {};
     this.touchedFields = {};
     this.agreements = { ...INITIAL_AGREEMENTS };
-    this.clearStripeIntentState();
+    this.validationLocale = "ru";
+    this.selectedCurrency = DEFAULT_CHECKOUT_CURRENCY;
+    this.selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
+    this.selectedProductId = DEFAULT_CHECKOUT_PRODUCT.id;
+    this.checkoutCurrencyInitialized = false;
+    this.clearStripeIntentState(true);
   }
 
-  clearStripeIntentState() {
+  clearStripeIntentState(cancelActiveIntents = false) {
+    const activePaymentIntentIds = cancelActiveIntents
+      ? Object.values(this.stripePaymentIntentIds).filter(Boolean)
+      : [];
+
     this.stripeClientSecrets = {};
+    this.stripePaymentIntentIds = {};
     this.stripeIntentErrors = {};
     this.pendingStripeCurrencies.clear();
+
+    if (activePaymentIntentIds.length > 0) {
+      this.cancelStripePaymentIntents(activePaymentIntentIds);
+    }
   }
 
   private clearFieldError(fieldName: PaymentCustomerFieldName) {
@@ -324,5 +394,48 @@ export class PaymentStore {
       ...this.stripeIntentErrors,
       [currency]: errorCode,
     };
+  }
+
+  private get customerSchema() {
+    return getPaymentCustomerSchema(this.validationLocale);
+  }
+
+  private get hasStripeIntentState() {
+    return (
+      Object.keys(this.stripeClientSecrets).length > 0 ||
+      Object.keys(this.stripePaymentIntentIds).length > 0 ||
+      Object.keys(this.stripeIntentErrors).length > 0
+    );
+  }
+
+  private revalidateTouchedFields() {
+    PAYMENT_INPUTS.forEach((field) => {
+      if (!this.touchedFields[field.name]) {
+        return;
+      }
+
+      this.validateCustomerField(field.name);
+    });
+  }
+
+  private cancelStripePaymentIntents(paymentIntentIds: string[]) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const uniquePaymentIntentIds = [...new Set(paymentIntentIds)];
+
+    uniquePaymentIntentIds.forEach((paymentIntentId) => {
+      void fetch("/api/stripe/payment-intent/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentIntentId,
+        }),
+        keepalive: true,
+      }).catch(() => undefined);
+    });
   }
 }

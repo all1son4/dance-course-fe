@@ -7,6 +7,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { TopMenu } from "@/components";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { usePaymentStore } from "@/stores";
 import { EnglishFlag, Logo, MenuButton, PolishFlag, RussianFlag } from "@/svg";
 
 import LanguageSelect from "../LanguageSelect";
@@ -28,7 +29,13 @@ export default function Header() {
   const searchParams = useSearchParams();
   const search = searchParams.toString();
   const router = useRouter();
+  const paymentStore = usePaymentStore();
   const previousRouteRef = useRef({ pathname, search });
+  const mobileMenuId = "header-mobile-menu";
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
@@ -48,11 +55,15 @@ export default function Header() {
       previousRouteRef.current.search !== search;
 
     if (routeChanged) {
+      if (previousRouteRef.current.pathname === "/payment" && pathname !== "/payment") {
+        paymentStore.resetCheckoutForm();
+      }
+
       window.scrollTo({ top: 0, left: 0, behavior: "auto" });
     }
 
     previousRouteRef.current = { pathname, search };
-  }, [pathname, search]);
+  }, [pathname, paymentStore, search]);
 
   useEffect(() => {
     const onAnchorClick = (event: MouseEvent) => {
@@ -120,14 +131,16 @@ export default function Header() {
     if (!routing.locales.includes(code as (typeof routing.locales)[number])) return;
     if (code === locale) return;
 
+    const nextHref = `${pathname}${search ? `?${search}` : ""}${window.location.hash}`;
+
     // Persist locale for localePrefix='never' so next navigations don't fall back.
     document.cookie = `NEXT_LOCALE=${code}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    setMenuIsOpen(false);
 
-    router.replace(pathname, {
+    router.replace(nextHref, {
       locale: code as (typeof routing.locales)[number],
       scroll: false,
     });
-    router.refresh();
   };
 
   const headerInteractiveContent = [
@@ -139,7 +152,7 @@ export default function Header() {
           items={[
             { label: t("menu.offline"), href: "/offline" },
             { label: t("menu.online"), href: "/online" },
-            { label: t("menu.contacts"), href: "#contacts" },
+            { label: t("menu.contacts"), href: "/#contacts" },
           ]}
         />
       ),
@@ -163,7 +176,14 @@ export default function Header() {
           <Logo />
         </Brand>
 
-        <IconBox onClick={() => setMenuIsOpen(!menuIsOpen)} $isOpen={menuIsOpen}>
+        <IconBox
+          type="button"
+          aria-controls={mobileMenuId}
+          aria-expanded={menuIsOpen}
+          aria-label={t("menu.ariaLabel")}
+          onClick={() => setMenuIsOpen(!menuIsOpen)}
+          $isOpen={menuIsOpen}
+        >
           <MenuButton />
         </IconBox>
 
@@ -172,7 +192,7 @@ export default function Header() {
             <Fragment key={item.key}>{item.node}</Fragment>
           ))}
         </Right>
-        <Bottom $isOpen={menuIsOpen}>
+        <Bottom id={mobileMenuId} $isOpen={menuIsOpen}>
           {headerInteractiveContent.map((item) => (
             <Fragment key={item.key}>{item.node}</Fragment>
           ))}

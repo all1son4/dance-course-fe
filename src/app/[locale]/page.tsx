@@ -618,6 +618,7 @@ export default function Home() {
               <a
                 href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 @stage_18
               </a>{" "}
@@ -628,6 +629,7 @@ export default function Home() {
               <a
                 href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 @stage_18
               </a>{" "}
@@ -638,6 +640,7 @@ export default function Home() {
               <a
                 href="https://www.instagram.com/worldofdancepoland?igsh=MWtsMWo5cmxyYWd3dQ=="
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 @worldofdancepoland
               </a>{" "}
@@ -648,6 +651,7 @@ export default function Home() {
               <a
                 href="https://www.instagram.com/dib.gala?igsh=MWZ3eXgwYnFrMWU2dA=="
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 @dib.gala
               </a>

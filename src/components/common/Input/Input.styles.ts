@@ -8,6 +8,10 @@ type InputFieldStyleProps = {
   $hasError: boolean;
 };
 
+type SelectFieldStyleProps = InputFieldStyleProps & {
+  $hasValue: boolean;
+};
+
 type InputWrapperStyleProps = {
   $width: string;
 };
@@ -105,10 +109,25 @@ export const MaskedInputField = styled(InputMask)<InputFieldStyleProps>`
   ${inputFieldStyles}
 `;
 
+export const SelectField = styled.select<SelectFieldStyleProps>`
+  ${inputFieldStyles}
+  appearance: none;
+  padding-right: 52px;
+  color: ${({ $hasValue }) => ($hasValue ? "rgba(0, 0, 0, 1)" : "rgba(72, 72, 72, 0.8)")};
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23000000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-position: right 20px center;
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
+
+  & option {
+    color: rgba(0, 0, 0, 1);
+  }
+`;
+
 export const ErrorMessage = styled.p`
-  margin: 5px 0 0 2px;
+  margin: 6px 0 0 2px;
   color: rgba(213, 0, 4, 1);
   font-weight: 500;
-  font-size: 11px;
-  line-height: 11px;
+  font-size: 12px;
+  line-height: 1.35;
 `;

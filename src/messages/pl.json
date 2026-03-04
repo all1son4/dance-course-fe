@@ -422,6 +422,10 @@
       "nickname": {
         "label": "Nick w Telegramie",
         "placeholder": "@yournickname"
+      },
+      "country": {
+        "label": "Kraj",
+        "placeholder": "Wybierz kraj"
       }
     },
     "agreements": {

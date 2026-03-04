@@ -10,7 +10,7 @@ export const Root = styled.div<{ $value: CurrencySwitchValue; $width: string }>`
   max-width: ${({ $width }) => $width};
   min-height: 42px;
   padding: 0;
-  border: 1px solid rgba(201, 201, 201, 1);
+  border: 1px solid rgba(180, 180, 180, 1);
   border-radius: 20px;
   overflow: hidden;
   background: transparent;

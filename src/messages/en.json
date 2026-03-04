@@ -422,6 +422,10 @@
       "nickname": {
         "label": "Telegram username",
         "placeholder": "@yournickname"
+      },
+      "country": {
+        "label": "Country",
+        "placeholder": "Select a country"
       }
     },
     "agreements": {

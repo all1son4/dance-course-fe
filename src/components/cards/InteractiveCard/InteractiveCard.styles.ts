@@ -66,11 +66,24 @@ export const ContentWrapper = styled.div`
   }
 `;
 
-export const TopInfoRow = styled.div`
+export const TopInfoRow = styled.div<{ $isCollapsed?: boolean }>`
   width: 100%;
   display: flex;
   min-height: 0;
-  flex: 1;
+  overflow: hidden;
+  max-height: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "560px")};
+  opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
+  transform: translateY(${({ $isCollapsed }) => ($isCollapsed ? "-8px" : "0")});
+  transition:
+    max-height 0.32s ease,
+    opacity 0.2s ease,
+    transform 0.32s ease;
+  pointer-events: ${({ $isCollapsed }) => ($isCollapsed ? "none" : "auto")};
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none;
+  }
 `;
 
 export const BottomBlock = styled.div`
@@ -85,14 +98,24 @@ export const BottomInfoRow = styled.div`
   display: flex;
 `;
 
-export const Divider = styled.div`
+export const Divider = styled.div<{ $isCollapsed?: boolean }>`
   width: 100%;
-  height: 1px;
+  height: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "1px")};
   background: rgba(209, 211, 218, 1);
-  margin: 40px 0;
+  margin: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "40px 0")};
+  opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
+  transition:
+    height 0.28s ease,
+    margin 0.28s ease,
+    opacity 0.2s ease;
+  overflow: hidden;
 
   @media (max-width: 880px) {
-    margin: 30px 0;
+    margin: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "30px 0")};
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
 

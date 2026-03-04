@@ -20,10 +20,12 @@ export default function LanguageSelect({
   value,
   options,
   onChange,
+  disabled = false,
 }: {
   value: string;
   options: LanguageOption[];
   onChange: (code: string) => void;
+  disabled?: boolean;
 }) {
   const t = useTranslations("Header");
   const [open, setOpen] = useState(false);
@@ -59,6 +61,8 @@ export default function LanguageSelect({
         aria-label={t("language.ariaLabel")}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-busy={disabled}
+        disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         $isOpen={open}
       >
@@ -74,11 +78,12 @@ export default function LanguageSelect({
               key={opt.code}
               role="menuitem"
               type="button"
+              disabled={disabled}
               onClick={() => {
                 onChange(opt.code);
                 setOpen(false);
               }}
-              selected={selected.code === opt.code}
+              $selected={selected.code === opt.code}
             >
               <Flag aria-hidden>{opt.flag}</Flag>
               <ItemLabel>{opt.label}</ItemLabel>

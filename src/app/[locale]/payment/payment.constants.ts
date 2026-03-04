@@ -1,4 +1,11 @@
-export type PaymentCustomerFieldName = "name" | "lastName" | "email" | "nickname";
+import { normalizeCountryCode } from "@/constants/countries";
+
+export type PaymentCustomerFieldName =
+  | "name"
+  | "lastName"
+  | "email"
+  | "nickname"
+  | "country";
 
 export type PaymentCustomerData = Record<PaymentCustomerFieldName, string>;
 
@@ -29,6 +36,7 @@ export const INITIAL_CUSTOMER_DATA: PaymentCustomerData = {
   lastName: "",
   email: "",
   nickname: "",
+  country: "",
 };
 
 export const INITIAL_AGREEMENTS: PaymentAgreementState = {
@@ -63,6 +71,12 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     labelKey: "inputs.nickname.label",
     name: "nickname",
     placeholderKey: "inputs.nickname.placeholder",
+  },
+  {
+    id: "country",
+    labelKey: "inputs.country.label",
+    name: "country",
+    placeholderKey: "inputs.country.placeholder",
   },
 ];
 
@@ -102,4 +116,19 @@ export const normalizeTelegramNickname = (value: string) => {
   }
 
   return `@${nicknameBody}`;
+};
+
+export const normalizePaymentCustomerFieldValue = (
+  fieldName: PaymentCustomerFieldName,
+  value: string,
+) => {
+  if (fieldName === "nickname") {
+    return normalizeTelegramNickname(value);
+  }
+
+  if (fieldName === "country") {
+    return normalizeCountryCode(value);
+  }
+
+  return value;
 };

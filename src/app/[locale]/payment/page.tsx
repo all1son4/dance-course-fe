@@ -4,7 +4,7 @@ import { observer } from "mobx-react-lite";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 
 import {
@@ -14,6 +14,11 @@ import {
   InteractiveCard,
   StripePaymentTabs,
 } from "@/components";
+import {
+  type CountryOption,
+  getFallbackCountryOptions,
+  getLocalizedCountryOptions,
+} from "@/constants/countries";
 import {
   formatCheckoutPrice,
   getDefaultCheckoutCurrencyByLocale,
@@ -30,9 +35,12 @@ import {
 } from "./payment.constants";
 
 const SUPPORTED_CURRENCIES: SupportedCheckoutCurrency[] = ["pln", "eur"];
+const MOBILE_SUMMARY_BREAKPOINT = 767;
+const MOBILE_SUMMARY_COMPACT_SCROLL_Y = 160;
 
 const PaymentSection = styled.section`
   display: flex;
+  align-items: flex-start;
   gap: 20px;
   padding: 0;
   box-sizing: border-box;
@@ -41,6 +49,19 @@ const PaymentSection = styled.section`
   justify-content: space-between;
   margin: 200px auto 100px;
   position: relative;
+
+  @media (max-width: 1024px) {
+    padding: 0 20px;
+  }
+
+  @media (max-width: 920px) {
+    flex-direction: column;
+    margin: 130px auto 80px;
+  }
+
+  @media (max-width: 767px) {
+    margin: 100px auto 60px;
+  }
 `;
 
 const InteractiveBox = styled.div`
@@ -50,6 +71,12 @@ const InteractiveBox = styled.div`
   width: 100%;
   max-width: 660px;
   min-width: 0;
+  position: relative;
+
+  @media (max-width: 920px) {
+    max-width: 100%;
+    gap: 30px;
+  }
 `;
 
 const TextBox = styled.div`
@@ -57,6 +84,10 @@ const TextBox = styled.div`
   display: flex;
   flex-direction: column;
   gap: 40px;
+
+  @media (max-width: 920px) {
+    gap: 20px;
+  }
 `;
 
 const PaymentTitle = styled.h1`
@@ -67,6 +98,10 @@ const PaymentTitle = styled.h1`
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 767px) {
+    font-size: 50px;
+  }
 `;
 
 const PaymentDescription = styled.p`
@@ -77,6 +112,10 @@ const PaymentDescription = styled.p`
   letter-spacing: 0;
   color: rgba(72, 72, 72, 1);
   margin: 0;
+
+  @media (max-width: 767px) {
+    font-size: 15px;
+  }
 `;
 
 const FormBox = styled.form`
@@ -100,6 +139,12 @@ const PersonalData = styled.div`
   ${glass({
     radius: "60px",
   })}
+
+  @media (max-width: 767px) {
+    gap: 30px;
+    padding: 30px 20px;
+    border-radius: 40px !important;
+  }
 `;
 
 const StripeReveal = styled.div<{ $isVisible: boolean }>`
@@ -120,6 +165,11 @@ const StripeReveal = styled.div<{ $isVisible: boolean }>`
   @media (max-width: 767px) {
     max-height: ${({ $isVisible }) => ($isVisible ? "1240px" : "0")};
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+    transform: none;
+  }
 `;
 
 const StripePanels = styled.div`
@@ -134,6 +184,10 @@ const StripePanel = styled.div<{ $isActive: boolean }>`
   pointer-events: ${({ $isActive }) => ($isActive ? "auto" : "none")};
   visibility: ${({ $isActive }) => ($isActive ? "visible" : "hidden")};
   transition: opacity 0.18s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 const PersonalDataTitle = styled.h2`
@@ -151,6 +205,10 @@ const Inputs = styled.div`
   flex-direction: column;
   gap: 22px;
   width: 100%;
+
+  @media (max-width: 767px) {
+    gap: 20px;
+  }
 `;
 
 const Checkboxes = styled.div`
@@ -160,7 +218,7 @@ const Checkboxes = styled.div`
   width: 100%;
 `;
 
-const SummaryBox = styled.div`
+const SummaryBoxDesktop = styled.div`
   display: flex;
   width: 100%;
   max-width: 480px;
@@ -168,6 +226,36 @@ const SummaryBox = styled.div`
   position: sticky;
   top: 200px;
   right: 0;
+
+  @media (max-width: 1140px) {
+    max-width: 420px;
+  }
+
+  @media (max-width: 1024px) {
+    max-width: 400px;
+  }
+
+  @media (max-width: 920px) {
+    display: none;
+  }
+`;
+
+const SummaryBoxMobile = styled.div<{ $isCompact: boolean }>`
+  display: none;
+  width: 100%;
+  max-width: 100%;
+
+  @media (max-width: 920px) {
+    display: flex;
+  }
+
+  @media (max-width: 767px) {
+    position: sticky;
+    top: 86px;
+    z-index: 30;
+    transform: translateY(${({ $isCompact }) => ($isCompact ? "-6px" : "0")});
+    transition: transform 0.2s ease;
+  }
 `;
 
 const SummaryTopContent = styled.div`
@@ -181,7 +269,7 @@ const SummaryBoxParahraphs = styled.div`
   flex-direction: column;
   gap: 12px;
   width: 100%;
-  margin: 0 0 40px;
+  margin: 0 0 40px 0;
 
   & p {
     font-weight: 300;
@@ -197,8 +285,13 @@ const SummaryBoxParahraphs = styled.div`
 const SummaryBottomContent = styled.div`
   display: flex;
   justify-content: space-between;
-  gap: 26px;
+  gap: 10px;
   width: 100%;
+
+  @media (max-width: 365px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 `;
 
 const CurrencyBox = styled.div`
@@ -223,6 +316,10 @@ const PriceBox = styled.div`
   flex-direction: column;
   gap: 8px;
   align-items: flex-end;
+
+  @media (max-width: 365px) {
+    align-items: flex-start;
+  }
 `;
 
 const Price = styled.p`
@@ -233,16 +330,24 @@ const Price = styled.p`
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 767px) {
+    font-size: 30px;
+  }
 `;
 
 const AdditionalNotification = styled.div`
   font-weight: 600;
   font-style: normal;
   font-size: 17px;
-  line-height: 110%;
+  line-height: 140%;
   letter-spacing: 0;
   margin: 0;
   color: rgba(72, 72, 72, 1);
+
+  @media (max-width: 767px) {
+    font-size: 15px;
+  }
 `;
 
 const PaymentPage = observer(function PaymentPage() {
@@ -251,10 +356,19 @@ const PaymentPage = observer(function PaymentPage() {
   const searchParams = useSearchParams();
   const t = useTranslations("PaymentPage");
   const productT = useTranslations("SellableProducts");
+  const [countryOptions, setCountryOptions] = useState<CountryOption[]>(
+    getFallbackCountryOptions,
+  );
+  const [isMobileSummaryCompact, setIsMobileSummaryCompact] = useState(false);
 
   useEffect(() => {
+    paymentStore.setValidationLocale(locale);
     paymentStore.initializeCheckoutCurrency(getDefaultCheckoutCurrencyByLocale(locale));
   }, [locale, paymentStore]);
+
+  useEffect(() => {
+    setCountryOptions(getLocalizedCountryOptions(locale));
+  }, [locale]);
 
   useEffect(() => {
     paymentStore.configureCheckoutSelection({
@@ -275,16 +389,45 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.selectedOfferId,
     paymentStore.selectedProductId,
     paymentStore.selectedCurrency,
+    paymentStore.customerData.email,
+    paymentStore.customerData.lastName,
+    paymentStore.customerData.name,
+    paymentStore.customerData.nickname,
+    paymentStore.customerData.country,
   ]);
 
-  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    const updateSummaryMode = () => {
+      const shouldCompact =
+        window.innerWidth <= MOBILE_SUMMARY_BREAKPOINT &&
+        window.scrollY > MOBILE_SUMMARY_COMPACT_SCROLL_Y;
+
+      setIsMobileSummaryCompact((prev) =>
+        prev === shouldCompact ? prev : shouldCompact,
+      );
+    };
+
+    updateSummaryMode();
+
+    window.addEventListener("scroll", updateSummaryMode, { passive: true });
+    window.addEventListener("resize", updateSummaryMode);
+
+    return () => {
+      window.removeEventListener("scroll", updateSummaryMode);
+      window.removeEventListener("resize", updateSummaryMode);
+    };
+  }, []);
+
+  const handleInputChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     paymentStore.setCustomerField(
       event.target.name as PaymentCustomerFieldName,
       event.target.value,
     );
   };
 
-  const handleInputBlur = (event: FocusEvent<HTMLInputElement>) => {
+  const handleInputBlur = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     paymentStore.touchCustomerField(event.target.name as PaymentCustomerFieldName);
   };
 
@@ -302,6 +445,55 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.setSelectedCurrency(value);
   };
 
+  const summaryTopContent = (
+    <SummaryTopContent>
+      <SummaryBoxParahraphs>
+        {paymentStore.selectedProduct.descriptionKeys.map((paragraphKey) => (
+          <p key={paragraphKey}>{productT(paragraphKey)}</p>
+        ))}
+      </SummaryBoxParahraphs>
+      <AdditionalNotification>
+        {productT(paymentStore.selectedProduct.accessNoteKey)}
+      </AdditionalNotification>
+    </SummaryTopContent>
+  );
+
+  const summaryBottomContent = (
+    <SummaryBottomContent>
+      <CurrencyBox>
+        <MoneyTitle>{t("summary.currencyLabel")}</MoneyTitle>
+        <CurrencySwitch
+          onChange={handleCurrencyChange}
+          value={paymentStore.selectedCurrency}
+          width="160px"
+        />
+      </CurrencyBox>
+      <PriceBox>
+        <MoneyTitle>{t("summary.amountLabel")}</MoneyTitle>
+        <Price>
+          {formatCheckoutPrice(paymentStore.selectedPrice, paymentStore.selectedCurrency)}
+        </Price>
+      </PriceBox>
+    </SummaryBottomContent>
+  );
+
+  const interactiveCardDesktopComponent = (
+    <InteractiveCard
+      title={productT(paymentStore.selectedProduct.titleKey)}
+      topRowContent={summaryTopContent}
+      bottomRowContent={summaryBottomContent}
+    />
+  );
+
+  const interactiveCardMobileComponent = (
+    <InteractiveCard
+      title={productT(paymentStore.selectedProduct.titleKey)}
+      topRowContent={summaryTopContent}
+      bottomRowContent={summaryBottomContent}
+      collapseTopRow={isMobileSummaryCompact}
+    />
+  );
+
   return (
     <PaymentSection>
       <InteractiveBox>
@@ -309,6 +501,9 @@ const PaymentPage = observer(function PaymentPage() {
           <PaymentTitle>{t("title")}</PaymentTitle>
           <PaymentDescription>{t("description")}</PaymentDescription>
         </TextBox>
+        <SummaryBoxMobile $isCompact={isMobileSummaryCompact}>
+          {interactiveCardMobileComponent}
+        </SummaryBoxMobile>
         <FormBox onSubmit={handleSubmit}>
           <PersonalData>
             <PersonalDataTitle>{t("personalDataTitle")}</PersonalDataTitle>
@@ -323,6 +518,9 @@ const PaymentPage = observer(function PaymentPage() {
                   onBlur={handleInputBlur}
                   onChange={handleInputChange}
                   placeholder={t(inputConfig.placeholderKey)}
+                  selectOptions={
+                    inputConfig.name === "country" ? countryOptions : undefined
+                  }
                   type={inputConfig.type}
                   value={paymentStore.customerData[inputConfig.name]}
                 />
@@ -348,10 +546,14 @@ const PaymentPage = observer(function PaymentPage() {
                   $isActive={paymentStore.selectedCurrency === currency}
                 >
                   <StripePaymentTabs
+                    billingCountry={paymentStore.customerData.country}
                     billingEmail={paymentStore.customerData.email}
                     billingName={`${paymentStore.customerData.name} ${paymentStore.customerData.lastName}`.trim()}
-                    clientSecret={paymentStore.getStripeClientSecret(currency)}
-                    errorMessage={paymentStore.getStripeIntentError(currency)}
+                    clientSecret={paymentStore.stripeClientSecrets?.[currency] ?? ""}
+                    errorMessage={paymentStore.stripeIntentErrors?.[currency] ?? null}
+                    paymentIntentId={
+                      paymentStore.stripePaymentIntentIds?.[currency] ?? ""
+                    }
                   />
                 </StripePanel>
               ))}
@@ -359,44 +561,7 @@ const PaymentPage = observer(function PaymentPage() {
           </StripeReveal>
         </FormBox>
       </InteractiveBox>
-      <SummaryBox>
-        <InteractiveCard
-          title={productT(paymentStore.selectedProduct.titleKey)}
-          topRowContent={
-            <SummaryTopContent>
-              <SummaryBoxParahraphs>
-                {paymentStore.selectedProduct.descriptionKeys.map((paragraphKey) => (
-                  <p key={paragraphKey}>{productT(paragraphKey)}</p>
-                ))}
-              </SummaryBoxParahraphs>
-              <AdditionalNotification>
-                {productT(paymentStore.selectedProduct.accessNoteKey)}
-              </AdditionalNotification>
-            </SummaryTopContent>
-          }
-          bottomRowContent={
-            <SummaryBottomContent>
-              <CurrencyBox>
-                <MoneyTitle>{t("summary.currencyLabel")}</MoneyTitle>
-                <CurrencySwitch
-                  onChange={handleCurrencyChange}
-                  value={paymentStore.selectedCurrency}
-                  width="160px"
-                />
-              </CurrencyBox>
-              <PriceBox>
-                <MoneyTitle>{t("summary.amountLabel")}</MoneyTitle>
-                <Price>
-                  {formatCheckoutPrice(
-                    paymentStore.selectedPrice,
-                    paymentStore.selectedCurrency,
-                  )}
-                </Price>
-              </PriceBox>
-            </SummaryBottomContent>
-          }
-        />
-      </SummaryBox>
+      <SummaryBoxDesktop>{interactiveCardDesktopComponent}</SummaryBoxDesktop>
     </PaymentSection>
   );
 });

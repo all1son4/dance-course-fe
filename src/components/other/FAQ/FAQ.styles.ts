@@ -74,14 +74,19 @@ export const QuestionItem = styled.li`
   }
 `;
 
-export const QuestionBox = styled.div<{ $isOpened: boolean }>`
+export const QuestionBox = styled.button<{ $isOpened: boolean }>`
+  appearance: none;
+  border: 0;
+  background: transparent;
   display: grid;
   grid-template-columns: 1fr 16.5px;
   width: 100%;
   gap: 16px;
   align-items: center;
   padding: 6px 0;
+  margin: 0;
   cursor: pointer;
+  text-align: left;
 
   & > p {
     transition: color 0.2s ease;

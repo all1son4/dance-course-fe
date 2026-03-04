@@ -78,7 +78,7 @@ export const PlaceholderText = styled.span`
   color: rgba(72, 72, 72, 1);
   font-weight: 400;
   font-style: normal;
-  font-size: 13px;
-  line-height: 110%;
+  font-size: 14px;
+  line-height: 120%;
   letter-spacing: 0;
 `;

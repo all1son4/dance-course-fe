@@ -18,9 +18,10 @@ export const Card = styled.div`
   })}
 
   @media (max-width: 767px) {
-    padding: 28px;
-    gap: 22px;
+    padding: 30px 20px;
+    gap: 20px;
     min-height: 580px;
+    border-radius: 40px !important;
   }
 `;
 
@@ -48,6 +49,10 @@ export const Description = styled.p`
   font-size: 17px;
   line-height: 150%;
   letter-spacing: 0;
+
+  @media (max-width: 767px) {
+    font-size: 15px;
+  }
 `;
 
 export const PaymentElementShell = styled.div`
@@ -128,7 +133,9 @@ export const Actions = styled.div`
   margin-top: 2px;
 
   @media (max-width: 767px) {
-    & button {
+    align-items: stretch;
+
+    & > button {
       max-width: 100%;
     }
   }
@@ -200,6 +207,12 @@ export const LoadingTab = styled.div<{ $isActive?: boolean }>`
     );
     animation: ${shimmer} 1.8s ease-in-out infinite;
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+    }
+  }
 `;
 
 export const LoadingField = styled.div<{ $short?: boolean }>`
@@ -224,6 +237,12 @@ export const LoadingField = styled.div<{ $short?: boolean }>`
     animation: ${shimmer} 1.7s ease-in-out infinite;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+    }
+  }
+
   @media (max-width: 767px) {
     width: 100%;
   }
@@ -244,6 +263,7 @@ export const LoadingFooter = styled.div`
   align-items: center;
   gap: 14px;
   padding-top: 6px;
+  flex-wrap: wrap;
 `;
 
 export const LoadingPulse = styled.span`
@@ -252,4 +272,8 @@ export const LoadingPulse = styled.span`
   border-radius: 999px;
   background: rgba(124, 0, 2, 1);
   animation: ${pulse} 1.2s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
 `;

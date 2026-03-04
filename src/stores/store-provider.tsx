@@ -1,14 +1,27 @@
 "use client";
 
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useContext } from "react";
 
 import { RootStore } from "./root-store";
 
 const StoreContext = createContext<RootStore | null>(null);
+let storeSingleton: RootStore | null = null;
+
+const isCompatibleStore = (store: RootStore) =>
+  typeof store.paymentStore.getStripeClientSecret === "function" &&
+  typeof store.paymentStore.getStripeIntentError === "function" &&
+  typeof store.paymentStore.getStripePaymentIntentId === "function";
+
+const getRootStore = () => {
+  if (!storeSingleton || !isCompatibleStore(storeSingleton)) {
+    storeSingleton = new RootStore();
+  }
+
+  return storeSingleton;
+};
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [store] = useState(() => new RootStore());
-  return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
+  return <StoreContext.Provider value={getRootStore()}>{children}</StoreContext.Provider>;
 }
 
 export function useStore() {

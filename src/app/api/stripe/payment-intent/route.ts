@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 
 import {
   DEFAULT_CHECKOUT_PRODUCT,
@@ -9,10 +8,16 @@ import {
   getSellableProductOfferById,
 } from "@/constants/sellable-products";
 
-export const runtime = "nodejs";
+import {
+  createPaymentIntentIdempotencyKey,
+  getStripeServer,
+  normalizeCheckoutSessionId,
+} from "./lib";
 
 type CreatePaymentIntentBody = {
+  checkoutSessionId?: string;
   customerData?: {
+    country?: string;
     name?: string;
     lastName?: string;
     email?: string;
@@ -23,15 +28,7 @@ type CreatePaymentIntentBody = {
   productId?: string;
 };
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY ?? "";
-
-const getStripeServer = () => {
-  if (!stripeSecretKey) {
-    return null;
-  }
-
-  return new Stripe(stripeSecretKey);
-};
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   const stripe = getStripeServer();
@@ -47,6 +44,7 @@ export async function POST(request: Request) {
 
   try {
     const body = (await request.json()) as CreatePaymentIntentBody;
+    const checkoutSessionId = normalizeCheckoutSessionId(body.checkoutSessionId);
     const customerData = body.customerData ?? {};
     const product = getSellableProductById(body.productId) ?? DEFAULT_CHECKOUT_PRODUCT;
     const offer =
@@ -55,24 +53,47 @@ export async function POST(request: Request) {
       product.offers[0];
     const currency = getResolvedCheckoutCurrency(body.currency);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: getProductPrice(product, offer.id, currency) * 100,
-      currency,
-      automatic_payment_methods: {
-        enabled: true,
+    if (!checkoutSessionId) {
+      return NextResponse.json(
+        {
+          errorCode: "missing_checkout_session_id",
+        },
+        { status: 400 },
+      );
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: getProductPrice(product, offer.id, currency) * 100,
+        currency,
+        automatic_payment_methods: {
+          enabled: true,
+        },
+        description: `${product.title} - ${offer.label}`,
+        receipt_email: customerData.email?.trim() || undefined,
+        metadata: {
+          checkout_currency: currency,
+          checkout_session_id: checkoutSessionId,
+          offer_id: offer.id,
+          offer_label: offer.label,
+          customer_name: customerData.name?.trim() || "",
+          customer_last_name: customerData.lastName?.trim() || "",
+          customer_nickname: customerData.nickname?.trim() || "",
+          customer_country: customerData.country?.trim() || "",
+          product_id: product.id,
+          product_title: product.title,
+        },
       },
-      receipt_email: customerData.email?.trim() || undefined,
-      metadata: {
-        checkout_currency: currency,
-        offer_id: offer.id,
-        offer_label: offer.label,
-        customer_name: customerData.name?.trim() || "",
-        customer_last_name: customerData.lastName?.trim() || "",
-        customer_nickname: customerData.nickname?.trim() || "",
-        product_id: product.id,
-        product_title: product.title,
+      {
+        idempotencyKey: createPaymentIntentIdempotencyKey({
+          checkoutSessionId,
+          currency,
+          customerData,
+          offerId: offer.id,
+          productId: product.id,
+        }),
       },
-    });
+    );
 
     if (!paymentIntent.client_secret) {
       return NextResponse.json({ errorCode: "missing_client_secret" }, { status: 500 });
@@ -80,6 +101,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
     console.error("Failed to create Stripe PaymentIntent", error);

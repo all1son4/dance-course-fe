@@ -92,7 +92,12 @@ export const Right = styled.div`
   }
 `;
 
-export const IconBox = styled.div<{ $isOpen: boolean }>`
+export const IconBox = styled.button<{ $isOpen: boolean }>`
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
   display: none;
   position: absolute;
   right: 30px;
