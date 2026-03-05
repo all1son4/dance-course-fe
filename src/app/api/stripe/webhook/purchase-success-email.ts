@@ -15,7 +15,7 @@ const EMAIL_COPY = {
     accessTitle: "Access your materials",
     amountLabel: "Amount",
     autoReplyNote:
-      "This is an automatic email. If you have any questions, just reply to this message.",
+      "This is an automatic email. If you have any questions, contact support on the sales website.",
     backToSite: "Back to website",
     defaultOfferLabel: "Standard access",
     heading: "Thank you, your payment was successful",
@@ -40,7 +40,7 @@ const EMAIL_COPY = {
     accessTitle: "Dostęp do materiałów",
     amountLabel: "Kwota",
     autoReplyNote:
-      "To wiadomość automatyczna. Jeśli masz pytania, po prostu odpowiedz na ten e-mail.",
+      "To wiadomość automatyczna. Jeśli masz pytania, skontaktuj się ze wsparciem na stronie sprzedaży.",
     backToSite: "Wróć na stronę",
     defaultOfferLabel: "Dostęp standardowy",
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
@@ -64,7 +64,7 @@ const EMAIL_COPY = {
     accessTitle: "Доступ к материалам",
     amountLabel: "Сумма",
     autoReplyNote:
-      "Это автоматическое письмо. Если у вас есть вопросы, просто ответьте на него.",
+      "Это автоматическое письмо. Если у вас есть вопросы, свяжитесь с поддержкой на сайте продажи.",
     backToSite: "Вернуться на сайт",
     defaultOfferLabel: "Стандартный доступ",
     heading: "Спасибо, оплата прошла успешно",
