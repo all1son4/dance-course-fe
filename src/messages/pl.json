@@ -473,7 +473,7 @@
       "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok."
     },
     "placeholder": {
-      "missingPublishableKey": "Dodaj NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY do .env i uruchom ponownie dev server.",
+      "missingPublishableKey": "Dodaj STRIPE_PUBLISHABLE_KEY do .env i uruchom ponownie dev server.",
       "awaitingClientSecret": "Stripe jest gotowy. Payment Element pojawi się tutaj automatycznie po otrzymaniu clientSecret."
     },
     "errors": {

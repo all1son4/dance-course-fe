@@ -462,7 +462,7 @@ export const StripePaymentTabs = ({
   resultCurrency,
   resultOfferId,
   resultProductId,
-  publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
+  publishableKey = process.env.STRIPE_PUBLISHABLE_KEY ?? "",
 }: StripePaymentTabsProps) => {
   const locale = useLocale();
   const t = useTranslations("StripePaymentTabs");
