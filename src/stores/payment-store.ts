@@ -338,6 +338,9 @@ export class PaymentStore {
   }
 
   resetCheckoutForm() {
+    const previousCheckoutSessionId = this.checkoutSessionId;
+
+    this.clearStripeIntentState(true, previousCheckoutSessionId);
     this.checkoutSessionId = createCheckoutSessionId();
     this.customerData = { ...INITIAL_CUSTOMER_DATA };
     this.customerErrors = {};
@@ -348,10 +351,12 @@ export class PaymentStore {
     this.selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
     this.selectedProductId = DEFAULT_CHECKOUT_PRODUCT.id;
     this.checkoutCurrencyInitialized = false;
-    this.clearStripeIntentState(true);
   }
 
-  clearStripeIntentState(cancelActiveIntents = false) {
+  clearStripeIntentState(
+    cancelActiveIntents = false,
+    checkoutSessionId = this.checkoutSessionId,
+  ) {
     const activePaymentIntentIds = cancelActiveIntents
       ? Object.values(this.stripePaymentIntentIds).filter(Boolean)
       : [];
@@ -362,7 +367,7 @@ export class PaymentStore {
     this.pendingStripeCurrencies.clear();
 
     if (activePaymentIntentIds.length > 0) {
-      this.cancelStripePaymentIntents(activePaymentIntentIds);
+      this.cancelStripePaymentIntents(activePaymentIntentIds, checkoutSessionId);
     }
   }
 
@@ -418,7 +423,10 @@ export class PaymentStore {
     });
   }
 
-  private cancelStripePaymentIntents(paymentIntentIds: string[]) {
+  private cancelStripePaymentIntents(
+    paymentIntentIds: string[],
+    checkoutSessionId: string,
+  ) {
     if (typeof window === "undefined") {
       return;
     }
@@ -432,6 +440,7 @@ export class PaymentStore {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          checkoutSessionId,
           paymentIntentId,
         }),
         keepalive: true,

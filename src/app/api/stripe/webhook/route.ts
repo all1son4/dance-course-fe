@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 
 import { GoogleSheetsError, isGoogleSheetsConfigured } from "@/lib/google-sheets";
+import { isPayloadTooLarge, jsonNoStore } from "@/lib/http-security";
 
 import { getStripeServer } from "../payment-intent/lib";
 import {
@@ -10,14 +10,24 @@ import {
 } from "./lib";
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  if (isPayloadTooLarge(request, MAX_WEBHOOK_BODY_BYTES)) {
+    return jsonNoStore(
+      {
+        errorCode: "payload_too_large",
+      },
+      { status: 413 },
+    );
+  }
+
   const stripe = getStripeServer();
 
   if (!stripe) {
-    return NextResponse.json(
+    return jsonNoStore(
       {
         errorCode: "missing_secret_key",
       },
@@ -26,7 +36,7 @@ export async function POST(request: Request) {
   }
 
   if (!isGoogleSheetsConfigured()) {
-    return NextResponse.json(
+    return jsonNoStore(
       {
         errorCode: "google_sheets_not_configured",
       },
@@ -35,7 +45,7 @@ export async function POST(request: Request) {
   }
 
   if (!stripeWebhookSecret) {
-    return NextResponse.json(
+    return jsonNoStore(
       {
         errorCode: "missing_webhook_secret",
       },
@@ -46,7 +56,7 @@ export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
 
   if (!signature) {
-    return NextResponse.json(
+    return jsonNoStore(
       {
         errorCode: "missing_webhook_signature",
       },
@@ -63,7 +73,7 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("Failed to verify Stripe webhook signature", error);
 
-      return NextResponse.json(
+      return jsonNoStore(
         {
           errorCode: "invalid_webhook_signature",
         },
@@ -72,7 +82,7 @@ export async function POST(request: Request) {
     }
 
     if (!isSupportedStripePaymentIntentEvent(event.type)) {
-      return NextResponse.json({
+      return jsonNoStore({
         eventId: event.id,
         ignored: true,
         received: true,
@@ -95,7 +105,7 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json(handledEvent);
+    return jsonNoStore(handledEvent);
   } catch (error) {
     if (error instanceof GoogleSheetsError) {
       console.error("Failed to sync Stripe webhook to Google Sheets", {
@@ -104,10 +114,9 @@ export async function POST(request: Request) {
         status: error.status,
       });
 
-      return NextResponse.json(
+      return jsonNoStore(
         {
-          details: error.details,
-          errorCode: error.code,
+          errorCode: "stripe_webhook_sync_failed",
         },
         { status: 500 },
       );
@@ -115,7 +124,7 @@ export async function POST(request: Request) {
 
     console.error("Failed to process Stripe webhook", error);
 
-    return NextResponse.json(
+    return jsonNoStore(
       {
         errorCode: "stripe_webhook_failed",
       },

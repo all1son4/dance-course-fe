@@ -1,6 +1,7 @@
 export * from "./CheckboxIcon";
 export * from "./Chevron";
 export * from "./EnglishFlag";
+export * from "./Failed";
 export * from "./Insta";
 export * from "./Logo";
 export * from "./MenuButton";
@@ -20,4 +21,5 @@ export * from "./SmallClock";
 export * from "./SmallMail";
 export * from "./SmallMap";
 export * from "./SmallPhone";
+export * from "./Success";
 export * from "./Telegram";

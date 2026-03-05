@@ -2,11 +2,12 @@ import type Stripe from "stripe";
 
 import {
   appendStripeEventRecord,
+  appendSuccessfulCustomerRecord,
   findPaymentRecordByIntentId,
   findStripeEventRecordByEventId,
   type PaymentSheetRecord,
+  upsertPaymentRecord,
 } from "@/lib/google-sheets";
-import { upsertPaymentRecord } from "@/lib/google-sheets";
 
 import { getManagedPaymentIntentSnapshot } from "../payment-intent/lib";
 
@@ -58,6 +59,7 @@ const mapPaymentIntentToPaymentRecord = (
       payment_intent_id: snapshot.paymentIntentId,
       product_id: paymentIntent.metadata.product_id ?? "",
       product_title: paymentIntent.metadata.product_title ?? "",
+      successful_customer_logged_at: existingRecord?.successful_customer_logged_at ?? "",
       status: snapshot.status,
       updated_at: timestamp,
     } satisfies PaymentSheetRecord;
@@ -107,7 +109,24 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
     };
   }
 
-  const savedPaymentRecord = await upsertPaymentRecord(paymentRecord);
+  let savedPaymentRecord = await upsertPaymentRecord(paymentRecord);
+
+  if (
+    savedPaymentRecord.outcome === "succeeded" &&
+    !savedPaymentRecord.successful_customer_logged_at
+  ) {
+    await appendSuccessfulCustomerRecord({
+      customer_country: savedPaymentRecord.customer_country,
+      customer_email: savedPaymentRecord.customer_email,
+      customer_last_name: savedPaymentRecord.customer_last_name,
+      customer_name: savedPaymentRecord.customer_name,
+      customer_nickname: savedPaymentRecord.customer_nickname,
+    });
+    savedPaymentRecord = await upsertPaymentRecord({
+      ...savedPaymentRecord,
+      successful_customer_logged_at: new Date().toISOString(),
+    });
+  }
 
   await appendStripeEventRecord({
     event_id: event.id,

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
 
 import { TopMenu } from "@/components";
@@ -33,6 +34,23 @@ export default function Header() {
   const previousRouteRef = useRef({ pathname, search });
   const mobileMenuId = "header-mobile-menu";
 
+  const smoothScrollToContacts = () => {
+    const contactsElement = document.getElementById("contacts");
+
+    if (!contactsElement) {
+      return false;
+    }
+
+    contactsElement.scrollIntoView({
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+      block: "start",
+    });
+
+    return true;
+  };
+
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
@@ -53,61 +71,45 @@ export default function Header() {
     const routeChanged =
       previousRouteRef.current.pathname !== pathname ||
       previousRouteRef.current.search !== search;
+    let hashScrollTimeoutId: number | null = null;
 
     if (routeChanged) {
       if (previousRouteRef.current.pathname === "/payment" && pathname !== "/payment") {
         paymentStore.resetCheckoutForm();
       }
 
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      const hash = decodeURIComponent(window.location.hash.slice(1));
+
+      if (hash === "contacts") {
+        const scrollToHash = (attempt = 0) => {
+          if (smoothScrollToContacts()) {
+            return;
+          }
+
+          if (attempt >= 16) {
+            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+            return;
+          }
+
+          hashScrollTimeoutId = window.setTimeout(() => {
+            scrollToHash(attempt + 1);
+          }, 40);
+        };
+
+        scrollToHash();
+      } else {
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      }
     }
 
     previousRouteRef.current = { pathname, search };
-  }, [pathname, paymentStore, search]);
 
-  useEffect(() => {
-    const onAnchorClick = (event: MouseEvent) => {
-      if (event.defaultPrevented || event.button !== 0) return;
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-
-      const target = event.target as Element | null;
-      const link = target?.closest("a[href]") as HTMLAnchorElement | null;
-      if (!link) return;
-      if (link.target && link.target !== "_self") return;
-
-      let url: URL;
-      try {
-        url = new URL(link.href, window.location.href);
-      } catch {
-        return;
+    return () => {
+      if (hashScrollTimeoutId !== null) {
+        window.clearTimeout(hashScrollTimeoutId);
       }
-
-      if (!url.hash || url.hash === "#") return;
-
-      const samePage =
-        url.origin === window.location.origin &&
-        url.pathname === window.location.pathname &&
-        url.search === window.location.search;
-      if (!samePage) return;
-
-      const hash = decodeURIComponent(url.hash.slice(1));
-      const element = document.getElementById(hash);
-      if (!element) return;
-
-      event.preventDefault();
-      window.history.pushState({}, "", `#${hash}`);
-      element.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-        block: "start",
-      });
     };
-
-    const options = { capture: true } as const;
-    document.addEventListener("click", onAnchorClick, options);
-    return () => document.removeEventListener("click", onAnchorClick, options);
-  }, []);
+  }, [pathname, paymentStore, search]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -143,6 +145,32 @@ export default function Header() {
     });
   };
 
+  const onBrandClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    setMenuIsOpen(false);
+
+    if (pathname !== "/") {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextUrl = `${window.location.pathname}${window.location.search}`;
+    window.history.replaceState(window.history.state, "", nextUrl);
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  };
+
+  const onContactsMenuClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+
+    if (smoothScrollToContacts()) {
+      return;
+    }
+
+    router.push("/#contacts", {
+      scroll: false,
+    });
+  };
+
   const headerInteractiveContent = [
     {
       key: "menu",
@@ -152,7 +180,11 @@ export default function Header() {
           items={[
             { label: t("menu.offline"), href: "/offline" },
             { label: t("menu.online"), href: "/online" },
-            { label: t("menu.contacts"), href: "/#contacts" },
+            {
+              label: t("menu.contacts"),
+              href: "/#contacts",
+              onClick: onContactsMenuClick,
+            },
           ]}
         />
       ),
@@ -172,7 +204,7 @@ export default function Header() {
   return (
     <HeaderWrap>
       <Pill $isOpen={menuIsOpen}>
-        <Brand href="/" aria-label={t("aria.home")}>
+        <Brand href="/" aria-label={t("aria.home")} onClick={onBrandClick}>
           <Logo />
         </Brand>
 

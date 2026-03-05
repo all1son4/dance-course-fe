@@ -23,7 +23,10 @@ export default function TopMenu({
           key={item.href}
           href={item.href}
           $selected={pathname === item.href}
-          onClick={() => setMenuIsOpen(false)}
+          onClick={(event) => {
+            item.onClick?.(event);
+            setMenuIsOpen(false);
+          }}
         >
           {item.label}
         </NavLink>

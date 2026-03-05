@@ -36,6 +36,8 @@ import {
 import type { StripePaymentTabsProps } from "./StripePaymentTabs.types";
 
 const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
+const PAYMENT_SUCCESS_PATH = "/payment/success";
+const PAYMENT_FAILED_PATH = "/payment/failed";
 
 const getStripePromise = (publishableKey: string) => {
   const cachedPromise = stripePromiseCache.get(publishableKey);
@@ -220,24 +222,29 @@ const getStripeLocale = (locale: string): StripeElementsOptions["locale"] => {
 };
 
 type StripePaymentFormProps = {
+  allPaymentIntentIds?: string[] | null;
   billingCountry?: string | null;
   billingEmail?: string | null;
   billingName?: string | null;
+  checkoutSessionId?: string | null;
   confirmFailedText: string;
   confirmedText: string;
   paymentIntentId?: string | null;
   payButtonText: string;
   processingText: string;
-  successText: string;
+  resultCurrency?: string | null;
+  resultOfferId?: string | null;
+  resultProductId?: string | null;
 };
 
-const getConfirmedStatus = async (paymentIntentId: string) => {
+const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: string) => {
   const response = await fetch("/api/stripe/payment-intent/status", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      checkoutSessionId,
       paymentIntentId,
     }),
   });
@@ -254,15 +261,19 @@ const getConfirmedStatus = async (paymentIntentId: string) => {
 };
 
 const StripePaymentForm = ({
+  allPaymentIntentIds,
   billingCountry,
   billingEmail,
   billingName,
+  checkoutSessionId,
   confirmFailedText,
   confirmedText,
   paymentIntentId,
   payButtonText,
   processingText,
-  successText,
+  resultCurrency,
+  resultOfferId,
+  resultProductId,
 }: StripePaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -272,6 +283,58 @@ const StripePaymentForm = ({
   );
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const cancelUnusedPaymentIntents = (usedPaymentIntentId: string) => {
+    if (!checkoutSessionId) {
+      return;
+    }
+
+    const uniquePaymentIntentIds = [
+      ...new Set((allPaymentIntentIds ?? []).map((id) => id.trim()).filter(Boolean)),
+    ].filter((id) => id !== usedPaymentIntentId);
+
+    uniquePaymentIntentIds.forEach((paymentIntentId) => {
+      void fetch("/api/stripe/payment-intent/cancel", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          checkoutSessionId,
+          paymentIntentId,
+        }),
+        keepalive: true,
+      }).catch(() => undefined);
+    });
+  };
+  const createResultPageUrl = (pathname: string) => {
+    const url = new URL(pathname, window.location.origin);
+
+    if (resultProductId) {
+      url.searchParams.set("product", resultProductId);
+    }
+
+    if (resultOfferId) {
+      url.searchParams.set("offer", resultOfferId);
+    }
+
+    if (resultCurrency) {
+      url.searchParams.set("currency", resultCurrency);
+    }
+
+    if (checkoutSessionId) {
+      url.searchParams.set("checkout", checkoutSessionId);
+    }
+
+    return url.toString();
+  };
+
+  const redirectToResultPage = (pathname: string) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.location.assign(createResultPageUrl(pathname));
+  };
 
   const handlePayment = async () => {
     if (!stripe || !elements || isSubmitting) {
@@ -282,32 +345,55 @@ const StripePaymentForm = ({
     setSubmitError(null);
     setSubmitSuccess(null);
 
+    let shouldKeepSubmitting = false;
+
+    const redirectWithLockedButton = (pathname: string) => {
+      shouldKeepSubmitting = true;
+      redirectToResultPage(pathname);
+    };
+
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: window.location.href.split("?")[0],
+          return_url: createResultPageUrl(PAYMENT_SUCCESS_PATH),
         },
         redirect: "if_required",
       });
 
       if (error) {
-        setSubmitError(confirmFailedText);
+        const errorPaymentIntentStatus = (
+          error as { payment_intent?: { status?: string } }
+        ).payment_intent?.status;
+
+        if (
+          errorPaymentIntentStatus === "requires_payment_method" ||
+          errorPaymentIntentStatus === "canceled"
+        ) {
+          redirectWithLockedButton(PAYMENT_FAILED_PATH);
+          return;
+        }
+
+        setSubmitError(error.message || confirmFailedText);
         return;
       }
 
       const resolvedPaymentIntentId = paymentIntent?.id ?? paymentIntentId ?? "";
 
-      if (resolvedPaymentIntentId) {
-        const { outcome } = await getConfirmedStatus(resolvedPaymentIntentId);
+      if (resolvedPaymentIntentId && checkoutSessionId) {
+        const { outcome } = await getConfirmedStatus(
+          resolvedPaymentIntentId,
+          checkoutSessionId,
+        );
 
         if (outcome === "succeeded") {
-          setSubmitSuccess(successText);
+          cancelUnusedPaymentIntents(resolvedPaymentIntentId);
+          redirectWithLockedButton(PAYMENT_SUCCESS_PATH);
           return;
         }
 
         if (outcome === "failed" || outcome === "canceled") {
-          setSubmitError(confirmFailedText);
+          redirectWithLockedButton(PAYMENT_FAILED_PATH);
           return;
         }
 
@@ -316,7 +402,13 @@ const StripePaymentForm = ({
       }
 
       if (paymentIntent?.status === "succeeded") {
-        setSubmitSuccess(successText);
+        const usedPaymentIntentId = paymentIntent.id ?? resolvedPaymentIntentId;
+
+        if (usedPaymentIntentId) {
+          cancelUnusedPaymentIntents(usedPaymentIntentId);
+        }
+
+        redirectWithLockedButton(PAYMENT_SUCCESS_PATH);
         return;
       }
 
@@ -324,7 +416,9 @@ const StripePaymentForm = ({
     } catch {
       setSubmitError(confirmFailedText);
     } finally {
-      setIsSubmitting(false);
+      if (!shouldKeepSubmitting) {
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -357,12 +451,17 @@ const StripePaymentForm = ({
 };
 
 export const StripePaymentTabs = ({
+  allPaymentIntentIds,
   billingCountry,
   billingEmail,
   billingName,
+  checkoutSessionId,
   clientSecret,
   errorMessage,
   paymentIntentId,
+  resultCurrency,
+  resultOfferId,
+  resultProductId,
   publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
 }: StripePaymentTabsProps) => {
   const locale = useLocale();
@@ -398,15 +497,19 @@ export const StripePaymentTabs = ({
           stripe={getStripePromise(publishableKey)}
         >
           <StripePaymentForm
+            allPaymentIntentIds={allPaymentIntentIds}
             billingCountry={billingCountry}
             billingEmail={billingEmail}
             billingName={billingName}
+            checkoutSessionId={checkoutSessionId}
             confirmFailedText={t("errors.confirmPaymentFailed")}
             confirmedText={t("status.confirmed")}
             paymentIntentId={paymentIntentId}
             payButtonText={t("button.pay")}
             processingText={t("button.processing")}
-            successText={t("status.succeeded")}
+            resultCurrency={resultCurrency}
+            resultOfferId={resultOfferId}
+            resultProductId={resultProductId}
           />
         </Elements>
       ) : (

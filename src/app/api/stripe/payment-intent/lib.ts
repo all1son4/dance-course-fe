@@ -25,11 +25,56 @@ export type ManagedPaymentIntentSnapshot = {
 export const normalizePaymentIntentId = (value: string | null | undefined) => {
   const normalizedValue = value?.trim() ?? "";
 
-  return normalizedValue.startsWith("pi_") ? normalizedValue : "";
+  if (normalizedValue.length > 128) {
+    return "";
+  }
+
+  return /^pi_[A-Za-z0-9]+$/u.test(normalizedValue) ? normalizedValue : "";
 };
 
 export const normalizeCheckoutSessionId = (value: string | null | undefined) =>
   (value?.trim() ?? "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 96);
+
+const trimAndCollapseSpaces = (value: string | null | undefined) =>
+  (value ?? "").replace(/\s+/g, " ").trim();
+
+export type PaymentIntentCustomerData = {
+  country: string;
+  email: string;
+  lastName: string;
+  name: string;
+  nickname: string;
+};
+
+export const normalizePaymentIntentCustomerData = (customerData: {
+  country?: string;
+  email?: string;
+  lastName?: string;
+  name?: string;
+  nickname?: string;
+}): PaymentIntentCustomerData => {
+  const normalizedCountry = trimAndCollapseSpaces(customerData.country)
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .slice(0, 2);
+  const normalizedEmail = trimAndCollapseSpaces(customerData.email)
+    .toLowerCase()
+    .slice(0, 254);
+  const normalizedName = trimAndCollapseSpaces(customerData.name).slice(0, 80);
+  const normalizedLastName = trimAndCollapseSpaces(customerData.lastName).slice(0, 80);
+  const normalizedNickname = trimAndCollapseSpaces(customerData.nickname)
+    .replace(/\s+/g, "")
+    .replace(/[^A-Za-z0-9_@]/g, "")
+    .slice(0, 33);
+
+  return {
+    country: normalizedCountry,
+    email: normalizedEmail,
+    lastName: normalizedLastName,
+    name: normalizedName,
+    nickname: normalizedNickname,
+  };
+};
 
 export const createPaymentIntentIdempotencyKey = ({
   checkoutSessionId,

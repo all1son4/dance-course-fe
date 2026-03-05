@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 import {
   DEFAULT_CHECKOUT_PRODUCT,
   getProductPrice,
@@ -7,11 +5,20 @@ import {
   getSellableProductById,
   getSellableProductOfferById,
 } from "@/constants/sellable-products";
+import {
+  hasJsonContentType,
+  isPayloadTooLarge,
+  isTrustedBrowserOrigin,
+  jsonNoStore,
+  parseJsonBody,
+} from "@/lib/http-security";
+import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
 
 import {
   createPaymentIntentIdempotencyKey,
   getStripeServer,
   normalizeCheckoutSessionId,
+  normalizePaymentIntentCustomerData,
 } from "./lib";
 
 type CreatePaymentIntentBody = {
@@ -30,11 +37,61 @@ type CreatePaymentIntentBody = {
 
 export const runtime = "nodejs";
 
+const MAX_PAYMENT_INTENT_BODY_BYTES = 16 * 1024;
+
 export async function POST(request: Request) {
+  if (!isTrustedBrowserOrigin(request)) {
+    return jsonNoStore(
+      {
+        errorCode: "invalid_origin",
+      },
+      { status: 403 },
+    );
+  }
+
+  if (isPayloadTooLarge(request, MAX_PAYMENT_INTENT_BODY_BYTES)) {
+    return jsonNoStore(
+      {
+        errorCode: "payload_too_large",
+      },
+      { status: 413 },
+    );
+  }
+
+  if (!hasJsonContentType(request)) {
+    return jsonNoStore(
+      {
+        errorCode: "unsupported_media_type",
+      },
+      { status: 415 },
+    );
+  }
+
+  const requesterIp = getRequestIp(request);
+  const rateLimit = consumeRateLimit({
+    key: `stripe:create-payment-intent:${requesterIp}`,
+    limit: 60,
+    windowMs: 60_000,
+  });
+
+  if (rateLimit.limited) {
+    return jsonNoStore(
+      {
+        errorCode: "rate_limited",
+      },
+      {
+        headers: {
+          "Retry-After": String(rateLimit.retryAfterSeconds),
+        },
+        status: 429,
+      },
+    );
+  }
+
   const stripe = getStripeServer();
 
   if (!stripe) {
-    return NextResponse.json(
+    return jsonNoStore(
       {
         errorCode: "missing_secret_key",
       },
@@ -43,9 +100,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = (await request.json()) as CreatePaymentIntentBody;
+    const body = await parseJsonBody<CreatePaymentIntentBody>(request);
+
+    if (!body) {
+      return jsonNoStore(
+        {
+          errorCode: "invalid_request_body",
+        },
+        { status: 400 },
+      );
+    }
+
     const checkoutSessionId = normalizeCheckoutSessionId(body.checkoutSessionId);
-    const customerData = body.customerData ?? {};
+    const customerData = normalizePaymentIntentCustomerData(body.customerData ?? {});
     const product = getSellableProductById(body.productId) ?? DEFAULT_CHECKOUT_PRODUCT;
     const offer =
       getSellableProductOfferById(product, body.offerId) ??
@@ -54,7 +121,7 @@ export async function POST(request: Request) {
     const currency = getResolvedCheckoutCurrency(body.currency);
 
     if (!checkoutSessionId) {
-      return NextResponse.json(
+      return jsonNoStore(
         {
           errorCode: "missing_checkout_session_id",
         },
@@ -70,16 +137,16 @@ export async function POST(request: Request) {
           enabled: true,
         },
         description: `${product.title} - ${offer.label}`,
-        receipt_email: customerData.email?.trim() || undefined,
+        receipt_email: customerData.email || undefined,
         metadata: {
           checkout_currency: currency,
           checkout_session_id: checkoutSessionId,
           offer_id: offer.id,
           offer_label: offer.label,
-          customer_name: customerData.name?.trim() || "",
-          customer_last_name: customerData.lastName?.trim() || "",
-          customer_nickname: customerData.nickname?.trim() || "",
-          customer_country: customerData.country?.trim() || "",
+          customer_name: customerData.name,
+          customer_last_name: customerData.lastName,
+          customer_nickname: customerData.nickname,
+          customer_country: customerData.country,
           product_id: product.id,
           product_title: product.title,
         },
@@ -96,17 +163,17 @@ export async function POST(request: Request) {
     );
 
     if (!paymentIntent.client_secret) {
-      return NextResponse.json({ errorCode: "missing_client_secret" }, { status: 500 });
+      return jsonNoStore({ errorCode: "missing_client_secret" }, { status: 500 });
     }
 
-    return NextResponse.json({
+    return jsonNoStore({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
     console.error("Failed to create Stripe PaymentIntent", error);
 
-    return NextResponse.json(
+    return jsonNoStore(
       {
         errorCode: "payment_intent_failed",
       },

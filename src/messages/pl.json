@@ -435,6 +435,27 @@
       "digitalContentAgreement": "Akceptuję warunki i zawieram umowę o dostarczenie treści cyfrowych."
     }
   },
+  "PaymentSuccessPage": {
+    "title": "Dziękujemy! Płatność zakończyła się sukcesem",
+    "description": {
+      "line1": "Wkrótce Ania skontaktuje się z Tobą i wyśle linki do czatów Telegram z materiałami.",
+      "line2": "Przygotuj się do tańca — najciekawsza część zaczyna się już wkrótce!"
+    },
+    "buttons": {
+      "home": "Wróć na stronę główną"
+    }
+  },
+  "PaymentFailedPage": {
+    "title": "Płatność nie powiodła się!",
+    "description": {
+      "line1": "Nie udało się zrealizować płatności — karta mogła zostać odrzucona przez bank, wygasła lub wystąpił błąd techniczny.",
+      "line2": "Spróbuj ponownie albo wybierz inną metodę płatności. Jeśli problem się powtarza, skontaktuj się z nami — pomożemy dokończyć zakup."
+    },
+    "buttons": {
+      "backToPayment": "Wróć do płatności",
+      "contactSupport": "Skontaktuj się ze wsparciem"
+    }
+  },
   "StripePaymentTabs": {
     "title": "Metoda płatności",
     "description": "Bezpieczna płatność przez Stripe",

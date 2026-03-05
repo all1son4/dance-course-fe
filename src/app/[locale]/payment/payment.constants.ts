@@ -71,6 +71,7 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     labelKey: "inputs.nickname.label",
     name: "nickname",
     placeholderKey: "inputs.nickname.placeholder",
+    type: "text",
   },
   {
     id: "country",

@@ -5,9 +5,15 @@ const GOOGLE_SHEETS_API_BASE_URL = "https://sheets.googleapis.com/v4/spreadsheet
 const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const DEFAULT_PAYMENTS_SHEET_NAME = "Payments";
 const DEFAULT_STRIPE_EVENTS_SHEET_NAME = "StripeEvents";
+const DEFAULT_SUCCESSFUL_CUSTOMERS_SHEET_NAME = "SuccessfulCustomers";
 
 const PAYMENT_SHEET_HEADERS = [
   "payment_intent_id",
+  "customer_email",
+  "customer_name",
+  "customer_last_name",
+  "customer_nickname",
+  "customer_country",
   "latest_event_id",
   "latest_event_type",
   "status",
@@ -19,14 +25,10 @@ const PAYMENT_SHEET_HEADERS = [
   "offer_id",
   "offer_label",
   "checkout_currency",
-  "customer_email",
-  "customer_name",
-  "customer_last_name",
-  "customer_nickname",
-  "customer_country",
   "last_payment_error_code",
   "last_payment_error_message",
   "first_seen_at",
+  "successful_customer_logged_at",
   "updated_at",
   "checkout_session_id",
 ] as const;
@@ -38,6 +40,14 @@ const STRIPE_EVENT_SHEET_HEADERS = [
   "status",
   "outcome",
   "processed_at",
+] as const;
+
+const SUCCESSFUL_CUSTOMERS_SHEET_HEADERS = [
+  "customer_email",
+  "customer_name",
+  "customer_last_name",
+  "customer_nickname",
+  "customer_country",
 ] as const;
 
 type GoogleSheetsTokenResponse = {
@@ -69,6 +79,7 @@ type GoogleSheetsConfig = {
   privateKey: string;
   serviceAccountEmail: string;
   spreadsheetId: string;
+  successfulCustomersSheetName: string;
   stripeEventsSheetName: string;
 };
 
@@ -84,9 +95,14 @@ type SheetTitleCache = {
 
 type PaymentSheetHeader = (typeof PAYMENT_SHEET_HEADERS)[number];
 type StripeEventSheetHeader = (typeof STRIPE_EVENT_SHEET_HEADERS)[number];
+type SuccessfulCustomersSheetHeader = (typeof SUCCESSFUL_CUSTOMERS_SHEET_HEADERS)[number];
 
 export type PaymentSheetRecord = Record<PaymentSheetHeader, string>;
 export type StripeEventSheetRecord = Record<StripeEventSheetHeader, string>;
+export type SuccessfulCustomersSheetRecord = Record<
+  SuccessfulCustomersSheetHeader,
+  string
+>;
 
 export class GoogleSheetsError extends Error {
   code: string;
@@ -139,15 +155,12 @@ const getGoogleSheetsConfig = (): GoogleSheetsConfig | null => {
   }
 
   return {
-    paymentsSheetName:
-      process.env.GOOGLE_SHEETS_PAYMENTS_SHEET_NAME?.trim() ||
-      DEFAULT_PAYMENTS_SHEET_NAME,
+    paymentsSheetName: DEFAULT_PAYMENTS_SHEET_NAME,
     privateKey,
     serviceAccountEmail,
     spreadsheetId,
-    stripeEventsSheetName:
-      process.env.GOOGLE_SHEETS_EVENTS_SHEET_NAME?.trim() ||
-      DEFAULT_STRIPE_EVENTS_SHEET_NAME,
+    successfulCustomersSheetName: DEFAULT_SUCCESSFUL_CUSTOMERS_SHEET_NAME,
+    stripeEventsSheetName: DEFAULT_STRIPE_EVENTS_SHEET_NAME,
   };
 };
 
@@ -382,6 +395,18 @@ const appendSheetValues = async (
   );
 };
 
+const areHeadersEqual = (left: readonly string[], right: readonly string[]) =>
+  left.length === right.length && left.every((header, index) => right[index] === header);
+
+const mapRowToRecord = <T extends string>(headers: readonly T[], row: string[]) =>
+  headers.reduce(
+    (record, header, index) => {
+      record[header] = row[index] ?? "";
+      return record;
+    },
+    {} as Record<T, string>,
+  );
+
 const ensureSheetHeaders = async (
   config: GoogleSheetsConfig,
   sheetTitle: string,
@@ -390,9 +415,7 @@ const ensureSheetHeaders = async (
   await ensureSheetExists(config, sheetTitle);
 
   const currentHeaderRow = (await getSheetValues(config, sheetTitle, "1:1"))[0] ?? [];
-  const hasExpectedHeaders =
-    headers.length === currentHeaderRow.length &&
-    headers.every((header, index) => currentHeaderRow[index] === header);
+  const hasExpectedHeaders = areHeadersEqual(headers, currentHeaderRow);
 
   if (hasExpectedHeaders) {
     return;
@@ -404,15 +427,6 @@ const ensureSheetHeaders = async (
     Array.from(headers),
   ]);
 };
-
-const mapRowToRecord = <T extends string>(headers: readonly T[], row: string[]) =>
-  headers.reduce(
-    (record, header, index) => {
-      record[header] = row[index] ?? "";
-      return record;
-    },
-    {} as Record<T, string>,
-  );
 
 const getRows = async <T extends string>(
   config: GoogleSheetsConfig,
@@ -506,6 +520,36 @@ export const appendStripeEventRecord = async (record: StripeEventSheetRecord) =>
     config.stripeEventsSheetName,
     `A1:${lastColumnLetter}`,
     [toOrderedRow(STRIPE_EVENT_SHEET_HEADERS, record)],
+  );
+
+  return record;
+};
+
+export const appendSuccessfulCustomerRecord = async (
+  record: SuccessfulCustomersSheetRecord,
+) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  await ensureSheetHeaders(
+    config,
+    config.successfulCustomersSheetName,
+    SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
+  );
+  const lastColumnLetter = columnIndexToLetter(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS.length);
+
+  await appendSheetValues(
+    config,
+    config.successfulCustomersSheetName,
+    `A1:${lastColumnLetter}`,
+    [toOrderedRow(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS, record)],
   );
 
   return record;

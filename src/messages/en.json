@@ -435,6 +435,27 @@
       "digitalContentAgreement": "I accept the terms and conclude the agreement for the delivery of digital content."
     }
   },
+  "PaymentSuccessPage": {
+    "title": "Thank you! Your payment was successful",
+    "description": {
+      "line1": "Anya will contact you soon and send links to Telegram chats with the course materials.",
+      "line2": "Get ready to dance — the most exciting part starts soon!"
+    },
+    "buttons": {
+      "home": "Back to home"
+    }
+  },
+  "PaymentFailedPage": {
+    "title": "Payment failed!",
+    "description": {
+      "line1": "We could not complete your payment — the card may have been declined by the bank, expired, or a technical issue occurred.",
+      "line2": "Please try again or choose another payment method. If the issue repeats, contact us and we will help you complete the purchase."
+    },
+    "buttons": {
+      "backToPayment": "Back to payment",
+      "contactSupport": "Contact support"
+    }
+  },
   "StripePaymentTabs": {
     "title": "Payment method",
     "description": "Secure payment via Stripe",

@@ -4,7 +4,7 @@ import { observer } from "mobx-react-lite";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
 import {
@@ -22,6 +22,7 @@ import {
 import {
   formatCheckoutPrice,
   getDefaultCheckoutCurrencyByLocale,
+  getResolvedCheckoutCurrency,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
 import { usePaymentStore } from "@/stores";
@@ -150,14 +151,16 @@ const PersonalData = styled.div`
 const StripeReveal = styled.div<{ $isVisible: boolean }>`
   position: relative;
   z-index: 1;
-  padding-top: 20px;
+  padding-top: ${({ $isVisible }) => ($isVisible ? "20px" : "0")};
   width: 100%;
   min-width: 0;
+  overflow: ${({ $isVisible }) => ($isVisible ? "unset" : "hidden")};
   max-height: ${({ $isVisible }) => ($isVisible ? "920px" : "0")};
   opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
   transform: translateY(${({ $isVisible }) => ($isVisible ? "0" : "-18px")});
   pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
   transition:
+    padding-top 0.45s ease,
     max-height 0.45s ease,
     opacity 0.16s ease,
     transform 0.45s ease;
@@ -169,24 +172,6 @@ const StripeReveal = styled.div<{ $isVisible: boolean }>`
   @media (prefers-reduced-motion: reduce) {
     transition: none;
     transform: none;
-  }
-`;
-
-const StripePanels = styled.div`
-  display: grid;
-  width: 100%;
-`;
-
-const StripePanel = styled.div<{ $isActive: boolean }>`
-  grid-area: 1 / 1;
-  width: 100%;
-  opacity: ${({ $isActive }) => ($isActive ? 1 : 0)};
-  pointer-events: ${({ $isActive }) => ($isActive ? "auto" : "none")};
-  visibility: ${({ $isActive }) => ($isActive ? "visible" : "hidden")};
-  transition: opacity 0.18s ease;
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
   }
 `;
 
@@ -360,6 +345,11 @@ const PaymentPage = observer(function PaymentPage() {
     getFallbackCountryOptions,
   );
   const [isMobileSummaryCompact, setIsMobileSummaryCompact] = useState(false);
+  const hasAppliedCurrencyFromQuery = useRef(false);
+
+  useEffect(() => {
+    document.body.removeAttribute("data-hide-footer");
+  }, []);
 
   useEffect(() => {
     paymentStore.setValidationLocale(locale);
@@ -375,6 +365,29 @@ const PaymentPage = observer(function PaymentPage() {
       offerId: searchParams.get("offer"),
       productId: searchParams.get("product"),
     });
+  }, [paymentStore, searchParams]);
+
+  useEffect(() => {
+    if (hasAppliedCurrencyFromQuery.current) {
+      return;
+    }
+
+    hasAppliedCurrencyFromQuery.current = true;
+    const queryCurrency = searchParams.get("currency");
+
+    if (!queryCurrency) {
+      return;
+    }
+
+    const nextCurrency = getResolvedCheckoutCurrency(queryCurrency);
+    paymentStore.setSelectedCurrency(nextCurrency);
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.delete("currency");
+
+    const nextQuery = nextSearchParams.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
+    window.history.replaceState(window.history.state, "", nextUrl);
   }, [paymentStore, searchParams]);
 
   useEffect(() => {
@@ -539,25 +552,26 @@ const PaymentPage = observer(function PaymentPage() {
             </Checkboxes>
           </PersonalData>
           <StripeReveal $isVisible={paymentStore.canShowStripe}>
-            <StripePanels>
-              {SUPPORTED_CURRENCIES.map((currency) => (
-                <StripePanel
-                  key={currency}
-                  $isActive={paymentStore.selectedCurrency === currency}
-                >
-                  <StripePaymentTabs
-                    billingCountry={paymentStore.customerData.country}
-                    billingEmail={paymentStore.customerData.email}
-                    billingName={`${paymentStore.customerData.name} ${paymentStore.customerData.lastName}`.trim()}
-                    clientSecret={paymentStore.stripeClientSecrets?.[currency] ?? ""}
-                    errorMessage={paymentStore.stripeIntentErrors?.[currency] ?? null}
-                    paymentIntentId={
-                      paymentStore.stripePaymentIntentIds?.[currency] ?? ""
-                    }
-                  />
-                </StripePanel>
-              ))}
-            </StripePanels>
+            <StripePaymentTabs
+              key={paymentStore.selectedCurrency}
+              allPaymentIntentIds={Object.values(paymentStore.stripePaymentIntentIds)}
+              billingCountry={paymentStore.customerData.country}
+              billingEmail={paymentStore.customerData.email}
+              billingName={`${paymentStore.customerData.name} ${paymentStore.customerData.lastName}`.trim()}
+              checkoutSessionId={paymentStore.checkoutSessionId}
+              clientSecret={
+                paymentStore.stripeClientSecrets?.[paymentStore.selectedCurrency] ?? ""
+              }
+              errorMessage={
+                paymentStore.stripeIntentErrors?.[paymentStore.selectedCurrency] ?? null
+              }
+              paymentIntentId={
+                paymentStore.stripePaymentIntentIds?.[paymentStore.selectedCurrency] ?? ""
+              }
+              resultCurrency={paymentStore.selectedCurrency}
+              resultOfferId={paymentStore.selectedOfferId}
+              resultProductId={paymentStore.selectedProductId}
+            />
           </StripeReveal>
         </FormBox>
       </InteractiveBox>
