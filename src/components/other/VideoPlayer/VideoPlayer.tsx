@@ -103,6 +103,7 @@ export default function VideoPlayer({
     () => ({
       controls: [],
       clickToPlay: false,
+      loadSprite: false,
       muted,
       ...(loop ? { loop: { active: true } } : {}),
       ...(isYoutube

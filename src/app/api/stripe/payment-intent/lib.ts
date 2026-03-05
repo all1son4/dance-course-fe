@@ -11,6 +11,7 @@ export type ManagedPaymentIntentOutcome =
   | "requires_action"
   | "failed"
   | "canceled";
+export type CheckoutLocale = "ru" | "en" | "pl";
 
 export type ManagedPaymentIntentSnapshot = {
   amount: number;
@@ -34,6 +35,22 @@ export const normalizePaymentIntentId = (value: string | null | undefined) => {
 
 export const normalizeCheckoutSessionId = (value: string | null | undefined) =>
   (value?.trim() ?? "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 96);
+
+export const getResolvedCheckoutLocale = (
+  locale: string | null | undefined,
+): CheckoutLocale => {
+  const normalizedLocale = (locale ?? "").trim().toLowerCase();
+
+  if (normalizedLocale.startsWith("en")) {
+    return "en";
+  }
+
+  if (normalizedLocale.startsWith("pl")) {
+    return "pl";
+  }
+
+  return "ru";
+};
 
 const trimAndCollapseSpaces = (value: string | null | undefined) =>
   (value ?? "").replace(/\s+/g, " ").trim();

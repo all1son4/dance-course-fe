@@ -66,7 +66,7 @@ export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
   },
 ];
 
-export const getChoreos = (locale: string, t: Translate): TChoreoCard[] => {
+export const getChoreos = (t: Translate): TChoreoCard[] => {
   const stillAlive = SELLABLE_PRODUCTS["choreo-still-alive"];
   const herLies = SELLABLE_PRODUCTS["choreo-her-lies"];
 
@@ -78,7 +78,6 @@ export const getChoreos = (locale: string, t: Translate): TChoreoCard[] => {
       title: "Still Alive",
       firstButtonOptions: {
         href: buildCheckoutHref({
-          locale,
           offerId: stillAlive.offers[0]?.id,
           productId: stillAlive.id,
         }),
@@ -86,7 +85,6 @@ export const getChoreos = (locale: string, t: Translate): TChoreoCard[] => {
       },
       secondButtonOptions: {
         href: buildCheckoutHref({
-          locale,
           offerId: stillAlive.offers[1]?.id,
           productId: stillAlive.id,
         }),
@@ -100,7 +98,6 @@ export const getChoreos = (locale: string, t: Translate): TChoreoCard[] => {
       title: "Her Lies",
       firstButtonOptions: {
         href: buildCheckoutHref({
-          locale,
           offerId: herLies.offers[0]?.id,
           productId: herLies.id,
         }),
@@ -108,7 +105,6 @@ export const getChoreos = (locale: string, t: Translate): TChoreoCard[] => {
       },
       secondButtonOptions: {
         href: buildCheckoutHref({
-          locale,
           offerId: herLies.offers[1]?.id,
           productId: herLies.id,
         }),

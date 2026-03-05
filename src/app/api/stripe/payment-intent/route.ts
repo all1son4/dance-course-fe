@@ -16,12 +16,14 @@ import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
 
 import {
   createPaymentIntentIdempotencyKey,
+  getResolvedCheckoutLocale,
   getStripeServer,
   normalizeCheckoutSessionId,
   normalizePaymentIntentCustomerData,
 } from "./lib";
 
 type CreatePaymentIntentBody = {
+  checkoutLocale?: string;
   checkoutSessionId?: string;
   customerData?: {
     country?: string;
@@ -112,6 +114,7 @@ export async function POST(request: Request) {
     }
 
     const checkoutSessionId = normalizeCheckoutSessionId(body.checkoutSessionId);
+    const checkoutLocale = getResolvedCheckoutLocale(body.checkoutLocale);
     const customerData = normalizePaymentIntentCustomerData(body.customerData ?? {});
     const product = getSellableProductById(body.productId) ?? DEFAULT_CHECKOUT_PRODUCT;
     const offer =
@@ -140,6 +143,7 @@ export async function POST(request: Request) {
         receipt_email: customerData.email || undefined,
         metadata: {
           checkout_currency: currency,
+          checkout_locale: checkoutLocale,
           checkout_session_id: checkoutSessionId,
           offer_id: offer.id,
           offer_label: offer.label,

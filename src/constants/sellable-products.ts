@@ -33,7 +33,6 @@ export type SellableProduct = {
 };
 
 type CheckoutHrefOptions = {
-  locale: string;
   offerId?: string;
   productId: string;
 };
@@ -195,11 +194,7 @@ export const formatCheckoutPrice = (
   currency: SupportedCheckoutCurrency,
 ) => `${amount} ${currency.toUpperCase()}`;
 
-export const buildCheckoutHref = ({
-  locale,
-  offerId,
-  productId,
-}: CheckoutHrefOptions) => {
+export const buildCheckoutHref = ({ offerId, productId }: CheckoutHrefOptions) => {
   const searchParams = new URLSearchParams({
     product: productId,
   });
@@ -208,5 +203,5 @@ export const buildCheckoutHref = ({
     searchParams.set("offer", offerId);
   }
 
-  return `/${locale}/payment?${searchParams.toString()}`;
+  return `/payment?${searchParams.toString()}`;
 };

@@ -43,11 +43,13 @@ const STRIPE_EVENT_SHEET_HEADERS = [
 ] as const;
 
 const SUCCESSFUL_CUSTOMERS_SHEET_HEADERS = [
+  "payment_intent_id",
   "customer_email",
   "customer_name",
   "customer_last_name",
   "customer_nickname",
   "customer_country",
+  "purchase_item",
 ] as const;
 
 type GoogleSheetsTokenResponse = {

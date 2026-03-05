@@ -1,4 +1,4 @@
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import { Button, Contacts, TextContentCard } from "@/components";
@@ -333,10 +333,9 @@ export const ChoreoSection = styled.section`
 `;
 
 export default function FirstTouch() {
-  const locale = useLocale();
   const t = useTranslations("ChoreoPage");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
-  const choreos = getChoreos(locale, (key) => t(key));
+  const choreos = getChoreos((key) => t(key));
 
   return (
     <>

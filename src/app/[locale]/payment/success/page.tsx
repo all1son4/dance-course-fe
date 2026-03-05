@@ -6,10 +6,12 @@ import { useEffect } from "react";
 import styled from "styled-components";
 
 import { Button } from "@/components";
+import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { glass } from "@/styles/mixins/glass";
 import { Success } from "@/svg";
 
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
+const FIRST_TOUCH_TELEGRAM_LINK = "https://t.me/+YSmcfQx7nYhhOTgy";
 
 const Container = styled.div`
   display: flex;
@@ -69,7 +71,8 @@ const ButtonBox = styled.div`
   display: flex;
   justify-content: center;
   margin: 40px 0 0 0;
-  max-width: 300px;
+  max-width: 600px;
+  gap: 10px;
   width: 100%;
 
   @media (max-width: 767px) {
@@ -81,6 +84,8 @@ export default function SuccesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const t = useTranslations("PaymentSuccessPage");
+  const isFirstTouchPurchase =
+    searchParams.get("product")?.trim() === SELLABLE_PRODUCTS["first-touch"].id;
 
   useEffect(() => {
     document.body.setAttribute("data-hide-footer", "true");
@@ -168,10 +173,17 @@ export default function SuccesPage() {
         <Paragraps>
           <Paragraph>{t("description.line1")}</Paragraph>
           <Paragraph>{t("description.line2")}</Paragraph>
-          <ButtonBox>
-            <Button buttonText={t("buttons.home")} href="/" />
-          </ButtonBox>
         </Paragraps>
+        <ButtonBox>
+          {isFirstTouchPurchase && (
+            <Button
+              buttonText={t("telegram.openLink")}
+              href={FIRST_TOUCH_TELEGRAM_LINK}
+              target="_blank"
+            />
+          )}
+          <Button buttonText={t("buttons.home")} href="/" variant="secondary" />
+        </ButtonBox>
       </ResultCard>
     </Container>
   );

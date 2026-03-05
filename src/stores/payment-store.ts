@@ -239,6 +239,7 @@ export class PaymentStore {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          checkoutLocale: this.validationLocale,
           checkoutSessionId: this.checkoutSessionId,
           customerData: this.customerData,
           currency: resolvedCurrency,

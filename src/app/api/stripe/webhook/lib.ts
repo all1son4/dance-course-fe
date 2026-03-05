@@ -26,44 +26,57 @@ type StripePaymentWebhookResult = {
   eventType: string;
   paymentRecord: PaymentSheetRecord;
   received: true;
+  skipped: boolean;
+};
+
+const getPurchaseItemLabel = (paymentRecord: PaymentSheetRecord) => {
+  const productTitle = paymentRecord.product_title.trim();
+  const offerLabel = paymentRecord.offer_label.trim();
+
+  if (productTitle && offerLabel) {
+    return `${productTitle} — ${offerLabel}`;
+  }
+
+  if (productTitle) {
+    return productTitle;
+  }
+
+  return offerLabel;
 };
 
 const mapPaymentIntentToPaymentRecord = (
   event: Stripe.Event,
   paymentIntent: Stripe.PaymentIntent,
+  existingRecord: PaymentSheetRecord | null,
 ) => {
   const snapshot = getManagedPaymentIntentSnapshot(paymentIntent);
-  const existingRecordPromise = findPaymentRecordByIntentId(paymentIntent.id);
+  const timestamp = new Date().toISOString();
 
-  return existingRecordPromise.then((existingRecord) => {
-    const timestamp = new Date().toISOString();
-
-    return {
-      amount: String(snapshot.amount),
-      checkout_currency: paymentIntent.metadata.checkout_currency ?? "",
-      currency: snapshot.currency,
-      customer_country: paymentIntent.metadata.customer_country ?? "",
-      customer_email: paymentIntent.receipt_email ?? "",
-      customer_last_name: paymentIntent.metadata.customer_last_name ?? "",
-      customer_name: paymentIntent.metadata.customer_name ?? "",
-      customer_nickname: paymentIntent.metadata.customer_nickname ?? "",
-      checkout_session_id: paymentIntent.metadata.checkout_session_id ?? "",
-      first_seen_at: existingRecord?.first_seen_at || timestamp,
-      last_payment_error_code: snapshot.lastPaymentErrorCode ?? "",
-      last_payment_error_message: snapshot.lastPaymentErrorMessage ?? "",
-      latest_event_id: event.id,
-      latest_event_type: event.type,
-      offer_id: paymentIntent.metadata.offer_id ?? "",
-      offer_label: paymentIntent.metadata.offer_label ?? "",
-      outcome: snapshot.outcome,
-      payment_intent_id: snapshot.paymentIntentId,
-      product_id: paymentIntent.metadata.product_id ?? "",
-      product_title: paymentIntent.metadata.product_title ?? "",
-      successful_customer_logged_at: existingRecord?.successful_customer_logged_at ?? "",
-      status: snapshot.status,
-      updated_at: timestamp,
-    } satisfies PaymentSheetRecord;
-  });
+  return {
+    amount: String(snapshot.amount),
+    checkout_currency: paymentIntent.metadata.checkout_currency ?? "",
+    currency: snapshot.currency,
+    customer_country: paymentIntent.metadata.customer_country ?? "",
+    customer_email: paymentIntent.receipt_email ?? "",
+    customer_last_name: paymentIntent.metadata.customer_last_name ?? "",
+    customer_name: paymentIntent.metadata.customer_name ?? "",
+    customer_nickname: paymentIntent.metadata.customer_nickname ?? "",
+    checkout_session_id: paymentIntent.metadata.checkout_session_id ?? "",
+    first_seen_at: existingRecord?.first_seen_at || timestamp,
+    last_payment_error_code: snapshot.lastPaymentErrorCode ?? "",
+    last_payment_error_message: snapshot.lastPaymentErrorMessage ?? "",
+    latest_event_id: event.id,
+    latest_event_type: event.type,
+    offer_id: paymentIntent.metadata.offer_id ?? "",
+    offer_label: paymentIntent.metadata.offer_label ?? "",
+    outcome: snapshot.outcome,
+    payment_intent_id: snapshot.paymentIntentId,
+    product_id: paymentIntent.metadata.product_id ?? "",
+    product_title: paymentIntent.metadata.product_title ?? "",
+    successful_customer_logged_at: existingRecord?.successful_customer_logged_at ?? "",
+    status: snapshot.status,
+    updated_at: timestamp,
+  } satisfies PaymentSheetRecord;
 };
 
 export const isSupportedStripePaymentIntentEvent = (eventType: string) =>
@@ -96,8 +109,15 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
   event: Stripe.Event,
 ): Promise<StripePaymentWebhookResult> => {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
-  const existingEvent = await findStripeEventRecordByEventId(event.id);
-  const paymentRecord = await mapPaymentIntentToPaymentRecord(event, paymentIntent);
+  const [existingEvent, existingPaymentRecord] = await Promise.all([
+    findStripeEventRecordByEventId(event.id),
+    findPaymentRecordByIntentId(paymentIntent.id),
+  ]);
+  const paymentRecord = mapPaymentIntentToPaymentRecord(
+    event,
+    paymentIntent,
+    existingPaymentRecord,
+  );
 
   if (existingEvent) {
     return {
@@ -106,6 +126,28 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
       eventType: event.type,
       paymentRecord,
       received: true,
+      skipped: false,
+    };
+  }
+
+  if (event.type === "payment_intent.canceled" && !existingPaymentRecord) {
+    // Ignore auto-canceled unused intents in Payments sheet.
+    await appendStripeEventRecord({
+      event_id: event.id,
+      event_type: event.type,
+      outcome: paymentRecord.outcome,
+      payment_intent_id: paymentRecord.payment_intent_id,
+      processed_at: new Date().toISOString(),
+      status: paymentRecord.status,
+    });
+
+    return {
+      duplicate: false,
+      eventId: event.id,
+      eventType: event.type,
+      paymentRecord,
+      received: true,
+      skipped: true,
     };
   }
 
@@ -116,11 +158,13 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
     !savedPaymentRecord.successful_customer_logged_at
   ) {
     await appendSuccessfulCustomerRecord({
+      payment_intent_id: savedPaymentRecord.payment_intent_id,
       customer_country: savedPaymentRecord.customer_country,
       customer_email: savedPaymentRecord.customer_email,
       customer_last_name: savedPaymentRecord.customer_last_name,
       customer_name: savedPaymentRecord.customer_name,
       customer_nickname: savedPaymentRecord.customer_nickname,
+      purchase_item: getPurchaseItemLabel(savedPaymentRecord),
     });
     savedPaymentRecord = await upsertPaymentRecord({
       ...savedPaymentRecord,
@@ -143,5 +187,6 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
     eventType: event.type,
     paymentRecord: savedPaymentRecord,
     received: true,
+    skipped: false,
   };
 };

@@ -438,8 +438,12 @@
   "PaymentSuccessPage": {
     "title": "Dziękujemy! Płatność zakończyła się sukcesem",
     "description": {
-      "line1": "Wkrótce Ania skontaktuje się z Tobą i wyśle linki do czatów Telegram z materiałami.",
-      "line2": "Przygotuj się do tańca — najciekawsza część zaczyna się już wkrótce!"
+      "line1": "Płatność została przyjęta. Dostęp do kursu jest już gotowy.",
+      "line2": "Otwórz Telegram, aby od razu rozpocząć naukę."
+    },
+    "telegram": {
+      "firstTouchLabel": "Materiały kursu First Touch:",
+      "openLink": "Przejdź do Telegrama"
     },
     "buttons": {
       "home": "Wróć na stronę główną"

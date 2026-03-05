@@ -438,8 +438,12 @@
   "PaymentSuccessPage": {
     "title": "Thank you! Your payment was successful",
     "description": {
-      "line1": "Anya will contact you soon and send links to Telegram chats with the course materials.",
-      "line2": "Get ready to dance — the most exciting part starts soon!"
+      "line1": "Payment received. Your course access is ready.",
+      "line2": "Open Telegram to start learning right away."
+    },
+    "telegram": {
+      "firstTouchLabel": "First Touch course materials:",
+      "openLink": "Go to Telegram"
     },
     "buttons": {
       "home": "Back to home"

@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { styled } from "styled-components";
 
 import {
@@ -510,11 +510,9 @@ const CourseProgramButtonBox = styled.div`
 `;
 
 export default function FirstTouch() {
-  const locale = useLocale();
   const t = useTranslations("FirstTouchPage");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
   const checkoutHref = buildCheckoutHref({
-    locale,
     offerId: getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT).id,
     productId: DEFAULT_CHECKOUT_PRODUCT.id,
   });
