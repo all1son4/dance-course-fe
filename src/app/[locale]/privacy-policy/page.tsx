@@ -1,8 +1,40 @@
+import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Fragment } from "react";
 import styled from "styled-components";
 
+import { buildPageMetadata } from "@/lib/seo";
+
 import { getPrivacyPolicyItems } from "./constants";
+
+type PrivacyPolicyPageMetadataProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: PrivacyPolicyPageMetadataProps): Promise<Metadata> {
+  const { locale } = await params;
+  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
+  const pageT = await getTranslations({
+    locale,
+    namespace: "Metadata.pages.privacyPolicy",
+  });
+
+  return buildPageMetadata({
+    locale,
+    path: "/privacy-policy",
+    title: pageT("title"),
+    description: pageT("description"),
+    siteName: metadataT("siteName"),
+    ogImageAlt: pageT("ogImageAlt"),
+    keywords: pageT("keywords")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+}
 
 const PrivacyPolicySection = styled.section`
   display: flex;

@@ -1,11 +1,39 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { styled } from "styled-components";
 
 import { Button, Contacts, InteractiveCard } from "@/components";
 import SvgAsset from "@/components/common/SvgAsset";
+import { buildPageMetadata } from "@/lib/seo";
 
 import { getOnlineCoursesArray } from "./constants";
+
+type OnlinePageMetadataProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: OnlinePageMetadataProps): Promise<Metadata> {
+  const { locale } = await params;
+  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
+  const pageT = await getTranslations({ locale, namespace: "Metadata.pages.online" });
+
+  return buildPageMetadata({
+    locale,
+    path: "/online",
+    title: pageT("title"),
+    description: pageT("description"),
+    siteName: metadataT("siteName"),
+    ogImageAlt: pageT("ogImageAlt"),
+    keywords: pageT("keywords")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+}
 
 const IntroductionSection = styled.section`
   position: relative;

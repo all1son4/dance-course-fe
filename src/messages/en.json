@@ -1,11 +1,52 @@
 {
   "Metadata": {
     "title": {
-      "default": "Dance Platform",
-      "template": "%s · Dance Platform"
+      "default": "Anna Strok | Frame Up Strip",
+      "template": "%s | Anna Strok"
     },
-    "description": "Frame Up dance course platform",
-    "applicationName": "Dance Platform"
+    "description": "Online and offline Frame Up Strip classes by Anna Strok in Warsaw: beginner training, choreography breakdowns, and class booking.",
+    "applicationName": "Anna Strok",
+    "siteName": "Anna Strok | Frame Up Strip",
+    "ogImageAlt": "Anna Strok teaching Frame Up Strip",
+    "keywords": "Anna Strok, Frame Up Strip, dance classes Warsaw, online dance course, offline dance classes, choreography breakdown, high heels dance",
+    "pages": {
+      "home": {
+        "title": "Frame Up Strip Classes in Warsaw — Online and Offline",
+        "description": "Anna Strok teaches Frame Up Strip online and offline: beginner-friendly courses, choreography breakdowns, and class booking in Warsaw.",
+        "ogImageAlt": "Anna Strok with students during a Frame Up Strip class",
+        "keywords": "Anna Strok dance, Frame Up Strip Warsaw, online dance classes, offline dance classes Warsaw, high heels dance lessons"
+      },
+      "online": {
+        "title": "Online Frame Up Strip Courses",
+        "description": "Learn Frame Up Strip online in Telegram: First Touch beginner program and choreography breakdown lessons with instant material access.",
+        "ogImageAlt": "Online Frame Up Strip courses by Anna Strok",
+        "keywords": "online frame up course, first touch dance program, choreography breakdown online, telegram dance classes, Anna Strok online"
+      },
+      "firstTouch": {
+        "title": "First Touch — Frame Up Strip Beginner Course",
+        "description": "First Touch by Anna Strok: core Frame Up Strip technique, body control, emotion work, and your first choreography in one program.",
+        "ogImageAlt": "First Touch beginner course by Anna Strok",
+        "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
+      },
+      "choreo": {
+        "title": "Frame Up Strip Choreography Breakdowns",
+        "description": "Detailed choreography breakdowns for Still Alive and Her Lies with structure, technique, and performance guidance in a flexible online format.",
+        "ogImageAlt": "Frame Up Strip choreography breakdowns by Anna Strok",
+        "keywords": "choreography breakdown, still alive choreography, her lies choreography, frame up dance tutorial, Anna Strok choreography"
+      },
+      "offline": {
+        "title": "Offline Frame Up Strip Classes in Warsaw",
+        "description": "Join offline Frame Up Strip groups in Warsaw: beginner and intermediate levels, impro sessions, and trial class registration.",
+        "ogImageAlt": "Offline Frame Up Strip classes in Warsaw",
+        "keywords": "frame up strip warsaw, offline dance classes warsaw, high heels dance warsaw, trial dance class, women dance classes"
+      },
+      "privacyPolicy": {
+        "title": "Privacy Policy",
+        "description": "Privacy policy for Anna Strok website: personal data processing rules, legal basis, and contact details.",
+        "ogImageAlt": "Anna Strok privacy policy page",
+        "keywords": "Anna Strok privacy policy, personal data processing, dance website privacy"
+      }
+    }
   },
   "Header": {
     "aria": {

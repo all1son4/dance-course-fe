@@ -1,11 +1,52 @@
 {
   "Metadata": {
     "title": {
-      "default": "Dance Platform",
-      "template": "%s · Dance Platform"
+      "default": "Anna Strok | Frame Up Strip",
+      "template": "%s | Anna Strok"
     },
-    "description": "Platforma kursów tańca Frame Up",
-    "applicationName": "Dance Platform"
+    "description": "Kursy Frame Up Strip online i offline prowadzone przez Annę Strok w Warszawie: nauka od podstaw, analizy choreografii i zapisy na zajęcia.",
+    "applicationName": "Anna Strok",
+    "siteName": "Anna Strok | Frame Up Strip",
+    "ogImageAlt": "Anna Strok podczas zajęć Frame Up Strip",
+    "keywords": "Anna Strok, Frame Up Strip, taniec Warszawa, kurs tańca online, zajęcia taneczne offline, analiza choreografii, high heels dance",
+    "pages": {
+      "home": {
+        "title": "Kursy Frame Up Strip w Warszawie — online i offline",
+        "description": "Anna Strok prowadzi kursy Frame Up Strip online i offline: nauka od podstaw, analizy choreografii oraz zapisy na zajęcia w Warszawie.",
+        "ogImageAlt": "Anna Strok i uczestniczki podczas zajęć Frame Up Strip",
+        "keywords": "Anna Strok taniec, Frame Up Strip Warszawa, kurs tańca online, zajęcia taneczne Warszawa, high heels dance"
+      },
+      "online": {
+        "title": "Kursy online Frame Up Strip",
+        "description": "Ucz się Frame Up Strip online w Telegramie: program First Touch dla początkujących oraz analizy choreografii z szybkim dostępem do materiałów.",
+        "ogImageAlt": "Kursy online Frame Up Strip prowadzone przez Annę Strok",
+        "keywords": "kurs frame up online, first touch kurs, analiza choreografii online, telegram kurs tańca, Anna Strok online"
+      },
+      "firstTouch": {
+        "title": "First Touch — kurs Frame Up Strip dla początkujących",
+        "description": "First Touch od Anny Strok: podstawy Frame Up Strip, technika, kontrola ciała, emocje i pierwsza choreografia w jednym kursie.",
+        "ogImageAlt": "Kurs First Touch dla początkujących",
+        "keywords": "First Touch kurs, kurs tańca dla początkujących online, frame up strip podstawy, Anna Strok First Touch"
+      },
+      "choreo": {
+        "title": "Analizy choreografii Frame Up Strip",
+        "description": "Szczegółowe analizy choreografii Still Alive i Her Lies: struktura ruchu, technika oraz wyraz sceniczny w wygodnym formacie online.",
+        "ogImageAlt": "Analizy choreografii Frame Up Strip od Anny Strok",
+        "keywords": "analiza choreografii online, still alive choreografia, her lies choreografia, frame up tutorial, Anna Strok choreografia"
+      },
+      "offline": {
+        "title": "Zajęcia offline Frame Up Strip w Warszawie",
+        "description": "Dołącz do grup Frame Up Strip w Warszawie: poziom początkujący i średni, zajęcia impro oraz zapisy na lekcję próbną.",
+        "ogImageAlt": "Zajęcia offline Frame Up Strip w Warszawie",
+        "keywords": "frame up strip warszawa, zajęcia taneczne warszawa, high heels warszawa, lekcja próbna tańca"
+      },
+      "privacyPolicy": {
+        "title": "Polityka prywatności",
+        "description": "Polityka prywatności strony Anna Strok: zasady przetwarzania danych osobowych, podstawa prawna i dane kontaktowe.",
+        "ogImageAlt": "Strona polityki prywatności Anna Strok",
+        "keywords": "polityka prywatności anna strok, przetwarzanie danych osobowych, privacy policy dance website"
+      }
+    }
   },
   "Header": {
     "aria": {

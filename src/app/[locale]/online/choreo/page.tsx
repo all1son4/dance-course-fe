@@ -1,11 +1,39 @@
+import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { styled } from "styled-components";
 
 import { Button, Contacts, TextContentCard } from "@/components";
 import ChoreoCard from "@/components/cards/ChoreoCard";
 import SvgAsset from "@/components/common/SvgAsset";
+import { buildPageMetadata } from "@/lib/seo";
 
 import { getChoreos, getOnlineSuggestions } from "./contstants";
+
+type ChoreoPageMetadataProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: ChoreoPageMetadataProps): Promise<Metadata> {
+  const { locale } = await params;
+  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
+  const pageT = await getTranslations({ locale, namespace: "Metadata.pages.choreo" });
+
+  return buildPageMetadata({
+    locale,
+    path: "/online/choreo",
+    title: pageT("title"),
+    description: pageT("description"),
+    siteName: metadataT("siteName"),
+    ogImageAlt: pageT("ogImageAlt"),
+    keywords: pageT("keywords")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+}
 
 const IntroductionSection = styled.section`
   position: relative;

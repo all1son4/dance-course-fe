@@ -1,11 +1,52 @@
 {
   "Metadata": {
     "title": {
-      "default": "Dance Platform",
-      "template": "%s · Dance Platform"
+      "default": "Anna Strok | Frame Up Strip",
+      "template": "%s | Anna Strok"
     },
-    "description": "Платформа танцевальных курсов Frame Up",
-    "applicationName": "Dance Platform"
+    "description": "Онлайн и офлайн курсы Frame Up Strip от Анны Строк в Варшаве: обучение с нуля, разборы хореографий и запись на занятия.",
+    "applicationName": "Anna Strok",
+    "siteName": "Anna Strok | Frame Up Strip",
+    "ogImageAlt": "Анна Строк на занятии Frame Up Strip",
+    "keywords": "Анна Строк, Frame Up Strip, танцы Варшава, онлайн курс танцев, офлайн занятия танцами, choreography breakdown, dance classes Warsaw",
+    "pages": {
+      "home": {
+        "title": "Онлайн и офлайн курсы Frame Up Strip в Варшаве",
+        "description": "Анна Строк обучает Frame Up Strip в онлайн и офлайн формате: курсы для начинающих, разборы хореографий и запись на занятия в Варшаве.",
+        "ogImageAlt": "Анна Строк и ученицы на тренировке Frame Up Strip",
+        "keywords": "frame up strip варшава, anna strok, курсы танцев онлайн, занятия танцами варшава, high heels варшава"
+      },
+      "online": {
+        "title": "Online курсы Frame Up Strip",
+        "description": "Онлайн обучение Frame Up Strip в Telegram: курс First Touch для начинающих и видео-разборы хореографий с доступом к материалам.",
+        "ogImageAlt": "Онлайн курсы Frame Up Strip от Анны Строк",
+        "keywords": "онлайн курс frame up, first touch курс, видео разбор хореографии, танцы в telegram, anna strok online"
+      },
+      "firstTouch": {
+        "title": "First Touch — курс Frame Up Strip для начинающих",
+        "description": "Курс First Touch от Анны Строк: база Frame Up Strip, техника, пластика, эмоции и первая хореография для новичков.",
+        "ogImageAlt": "Курс First Touch для начинающих в стиле Frame Up Strip",
+        "keywords": "first touch, курс для начинающих танцы, frame up strip база, anna strok first touch, онлайн танцы для новичков"
+      },
+      "choreo": {
+        "title": "Видео-разборы хореографий Frame Up Strip",
+        "description": "Разборы хореографий Still Alive и Her Lies: детальная структура движений, подача и отработка материала в удобном онлайн формате.",
+        "ogImageAlt": "Видео-разборы хореографий от Анны Строк",
+        "keywords": "разбор хореографии онлайн, still alive dance, her lies dance, frame up choreography, anna strok choreography"
+      },
+      "offline": {
+        "title": "Offline занятия Frame Up Strip в Варшаве",
+        "description": "Офлайн группы Frame Up Strip в Варшаве: уровни для начинающих и продолжающих, импровизация и запись на пробное занятие.",
+        "ogImageAlt": "Офлайн тренировки Frame Up Strip в Варшаве",
+        "keywords": "frame up strip варшава офлайн, танцы варшава для девушек, high heels classes warsaw, пробное занятие танцы"
+      },
+      "privacyPolicy": {
+        "title": "Политика конфиденциальности",
+        "description": "Политика конфиденциальности Anna Strok: порядок обработки персональных данных, контакты и правовые основания.",
+        "ogImageAlt": "Политика конфиденциальности Anna Strok",
+        "keywords": "политика конфиденциальности anna strok, защита персональных данных, privacy policy dance platform"
+      }
+    }
   },
   "Header": {
     "aria": {

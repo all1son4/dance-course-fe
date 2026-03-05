@@ -1,11 +1,39 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { styled } from "styled-components";
 
 import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
 import SvgAsset from "@/components/common/SvgAsset";
+import { buildPageMetadata } from "@/lib/seo";
 import { glass } from "@/styles/mixins/glass";
 import { Insta, Logo, Quote } from "@/svg";
+
+type HomePageMetadataProps = {
+  params: Promise<{ locale: string }>;
+};
+
+export async function generateMetadata({
+  params,
+}: HomePageMetadataProps): Promise<Metadata> {
+  const { locale } = await params;
+  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
+  const pageT = await getTranslations({ locale, namespace: "Metadata.pages.home" });
+
+  return buildPageMetadata({
+    locale,
+    path: "/",
+    title: pageT("title"),
+    description: pageT("description"),
+    siteName: metadataT("siteName"),
+    ogImageAlt: pageT("ogImageAlt"),
+    keywords: pageT("keywords")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
+}
 
 const IntroduceSection = styled.section`
   position: relative;

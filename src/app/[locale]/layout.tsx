@@ -6,12 +6,7 @@ import type { ReactNode } from "react";
 
 import { Footer, Header, PageContainer } from "@/components";
 import { routing } from "@/i18n/routing";
-
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000");
+import { instagramUrl, normalizedSiteUrl, seoImagePath, telegramUrl } from "@/lib/seo";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -33,6 +28,11 @@ export async function generateMetadata({
 }: Omit<LocaleLayoutProps, "children">): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: "Metadata" });
+  const keywords = t("keywords")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const openGraphLocale = locale === "en" ? "en_US" : locale === "pl" ? "pl_PL" : "ru_RU";
 
   return {
     title: {
@@ -41,7 +41,45 @@ export async function generateMetadata({
     },
     description: t("description"),
     applicationName: t("applicationName"),
-    metadataBase: new URL(siteUrl),
+    metadataBase: new URL(normalizedSiteUrl),
+    keywords,
+    alternates: {
+      canonical: "./",
+    },
+    openGraph: {
+      type: "website",
+      siteName: t("siteName"),
+      title: t("title.default"),
+      description: t("description"),
+      locale: openGraphLocale,
+      images: [
+        {
+          url: seoImagePath,
+          alt: t("ogImageAlt"),
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("title.default"),
+      description: t("description"),
+      images: [seoImagePath],
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+        "max-video-preview": -1,
+      },
+    },
+    authors: [{ name: "Anna Strok" }],
+    creator: "Anna Strok",
+    publisher: t("siteName"),
+    category: "dance",
   };
 }
 
@@ -54,9 +92,33 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
 
   setRequestLocale(locale);
   const messages = await getMessages();
+  const t = await getTranslations({ locale, namespace: "Metadata" });
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: t("siteName"),
+      url: normalizedSiteUrl,
+      description: t("description"),
+      inLanguage: locale,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: "Anna Strok",
+      url: normalizedSiteUrl,
+      image: `${normalizedSiteUrl}${seoImagePath}`,
+      sameAs: [instagramUrl, telegramUrl],
+      jobTitle: "Dance Teacher",
+    },
+  ];
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Header />
       <main lang={locale}>
         <PageContainer>{children}</PageContainer>
