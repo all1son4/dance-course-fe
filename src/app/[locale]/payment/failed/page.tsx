@@ -1,15 +1,31 @@
-"use client";
-
-import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { getTranslations } from "next-intl/server";
 import styled from "styled-components";
 
 import { Button } from "@/components";
 import { glass } from "@/styles/mixins/glass";
 import { Failed } from "@/svg";
 
+import FailedPageGuard from "./failed-page-guard";
+
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
+type FailedPageSearchParams = Record<string, string | string[] | undefined>;
+type FailedPageProps = {
+  searchParams?: Promise<FailedPageSearchParams> | FailedPageSearchParams;
+};
+
+const getParamValue = (searchParams: FailedPageSearchParams, key: string): string => {
+  const value = searchParams[key];
+
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    return (value[0] ?? "").trim();
+  }
+
+  return "";
+};
 
 const Container = styled.div`
   display: flex;
@@ -78,13 +94,13 @@ const ButtonBox = styled.div`
   }
 `;
 
-export default function FailedPage() {
-  const searchParams = useSearchParams();
-  const t = useTranslations("PaymentFailedPage");
+export default async function FailedPage({ searchParams }: FailedPageProps) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const t = await getTranslations("PaymentFailedPage");
   const contextParams = new URLSearchParams();
 
   CHECKOUT_CONTEXT_KEYS.forEach((key) => {
-    const value = searchParams.get(key)?.trim();
+    const value = getParamValue(resolvedSearchParams, key);
 
     if (value) {
       contextParams.set(key, value);
@@ -95,17 +111,10 @@ export default function FailedPage() {
     ? `/payment?${contextParams.toString()}`
     : "/payment";
 
-  useEffect(() => {
-    document.body.setAttribute("data-hide-footer", "true");
-
-    return () => {
-      document.body.removeAttribute("data-hide-footer");
-    };
-  }, []);
-
   return (
     <Container>
       <ResultCard>
+        <FailedPageGuard />
         <Failed />
         <Title>{t("title")}</Title>
         <Paragraps>

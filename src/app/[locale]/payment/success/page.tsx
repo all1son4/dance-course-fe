@@ -1,8 +1,5 @@
-"use client";
-
-import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import styled from "styled-components";
 
 import { Button } from "@/components";
@@ -10,8 +7,29 @@ import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { glass } from "@/styles/mixins/glass";
 import { Success } from "@/svg";
 
+import SuccessRedirectGuard from "./success-redirect-guard";
+
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
 const FIRST_TOUCH_TELEGRAM_LINK = "https://t.me/+YSmcfQx7nYhhOTgy";
+
+type SuccessPageSearchParams = Record<string, string | string[] | undefined>;
+type SuccessPageProps = {
+  searchParams?: Promise<SuccessPageSearchParams> | SuccessPageSearchParams;
+};
+
+const getParamValue = (searchParams: SuccessPageSearchParams, key: string): string => {
+  const value = searchParams[key];
+
+  if (typeof value === "string") {
+    return value.trim();
+  }
+
+  if (Array.isArray(value)) {
+    return (value[0] ?? "").trim();
+  }
+
+  return "";
+};
 
 const Container = styled.div`
   display: flex;
@@ -80,94 +98,44 @@ const ButtonBox = styled.div`
   }
 `;
 
-export default function SuccesPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const t = useTranslations("PaymentSuccessPage");
+export default async function SuccesPage({ searchParams }: SuccessPageProps) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const t = await getTranslations("PaymentSuccessPage");
+  const redirectStatus = getParamValue(
+    resolvedSearchParams,
+    "redirect_status",
+  ).toLowerCase();
+  const checkoutSessionId = getParamValue(resolvedSearchParams, "checkout");
+  const paymentIntentId = getParamValue(resolvedSearchParams, "payment_intent");
+  const contextParams = new URLSearchParams();
+
+  CHECKOUT_CONTEXT_KEYS.forEach((key) => {
+    const value = getParamValue(resolvedSearchParams, key);
+
+    if (value) {
+      contextParams.set(key, value);
+    }
+  });
+
+  const contextQuery = contextParams.toString();
+  const failedPath = contextQuery ? `/payment/failed?${contextQuery}` : "/payment/failed";
+
+  if (redirectStatus === "failed") {
+    redirect(failedPath);
+  }
+
   const isFirstTouchPurchase =
-    searchParams.get("product")?.trim() === SELLABLE_PRODUCTS["first-touch"].id;
-
-  useEffect(() => {
-    document.body.setAttribute("data-hide-footer", "true");
-
-    return () => {
-      document.body.removeAttribute("data-hide-footer");
-    };
-  }, []);
-
-  useEffect(() => {
-    const redirectStatus =
-      searchParams.get("redirect_status")?.trim().toLowerCase() ?? "";
-    const checkoutSessionId = searchParams.get("checkout")?.trim() ?? "";
-    const paymentIntentId = searchParams.get("payment_intent")?.trim() ?? "";
-    const contextParams = new URLSearchParams();
-    CHECKOUT_CONTEXT_KEYS.forEach((key) => {
-      const value = searchParams.get(key)?.trim();
-
-      if (value) {
-        contextParams.set(key, value);
-      }
-    });
-    const contextQuery = contextParams.toString();
-    const failedPath = contextQuery
-      ? `/payment/failed?${contextQuery}`
-      : "/payment/failed";
-
-    if (redirectStatus === "failed") {
-      router.replace(failedPath);
-      return;
-    }
-
-    if (!paymentIntentId || !checkoutSessionId) {
-      return;
-    }
-
-    let isDisposed = false;
-
-    const verifyOutcome = async () => {
-      try {
-        const response = await fetch("/api/stripe/payment-intent/status", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            checkoutSessionId,
-            paymentIntentId,
-          }),
-        });
-
-        if (!response.ok || isDisposed) {
-          return;
-        }
-
-        const data = (await response.json()) as {
-          outcome?:
-            | "canceled"
-            | "failed"
-            | "processing"
-            | "requires_action"
-            | "succeeded";
-        };
-
-        if (data.outcome === "failed" || data.outcome === "canceled") {
-          router.replace(failedPath);
-        }
-      } catch {
-        // Keep the success screen if status validation is temporarily unavailable.
-      }
-    };
-
-    void verifyOutcome();
-
-    return () => {
-      isDisposed = true;
-    };
-  }, [router, searchParams]);
+    getParamValue(resolvedSearchParams, "product") ===
+    SELLABLE_PRODUCTS["first-touch"].id;
 
   return (
     <Container>
       <ResultCard>
+        <SuccessRedirectGuard
+          checkoutSessionId={checkoutSessionId}
+          failedPath={failedPath}
+          paymentIntentId={paymentIntentId}
+        />
         <Success />
         <Title>{t("title")}</Title>
         <Paragraps>
