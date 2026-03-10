@@ -8,7 +8,7 @@ import ChoreoCard from "@/components/cards/ChoreoCard";
 import SvgAsset from "@/components/common/SvgAsset";
 import { buildPageMetadata } from "@/lib/seo";
 
-import { getChoreos, getOnlineSuggestions } from "./contstants";
+import { getChoreos, getOnlineSuggestions } from "./constants";
 
 type ChoreoPageMetadataProps = {
   params: Promise<{ locale: string }>;
@@ -445,7 +445,7 @@ export default function FirstTouch() {
             <ChoreoCard
               key={choreo.id}
               videoSrc={choreo.videoSrc}
-              postrSrc={choreo.postrSrc}
+              posterSrc={choreo.posterSrc}
               title={choreo.title}
               firstButtonOptions={choreo.firstButtonOptions}
               secondButtonOptions={choreo.secondButtonOptions}

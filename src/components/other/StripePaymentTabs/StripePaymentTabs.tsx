@@ -14,7 +14,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Button } from "@/components";
+import Button from "@/components/common/Button";
 
 import {
   Actions,
@@ -37,7 +37,6 @@ import type { StripePaymentTabsProps } from "./StripePaymentTabs.types";
 
 const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
 const PAYMENT_SUCCESS_PATH = "/payment/success";
-const PAYMENT_FAILED_PATH = "/payment/failed";
 
 const getStripePromise = (publishableKey: string) => {
   const cachedPromise = stripePromiseCache.get(publishableKey);
@@ -227,14 +226,15 @@ type StripePaymentFormProps = {
   billingEmail?: string | null;
   billingName?: string | null;
   checkoutSessionId?: string | null;
-  confirmFailedText: string;
   confirmedText: string;
   paymentIntentId?: string | null;
   payButtonText: string;
+  preparingText: string;
   processingText: string;
   resultCurrency?: string | null;
   resultOfferId?: string | null;
   resultProductId?: string | null;
+  technicalErrorText: string;
 };
 
 const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: string) => {
@@ -266,14 +266,15 @@ const StripePaymentForm = ({
   billingEmail,
   billingName,
   checkoutSessionId,
-  confirmFailedText,
   confirmedText,
   paymentIntentId,
   payButtonText,
+  preparingText,
   processingText,
   resultCurrency,
   resultOfferId,
   resultProductId,
+  technicalErrorText,
 }: StripePaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -281,6 +282,7 @@ const StripePaymentForm = ({
   const [paymentElementOptions] = useState(() =>
     createPaymentElementOptions(billingCountry, billingEmail, billingName),
   );
+  const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const cancelUnusedPaymentIntents = (usedPaymentIntentId: string) => {
@@ -306,7 +308,7 @@ const StripePaymentForm = ({
       }).catch(() => undefined);
     });
   };
-  const createResultPageUrl = (pathname: string) => {
+  const createResultPageUrl = (pathname: string, nextPaymentIntentId?: string) => {
     const url = new URL(pathname, window.location.origin);
 
     if (resultProductId) {
@@ -325,19 +327,23 @@ const StripePaymentForm = ({
       url.searchParams.set("checkout", checkoutSessionId);
     }
 
+    if (nextPaymentIntentId) {
+      url.searchParams.set("payment_intent", nextPaymentIntentId);
+    }
+
     return url.toString();
   };
 
-  const redirectToResultPage = (pathname: string) => {
+  const redirectToResultPage = (pathname: string, nextPaymentIntentId?: string) => {
     if (typeof window === "undefined") {
       return;
     }
 
-    window.location.assign(createResultPageUrl(pathname));
+    window.location.assign(createResultPageUrl(pathname, nextPaymentIntentId));
   };
 
   const handlePayment = async () => {
-    if (!stripe || !elements || isSubmitting) {
+    if (!stripe || !elements || isSubmitting || !isPaymentElementReady) {
       return;
     }
 
@@ -347,34 +353,27 @@ const StripePaymentForm = ({
 
     let shouldKeepSubmitting = false;
 
-    const redirectWithLockedButton = (pathname: string) => {
+    const redirectWithLockedButton = (pathname: string, nextPaymentIntentId?: string) => {
       shouldKeepSubmitting = true;
-      redirectToResultPage(pathname);
+      redirectToResultPage(pathname, nextPaymentIntentId);
     };
 
     try {
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
-          return_url: createResultPageUrl(PAYMENT_SUCCESS_PATH),
+          return_url: createResultPageUrl(
+            PAYMENT_SUCCESS_PATH,
+            paymentIntentId ?? undefined,
+          ),
         },
         redirect: "if_required",
       });
 
       if (error) {
-        const errorPaymentIntentStatus = (
-          error as { payment_intent?: { status?: string } }
-        ).payment_intent?.status;
-
-        if (
-          errorPaymentIntentStatus === "requires_payment_method" ||
-          errorPaymentIntentStatus === "canceled"
-        ) {
-          redirectWithLockedButton(PAYMENT_FAILED_PATH);
-          return;
+        if (error.type === "api_connection_error" || error.type === "api_error") {
+          setSubmitError(technicalErrorText);
         }
-
-        setSubmitError(error.message || confirmFailedText);
         return;
       }
 
@@ -388,12 +387,11 @@ const StripePaymentForm = ({
 
         if (outcome === "succeeded") {
           cancelUnusedPaymentIntents(resolvedPaymentIntentId);
-          redirectWithLockedButton(PAYMENT_SUCCESS_PATH);
+          redirectWithLockedButton(PAYMENT_SUCCESS_PATH, resolvedPaymentIntentId);
           return;
         }
 
         if (outcome === "failed" || outcome === "canceled") {
-          redirectWithLockedButton(PAYMENT_FAILED_PATH);
           return;
         }
 
@@ -408,13 +406,13 @@ const StripePaymentForm = ({
           cancelUnusedPaymentIntents(usedPaymentIntentId);
         }
 
-        redirectWithLockedButton(PAYMENT_SUCCESS_PATH);
+        redirectWithLockedButton(PAYMENT_SUCCESS_PATH, usedPaymentIntentId || undefined);
         return;
       }
 
       setSubmitSuccess(confirmedText);
     } catch {
-      setSubmitError(confirmFailedText);
+      setSubmitError(technicalErrorText);
     } finally {
       if (!shouldKeepSubmitting) {
         setIsSubmitting(false);
@@ -425,22 +423,29 @@ const StripePaymentForm = ({
   return (
     <>
       <PaymentElementShell>
-        <PaymentElement options={paymentElementOptions} />
+        <PaymentElement
+          options={paymentElementOptions}
+          onLoaderStart={() => setIsPaymentElementReady(false)}
+          onReady={() => setIsPaymentElementReady(true)}
+        />
       </PaymentElementShell>
       <Actions>
         {submitError ? (
           <ErrorText role="alert" aria-live="assertive">
             {submitError}
           </ErrorText>
-        ) : null}
-        {submitSuccess ? (
+        ) : submitSuccess ? (
           <StatusText role="status" aria-live="polite" aria-atomic="true">
             {submitSuccess}
+          </StatusText>
+        ) : !isPaymentElementReady ? (
+          <StatusText role="status" aria-live="polite" aria-atomic="true">
+            {preparingText}
           </StatusText>
         ) : null}
         <Button
           buttonText={isSubmitting ? processingText : payButtonText}
-          disabled={!stripe || !elements || isSubmitting}
+          disabled={!stripe || !elements || isSubmitting || !isPaymentElementReady}
           onClick={handlePayment}
           type="button"
           width="240px"
@@ -502,14 +507,15 @@ export const StripePaymentTabs = ({
             billingEmail={billingEmail}
             billingName={billingName}
             checkoutSessionId={checkoutSessionId}
-            confirmFailedText={t("errors.confirmPaymentFailed")}
             confirmedText={t("status.confirmed")}
             paymentIntentId={paymentIntentId}
             payButtonText={t("button.pay")}
+            preparingText={t("status.preparing")}
             processingText={t("button.processing")}
             resultCurrency={resultCurrency}
             resultOfferId={resultOfferId}
             resultProductId={resultProductId}
+            technicalErrorText={t("errors.paymentIntentRequestFailed")}
           />
         </Elements>
       ) : (

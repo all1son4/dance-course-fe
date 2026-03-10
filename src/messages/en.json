@@ -4,23 +4,23 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Online and offline Frame Up Strip classes by Anna Strok in Warsaw: beginner training, choreography breakdowns, and class booking.",
+    "description": "Online and offline Frame Up Strip classes by Anna Strok in Warsaw: beginner training, choreography tutorials, and class booking.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Anna Strok teaching Frame Up Strip",
-    "keywords": "Anna Strok, Frame Up Strip, dance classes Warsaw, online dance course, offline dance classes, choreography breakdown, high heels dance",
+    "keywords": "Anna Strok, Frame Up Strip, dance classes Warsaw, online dance course, offline dance classes, choreography tutorial, high heels dance",
     "pages": {
       "home": {
         "title": "Frame Up Strip Classes in Warsaw — Online and Offline",
-        "description": "Anna Strok teaches Frame Up Strip online and offline: beginner-friendly courses, choreography breakdowns, and class booking in Warsaw.",
+        "description": "Anna Strok teaches Frame Up Strip online and offline: beginner-friendly courses, choreography tutorials, and class booking in Warsaw.",
         "ogImageAlt": "Anna Strok with students during a Frame Up Strip class",
         "keywords": "Anna Strok dance, Frame Up Strip Warsaw, online dance classes, offline dance classes Warsaw, high heels dance lessons"
       },
       "online": {
         "title": "Online Frame Up Strip Courses",
-        "description": "Learn Frame Up Strip online in Telegram: First Touch beginner program and choreography breakdown lessons with instant material access.",
+        "description": "Learn Frame Up Strip online in Telegram: First Touch beginner program and choreography tutorial lessons with instant material access.",
         "ogImageAlt": "Online Frame Up Strip courses by Anna Strok",
-        "keywords": "online frame up course, first touch dance program, choreography breakdown online, telegram dance classes, Anna Strok online"
+        "keywords": "online frame up course, first touch dance program, choreography tutorial online, telegram dance classes, Anna Strok online"
       },
       "firstTouch": {
         "title": "First Touch — Frame Up Strip Beginner Course",
@@ -29,10 +29,10 @@
         "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
       },
       "choreo": {
-        "title": "Frame Up Strip Choreography Breakdowns",
-        "description": "Detailed choreography breakdowns for Still Alive and Her Lies with structure, technique, and performance guidance in a flexible online format.",
-        "ogImageAlt": "Frame Up Strip choreography breakdowns by Anna Strok",
-        "keywords": "choreography breakdown, still alive choreography, her lies choreography, frame up dance tutorial, Anna Strok choreography"
+        "title": "Frame Up Strip Choreography Tutorials",
+        "description": "Detailed choreography tutorials for Still Alive and Her Lies with structure, technique, and performance guidance in a flexible online format.",
+        "ogImageAlt": "Frame Up Strip choreography tutorials by Anna Strok",
+        "keywords": "choreography tutorial, still alive choreography, her lies choreography, frame up dance tutorial, Anna Strok choreography"
       },
       "offline": {
         "title": "Offline Frame Up Strip Classes in Warsaw",
@@ -448,13 +448,9 @@
       "amountLabel": "Payment amount"
     },
     "inputs": {
-      "name": {
-        "label": "First name",
-        "placeholder": "First name"
-      },
-      "lastName": {
-        "label": "Last name",
-        "placeholder": "Last name"
+      "fullName": {
+        "label": "Full name",
+        "placeholder": "Full name"
       },
       "email": {
         "label": "Email",
@@ -467,24 +463,46 @@
       "country": {
         "label": "Country",
         "placeholder": "Select a country"
+      },
+      "lessonLanguage": {
+        "label": "Material language",
+        "placeholder": "Select language",
+        "options": {
+          "ru": "Russian",
+          "en": "English"
+        }
       }
     },
     "agreements": {
       "immediateAccessConsent": "I agree to the start of the service / delivery of access to digital content (online course) immediately after payment and before the 14-day withdrawal period expires.",
       "withdrawalNoticeAcknowledgement": "I acknowledge that after receiving immediate access to digital content, I lose the right to withdraw from the agreement within 14 days.",
-      "privacyPolicyAcknowledgement": "I declare that I have read the privacy policy.",
+      "privacyPolicyAcknowledgement": "I declare that I have read the <link>privacy policy</link>.",
       "digitalContentAgreement": "I accept the terms and conclude the agreement for the delivery of digital content."
     }
   },
   "PaymentSuccessPage": {
     "title": "Thank you! Your payment was successful",
     "description": {
-      "line1": "Payment received. Your course access is ready.",
-      "line2": "Open Telegram to start learning right away."
+      "firstTouch": {
+        "line1": "Payment confirmed. Your First Touch course access is already active.",
+        "line2": "Tap “Go to Telegram” to open the group and start learning right away."
+      },
+      "withoutMentor": {
+        "line1": "Payment confirmed. We are generating your personal access link to the lessons.",
+        "line2": "As soon as the link is ready, the button on this page will open your materials in Telegram."
+      },
+      "withMentor": {
+        "line1": "Payment confirmed. Your mentored format request has been received.",
+        "line2": "Please wait for a message from our team with the next steps and access details."
+      }
     },
     "telegram": {
       "firstTouchLabel": "First Touch course materials:",
-      "openLink": "Go to Telegram"
+      "openLink": "Go to Telegram",
+      "pending": "Preparing your personal Telegram lessons link...",
+      "unavailable": "The link is not ready yet. Refresh in a minute or contact support.",
+      "retry": "Refresh link",
+      "contactSupport": "Support"
     },
     "buttons": {
       "home": "Back to home"
@@ -541,9 +559,9 @@
       }
     },
     "choreoStillAlive": {
-      "title": "Choreography breakdown \"Still Alive\"",
+      "title": "Choreography tutorial \"Still Alive\"",
       "description": {
-        "1": "An online breakdown of the Still Alive choreography for dancers who want depth, structure and expressive movement.",
+        "1": "An online tutorial for the Still Alive choreography for dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
@@ -554,9 +572,9 @@
       }
     },
     "choreoHerLies": {
-      "title": "Choreography breakdown \"Her Lies\"",
+      "title": "Choreography tutorial \"Her Lies\"",
       "description": {
-        "1": "An online breakdown of the Her Lies choreography for dancers who want depth, structure and expressive movement.",
+        "1": "An online tutorial for the Her Lies choreography for dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },

@@ -56,6 +56,7 @@ const getOriginFromHeader = (value: string | null) => {
 export const isTrustedBrowserOrigin = (request: Request) => {
   const allowedOrigins = getAllowedOrigins(request);
   const origin = getOriginFromHeader(request.headers.get("origin"));
+  const isProduction = process.env.NODE_ENV === "production";
 
   if (origin) {
     return allowedOrigins.has(origin);
@@ -67,8 +68,9 @@ export const isTrustedBrowserOrigin = (request: Request) => {
     return allowedOrigins.has(refererOrigin);
   }
 
-  // Keep server-to-server compatibility for cases when these headers are absent.
-  return true;
+  // In production, browser-origin protected endpoints should reject requests
+  // without origin metadata.
+  return !isProduction;
 };
 
 export const isPayloadTooLarge = (request: Request, maxBytes: number) => {

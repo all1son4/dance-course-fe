@@ -44,7 +44,14 @@ export default function SuccessRedirectGuard({
           }),
         });
 
-        if (!response.ok || isDisposed) {
+        if (isDisposed) {
+          return;
+        }
+
+        if (!response.ok) {
+          if (response.status === 400 || response.status === 403) {
+            router.replace(failedPath);
+          }
           return;
         }
 

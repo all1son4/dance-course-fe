@@ -1,6 +1,6 @@
 export type TChoreoCard = {
   videoSrc?: string;
-  postrSrc: string;
+  posterSrc: string;
   title?: string;
   firstButtonOptions?: {
     href?: string;

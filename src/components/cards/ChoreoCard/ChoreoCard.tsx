@@ -1,7 +1,8 @@
-import { Button, VideoPlayer } from "@/components";
+import Button from "@/components/common/Button";
+import VideoPlayer from "@/components/other/VideoPlayer";
 
 import { ButtonBox, CardContainer, CardTitle, InteractiveBox } from "./ChoreoCard.styles";
-import { TChoreoCard } from "./ChoreoCard.types";
+import type { TChoreoCard } from "./ChoreoCard.types";
 
 export default function ChoreoCard(choreo: TChoreoCard) {
   return (
@@ -9,7 +10,7 @@ export default function ChoreoCard(choreo: TChoreoCard) {
       {choreo?.videoSrc && (
         <VideoPlayer
           src={choreo.videoSrc}
-          poster={choreo.postrSrc}
+          poster={choreo.posterSrc}
           iconSize="40px"
           buttonSize="80px"
           radius="40px 40px 0 0"

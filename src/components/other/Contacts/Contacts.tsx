@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 
-import { ContactCard } from "@/components";
+import ContactCard from "@/components/cards/ContactCard";
 
 import { getContactsArray } from "./Contacts.constants";
 import {

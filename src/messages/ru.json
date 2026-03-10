@@ -8,7 +8,7 @@
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Анна Строк на занятии Frame Up Strip",
-    "keywords": "Анна Строк, Frame Up Strip, танцы Варшава, онлайн курс танцев, офлайн занятия танцами, choreography breakdown, dance classes Warsaw",
+    "keywords": "Анна Строк, Frame Up Strip, танцы Варшава, онлайн курс танцев, офлайн занятия танцами, choreography tutorial, dance classes Warsaw",
     "pages": {
       "home": {
         "title": "Онлайн и офлайн курсы Frame Up Strip в Варшаве",
@@ -448,13 +448,9 @@
       "amountLabel": "Сумма оплаты"
     },
     "inputs": {
-      "name": {
-        "label": "Имя",
-        "placeholder": "Имя"
-      },
-      "lastName": {
-        "label": "Фамилия",
-        "placeholder": "Фамилия"
+      "fullName": {
+        "label": "ФИО",
+        "placeholder": "ФИО"
       },
       "email": {
         "label": "Email",
@@ -467,24 +463,46 @@
       "country": {
         "label": "Страна",
         "placeholder": "Выберите страну"
+      },
+      "lessonLanguage": {
+        "label": "Язык материалов",
+        "placeholder": "Выберите язык",
+        "options": {
+          "ru": "Русский",
+          "en": "English"
+        }
       }
     },
     "agreements": {
       "immediateAccessConsent": "Я соглашаюсь на начало оказания услуги/предоставление доступа к цифровому контенту (онлайн-курсу) сразу после оплаты и до истечения 14 дней с момента покупки.",
       "withdrawalNoticeAcknowledgement": "Я принимаю к сведению, что после получения мгновенного доступа к цифровому контенту я утрачиваю право на отказ от договора в течение 14 дней.",
-      "privacyPolicyAcknowledgement": "Заявляю, что ознакомилась с политикой конфиденциальности.",
+      "privacyPolicyAcknowledgement": "Заявляю, что ознакомилась с <link>политикой конфиденциальности</link>.",
       "digitalContentAgreement": "Я принимаю условия и заключаю соглашение о предоставлении цифрового контента."
     }
   },
   "PaymentSuccessPage": {
     "title": "Спасибо! Оплата прошла успешно",
     "description": {
-      "line1": "Оплата получена. Доступ к материалам уже готов.",
-      "line2": "Перейдите в Telegram, чтобы сразу открыть курс."
+      "firstTouch": {
+        "line1": "Оплата подтверждена. Доступ к курсу First Touch уже активирован.",
+        "line2": "Нажмите кнопку «Перейти в Telegram», чтобы открыть группу и сразу начать обучение."
+      },
+      "withoutMentor": {
+        "line1": "Оплата подтверждена. Мы подготавливаем персональную ссылку с доступом к урокам.",
+        "line2": "Как только ссылка будет готова, кнопка на этой странице откроет ваши материалы в Telegram."
+      },
+      "withMentor": {
+        "line1": "Оплата подтверждена. Ваша заявка на формат с куратором принята в работу.",
+        "line2": "Пожалуйста, ожидайте сообщение от команды с дальнейшими шагами и доступом к материалам."
+      }
     },
     "telegram": {
       "firstTouchLabel": "Материалы курса First Touch:",
-      "openLink": "Перейти в Telegram"
+      "openLink": "Перейти в Telegram",
+      "pending": "Готовим персональную ссылку на уроки в Telegram...",
+      "unavailable": "Ссылка еще не готова. Обновите через минуту или напишите в поддержку.",
+      "retry": "Обновить ссылку",
+      "contactSupport": "Поддержка"
     },
     "buttons": {
       "home": "Вернуться на главную"

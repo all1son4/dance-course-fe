@@ -5,13 +5,18 @@ import { useLocale, useTranslations } from "next-intl";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
 
-import { TopMenu } from "@/components";
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import {
+  getHashTargetFromLocation,
+  scrollToHashTarget,
+  scrollToTopInstant,
+} from "@/lib/scroll";
 import { usePaymentStore } from "@/stores";
 import { EnglishFlag, Logo, MenuButton, PolishFlag, RussianFlag } from "@/svg";
 
 import LanguageSelect from "../LanguageSelect";
+import TopMenu from "../TopMenu";
 import {
   Bottom,
   Brand,
@@ -24,35 +29,56 @@ import {
 
 export default function Header() {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const [isLocaleSwitching, setIsLocaleSwitching] = useState(false);
   const t = useTranslations("Header");
   const locale = useLocale();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const search = searchParams.toString();
   const router = useRouter();
   const paymentStore = usePaymentStore();
-  const previousRouteRef = useRef({ pathname, search });
+  const previousPathnameRef = useRef(pathname);
   const mobileMenuId = "header-mobile-menu";
 
-  const smoothScrollToContacts = () => {
-    const contactsElement = document.getElementById("contacts");
-
-    if (!contactsElement) {
-      return false;
+  const syncLocaleCookie = (nextLocale: (typeof routing.locales)[number]) => {
+    if (routing.localeCookie === false) {
+      return;
     }
 
-    contactsElement.scrollIntoView({
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-      block: "start",
-    });
+    const cookieName =
+      typeof routing.localeCookie === "object" && routing.localeCookie.name
+        ? routing.localeCookie.name
+        : "NEXT_LOCALE";
 
-    return true;
+    document.cookie = `${cookieName}=${nextLocale}; path=/; Max-Age=31536000; SameSite=Lax`;
+  };
+
+  const preserveScrollPosition = () => {
+    const left = window.scrollX;
+    const top = window.scrollY;
+    let attempts = 0;
+
+    const restore = () => {
+      window.scrollTo({ left, top, behavior: "auto" });
+      attempts += 1;
+
+      if (attempts < 10) {
+        window.requestAnimationFrame(restore);
+      }
+    };
+
+    window.requestAnimationFrame(restore);
   };
 
   useEffect(() => {
     document.documentElement.lang = locale;
+
+    const frameId = window.requestAnimationFrame(() => {
+      setIsLocaleSwitching(false);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
   }, [locale]);
 
   useEffect(() => {
@@ -68,26 +94,34 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const routeChanged =
-      previousRouteRef.current.pathname !== pathname ||
-      previousRouteRef.current.search !== search;
+    const frameId = window.requestAnimationFrame(() => {
+      setMenuIsOpen(false);
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, [pathname]);
+
+  useEffect(() => {
+    const routeChanged = previousPathnameRef.current !== pathname;
     let hashScrollTimeoutId: number | null = null;
 
     if (routeChanged) {
-      if (previousRouteRef.current.pathname === "/payment" && pathname !== "/payment") {
+      if (previousPathnameRef.current === "/payment" && pathname !== "/payment") {
         paymentStore.resetCheckoutForm();
       }
 
-      const hash = decodeURIComponent(window.location.hash.slice(1));
+      const hashTargetId = getHashTargetFromLocation();
 
-      if (hash === "contacts") {
+      if (hashTargetId) {
         const scrollToHash = (attempt = 0) => {
-          if (smoothScrollToContacts()) {
+          if (scrollToHashTarget(hashTargetId)) {
             return;
           }
 
           if (attempt >= 16) {
-            window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+            scrollToTopInstant();
             return;
           }
 
@@ -98,18 +132,18 @@ export default function Header() {
 
         scrollToHash();
       } else {
-        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+        scrollToTopInstant();
       }
     }
 
-    previousRouteRef.current = { pathname, search };
+    previousPathnameRef.current = pathname;
 
     return () => {
       if (hashScrollTimeoutId !== null) {
         window.clearTimeout(hashScrollTimeoutId);
       }
     };
-  }, [pathname, paymentStore, search]);
+  }, [pathname, paymentStore]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -132,17 +166,13 @@ export default function Header() {
   const onLanguageChange = (code: string) => {
     if (!routing.locales.includes(code as (typeof routing.locales)[number])) return;
     if (code === locale) return;
+    if (isLocaleSwitching) return;
 
-    const nextHref = `${pathname}${search ? `?${search}` : ""}${window.location.hash}`;
-
-    // Persist locale for localePrefix='never' so next navigations don't fall back.
-    document.cookie = `NEXT_LOCALE=${code}; Path=/; Max-Age=31536000; SameSite=Lax`;
     setMenuIsOpen(false);
-
-    router.replace(nextHref, {
-      locale: code as (typeof routing.locales)[number],
-      scroll: false,
-    });
+    setIsLocaleSwitching(true);
+    syncLocaleCookie(code as (typeof routing.locales)[number]);
+    preserveScrollPosition();
+    router.refresh();
   };
 
   const onBrandClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
@@ -153,16 +183,16 @@ export default function Header() {
     }
 
     event.preventDefault();
-
-    const nextUrl = `${window.location.pathname}${window.location.search}`;
-    window.history.replaceState(window.history.state, "", nextUrl);
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    const query = searchParams.toString();
+    const nextHref = `/${query ? `?${query}` : ""}`;
+    router.replace(nextHref, { scroll: false });
+    scrollToTopInstant();
   };
 
   const onContactsMenuClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
 
-    if (smoothScrollToContacts()) {
+    if (scrollToHashTarget("contacts")) {
       return;
     }
 
@@ -197,6 +227,7 @@ export default function Header() {
           value={locale}
           options={languageOptions}
           onChange={onLanguageChange}
+          disabled={isLocaleSwitching}
         />
       ),
     },

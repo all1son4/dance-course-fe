@@ -11,12 +11,11 @@ type PaymentValidationMessages = {
   countryInvalid: string;
   emailInvalid: string;
   emailRequired: string;
-  lastNameMax: string;
-  lastNameMin: string;
-  lastNameRequired: string;
-  nameMax: string;
-  nameMin: string;
-  nameRequired: string;
+  fullNameMax: string;
+  fullNameMin: string;
+  fullNameRequired: string;
+  lessonLanguageInvalid: string;
+  lessonLanguageRequired: string;
   nicknameInvalid: string;
   nicknameRequired: string;
 };
@@ -30,12 +29,11 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     countryInvalid: "Выберите страну из списка",
     emailInvalid: "Введите корректный email",
     emailRequired: "Введите email",
-    lastNameMax: "Фамилия должна содержать не больше 50 символов",
-    lastNameMin: "Фамилия должна содержать минимум 2 символа",
-    lastNameRequired: "Введите фамилию",
-    nameMax: "Имя должно содержать не больше 50 символов",
-    nameMin: "Имя должно содержать минимум 2 символа",
-    nameRequired: "Введите имя",
+    fullNameMax: "ФИО должно содержать не больше 100 символов",
+    fullNameMin: "Введите ФИО полностью",
+    fullNameRequired: "Введите ФИО",
+    lessonLanguageInvalid: "Выберите язык из списка",
+    lessonLanguageRequired: "Выберите язык материалов",
     nicknameInvalid: "Введите корректный ник Telegram в формате @username",
     nicknameRequired: "Введите ник в Telegram",
   },
@@ -44,12 +42,11 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     countryInvalid: "Select a country from the list",
     emailInvalid: "Enter a valid email address",
     emailRequired: "Enter your email",
-    lastNameMax: "Last name must be 50 characters or fewer",
-    lastNameMin: "Last name must be at least 2 characters",
-    lastNameRequired: "Enter your last name",
-    nameMax: "Name must be 50 characters or fewer",
-    nameMin: "Name must be at least 2 characters",
-    nameRequired: "Enter your name",
+    fullNameMax: "Full name must be 100 characters or fewer",
+    fullNameMin: "Enter your full name",
+    fullNameRequired: "Enter your full name",
+    lessonLanguageInvalid: "Select a language from the list",
+    lessonLanguageRequired: "Select material language",
     nicknameInvalid: "Enter a valid Telegram username in the @username format",
     nicknameRequired: "Enter your Telegram username",
   },
@@ -58,12 +55,11 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     countryInvalid: "Wybierz kraj z listy",
     emailInvalid: "Wpisz poprawny adres e-mail",
     emailRequired: "Wpisz adres e-mail",
-    lastNameMax: "Nazwisko moze miec maksymalnie 50 znakow",
-    lastNameMin: "Nazwisko musi miec co najmniej 2 znaki",
-    lastNameRequired: "Wpisz nazwisko",
-    nameMax: "Imie moze miec maksymalnie 50 znakow",
-    nameMin: "Imie musi miec co najmniej 2 znaki",
-    nameRequired: "Wpisz imie",
+    fullNameMax: "Imie i nazwisko moga miec maksymalnie 100 znakow",
+    fullNameMin: "Wpisz pelne imie i nazwisko",
+    fullNameRequired: "Wpisz imie i nazwisko",
+    lessonLanguageInvalid: "Wybierz jezyk z listy",
+    lessonLanguageRequired: "Wybierz język materiałów",
     nicknameInvalid: "Wpisz poprawny nick Telegram w formacie @username",
     nicknameRequired: "Wpisz nick Telegram",
   },
@@ -108,12 +104,9 @@ export const getPaymentCustomerSchema = (
 
   const messages = PAYMENT_VALIDATION_MESSAGES[resolvedLocale];
   const schema: yup.ObjectSchema<PaymentCustomerData> = yup.object({
-    name: trimmedRequiredText(messages.nameRequired)
-      .min(2, messages.nameMin)
-      .max(50, messages.nameMax),
-    lastName: trimmedRequiredText(messages.lastNameRequired)
-      .min(2, messages.lastNameMin)
-      .max(50, messages.lastNameMax),
+    fullName: trimmedRequiredText(messages.fullNameRequired)
+      .min(3, messages.fullNameMin)
+      .max(100, messages.fullNameMax),
     email: yup
       .string()
       .transform((value) => (typeof value === "string" ? value.trim() : ""))
@@ -132,6 +125,11 @@ export const getPaymentCustomerSchema = (
         messages.countryInvalid,
         (value) => typeof value === "string" && isSupportedCountryCode(value),
       ),
+    lessonLanguage: yup
+      .string()
+      .transform((value) => (typeof value === "string" ? value.trim().toLowerCase() : ""))
+      .required(messages.lessonLanguageRequired)
+      .oneOf(["ru", "en"], messages.lessonLanguageInvalid),
   });
 
   schemaCache.set(resolvedLocale, schema);

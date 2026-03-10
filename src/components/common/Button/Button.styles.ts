@@ -104,6 +104,10 @@ export const ButtonLinkWrapper = styled(Link)<StyledProps>`
   ${controlStyles}
 `;
 
+export const ButtonAnchorWrapper = styled.a<StyledProps>`
+  ${controlStyles}
+`;
+
 export const StyledButton = styled.button<StyledProps>`
   ${controlStyles}
 `;

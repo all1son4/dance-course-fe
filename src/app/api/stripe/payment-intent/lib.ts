@@ -12,6 +12,7 @@ export type ManagedPaymentIntentOutcome =
   | "failed"
   | "canceled";
 export type CheckoutLocale = "ru" | "en" | "pl";
+export type CheckoutLessonLanguage = "ru" | "en";
 
 export type ManagedPaymentIntentSnapshot = {
   amount: number;
@@ -52,22 +53,34 @@ export const getResolvedCheckoutLocale = (
   return "ru";
 };
 
+export const getResolvedCheckoutLessonLanguage = (
+  lessonLanguage: string | null | undefined,
+): CheckoutLessonLanguage => {
+  const normalizedValue = (lessonLanguage ?? "").trim().toLowerCase();
+
+  if (normalizedValue.startsWith("en")) {
+    return "en";
+  }
+
+  return "ru";
+};
+
 const trimAndCollapseSpaces = (value: string | null | undefined) =>
   (value ?? "").replace(/\s+/g, " ").trim();
 
 export type PaymentIntentCustomerData = {
   country: string;
   email: string;
-  lastName: string;
-  name: string;
+  fullName: string;
+  lessonLanguage: CheckoutLessonLanguage;
   nickname: string;
 };
 
 export const normalizePaymentIntentCustomerData = (customerData: {
   country?: string;
   email?: string;
-  lastName?: string;
-  name?: string;
+  fullName?: string;
+  lessonLanguage?: string;
   nickname?: string;
 }): PaymentIntentCustomerData => {
   const normalizedCountry = trimAndCollapseSpaces(customerData.country)
@@ -77,18 +90,20 @@ export const normalizePaymentIntentCustomerData = (customerData: {
   const normalizedEmail = trimAndCollapseSpaces(customerData.email)
     .toLowerCase()
     .slice(0, 254);
-  const normalizedName = trimAndCollapseSpaces(customerData.name).slice(0, 80);
-  const normalizedLastName = trimAndCollapseSpaces(customerData.lastName).slice(0, 80);
+  const normalizedFullName = trimAndCollapseSpaces(customerData.fullName).slice(0, 100);
   const normalizedNickname = trimAndCollapseSpaces(customerData.nickname)
     .replace(/\s+/g, "")
     .replace(/[^A-Za-z0-9_@]/g, "")
     .slice(0, 33);
+  const normalizedLessonLanguage = getResolvedCheckoutLessonLanguage(
+    customerData.lessonLanguage,
+  );
 
   return {
     country: normalizedCountry,
     email: normalizedEmail,
-    lastName: normalizedLastName,
-    name: normalizedName,
+    fullName: normalizedFullName,
+    lessonLanguage: normalizedLessonLanguage,
     nickname: normalizedNickname,
   };
 };
@@ -105,8 +120,8 @@ export const createPaymentIntentIdempotencyKey = ({
   customerData: {
     country?: string;
     email?: string;
-    lastName?: string;
-    name?: string;
+    fullName?: string;
+    lessonLanguage?: string;
     nickname?: string;
   };
   offerId: string;
@@ -117,8 +132,8 @@ export const createPaymentIntentIdempotencyKey = ({
       JSON.stringify({
         country: customerData.country?.trim().toUpperCase() ?? "",
         email: customerData.email?.trim().toLowerCase() ?? "",
-        lastName: customerData.lastName?.trim() ?? "",
-        name: customerData.name?.trim() ?? "",
+        fullName: customerData.fullName?.trim() ?? "",
+        lessonLanguage: getResolvedCheckoutLessonLanguage(customerData.lessonLanguage),
         nickname: customerData.nickname?.trim() ?? "",
       }),
     )

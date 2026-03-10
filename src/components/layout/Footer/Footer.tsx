@@ -1,6 +1,6 @@
 import { useTranslations } from "next-intl";
 
-import { Button } from "@/components";
+import Button from "@/components/common/Button";
 import { Logo, SmallMail, SmallPhone } from "@/svg";
 
 import {

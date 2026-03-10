@@ -13,6 +13,10 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
+import {
+  getLocalizedSellableProductOfferLabel,
+  getLocalizedSellableProductTitle,
+} from "@/lib/sellable-products-localization";
 
 import {
   createPaymentIntentIdempotencyKey,
@@ -27,8 +31,8 @@ type CreatePaymentIntentBody = {
   checkoutSessionId?: string;
   customerData?: {
     country?: string;
-    name?: string;
-    lastName?: string;
+    fullName?: string;
+    lessonLanguage?: string;
     email?: string;
     nickname?: string;
   };
@@ -122,6 +126,14 @@ export async function POST(request: Request) {
       product.offers.find((item) => item.id === product.defaultOfferId) ??
       product.offers[0];
     const currency = getResolvedCheckoutCurrency(body.currency);
+    const localizedProductTitle = getLocalizedSellableProductTitle(
+      product,
+      checkoutLocale,
+    );
+    const localizedOfferLabel = getLocalizedSellableProductOfferLabel(
+      offer,
+      checkoutLocale,
+    );
 
     if (!checkoutSessionId) {
       return jsonNoStore(
@@ -139,20 +151,20 @@ export async function POST(request: Request) {
         automatic_payment_methods: {
           enabled: true,
         },
-        description: `${product.title} - ${offer.label}`,
+        description: `${localizedProductTitle} - ${localizedOfferLabel}`,
         receipt_email: customerData.email || undefined,
         metadata: {
           checkout_currency: currency,
           checkout_locale: checkoutLocale,
           checkout_session_id: checkoutSessionId,
           offer_id: offer.id,
-          offer_label: offer.label,
-          customer_name: customerData.name,
-          customer_last_name: customerData.lastName,
+          offer_label: localizedOfferLabel,
+          customer_full_name: customerData.fullName,
           customer_nickname: customerData.nickname,
           customer_country: customerData.country,
+          lesson_language: product.type === "choreo" ? customerData.lessonLanguage : "",
           product_id: product.id,
-          product_title: product.title,
+          product_title: localizedProductTitle,
         },
       },
       {

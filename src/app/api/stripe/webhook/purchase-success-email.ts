@@ -1,7 +1,7 @@
 import { getResolvedCheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 
-const TELEGRAM_ACCESS_LINK_BY_PRODUCT_ID: Record<string, string> = {
+const DEFAULT_TELEGRAM_ACCESS_LINK_BY_PRODUCT_ID: Record<string, string> = {
   [SELLABLE_PRODUCTS["first-touch"].id]: "https://t.me/+YSmcfQx7nYhhOTgy",
 };
 
@@ -129,10 +129,11 @@ export type BuildPurchaseSuccessEmailInput = {
   productTitle: string;
   receiptKind?: "pdf" | "receipt" | null;
   receiptLink: string | null;
+  telegramAccessUrl?: string | null;
 };
 
 export const getTelegramAccessLinkByProductId = (productId: string) =>
-  TELEGRAM_ACCESS_LINK_BY_PRODUCT_ID[productId] ?? null;
+  DEFAULT_TELEGRAM_ACCESS_LINK_BY_PRODUCT_ID[productId] ?? null;
 
 export const buildPurchaseSuccessEmail = ({
   amountMinor,
@@ -143,10 +144,11 @@ export const buildPurchaseSuccessEmail = ({
   productTitle,
   receiptKind,
   receiptLink,
+  telegramAccessUrl,
 }: BuildPurchaseSuccessEmailInput) => {
   const locale = getResolvedCheckoutLocale(checkoutLocale);
   const copy = EMAIL_COPY[locale];
-  const telegramLink = getTelegramAccessLinkByProductId(productId);
+  const telegramLink = telegramAccessUrl ?? getTelegramAccessLinkByProductId(productId);
   const amountLabel = formatCheckoutAmount({
     amountMinor,
     currency: checkoutCurrency,

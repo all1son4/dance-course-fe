@@ -31,10 +31,45 @@ The checkout uses Stripe `PaymentIntent`s and expects these environment variable
 - `GOOGLE_PRIVATE_KEY`
 - `GOOGLE_SHEETS_SPREADSHEET_ID`
 
-Optional Google Sheets env variables:
+Optional Telegram env variables:
 
-- `GOOGLE_SHEETS_PAYMENTS_SHEET_NAME` (defaults to `Payments`)
-- `GOOGLE_SHEETS_EVENTS_SHEET_NAME` (defaults to `StripeEvents`)
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_BOT_USERNAME`
+- `TELEGRAM_WEBHOOK_SECRET`
+- `TELEGRAM_LESSON_SOURCES_JSON`
+- `TELEGRAM_START_TOKEN_TTL_HOURS` (e.g. `720` for 30 days)
+- `TELEGRAM_ALERT_CHAT_ID` (Telegram group chat id for `with-mentor` purchase alerts)
+- `TELEGRAM_ALERT_BOT_TOKEN` (optional; falls back to `TELEGRAM_BOT_TOKEN`)
+- `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in production)
+
+`TELEGRAM_WEBHOOK_SECRET` is required in production (`NODE_ENV=production`).
+
+Important production notes:
+
+- Runtime Node.js must be `>=20.9.0`.
+- `.nvmrc` is set to `20.9.0` for local/dev parity.
+- Browser-facing POST APIs validate `Origin/Referer` in production; missing headers are rejected.
+- After changing `TELEGRAM_LESSON_SOURCES_JSON`, restart the app process (source map is cached in-memory).
+- Operational timestamps persisted by backend flows are recorded in `Europe/Warsaw` timezone format.
+
+`TELEGRAM_LESSON_SOURCES_JSON` supports both a single source per offer and language-specific sources:
+
+```json
+{
+  "off_without_mentor_id": {
+    "ru": {
+      "sourceChatId": "-1001111111111",
+      "sourceMessageId": 10,
+      "lessonTitle": "Разбор (RU)"
+    },
+    "en": {
+      "sourceChatId": "-1001111111111",
+      "sourceMessageId": 11,
+      "lessonTitle": "Tutorial (EN)"
+    }
+  }
+}
+```
 
 The server exposes:
 
@@ -42,6 +77,8 @@ The server exposes:
 - `POST /api/stripe/payment-intent/status`
 - `POST /api/stripe/payment-intent/cancel`
 - `POST /api/stripe/webhook`
+- `POST /api/telegram/access-link`
+- `POST /api/telegram/webhook`
 
 For local webhook testing with the Stripe CLI:
 

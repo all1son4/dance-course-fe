@@ -25,12 +25,14 @@ import {
   getResolvedCheckoutCurrency,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import { Link } from "@/i18n/navigation";
 import { usePaymentStore } from "@/stores";
 import { glass } from "@/styles/mixins/glass";
 
 import {
   PAYMENT_CHECKBOXES,
   PAYMENT_INPUTS,
+  PAYMENT_LESSON_LANGUAGE_OPTIONS,
   type PaymentAgreementFieldName,
   type PaymentCustomerFieldName,
 } from "./payment.constants";
@@ -335,6 +337,19 @@ const AdditionalNotification = styled.div`
   }
 `;
 
+const AgreementLink = styled(Link)`
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  color: rgba(72, 72, 72, 1);
+  transition: color 0.2s ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #000000;
+    }
+  }
+`;
+
 const PaymentPage = observer(function PaymentPage() {
   const paymentStore = usePaymentStore();
   const locale = useLocale();
@@ -346,6 +361,14 @@ const PaymentPage = observer(function PaymentPage() {
   );
   const [isMobileSummaryCompact, setIsMobileSummaryCompact] = useState(false);
   const hasAppliedCurrencyFromQuery = useRef(false);
+  const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
+  const visiblePaymentInputs = isChoreoProduct
+    ? PAYMENT_INPUTS
+    : PAYMENT_INPUTS.filter((inputConfig) => inputConfig.name !== "lessonLanguage");
+  const lessonLanguageOptions = PAYMENT_LESSON_LANGUAGE_OPTIONS.map((option) => ({
+    label: t(option.labelKey),
+    value: option.value,
+  }));
 
   useEffect(() => {
     document.body.removeAttribute("data-hide-footer");
@@ -381,13 +404,6 @@ const PaymentPage = observer(function PaymentPage() {
 
     const nextCurrency = getResolvedCheckoutCurrency(queryCurrency);
     paymentStore.setSelectedCurrency(nextCurrency);
-
-    const nextSearchParams = new URLSearchParams(searchParams.toString());
-    nextSearchParams.delete("currency");
-
-    const nextQuery = nextSearchParams.toString();
-    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}`;
-    window.history.replaceState(window.history.state, "", nextUrl);
   }, [paymentStore, searchParams]);
 
   useEffect(() => {
@@ -403,10 +419,10 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.selectedProductId,
     paymentStore.selectedCurrency,
     paymentStore.customerData.email,
-    paymentStore.customerData.lastName,
-    paymentStore.customerData.name,
+    paymentStore.customerData.fullName,
     paymentStore.customerData.nickname,
     paymentStore.customerData.country,
+    paymentStore.customerData.lessonLanguage,
   ]);
 
   useEffect(() => {
@@ -456,6 +472,18 @@ const PaymentPage = observer(function PaymentPage() {
 
   const handleCurrencyChange = (value: SupportedCheckoutCurrency) => {
     paymentStore.setSelectedCurrency(value);
+  };
+
+  const getInputSelectOptions = (fieldName: PaymentCustomerFieldName) => {
+    if (fieldName === "country") {
+      return countryOptions;
+    }
+
+    if (fieldName === "lessonLanguage") {
+      return lessonLanguageOptions;
+    }
+
+    return undefined;
   };
 
   const summaryTopContent = (
@@ -521,7 +549,7 @@ const PaymentPage = observer(function PaymentPage() {
           <PersonalData>
             <PersonalDataTitle>{t("personalDataTitle")}</PersonalDataTitle>
             <Inputs>
-              {PAYMENT_INPUTS.map((inputConfig) => (
+              {visiblePaymentInputs.map((inputConfig) => (
                 <Input
                   key={inputConfig.name}
                   errorMessage={paymentStore.customerErrors[inputConfig.name] ?? ""}
@@ -531,9 +559,7 @@ const PaymentPage = observer(function PaymentPage() {
                   onBlur={handleInputBlur}
                   onChange={handleInputChange}
                   placeholder={t(inputConfig.placeholderKey)}
-                  selectOptions={
-                    inputConfig.name === "country" ? countryOptions : undefined
-                  }
+                  selectOptions={getInputSelectOptions(inputConfig.name)}
                   type={inputConfig.type}
                   value={paymentStore.customerData[inputConfig.name]}
                 />
@@ -546,7 +572,23 @@ const PaymentPage = observer(function PaymentPage() {
                   checked={paymentStore.agreements[checkboxConfig.name]}
                   name={checkboxConfig.formName}
                   onChange={handleAgreementChange(checkboxConfig.name)}
-                  placeholder={t(checkboxConfig.placeholderKey)}
+                  placeholder={
+                    checkboxConfig.name === "privacyPolicyAcknowledgement"
+                      ? t.rich(checkboxConfig.placeholderKey, {
+                          link: (chunks) => (
+                            <AgreementLink
+                              href="/privacy-policy"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(event) => event.stopPropagation()}
+                              onMouseDown={(event) => event.stopPropagation()}
+                            >
+                              {chunks}
+                            </AgreementLink>
+                          ),
+                        })
+                      : t(checkboxConfig.placeholderKey)
+                  }
                 />
               ))}
             </Checkboxes>
@@ -557,7 +599,7 @@ const PaymentPage = observer(function PaymentPage() {
               allPaymentIntentIds={Object.values(paymentStore.stripePaymentIntentIds)}
               billingCountry={paymentStore.customerData.country}
               billingEmail={paymentStore.customerData.email}
-              billingName={`${paymentStore.customerData.name} ${paymentStore.customerData.lastName}`.trim()}
+              billingName={paymentStore.customerData.fullName.trim()}
               checkoutSessionId={paymentStore.checkoutSessionId}
               clientSecret={
                 paymentStore.stripeClientSecrets?.[paymentStore.selectedCurrency] ?? ""

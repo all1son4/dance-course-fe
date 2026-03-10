@@ -1,11 +1,13 @@
 import { normalizeCountryCode } from "@/constants/countries";
 
 export type PaymentCustomerFieldName =
-  | "name"
-  | "lastName"
+  | "fullName"
   | "email"
   | "nickname"
-  | "country";
+  | "country"
+  | "lessonLanguage";
+
+export type PaymentLessonLanguage = "ru" | "en";
 
 export type PaymentCustomerData = Record<PaymentCustomerFieldName, string>;
 
@@ -32,11 +34,11 @@ export type PaymentCheckboxConfig = {
 };
 
 export const INITIAL_CUSTOMER_DATA: PaymentCustomerData = {
-  name: "",
-  lastName: "",
+  fullName: "",
   email: "",
   nickname: "",
   country: "",
+  lessonLanguage: "ru",
 };
 
 export const INITIAL_AGREEMENTS: PaymentAgreementState = {
@@ -48,16 +50,10 @@ export const INITIAL_AGREEMENTS: PaymentAgreementState = {
 
 export const PAYMENT_INPUTS: PaymentInputConfig[] = [
   {
-    id: "name",
-    labelKey: "inputs.name.label",
-    name: "name",
-    placeholderKey: "inputs.name.placeholder",
-  },
-  {
-    id: "lastName",
-    labelKey: "inputs.lastName.label",
-    name: "lastName",
-    placeholderKey: "inputs.lastName.placeholder",
+    id: "fullName",
+    labelKey: "inputs.fullName.label",
+    name: "fullName",
+    placeholderKey: "inputs.fullName.placeholder",
   },
   {
     id: "email",
@@ -78,6 +74,26 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     labelKey: "inputs.country.label",
     name: "country",
     placeholderKey: "inputs.country.placeholder",
+  },
+  {
+    id: "lessonLanguage",
+    labelKey: "inputs.lessonLanguage.label",
+    name: "lessonLanguage",
+    placeholderKey: "inputs.lessonLanguage.placeholder",
+  },
+];
+
+export const PAYMENT_LESSON_LANGUAGE_OPTIONS: Array<{
+  labelKey: string;
+  value: PaymentLessonLanguage;
+}> = [
+  {
+    labelKey: "inputs.lessonLanguage.options.ru",
+    value: "ru",
+  },
+  {
+    labelKey: "inputs.lessonLanguage.options.en",
+    value: "en",
   },
 ];
 
@@ -129,6 +145,12 @@ export const normalizePaymentCustomerFieldValue = (
 
   if (fieldName === "country") {
     return normalizeCountryCode(value);
+  }
+
+  if (fieldName === "lessonLanguage") {
+    const normalizedValue = value.trim().toLowerCase();
+
+    return normalizedValue === "en" ? "en" : "ru";
   }
 
   return value;

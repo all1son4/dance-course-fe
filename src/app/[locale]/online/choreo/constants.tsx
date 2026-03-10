@@ -19,7 +19,7 @@ export type TOnlineSuggestion = {
 export type TChoreoCard = {
   id: number;
   videoSrc?: string;
-  postrSrc: string;
+  posterSrc: string;
   title?: string;
   firstButtonOptions?: {
     href?: string;
@@ -74,7 +74,7 @@ export const getChoreos = (t: Translate): TChoreoCard[] => {
     {
       id: 1,
       videoSrc: "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2",
-      postrSrc: "/images/still_alive_poster.webp",
+      posterSrc: "/images/still_alive_poster.webp",
       title: "Still Alive",
       firstButtonOptions: {
         href: buildCheckoutHref({
@@ -94,7 +94,7 @@ export const getChoreos = (t: Translate): TChoreoCard[] => {
     {
       id: 2,
       videoSrc: "https://www.instagram.com/reel/DKw36jmNp5D/?igsh=MWg4NDA0cWx6dnpnNQ==",
-      postrSrc: "/images/her_lies_poster.webp",
+      posterSrc: "/images/her_lies_poster.webp",
       title: "Her Lies",
       firstButtonOptions: {
         href: buildCheckoutHref({

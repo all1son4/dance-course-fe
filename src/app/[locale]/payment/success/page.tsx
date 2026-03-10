@@ -3,11 +3,16 @@ import { getTranslations } from "next-intl/server";
 import styled from "styled-components";
 
 import { Button } from "@/components";
-import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import {
+  getSellableProductById,
+  getSellableProductOfferById,
+  SELLABLE_PRODUCTS,
+} from "@/constants/sellable-products";
 import { glass } from "@/styles/mixins/glass";
 import { Success } from "@/svg";
 
 import SuccessRedirectGuard from "./success-redirect-guard";
+import TelegramAccessButton from "./telegram-access-button";
 
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
 const FIRST_TOUCH_TELEGRAM_LINK = "https://t.me/+YSmcfQx7nYhhOTgy";
@@ -88,6 +93,7 @@ const Paragraph = styled.p`
 const ButtonBox = styled.div`
   display: flex;
   justify-content: center;
+  align-items: center;
   margin: 40px 0 0 0;
   max-width: 600px;
   gap: 10px;
@@ -101,6 +107,8 @@ const ButtonBox = styled.div`
 export default async function SuccesPage({ searchParams }: SuccessPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const t = await getTranslations("PaymentSuccessPage");
+  const productId = getParamValue(resolvedSearchParams, "product");
+  const offerId = getParamValue(resolvedSearchParams, "offer");
   const redirectStatus = getParamValue(
     resolvedSearchParams,
     "redirect_status",
@@ -119,14 +127,32 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
 
   const contextQuery = contextParams.toString();
   const failedPath = contextQuery ? `/payment/failed?${contextQuery}` : "/payment/failed";
+  const paymentPath = contextQuery ? `/payment?${contextQuery}` : "/payment";
+
+  if (!checkoutSessionId || !paymentIntentId || !productId || !offerId) {
+    redirect(paymentPath);
+  }
 
   if (redirectStatus === "failed") {
     redirect(failedPath);
   }
 
-  const isFirstTouchPurchase =
-    getParamValue(resolvedSearchParams, "product") ===
-    SELLABLE_PRODUCTS["first-touch"].id;
+  const isFirstTouchPurchase = productId === SELLABLE_PRODUCTS["first-touch"].id;
+  const selectedProduct = getSellableProductById(productId);
+  const selectedOffer = selectedProduct
+    ? getSellableProductOfferById(selectedProduct, offerId)
+    : null;
+
+  if (!selectedProduct || !selectedOffer) {
+    redirect(paymentPath);
+  }
+
+  const isWithoutMentorPurchase = selectedOffer?.code === "without-mentor";
+  const successCase = isFirstTouchPurchase
+    ? "firstTouch"
+    : isWithoutMentorPurchase
+      ? "withoutMentor"
+      : "withMentor";
 
   return (
     <Container>
@@ -139,8 +165,8 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
         <Success />
         <Title>{t("title")}</Title>
         <Paragraps>
-          <Paragraph>{t("description.line1")}</Paragraph>
-          <Paragraph>{t("description.line2")}</Paragraph>
+          <Paragraph>{t(`description.${successCase}.line1`)}</Paragraph>
+          <Paragraph>{t(`description.${successCase}.line2`)}</Paragraph>
         </Paragraps>
         <ButtonBox>
           {isFirstTouchPurchase && (
@@ -148,6 +174,20 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
               buttonText={t("telegram.openLink")}
               href={FIRST_TOUCH_TELEGRAM_LINK}
               target="_blank"
+            />
+          )}
+          {isWithoutMentorPurchase && (
+            <TelegramAccessButton
+              buttonText={t("telegram.openLink")}
+              checkoutSessionId={checkoutSessionId}
+              offerId={offerId}
+              paymentIntentId={paymentIntentId}
+              pendingText={t("telegram.pending")}
+              productId={productId}
+              retryButtonText={t("telegram.retry")}
+              supportButtonText={t("telegram.contactSupport")}
+              supportHref="/#contacts"
+              unavailableText={t("telegram.unavailable")}
             />
           )}
           <Button buttonText={t("buttons.home")} href="/" variant="secondary" />
