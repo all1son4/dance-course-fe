@@ -4,6 +4,10 @@ import styled from "styled-components";
 
 import { Button } from "@/components";
 import {
+  FIRST_TOUCH_TELEGRAM_CHANNEL_URL,
+  SUPPORT_TELEGRAM_URL,
+} from "@/constants/links";
+import {
   getSellableProductById,
   getSellableProductOfferById,
   SELLABLE_PRODUCTS,
@@ -15,7 +19,6 @@ import SuccessRedirectGuard from "./success-redirect-guard";
 import TelegramAccessButton from "./telegram-access-button";
 
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
-const FIRST_TOUCH_TELEGRAM_LINK = "https://t.me/+YSmcfQx7nYhhOTgy";
 
 type SuccessPageSearchParams = Record<string, string | string[] | undefined>;
 type SuccessPageProps = {
@@ -172,7 +175,7 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
           {isFirstTouchPurchase && (
             <Button
               buttonText={t("telegram.openLink")}
-              href={FIRST_TOUCH_TELEGRAM_LINK}
+              href={FIRST_TOUCH_TELEGRAM_CHANNEL_URL}
               target="_blank"
             />
           )}
@@ -186,7 +189,7 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
               productId={productId}
               retryButtonText={t("telegram.retry")}
               supportButtonText={t("telegram.contactSupport")}
-              supportHref="/#contacts"
+              supportHref={SUPPORT_TELEGRAM_URL}
               unavailableText={t("telegram.unavailable")}
             />
           )}

@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
 
 import { Button } from "@/components";
-import { Link } from "@/i18n/navigation";
 
 type TelegramAccessButtonProps = {
   buttonText: string;
@@ -108,7 +107,7 @@ const ActionButton = styled.button`
   white-space: nowrap;
 `;
 
-const SupportLink = styled(Link)`
+const SupportLink = styled.a`
   border: 1px solid rgba(16, 16, 16, 0.2);
   background: rgba(255, 255, 255, 0.7);
   color: rgba(16, 16, 16, 0.92);
@@ -272,7 +271,7 @@ export default function TelegramAccessButton({
           <ActionButton onClick={() => setRequestNonce((prev) => prev + 1)} type="button">
             {retryButtonText}
           </ActionButton>
-          <SupportLink href={supportHref} scroll={false}>
+          <SupportLink href={supportHref} target="_blank" rel="noopener noreferrer">
             {supportButtonText}
           </SupportLink>
         </StatusActions>

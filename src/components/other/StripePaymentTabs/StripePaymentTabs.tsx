@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 
 import Button from "@/components/common/Button";
+import { GOOGLE_FONTS_MANROPE_CSS_URL } from "@/constants/links";
 
 import {
   Actions,
@@ -85,8 +86,7 @@ const createElementsOptions = (
   locale,
   fonts: [
     {
-      cssSrc:
-        "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&display=swap",
+      cssSrc: GOOGLE_FONTS_MANROPE_CSS_URL,
     },
   ],
   appearance: {

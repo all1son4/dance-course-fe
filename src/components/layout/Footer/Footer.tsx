@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 
 import Button from "@/components/common/Button";
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { Logo, SmallMail, SmallPhone } from "@/svg";
 
 import {
@@ -46,7 +47,13 @@ export default function Footer() {
         </InfoBlock>
         <SupportBlock>
           <SupportText>{t("support.title")}</SupportText>
-          <Button variant="secondary" buttonText={t("support.button")} size="sm" />
+          <Button
+            variant="secondary"
+            buttonText={t("support.button")}
+            size="sm"
+            href={SUPPORT_TELEGRAM_URL}
+            target="_blank"
+          />
         </SupportBlock>
       </TopRow>
       <Divider />

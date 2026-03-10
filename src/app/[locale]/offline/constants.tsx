@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
 
+import {
+  INSTAGRAM_PROFILE_URL,
+  TRIAL_REGISTRATION_FORM_VIEW_URL,
+} from "@/constants/links";
 import { SmallClock, SmallMap } from "@/svg";
 
 export type TInteractiveCard = {
@@ -130,8 +134,7 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
       </PriceBox>
     ),
     buttonText: t("cards.common.button"),
-    buttonHref:
-      "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/viewform?pli=1&pli=1&edit_requested=true",
+    buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
   },
   {
     id: 2,
@@ -177,8 +180,7 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
       </PriceBox>
     ),
     buttonText: t("cards.common.button"),
-    buttonHref:
-      "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/viewform?pli=1&pli=1&edit_requested=true",
+    buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
   },
   {
     id: 3,
@@ -199,6 +201,6 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
       </PriceBox>
     ),
     buttonText: t("cards.common.button"),
-    buttonHref: "https://www.instagram.com/anna.strok_dance",
+    buttonHref: INSTAGRAM_PROFILE_URL,
   },
 ];

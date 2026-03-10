@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 import styled from "styled-components";
 
 import { Button } from "@/components";
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { glass } from "@/styles/mixins/glass";
 import { Failed } from "@/svg";
 
@@ -124,7 +125,8 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
             <Button buttonText={t("buttons.backToPayment")} href={paymentPath} />
             <Button
               buttonText={t("buttons.contactSupport")}
-              href="/#contacts"
+              href={SUPPORT_TELEGRAM_URL}
+              target="_blank"
               variant="secondary"
             />
           </ButtonBox>

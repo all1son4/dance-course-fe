@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import type Plyr from "plyr";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
+import { INSTAGRAM_BASE_URL } from "@/constants/links";
 import { Play } from "@/svg";
 
 import { CenterButton, PosterOverlay, VideoWrap } from "./VideoPlayer.styles";
@@ -58,7 +59,7 @@ const getInstagramPostUrl = (value: string) => {
 
     if (!id) return null;
     if (type === "reel" || type === "p" || type === "tv") {
-      return `https://www.instagram.com/${type}/${id}/`;
+      return `${INSTAGRAM_BASE_URL}/${type}/${id}/`;
     }
   } catch {
     // ignore

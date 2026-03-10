@@ -6,6 +6,13 @@ import { styled } from "styled-components";
 
 import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
 import SvgAsset from "@/components/common/SvgAsset";
+import {
+  INSTAGRAM_DIB_GALA_URL,
+  INSTAGRAM_PROFILE_HANDLE,
+  INSTAGRAM_PROFILE_URL,
+  INSTAGRAM_STAGE18_URL,
+  INSTAGRAM_WORLD_OF_DANCE_POLAND_URL,
+} from "@/constants/links";
 import { buildPageMetadata } from "@/lib/seo";
 import { glass } from "@/styles/mixins/glass";
 import { Insta, Logo, Quote } from "@/svg";
@@ -632,8 +639,8 @@ export default function Home() {
           <ContactCard
             icon={<Insta />}
             title={t("about.instagram")}
-            text="anna.strok_dance"
-            link="https://www.instagram.com/anna.strok_dance"
+            text={INSTAGRAM_PROFILE_HANDLE}
+            link={INSTAGRAM_PROFILE_URL}
           />
           <AboutMeParagraphs>
             <AboutMeParagraph>{t("about.bio.1")}</AboutMeParagraph>
@@ -643,22 +650,14 @@ export default function Home() {
           <AboutMeList>
             <li>
               {t("about.achievements.stage18Solo.prefix")}{" "}
-              <a
-                href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={INSTAGRAM_STAGE18_URL} target="_blank" rel="noopener noreferrer">
                 @stage_18
               </a>{" "}
               {t("about.achievements.stage18Solo.suffix")}
             </li>
             <li>
               {t("about.achievements.stage18Team.prefix")}{" "}
-              <a
-                href="https://www.instagram.com/stage__18?igsh=eDF3YTU1a3Z1d3pt"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={INSTAGRAM_STAGE18_URL} target="_blank" rel="noopener noreferrer">
                 @stage_18
               </a>{" "}
               {t("about.achievements.stage18Team.suffix")}
@@ -666,7 +665,7 @@ export default function Home() {
             <li>
               {t("about.achievements.wod.prefix")}{" "}
               <a
-                href="https://www.instagram.com/worldofdancepoland?igsh=MWtsMWo5cmxyYWd3dQ=="
+                href={INSTAGRAM_WORLD_OF_DANCE_POLAND_URL}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -676,11 +675,7 @@ export default function Home() {
             </li>
             <li>
               {t("about.achievements.dib.prefix")}{" "}
-              <a
-                href="https://www.instagram.com/dib.gala?igsh=MWZ3eXgwYnFrMWU2dA=="
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <a href={INSTAGRAM_DIB_GALA_URL} target="_blank" rel="noopener noreferrer">
                 @dib.gala
               </a>
             </li>

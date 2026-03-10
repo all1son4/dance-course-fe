@@ -1,9 +1,8 @@
+import { TRIAL_REGISTRATION_FORM_EDIT_URL } from "@/constants/links";
+
 import { TQuestionsArray } from "./FAQ.types";
 
 type Translate = (key: string) => string;
-
-const TRIAL_FORM_URL =
-  "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/edit";
 
 export const getQuestionsArray = (t: Translate): TQuestionsArray =>
   Array.from({ length: 10 }, (_, index) => {
@@ -16,7 +15,7 @@ export const getQuestionsArray = (t: Translate): TQuestionsArray =>
       ...(id === 9
         ? {
             link: {
-              href: TRIAL_FORM_URL,
+              href: TRIAL_REGISTRATION_FORM_EDIT_URL,
               label: t("items.9.linkLabel"),
             },
           }

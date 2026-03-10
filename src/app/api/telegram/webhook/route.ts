@@ -1,3 +1,4 @@
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { isPayloadTooLarge, jsonNoStore, parseJsonBody } from "@/lib/http-security";
 import {
   activateTelegramStartToken,
@@ -39,23 +40,19 @@ const BOT_COPY = {
     alreadyActivated:
       "Access is already activated for this account. Sending your materials again.",
     checkingAccess: "Checking access, please wait a few seconds...",
-    expired:
-      "This link has expired. Return to the success page or request a new link via support.",
+    expired: `This link has expired. Return to the success page or request a new link via support: ${SUPPORT_TELEGRAM_URL}`,
     helpTitle: "Bot commands:",
     invalidToken:
       "Invalid activation code. Open the bot using the personal link from your purchase email.",
     intro:
       "Hi! This bot delivers your lesson materials for purchases without mentor support.",
     lessonPrefix: "Your material:",
-    lessonDeliveryFailed:
-      "We could not send the lesson automatically. Please contact support and we will help.",
+    lessonDeliveryFailed: `We could not send the lesson automatically. Please contact support and we will help: ${SUPPORT_TELEGRAM_URL}`,
     myLessonsCommand: "/my_lessons - get your lessons again",
     noPurchases:
       "No activated purchases found yet. Make sure you opened the bot via your personal email link.",
-    notAvailable:
-      "Could not confirm access with this link. Please contact support and we will help.",
-    sourceMissing:
-      "Access is activated, but the lesson source is not configured yet. Please contact support.",
+    notAvailable: `Could not confirm access with this link. Please contact support and we will help: ${SUPPORT_TELEGRAM_URL}`,
+    sourceMissing: `Access is activated, but the lesson source is not configured yet. Please contact support: ${SUPPORT_TELEGRAM_URL}`,
     startCommand: "/start <code> - activate access after purchase",
     startHint:
       "Open the personal link from the email after payment to activate your access.",
@@ -72,22 +69,18 @@ const BOT_COPY = {
     alreadyActivated:
       "Dostęp jest już aktywowany na tym koncie. Wysyłam materiały ponownie.",
     checkingAccess: "Sprawdzam dostęp, poczekaj kilka sekund...",
-    expired:
-      "Link wygasł. Wróć na stronę sukcesu płatności lub poproś wsparcie o nowy link.",
+    expired: `Link wygasł. Wróć na stronę sukcesu płatności lub poproś wsparcie o nowy link: ${SUPPORT_TELEGRAM_URL}`,
     helpTitle: "Komendy bota:",
     invalidToken:
       "Nieprawidłowy kod aktywacyjny. Otwórz bota z osobistego linku w e-mailu po zakupie.",
     intro: "Cześć! Ten bot udostępnia materiały po zakupach bez wsparcia mentora.",
     lessonPrefix: "Twój materiał:",
-    lessonDeliveryFailed:
-      "Nie udało się automatycznie wysłać lekcji. Skontaktuj się ze wsparciem, pomożemy.",
+    lessonDeliveryFailed: `Nie udało się automatycznie wysłać lekcji. Skontaktuj się ze wsparciem, pomożemy: ${SUPPORT_TELEGRAM_URL}`,
     myLessonsCommand: "/my_lessons - pobierz swoje lekcje ponownie",
     noPurchases:
       "Nie znaleziono jeszcze aktywowanych zakupów. Upewnij się, że otworzyłeś bota przez osobisty link z e-maila.",
-    notAvailable:
-      "Nie udało się potwierdzić dostępu tym linkiem. Skontaktuj się ze wsparciem.",
-    sourceMissing:
-      "Dostęp aktywowany, ale źródło lekcji nie jest jeszcze skonfigurowane. Skontaktuj się ze wsparciem.",
+    notAvailable: `Nie udało się potwierdzić dostępu tym linkiem. Skontaktuj się ze wsparciem: ${SUPPORT_TELEGRAM_URL}`,
+    sourceMissing: `Dostęp aktywowany, ale źródło lekcji nie jest jeszcze skonfigurowane. Skontaktuj się ze wsparciem: ${SUPPORT_TELEGRAM_URL}`,
     startCommand: "/start <kod> - aktywuj dostęp po zakupie",
     startHint: "Otwórz osobisty link z e-maila po płatności, aby aktywować dostęp.",
     tokenAlreadyUsed:
@@ -103,22 +96,18 @@ const BOT_COPY = {
     alreadyActivated:
       "Доступ уже активирован на этом аккаунте. Отправляю ваши материалы повторно.",
     checkingAccess: "Проверяю доступ, подождите пару секунд...",
-    expired:
-      "Срок действия ссылки истек. Вернитесь на страницу успешной оплаты или запросите новую ссылку через поддержку.",
+    expired: `Срок действия ссылки истек. Вернитесь на страницу успешной оплаты или запросите новую ссылку через поддержку: ${SUPPORT_TELEGRAM_URL}`,
     helpTitle: "Команды бота:",
     invalidToken:
       "Неверный код активации. Откройте бота по персональной ссылке из письма после оплаты.",
     intro: "Привет! Этот бот выдает материалы по покупкам без куратора.",
     lessonPrefix: "Ваш материал:",
-    lessonDeliveryFailed:
-      "Не удалось отправить урок автоматически. Напишите в поддержку, пожалуйста.",
+    lessonDeliveryFailed: `Не удалось отправить урок автоматически. Напишите в поддержку, пожалуйста: ${SUPPORT_TELEGRAM_URL}`,
     myLessonsCommand: "/my_lessons - получить ваши уроки повторно",
     noPurchases:
       "У вас пока нет активированных покупок. Проверьте, что вы открыли бота по персональной ссылке из письма.",
-    notAvailable:
-      "Не удалось подтвердить доступ по этой ссылке. Напишите в поддержку, пожалуйста.",
-    sourceMissing:
-      "Доступ активирован, но источник урока пока не настроен. Напишите в поддержку, пожалуйста.",
+    notAvailable: `Не удалось подтвердить доступ по этой ссылке. Напишите в поддержку, пожалуйста: ${SUPPORT_TELEGRAM_URL}`,
+    sourceMissing: `Доступ активирован, но источник урока пока не настроен. Напишите в поддержку, пожалуйста: ${SUPPORT_TELEGRAM_URL}`,
     startCommand: "/start <код> - активировать доступ после покупки",
     startHint:
       "Откройте персональную ссылку из письма после оплаты, чтобы активировать доступ.",

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constants/links";
 import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import {
   OnlineCalendar,
@@ -73,7 +74,7 @@ export const getChoreos = (t: Translate): TChoreoCard[] => {
   return [
     {
       id: 1,
-      videoSrc: "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2",
+      videoSrc: CHOREO_STILL_ALIVE_REEL_URL,
       posterSrc: "/images/still_alive_poster.webp",
       title: "Still Alive",
       firstButtonOptions: {
@@ -93,7 +94,7 @@ export const getChoreos = (t: Translate): TChoreoCard[] => {
     },
     {
       id: 2,
-      videoSrc: "https://www.instagram.com/reel/DKw36jmNp5D/?igsh=MWg4NDA0cWx6dnpnNQ==",
+      videoSrc: CHOREO_HER_LIES_REEL_URL,
       posterSrc: "/images/her_lies_poster.webp",
       title: "Her Lies",
       firstButtonOptions: {

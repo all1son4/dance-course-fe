@@ -1,21 +1,26 @@
 import { getResolvedCheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
+import {
+  DEFAULT_SITE_HOME_URL,
+  FIRST_TOUCH_TELEGRAM_CHANNEL_URL,
+  SUPPORT_TELEGRAM_URL,
+} from "@/constants/links";
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 
 const DEFAULT_TELEGRAM_ACCESS_LINK_BY_PRODUCT_ID: Record<string, string> = {
-  [SELLABLE_PRODUCTS["first-touch"].id]: "https://t.me/+YSmcfQx7nYhhOTgy",
+  [SELLABLE_PRODUCTS["first-touch"].id]: FIRST_TOUCH_TELEGRAM_CHANNEL_URL,
 };
 
 const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  "https://frameupstrip.com";
+  DEFAULT_SITE_HOME_URL;
 
 const EMAIL_COPY = {
   en: {
     accessTitle: "Access your materials",
     amountLabel: "Amount",
     autoReplyNote:
-      "This is an automatic email. If you have any questions, contact support on the sales website.",
+      "This is an automatic email. If you have any questions, contact support",
     backToSite: "Back to website",
     defaultOfferLabel: "Standard access",
     heading: "Thank you, your payment was successful",
@@ -40,7 +45,7 @@ const EMAIL_COPY = {
     accessTitle: "Dostęp do materiałów",
     amountLabel: "Kwota",
     autoReplyNote:
-      "To wiadomość automatyczna. Jeśli masz pytania, skontaktuj się ze wsparciem na stronie sprzedaży.",
+      "To wiadomość automatyczna. Jeśli masz pytania, skontaktuj się ze wsparciem",
     backToSite: "Wróć na stronę",
     defaultOfferLabel: "Dostęp standardowy",
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
@@ -64,7 +69,7 @@ const EMAIL_COPY = {
     accessTitle: "Доступ к материалам",
     amountLabel: "Сумма",
     autoReplyNote:
-      "Это автоматическое письмо. Если у вас есть вопросы, свяжитесь с поддержкой на сайте продажи.",
+      "Это автоматическое письмо. Если у вас есть вопросы, свяжитесь с поддержкой",
     backToSite: "Вернуться на сайт",
     defaultOfferLabel: "Стандартный доступ",
     heading: "Спасибо, оплата прошла успешно",
@@ -158,6 +163,7 @@ export const buildPurchaseSuccessEmail = ({
   const safeOfferLabel = escapeHtml(offerLabel || copy.defaultOfferLabel);
   const safeAmountLabel = escapeHtml(amountLabel);
   const safeReceiptLink = receiptLink ? escapeHtml(receiptLink) : "";
+  const safeSupportTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
   const safeTelegramLink = telegramLink ? escapeHtml(telegramLink) : "";
   const safeSiteHomeUrl = escapeHtml(SITE_HOME_URL);
 
@@ -228,7 +234,7 @@ export const buildPurchaseSuccessEmail = ({
         </a>
 
         <p style="margin:20px 0 0 0;font-size:12px;line-height:18px;color:#8a8a8a;">
-          ${copy.autoReplyNote}
+          ${copy.autoReplyNote}: <a href="${safeSupportTelegramUrl}" style="color:#8a8a8a;text-decoration:underline;">${safeSupportTelegramUrl}</a>.
         </p>
       </div>
     </div>

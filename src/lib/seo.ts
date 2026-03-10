@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { INSTAGRAM_PROFILE_URL, PERSONAL_TELEGRAM_URL } from "@/constants/links";
+
 export const siteUrl =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
@@ -8,8 +10,8 @@ export const siteUrl =
     : "http://localhost:3000");
 export const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
 export const seoImagePath = "/images/seo_photo.jpg";
-export const instagramUrl = "https://www.instagram.com/anna.strok_dance";
-export const telegramUrl = "https://t.me/annastrok_dance";
+export const instagramUrl = INSTAGRAM_PROFILE_URL;
+export const telegramUrl = PERSONAL_TELEGRAM_URL;
 
 const getOpenGraphLocale = (locale: string) => {
   if (locale === "en") {
