@@ -238,7 +238,7 @@ export default function Header() {
         <Brand href="/" aria-label={t("aria.home")} onClick={onBrandClick}>
           <Logo />
         </Brand>
-
+        !!!
         <IconBox
           type="button"
           aria-controls={mobileMenuId}
@@ -249,7 +249,6 @@ export default function Header() {
         >
           <MenuButton />
         </IconBox>
-
         <Right>
           {headerInteractiveContent.map((item) => (
             <Fragment key={item.key}>{item.node}</Fragment>
