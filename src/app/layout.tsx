@@ -1,6 +1,7 @@
 import "./globals.css";
 import "@/styles/vendor/plyr.css";
 
+import { Analytics } from "@vercel/analytics/next";
 import { Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 
@@ -17,6 +18,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru">
       <body className={manrope.variable}>
+        <Analytics />
         <StyledComponentsRegistry>
           <StoreProvider>{children}</StoreProvider>
         </StyledComponentsRegistry>
