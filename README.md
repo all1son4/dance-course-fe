@@ -46,8 +46,8 @@ Optional Telegram env variables:
 
 Important production notes:
 
-- Runtime Node.js must be `>=20.9.0`.
-- `.nvmrc` is set to `20.9.0` for local/dev parity.
+- Runtime Node.js must be `>=24.14.0`.
+- `.nvmrc` is set to `24.14.0` for local/dev parity.
 - Browser-facing POST APIs validate `Origin/Referer` in production; missing headers are rejected.
 - After changing `TELEGRAM_LESSON_SOURCES_JSON`, restart the app process (source map is cached in-memory).
 - Operational timestamps persisted by backend flows are recorded in `Europe/Warsaw` timezone format.
