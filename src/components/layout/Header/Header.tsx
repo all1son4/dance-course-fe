@@ -238,7 +238,6 @@ export default function Header() {
         <Brand href="/" aria-label={t("aria.home")} onClick={onBrandClick}>
           <Logo />
         </Brand>
-        !!!
         <IconBox
           type="button"
           aria-controls={mobileMenuId}
