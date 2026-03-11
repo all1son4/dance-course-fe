@@ -500,8 +500,7 @@
       "firstTouchLabel": "Materiały kursu First Touch:",
       "openLink": "Przejdź do Telegrama",
       "pending": "Przygotowujemy Twój osobisty link do lekcji w Telegramie...",
-      "unavailable": "Link nie jest jeszcze gotowy. Odśwież za chwilę lub skontaktuj się ze wsparciem.",
-      "retry": "Odśwież link",
+      "unavailable": "Link nie jest jeszcze gotowy. Skontaktuj się ze wsparciem.",
       "contactSupport": "Wsparcie"
     },
     "buttons": {

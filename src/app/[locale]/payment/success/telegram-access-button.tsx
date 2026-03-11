@@ -8,11 +8,11 @@ import { Button } from "@/components";
 type TelegramAccessButtonProps = {
   buttonText: string;
   checkoutSessionId: string;
+  onUnavailableChange?: (isUnavailable: boolean) => void;
   offerId: string;
   paymentIntentId: string;
   pendingText: string;
   productId: string;
-  retryButtonText: string;
   supportButtonText: string;
   supportHref: string;
   unavailableText: string;
@@ -61,6 +61,10 @@ const StatusBox = styled.div<{ $kind: "pending" | "unavailable" }>`
   border: 1px solid
     ${({ $kind }) =>
       $kind === "pending" ? "rgba(124, 0, 2, 0.18)" : "rgba(0, 0, 0, 0.12)"};
+
+  @media (max-width: 767px) {
+    width: 100%;
+  }
 `;
 
 const Dots = styled.span`
@@ -87,39 +91,7 @@ const StatusText = styled.p`
   color: rgba(16, 16, 16, 0.88);
 `;
 
-const StatusActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-  flex-wrap: wrap;
-`;
-
-const ActionButton = styled.button`
-  border: 1px solid rgba(16, 16, 16, 0.2);
-  background: rgba(255, 255, 255, 0.7);
-  color: rgba(16, 16, 16, 0.92);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 13px;
-  line-height: 1;
-  cursor: pointer;
-  white-space: nowrap;
-`;
-
-const SupportLink = styled.a`
-  border: 1px solid rgba(16, 16, 16, 0.2);
-  background: rgba(255, 255, 255, 0.7);
-  color: rgba(16, 16, 16, 0.92);
-  border-radius: 999px;
-  padding: 6px 12px;
-  font-size: 13px;
-  line-height: 1;
-  white-space: nowrap;
-  text-decoration: none;
-`;
-
-const MAX_RETRY_ATTEMPTS = 40;
+const MAX_RETRY_ATTEMPTS = 15;
 const RETRY_BASE_DELAY_MS = 1_500;
 const RETRY_MAX_DELAY_MS = 5_000;
 
@@ -129,11 +101,11 @@ const getRetryDelayMs = (attempt: number) =>
 export default function TelegramAccessButton({
   buttonText,
   checkoutSessionId,
+  onUnavailableChange,
   offerId,
   paymentIntentId,
   pendingText,
   productId,
-  retryButtonText,
   supportButtonText,
   supportHref,
   unavailableText,
@@ -141,8 +113,13 @@ export default function TelegramAccessButton({
   const [accessUrl, setAccessUrl] = useState("");
   const [statusKind, setStatusKind] = useState<"pending" | "unavailable">("pending");
   const [statusText, setStatusText] = useState(pendingText);
-  const [requestNonce, setRequestNonce] = useState(0);
   const isContextValid = Boolean(checkoutSessionId && offerId && productId);
+
+  useEffect(() => {
+    onUnavailableChange?.(
+      !accessUrl && (!isContextValid || statusKind === "unavailable"),
+    );
+  }, [accessUrl, isContextValid, onUnavailableChange, statusKind]);
 
   useEffect(() => {
     if (!isContextValid) {
@@ -240,7 +217,6 @@ export default function TelegramAccessButton({
     paymentIntentId,
     pendingText,
     productId,
-    requestNonce,
     unavailableText,
   ]);
 
@@ -249,11 +225,11 @@ export default function TelegramAccessButton({
   }
 
   if (!isContextValid) {
-    return (
-      <StatusBox $kind="unavailable" role="status" aria-live="polite" aria-atomic="true">
-        <StatusText>{unavailableText}</StatusText>
-      </StatusBox>
-    );
+    return <Button buttonText={supportButtonText} href={supportHref} target="_blank" />;
+  }
+
+  if (statusKind === "unavailable") {
+    return <Button buttonText={supportButtonText} href={supportHref} target="_blank" />;
   }
 
   return (
@@ -266,16 +242,6 @@ export default function TelegramAccessButton({
         </Dots>
       ) : null}
       <StatusText>{statusText}</StatusText>
-      {statusKind === "unavailable" ? (
-        <StatusActions>
-          <ActionButton onClick={() => setRequestNonce((prev) => prev + 1)} type="button">
-            {retryButtonText}
-          </ActionButton>
-          <SupportLink href={supportHref} target="_blank" rel="noopener noreferrer">
-            {supportButtonText}
-          </SupportLink>
-        </StatusActions>
-      ) : null}
     </StatusBox>
   );
 }

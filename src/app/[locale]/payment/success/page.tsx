@@ -2,11 +2,6 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import styled from "styled-components";
 
-import { Button } from "@/components";
-import {
-  FIRST_TOUCH_TELEGRAM_CHANNEL_URL,
-  SUPPORT_TELEGRAM_URL,
-} from "@/constants/links";
 import {
   getSellableProductById,
   getSellableProductOfferById,
@@ -15,8 +10,8 @@ import {
 import { glass } from "@/styles/mixins/glass";
 import { Success } from "@/svg";
 
+import SuccessContent from "./success-content";
 import SuccessRedirectGuard from "./success-redirect-guard";
-import TelegramAccessButton from "./telegram-access-button";
 
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
 
@@ -64,46 +59,6 @@ const ResultCard = styled.div`
   @media (max-width: 767px) {
     border-radius: 40px !important;
     padding: 30px 20px;
-  }
-`;
-
-const Title = styled.p`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 30px;
-  line-height: 100%;
-  letter-spacing: 0;
-  margin: 40px 0 20px 0;
-  color: rgba(0, 0, 0, 1);
-`;
-
-const Paragraps = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-`;
-
-const Paragraph = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-`;
-
-const ButtonBox = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 40px 0 0 0;
-  max-width: 600px;
-  gap: 10px;
-  width: 100%;
-
-  @media (max-width: 767px) {
-    max-width: 100%;
   }
 `;
 
@@ -166,35 +121,22 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
           paymentIntentId={paymentIntentId}
         />
         <Success />
-        <Title>{t("title")}</Title>
-        <Paragraps>
-          <Paragraph>{t(`description.${successCase}.line1`)}</Paragraph>
-          <Paragraph>{t(`description.${successCase}.line2`)}</Paragraph>
-        </Paragraps>
-        <ButtonBox>
-          {isFirstTouchPurchase && (
-            <Button
-              buttonText={t("telegram.openLink")}
-              href={FIRST_TOUCH_TELEGRAM_CHANNEL_URL}
-              target="_blank"
-            />
-          )}
-          {isWithoutMentorPurchase && (
-            <TelegramAccessButton
-              buttonText={t("telegram.openLink")}
-              checkoutSessionId={checkoutSessionId}
-              offerId={offerId}
-              paymentIntentId={paymentIntentId}
-              pendingText={t("telegram.pending")}
-              productId={productId}
-              retryButtonText={t("telegram.retry")}
-              supportButtonText={t("telegram.contactSupport")}
-              supportHref={SUPPORT_TELEGRAM_URL}
-              unavailableText={t("telegram.unavailable")}
-            />
-          )}
-          <Button buttonText={t("buttons.home")} href="/" variant="secondary" />
-        </ButtonBox>
+        <SuccessContent
+          checkoutSessionId={checkoutSessionId}
+          descriptionLine1={t(`description.${successCase}.line1`)}
+          descriptionLine2={t(`description.${successCase}.line2`)}
+          homeButtonText={t("buttons.home")}
+          isFirstTouchPurchase={isFirstTouchPurchase}
+          isWithoutMentorPurchase={isWithoutMentorPurchase}
+          offerId={offerId}
+          paymentIntentId={paymentIntentId}
+          productId={productId}
+          telegramContactSupportText={t("telegram.contactSupport")}
+          telegramOpenLinkText={t("telegram.openLink")}
+          telegramPendingText={t("telegram.pending")}
+          telegramUnavailableText={t("telegram.unavailable")}
+          title={t("title")}
+        />
       </ResultCard>
     </Container>
   );

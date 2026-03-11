@@ -39,7 +39,8 @@ const EMAIL_COPY = {
     subjectPrefix: "Payment confirmed",
     summaryTitle: "Purchase summary",
     telegramCta: "Open Telegram channel",
-    telegramPending: "Telegram access link will be sent in a separate message.",
+    telegramPending:
+      "Telegram access link is being prepared. If it is still unavailable, open the payment success page or contact support.",
   },
   pl: {
     accessTitle: "Dostęp do materiałów",
@@ -63,7 +64,8 @@ const EMAIL_COPY = {
     subjectPrefix: "Płatność potwierdzona",
     summaryTitle: "Podsumowanie zakupu",
     telegramCta: "Otwórz Telegram",
-    telegramPending: "Link dostępu do Telegrama zostanie wysłany osobno.",
+    telegramPending:
+      "Link dostępu do Telegrama jest przygotowywany. Jeśli nadal go nie ma, otwórz stronę sukcesu płatności lub skontaktuj się ze wsparciem.",
   },
   ru: {
     accessTitle: "Доступ к материалам",
@@ -88,7 +90,8 @@ const EMAIL_COPY = {
     subjectPrefix: "Оплата подтверждена",
     summaryTitle: "Кратко о покупке",
     telegramCta: "Открыть Telegram-канал",
-    telegramPending: "Ссылка на доступ в Telegram будет отправлена отдельным сообщением.",
+    telegramPending:
+      "Ссылка на доступ в Telegram подготавливается. Если она всё ещё недоступна, откройте страницу успешной оплаты или свяжитесь с поддержкой.",
   },
 } as const;
 
