@@ -1,4 +1,4 @@
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 
 import PageContainer from "@/components/layout/PageContainer";
 import { glass } from "@/styles/mixins/glass";
@@ -85,7 +85,7 @@ const Title = styled.h1`
   font-weight: 400;
   letter-spacing: -0.02em;
   color: rgba(16, 16, 16, 0.96);
-  margin: 0 0 24px; 0;
+  margin: 0 0 24px;
 
   @media (max-width: 767px) {
     font-size: 38px;
@@ -105,31 +105,11 @@ const Subtitle = styled.p`
   }
 `;
 
-const spin = keyframes`
-  from {
-    transform: rotate(0turn);
-  }
-
-  to {
-    transform: rotate(1turn);
-  }
-`;
-
-const orbit = keyframes`
-  0% {
-    transform: rotate(0turn) translateX(18px);
-  }
-
-  100% {
-    transform: rotate(1turn) translateX(18px);
-  }
-`;
-
 const LoaderRow = styled.div`
   margin: 20px auto 0 auto;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 24px;
 `;
 
 const Ring = styled.span`
@@ -139,7 +119,7 @@ const Ring = styled.span`
   border: 2px solid rgba(124, 0, 2, 0.18);
   border-top-color: rgba(124, 0, 2, 0.9);
   position: relative;
-  animation: ${spin} 0.9s linear infinite;
+  animation: maintenance-ring-spin 0.9s linear infinite;
 
   &::after {
     content: "";
@@ -151,14 +131,14 @@ const Ring = styled.span`
     top: 50%;
     left: 50%;
     transform-origin: center;
-    animation: ${orbit} 1.8s linear infinite;
+    animation: maintenance-ring-orbit 1.8s linear infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    animation: ${spin} 1.6s linear infinite !important;
+    animation: maintenance-ring-spin 1.6s linear infinite !important;
 
     &::after {
-      animation: ${orbit} 2.8s linear infinite !important;
+      animation: maintenance-ring-orbit 2.8s linear infinite !important;
     }
   }
 `;

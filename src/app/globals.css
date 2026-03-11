@@ -8,6 +8,26 @@
     Arial, sans-serif;
 }
 
+@keyframes maintenance-ring-spin {
+  from {
+    transform: rotate(0turn);
+  }
+
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes maintenance-ring-orbit {
+  0% {
+    transform: rotate(0turn) translateX(18px);
+  }
+
+  100% {
+    transform: rotate(1turn) translateX(18px);
+  }
+}
+
 /* Modern baseline */
 *,
 *::before,
