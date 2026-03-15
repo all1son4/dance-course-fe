@@ -525,6 +525,8 @@ export default function Offline() {
             bottomRowContent={course.bottomRowContent}
             buttonText={course.buttonText}
             buttonHref={course.buttonHref}
+            buttonTarget={course.buttonTarget}
+            buttonRel={course.buttonRel}
           />
         ))}
       </CoursesSection>

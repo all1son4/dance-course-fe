@@ -109,15 +109,15 @@
     "items": {
       "1": {
         "question": "Is Frame Up suitable if I have never danced before?",
-        "answer": "Yes, this style is perfect for beginners. We move step by step, paying attention to technique, body flow and confidence. The main thing is your desire to try and enjoy the process."
+        "answer": "Yes, this style is beginner-friendly. In the offline beginner group, we move step by step and focus on technique, body flow, and confidence. You can also begin gradually with the online beginner course \"First Touch\". The main thing is your willingness to try and enjoy the process."
       },
       "2": {
         "question": "What should I bring to class?",
-        "answer": "Wear comfortable clothes that let you move freely, bring socks or soft shoes, and a bottle of water. I will guide you through everything else on site."
+        "answer": "Wear comfortable clothes that let you move freely, and bring socks, knee pads, a bottle of water, and heels (if you have them)."
       },
       "3": {
         "question": "Can I join in the middle of a month or course?",
-        "answer": "Yes, you can start at any time. I will help you integrate quickly and catch up with the program."
+        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the \"Contacts\" section."
       },
       "4": {
         "question": "Is Frame Up right for me if I feel shy or afraid to move?",
@@ -136,15 +136,11 @@
         "answer": "Flexibility is a skill that can be developed. Frame Up gently helps you open your body, improve mobility and feel more feminine."
       },
       "8": {
-        "question": "How do classes usually look?",
-        "answer": "We warm up the body, study technique, work on body flow, posture and musicality, and then learn choreography. Every class is a mix of energy, emotion and creativity."
-      },
-      "9": {
         "question": "Can I attend a trial class?",
-        "answer": "Yes, a trial class is available. It is the best way to feel the style and atmosphere and understand if this format is right for you. Registration is available here:",
+        "answer": "Yes, you can attend a trial class for only 70 PLN in the offline beginner or continuing groups. Registration is available here:",
         "linkLabel": "Open registration form"
       },
-      "10": {
+      "9": {
         "question": "Is Frame Up suitable for any age?",
         "answer": "Absolutely. Frame Up is about femininity, confidence and joy of movement, not age limits."
       }
@@ -266,13 +262,13 @@
           "3": "We work on basic technique, feet, emotions, and by the end you will learn your first choreography."
         },
         "startLabel": "Course starts",
-        "startValue": "March 2, 2026",
+        "startValue": "May 4, 2026",
         "button": "Learn more"
       },
       "choreo": {
         "title": "Video tutorials of my choreographies",
         "description": {
-          "1": "Online choreography tutorials for dancers who want depth, structure and expressive movement.",
+          "1": "Online video tutorials of my choreographies.",
           "2": "Learn online with unlimited replay so you can confidently build everything into the music."
         },
         "startLabel": "Course starts",
@@ -361,7 +357,7 @@
         "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
       },
       "startLabel": "Course starts",
-      "startDate": "March 2, 2026",
+      "startDate": "May 4, 2026",
       "buyButton": "Buy for 250 PLN / 50 €",
       "programButton": "Course program",
       "playLabel": "Play video",
@@ -384,7 +380,7 @@
         "text": "From feet and waves to performance and first choreography - you get a complete base for confident movement in Frame Up and related styles."
       },
       "4": {
-        "title": "Course access for 1.5 months",
+        "title": "Course access for 1 month",
         "text": "Enough time to study at your own pace, revisit materials and polish movement quality."
       },
       "5": {
@@ -402,7 +398,7 @@
     "hero": {
       "title": "Video tutorials of my choreographies",
       "description": {
-        "1": "Online choreography tutorials for intermediate and continuing dancers who want depth, structure and expressive dance.",
+        "1": "Online video tutorials of my choreographies.",
         "2": "Learn online with replay support to confidently assemble choreography into music."
       },
       "startLabel": "Course starts",
@@ -603,7 +599,7 @@
       },
       "4": {
         "title": "4. Data recipients / processors",
-        "text": "Data may be transferred to entities supporting the controller in providing services, in particular:\n- payment system providers (Stripe),\n- hosting / course delivery platform (Telegram) / tools used to provide access to materials,\n- email, communication, and customer support tools (Gmail),\n- accounting services (if applicable),\n- IT support.\nData is not sold or shared with third parties for their own marketing purposes. It may also be disclosed to public authorities only where required by law."
+        "text": "Data may be transferred to entities supporting the controller in providing services, in particular:\n- payment system providers (Stripe),\n- hosting / course delivery platform (Telegram) / tools used to provide access to materials,\n- email, communication, and customer support tools (Gmail, Telegram),\n- accounting services (if applicable),\n- IT support.\nData is not sold or shared with third parties for their own marketing purposes. It may also be disclosed to public authorities only where required by law."
       },
       "5": {
         "title": "5. Transfers of data outside the EEA",

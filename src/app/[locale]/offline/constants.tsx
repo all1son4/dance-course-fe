@@ -1,19 +1,14 @@
-import type { ReactNode } from "react";
 import styled from "styled-components";
 
+import type { TInteractiveCard as TInteractiveCardBase } from "@/components/cards/InteractiveCard/InteractiveCard.types";
 import {
   INSTAGRAM_PROFILE_URL,
   TRIAL_REGISTRATION_FORM_VIEW_URL,
 } from "@/constants/links";
 import { SmallClock, SmallMap } from "@/svg";
 
-export type TInteractiveCard = {
+export type TInteractiveCard = TInteractiveCardBase & {
   id: number;
-  title: string;
-  topRowContent?: ReactNode;
-  bottomRowContent?: ReactNode;
-  buttonText?: string;
-  buttonHref?: string;
 };
 
 type Translate = (key: string) => string;
@@ -135,6 +130,8 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
     ),
     buttonText: t("cards.common.button"),
     buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
+    buttonTarget: "_blank",
+    buttonRel: "noopener noreferrer",
   },
   {
     id: 2,
@@ -181,6 +178,8 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
     ),
     buttonText: t("cards.common.button"),
     buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
+    buttonTarget: "_blank",
+    buttonRel: "noopener noreferrer",
   },
   {
     id: 3,
@@ -202,5 +201,7 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
     ),
     buttonText: t("cards.common.button"),
     buttonHref: INSTAGRAM_PROFILE_URL,
+    buttonTarget: "_blank",
+    buttonRel: "noopener noreferrer",
   },
 ];

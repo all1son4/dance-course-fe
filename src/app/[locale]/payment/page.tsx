@@ -38,8 +38,6 @@ import {
 } from "./payment.constants";
 
 const SUPPORTED_CURRENCIES: SupportedCheckoutCurrency[] = ["pln", "eur"];
-const MOBILE_SUMMARY_BREAKPOINT = 767;
-const MOBILE_SUMMARY_COMPACT_SCROLL_Y = 160;
 
 const PaymentSection = styled.section`
   display: flex;
@@ -227,7 +225,7 @@ const SummaryBoxDesktop = styled.div`
   }
 `;
 
-const SummaryBoxMobile = styled.div<{ $isCompact: boolean }>`
+const SummaryBoxMobile = styled.div`
   display: none;
   width: 100%;
   max-width: 100%;
@@ -240,8 +238,6 @@ const SummaryBoxMobile = styled.div<{ $isCompact: boolean }>`
     position: sticky;
     top: 86px;
     z-index: 30;
-    transform: translateY(${({ $isCompact }) => ($isCompact ? "-6px" : "0")});
-    transition: transform 0.2s ease;
   }
 `;
 
@@ -359,7 +355,6 @@ const PaymentPage = observer(function PaymentPage() {
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>(
     getFallbackCountryOptions,
   );
-  const [isMobileSummaryCompact, setIsMobileSummaryCompact] = useState(false);
   const hasAppliedCurrencyFromQuery = useRef(false);
   const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
   const visiblePaymentInputs = isChoreoProduct
@@ -424,28 +419,6 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.customerData.country,
     paymentStore.customerData.lessonLanguage,
   ]);
-
-  useEffect(() => {
-    const updateSummaryMode = () => {
-      const shouldCompact =
-        window.innerWidth <= MOBILE_SUMMARY_BREAKPOINT &&
-        window.scrollY > MOBILE_SUMMARY_COMPACT_SCROLL_Y;
-
-      setIsMobileSummaryCompact((prev) =>
-        prev === shouldCompact ? prev : shouldCompact,
-      );
-    };
-
-    updateSummaryMode();
-
-    window.addEventListener("scroll", updateSummaryMode, { passive: true });
-    window.addEventListener("resize", updateSummaryMode);
-
-    return () => {
-      window.removeEventListener("scroll", updateSummaryMode);
-      window.removeEventListener("resize", updateSummaryMode);
-    };
-  }, []);
 
   const handleInputChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -531,7 +504,8 @@ const PaymentPage = observer(function PaymentPage() {
       title={productT(paymentStore.selectedProduct.titleKey)}
       topRowContent={summaryTopContent}
       bottomRowContent={summaryBottomContent}
-      collapseTopRow={isMobileSummaryCompact}
+      isTopRowCollapsible
+      defaultCollapseTopRow
     />
   );
 
@@ -542,9 +516,7 @@ const PaymentPage = observer(function PaymentPage() {
           <PaymentTitle>{t("title")}</PaymentTitle>
           <PaymentDescription>{t("description")}</PaymentDescription>
         </TextBox>
-        <SummaryBoxMobile $isCompact={isMobileSummaryCompact}>
-          {interactiveCardMobileComponent}
-        </SummaryBoxMobile>
+        <SummaryBoxMobile>{interactiveCardMobileComponent}</SummaryBoxMobile>
         <FormBox onSubmit={handleSubmit}>
           <PersonalData>
             <PersonalDataTitle>{t("personalDataTitle")}</PersonalDataTitle>

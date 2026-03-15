@@ -23,6 +23,8 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   font-size: 16px;
   text-decoration: none;
   padding: 6px 0;
+  display: inline-flex;
+  align-items: center;
 
   box-sizing: border-box;
   font-weight: 500;
@@ -50,5 +52,6 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   @media (max-width: 767px) {
     padding: 0;
     font-size: 17px;
+    min-height: 24px;
   }
 `;

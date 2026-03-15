@@ -53,8 +53,10 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
     }
   }
 
-  &:active {
-    transform: translate(-50%, -50%) scale(0.99);
+  @media (hover: none) and (pointer: coarse) {
+    &:active {
+      opacity: 0.9;
+    }
   }
 
   &:focus-visible {

@@ -8,7 +8,7 @@ export const Root = styled.div<{ $value: CurrencySwitchValue; $width: string }>`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   width: 100%;
   max-width: ${({ $width }) => $width};
-  min-height: 42px;
+  min-height: 44px;
   padding: 0;
   border: 1px solid rgba(180, 180, 180, 1);
   border-radius: 20px;
@@ -41,6 +41,7 @@ export const OptionButton = styled.button<{ $isActive: boolean }>`
   appearance: none;
   border: none;
   background: transparent;
+  min-height: 44px;
   padding: 0 24px;
   font-weight: 600;
   font-style: normal;

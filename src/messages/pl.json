@@ -109,15 +109,15 @@
     "items": {
       "1": {
         "question": "Czy Frame Up jest dla mnie, jeśli nigdy nie tańczyłam?",
-        "answer": "Tak, ten styl świetnie nadaje się dla początkujących. Pracujemy krok po kroku nad techniką, plastyką i pewnością siebie. Najważniejsze są chęć i radość z procesu."
+        "answer": "Tak, ten styl jest odpowiedni dla początkujących. Na zajęciach w początkującej grupie offline pracujemy stopniowo i skupiamy się na technice, plastyce oraz pewności siebie. Możesz też zacząć stopniową naukę od kursu online dla początkujących \"First Touch\". Najważniejsze są chęć próbowania i radość z procesu."
       },
       "2": {
         "question": "Co zabrać na trening?",
-        "answer": "Wygodny strój, w którym czujesz się swobodnie, skarpetki lub miękkie obuwie i butelkę wody. Resztę wyjaśnię i pokażę na miejscu."
+        "answer": "Wygodny strój, w którym czujesz się swobodnie, skarpetki, nakolanniki, butelkę wody i stripy (jeśli masz)."
       },
       "3": {
         "question": "Czy mogę dołączyć w trakcie miesiąca lub kursu?",
-        "answer": "Tak, możesz zacząć w dowolnym momencie. Pomogę Ci szybko wejść do grupy i nadrobić program."
+        "answer": "Jeśli chcesz dołączyć w połowie miesiąca, napisz do Anny w wiadomości prywatnej, a podpowie Ci, kiedy najlepiej wejść w nowy materiał. Linki do jej Instagrama i Telegrama znajdziesz w sekcji \"Kontakt\"."
       },
       "4": {
         "question": "Czy Frame Up jest dla mnie, jeśli się wstydzę lub boję się ruchu?",
@@ -136,15 +136,11 @@
         "answer": "Plastyka to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się bardziej kobieco."
       },
       "8": {
-        "question": "Jak wyglądają zajęcia?",
-        "answer": "Rozgrzewamy ciało, uczymy się techniki, pracujemy nad plastyką, postawą i muzykalnością, a następnie uczymy choreografii. Każde zajęcia to połączenie energii, emocji i kreatywności."
-      },
-      "9": {
         "question": "Czy mogę przyjść na zajęcia próbne?",
-        "answer": "Tak, zajęcia próbne są dostępne. To najlepszy sposób, aby poczuć styl i atmosferę oraz sprawdzić, czy ten format jest dla Ciebie. Rejestracja jest dostępna tutaj:",
+        "answer": "Tak, możesz przyjść na zajęcia próbne za jedyne 70 PLN do grup offline na poziomie początkującym lub kontynuującym. Rejestracja jest dostępna tutaj:",
         "linkLabel": "Otwórz formularz rejestracyjny"
       },
-      "10": {
+      "9": {
         "question": "Czy Frame Up jest odpowiedni w każdym wieku?",
         "answer": "Zdecydowanie tak. Frame Up to kobiecość, pewność siebie i przyjemność z ruchu, a nie ograniczenia wiekowe."
       }
@@ -266,13 +262,13 @@
           "3": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
         },
         "startLabel": "Start kursu",
-        "startValue": "2 marca 2026",
+        "startValue": "4 maja 2026",
         "button": "Więcej o kursie"
       },
       "choreo": {
         "title": "Samouczki choreograficzne",
         "description": {
-          "1": "Samouczki choreograficzne online dla tancerzy, którzy chcą głębi, struktury i wyrazistego tańca.",
+          "1": "Samouczki online moich choreografii.",
           "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
         },
         "startLabel": "Start kursu",
@@ -361,7 +357,7 @@
         "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
       },
       "startLabel": "Start kursu",
-      "startDate": "2 Marca 2026",
+      "startDate": "4 maja 2026",
       "buyButton": "Kup za 250 PLN / 50 €",
       "programButton": "Program kursu",
       "playLabel": "Odtwórz wideo",
@@ -384,7 +380,7 @@
         "text": "Od pracy stóp i fal po ekspresję i pierwszą choreografię - dostajesz pełną bazę, by pewnie poruszać się w Frame Up i pokrewnych stylach."
       },
       "4": {
-        "title": "Dostęp do kursu przez 1,5 miesiąca",
+        "title": "Dostęp do kursu przez 1 miesiąc",
         "text": "Wystarczająco czasu, by przejść materiał we własnym tempie, wracać do lekcji i dopracować ruch."
       },
       "5": {
@@ -402,7 +398,7 @@
     "hero": {
       "title": "Samouczki choreograficzne",
       "description": {
-        "1": "Samouczki choreograficzne online dla poziomu średniego i kontynuującego.",
+        "1": "Samouczki online moich choreografii.",
         "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
       },
       "startLabel": "Start kursu",
@@ -603,7 +599,7 @@
       },
       "4": {
         "title": "4. Odbiorcy danych / podmioty przetwarzające",
-        "text": "Dane mogą być przekazywane podmiotom wspierającym administratora w świadczeniu usług, w szczególności dostawcom:\n- systemów płatności (Stripe),\n- hostingu / platformy kursowej (Telegram) / narzędzi do udostępniania materiałów,\n- narzędzi e-mail, komunikacji i obsługi klienta (Gmail),\n- księgowości (jeśli dotyczy),\n- wsparcia IT.\nDane nie są sprzedawane ani udostępniane osobom trzecim do własnych celów marketingowych. Mogą być również udostępnione organom publicznym wyłącznie, gdy wymagają tego przepisy prawa."
+        "text": "Dane mogą być przekazywane podmiotom wspierającym administratora w świadczeniu usług, w szczególności dostawcom:\n- systemów płatności (Stripe),\n- hostingu / platformy kursowej (Telegram) / narzędzi do udostępniania materiałów,\n- narzędzi e-mail, komunikacji i obsługi klienta (Gmail, Telegram),\n- księgowości (jeśli dotyczy),\n- wsparcia IT.\nDane nie są sprzedawane ani udostępniane osobom trzecim do własnych celów marketingowych. Mogą być również udostępnione organom publicznym wyłącznie, gdy wymagają tego przepisy prawa."
       },
       "5": {
         "title": "5. Przekazywanie danych poza EOG",

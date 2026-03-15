@@ -1,14 +1,15 @@
-import { styled } from "styled-components";
+import { css, keyframes, styled } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
-export const CardContainer = styled.div`
+export const CardContainer = styled.div<{ $hasCollapseToggle?: boolean }>`
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
   position: relative;
+  padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "12px" : "0")};
 
   ${glass({ radius: "50px" })}
 
@@ -123,4 +124,64 @@ export const ButtonBox = styled.div`
   width: 100%;
   display: flex;
   margin: 30px 0 0 0;
+`;
+
+const collapseHintBounce = keyframes`
+  0%, 100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -4px, 0);
+  }
+`;
+
+export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: calc(50% - 22px);
+  bottom: -2px;
+  background: transparent;
+  cursor: pointer;
+  z-index: 2;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s ease;
+  ${({ $isCollapsed }) =>
+    $isCollapsed
+      ? css`
+          animation: ${collapseHintBounce} 1.25s ease-in-out infinite;
+        `
+      : css`
+          animation: none;
+        `}
+
+  & svg {
+    transition: transform 0.2s ease;
+    transform: rotate(${({ $isCollapsed }) => ($isCollapsed ? "0deg" : "180deg")});
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transition: none;
+
+    & svg {
+      transition: none;
+    }
+  }
 `;

@@ -1,13 +1,9 @@
-import type { ReactNode } from "react";
 import styled from "styled-components";
 
-export type TInteractiveCard = {
+import type { TInteractiveCard as TInteractiveCardBase } from "@/components/cards/InteractiveCard/InteractiveCard.types";
+
+export type TInteractiveCard = TInteractiveCardBase & {
   id: number;
-  title: string;
-  topRowContent?: ReactNode;
-  bottomRowContent?: ReactNode;
-  buttonText?: string;
-  buttonHref?: string;
 };
 
 type Translate = (key: string) => string;

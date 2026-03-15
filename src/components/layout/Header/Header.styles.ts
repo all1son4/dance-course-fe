@@ -101,7 +101,11 @@ export const IconBox = styled.button<{ $isOpen: boolean }>`
   display: none;
   position: absolute;
   right: 30px;
-  top: 17.5px;
+  top: 7.5px;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
   z-index: 55;
   cursor: pointer;
 

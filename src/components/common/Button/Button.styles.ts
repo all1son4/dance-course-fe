@@ -19,7 +19,7 @@ const sizeStyles = {
     box-sizing: border-box;
   `,
   sm: css`
-    height: 42px;
+    height: 44px;
     font-size: 16px;
     font-weight: 400;
     box-sizing: border-box;
@@ -74,12 +74,18 @@ const controlStyles = css<StyledProps>`
   user-select: none;
   white-space: nowrap;
   text-decoration: none !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 44px;
+  min-height: 44px;
 
   transition:
-    transform 0.15s ease,
+    transform 0.12s ease,
     color 0.2s ease,
     background-color 0.2s ease,
-    box-shadow 0.2s ease;
+    box-shadow 0.2s ease,
+    filter 0.12s ease,
+    opacity 0.12s ease;
 
   ${({ $size }) => sizeStyles[$size]};
   width: 100%;
@@ -89,7 +95,9 @@ const controlStyles = css<StyledProps>`
 
   @media (hover: none) and (pointer: coarse) {
     &:active:not(:disabled) {
-      transform: scale(0.95);
+      transform: scale(0.985);
+      filter: brightness(0.95);
+      opacity: 0.98;
     }
   }
 
