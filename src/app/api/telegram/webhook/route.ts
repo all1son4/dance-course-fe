@@ -3,6 +3,7 @@ import { isPayloadTooLarge, jsonNoStore, parseJsonBody } from "@/lib/http-securi
 import {
   activateTelegramStartToken,
   getActivatedPaymentsByTelegramUserId,
+  syncTelegramChannelMembership,
 } from "@/lib/telegram/access";
 import { copyTelegramMessage, sendTelegramMessage } from "@/lib/telegram/bot-api";
 import {
@@ -30,7 +31,29 @@ type TelegramIncomingMessage = {
   text?: string;
 };
 
+type TelegramChatMember = {
+  is_member?: boolean;
+  status?: string;
+  user?: {
+    id?: number;
+    username?: string;
+  };
+};
+
+type TelegramChatMemberUpdate = {
+  chat?: {
+    id?: number;
+    type?: string;
+  };
+  invite_link?: {
+    invite_link?: string;
+  };
+  new_chat_member?: TelegramChatMember;
+  old_chat_member?: TelegramChatMember;
+};
+
 type TelegramUpdate = {
+  chat_member?: TelegramChatMemberUpdate;
   message?: TelegramIncomingMessage;
 };
 
@@ -166,6 +189,20 @@ const buildHelpText = (locale: BotLocale) => {
   const copy = getBotCopy(locale);
 
   return [copy.helpTitle, copy.startCommand, copy.myLessonsCommand].join("\n");
+};
+
+const isActiveTelegramMember = (member: TelegramChatMember | undefined) => {
+  const status = member?.status?.trim() ?? "";
+
+  if (status === "member" || status === "administrator" || status === "creator") {
+    return true;
+  }
+
+  if (status === "restricted") {
+    return member?.is_member === true;
+  }
+
+  return false;
 };
 
 const sendPurchasedLessons = async ({
@@ -394,6 +431,41 @@ export async function POST(request: Request) {
 
   try {
     const update = await parseJsonBody<TelegramUpdate>(request);
+    const chatMemberUpdate = update?.chat_member;
+
+    if (chatMemberUpdate) {
+      const chatId = chatMemberUpdate.chat?.id;
+      const newMember = chatMemberUpdate.new_chat_member;
+      const oldMember = chatMemberUpdate.old_chat_member;
+      const telegramUserId = newMember?.user?.id ? String(newMember.user.id) : "";
+
+      if (chatId && telegramUserId) {
+        const wasActive = isActiveTelegramMember(oldMember);
+        const isActive = isActiveTelegramMember(newMember);
+
+        if (!wasActive && isActive) {
+          await syncTelegramChannelMembership({
+            chatId: String(chatId),
+            inviteLink: chatMemberUpdate.invite_link?.invite_link ?? "",
+            membershipStatus: "joined",
+            telegramUserId,
+            telegramUsername: newMember?.user?.username ?? "",
+          });
+        } else if (wasActive && !isActive) {
+          await syncTelegramChannelMembership({
+            chatId: String(chatId),
+            membershipStatus: "left",
+            telegramUserId,
+            telegramUsername: newMember?.user?.username ?? "",
+          });
+        }
+      }
+
+      return jsonNoStore({
+        ok: true,
+      });
+    }
+
     const message = update?.message;
     const chatId = message?.chat?.id;
     const chatType = message?.chat?.type ?? "";
@@ -471,8 +543,13 @@ export async function POST(request: Request) {
       }
     }
 
-    return jsonNoStore({
-      ok: true,
-    });
+    return jsonNoStore(
+      {
+        errorCode: "telegram_webhook_failed",
+      },
+      {
+        status: 500,
+      },
+    );
   }
 }

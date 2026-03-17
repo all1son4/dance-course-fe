@@ -43,6 +43,9 @@ const PAYMENT_SHEET_HEADERS = [
   "telegram_token_used_at",
   "telegram_user_id",
   "telegram_username",
+  "telegram_channel_chat_id",
+  "telegram_access_expires_at",
+  "telegram_access_revoked_at",
   "email_delivery_status",
   "email_delivery_updated_at",
   "with_mentor_alert_status",
@@ -85,6 +88,9 @@ const PAYMENT_SHEET_HEADER_LABELS: Record<
   telegram_token_used_at: "Когда токен использован",
   telegram_user_id: "Telegram user ID",
   telegram_username: "Telegram username (активировавший)",
+  telegram_channel_chat_id: "ID Telegram-канала",
+  telegram_access_expires_at: "Доступ в Telegram до",
+  telegram_access_revoked_at: "Когда Telegram-доступ отозван",
   email_delivery_status: "Статус отправки email",
   email_delivery_updated_at: "Когда обновлен статус email",
   with_mentor_alert_status: "Статус admin Telegram-алерта",
@@ -147,6 +153,9 @@ const TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS = [
   "product_id",
   "offer_id",
   "customer_email",
+  "link_kind",
+  "chat_id",
+  "access_expires_at",
   "status",
   "created_at",
   "expires_at",
@@ -166,6 +175,9 @@ const TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS: Record<
   product_id: "ID продукта",
   offer_id: "ID тарифа",
   customer_email: "Email клиента",
+  link_kind: "Тип ссылки",
+  chat_id: "ID Telegram-чата",
+  access_expires_at: "Доступ до",
   status: "Статус токена",
   created_at: "Создан",
   expires_at: "Действует до",
@@ -182,8 +194,13 @@ const TELEGRAM_USER_BINDINGS_SHEET_HEADERS = [
   "customer_email",
   "product_id",
   "offer_id",
+  "chat_id",
+  "invite_link",
   "bound_at",
   "last_seen_at",
+  "access_expires_at",
+  "revoked_at",
+  "revoked_reason",
   "status",
 ] as const;
 const TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS: Record<
@@ -196,8 +213,13 @@ const TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS: Record<
   customer_email: "Email клиента",
   product_id: "ID продукта",
   offer_id: "ID тарифа",
+  chat_id: "ID Telegram-чата",
+  invite_link: "Использованная invite-ссылка",
   bound_at: "Когда привязано",
   last_seen_at: "Последняя активность",
+  access_expires_at: "Доступ до",
+  revoked_at: "Когда доступ отозван",
+  revoked_reason: "Причина отзыва",
   status: "Статус привязки",
 };
 
@@ -690,11 +712,15 @@ const getRows = async <T extends string>(
   sheetTitle: string,
   headers: readonly T[],
   labelsMap?: Partial<Record<T, string>>,
+  options?: {
+    cacheTtlMs?: number;
+  },
 ) => {
+  const cacheTtlMs = options?.cacheTtlMs ?? SHEET_ROWS_CACHE_TTL_MS;
   const rowsCacheKey = getRowsCacheKey(config, sheetTitle, headers);
   const cachedRows = rowsCache.get(rowsCacheKey);
 
-  if (cachedRows && cachedRows.expiresAt > Date.now()) {
+  if (cacheTtlMs > 0 && cachedRows && cachedRows.expiresAt > Date.now()) {
     return cachedRows.rows as Array<Record<T, string>>;
   }
 
@@ -707,10 +733,12 @@ const getRows = async <T extends string>(
     .filter((row) => row.some((cell) => cell !== ""))
     .map((row) => mapRowToRecord(headers, row));
 
-  rowsCache.set(rowsCacheKey, {
-    expiresAt: Date.now() + SHEET_ROWS_CACHE_TTL_MS,
-    rows: mappedRows as Array<Record<string, string>>,
-  });
+  if (cacheTtlMs > 0) {
+    rowsCache.set(rowsCacheKey, {
+      expiresAt: Date.now() + cacheTtlMs,
+      rows: mappedRows as Array<Record<string, string>>,
+    });
+  }
 
   return mappedRows;
 };
@@ -796,7 +824,12 @@ export const ensureGoogleSheetsSchema = async () => {
   }
 };
 
-export const findPaymentRecordByIntentId = async (paymentIntentId: string) => {
+export const findPaymentRecordByIntentId = async (
+  paymentIntentId: string,
+  options?: {
+    cacheTtlMs?: number;
+  },
+) => {
   const config = getGoogleSheetsConfig();
 
   if (!config) {
@@ -812,6 +845,7 @@ export const findPaymentRecordByIntentId = async (paymentIntentId: string) => {
     config.paymentsSheetName,
     PAYMENT_SHEET_HEADERS,
     PAYMENT_SHEET_HEADER_LABELS,
+    options,
   );
 
   return rows.find((row) => row.payment_intent_id === paymentIntentId) ?? null;
@@ -881,6 +915,10 @@ export const findStripeEventRecordByEventId = async (eventId: string) => {
     config.stripeEventsSheetName,
     STRIPE_EVENT_SHEET_HEADERS,
     STRIPE_EVENT_SHEET_HEADER_LABELS,
+    {
+      // Stripe event deduplication must read fresh data to avoid stale-cache duplicates.
+      cacheTtlMs: 0,
+    },
   );
 
   return rows.find((row) => row.event_id === eventId) ?? null;
@@ -904,6 +942,29 @@ export const appendStripeEventRecord = async (record: StripeEventSheetRecord) =>
     STRIPE_EVENT_SHEET_HEADER_LABELS,
   );
   const lastColumnLetter = columnIndexToLetter(STRIPE_EVENT_SHEET_HEADERS.length);
+
+  const rows = await getRows(
+    config,
+    config.stripeEventsSheetName,
+    STRIPE_EVENT_SHEET_HEADERS,
+    STRIPE_EVENT_SHEET_HEADER_LABELS,
+    {
+      // Write path also uses fresh read to make event upsert idempotent.
+      cacheTtlMs: 0,
+    },
+  );
+  const rowNumber = getRowNumberByFieldValue(rows, "event_id", record.event_id);
+
+  if (rowNumber) {
+    await updateSheetValues(
+      config,
+      config.stripeEventsSheetName,
+      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
+      [toOrderedRow(STRIPE_EVENT_SHEET_HEADERS, record)],
+    );
+
+    return record;
+  }
 
   await appendSheetValues(
     config,
@@ -936,6 +997,33 @@ export const appendSuccessfulCustomerRecord = async (
   );
   const lastColumnLetter = columnIndexToLetter(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS.length);
 
+  const rows = await getRows(
+    config,
+    config.successfulCustomersSheetName,
+    SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
+    SUCCESSFUL_CUSTOMERS_SHEET_HEADER_LABELS,
+    {
+      // Customer log is idempotent by payment_intent_id even across webhook retries.
+      cacheTtlMs: 0,
+    },
+  );
+  const rowNumber = getRowNumberByFieldValue(
+    rows,
+    "payment_intent_id",
+    record.payment_intent_id,
+  );
+
+  if (rowNumber) {
+    await updateSheetValues(
+      config,
+      config.successfulCustomersSheetName,
+      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
+      [toOrderedRow(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS, record)],
+    );
+
+    return record;
+  }
+
   await appendSheetValues(
     config,
     config.successfulCustomersSheetName,
@@ -962,6 +1050,10 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
     config.paymentsSheetName,
     PAYMENT_SHEET_HEADERS,
     PAYMENT_SHEET_HEADER_LABELS,
+    {
+      // Write path must use fresh rows to avoid stale-cache duplicate inserts.
+      cacheTtlMs: 0,
+    },
   );
   const existingRecord =
     rows.find((row) => row.payment_intent_id === record.payment_intent_id) ?? null;
@@ -1036,6 +1128,27 @@ export const findTelegramAccessTokenRecordByTokenHash = async (tokenHash: string
   return rows.find((row) => row.token_hash === tokenHash) ?? null;
 };
 
+export const findTelegramAccessTokenRecordByTokenValue = async (tokenValue: string) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const rows = await getRows(
+    config,
+    config.telegramAccessTokensSheetName,
+    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+  );
+
+  return rows.find((row) => row.token_value === tokenValue) ?? null;
+};
+
 export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
   paymentIntentId: string,
 ) => {
@@ -1087,6 +1200,10 @@ export const upsertTelegramAccessTokenRecord = async (
     config.telegramAccessTokensSheetName,
     TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
     TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    {
+      // Write path must use fresh rows to avoid stale-cache duplicate inserts.
+      cacheTtlMs: 0,
+    },
   );
   const rowNumber = getRowNumberByFieldValue(rows, "token_id", record.token_id);
   const lastColumnLetter = columnIndexToLetter(
@@ -1160,6 +1277,82 @@ export const findTelegramUserBindingsByTelegramUserId = async (
   return rows.filter((row) => row.telegram_user_id === telegramUserId);
 };
 
+export const findTelegramUserBindingsByCustomerEmail = async (customerEmail: string) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const rows = await getRows(
+    config,
+    config.telegramUserBindingsSheetName,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+  );
+  const normalizedEmail = customerEmail.trim().toLowerCase();
+
+  return rows.filter(
+    (row) => row.customer_email.trim().toLowerCase() === normalizedEmail,
+  );
+};
+
+export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
+  chatId,
+  telegramUserId,
+}: {
+  chatId: string;
+  telegramUserId: string;
+}) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const rows = await getRows(
+    config,
+    config.telegramUserBindingsSheetName,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+  );
+
+  return rows.filter(
+    (row) =>
+      row.telegram_user_id.trim() === telegramUserId.trim() &&
+      row.chat_id.trim() === chatId.trim(),
+  );
+};
+
+export const findActiveTelegramUserBindings = async () => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const rows = await getRows(
+    config,
+    config.telegramUserBindingsSheetName,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+  );
+
+  return rows.filter((row) => row.status === "active");
+};
+
 export const upsertTelegramUserBindingRecord = async (
   record: TelegramUserBindingSheetRecord,
 ) => {
@@ -1178,6 +1371,10 @@ export const upsertTelegramUserBindingRecord = async (
     config.telegramUserBindingsSheetName,
     TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
     TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+    {
+      // Write path must use fresh rows to avoid stale-cache duplicate inserts.
+      cacheTtlMs: 0,
+    },
   );
   const rowNumber = getRowNumberByFieldValue(
     rows,

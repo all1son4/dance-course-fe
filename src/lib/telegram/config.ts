@@ -13,6 +13,11 @@ export type TelegramLessonSource = {
   sourceChatId: string;
   sourceMessageId: number;
 };
+export type TelegramChannelTarget = {
+  chatId: string;
+  lessonLanguage: TelegramLessonLanguage | null;
+  offerId: string;
+};
 
 type ParsedTelegramLessonSource = {
   lessonTitle?: string;
@@ -21,12 +26,22 @@ type ParsedTelegramLessonSource = {
   sourceChatId: string;
   sourceMessageId: number;
 };
+type ParsedTelegramChannelTarget = {
+  chatId: string;
+  lessonLanguage: TelegramLessonLanguage | null;
+  offerId: string;
+};
 
 const getEnvValue = (name: string) => process.env[name]?.trim() ?? "";
 
 const normalizeTelegramUsername = (value: string) => value.replace(/^@/u, "").trim();
 let lessonSourcesCache: Map<string, ParsedTelegramLessonSource> | null = null;
+let channelTargetsCache: Map<string, ParsedTelegramChannelTarget> | null = null;
 const getLessonSourceKey = (
+  offerId: string,
+  lessonLanguage: TelegramLessonLanguage | null,
+) => `${offerId}:${lessonLanguage ?? "default"}`;
+const getChannelTargetKey = (
   offerId: string,
   lessonLanguage: TelegramLessonLanguage | null,
 ) => `${offerId}:${lessonLanguage ?? "default"}`;
@@ -203,6 +218,129 @@ const parseLessonSources = () => {
     return lessonSourcesCache;
   }
 };
+const parseChannelTarget = (
+  value: unknown,
+  fallbackOfferId: string,
+  fallbackLessonLanguage: TelegramLessonLanguage | null,
+) => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as {
+    chatId?: unknown;
+    lessonLanguage?: unknown;
+    offerId?: unknown;
+  };
+  const offerId =
+    typeof candidate.offerId === "string" && candidate.offerId.trim()
+      ? candidate.offerId.trim()
+      : fallbackOfferId;
+  const chatId =
+    typeof candidate.chatId === "string" || typeof candidate.chatId === "number"
+      ? String(candidate.chatId).trim()
+      : "";
+  const lessonLanguage =
+    resolveTelegramLessonLanguage(
+      typeof candidate.lessonLanguage === "string" ? candidate.lessonLanguage : null,
+    ) ?? fallbackLessonLanguage;
+
+  if (!offerId || !chatId) {
+    return null;
+  }
+
+  return {
+    chatId,
+    lessonLanguage,
+    offerId,
+  } satisfies ParsedTelegramChannelTarget;
+};
+
+const parseChannelTargets = () => {
+  if (channelTargetsCache) {
+    return channelTargetsCache;
+  }
+
+  const rawValue = getEnvValue("TELEGRAM_CHANNEL_TARGETS_JSON");
+
+  if (!rawValue) {
+    channelTargetsCache = new Map<string, ParsedTelegramChannelTarget>();
+    return channelTargetsCache;
+  }
+
+  try {
+    const parsedValue = JSON.parse(rawValue) as unknown;
+    const channelTargets = new Map<string, ParsedTelegramChannelTarget>();
+
+    if (Array.isArray(parsedValue)) {
+      parsedValue.forEach((entry) => {
+        const channelTarget = parseChannelTarget(entry, "", null);
+
+        if (channelTarget) {
+          channelTargets.set(
+            getChannelTargetKey(channelTarget.offerId, channelTarget.lessonLanguage),
+            channelTarget,
+          );
+        }
+      });
+
+      channelTargetsCache = channelTargets;
+      return channelTargets;
+    }
+
+    if (parsedValue && typeof parsedValue === "object") {
+      Object.entries(parsedValue as Record<string, unknown>).forEach(
+        ([offerId, entry]) => {
+          const channelTarget = parseChannelTarget(entry, offerId, null);
+
+          if (channelTarget) {
+            channelTargets.set(
+              getChannelTargetKey(channelTarget.offerId, channelTarget.lessonLanguage),
+              channelTarget,
+            );
+            return;
+          }
+
+          if (!entry || typeof entry !== "object") {
+            return;
+          }
+
+          Object.entries(entry as Record<string, unknown>).forEach(
+            ([languageKey, languageEntry]) => {
+              const lessonLanguage = resolveTelegramLessonLanguage(languageKey);
+
+              if (!lessonLanguage) {
+                return;
+              }
+
+              const channelTargetByLanguage = parseChannelTarget(
+                languageEntry,
+                offerId,
+                lessonLanguage,
+              );
+
+              if (channelTargetByLanguage) {
+                channelTargets.set(
+                  getChannelTargetKey(
+                    channelTargetByLanguage.offerId,
+                    channelTargetByLanguage.lessonLanguage,
+                  ),
+                  channelTargetByLanguage,
+                );
+              }
+            },
+          );
+        },
+      );
+    }
+
+    channelTargetsCache = channelTargets;
+    return channelTargets;
+  } catch {
+    channelTargetsCache = new Map<string, ParsedTelegramChannelTarget>();
+    return channelTargetsCache;
+  }
+};
 
 export const getTelegramBotToken = () => getEnvValue("TELEGRAM_BOT_TOKEN");
 
@@ -277,4 +415,30 @@ export const getTelegramLessonSourceByOfferId = ({
     sourceChatId: lessonSource.sourceChatId,
     sourceMessageId: lessonSource.sourceMessageId,
   } satisfies TelegramLessonSource;
+};
+
+export const getTelegramChannelTargetByOfferId = ({
+  lessonLanguage,
+  offerId,
+}: {
+  lessonLanguage?: string | null;
+  offerId: string;
+}) => {
+  const resolvedLessonLanguage = resolveTelegramLessonLanguage(lessonLanguage);
+  const parsedChannelTargets = parseChannelTargets();
+  const targetByLanguage = resolvedLessonLanguage
+    ? parsedChannelTargets.get(getChannelTargetKey(offerId, resolvedLessonLanguage))
+    : null;
+  const targetByDefault = parsedChannelTargets.get(getChannelTargetKey(offerId, null));
+  const target = targetByLanguage ?? targetByDefault;
+
+  if (!target) {
+    return null;
+  }
+
+  return {
+    chatId: target.chatId,
+    lessonLanguage: target.lessonLanguage ?? resolvedLessonLanguage ?? null,
+    offerId: target.offerId,
+  } satisfies TelegramChannelTarget;
 };

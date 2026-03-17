@@ -1,14 +1,5 @@
 import { getResolvedCheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
-import {
-  DEFAULT_SITE_HOME_URL,
-  FIRST_TOUCH_TELEGRAM_CHANNEL_URL,
-  SUPPORT_TELEGRAM_URL,
-} from "@/constants/links";
-import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
-
-const DEFAULT_TELEGRAM_ACCESS_LINK_BY_PRODUCT_ID: Record<string, string> = {
-  [SELLABLE_PRODUCTS["first-touch"].id]: FIRST_TOUCH_TELEGRAM_CHANNEL_URL,
-};
+import { DEFAULT_SITE_HOME_URL, SUPPORT_TELEGRAM_URL } from "@/constants/links";
 
 const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
@@ -133,22 +124,19 @@ export type BuildPurchaseSuccessEmailInput = {
   checkoutCurrency: string;
   checkoutLocale?: string | null;
   offerLabel: string;
-  productId: string;
   productTitle: string;
   receiptKind?: "pdf" | "receipt" | null;
   receiptLink: string | null;
   telegramAccessUrl?: string | null;
 };
 
-export const getTelegramAccessLinkByProductId = (productId: string) =>
-  DEFAULT_TELEGRAM_ACCESS_LINK_BY_PRODUCT_ID[productId] ?? null;
+export const getTelegramAccessLinkByProductId = () => null;
 
 export const buildPurchaseSuccessEmail = ({
   amountMinor,
   checkoutCurrency,
   checkoutLocale,
   offerLabel,
-  productId,
   productTitle,
   receiptKind,
   receiptLink,
@@ -156,7 +144,7 @@ export const buildPurchaseSuccessEmail = ({
 }: BuildPurchaseSuccessEmailInput) => {
   const locale = getResolvedCheckoutLocale(checkoutLocale);
   const copy = EMAIL_COPY[locale];
-  const telegramLink = telegramAccessUrl ?? getTelegramAccessLinkByProductId(productId);
+  const telegramLink = telegramAccessUrl ?? getTelegramAccessLinkByProductId();
   const amountLabel = formatCheckoutAmount({
     amountMinor,
     currency: checkoutCurrency,

@@ -480,16 +480,16 @@
     "title": "Thank you! Your payment was successful",
     "description": {
       "firstTouch": {
-        "line1": "Payment confirmed. Your First Touch course access is already active.",
-        "line2": "Tap “Go to Telegram” to open the group and start learning right away."
+        "line1": "Payment confirmed. We are generating your personal link to the First Touch course.",
+        "line2": "As soon as the link is ready, the button on this page will open your Telegram group."
       },
       "withoutMentor": {
         "line1": "Payment confirmed. We are generating your personal access link to the lessons.",
         "line2": "As soon as the link is ready, the button on this page will open your materials in Telegram."
       },
       "withMentor": {
-        "line1": "Payment confirmed. Your mentored format request has been received.",
-        "line2": "Please wait for a message from our team with the next steps and access details."
+        "line1": "Payment confirmed. We are generating your personal access link to the lessons.",
+        "line2": "As soon as the link is ready, the button on this page will open your materials in Telegram."
       }
     },
     "telegram": {

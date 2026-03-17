@@ -480,16 +480,16 @@
     "title": "Dziękujemy! Płatność zakończyła się sukcesem",
     "description": {
       "firstTouch": {
-        "line1": "Płatność została potwierdzona. Dostęp do kursu First Touch jest już aktywny.",
-        "line2": "Kliknij „Przejdź do Telegrama”, aby otworzyć grupę i od razu rozpocząć naukę."
+        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link do kursu First Touch.",
+        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoją grupę w Telegramie."
       },
       "withoutMentor": {
         "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link z dostępem do lekcji.",
         "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoje materiały w Telegramie."
       },
       "withMentor": {
-        "line1": "Płatność została potwierdzona. Twoje zamówienie w formacie z mentorem zostało przyjęte.",
-        "line2": "Poczekaj na wiadomość od naszego zespołu z dalszymi krokami i dostępem do materiałów."
+        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link z dostępem do lekcji.",
+        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoje materiały w Telegramie."
       }
     },
     "telegram": {

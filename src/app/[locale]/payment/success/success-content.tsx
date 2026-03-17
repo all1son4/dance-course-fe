@@ -4,10 +4,7 @@ import { useState } from "react";
 import styled from "styled-components";
 
 import { Button } from "@/components";
-import {
-  FIRST_TOUCH_TELEGRAM_CHANNEL_URL,
-  SUPPORT_TELEGRAM_URL,
-} from "@/constants/links";
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 
 import TelegramAccessButton from "./telegram-access-button";
 
@@ -16,8 +13,7 @@ type SuccessContentProps = {
   descriptionLine1: string;
   descriptionLine2: string;
   homeButtonText: string;
-  isFirstTouchPurchase: boolean;
-  isWithoutMentorPurchase: boolean;
+  isTelegramAccessPurchase: boolean;
   offerId: string;
   paymentIntentId: string;
   productId: string;
@@ -74,8 +70,7 @@ export default function SuccessContent({
   descriptionLine1,
   descriptionLine2,
   homeButtonText,
-  isFirstTouchPurchase,
-  isWithoutMentorPurchase,
+  isTelegramAccessPurchase,
   offerId,
   paymentIntentId,
   productId,
@@ -93,20 +88,12 @@ export default function SuccessContent({
       <Paragraphs>
         <Paragraph>{descriptionLine1}</Paragraph>
         <Paragraph>{descriptionLine2}</Paragraph>
-        {isWithoutMentorPurchase && showUnavailableNote ? (
+        {isTelegramAccessPurchase && showUnavailableNote ? (
           <Paragraph>{telegramUnavailableText}</Paragraph>
         ) : null}
       </Paragraphs>
       <ButtonBox>
-        {isFirstTouchPurchase ? (
-          <Button
-            buttonText={telegramOpenLinkText}
-            href={FIRST_TOUCH_TELEGRAM_CHANNEL_URL}
-            target="_blank"
-          />
-        ) : null}
-
-        {isWithoutMentorPurchase ? (
+        {isTelegramAccessPurchase ? (
           <TelegramAccessButton
             buttonText={telegramOpenLinkText}
             checkoutSessionId={checkoutSessionId}

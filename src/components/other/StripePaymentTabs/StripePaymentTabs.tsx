@@ -38,6 +38,7 @@ import type { StripePaymentTabsProps } from "./StripePaymentTabs.types";
 
 const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
 const PAYMENT_SUCCESS_PATH = "/payment/success";
+const PAYMENT_FAILED_PATH = "/payment/failed";
 
 const getStripePromise = (publishableKey: string) => {
   const cachedPromise = stripePromiseCache.get(publishableKey);
@@ -371,9 +372,13 @@ const StripePaymentForm = ({
       });
 
       if (error) {
-        if (error.type === "api_connection_error" || error.type === "api_error") {
-          setSubmitError(technicalErrorText);
-        }
+        const normalizedMessage = error.message?.trim() ?? "";
+
+        setSubmitError(
+          error.type === "api_connection_error" || error.type === "api_error"
+            ? technicalErrorText
+            : normalizedMessage || technicalErrorText,
+        );
         return;
       }
 
@@ -392,6 +397,7 @@ const StripePaymentForm = ({
         }
 
         if (outcome === "failed" || outcome === "canceled") {
+          redirectWithLockedButton(PAYMENT_FAILED_PATH, resolvedPaymentIntentId);
           return;
         }
 

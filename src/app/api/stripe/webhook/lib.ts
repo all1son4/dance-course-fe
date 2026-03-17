@@ -36,6 +36,11 @@ const WITHOUT_MENTOR_OFFER_IDS = new Set(
       .map((offer) => offer.id),
   ),
 );
+const FIRST_TOUCH_OFFER_IDS = new Set(
+  SELLABLE_PRODUCTS_LIST.flatMap((product) =>
+    product.code === "first-touch" ? product.offers.map((offer) => offer.id) : [],
+  ),
+);
 
 type StripePaymentWebhookResult = {
   duplicate: boolean;
@@ -73,15 +78,19 @@ const buildPurchaseItemLabel = (productTitle: string, offerLabel: string) => {
 };
 
 const getAccessWorkflowByOfferId = (offerId: string) => {
+  if (FIRST_TOUCH_OFFER_IDS.has(offerId)) {
+    return "telegram-chat";
+  }
+
   if (WITHOUT_MENTOR_OFFER_IDS.has(offerId)) {
-    return "telegram-bot";
+    return "telegram-channel";
   }
 
   if (WITH_MENTOR_OFFER_IDS.has(offerId)) {
     return "with-mentor";
   }
 
-  return "telegram-channel";
+  return "telegram-chat";
 };
 
 const mapPaymentIntentToPaymentRecord = (
@@ -105,9 +114,12 @@ const mapPaymentIntentToPaymentRecord = (
   const customerFullName =
     paymentIntent.metadata.customer_full_name ?? existingRecord?.customer_full_name ?? "";
   const accessWorkflow = getAccessWorkflowByOfferId(offerId);
-  const deliveryChannel = accessWorkflow === "with-mentor" ? "manual" : "telegram";
-  const telegramAccessStatus =
-    accessWorkflow === "with-mentor" ? "not_required" : "pending";
+  const isTelegramAccessOffer =
+    FIRST_TOUCH_OFFER_IDS.has(offerId) ||
+    WITHOUT_MENTOR_OFFER_IDS.has(offerId) ||
+    WITH_MENTOR_OFFER_IDS.has(offerId);
+  const deliveryChannel = "telegram";
+  const telegramAccessStatus = isTelegramAccessOffer ? "pending" : "not_required";
 
   return {
     amount: String(snapshot.amount),
@@ -146,6 +158,9 @@ const mapPaymentIntentToPaymentRecord = (
     telegram_token_used_at: existingRecord?.telegram_token_used_at ?? "",
     telegram_user_id: existingRecord?.telegram_user_id ?? "",
     telegram_username: existingRecord?.telegram_username ?? "",
+    telegram_channel_chat_id: existingRecord?.telegram_channel_chat_id ?? "",
+    telegram_access_expires_at: existingRecord?.telegram_access_expires_at ?? "",
+    telegram_access_revoked_at: existingRecord?.telegram_access_revoked_at ?? "",
     status: snapshot.status,
     updated_at: timestamp,
     with_mentor_alert_status: existingRecord?.with_mentor_alert_status ?? "",
@@ -185,7 +200,9 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
   const [existingEvent, existingPaymentRecord] = await Promise.all([
     findStripeEventRecordByEventId(event.id),
-    findPaymentRecordByIntentId(paymentIntent.id),
+    findPaymentRecordByIntentId(paymentIntent.id, {
+      cacheTtlMs: 0,
+    }),
   ]);
   const paymentRecord = mapPaymentIntentToPaymentRecord(
     event,

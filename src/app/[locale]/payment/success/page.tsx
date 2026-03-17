@@ -7,6 +7,7 @@ import {
   getSellableProductOfferById,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
+import { isChoreoChannelOfferId, isFirstTouchOfferId } from "@/lib/telegram/offer-access";
 import { glass } from "@/styles/mixins/glass";
 import { Success } from "@/svg";
 
@@ -106,6 +107,8 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
   }
 
   const isWithoutMentorPurchase = selectedOffer?.code === "without-mentor";
+  const isTelegramAccessPurchase =
+    isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
   const successCase = isFirstTouchPurchase
     ? "firstTouch"
     : isWithoutMentorPurchase
@@ -126,8 +129,7 @@ export default async function SuccesPage({ searchParams }: SuccessPageProps) {
           descriptionLine1={t(`description.${successCase}.line1`)}
           descriptionLine2={t(`description.${successCase}.line2`)}
           homeButtonText={t("buttons.home")}
-          isFirstTouchPurchase={isFirstTouchPurchase}
-          isWithoutMentorPurchase={isWithoutMentorPurchase}
+          isTelegramAccessPurchase={isTelegramAccessPurchase}
           offerId={offerId}
           paymentIntentId={paymentIntentId}
           productId={productId}

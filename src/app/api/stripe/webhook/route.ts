@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import type Stripe from "stripe";
 
 import { normalizeCountryCode } from "@/constants/countries";
@@ -14,7 +16,7 @@ import { isPayloadTooLarge, jsonNoStore } from "@/lib/http-security";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 import {
   ensureTelegramAccessLinkForPayment,
-  isOfferEligibleForTelegramBotAccess,
+  isOfferEligibleForTelegramAccessLink,
 } from "@/lib/telegram/access";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
 import {
@@ -69,10 +71,105 @@ const LESSON_LANGUAGE_LABEL_BY_LANGUAGE = {
   ru: "Русский",
 } as const;
 const pendingPurchaseEmailSyncs = new Map<string, Promise<void>>();
-const pendingWithMentorAlertSyncs = new Map<string, Promise<void>>();
+const pendingPurchaseAlertSyncs = new Map<string, Promise<void>>();
+const PAYMENT_PROCESSING_STATUS_PREFIX = "sending:";
+const PAYMENT_PROCESSING_LEASE_TTL_MS = 2 * 60 * 1000;
+
+type PaymentStatusField = "email_delivery_status" | "with_mentor_alert_status";
+type PaymentStatusUpdatedField =
+  | "email_delivery_updated_at"
+  | "with_mentor_alert_updated_at";
 
 const escapeTelegramHtml = (value: string) =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+
+const parseTimestamp = (value: string) => {
+  const timestamp = Date.parse(value);
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const createPaymentProcessingStatus = () =>
+  `${PAYMENT_PROCESSING_STATUS_PREFIX}${randomBytes(10).toString("hex")}`;
+
+const isFreshPaymentProcessingStatus = ({
+  status,
+  updatedAt,
+}: {
+  status: string;
+  updatedAt: string;
+}) =>
+  status.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX) &&
+  parseTimestamp(updatedAt) + PAYMENT_PROCESSING_LEASE_TTL_MS > Date.now();
+
+const getFreshPaymentRecord = async ({
+  fallbackPaymentRecord,
+  paymentIntentId,
+}: {
+  fallbackPaymentRecord: PaymentSheetRecord;
+  paymentIntentId: string;
+}) =>
+  (await findPaymentRecordByIntentId(paymentIntentId, {
+    cacheTtlMs: 0,
+  })) ?? fallbackPaymentRecord;
+
+const tryAcquirePaymentProcessingLease = async ({
+  completedStatuses,
+  fallbackPaymentRecord,
+  paymentIntentId,
+  statusField,
+  updatedAtField,
+}: {
+  completedStatuses: Set<string>;
+  fallbackPaymentRecord: PaymentSheetRecord;
+  paymentIntentId: string;
+  statusField: PaymentStatusField;
+  updatedAtField: PaymentStatusUpdatedField;
+}) => {
+  const latestPaymentRecord = await getFreshPaymentRecord({
+    fallbackPaymentRecord,
+    paymentIntentId,
+  });
+  const currentStatus = latestPaymentRecord[statusField].trim();
+
+  if (completedStatuses.has(currentStatus)) {
+    return {
+      acquired: false,
+      paymentRecord: latestPaymentRecord,
+    };
+  }
+
+  if (
+    isFreshPaymentProcessingStatus({
+      status: currentStatus,
+      updatedAt: latestPaymentRecord[updatedAtField],
+    })
+  ) {
+    return {
+      acquired: false,
+      paymentRecord: latestPaymentRecord,
+    };
+  }
+
+  const now = toWarsawIso();
+  const leaseStatus = createPaymentProcessingStatus();
+  await upsertPaymentRecord({
+    ...latestPaymentRecord,
+    [statusField]: leaseStatus,
+    [updatedAtField]: now,
+    updated_at: now,
+  });
+
+  const verifiedPaymentRecord = await getFreshPaymentRecord({
+    fallbackPaymentRecord: latestPaymentRecord,
+    paymentIntentId,
+  });
+
+  return {
+    acquired: verifiedPaymentRecord[statusField].trim() === leaseStatus,
+    paymentRecord: verifiedPaymentRecord,
+  };
+};
 
 const getFormattedAmountLabel = ({
   amountMinor,
@@ -167,7 +264,27 @@ const getFormattedCountryLabel = ({
   }
 };
 
-const buildWithMentorPurchaseAlertText = ({
+const getAccessWorkflowLabel = (workflow: string) => {
+  if (workflow === "with-mentor") {
+    return "С куратором";
+  }
+
+  if (workflow === "telegram-channel") {
+    return "Telegram-канал";
+  }
+
+  if (workflow === "telegram-chat") {
+    return "Telegram-чат";
+  }
+
+  if (workflow === "telegram-bot") {
+    return "Telegram-бот";
+  }
+
+  return workflow || "—";
+};
+
+const buildPurchaseAlertText = ({
   eventCreatedAtIso,
   eventId,
   eventType,
@@ -204,9 +321,12 @@ const buildWithMentorPurchaseAlertText = ({
       : `@${customerNickname}`
     : "";
   const lines = [
-    "<b>Новая покупка с куратором</b>",
+    "<b>Новая покупка</b>",
     "",
     `<b>Что купили:</b> ${escapeTelegramHtml(purchaseItem || "—")}`,
+    `<b>Формат доступа:</b> ${escapeTelegramHtml(
+      getAccessWorkflowLabel(paymentRecord.access_workflow),
+    )}`,
     `<b>Сумма:</b> ${escapeTelegramHtml(amountLabel || "—")}`,
     `<b>Язык checkout:</b> ${escapeTelegramHtml(
       `${checkoutLanguageLabel} (${checkoutLocale.toUpperCase()})`,
@@ -305,7 +425,9 @@ const updatePaymentEmailDeliveryStatus = async ({
 }) => {
   const now = toWarsawIso();
   const latestPaymentRecord =
-    (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id)) ?? paymentRecord;
+    (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id, {
+      cacheTtlMs: 0,
+    })) ?? paymentRecord;
 
   await upsertPaymentRecord({
     ...latestPaymentRecord,
@@ -332,7 +454,7 @@ const tryUpdatePaymentEmailDeliveryStatus = async ({
   }
 };
 
-const updateWithMentorAlertStatus = async ({
+const updatePurchaseAlertStatus = async ({
   paymentRecord,
   status,
 }: {
@@ -341,7 +463,9 @@ const updateWithMentorAlertStatus = async ({
 }) => {
   const now = toWarsawIso();
   const latestPaymentRecord =
-    (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id)) ?? paymentRecord;
+    (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id, {
+      cacheTtlMs: 0,
+    })) ?? paymentRecord;
 
   await upsertPaymentRecord({
     ...latestPaymentRecord,
@@ -351,7 +475,7 @@ const updateWithMentorAlertStatus = async ({
   });
 };
 
-const tryUpdateWithMentorAlertStatus = async ({
+const tryUpdatePurchaseAlertStatus = async ({
   paymentRecord,
   status,
 }: {
@@ -359,12 +483,12 @@ const tryUpdateWithMentorAlertStatus = async ({
   status: "failed" | "sent";
 }) => {
   try {
-    await updateWithMentorAlertStatus({
+    await updatePurchaseAlertStatus({
       paymentRecord,
       status,
     });
   } catch (statusUpdateError) {
-    console.error("Failed to update with-mentor alert status", statusUpdateError);
+    console.error("Failed to update purchase alert status", statusUpdateError);
   }
 };
 
@@ -407,13 +531,20 @@ const sendPurchaseSuccessEmail = async ({
   }
 
   const emailSyncPromise = (async () => {
-    const paymentRecord =
-      (await findPaymentRecordByIntentId(handledEvent.paymentRecord.payment_intent_id)) ??
-      handledEvent.paymentRecord;
+    const paymentIntentIdForLease = handledEvent.paymentRecord.payment_intent_id;
+    const emailLease = await tryAcquirePaymentProcessingLease({
+      completedStatuses: new Set(["sent", "skipped"]),
+      fallbackPaymentRecord: handledEvent.paymentRecord,
+      paymentIntentId: paymentIntentIdForLease,
+      statusField: "email_delivery_status",
+      updatedAtField: "email_delivery_updated_at",
+    });
 
-    if (paymentRecord.email_delivery_status === "sent") {
+    if (!emailLease.acquired) {
       return;
     }
+
+    const paymentRecord = emailLease.paymentRecord;
 
     const checkoutLocale = getResolvedCheckoutLocale(
       paymentIntent.metadata.checkout_locale,
@@ -422,7 +553,9 @@ const sendPurchaseSuccessEmail = async ({
       paymentRecord.offer_id,
       checkoutLocale,
     );
-    const telegramAccessLink = isOfferEligibleForTelegramBotAccess(paymentRecord.offer_id)
+    const telegramAccessLink = isOfferEligibleForTelegramAccessLink(
+      paymentRecord.offer_id,
+    )
       ? await ensureTelegramAccessLinkForPayment(paymentRecord)
       : null;
     const {
@@ -454,7 +587,6 @@ const sendPurchaseSuccessEmail = async ({
         paymentIntent.metadata.offer_label ||
         localizedOfferMetadata?.offerLabel ||
         "",
-      productId: paymentRecord.product_id,
       productTitle:
         paymentRecord.product_title ||
         paymentIntent.description ||
@@ -519,7 +651,7 @@ const sendPurchaseSuccessEmail = async ({
   await emailSyncPromise;
 };
 
-const sendWithMentorPurchaseAlert = async ({
+const sendPurchaseAlert = async ({
   event,
   handledEvent,
 }: {
@@ -528,17 +660,15 @@ const sendWithMentorPurchaseAlert = async ({
 }) => {
   if (
     event.type !== "payment_intent.succeeded" ||
-    handledEvent.duplicate ||
     handledEvent.skipped ||
-    handledEvent.paymentRecord.outcome !== "succeeded" ||
-    handledEvent.paymentRecord.access_workflow !== "with-mentor"
+    handledEvent.paymentRecord.outcome !== "succeeded"
   ) {
     return;
   }
 
   if (isProduction && !allowTestModeNotifications && !event.livemode) {
     console.warn(
-      "Skipping with-mentor Telegram alert for Stripe test-mode event in production",
+      "Skipping purchase Telegram alert for Stripe test-mode event in production",
       {
         eventId: handledEvent.eventId,
         paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
@@ -548,7 +678,7 @@ const sendWithMentorPurchaseAlert = async ({
   }
 
   if (!isTelegramAlertsConfigured()) {
-    console.warn("Telegram alerts are not configured for with-mentor purchases", {
+    console.warn("Telegram alerts are not configured for purchase alerts", {
       eventId: handledEvent.eventId,
       paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
     });
@@ -563,7 +693,7 @@ const sendWithMentorPurchaseAlert = async ({
   }
 
   const paymentIntentId = handledEvent.paymentRecord.payment_intent_id;
-  const pendingSync = pendingWithMentorAlertSyncs.get(paymentIntentId);
+  const pendingSync = pendingPurchaseAlertSyncs.get(paymentIntentId);
 
   if (pendingSync) {
     await pendingSync;
@@ -571,14 +701,21 @@ const sendWithMentorPurchaseAlert = async ({
   }
 
   const alertSyncPromise = (async () => {
-    const latestPaymentRecord =
-      (await findPaymentRecordByIntentId(paymentIntentId)) ?? handledEvent.paymentRecord;
+    const alertLease = await tryAcquirePaymentProcessingLease({
+      completedStatuses: new Set(["sent"]),
+      fallbackPaymentRecord: handledEvent.paymentRecord,
+      paymentIntentId,
+      statusField: "with_mentor_alert_status",
+      updatedAtField: "with_mentor_alert_updated_at",
+    });
 
-    if (latestPaymentRecord.with_mentor_alert_status === "sent") {
+    if (!alertLease.acquired) {
       return;
     }
 
-    const alertText = buildWithMentorPurchaseAlertText({
+    const latestPaymentRecord = alertLease.paymentRecord;
+
+    const alertText = buildPurchaseAlertText({
       eventCreatedAtIso: toWarsawIso(event.created * 1000),
       eventId: handledEvent.eventId,
       eventType: handledEvent.eventType,
@@ -595,32 +732,34 @@ const sendWithMentorPurchaseAlert = async ({
         text: alertText,
       });
 
-      console.warn("Sent with-mentor purchase alert to Telegram group", {
+      console.warn("Sent purchase alert to Telegram group", {
         eventId: handledEvent.eventId,
         paymentIntentId,
       });
 
-      await tryUpdateWithMentorAlertStatus({
+      await tryUpdatePurchaseAlertStatus({
         paymentRecord: latestPaymentRecord,
         status: "sent",
       });
     } catch (error) {
-      console.error("Failed to send with-mentor purchase alert", {
+      console.error("Failed to send purchase alert", {
         error,
         eventId: handledEvent.eventId,
         paymentIntentId,
       });
 
-      await tryUpdateWithMentorAlertStatus({
+      await tryUpdatePurchaseAlertStatus({
         paymentRecord: latestPaymentRecord,
         status: "failed",
       });
+
+      throw error;
     }
   })().finally(() => {
-    pendingWithMentorAlertSyncs.delete(paymentIntentId);
+    pendingPurchaseAlertSyncs.delete(paymentIntentId);
   });
 
-  pendingWithMentorAlertSyncs.set(paymentIntentId, alertSyncPromise);
+  pendingPurchaseAlertSyncs.set(paymentIntentId, alertSyncPromise);
   await alertSyncPromise;
 };
 
@@ -720,7 +859,7 @@ export async function POST(request: Request) {
       handledEvent,
       stripe,
     });
-    await sendWithMentorPurchaseAlert({
+    await sendPurchaseAlert({
       event,
       handledEvent,
     });

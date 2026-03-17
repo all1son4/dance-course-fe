@@ -110,3 +110,64 @@ export const copyTelegramMessage = async ({
       botToken,
     },
   );
+
+type TelegramInviteLink = {
+  expire_date?: number;
+  invite_link: string;
+  member_limit?: number;
+  name?: string;
+};
+
+export const createTelegramChatInviteLink = async ({
+  botToken,
+  chatId,
+  expireDateUnix,
+  memberLimit = 1,
+  name,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  expireDateUnix?: number;
+  memberLimit?: number;
+  name?: string;
+}) =>
+  callTelegramApi<TelegramInviteLink>(
+    "createChatInviteLink",
+    {
+      chat_id: chatId,
+      member_limit: memberLimit,
+      ...(Number.isFinite(expireDateUnix) && expireDateUnix
+        ? { expire_date: expireDateUnix }
+        : {}),
+      ...(name ? { name } : {}),
+    },
+    {
+      botToken,
+    },
+  );
+
+export const banTelegramChatMember = async ({
+  botToken,
+  chatId,
+  revokeMessages = false,
+  untilDateUnix,
+  userId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  revokeMessages?: boolean;
+  untilDateUnix?: number;
+  userId: number | string;
+}) =>
+  callTelegramApi<boolean>(
+    "banChatMember",
+    {
+      chat_id: chatId,
+      revoke_messages: revokeMessages,
+      ...(untilDateUnix ? { until_date: untilDateUnix } : {}),
+      user_id: userId,
+    },
+    {
+      botToken,
+    },
+  );
