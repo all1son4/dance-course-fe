@@ -146,15 +146,54 @@ export default function Header() {
   }, [pathname, paymentStore]);
 
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
+    const connection = (
+      navigator as Navigator & {
+        connection?: { effectiveType?: string; saveData?: boolean };
+      }
+    ).connection;
+    const shouldSkipPrefetch =
+      connection?.saveData === true ||
+      connection?.effectiveType === "slow-2g" ||
+      connection?.effectiveType === "2g";
+
+    if (shouldSkipPrefetch) {
+      return;
+    }
+
+    const prefetchRoutes = () => {
       router.prefetch("/");
       router.prefetch("/online");
       router.prefetch("/offline");
       router.prefetch("/online/first-touch");
       router.prefetch("/online/choreo");
-    }, 200);
+    };
 
-    return () => window.clearTimeout(timeoutId);
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (
+        callback: IdleRequestCallback,
+        options?: IdleRequestOptions,
+      ) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (
+      typeof idleWindow.requestIdleCallback === "function" &&
+      typeof idleWindow.cancelIdleCallback === "function"
+    ) {
+      const idleId = idleWindow.requestIdleCallback(prefetchRoutes, {
+        timeout: 1200,
+      });
+
+      return () => {
+        idleWindow.cancelIdleCallback?.(idleId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(prefetchRoutes, 280);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [router]);
 
   const languageOptions = [

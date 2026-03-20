@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import Button from "@/components/common/Button";
@@ -20,6 +21,7 @@ import {
 import { TInteractiveCard } from "./InteractiveCard.types";
 
 export default function InteractiveCard(card: TInteractiveCard) {
+  const t = useTranslations("Common");
   const hasTopRow = Boolean(card.topRowContent);
   const canCollapseTopRow = hasTopRow && Boolean(card.isTopRowCollapsible);
   const isCollapseStateControlled = typeof card.collapseTopRow === "boolean";
@@ -81,7 +83,7 @@ export default function InteractiveCard(card: TInteractiveCard) {
       {canCollapseTopRow ? (
         <CollapseToggle
           type="button"
-          aria-label="Toggle details"
+          aria-label={t("toggleDetails")}
           aria-controls={topRowId}
           aria-expanded={!isTopRowCollapsed}
           onClick={onCollapseToggleClick}

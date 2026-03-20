@@ -21,6 +21,7 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   align-items: center;
   justify-content: center;
   gap: 10px;
+  min-height: 44px;
 
   transition: color 0.2s ease;
 
@@ -60,6 +61,12 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
 
   @media (max-width: 767px) {
     padding: 0;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline-offset: 3px;
+    border-radius: 10px;
   }
 `;
 
@@ -114,6 +121,7 @@ export const Item = styled.button<{ $selected?: boolean }>`
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 44px;
 
   padding: 0;
   margin: 0;
@@ -135,6 +143,12 @@ export const Item = styled.button<{ $selected?: boolean }>`
 
   &:disabled {
     cursor: wait;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline-offset: 3px;
+    border-radius: 10px;
   }
 
   & span {

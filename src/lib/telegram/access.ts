@@ -10,6 +10,7 @@ import {
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,
   findTelegramUserBindingsByTelegramUserIdAndChatId,
+  isGoogleSheetsRateLimitError,
   type PaymentSheetRecord,
   upsertPaymentRecord,
   upsertTelegramAccessTokenRecord,
@@ -78,9 +79,21 @@ type RevokeExpiredTelegramAccessResult = {
   revokedGroups: number;
 };
 
+type TelegramAccessLinkCacheEntry = {
+  accessUrl: string;
+  chatId: string;
+  tokenExpiresAt: string;
+  tokenId: string;
+};
+
 const DEFAULT_TELEGRAM_CHANNEL_ACCESS_DAYS = 30;
 const TELEGRAM_START_TOKEN_BYTES = 24;
 const TELEGRAM_TEMP_KICK_SECONDS = 60;
+const pendingTelegramAccessLinkEnsures = new Map<
+  string,
+  Promise<TelegramAccessLinkResult>
+>();
+const telegramAccessLinkCache = new Map<string, TelegramAccessLinkCacheEntry>();
 
 const getTelegramChannelAccessDurationMs = () => {
   // TELEGRAM_CHANNEL_ACCESS_DAYS controls how long user access is valid after purchase.
@@ -147,6 +160,57 @@ const shouldIgnoreKickFailure = (error: unknown) =>
   error instanceof Error &&
   (error.message.includes("USER_NOT_PARTICIPANT") ||
     error.message.includes("user not found"));
+
+const getCachedAccessLink = ({
+  chatId,
+  paymentIntentId,
+}: {
+  chatId: string;
+  paymentIntentId: string;
+}) => {
+  const cached = telegramAccessLinkCache.get(paymentIntentId);
+
+  if (!cached) {
+    return null;
+  }
+
+  if (cached.chatId !== chatId) {
+    telegramAccessLinkCache.delete(paymentIntentId);
+    return null;
+  }
+
+  if (cached.tokenExpiresAt && isIsoExpired(cached.tokenExpiresAt)) {
+    telegramAccessLinkCache.delete(paymentIntentId);
+    return null;
+  }
+
+  return cached;
+};
+
+const setCachedAccessLink = ({
+  accessUrl,
+  chatId,
+  paymentIntentId,
+  tokenExpiresAt,
+  tokenId,
+}: {
+  accessUrl: string;
+  chatId: string;
+  paymentIntentId: string;
+  tokenExpiresAt: string;
+  tokenId: string;
+}) => {
+  if (!paymentIntentId || !accessUrl) {
+    return;
+  }
+
+  telegramAccessLinkCache.set(paymentIntentId, {
+    accessUrl,
+    chatId,
+    tokenExpiresAt,
+    tokenId,
+  });
+};
 
 const markTokenAsExpired = async ({
   tokenRecord,
@@ -283,7 +347,7 @@ export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
 
 const isOfferTimedTelegramAccess = (offerId: string) => isChoreoChannelOfferId(offerId);
 
-export const ensureTelegramAccessLinkForPayment = async (
+const ensureTelegramAccessLinkForPaymentInternal = async (
   paymentRecord: PaymentSheetRecord,
 ): Promise<TelegramAccessLinkResult> => {
   if (!isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)) {
@@ -323,6 +387,20 @@ export const ensureTelegramAccessLinkForPayment = async (
 
   const normalizedChatId = channelTarget.chatId.trim();
   const hasTimedAccess = isOfferTimedTelegramAccess(paymentRecord.offer_id);
+  const cachedAccessLink = getCachedAccessLink({
+    chatId: normalizedChatId,
+    paymentIntentId: paymentRecord.payment_intent_id,
+  });
+
+  if (cachedAccessLink) {
+    return {
+      accessUrl: cachedAccessLink.accessUrl,
+      status: "ready",
+      tokenExpiresAt: cachedAccessLink.tokenExpiresAt,
+      tokenId: cachedAccessLink.tokenId,
+    };
+  }
+
   const paymentRecordWithWindow = hasTimedAccess
     ? (await updatePaymentAccessWindow(paymentRecord)).paymentRecord
     : paymentRecord;
@@ -368,6 +446,14 @@ export const ensureTelegramAccessLinkForPayment = async (
     currentTokenRecord.token_value &&
     !isIssuedTokenExpired
   ) {
+    setCachedAccessLink({
+      accessUrl: currentTokenRecord.token_value,
+      chatId: normalizedChatId,
+      paymentIntentId: paymentRecord.payment_intent_id,
+      tokenExpiresAt: currentTokenRecord.expires_at,
+      tokenId: currentTokenRecord.token_id,
+    });
+
     return {
       accessUrl: currentTokenRecord.token_value,
       status: "ready",
@@ -400,6 +486,8 @@ export const ensureTelegramAccessLinkForPayment = async (
     currentTokenRecord.status === "used" &&
     isCurrentTokenForTargetChat
   ) {
+    telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
+
     return {
       accessUrl: null,
       reason: "already_activated",
@@ -460,12 +548,36 @@ export const ensureTelegramAccessLinkForPayment = async (
     });
 
     if (hasTimedAccess) {
-      await trySyncPaymentByExistingActiveBinding({
-        accessExpiresAt,
-        chatId: normalizedChatId,
-        paymentRecord: nextPaymentRecord,
-      });
+      try {
+        await trySyncPaymentByExistingActiveBinding({
+          accessExpiresAt,
+          chatId: normalizedChatId,
+          paymentRecord: nextPaymentRecord,
+        });
+      } catch (syncError) {
+        if (isGoogleSheetsRateLimitError(syncError)) {
+          console.warn(
+            "Skipped optional Telegram binding sync due to Google Sheets rate limit",
+            {
+              paymentIntentId: paymentRecord.payment_intent_id,
+            },
+          );
+        } else {
+          console.error("Failed to sync Telegram binding by existing active record", {
+            error: syncError,
+            paymentIntentId: paymentRecord.payment_intent_id,
+          });
+        }
+      }
     }
+
+    setCachedAccessLink({
+      accessUrl: inviteLink.invite_link,
+      chatId: normalizedChatId,
+      paymentIntentId: paymentRecord.payment_intent_id,
+      tokenExpiresAt: hasTimedAccess ? accessExpiresAt : "",
+      tokenId,
+    });
 
     return {
       accessUrl: inviteLink.invite_link,
@@ -474,18 +586,31 @@ export const ensureTelegramAccessLinkForPayment = async (
       tokenId,
     };
   } catch (error) {
+    telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
+
+    if (isGoogleSheetsRateLimitError(error)) {
+      throw error;
+    }
+
     console.error("Failed to create Telegram invite link", {
       chatId: normalizedChatId,
       error,
       paymentIntentId: paymentRecord.payment_intent_id,
     });
 
-    await upsertPaymentRecord({
-      ...paymentRecordWithWindow,
-      telegram_access_status: "link_failed",
-      telegram_channel_chat_id: normalizedChatId,
-      updated_at: createdAt,
-    });
+    try {
+      await upsertPaymentRecord({
+        ...paymentRecordWithWindow,
+        telegram_access_status: "link_failed",
+        telegram_channel_chat_id: normalizedChatId,
+        updated_at: createdAt,
+      });
+    } catch (statusError) {
+      console.error("Failed to persist Telegram link failure status", {
+        error: statusError,
+        paymentIntentId: paymentRecord.payment_intent_id,
+      });
+    }
 
     return {
       accessUrl: null,
@@ -495,6 +620,32 @@ export const ensureTelegramAccessLinkForPayment = async (
       tokenId: null,
     };
   }
+};
+
+export const ensureTelegramAccessLinkForPayment = async (
+  paymentRecord: PaymentSheetRecord,
+) => {
+  const paymentIntentId = paymentRecord.payment_intent_id.trim();
+
+  if (!paymentIntentId) {
+    return ensureTelegramAccessLinkForPaymentInternal(paymentRecord);
+  }
+
+  const pendingEnsure = pendingTelegramAccessLinkEnsures.get(paymentIntentId);
+
+  if (pendingEnsure) {
+    return pendingEnsure;
+  }
+
+  const ensurePromise = ensureTelegramAccessLinkForPaymentInternal(paymentRecord).finally(
+    () => {
+      pendingTelegramAccessLinkEnsures.delete(paymentIntentId);
+    },
+  );
+
+  pendingTelegramAccessLinkEnsures.set(paymentIntentId, ensurePromise);
+
+  return ensurePromise;
 };
 
 export const syncTelegramChannelMembership = async ({

@@ -68,7 +68,8 @@
   },
   "Common": {
     "details": "Szczegóły",
-    "playVideo": "Odtwórz wideo"
+    "playVideo": "Odtwórz wideo",
+    "toggleDetails": "Pokaż lub ukryj szczegóły"
   },
   "NotFoundPage": {
     "title": "Wygląda na to, że ta strona nie istnieje",
@@ -422,7 +423,7 @@
         "text": "Wygodny format: masz czas, by przejść, powtórzyć i utrwalić materiał we własnym tempie."
       },
       "4": {
-        "title": "Szybki dostęp przez zamknięte czaty Telegram",
+        "title": "Szybki dostęp przez zamknięte kanały Telegram",
         "text": "Bez zbędnych platform - całe szkolenie w jednym miejscu od razu po płatności."
       },
       "5": {
@@ -560,7 +561,7 @@
         "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
-      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny czat Telegram.",
+      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny kanał Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"
@@ -573,7 +574,7 @@
         "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
-      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny czat Telegram.",
+      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny kanał Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"

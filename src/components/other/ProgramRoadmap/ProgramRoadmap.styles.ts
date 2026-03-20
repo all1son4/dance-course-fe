@@ -45,7 +45,7 @@ export const IconBox = styled.div`
 
 export const ItemTitle = styled.p`
   font-weight: 600;
-  font-style: semibold;
+  font-style: normal;
   font-size: 17px;
   line-height: 110%;
   letter-spacing: 0;

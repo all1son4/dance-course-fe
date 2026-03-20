@@ -5,6 +5,8 @@ import {
 import {
   findLatestSucceededPaymentRecordByCheckoutSessionId,
   findPaymentRecordByIntentId,
+  GoogleSheetsError,
+  isGoogleSheetsRateLimitError,
 } from "@/lib/google-sheets";
 import {
   hasJsonContentType,
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
   }
 
   const requesterIp = getRequestIp(request);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeRateLimit({
     key: `telegram:access-link:${requesterIp}`,
     limit: 90,
     windowMs: 60_000,
@@ -162,6 +164,38 @@ export async function POST(request: Request) {
       tokenExpiresAt: accessLink.tokenExpiresAt,
     });
   } catch (error) {
+    if (isGoogleSheetsRateLimitError(error)) {
+      console.warn(
+        "Google Sheets rate limit reached while resolving Telegram access link",
+      );
+
+      return jsonNoStore(
+        {
+          status: "pending",
+        },
+        {
+          headers: {
+            "Retry-After": "20",
+          },
+        },
+      );
+    }
+
+    if (error instanceof GoogleSheetsError) {
+      console.error("Failed to resolve Telegram access link in Google Sheets", {
+        details: error.details,
+        errorCode: error.code,
+        status: error.status,
+      });
+
+      return jsonNoStore(
+        {
+          errorCode: "telegram_access_link_failed",
+        },
+        { status: 500 },
+      );
+    }
+
     console.error("Failed to resolve Telegram access link", error);
 
     return jsonNoStore(

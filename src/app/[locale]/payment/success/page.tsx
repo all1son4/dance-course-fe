@@ -63,7 +63,7 @@ const ResultCard = styled.div`
   }
 `;
 
-export default async function SuccesPage({ searchParams }: SuccessPageProps) {
+export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const t = await getTranslations("PaymentSuccessPage");
   const productId = getParamValue(resolvedSearchParams, "product");

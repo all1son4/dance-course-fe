@@ -66,7 +66,7 @@ const Title = styled.p`
   color: rgba(0, 0, 0, 1);
 `;
 
-const Paragraps = styled.div`
+const Paragraphs = styled.div`
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -118,7 +118,7 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
         <FailedPageGuard />
         <Failed />
         <Title>{t("title")}</Title>
-        <Paragraps>
+        <Paragraphs>
           <Paragraph>{t("description.line1")}</Paragraph>
           <Paragraph>{t("description.line2")}</Paragraph>
           <ButtonBox>
@@ -130,7 +130,7 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
               variant="secondary"
             />
           </ButtonBox>
-        </Paragraps>
+        </Paragraphs>
       </ResultCard>
     </Container>
   );

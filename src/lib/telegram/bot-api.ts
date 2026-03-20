@@ -2,11 +2,55 @@ import { getTelegramBotToken } from "./config";
 
 type TelegramApiResponse<T> = {
   description?: string;
+  error_code?: number;
   ok: boolean;
+  parameters?: {
+    retry_after?: number;
+  };
   result?: T;
 };
 
 const TELEGRAM_API_BASE_URL = "https://api.telegram.org";
+const TELEGRAM_API_TIMEOUT_MS = 10_000;
+const TELEGRAM_API_MAX_ATTEMPTS = 3;
+const TELEGRAM_API_RETRY_BASE_DELAY_MS = 350;
+const TELEGRAM_API_RETRY_MAX_DELAY_MS = 2_500;
+
+const wait = (delayMs: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
+
+const isAbortError = (error: unknown) =>
+  error instanceof Error && error.name === "AbortError";
+
+const isRetryableTelegramHttpError = (
+  status: number,
+  data: TelegramApiResponse<unknown> | null,
+) => status === 429 || status >= 500 || data?.error_code === 429;
+
+const isRetryableTelegramNetworkError = (error: unknown) =>
+  error instanceof TypeError || isAbortError(error);
+
+const getRetryDelayMs = ({
+  attempt,
+  retryAfterSeconds,
+}: {
+  attempt: number;
+  retryAfterSeconds?: number;
+}) => {
+  if (Number.isFinite(retryAfterSeconds) && (retryAfterSeconds ?? 0) > 0) {
+    return Math.ceil((retryAfterSeconds ?? 0) * 1000);
+  }
+
+  const baseDelay = Math.min(
+    TELEGRAM_API_RETRY_BASE_DELAY_MS * 2 ** attempt,
+    TELEGRAM_API_RETRY_MAX_DELAY_MS,
+  );
+  const jitter = Math.floor(Math.random() * 180);
+
+  return baseDelay + jitter;
+};
 
 const getTelegramApiUrl = ({
   botToken,
@@ -40,23 +84,79 @@ const callTelegramApi = async <T>(
     throw new Error("telegram_bot_not_configured");
   }
 
-  const response = await fetch(apiUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-    cache: "no-store",
-  });
-  const data = (await response.json()) as TelegramApiResponse<T>;
+  for (let attempt = 0; attempt < TELEGRAM_API_MAX_ATTEMPTS; attempt += 1) {
+    const requestController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      requestController.abort();
+    }, TELEGRAM_API_TIMEOUT_MS);
 
-  if (!response.ok || !data.ok || !data.result) {
-    throw new Error(
-      `telegram_api_failed:${method}:${data.description ?? "unknown_error"}`,
-    );
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        signal: requestController.signal,
+      });
+      const data = (await response
+        .json()
+        .catch(() => null)) as TelegramApiResponse<T> | null;
+      const hasResult = Boolean(data && "result" in data);
+
+      if (response.ok && data?.ok && hasResult) {
+        return data.result as T;
+      }
+
+      const description = data?.description ?? "unknown_error";
+      const shouldRetry =
+        attempt < TELEGRAM_API_MAX_ATTEMPTS - 1 &&
+        isRetryableTelegramHttpError(response.status, data);
+
+      if (shouldRetry) {
+        const retryAfterFromBody = data?.parameters?.retry_after;
+        const retryAfterFromHeader = Number(response.headers.get("retry-after") ?? "");
+        const retryAfterSeconds = Number.isFinite(retryAfterFromBody)
+          ? retryAfterFromBody
+          : Number.isFinite(retryAfterFromHeader)
+            ? retryAfterFromHeader
+            : undefined;
+
+        await wait(
+          getRetryDelayMs({
+            attempt,
+            retryAfterSeconds,
+          }),
+        );
+        continue;
+      }
+
+      throw new Error(`telegram_api_failed:${method}:${description}`);
+    } catch (error) {
+      const shouldRetry =
+        attempt < TELEGRAM_API_MAX_ATTEMPTS - 1 && isRetryableTelegramNetworkError(error);
+
+      if (shouldRetry) {
+        await wait(
+          getRetryDelayMs({
+            attempt,
+          }),
+        );
+        continue;
+      }
+
+      if (error instanceof Error) {
+        throw error;
+      }
+
+      throw new Error(`telegram_api_failed:${method}:unknown_error`);
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
-  return data.result;
+  throw new Error(`telegram_api_failed:${method}:unknown_error`);
 };
 
 export const sendTelegramMessage = async ({

@@ -52,9 +52,9 @@ const pulse = keyframes`
 const StatusBox = styled.div<{ $kind: "pending" | "unavailable" }>`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 14px;
+  gap: 11px;
+  padding: 12px 16px;
+  border-radius: 18px;
   min-height: 56px;
   background: ${({ $kind }) =>
     $kind === "pending" ? "rgba(124, 0, 2, 0.06)" : "rgba(0, 0, 0, 0.035)"};
@@ -74,11 +74,11 @@ const Dots = styled.span`
 `;
 
 const Dot = styled.span<{ $delayMs: number }>`
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 999px;
-  background: rgba(124, 0, 2, 0.88);
-  animation: ${pulse} 0.95s ease-in-out infinite;
+  background: rgba(124, 0, 2, 0.82);
+  animation: ${pulse} 1.05s ease-in-out infinite;
   animation-delay: ${({ $delayMs }) => `${$delayMs}ms`};
 `;
 
@@ -94,9 +94,31 @@ const StatusText = styled.p`
 const MAX_RETRY_ATTEMPTS = 15;
 const RETRY_BASE_DELAY_MS = 1_500;
 const RETRY_MAX_DELAY_MS = 5_000;
+const ACCESS_LINK_REQUEST_TIMEOUT_MS = 10_000;
+const SERVER_RETRY_AFTER_MAX_MS = 30_000;
 
 const getRetryDelayMs = (attempt: number) =>
   Math.min(RETRY_BASE_DELAY_MS + attempt * 180, RETRY_MAX_DELAY_MS);
+
+const parseRetryAfterMs = (retryAfterHeader: string | null) => {
+  if (!retryAfterHeader) {
+    return null;
+  }
+
+  const retryAfterSeconds = Number(retryAfterHeader);
+
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0) {
+    return Math.min(Math.round(retryAfterSeconds * 1000), SERVER_RETRY_AFTER_MAX_MS);
+  }
+
+  const retryAtUnixMs = Date.parse(retryAfterHeader);
+
+  if (!Number.isFinite(retryAtUnixMs)) {
+    return null;
+  }
+
+  return Math.min(Math.max(retryAtUnixMs - Date.now(), 0), SERVER_RETRY_AFTER_MAX_MS);
+};
 
 export default function TelegramAccessButton({
   buttonText,
@@ -127,8 +149,25 @@ export default function TelegramAccessButton({
     }
 
     let isDisposed = false;
+    let activeAbortController: AbortController | null = null;
+    const pendingTimeouts = new Set<number>();
+
+    const scheduleNextAttempt = (callback: () => void, delayMs: number) => {
+      const timeoutId = window.setTimeout(() => {
+        pendingTimeouts.delete(timeoutId);
+        callback();
+      }, delayMs);
+      pendingTimeouts.add(timeoutId);
+    };
 
     const requestAccessLink = async (attempt: number) => {
+      const requestController = new AbortController();
+      activeAbortController = requestController;
+      const requestTimeoutId = window.setTimeout(() => {
+        requestController.abort();
+      }, ACCESS_LINK_REQUEST_TIMEOUT_MS);
+      pendingTimeouts.add(requestTimeoutId);
+
       try {
         const response = await fetch("/api/telegram/access-link", {
           method: "POST",
@@ -141,11 +180,14 @@ export default function TelegramAccessButton({
             paymentIntentId,
             productId,
           }),
+          signal: requestController.signal,
         });
 
         if (isDisposed) {
           return;
         }
+
+        const retryAfterMs = parseRetryAfterMs(response.headers.get("Retry-After"));
 
         if (!response.ok) {
           const errorPayload = (await response
@@ -159,9 +201,12 @@ export default function TelegramAccessButton({
             errorCode === "payment_context_mismatch";
 
           if (!isHardFailure && attempt < MAX_RETRY_ATTEMPTS) {
-            window.setTimeout(() => {
-              void requestAccessLink(attempt + 1);
-            }, getRetryDelayMs(attempt));
+            scheduleNextAttempt(
+              () => {
+                void requestAccessLink(attempt + 1);
+              },
+              retryAfterMs ?? getRetryDelayMs(attempt),
+            );
             return;
           }
 
@@ -184,9 +229,12 @@ export default function TelegramAccessButton({
         if (data.status === "pending" && attempt < MAX_RETRY_ATTEMPTS) {
           setStatusKind("pending");
           setStatusText(pendingText);
-          window.setTimeout(() => {
-            void requestAccessLink(attempt + 1);
-          }, getRetryDelayMs(attempt));
+          scheduleNextAttempt(
+            () => {
+              void requestAccessLink(attempt + 1);
+            },
+            retryAfterMs ?? getRetryDelayMs(attempt),
+          );
           return;
         }
 
@@ -194,7 +242,7 @@ export default function TelegramAccessButton({
         setStatusText(unavailableText);
       } catch {
         if (attempt < MAX_RETRY_ATTEMPTS) {
-          window.setTimeout(() => {
+          scheduleNextAttempt(() => {
             void requestAccessLink(attempt + 1);
           }, getRetryDelayMs(attempt));
           return;
@@ -202,6 +250,9 @@ export default function TelegramAccessButton({
 
         setStatusKind("unavailable");
         setStatusText(unavailableText);
+      } finally {
+        window.clearTimeout(requestTimeoutId);
+        pendingTimeouts.delete(requestTimeoutId);
       }
     };
 
@@ -209,6 +260,11 @@ export default function TelegramAccessButton({
 
     return () => {
       isDisposed = true;
+      activeAbortController?.abort();
+      pendingTimeouts.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      pendingTimeouts.clear();
     };
   }, [
     checkoutSessionId,

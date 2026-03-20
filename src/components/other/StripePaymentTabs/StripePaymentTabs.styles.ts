@@ -169,7 +169,6 @@ export const LoadingState = styled.div`
   flex-direction: column;
   gap: 20px;
   width: 100%;
-  padding: 0;
   overflow: hidden;
 
   @media (max-width: 767px) {
@@ -187,12 +186,12 @@ export const LoadingTabs = styled.div`
 
 export const LoadingTab = styled.div<{ $isActive?: boolean }>`
   position: relative;
-  height: 84px;
+  height: 80px;
   border-radius: 24px;
   border: 1px solid
-    ${({ $isActive }) => ($isActive ? "rgba(0, 0, 0, 0.92)" : "rgba(72, 72, 72, 0.16)")};
+    ${({ $isActive }) => ($isActive ? "rgba(0, 0, 0, 0.7)" : "rgba(72, 72, 72, 0.14)")};
   background: ${({ $isActive }) =>
-    $isActive ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.2)"};
+    $isActive ? "rgba(255, 255, 255, 0.72)" : "rgba(255, 255, 255, 0.34)"};
   overflow: hidden;
 
   &::after {
@@ -202,10 +201,10 @@ export const LoadingTab = styled.div<{ $isActive?: boolean }>`
     background: linear-gradient(
       90deg,
       rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.52) 50%,
+      rgba(255, 255, 255, 0.44) 50%,
       rgba(255, 255, 255, 0) 100%
     );
-    animation: ${shimmer} 1.8s ease-in-out infinite;
+    animation: ${shimmer} 2s ease-in-out infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -218,10 +217,10 @@ export const LoadingTab = styled.div<{ $isActive?: boolean }>`
 export const LoadingField = styled.div<{ $short?: boolean }>`
   position: relative;
   width: ${({ $short }) => ($short ? "48%" : "100%")};
-  height: 76px;
+  height: 72px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.64);
-  border: 1px solid rgba(72, 72, 72, 0.14);
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(72, 72, 72, 0.12);
   overflow: hidden;
 
   &::after {
@@ -231,10 +230,10 @@ export const LoadingField = styled.div<{ $short?: boolean }>`
     background: linear-gradient(
       90deg,
       rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.58) 50%,
+      rgba(255, 255, 255, 0.5) 50%,
       rgba(255, 255, 255, 0) 100%
     );
-    animation: ${shimmer} 1.7s ease-in-out infinite;
+    animation: ${shimmer} 1.9s ease-in-out infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -262,16 +261,17 @@ export const LoadingFooter = styled.div`
   display: flex;
   align-items: center;
   gap: 14px;
-  padding-top: 6px;
+  padding: 10px 0 0;
+  border-top: 1px solid rgba(72, 72, 72, 0.12);
   flex-wrap: wrap;
 `;
 
 export const LoadingPulse = styled.span`
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 999px;
-  background: rgba(124, 0, 2, 1);
-  animation: ${pulse} 1.2s ease-in-out infinite;
+  background: rgba(124, 0, 2, 0.9);
+  animation: ${pulse} 1.35s ease-in-out infinite;
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;

@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   }
 
   const requesterIp = getRequestIp(request);
-  const rateLimit = consumeRateLimit({
+  const rateLimit = await consumeRateLimit({
     key: `stripe:payment-intent-status:${requesterIp}`,
     limit: 180,
     windowMs: 60_000,

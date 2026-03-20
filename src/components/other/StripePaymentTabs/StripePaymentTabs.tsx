@@ -39,6 +39,15 @@ import type { StripePaymentTabsProps } from "./StripePaymentTabs.types";
 const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
 const PAYMENT_SUCCESS_PATH = "/payment/success";
 const PAYMENT_FAILED_PATH = "/payment/failed";
+const PAYMENT_STATUS_REQUEST_TIMEOUT_MS = 8_000;
+const PAYMENT_STATUS_MAX_ATTEMPTS = 3;
+const PAYMENT_STATUS_RETRY_BASE_DELAY_MS = 320;
+const PAYMENT_STATUS_RETRY_MAX_DELAY_MS = 1_400;
+
+const wait = (delayMs: number) =>
+  new Promise<void>((resolve) => {
+    window.setTimeout(resolve, delayMs);
+  });
 
 const getStripePromise = (publishableKey: string) => {
   const cachedPromise = stripePromiseCache.get(publishableKey);
@@ -238,27 +247,100 @@ type StripePaymentFormProps = {
   technicalErrorText: string;
 };
 
-const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: string) => {
-  const response = await fetch("/api/stripe/payment-intent/status", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      checkoutSessionId,
-      paymentIntentId,
-    }),
-  });
+type PaymentIntentStatusResponse = {
+  outcome: "canceled" | "failed" | "processing" | "requires_action" | "succeeded";
+  paymentIntentId: string;
+  status: string;
+};
 
-  if (!response.ok) {
-    throw new Error("payment_intent_status_failed");
+const getPaymentStatusRetryDelayMs = ({
+  attempt,
+  retryAfterSeconds,
+}: {
+  attempt: number;
+  retryAfterSeconds?: number;
+}) => {
+  if (Number.isFinite(retryAfterSeconds) && (retryAfterSeconds ?? 0) > 0) {
+    return Math.ceil((retryAfterSeconds ?? 0) * 1000);
   }
 
-  return (await response.json()) as {
-    outcome: "canceled" | "failed" | "processing" | "requires_action" | "succeeded";
-    paymentIntentId: string;
-    status: string;
-  };
+  const exponentialDelay = Math.min(
+    PAYMENT_STATUS_RETRY_BASE_DELAY_MS * 2 ** attempt,
+    PAYMENT_STATUS_RETRY_MAX_DELAY_MS,
+  );
+  const jitter = Math.floor(Math.random() * 140);
+
+  return exponentialDelay + jitter;
+};
+
+const shouldRetryPaymentStatusRequest = (status: number) =>
+  status === 429 || status >= 500;
+
+const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: string) => {
+  for (let attempt = 0; attempt < PAYMENT_STATUS_MAX_ATTEMPTS; attempt += 1) {
+    const requestController = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      requestController.abort();
+    }, PAYMENT_STATUS_REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch("/api/stripe/payment-intent/status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          checkoutSessionId,
+          paymentIntentId,
+        }),
+        cache: "no-store",
+        signal: requestController.signal,
+      });
+
+      if (response.ok) {
+        return (await response.json()) as PaymentIntentStatusResponse;
+      }
+
+      if (
+        attempt < PAYMENT_STATUS_MAX_ATTEMPTS - 1 &&
+        shouldRetryPaymentStatusRequest(response.status)
+      ) {
+        const retryAfterHeader = Number(response.headers.get("retry-after") ?? "");
+        const retryAfterSeconds = Number.isFinite(retryAfterHeader)
+          ? retryAfterHeader
+          : undefined;
+
+        await wait(
+          getPaymentStatusRetryDelayMs({
+            attempt,
+            retryAfterSeconds,
+          }),
+        );
+        continue;
+      }
+
+      throw new Error("payment_intent_status_failed");
+    } catch (error) {
+      const isRetryableNetworkError =
+        (error instanceof Error && error.name === "AbortError") ||
+        error instanceof TypeError;
+
+      if (attempt < PAYMENT_STATUS_MAX_ATTEMPTS - 1 && isRetryableNetworkError) {
+        await wait(
+          getPaymentStatusRetryDelayMs({
+            attempt,
+          }),
+        );
+        continue;
+      }
+
+      throw new Error("payment_intent_status_failed");
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
+
+  throw new Error("payment_intent_status_failed");
 };
 
 const StripePaymentForm = ({

@@ -37,8 +37,6 @@ import {
   type PaymentCustomerFieldName,
 } from "./payment.constants";
 
-const SUPPORTED_CURRENCIES: SupportedCheckoutCurrency[] = ["pln", "eur"];
-
 const PaymentSection = styled.section`
   display: flex;
   align-items: flex-start;
@@ -402,11 +400,17 @@ const PaymentPage = observer(function PaymentPage() {
   }, [paymentStore, searchParams]);
 
   useEffect(() => {
-    if (paymentStore.canShowStripe) {
-      SUPPORTED_CURRENCIES.forEach((currency) => {
-        void paymentStore.ensureStripePaymentIntent(currency);
-      });
+    if (!paymentStore.canShowStripe) {
+      return;
     }
+
+    const timeoutId = window.setTimeout(() => {
+      void paymentStore.ensureStripePaymentIntent(paymentStore.selectedCurrency);
+    }, 420);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [
     paymentStore,
     paymentStore.canShowStripe,

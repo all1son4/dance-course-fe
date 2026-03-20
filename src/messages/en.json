@@ -68,7 +68,8 @@
   },
   "Common": {
     "details": "Details",
-    "playVideo": "Play video"
+    "playVideo": "Play video",
+    "toggleDetails": "Show or hide details"
   },
   "NotFoundPage": {
     "title": "Looks like this page does not exist",
@@ -422,7 +423,7 @@
         "text": "A convenient format that gives you time to learn, repeat and consolidate everything at your own pace."
       },
       "4": {
-        "title": "Instant access via private Telegram chats",
+        "title": "Instant access via private Telegram channels",
         "text": "No extra platforms - all course materials in one place right after payment."
       },
       "5": {
@@ -560,7 +561,7 @@
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
-      "accessNote": "Access to materials for 30 days via a private Telegram chat.",
+      "accessNote": "Access to materials for 30 days via a private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
@@ -573,7 +574,7 @@
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
-      "accessNote": "Access to materials for 30 days via a private Telegram chat.",
+      "accessNote": "Access to materials for 30 days via a private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"

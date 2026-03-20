@@ -22,6 +22,7 @@ const SUPPORTED_PAYMENT_INTENT_EVENT_TYPES = new Set([
   "payment_intent.succeeded",
 ]);
 const pendingStripeWebhookSyncs = new Map<string, Promise<StripePaymentWebhookResult>>();
+const pendingStripePaymentIntentSyncs = new Map<string, Promise<void>>();
 const WITH_MENTOR_OFFER_IDS = new Set(
   SELLABLE_PRODUCTS_LIST.flatMap((product) =>
     product.offers
@@ -171,6 +172,41 @@ const mapPaymentIntentToPaymentRecord = (
 export const isSupportedStripePaymentIntentEvent = (eventType: string) =>
   SUPPORTED_PAYMENT_INTENT_EVENT_TYPES.has(eventType);
 
+const withPaymentIntentSyncLock = async <T>(
+  paymentIntentId: string,
+  task: () => Promise<T>,
+) => {
+  const normalizedPaymentIntentId = paymentIntentId.trim();
+
+  if (!normalizedPaymentIntentId) {
+    return task();
+  }
+
+  const previousSync = pendingStripePaymentIntentSyncs.get(normalizedPaymentIntentId);
+  const previousSyncSafe = previousSync ?? Promise.resolve();
+  let releaseLock!: () => void;
+  const lockReleasePromise = new Promise<void>((resolve) => {
+    releaseLock = resolve;
+  });
+  const lockQueueEntry = previousSyncSafe.then(() => lockReleasePromise);
+
+  pendingStripePaymentIntentSyncs.set(normalizedPaymentIntentId, lockQueueEntry);
+
+  await previousSyncSafe;
+
+  try {
+    return await task();
+  } finally {
+    releaseLock();
+
+    if (
+      pendingStripePaymentIntentSyncs.get(normalizedPaymentIntentId) === lockQueueEntry
+    ) {
+      pendingStripePaymentIntentSyncs.delete(normalizedPaymentIntentId);
+    }
+  }
+};
+
 export const syncStripePaymentEventToGoogleSheets = async (
   event: Stripe.Event,
 ): Promise<StripePaymentWebhookResult> => {
@@ -185,7 +221,10 @@ export const syncStripePaymentEventToGoogleSheets = async (
     };
   }
 
-  const syncPromise = syncStripePaymentEventToGoogleSheetsInternal(event).finally(() => {
+  const paymentIntentId = (event.data.object as Stripe.PaymentIntent)?.id ?? "";
+  const syncPromise = withPaymentIntentSyncLock(paymentIntentId, () =>
+    syncStripePaymentEventToGoogleSheetsInternal(event),
+  ).finally(() => {
     pendingStripeWebhookSyncs.delete(event.id);
   });
 

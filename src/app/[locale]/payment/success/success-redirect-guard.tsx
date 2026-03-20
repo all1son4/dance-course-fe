@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 const STATUS_CHECK_MAX_ATTEMPTS = 4;
 const STATUS_CHECK_RETRY_DELAY_MS = 1_000;
+const STATUS_REQUEST_TIMEOUT_MS = 8_000;
 
 type SuccessRedirectGuardProps = {
   checkoutSessionId: string;
@@ -33,13 +34,26 @@ export default function SuccessRedirectGuard({
     }
 
     let isDisposed = false;
+    let activeAbortController: AbortController | null = null;
+    const pendingTimeouts = new Set<number>();
     const wait = (delayMs: number) =>
       new Promise<void>((resolve) => {
-        window.setTimeout(() => resolve(), delayMs);
+        const timeoutId = window.setTimeout(() => {
+          pendingTimeouts.delete(timeoutId);
+          resolve();
+        }, delayMs);
+        pendingTimeouts.add(timeoutId);
       });
 
     const verifyOutcome = async () => {
       for (let attempt = 0; attempt < STATUS_CHECK_MAX_ATTEMPTS; attempt += 1) {
+        const requestController = new AbortController();
+        activeAbortController = requestController;
+        const requestTimeoutId = window.setTimeout(() => {
+          requestController.abort();
+        }, STATUS_REQUEST_TIMEOUT_MS);
+        pendingTimeouts.add(requestTimeoutId);
+
         try {
           const response = await fetch("/api/stripe/payment-intent/status", {
             method: "POST",
@@ -50,6 +64,7 @@ export default function SuccessRedirectGuard({
               checkoutSessionId,
               paymentIntentId,
             }),
+            signal: requestController.signal,
           });
 
           if (isDisposed) {
@@ -93,6 +108,9 @@ export default function SuccessRedirectGuard({
           }
 
           await wait(STATUS_CHECK_RETRY_DELAY_MS);
+        } finally {
+          window.clearTimeout(requestTimeoutId);
+          pendingTimeouts.delete(requestTimeoutId);
         }
       }
     };
@@ -101,6 +119,11 @@ export default function SuccessRedirectGuard({
 
     return () => {
       isDisposed = true;
+      activeAbortController?.abort();
+      pendingTimeouts.forEach((timeoutId) => {
+        window.clearTimeout(timeoutId);
+      });
+      pendingTimeouts.clear();
     };
   }, [checkoutSessionId, failedPath, paymentIntentId, router]);
 

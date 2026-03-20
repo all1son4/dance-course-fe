@@ -67,7 +67,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
   },
   "choreo-still-alive": {
-    accessNote: "Доступ к материалам 30 дней через приватный Telegram-чат.",
+    accessNote: "Доступ к материалам 30 дней через приватный Telegram-канал.",
     accessNoteKey: "choreoStillAlive.accessNote",
     code: "choreo-still-alive",
     description: [
@@ -110,7 +110,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
   },
   "choreo-her-lies": {
-    accessNote: "Доступ к материалам 30 дней через приватный Telegram-чат.",
+    accessNote: "Доступ к материалам 30 дней через приватный Telegram-канал.",
     accessNoteKey: "choreoHerLies.accessNote",
     code: "choreo-her-lies",
     description: [

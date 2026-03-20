@@ -113,7 +113,7 @@ const MobileImagesBox = styled.div`
       bottom: unset;
       margin: 10px 0 0 0;
       & :is(svg, img) {
-        margin: 0 0 0 -40px;
+        margin: 0 0 0 1%;
         width: 100%;
         height: auto;
       }
@@ -142,6 +142,10 @@ const MobileImagesBox = styled.div`
 
   & #mobile-only-image-box {
     margin: 0;
+
+    & :is(svg, img) {
+        margin: 0 0 0 -50px;
+      }
   }
     & #mobile-only-icon-box {
     justify-content: flex-end;
@@ -186,6 +190,10 @@ const ImageBox = styled.div`
   right: 14%;
   z-index: 10;
 
+  & :is(svg, img) {
+    object-fit: contain;
+  }
+
   @media (max-width: 1240px) {
     & :is(svg, img) {
       right: 4%;
@@ -220,6 +228,10 @@ const IconBox = styled.div`
   bottom: 20px;
   right: 4%;
   z-index: 15;
+
+  & :is(svg, img) {
+    object-fit: contain;
+  }
 
   @media (max-width: 1240px) {
     & :is(svg, img) {

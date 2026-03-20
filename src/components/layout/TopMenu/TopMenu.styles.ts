@@ -49,9 +49,17 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
     }
   }
 
+  &:focus-visible {
+    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline-offset: 3px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: rgba(124, 0, 2, 1);
+  }
+
   @media (max-width: 767px) {
-    padding: 0;
+    padding: 10px 0;
     font-size: 17px;
-    min-height: 24px;
+    min-height: 44px;
   }
 `;

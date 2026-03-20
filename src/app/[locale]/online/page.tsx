@@ -108,7 +108,7 @@ const Title = styled.h1`
 
   & p {
     font-weight: 300;
-    font-style: Light;
+    font-style: normal;
     font-size: 17px;
     line-height: 150%;
     letter-spacing: 0;
@@ -393,7 +393,7 @@ const StudioDanceImage = styled(Image)`
 const ContactSection = styled.section`
   display: flex;
   padding: 150px 100px 100px;
-  margin: 0 0 100px 0;
+  margin: -1px 0 100px 0;
   box-sizing: border-box;
   background: rgba(255, 255, 255, 1);
   border-radius: 0 0 100px 100px;
@@ -405,7 +405,7 @@ const ContactSection = styled.section`
   @media (max-width: 880px) {
     padding: 40px 20px;
     border-radius: 0 0 40px 40px;
-    margin: 0 0 60px 0;
+    margin: -1px 0 60px 0;
   }
 `;
 

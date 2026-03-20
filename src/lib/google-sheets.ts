@@ -277,6 +277,17 @@ type RowsCacheEntry = {
   rows: Array<Record<string, string>>;
 };
 
+type RowLookupCacheEntry = {
+  expiresAt: number;
+  record: Record<string, string> | null;
+  rowNumber: number | null;
+};
+
+type PaymentRecordByIntentCacheEntry = {
+  expiresAt: number;
+  record: PaymentSheetRecord | null;
+};
+
 type PaymentSheetHeader = (typeof PAYMENT_SHEET_HEADERS)[number];
 type StripeEventSheetHeader = (typeof STRIPE_EVENT_SHEET_HEADERS)[number];
 type SuccessfulCustomersSheetHeader = (typeof SUCCESSFUL_CUSTOMERS_SHEET_HEADERS)[number];
@@ -313,14 +324,26 @@ export class GoogleSheetsError extends Error {
   }
 }
 
+export const isGoogleSheetsRateLimitError = (error: unknown) =>
+  error instanceof GoogleSheetsError && error.status === 429;
+
 let accessTokenCache: AccessTokenCache | null = null;
 let sheetTitleCache: SheetTitleCache | null = null;
 let schemaSyncPromise: Promise<void> | null = null;
 const headerValidationCache = new Map<string, HeaderValidationCacheEntry>();
+const pendingHeaderValidation = new Map<string, Promise<void>>();
 const rowsCache = new Map<string, RowsCacheEntry>();
+const rowLookupCache = new Map<string, RowLookupCacheEntry>();
+const paymentRecordByIntentCache = new Map<string, PaymentRecordByIntentCacheEntry>();
 
-const SHEET_HEADERS_CACHE_TTL_MS = 5 * 60 * 1000;
-const SHEET_ROWS_CACHE_TTL_MS = 10 * 1000;
+const SHEET_HEADERS_CACHE_TTL_MS = 60 * 60 * 1000;
+const SHEET_ROWS_CACHE_TTL_MS = 60 * 1000;
+const PAYMENT_RECORD_CACHE_TTL_MS = 60 * 1000;
+const GOOGLE_SHEETS_REQUEST_MAX_RETRIES = 3;
+const GOOGLE_SHEETS_RETRY_BASE_DELAY_MS = 250;
+const GOOGLE_SHEETS_RETRY_MAX_DELAY_MS = 4_000;
+const GOOGLE_SHEETS_RATE_LIMIT_BACKOFF_MS = 20_000;
+let googleSheetsRateLimitedUntil = 0;
 
 const encodeBase64Url = (value: string) =>
   Buffer.from(value)
@@ -359,6 +382,14 @@ const getHeaderCacheKey = (
   expectedHeaderRow: readonly string[],
 ) => `${getSheetKey(config, sheetTitle)}:${expectedHeaderRow.join("|")}`;
 
+const getRowLookupCacheKey = (
+  config: GoogleSheetsConfig,
+  sheetTitle: string,
+  headers: readonly string[],
+  fieldName: string,
+  fieldValue: string,
+) => `${getSheetKey(config, sheetTitle)}:${headers.join("|")}:${fieldName}:${fieldValue}`;
+
 const invalidateSheetCaches = (config: GoogleSheetsConfig, sheetTitle: string) => {
   const sheetPrefix = `${getSheetKey(config, sheetTitle)}:`;
 
@@ -371,6 +402,12 @@ const invalidateSheetCaches = (config: GoogleSheetsConfig, sheetTitle: string) =
   Array.from(headerValidationCache.keys()).forEach((key) => {
     if (key.startsWith(sheetPrefix)) {
       headerValidationCache.delete(key);
+    }
+  });
+
+  Array.from(rowLookupCache.keys()).forEach((key) => {
+    if (key.startsWith(sheetPrefix)) {
+      rowLookupCache.delete(key);
     }
   });
 };
@@ -433,75 +470,260 @@ const getJwtAssertion = (config: GoogleSheetsConfig) => {
 };
 
 const getGoogleAccessToken = async (config: GoogleSheetsConfig) => {
+  assertGoogleSheetsRateLimitWindow();
+
   if (accessTokenCache && accessTokenCache.expiresAt > Date.now()) {
     return accessTokenCache.token;
   }
 
-  const response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      assertion: getJwtAssertion(config),
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-    }),
-    cache: "no-store",
-  });
-  const data = (await response.json()) as GoogleSheetsTokenResponse;
+  for (let attempt = 0; attempt <= GOOGLE_SHEETS_REQUEST_MAX_RETRIES; attempt += 1) {
+    let response: Response;
 
-  if (!response.ok || !data.access_token) {
+    try {
+      response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          assertion: getJwtAssertion(config),
+          grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        }),
+        cache: "no-store",
+      });
+    } catch (error) {
+      if (attempt === GOOGLE_SHEETS_REQUEST_MAX_RETRIES) {
+        throw new GoogleSheetsError(
+          "google_access_token_network_error",
+          error instanceof Error
+            ? error.message
+            : "Failed to obtain Google access token.",
+          null,
+        );
+      }
+
+      await sleep(getRetryDelayMs(attempt, null));
+      continue;
+    }
+
+    const responseText = await response.text();
+    let data: GoogleSheetsTokenResponse | null = null;
+
+    if (responseText) {
+      try {
+        data = JSON.parse(responseText) as GoogleSheetsTokenResponse;
+      } catch {
+        data = null;
+      }
+    }
+
+    if (response.ok && data?.access_token) {
+      const expiresInMs = Math.max((data.expires_in ?? 3600) - 60, 60) * 1000;
+
+      accessTokenCache = {
+        expiresAt: Date.now() + expiresInMs,
+        token: data.access_token,
+      };
+
+      return data.access_token;
+    }
+
+    if (response.status === 429) {
+      setGoogleSheetsRateLimitBackoff(
+        parseRetryAfterMs(response.headers.get("retry-after")),
+      );
+
+      throw new GoogleSheetsError(
+        data?.error ?? "google_access_token_failed",
+        data?.error_description ||
+          responseText ||
+          "Failed to obtain Google access token.",
+        response.status,
+      );
+    }
+
+    if (attempt < GOOGLE_SHEETS_REQUEST_MAX_RETRIES && response.status >= 500) {
+      await sleep(
+        getRetryDelayMs(attempt, parseRetryAfterMs(response.headers.get("retry-after"))),
+      );
+      continue;
+    }
+
     throw new GoogleSheetsError(
-      data.error ?? "google_access_token_failed",
-      data.error_description ?? "Failed to obtain Google access token.",
+      data?.error ?? "google_access_token_failed",
+      data?.error_description || responseText || "Failed to obtain Google access token.",
       response.status,
     );
   }
 
-  const expiresInMs = Math.max((data.expires_in ?? 3600) - 60, 60) * 1000;
-
-  accessTokenCache = {
-    expiresAt: Date.now() + expiresInMs,
-    token: data.access_token,
-  };
-
-  return data.access_token;
+  throw new GoogleSheetsError(
+    "google_access_token_failed",
+    "Failed to obtain Google access token after retry attempts.",
+    null,
+  );
 };
 
 const getGoogleSheetsUrl = (config: GoogleSheetsConfig, path: string) =>
   `${GOOGLE_SHEETS_API_BASE_URL}/${config.spreadsheetId}${path}`;
+
+const sleep = (delayMs: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
+
+const parseRetryAfterMs = (value: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const seconds = Number(value);
+
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds * 1000);
+  }
+
+  const atMs = Date.parse(value);
+
+  if (!Number.isFinite(atMs)) {
+    return null;
+  }
+
+  return Math.max(0, atMs - Date.now());
+};
+
+const setGoogleSheetsRateLimitBackoff = (retryAfterMs: number | null) => {
+  const fallbackBackoffMs = GOOGLE_SHEETS_RATE_LIMIT_BACKOFF_MS;
+  const effectiveBackoffMs =
+    Number.isFinite(retryAfterMs) && (retryAfterMs ?? 0) > 0
+      ? Math.max(fallbackBackoffMs, retryAfterMs ?? 0)
+      : fallbackBackoffMs;
+
+  googleSheetsRateLimitedUntil = Math.max(
+    googleSheetsRateLimitedUntil,
+    Date.now() + effectiveBackoffMs,
+  );
+};
+
+const assertGoogleSheetsRateLimitWindow = () => {
+  if (googleSheetsRateLimitedUntil <= Date.now()) {
+    return;
+  }
+
+  throw new GoogleSheetsError(
+    "google_sheets_request_failed",
+    "Google Sheets requests are temporarily paused due to recent rate limiting.",
+    429,
+  );
+};
+
+const getRetryDelayMs = (attempt: number, retryAfterMs: number | null) => {
+  if (retryAfterMs !== null) {
+    return Math.min(retryAfterMs, GOOGLE_SHEETS_RETRY_MAX_DELAY_MS);
+  }
+
+  const exponential = Math.min(
+    GOOGLE_SHEETS_RETRY_BASE_DELAY_MS * 2 ** attempt,
+    GOOGLE_SHEETS_RETRY_MAX_DELAY_MS,
+  );
+  const jitter = Math.floor(Math.random() * 200);
+
+  return exponential + jitter;
+};
+
+const isRetriableGoogleSheetsStatus = (status: number) => status === 401 || status >= 500;
 
 const googleSheetsRequest = async <T>(
   config: GoogleSheetsConfig,
   path: string,
   init?: RequestInit,
 ) => {
-  const accessToken = await getGoogleAccessToken(config);
-  const response = await fetch(getGoogleSheetsUrl(config, path), {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+  assertGoogleSheetsRateLimitWindow();
 
-  if (response.status === 204) {
-    return null as T;
-  }
+  for (let attempt = 0; attempt <= GOOGLE_SHEETS_REQUEST_MAX_RETRIES; attempt += 1) {
+    let accessToken: string;
 
-  const responseText = await response.text();
-  let data: T | null = null;
-
-  if (responseText) {
     try {
-      data = JSON.parse(responseText) as T;
-    } catch {
-      data = null;
-    }
-  }
+      accessToken = await getGoogleAccessToken(config);
+    } catch (error) {
+      if (attempt === GOOGLE_SHEETS_REQUEST_MAX_RETRIES) {
+        throw error;
+      }
 
-  if (!response.ok) {
+      await sleep(getRetryDelayMs(attempt, null));
+      continue;
+    }
+
+    let response: Response;
+
+    try {
+      response = await fetch(getGoogleSheetsUrl(config, path), {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          ...(init?.headers ?? {}),
+        },
+        cache: "no-store",
+      });
+    } catch (error) {
+      if (attempt === GOOGLE_SHEETS_REQUEST_MAX_RETRIES) {
+        throw new GoogleSheetsError(
+          "google_sheets_network_error",
+          error instanceof Error
+            ? error.message
+            : "Google Sheets network request failed.",
+          null,
+        );
+      }
+
+      await sleep(getRetryDelayMs(attempt, null));
+      continue;
+    }
+
+    if (response.status === 204) {
+      return null as T;
+    }
+
+    const responseText = await response.text();
+    let data: T | null = null;
+
+    if (responseText) {
+      try {
+        data = JSON.parse(responseText) as T;
+      } catch {
+        data = null;
+      }
+    }
+
+    if (response.ok) {
+      return data as T;
+    }
+
+    if (response.status === 429) {
+      setGoogleSheetsRateLimitBackoff(
+        parseRetryAfterMs(response.headers.get("retry-after")),
+      );
+
+      throw new GoogleSheetsError(
+        "google_sheets_request_failed",
+        responseText || "Google Sheets request failed.",
+        response.status,
+      );
+    }
+
+    if (response.status === 401) {
+      accessTokenCache = null;
+    }
+
+    if (
+      attempt < GOOGLE_SHEETS_REQUEST_MAX_RETRIES &&
+      isRetriableGoogleSheetsStatus(response.status)
+    ) {
+      await sleep(
+        getRetryDelayMs(attempt, parseRetryAfterMs(response.headers.get("retry-after"))),
+      );
+      continue;
+    }
+
     throw new GoogleSheetsError(
       "google_sheets_request_failed",
       responseText || "Google Sheets request failed.",
@@ -509,7 +731,11 @@ const googleSheetsRequest = async <T>(
     );
   }
 
-  return data as T;
+  throw new GoogleSheetsError(
+    "google_sheets_request_failed",
+    "Google Sheets request failed after retry attempts.",
+    null,
+  );
 };
 
 const getSheetTitleSet = async (config: GoogleSheetsConfig) => {
@@ -686,25 +912,37 @@ const ensureSheetHeaders = async (
     return;
   }
 
-  const currentHeaderRow = (await getSheetValues(config, sheetTitle, "1:1"))[0] ?? [];
-  const hasExpectedHeaders = areHeadersEqual(expectedHeaderRow, currentHeaderRow);
+  const pendingValidation = pendingHeaderValidation.get(headerCacheKey);
 
-  if (hasExpectedHeaders) {
-    headerValidationCache.set(headerCacheKey, {
-      expiresAt: Date.now() + SHEET_HEADERS_CACHE_TTL_MS,
-    });
+  if (pendingValidation) {
+    await pendingValidation;
     return;
   }
 
-  const lastColumnLetter = columnIndexToLetter(headers.length);
+  const validationPromise = (async () => {
+    const currentHeaderRow = (await getSheetValues(config, sheetTitle, "1:1"))[0] ?? [];
+    const hasExpectedHeaders = areHeadersEqual(expectedHeaderRow, currentHeaderRow);
 
-  await updateSheetValues(config, sheetTitle, `A1:${lastColumnLetter}1`, [
-    expectedHeaderRow,
-  ]);
+    if (!hasExpectedHeaders) {
+      const lastColumnLetter = columnIndexToLetter(headers.length);
 
-  headerValidationCache.set(headerCacheKey, {
-    expiresAt: Date.now() + SHEET_HEADERS_CACHE_TTL_MS,
-  });
+      await updateSheetValues(config, sheetTitle, `A1:${lastColumnLetter}1`, [
+        expectedHeaderRow,
+      ]);
+    }
+
+    headerValidationCache.set(headerCacheKey, {
+      expiresAt: Date.now() + SHEET_HEADERS_CACHE_TTL_MS,
+    });
+  })();
+
+  pendingHeaderValidation.set(headerCacheKey, validationPromise);
+
+  try {
+    await validationPromise;
+  } finally {
+    pendingHeaderValidation.delete(headerCacheKey);
+  }
 };
 
 const getRows = async <T extends string>(
@@ -743,14 +981,75 @@ const getRows = async <T extends string>(
   return mappedRows;
 };
 
-const getRowNumberByFieldValue = <T extends string>(
-  rows: Array<Record<T, string>>,
-  fieldName: T,
-  fieldValue: string,
-) => {
-  const rowIndex = rows.findIndex((row) => row[fieldName] === fieldValue);
+const getHeaderColumnIndex = <T extends string>(headers: readonly T[], header: T) => {
+  const columnIndex = headers.indexOf(header);
 
-  return rowIndex >= 0 ? rowIndex + 2 : null;
+  if (columnIndex < 0) {
+    throw new GoogleSheetsError(
+      "google_sheets_header_missing",
+      `Header "${String(header)}" is not configured for sheet lookup.`,
+      null,
+    );
+  }
+
+  return columnIndex + 1;
+};
+
+const findRecordAndRowByFieldValue = async <T extends string>({
+  cacheTtlMs = SHEET_ROWS_CACHE_TTL_MS,
+  config,
+  fieldName,
+  fieldValue,
+  headers,
+  labelsMap,
+  sheetTitle,
+}: {
+  cacheTtlMs?: number;
+  config: GoogleSheetsConfig;
+  fieldName: T;
+  fieldValue: string;
+  headers: readonly T[];
+  labelsMap?: Partial<Record<T, string>>;
+  sheetTitle: string;
+}) => {
+  const cacheKey = getRowLookupCacheKey(
+    config,
+    sheetTitle,
+    headers,
+    String(fieldName),
+    fieldValue,
+  );
+  const cachedEntry = rowLookupCache.get(cacheKey);
+
+  if (cacheTtlMs > 0 && cachedEntry && cachedEntry.expiresAt > Date.now()) {
+    return {
+      record: (cachedEntry.record as Record<T, string> | null) ?? null,
+      rowNumber: cachedEntry.rowNumber,
+    };
+  }
+
+  await ensureSheetHeaders(config, sheetTitle, headers, labelsMap);
+  const lastColumnLetter = columnIndexToLetter(headers.length);
+  const values = await getSheetValues(config, sheetTitle, `A2:${lastColumnLetter}`);
+  const fieldColumnIndex = getHeaderColumnIndex(headers, fieldName) - 1;
+  const rowIndex = values.findIndex(
+    (row) => (row[fieldColumnIndex] ?? "") === fieldValue,
+  );
+  const rowNumber = rowIndex >= 0 ? rowIndex + 2 : null;
+  const record = rowIndex >= 0 ? mapRowToRecord(headers, values[rowIndex] ?? []) : null;
+
+  if (cacheTtlMs > 0) {
+    rowLookupCache.set(cacheKey, {
+      expiresAt: Date.now() + cacheTtlMs,
+      record: (record as Record<string, string> | null) ?? null,
+      rowNumber,
+    });
+  }
+
+  return {
+    record,
+    rowNumber,
+  };
 };
 
 const toOrderedRow = <T extends string>(
@@ -830,6 +1129,19 @@ export const findPaymentRecordByIntentId = async (
     cacheTtlMs?: number;
   },
 ) => {
+  const normalizedPaymentIntentId = paymentIntentId.trim();
+
+  if (!normalizedPaymentIntentId) {
+    return null;
+  }
+
+  const cacheTtlMs = options?.cacheTtlMs ?? PAYMENT_RECORD_CACHE_TTL_MS;
+  const cachedEntry = paymentRecordByIntentCache.get(normalizedPaymentIntentId);
+
+  if (cacheTtlMs > 0 && cachedEntry && cachedEntry.expiresAt > Date.now()) {
+    return cachedEntry.record;
+  }
+
   const config = getGoogleSheetsConfig();
 
   if (!config) {
@@ -840,15 +1152,24 @@ export const findPaymentRecordByIntentId = async (
     );
   }
 
-  const rows = await getRows(
+  const { record } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: options?.cacheTtlMs,
     config,
-    config.paymentsSheetName,
-    PAYMENT_SHEET_HEADERS,
-    PAYMENT_SHEET_HEADER_LABELS,
-    options,
-  );
+    fieldName: "payment_intent_id",
+    fieldValue: normalizedPaymentIntentId,
+    headers: PAYMENT_SHEET_HEADERS,
+    labelsMap: PAYMENT_SHEET_HEADER_LABELS,
+    sheetTitle: config.paymentsSheetName,
+  });
 
-  return rows.find((row) => row.payment_intent_id === paymentIntentId) ?? null;
+  if (cacheTtlMs > 0) {
+    paymentRecordByIntentCache.set(normalizedPaymentIntentId, {
+      expiresAt: Date.now() + cacheTtlMs,
+      record: record ?? null,
+    });
+  }
+
+  return record;
 };
 
 export const findLatestPaymentRecordByCheckoutSessionId = async (
@@ -910,18 +1231,17 @@ export const findStripeEventRecordByEventId = async (eventId: string) => {
     );
   }
 
-  const rows = await getRows(
+  const { record } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
     config,
-    config.stripeEventsSheetName,
-    STRIPE_EVENT_SHEET_HEADERS,
-    STRIPE_EVENT_SHEET_HEADER_LABELS,
-    {
-      // Stripe event deduplication must read fresh data to avoid stale-cache duplicates.
-      cacheTtlMs: 0,
-    },
-  );
+    fieldName: "event_id",
+    fieldValue: eventId,
+    headers: STRIPE_EVENT_SHEET_HEADERS,
+    labelsMap: STRIPE_EVENT_SHEET_HEADER_LABELS,
+    sheetTitle: config.stripeEventsSheetName,
+  });
 
-  return rows.find((row) => row.event_id === eventId) ?? null;
+  return record;
 };
 
 export const appendStripeEventRecord = async (record: StripeEventSheetRecord) => {
@@ -943,17 +1263,15 @@ export const appendStripeEventRecord = async (record: StripeEventSheetRecord) =>
   );
   const lastColumnLetter = columnIndexToLetter(STRIPE_EVENT_SHEET_HEADERS.length);
 
-  const rows = await getRows(
+  const { rowNumber } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
     config,
-    config.stripeEventsSheetName,
-    STRIPE_EVENT_SHEET_HEADERS,
-    STRIPE_EVENT_SHEET_HEADER_LABELS,
-    {
-      // Write path also uses fresh read to make event upsert idempotent.
-      cacheTtlMs: 0,
-    },
-  );
-  const rowNumber = getRowNumberByFieldValue(rows, "event_id", record.event_id);
+    fieldName: "event_id",
+    fieldValue: record.event_id,
+    headers: STRIPE_EVENT_SHEET_HEADERS,
+    labelsMap: STRIPE_EVENT_SHEET_HEADER_LABELS,
+    sheetTitle: config.stripeEventsSheetName,
+  });
 
   if (rowNumber) {
     await updateSheetValues(
@@ -997,21 +1315,15 @@ export const appendSuccessfulCustomerRecord = async (
   );
   const lastColumnLetter = columnIndexToLetter(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS.length);
 
-  const rows = await getRows(
+  const { rowNumber } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
     config,
-    config.successfulCustomersSheetName,
-    SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
-    SUCCESSFUL_CUSTOMERS_SHEET_HEADER_LABELS,
-    {
-      // Customer log is idempotent by payment_intent_id even across webhook retries.
-      cacheTtlMs: 0,
-    },
-  );
-  const rowNumber = getRowNumberByFieldValue(
-    rows,
-    "payment_intent_id",
-    record.payment_intent_id,
-  );
+    fieldName: "payment_intent_id",
+    fieldValue: record.payment_intent_id,
+    headers: SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
+    labelsMap: SUCCESSFUL_CUSTOMERS_SHEET_HEADER_LABELS,
+    sheetTitle: config.successfulCustomersSheetName,
+  });
 
   if (rowNumber) {
     await updateSheetValues(
@@ -1045,27 +1357,19 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
     );
   }
 
-  const rows = await getRows(
+  const { record: existingRecord, rowNumber } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
     config,
-    config.paymentsSheetName,
-    PAYMENT_SHEET_HEADERS,
-    PAYMENT_SHEET_HEADER_LABELS,
-    {
-      // Write path must use fresh rows to avoid stale-cache duplicate inserts.
-      cacheTtlMs: 0,
-    },
-  );
-  const existingRecord =
-    rows.find((row) => row.payment_intent_id === record.payment_intent_id) ?? null;
+    fieldName: "payment_intent_id",
+    fieldValue: record.payment_intent_id,
+    headers: PAYMENT_SHEET_HEADERS,
+    labelsMap: PAYMENT_SHEET_HEADER_LABELS,
+    sheetTitle: config.paymentsSheetName,
+  });
   const nextRecord: PaymentSheetRecord = {
     ...record,
     first_seen_at: existingRecord?.first_seen_at || record.first_seen_at,
   };
-  const rowNumber = getRowNumberByFieldValue(
-    rows,
-    "payment_intent_id",
-    record.payment_intent_id,
-  );
   const lastColumnLetter = columnIndexToLetter(PAYMENT_SHEET_HEADERS.length);
 
   if (rowNumber) {
@@ -1076,12 +1380,22 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
       [toOrderedRow(PAYMENT_SHEET_HEADERS, nextRecord)],
     );
 
+    paymentRecordByIntentCache.set(nextRecord.payment_intent_id, {
+      expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
+      record: nextRecord,
+    });
+
     return nextRecord;
   }
 
   await appendSheetValues(config, config.paymentsSheetName, `A1:${lastColumnLetter}`, [
     toOrderedRow(PAYMENT_SHEET_HEADERS, nextRecord),
   ]);
+
+  paymentRecordByIntentCache.set(nextRecord.payment_intent_id, {
+    expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
+    record: nextRecord,
+  });
 
   return nextRecord;
 };
@@ -1097,14 +1411,16 @@ export const findTelegramAccessTokenRecordByTokenId = async (tokenId: string) =>
     );
   }
 
-  const rows = await getRows(
+  const { record } = await findRecordAndRowByFieldValue({
     config,
-    config.telegramAccessTokensSheetName,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
-  );
+    fieldName: "token_id",
+    fieldValue: tokenId,
+    headers: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    labelsMap: TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    sheetTitle: config.telegramAccessTokensSheetName,
+  });
 
-  return rows.find((row) => row.token_id === tokenId) ?? null;
+  return record;
 };
 
 export const findTelegramAccessTokenRecordByTokenHash = async (tokenHash: string) => {
@@ -1118,14 +1434,16 @@ export const findTelegramAccessTokenRecordByTokenHash = async (tokenHash: string
     );
   }
 
-  const rows = await getRows(
+  const { record } = await findRecordAndRowByFieldValue({
     config,
-    config.telegramAccessTokensSheetName,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
-  );
+    fieldName: "token_hash",
+    fieldValue: tokenHash,
+    headers: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    labelsMap: TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    sheetTitle: config.telegramAccessTokensSheetName,
+  });
 
-  return rows.find((row) => row.token_hash === tokenHash) ?? null;
+  return record;
 };
 
 export const findTelegramAccessTokenRecordByTokenValue = async (tokenValue: string) => {
@@ -1139,14 +1457,16 @@ export const findTelegramAccessTokenRecordByTokenValue = async (tokenValue: stri
     );
   }
 
-  const rows = await getRows(
+  const { record } = await findRecordAndRowByFieldValue({
     config,
-    config.telegramAccessTokensSheetName,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
-  );
+    fieldName: "token_value",
+    fieldValue: tokenValue,
+    headers: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    labelsMap: TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    sheetTitle: config.telegramAccessTokensSheetName,
+  });
 
-  return rows.find((row) => row.token_value === tokenValue) ?? null;
+  return record;
 };
 
 export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
@@ -1195,17 +1515,15 @@ export const upsertTelegramAccessTokenRecord = async (
     );
   }
 
-  const rows = await getRows(
+  const { rowNumber } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
     config,
-    config.telegramAccessTokensSheetName,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
-    {
-      // Write path must use fresh rows to avoid stale-cache duplicate inserts.
-      cacheTtlMs: 0,
-    },
-  );
-  const rowNumber = getRowNumberByFieldValue(rows, "token_id", record.token_id);
+    fieldName: "token_id",
+    fieldValue: record.token_id,
+    headers: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    labelsMap: TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    sheetTitle: config.telegramAccessTokensSheetName,
+  });
   const lastColumnLetter = columnIndexToLetter(
     TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS.length,
   );
@@ -1244,14 +1562,16 @@ export const findTelegramUserBindingByPaymentIntentId = async (
     );
   }
 
-  const rows = await getRows(
+  const { record } = await findRecordAndRowByFieldValue({
     config,
-    config.telegramUserBindingsSheetName,
-    TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
-    TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
-  );
+    fieldName: "payment_intent_id",
+    fieldValue: paymentIntentId,
+    headers: TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
+    labelsMap: TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+    sheetTitle: config.telegramUserBindingsSheetName,
+  });
 
-  return rows.find((row) => row.payment_intent_id === paymentIntentId) ?? null;
+  return record;
 };
 
 export const findTelegramUserBindingsByTelegramUserId = async (
@@ -1366,21 +1686,15 @@ export const upsertTelegramUserBindingRecord = async (
     );
   }
 
-  const rows = await getRows(
+  const { rowNumber } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
     config,
-    config.telegramUserBindingsSheetName,
-    TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
-    TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
-    {
-      // Write path must use fresh rows to avoid stale-cache duplicate inserts.
-      cacheTtlMs: 0,
-    },
-  );
-  const rowNumber = getRowNumberByFieldValue(
-    rows,
-    "payment_intent_id",
-    record.payment_intent_id,
-  );
+    fieldName: "payment_intent_id",
+    fieldValue: record.payment_intent_id,
+    headers: TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
+    labelsMap: TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+    sheetTitle: config.telegramUserBindingsSheetName,
+  });
   const lastColumnLetter = columnIndexToLetter(
     TELEGRAM_USER_BINDINGS_SHEET_HEADERS.length,
   );

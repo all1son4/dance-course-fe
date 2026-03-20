@@ -191,6 +191,10 @@ const ImageBox = styled.div`
   right: 1.5%;
   z-index: 10;
 
+  & img {
+    object-fit: contain;
+  }
+
   @media (max-width: 1240px) {
     max-width: 640px;
     bottom: -100px;
@@ -214,6 +218,10 @@ const IconBox = styled.div`
   top: 139px;
   right: 1%;
   z-index: 15;
+
+  & img {
+    object-fit: contain;
+  }
 
   @media (max-width: 1240px) {
     top: 90px;

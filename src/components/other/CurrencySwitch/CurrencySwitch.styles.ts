@@ -53,7 +53,9 @@ export const OptionButton = styled.button<{ $isActive: boolean }>`
   transition: color 0.18s ease;
 
   &:focus-visible {
-    outline: none;
+    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline-offset: -2px;
+    border-radius: 18px;
   }
 
   &:disabled {

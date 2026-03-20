@@ -7,7 +7,7 @@ export const CardContainer = styled.div`
   justify-content: center;
   align-items: center;
   margin: 0;
-  cursor: pointer;
+  cursor: default;
 `;
 
 export const CardLinkContainer = styled(Link)`

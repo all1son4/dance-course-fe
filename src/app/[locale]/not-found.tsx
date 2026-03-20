@@ -12,7 +12,7 @@ const NotFoundContainer = styled.div`
   align-items: center;
   justify-content: center;
   width: 100%;
-  height: 100vh;
+  min-height: 100dvh;
   margin: 0 auto;
   box-sizing: border-box;
   padding: 0 20px;

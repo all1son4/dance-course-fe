@@ -138,6 +138,12 @@ export const IconBox = styled.button<{ $isOpen: boolean }>`
       transform-origin: center;
     }
   `}
+
+  &:focus-visible {
+    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
 `;
 
 export const Bottom = styled.div<{ $isOpen: boolean }>`

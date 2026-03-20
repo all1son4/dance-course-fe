@@ -251,6 +251,10 @@ const ImageBox = styled.div`
   right: 10%;
   z-index: 10;
 
+  & img {
+    object-fit: contain;
+  }
+
   @media (max-width: 1440px) {
     right: 8%;
   }
@@ -269,8 +273,8 @@ const ImageBox = styled.div`
   }
 
   @media (max-width: 920px) {
-    max-width: 380px;
-    bottom: 80px;
+    max-width: 54%;
+    bottom: 60px;
   }
 `;
 
@@ -279,6 +283,10 @@ const IconBox = styled.div`
   top: 178px;
   right: 1.5%;
   z-index: 15;
+
+  & img {
+    object-fit: contain;
+  }
 
   @media (max-width: 1440px) {
     right: 0;
@@ -296,8 +304,8 @@ const IconBox = styled.div`
   }
 
   @media (max-width: 920px) {
-    top: 70px;
-    max-width: 210px;
+    top: 90px;
+    max-width: 26%;
   }
 `;
 
@@ -328,11 +336,14 @@ const Date = styled.p`
 `;
 
 const ButtonBox = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: calc(58% - 10px) calc(42% - 10px);
   gap: 20px;
   width: 100%;
+  max-width: 100%;
 
   @media (max-width: 920px) {
+    display: flex;
     flex-direction: column;
     max-width: 300px;
   }

@@ -52,6 +52,7 @@ const IntroduceSection = styled.section`
   padding: 0 25px;
 
   @media (max-width: 1440px) {
+    min-height: 800px;
     padding: 0 20px;
   }
 
@@ -78,8 +79,14 @@ const AbsolutePageImage = styled.div`
   left: 34%;
   z-index: 20;
 
+  & img {
+    object-fit: contain;
+  }
+
   @media (max-width: 1440px) {
+    top: -54px;
     width: 52%;
+    height: auto;
   }
 
   @media (max-width: 1240px) {
@@ -103,6 +110,7 @@ const AbsolutePageLogo = styled.div`
       display: flex;
       height: 750px;
       max-width: 550px;
+      object-fit: contain;
     }
 
     & .hero-brand-logo {
@@ -382,25 +390,42 @@ const IconPositionWrap = styled.div`
   position: absolute;
   z-index: 10;
   left: -36px;
-  top: -120px;
+  top: -110px;
+
+  & :is(svg, img) {
+    max-width: 80%;
+    height: auto;
+  }
 
   @media (max-width: 1240px) {
     left: 60px;
     top: -135px;
   }
 
-  @media (max-width: 1240px) {
-    left: 30px;
-    top: -220px;
+  @media (max-width: 880px) {
+    left: 60px;
+    top: -120px;
 
     & :is(svg, img) {
-      width: 50px;
-      height: auto;
+      width: 70px;
+    }
+  }
+
+  @media (max-width: 767px) {
+    top: -220px;
+    left: 30px;
+
+    & :is(svg, img) {
+      width: 60px;
     }
   }
 
   @media (max-width: 450px) {
-    top: -180px;
+    top: -176px;
+
+    & :is(svg, img) {
+      width: 50px;
+    }
   }
 `;
 

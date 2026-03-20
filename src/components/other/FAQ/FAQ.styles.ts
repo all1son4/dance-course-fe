@@ -120,6 +120,12 @@ export const QuestionBox = styled.button<{ $isOpened: boolean }>`
       stroke: rgba(124, 0, 2, 1);
     }
   }
+
+  &:focus-visible {
+    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
 `;
 
 export const Question = styled.p`

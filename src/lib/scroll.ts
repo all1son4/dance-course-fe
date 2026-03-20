@@ -1,4 +1,5 @@
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const DEFAULT_ANCHOR_OFFSET_PX = 8;
 
 export const getAnchorScrollBehavior = (): ScrollBehavior => {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -42,7 +43,7 @@ export const getHashTargetFromLocation = (): string | null => {
 };
 
 export const scrollToHashTarget = (targetId: string): boolean => {
-  if (typeof document === "undefined") {
+  if (typeof document === "undefined" || typeof window === "undefined") {
     return false;
   }
 
@@ -52,9 +53,16 @@ export const scrollToHashTarget = (targetId: string): boolean => {
     return false;
   }
 
-  targetElement.scrollIntoView({
+  const headerElement = document.querySelector("header");
+  const headerOffsetPx =
+    headerElement instanceof HTMLElement
+      ? Math.max(Math.round(headerElement.getBoundingClientRect().bottom), 0)
+      : 0;
+  const targetTopPx = window.scrollY + targetElement.getBoundingClientRect().top;
+
+  window.scrollTo({
+    top: Math.max(targetTopPx - headerOffsetPx - DEFAULT_ANCHOR_OFFSET_PX, 0),
     behavior: getAnchorScrollBehavior(),
-    block: "start",
   });
 
   return true;

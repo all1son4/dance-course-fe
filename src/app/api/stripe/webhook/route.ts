@@ -5,10 +5,10 @@ import type Stripe from "stripe";
 import { normalizeCountryCode } from "@/constants/countries";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
 import {
-  ensureGoogleSheetsSchema,
   findPaymentRecordByIntentId,
   GoogleSheetsError,
   isGoogleSheetsConfigured,
+  isGoogleSheetsRateLimitError,
   type PaymentSheetRecord,
   upsertPaymentRecord,
 } from "@/lib/google-sheets";
@@ -72,8 +72,11 @@ const LESSON_LANGUAGE_LABEL_BY_LANGUAGE = {
 } as const;
 const pendingPurchaseEmailSyncs = new Map<string, Promise<void>>();
 const pendingPurchaseAlertSyncs = new Map<string, Promise<void>>();
+const fallbackPurchaseAlertDedupe = new Map<string, number>();
 const PAYMENT_PROCESSING_STATUS_PREFIX = "sending:";
 const PAYMENT_PROCESSING_LEASE_TTL_MS = 2 * 60 * 1000;
+const PURCHASE_ALERT_FALLBACK_DEDUPE_TTL_MS = 10 * 60 * 1000;
+const FRESH_PAYMENT_LOOKUP_CACHE_TTL_MS = 30 * 1000;
 
 type PaymentStatusField = "email_delivery_status" | "with_mentor_alert_status";
 type PaymentStatusUpdatedField =
@@ -92,6 +95,27 @@ const parseTimestamp = (value: string) => {
 const createPaymentProcessingStatus = () =>
   `${PAYMENT_PROCESSING_STATUS_PREFIX}${randomBytes(10).toString("hex")}`;
 
+const hasFreshFallbackAlertSend = (paymentIntentId: string) => {
+  const now = Date.now();
+
+  for (const [key, expiresAt] of fallbackPurchaseAlertDedupe) {
+    if (expiresAt <= now) {
+      fallbackPurchaseAlertDedupe.delete(key);
+    }
+  }
+
+  const expiresAt = fallbackPurchaseAlertDedupe.get(paymentIntentId) ?? 0;
+
+  return expiresAt > now;
+};
+
+const markFallbackAlertSent = (paymentIntentId: string) => {
+  fallbackPurchaseAlertDedupe.set(
+    paymentIntentId,
+    Date.now() + PURCHASE_ALERT_FALLBACK_DEDUPE_TTL_MS,
+  );
+};
+
 const isFreshPaymentProcessingStatus = ({
   status,
   updatedAt,
@@ -108,10 +132,21 @@ const getFreshPaymentRecord = async ({
 }: {
   fallbackPaymentRecord: PaymentSheetRecord;
   paymentIntentId: string;
-}) =>
-  (await findPaymentRecordByIntentId(paymentIntentId, {
-    cacheTtlMs: 0,
-  })) ?? fallbackPaymentRecord;
+}) => {
+  try {
+    return (
+      (await findPaymentRecordByIntentId(paymentIntentId, {
+        cacheTtlMs: FRESH_PAYMENT_LOOKUP_CACHE_TTL_MS,
+      })) ?? fallbackPaymentRecord
+    );
+  } catch (error) {
+    if (!isGoogleSheetsRateLimitError(error)) {
+      throw error;
+    }
+
+    return fallbackPaymentRecord;
+  }
+};
 
 const tryAcquirePaymentProcessingLease = async ({
   completedStatuses,
@@ -424,10 +459,10 @@ const updatePaymentEmailDeliveryStatus = async ({
   status: "failed" | "sent" | "skipped";
 }) => {
   const now = toWarsawIso();
-  const latestPaymentRecord =
-    (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id, {
-      cacheTtlMs: 0,
-    })) ?? paymentRecord;
+  const latestPaymentRecord = await getFreshPaymentRecord({
+    fallbackPaymentRecord: paymentRecord,
+    paymentIntentId: paymentRecord.payment_intent_id,
+  });
 
   await upsertPaymentRecord({
     ...latestPaymentRecord,
@@ -462,10 +497,10 @@ const updatePurchaseAlertStatus = async ({
   status: "failed" | "sent";
 }) => {
   const now = toWarsawIso();
-  const latestPaymentRecord =
-    (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id, {
-      cacheTtlMs: 0,
-    })) ?? paymentRecord;
+  const latestPaymentRecord = await getFreshPaymentRecord({
+    fallbackPaymentRecord: paymentRecord,
+    paymentIntentId: paymentRecord.payment_intent_id,
+  });
 
   await upsertPaymentRecord({
     ...latestPaymentRecord,
@@ -701,19 +736,45 @@ const sendPurchaseAlert = async ({
   }
 
   const alertSyncPromise = (async () => {
-    const alertLease = await tryAcquirePaymentProcessingLease({
-      completedStatuses: new Set(["sent"]),
-      fallbackPaymentRecord: handledEvent.paymentRecord,
-      paymentIntentId,
-      statusField: "with_mentor_alert_status",
-      updatedAtField: "with_mentor_alert_updated_at",
-    });
+    let latestPaymentRecord = handledEvent.paymentRecord;
+    let shouldPersistAlertStatus = true;
 
-    if (!alertLease.acquired) {
-      return;
+    try {
+      const alertLease = await tryAcquirePaymentProcessingLease({
+        completedStatuses: new Set(["sent"]),
+        fallbackPaymentRecord: handledEvent.paymentRecord,
+        paymentIntentId,
+        statusField: "with_mentor_alert_status",
+        updatedAtField: "with_mentor_alert_updated_at",
+      });
+
+      if (!alertLease.acquired) {
+        return;
+      }
+
+      latestPaymentRecord = alertLease.paymentRecord;
+    } catch (error) {
+      if (!isGoogleSheetsRateLimitError(error)) {
+        throw error;
+      }
+
+      if (hasFreshFallbackAlertSend(paymentIntentId)) {
+        console.warn("Skipping fallback purchase alert duplicate during Sheets backoff", {
+          eventId: handledEvent.eventId,
+          paymentIntentId,
+        });
+        return;
+      }
+
+      shouldPersistAlertStatus = false;
+      console.warn(
+        "Google Sheets is rate limited, sending purchase alert without lease",
+        {
+          eventId: handledEvent.eventId,
+          paymentIntentId,
+        },
+      );
     }
-
-    const latestPaymentRecord = alertLease.paymentRecord;
 
     const alertText = buildPurchaseAlertText({
       eventCreatedAtIso: toWarsawIso(event.created * 1000),
@@ -737,10 +798,14 @@ const sendPurchaseAlert = async ({
         paymentIntentId,
       });
 
-      await tryUpdatePurchaseAlertStatus({
-        paymentRecord: latestPaymentRecord,
-        status: "sent",
-      });
+      if (shouldPersistAlertStatus) {
+        await tryUpdatePurchaseAlertStatus({
+          paymentRecord: latestPaymentRecord,
+          status: "sent",
+        });
+      } else {
+        markFallbackAlertSent(paymentIntentId);
+      }
     } catch (error) {
       console.error("Failed to send purchase alert", {
         error,
@@ -748,10 +813,12 @@ const sendPurchaseAlert = async ({
         paymentIntentId,
       });
 
-      await tryUpdatePurchaseAlertStatus({
-        paymentRecord: latestPaymentRecord,
-        status: "failed",
-      });
+      if (shouldPersistAlertStatus) {
+        await tryUpdatePurchaseAlertStatus({
+          paymentRecord: latestPaymentRecord,
+          status: "failed",
+        });
+      }
 
       throw error;
     }
@@ -761,6 +828,43 @@ const sendPurchaseAlert = async ({
 
   pendingPurchaseAlertSyncs.set(paymentIntentId, alertSyncPromise);
   await alertSyncPromise;
+};
+
+const runWebhookSideEffects = async ({
+  event,
+  handledEvent,
+  stripe,
+}: {
+  event: Stripe.Event;
+  handledEvent: Awaited<ReturnType<typeof syncStripePaymentEventToGoogleSheets>>;
+  stripe: Stripe;
+}) => {
+  try {
+    await sendPurchaseSuccessEmail({
+      event,
+      handledEvent,
+      stripe,
+    });
+  } catch (error) {
+    console.error("Purchase success email side effect failed", {
+      error,
+      eventId: handledEvent.eventId,
+      paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
+    });
+  }
+
+  try {
+    await sendPurchaseAlert({
+      event,
+      handledEvent,
+    });
+  } catch (error) {
+    console.error("Purchase alert side effect failed", {
+      error,
+      eventId: handledEvent.eventId,
+      paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
+    });
+  }
 };
 
 export async function POST(request: Request) {
@@ -797,19 +901,6 @@ export async function POST(request: Request) {
     return jsonNoStore(
       {
         errorCode: "missing_webhook_secret",
-      },
-      { status: 500 },
-    );
-  }
-
-  try {
-    await ensureGoogleSheetsSchema();
-  } catch (error) {
-    console.error("Failed to ensure Google Sheets schema", error);
-
-    return jsonNoStore(
-      {
-        errorCode: "google_sheets_schema_sync_failed",
       },
       { status: 500 },
     );
@@ -854,14 +945,10 @@ export async function POST(request: Request) {
 
     const handledEvent = await syncStripePaymentEventToGoogleSheets(event);
 
-    await sendPurchaseSuccessEmail({
+    await runWebhookSideEffects({
       event,
       handledEvent,
       stripe,
-    });
-    await sendPurchaseAlert({
-      event,
-      handledEvent,
     });
 
     if (

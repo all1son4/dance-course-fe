@@ -62,6 +62,11 @@ const ButtonBox = styled.div`
   @media (max-width: 767px) {
     max-width: 100%;
     flex-direction: column;
+
+    & button,
+    & a {
+      max-width: 100%;
+    }
   }
 `;
 
@@ -108,7 +113,7 @@ export default function SuccessContent({
           />
         ) : null}
 
-        <Button buttonText={homeButtonText} href="/" variant="secondary" />
+        <Button buttonText={homeButtonText} href="/" variant="secondary" width="280px" />
       </ButtonBox>
     </>
   );
