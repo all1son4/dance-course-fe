@@ -73,10 +73,10 @@ export default function LanguageSelect({
       if (e.key === "Escape") setOpen(false);
     }
 
-    document.addEventListener("mousedown", onDocClick);
+    document.addEventListener("pointerdown", onDocClick);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onDocClick);
+      document.removeEventListener("pointerdown", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
   }, []);

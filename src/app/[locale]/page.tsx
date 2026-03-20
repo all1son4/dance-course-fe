@@ -474,11 +474,6 @@ const CourseSection = styled.section`
   }
 
   @media (max-width: 880px) {
-    padding: 60px 20px;
-    gap: 30px;
-  }
-
-  @media (max-width: 880px) {
     padding: 40px 20px;
     gap: 30px;
   }

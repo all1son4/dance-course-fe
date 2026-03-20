@@ -60,6 +60,6 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   @media (max-width: 767px) {
     padding: 10px 0;
     font-size: 17px;
-    min-height: 44px;
+    min-height: 32px;
   }
 `;

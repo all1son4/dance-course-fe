@@ -234,7 +234,7 @@ const SummaryBoxMobile = styled.div`
 
   @media (max-width: 767px) {
     position: sticky;
-    top: 86px;
+    top: calc(86px + var(--safe-area-top));
     z-index: 30;
   }
 `;
@@ -579,9 +579,6 @@ const PaymentPage = observer(function PaymentPage() {
               checkoutSessionId={paymentStore.checkoutSessionId}
               clientSecret={
                 paymentStore.stripeClientSecrets?.[paymentStore.selectedCurrency] ?? ""
-              }
-              errorMessage={
-                paymentStore.stripeIntentErrors?.[paymentStore.selectedCurrency] ?? null
               }
               paymentIntentId={
                 paymentStore.stripePaymentIntentIds?.[paymentStore.selectedCurrency] ?? ""

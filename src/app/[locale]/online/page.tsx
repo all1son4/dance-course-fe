@@ -216,9 +216,10 @@ const MobileImagesBox = styled.div`
       right: unset;
       bottom: unset;
       width: 100%;
-      margin: -150px 0 0 0;
+      margin: clamp(-150px, -24vw, -80px) 0 0 0;
+
       & :is(svg, img) {
-        margin: 0 0 0 -100px;
+        margin: 0 0 0 clamp(-100px, -14vw, -60px);
         width: 100%;
       }
     }
@@ -237,13 +238,6 @@ const MobileImagesBox = styled.div`
   }
 
   @media (max-width: 550px) {
-    & #mobile-only-image-box {
-      margin: -120px 0 0 0;
-      & :is(svg, img) {
-        margin: 0 0 0 -80px;
-      }
-    }
-
     & #mobile-only-icon-box {
       & :is(svg, img) {
         width: 62%;
@@ -252,14 +246,6 @@ const MobileImagesBox = styled.div`
   }
 
   @media (max-width: 450px) {
-    & #mobile-only-image-box {
-      margin: -80px 0 0 0;
-
-      & :is(svg, img) {
-        margin: 0 0 0 -60px;
-      }
-    }
-
     & #mobile-only-icon-box {
       top: 15%;
     }

@@ -21,7 +21,7 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   align-items: center;
   justify-content: center;
   gap: 10px;
-  min-height: 44px;
+  min-height: 32px;
 
   transition: color 0.2s ease;
 
@@ -121,7 +121,7 @@ export const Item = styled.button<{ $selected?: boolean }>`
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 44px;
+  min-height: 32px;
 
   padding: 0;
   margin: 0;

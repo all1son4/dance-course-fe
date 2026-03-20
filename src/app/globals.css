@@ -1,6 +1,8 @@
 :root {
   /* Design tokens */
   --bg: linear-gradient(90deg, #e9eaee 27.02%, #9b9fa0 85.72%);
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Typography */
   --font-sans:

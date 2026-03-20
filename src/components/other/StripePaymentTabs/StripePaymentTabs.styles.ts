@@ -8,7 +8,6 @@ export const Card = styled.div`
   gap: 32px;
   width: 100%;
   min-width: 0;
-  min-height: 660px;
   padding: 50px;
   box-sizing: border-box;
   overflow: hidden;
@@ -20,7 +19,6 @@ export const Card = styled.div`
   @media (max-width: 767px) {
     padding: 30px 20px;
     gap: 20px;
-    min-height: 580px;
     border-radius: 40px !important;
   }
 `;
@@ -58,6 +56,9 @@ export const Description = styled.p`
 export const PaymentElementShell = styled.div`
   width: 100%;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 
   & > div {
     width: 100%;
@@ -130,7 +131,7 @@ export const Actions = styled.div`
   gap: 14px;
   width: 100%;
   align-items: flex-start;
-  margin-top: 2px;
+  margin-top: 24px;
 
   @media (max-width: 767px) {
     align-items: stretch;
@@ -186,12 +187,11 @@ export const LoadingTabs = styled.div`
 
 export const LoadingTab = styled.div<{ $isActive?: boolean }>`
   position: relative;
-  height: 80px;
-  border-radius: 24px;
+  height: 54px;
+  border-radius: 16px;
   border: 1px solid
     ${({ $isActive }) => ($isActive ? "rgba(0, 0, 0, 0.7)" : "rgba(72, 72, 72, 0.14)")};
-  background: ${({ $isActive }) =>
-    $isActive ? "rgba(255, 255, 255, 0.72)" : "rgba(255, 255, 255, 0.34)"};
+  background: transparent;
   overflow: hidden;
 
   &::after {
@@ -200,9 +200,9 @@ export const LoadingTab = styled.div<{ $isActive?: boolean }>`
     inset: 0;
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.44) 50%,
-      rgba(255, 255, 255, 0) 100%
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.08) 50%,
+      rgba(0, 0, 0, 0) 100%
     );
     animation: ${shimmer} 2s ease-in-out infinite;
   }
@@ -217,9 +217,9 @@ export const LoadingTab = styled.div<{ $isActive?: boolean }>`
 export const LoadingField = styled.div<{ $short?: boolean }>`
   position: relative;
   width: ${({ $short }) => ($short ? "48%" : "100%")};
-  height: 72px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.58);
+  height: 54px;
+  border-radius: 16px;
+  background: transparent;
   border: 1px solid rgba(72, 72, 72, 0.12);
   overflow: hidden;
 
@@ -229,9 +229,9 @@ export const LoadingField = styled.div<{ $short?: boolean }>`
     inset: 0;
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.5) 50%,
-      rgba(255, 255, 255, 0) 100%
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.08) 50%,
+      rgba(0, 0, 0, 0) 100%
     );
     animation: ${shimmer} 1.9s ease-in-out infinite;
   }
@@ -275,5 +275,38 @@ export const LoadingPulse = styled.span`
 
   @media (prefers-reduced-motion: reduce) {
     animation: none;
+  }
+`;
+
+export const LoadingAction = styled.div`
+  width: 240px;
+  min-height: 56px;
+  border-radius: 100px;
+  border: 1px solid rgba(72, 72, 72, 0.2);
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 0.08) 50%,
+      rgba(0, 0, 0, 0) 100%
+    );
+    animation: ${shimmer} 1.9s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 767px) {
+    width: 100%;
   }
 `;

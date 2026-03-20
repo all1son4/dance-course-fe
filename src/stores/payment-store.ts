@@ -166,14 +166,18 @@ export class PaymentStore {
     this.selectedCurrency = nextCurrency;
   }
 
-  setCustomerField(fieldName: PaymentCustomerFieldName, value: string) {
+  setCustomerField(
+    fieldName: PaymentCustomerFieldName,
+    value: string,
+    options?: { skipStripeIntentReset?: boolean },
+  ) {
     const nextValue = normalizePaymentCustomerFieldValue(fieldName, value);
     const hasValueChanged = this.customerData[fieldName] !== nextValue;
 
     if (hasValueChanged) {
       this.customerData[fieldName] = nextValue;
 
-      if (this.hasStripeIntentState) {
+      if (this.hasStripeIntentState && !options?.skipStripeIntentReset) {
         this.clearStripeIntentState(false);
       }
     }

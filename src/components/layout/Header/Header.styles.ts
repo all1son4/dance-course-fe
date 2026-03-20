@@ -5,7 +5,7 @@ import { glass } from "@/styles/mixins/glass";
 
 export const HeaderWrap = styled.header`
   position: fixed;
-  top: 20px;
+  top: calc(20px + var(--safe-area-top));
   left: 0;
   right: 0;
   z-index: 50;
@@ -20,7 +20,7 @@ export const HeaderWrap = styled.header`
   }
 
   @media (max-width: 767px) {
-    top: 10px;
+    top: calc(10px + var(--safe-area-top));
   }
 `;
 

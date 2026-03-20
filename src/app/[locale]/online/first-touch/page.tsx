@@ -136,7 +136,7 @@ const MobileImagesBox = styled.div`
       top: unset;
       right: unset;
       bottom: unset;
-      margin: -100px 0 0 -60px;
+      margin: clamp(-100px, -15vw, -60px) 0 0 clamp(-60px, -9vw, -20px);
       & :is(svg, img) {
         max-width: 100%;
         width: 90%;
@@ -163,15 +163,6 @@ const MobileImagesBox = styled.div`
   }
 
   @media (max-width: 570px) {
-    & #mobile-only-image-box {
-      margin: -70px 0 0 -40px;
-      & :is(svg, img) {
-        max-width: 100%;
-        width: 90%;
-        height: 100%;
-      }
-    }
-
     & #mobile-only-icon-box {
       margin: 40px 0 0 0;
       & :is(svg, img) {
@@ -182,13 +173,6 @@ const MobileImagesBox = styled.div`
   }
 
   @media (max-width: 450px) {
-    & #mobile-only-image-box {
-      margin: -60px 0 0 -20px;
-      & :is(svg, img) {
-        width: 100%;
-      }
-    }
-
     & #mobile-only-icon-box {
       margin: 40px 0 0 0;
       & :is(svg, img) {

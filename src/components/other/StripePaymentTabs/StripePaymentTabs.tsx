@@ -21,8 +21,8 @@ import {
   Actions,
   Card,
   Description,
-  ErrorText,
   Header,
+  LoadingAction,
   LoadingField,
   LoadingFieldRow,
   LoadingFooter,
@@ -85,6 +85,14 @@ const createPaymentElementOptions = (
         name: trimmedName || undefined,
       },
     },
+    fields: {
+      billingDetails: {
+        email: "never",
+        address: {
+          country: "never",
+        },
+      },
+    },
   };
 };
 
@@ -126,9 +134,11 @@ const createElementsOptions = (
       ".Tab": {
         backgroundColor: "transparent",
         border: "1px solid rgba(72, 72, 72, 0.18)",
-        borderRadius: "24px",
+        borderRadius: "16px",
         boxShadow: "none",
-        padding: "20px 22px",
+        boxSizing: "border-box",
+        minHeight: "54px",
+        padding: "14px 20px",
       },
       ".Tab:focus": {
         borderColor: "rgba(0, 0, 0, 1)",
@@ -163,8 +173,9 @@ const createElementsOptions = (
       ".TabLabel": {
         color: "rgba(0, 0, 0, 1)",
         fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        fontSize: "15px",
-        fontWeight: "500",
+        fontSize: "17px",
+        fontWeight: "300",
+        lineHeight: "150%",
       },
       ".TabLabel--selected": {
         color: "rgba(0, 0, 0, 1)",
@@ -174,9 +185,14 @@ const createElementsOptions = (
         border: "1px solid rgba(72, 72, 72, 0.6)",
         borderRadius: "16px",
         boxShadow: "none",
+        boxSizing: "border-box",
         color: "rgba(0, 0, 0, 1)",
         caretColor: "rgba(124, 0, 2, 1)",
-        height: "55px",
+        minHeight: "54px",
+        padding: "14px 20px",
+        fontSize: "17px",
+        fontWeight: "300",
+        lineHeight: "150%",
       },
       ".Input:focus": {
         borderColor: "rgba(0, 0, 0, 1)",
@@ -192,8 +208,9 @@ const createElementsOptions = (
       },
       ".Label": {
         color: "rgba(72, 72, 72, 1)",
-        fontSize: "14px",
-        fontWeight: "400",
+        fontSize: "17px",
+        fontWeight: "300",
+        lineHeight: "150%",
       },
       ".PickerItem": {
         backgroundColor: "rgba(0, 0, 0, 1)",
@@ -237,14 +254,14 @@ type StripePaymentFormProps = {
   billingName?: string | null;
   checkoutSessionId?: string | null;
   confirmedText: string;
+  isContentVisible: boolean;
+  onPaymentElementReadyChange?: (isReady: boolean) => void;
   paymentIntentId?: string | null;
   payButtonText: string;
-  preparingText: string;
   processingText: string;
   resultCurrency?: string | null;
   resultOfferId?: string | null;
   resultProductId?: string | null;
-  technicalErrorText: string;
 };
 
 type PaymentIntentStatusResponse = {
@@ -350,14 +367,14 @@ const StripePaymentForm = ({
   billingName,
   checkoutSessionId,
   confirmedText,
+  isContentVisible,
+  onPaymentElementReadyChange,
   paymentIntentId,
   payButtonText,
-  preparingText,
   processingText,
   resultCurrency,
   resultOfferId,
   resultProductId,
-  technicalErrorText,
 }: StripePaymentFormProps) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -366,8 +383,8 @@ const StripePaymentForm = ({
     createPaymentElementOptions(billingCountry, billingEmail, billingName),
   );
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+
   const cancelUnusedPaymentIntents = (usedPaymentIntentId: string) => {
     if (!checkoutSessionId) {
       return;
@@ -431,7 +448,6 @@ const StripePaymentForm = ({
     }
 
     setIsSubmitting(true);
-    setSubmitError(null);
     setSubmitSuccess(null);
 
     let shouldKeepSubmitting = false;
@@ -454,13 +470,7 @@ const StripePaymentForm = ({
       });
 
       if (error) {
-        const normalizedMessage = error.message?.trim() ?? "";
-
-        setSubmitError(
-          error.type === "api_connection_error" || error.type === "api_error"
-            ? technicalErrorText
-            : normalizedMessage || technicalErrorText,
-        );
+        void error;
         return;
       }
 
@@ -500,7 +510,7 @@ const StripePaymentForm = ({
 
       setSubmitSuccess(confirmedText);
     } catch {
-      setSubmitError(technicalErrorText);
+      // Keep current UI state when Stripe/network confirmation fails.
     } finally {
       if (!shouldKeepSubmitting) {
         setIsSubmitting(false);
@@ -509,26 +519,29 @@ const StripePaymentForm = ({
   };
 
   return (
-    <>
+    <div
+      style={{
+        visibility: isContentVisible ? "visible" : "hidden",
+        pointerEvents: isContentVisible ? "auto" : "none",
+      }}
+    >
       <PaymentElementShell>
         <PaymentElement
           options={paymentElementOptions}
-          onLoaderStart={() => setIsPaymentElementReady(false)}
-          onReady={() => setIsPaymentElementReady(true)}
+          onLoaderStart={() => {
+            setIsPaymentElementReady(false);
+            onPaymentElementReadyChange?.(false);
+          }}
+          onReady={() => {
+            setIsPaymentElementReady(true);
+            onPaymentElementReadyChange?.(true);
+          }}
         />
       </PaymentElementShell>
       <Actions>
-        {submitError ? (
-          <ErrorText role="alert" aria-live="assertive">
-            {submitError}
-          </ErrorText>
-        ) : submitSuccess ? (
+        {submitSuccess && isContentVisible ? (
           <StatusText role="status" aria-live="polite" aria-atomic="true">
             {submitSuccess}
-          </StatusText>
-        ) : !isPaymentElementReady ? (
-          <StatusText role="status" aria-live="polite" aria-atomic="true">
-            {preparingText}
           </StatusText>
         ) : null}
         <Button
@@ -539,7 +552,7 @@ const StripePaymentForm = ({
           width="240px"
         />
       </Actions>
-    </>
+    </div>
   );
 };
 
@@ -550,7 +563,6 @@ export const StripePaymentTabs = ({
   billingName,
   checkoutSessionId,
   clientSecret,
-  errorMessage,
   paymentIntentId,
   resultCurrency,
   resultOfferId,
@@ -562,20 +574,11 @@ export const StripePaymentTabs = ({
   const isReady = Boolean(clientSecret && publishableKey);
   const resolvedClientSecret = clientSecret ?? "";
   const stripeLocale = getStripeLocale(locale);
-  const errorText = (() => {
-    switch (errorMessage) {
-      case "missing_client_secret":
-        return t("errors.missingClientSecret");
-      case "missing_secret_key":
-        return t("errors.missingSecretKey");
-      case "payment_intent_failed":
-        return t("errors.paymentIntentFailed");
-      case "payment_intent_request_failed":
-        return t("errors.paymentIntentRequestFailed");
-      default:
-        return errorMessage ? t("errors.paymentIntentRequestFailed") : null;
-    }
-  })();
+  const paymentFormReadyKey = `${resolvedClientSecret}:${publishableKey}:${stripeLocale}`;
+  const [readyPaymentFormKey, setReadyPaymentFormKey] = useState<string | null>(null);
+  const isPaymentFormReady = readyPaymentFormKey === paymentFormReadyKey;
+
+  const shouldShowLoadingSkeleton = !isReady || !isPaymentFormReady;
 
   return (
     <Card aria-busy={!isReady}>
@@ -583,53 +586,69 @@ export const StripePaymentTabs = ({
         <Title>{t("title")}</Title>
         <Description>{t("description")}</Description>
       </Header>
+      <div style={{ position: "relative" }}>
+        {isReady ? (
+          <div
+            style={{
+              position: shouldShowLoadingSkeleton ? "absolute" : "relative",
+              inset: shouldShowLoadingSkeleton ? 0 : undefined,
+              opacity: shouldShowLoadingSkeleton ? 0 : 1,
+              pointerEvents: shouldShowLoadingSkeleton ? "none" : "auto",
+            }}
+          >
+            <Elements
+              options={createElementsOptions(resolvedClientSecret, stripeLocale)}
+              stripe={getStripePromise(publishableKey)}
+            >
+              <StripePaymentForm
+                key={paymentFormReadyKey}
+                allPaymentIntentIds={allPaymentIntentIds}
+                billingCountry={billingCountry}
+                billingEmail={billingEmail}
+                billingName={billingName}
+                checkoutSessionId={checkoutSessionId}
+                confirmedText={t("status.confirmed")}
+                isContentVisible={!shouldShowLoadingSkeleton}
+                onPaymentElementReadyChange={(isFormReady) => {
+                  if (isFormReady) {
+                    setReadyPaymentFormKey(paymentFormReadyKey);
+                    return;
+                  }
 
-      {isReady ? (
-        <Elements
-          options={createElementsOptions(resolvedClientSecret, stripeLocale)}
-          stripe={getStripePromise(publishableKey)}
-        >
-          <StripePaymentForm
-            allPaymentIntentIds={allPaymentIntentIds}
-            billingCountry={billingCountry}
-            billingEmail={billingEmail}
-            billingName={billingName}
-            checkoutSessionId={checkoutSessionId}
-            confirmedText={t("status.confirmed")}
-            paymentIntentId={paymentIntentId}
-            payButtonText={t("button.pay")}
-            preparingText={t("status.preparing")}
-            processingText={t("button.processing")}
-            resultCurrency={resultCurrency}
-            resultOfferId={resultOfferId}
-            resultProductId={resultProductId}
-            technicalErrorText={t("errors.paymentIntentRequestFailed")}
-          />
-        </Elements>
-      ) : (
-        <LoadingState role="status" aria-live="polite" aria-atomic="true">
-          <LoadingTabs>
-            <LoadingTab />
-            <LoadingTab />
-          </LoadingTabs>
-          <LoadingField />
-          <LoadingFieldRow>
-            <LoadingField $short />
-            <LoadingField $short />
-          </LoadingFieldRow>
-          <LoadingField />
-          <LoadingFooter>
-            <LoadingPulse />
-            <StatusText>{t("status.preparing")}</StatusText>
-          </LoadingFooter>
-        </LoadingState>
-      )}
+                  setReadyPaymentFormKey((currentReadyKey) =>
+                    currentReadyKey === paymentFormReadyKey ? null : currentReadyKey,
+                  );
+                }}
+                paymentIntentId={paymentIntentId}
+                payButtonText={t("button.pay")}
+                processingText={t("button.processing")}
+                resultCurrency={resultCurrency}
+                resultOfferId={resultOfferId}
+                resultProductId={resultProductId}
+              />
+            </Elements>
+          </div>
+        ) : null}
 
-      {!isReady && errorText ? (
-        <ErrorText role="alert" aria-live="assertive">
-          {errorText}
-        </ErrorText>
-      ) : null}
+        {shouldShowLoadingSkeleton ? (
+          <LoadingState role="status" aria-live="polite" aria-atomic="true">
+            <LoadingTabs>
+              <LoadingTab />
+              <LoadingTab />
+            </LoadingTabs>
+            <LoadingField />
+            <LoadingFieldRow>
+              <LoadingField $short />
+              <LoadingField $short />
+            </LoadingFieldRow>
+            <LoadingFooter>
+              <LoadingPulse />
+              <StatusText>{t("status.preparing")}</StatusText>
+            </LoadingFooter>
+            <LoadingAction aria-hidden />
+          </LoadingState>
+        ) : null}
+      </div>
     </Card>
   );
 };

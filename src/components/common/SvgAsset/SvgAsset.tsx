@@ -19,6 +19,8 @@ export default function SvgAsset({
   loading = "lazy",
   sizes = "100vw",
 }: SvgAssetProps) {
+  const shouldBypassOptimization = src.trim().toLowerCase().endsWith(".svg");
+
   return (
     <Image
       src={src}
@@ -26,7 +28,7 @@ export default function SvgAsset({
       height={height}
       alt=""
       aria-hidden
-      unoptimized
+      unoptimized={shouldBypassOptimization}
       className={className}
       priority={priority}
       loading={priority ? undefined : loading}

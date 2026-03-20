@@ -139,22 +139,22 @@ const MobileImagesBox = styled.div`
   }
 
   @media (max-width: 550px) {
+    & #mobile-only-image-box {
+      margin: 0;
 
-  & #mobile-only-image-box {
-    margin: 0;
-
-    & :is(svg, img) {
+      & :is(svg, img) {
         margin: 0 0 0 -50px;
       }
-  }
+    }
+
     & #mobile-only-icon-box {
-    justify-content: flex-end;
+      justify-content: flex-end;
+
       & :is(svg, img) {
         margin: 0;
         width: 58%;
       }
     }
-  }
   }
 `;
 

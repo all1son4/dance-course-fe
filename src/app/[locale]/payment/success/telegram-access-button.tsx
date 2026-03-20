@@ -91,10 +91,24 @@ const StatusText = styled.p`
   color: rgba(16, 16, 16, 0.88);
 `;
 
+const StatusTextBox = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+const StatusMeta = styled.span`
+  font-weight: 500;
+  font-size: 11.5px;
+  line-height: 140%;
+  letter-spacing: 0;
+  color: rgba(16, 16, 16, 0.55);
+`;
+
 const MAX_RETRY_ATTEMPTS = 15;
 const RETRY_BASE_DELAY_MS = 1_500;
 const RETRY_MAX_DELAY_MS = 5_000;
-const ACCESS_LINK_REQUEST_TIMEOUT_MS = 10_000;
+const ACCESS_LINK_REQUEST_TIMEOUT_MS = 8_000;
 const SERVER_RETRY_AFTER_MAX_MS = 30_000;
 
 const getRetryDelayMs = (attempt: number) =>
@@ -133,6 +147,7 @@ export default function TelegramAccessButton({
   unavailableText,
 }: TelegramAccessButtonProps) {
   const [accessUrl, setAccessUrl] = useState("");
+  const [attemptCount, setAttemptCount] = useState(0);
   const [statusKind, setStatusKind] = useState<"pending" | "unavailable">("pending");
   const [statusText, setStatusText] = useState(pendingText);
   const isContextValid = Boolean(checkoutSessionId && offerId && productId);
@@ -161,6 +176,12 @@ export default function TelegramAccessButton({
     };
 
     const requestAccessLink = async (attempt: number) => {
+      if (!isDisposed) {
+        setStatusKind("pending");
+        setStatusText(pendingText);
+        setAttemptCount(Math.min(attempt + 1, MAX_RETRY_ATTEMPTS));
+      }
+
       const requestController = new AbortController();
       activeAbortController = requestController;
       const requestTimeoutId = window.setTimeout(() => {
@@ -180,6 +201,7 @@ export default function TelegramAccessButton({
             paymentIntentId,
             productId,
           }),
+          cache: "no-store",
           signal: requestController.signal,
         });
 
@@ -223,6 +245,7 @@ export default function TelegramAccessButton({
 
         if (data.status === "ready" && data.accessUrl) {
           setAccessUrl(data.accessUrl);
+          setAttemptCount(0);
           return;
         }
 
@@ -297,7 +320,14 @@ export default function TelegramAccessButton({
           <Dot $delayMs={240} />
         </Dots>
       ) : null}
-      <StatusText>{statusText}</StatusText>
+      <StatusTextBox>
+        <StatusText>{statusText}</StatusText>
+        {attemptCount > 0 ? (
+          <StatusMeta>
+            {Math.min(attemptCount, MAX_RETRY_ATTEMPTS)}/{MAX_RETRY_ATTEMPTS}
+          </StatusMeta>
+        ) : null}
+      </StatusTextBox>
     </StatusBox>
   );
 }

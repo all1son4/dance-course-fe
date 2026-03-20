@@ -81,4 +81,6 @@ export const PlaceholderText = styled.span`
   font-size: 14px;
   line-height: 120%;
   letter-spacing: 0;
+  position: relative;
+  z-index: 2;
 `;
