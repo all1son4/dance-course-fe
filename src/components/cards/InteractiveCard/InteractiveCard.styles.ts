@@ -9,7 +9,7 @@ export const CardContainer = styled.div<{ $hasCollapseToggle?: boolean }>`
   max-width: 100%;
   overflow: hidden;
   position: relative;
-  padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "12px" : "0")};
+  padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "4px" : "0")};
 
   ${glass({ radius: "50px" })}
 
@@ -140,15 +140,15 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   appearance: none;
   border: 0;
   border-radius: 0;
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   position: absolute;
-  left: calc(50% - 22px);
+  left: calc(50% - 14px);
   bottom: -2px;
   background: transparent;
   cursor: pointer;

@@ -127,7 +127,7 @@ const createElementsOptions = (
     rules: {
       ".Block": {
         backgroundColor: "transparent",
-        border: "1px solid rgba(255, 255, 255, 0.48)",
+        border: "none",
         boxShadow: "none",
         padding: "0",
       },

@@ -280,6 +280,18 @@ const CurrencyBox = styled.div`
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+
+  @media (max-width: 920px) {
+    & [role="radiogroup"] {
+      max-width: 146px;
+      height: 40px;
+    }
+
+    & [role="radio"] {
+      padding: 0 18px;
+      font-size: 15px;
+    }
+  }
 `;
 
 const MoneyTitle = styled.p`
@@ -312,8 +324,12 @@ const Price = styled.p`
   margin: 0;
   color: rgba(0, 0, 0, 1);
 
-  @media (max-width: 767px) {
+  @media (max-width: 920px) {
     font-size: 30px;
+  }
+
+  @media (max-width: 767px) {
+    font-size: 28px;
   }
 `;
 
@@ -344,6 +360,12 @@ const AgreementLink = styled(Link)`
   }
 `;
 
+const getCompactSummaryTitle = (fullTitle: string) => {
+  const quotedNameMatch = fullTitle.match(/["“”«»]([^"“”«»]+)["“”«»]/u);
+
+  return quotedNameMatch?.[1]?.trim() || fullTitle;
+};
+
 const PaymentPage = observer(function PaymentPage() {
   const paymentStore = usePaymentStore();
   const locale = useLocale();
@@ -362,6 +384,8 @@ const PaymentPage = observer(function PaymentPage() {
     label: t(option.labelKey),
     value: option.value,
   }));
+  const selectedProductTitle = productT(paymentStore.selectedProduct.titleKey);
+  const selectedProductCompactTitle = getCompactSummaryTitle(selectedProductTitle);
 
   useEffect(() => {
     document.body.removeAttribute("data-hide-footer");
@@ -497,7 +521,7 @@ const PaymentPage = observer(function PaymentPage() {
 
   const interactiveCardDesktopComponent = (
     <InteractiveCard
-      title={productT(paymentStore.selectedProduct.titleKey)}
+      title={selectedProductTitle}
       topRowContent={summaryTopContent}
       bottomRowContent={summaryBottomContent}
     />
@@ -505,7 +529,7 @@ const PaymentPage = observer(function PaymentPage() {
 
   const interactiveCardMobileComponent = (
     <InteractiveCard
-      title={productT(paymentStore.selectedProduct.titleKey)}
+      title={selectedProductCompactTitle}
       topRowContent={summaryTopContent}
       bottomRowContent={summaryBottomContent}
       isTopRowCollapsible
