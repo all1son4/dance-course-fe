@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/telegram/revoke-expired-access",
-      "schedule": "* * * * *"
+      "schedule": "0 3 * * *"
     }
   ]
 }
