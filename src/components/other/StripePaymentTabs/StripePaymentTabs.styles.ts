@@ -171,11 +171,6 @@ export const LoadingState = styled.div`
   gap: 20px;
   width: 100%;
   overflow: hidden;
-
-  @media (max-width: 767px) {
-    padding: 18px;
-    border-radius: 24px;
-  }
 `;
 
 export const LoadingTabs = styled.div`
