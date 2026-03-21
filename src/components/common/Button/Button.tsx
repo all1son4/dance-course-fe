@@ -21,7 +21,7 @@ import {
 } from "./Button.styles";
 import type { ButtonProps } from "./Button.types";
 
-const NAVIGATION_SPINNER_DELAY_MS = 140;
+const NAVIGATION_SPINNER_DELAY_MS = 120;
 const NAVIGATION_SPINNER_FAILSAFE_MS = 10_000;
 
 const isInternalNavigationHref = (value: string) => {
