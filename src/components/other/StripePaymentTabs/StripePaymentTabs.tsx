@@ -384,6 +384,9 @@ const StripePaymentForm = ({
   );
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const resolvedBillingEmail = billingEmail?.trim() ?? "";
+  const resolvedBillingName = billingName?.trim() ?? "";
+  const resolvedBillingCountry = billingCountry?.trim().toUpperCase() ?? "";
 
   const cancelUnusedPaymentIntents = (usedPaymentIntentId: string) => {
     if (!checkoutSessionId) {
@@ -461,6 +464,15 @@ const StripePaymentForm = ({
       const { error, paymentIntent } = await stripe.confirmPayment({
         elements,
         confirmParams: {
+          payment_method_data: {
+            billing_details: {
+              email: resolvedBillingEmail,
+              name: resolvedBillingName || undefined,
+              address: {
+                country: resolvedBillingCountry || undefined,
+              },
+            },
+          },
           return_url: createResultPageUrl(
             PAYMENT_SUCCESS_PATH,
             paymentIntentId ?? undefined,

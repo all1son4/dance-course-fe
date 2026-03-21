@@ -7,7 +7,6 @@ import type { ReactNode } from "react";
 
 import SiteComingSoon from "@/components/maintenance/SiteComingSoon";
 import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
-import { StoreProvider } from "@/stores";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -29,7 +28,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <body className={manrope.variable}>
         <Analytics />
         <StyledComponentsRegistry>
-          {showSite ? <StoreProvider>{children}</StoreProvider> : <SiteComingSoon />}
+          {showSite ? children : <SiteComingSoon />}
         </StyledComponentsRegistry>
       </body>
     </html>

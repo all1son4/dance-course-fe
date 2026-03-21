@@ -1,5 +1,5 @@
 import Button from "@/components/common/Button";
-import VideoPlayer from "@/components/other/VideoPlayer";
+import LazyVideoPlayer from "@/components/other/VideoPlayer/LazyVideoPlayer";
 
 import { ButtonBox, CardContainer, CardTitle, InteractiveBox } from "./ChoreoCard.styles";
 import type { TChoreoCard } from "./ChoreoCard.types";
@@ -8,7 +8,7 @@ export default function ChoreoCard(choreo: TChoreoCard) {
   return (
     <CardContainer>
       {choreo?.videoSrc && (
-        <VideoPlayer
+        <LazyVideoPlayer
           src={choreo.videoSrc}
           poster={choreo.posterSrc}
           iconSize="40px"

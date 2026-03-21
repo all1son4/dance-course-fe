@@ -3,11 +3,14 @@ const createNextIntlPlugin = require("next-intl/plugin");
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const path = require("path");
 const isProduction = process.env.NODE_ENV === "production";
+const shouldUseUnoptimizedImages = process.env.NEXT_IMAGE_UNOPTIMIZED === "1";
+const vercelLiveSource = "https://vercel.live";
 const scriptSources = [
   "'self'",
   "'unsafe-inline'",
   ...(isProduction ? [] : ["'unsafe-eval'"]),
   "https://js.stripe.com",
+  ...(isProduction ? [] : [vercelLiveSource]),
 ].join(" ");
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -20,7 +23,9 @@ const contentSecurityPolicy = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
-  "connect-src 'self' https://api.stripe.com https://r.stripe.com https://js.stripe.com https://hooks.stripe.com https://fonts.googleapis.com",
+  `connect-src 'self' https://api.stripe.com https://r.stripe.com https://js.stripe.com https://hooks.stripe.com https://fonts.googleapis.com ${
+    isProduction ? "" : vercelLiveSource
+  }`.trim(),
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",
   "upgrade-insecure-requests",
@@ -69,8 +74,9 @@ const nextConfig = {
     ];
   },
   images: {
-    // We serve pre-compressed local assets from /public to avoid runtime optimization latency.
-    unoptimized: true,
+    // Keep optimizer enabled by default for responsive image variants and better LCP.
+    // Set NEXT_IMAGE_UNOPTIMIZED=1 only if you need a quick rollback.
+    unoptimized: shouldUseUnoptimizedImages,
   },
   turbopack: {
     root: path.join(__dirname),

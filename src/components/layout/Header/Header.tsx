@@ -12,7 +12,6 @@ import {
   scrollToHashTarget,
   scrollToTopInstant,
 } from "@/lib/scroll";
-import { usePaymentStore } from "@/stores";
 import { EnglishFlag, Logo, MenuButton, PolishFlag, RussianFlag } from "@/svg";
 
 import LanguageSelect from "../LanguageSelect";
@@ -35,7 +34,7 @@ export default function Header() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const paymentStore = usePaymentStore();
+  const pillRef = useRef<HTMLDivElement | null>(null);
   const previousPathnameRef = useRef(pathname);
   const mobileMenuId = "header-mobile-menu";
 
@@ -104,14 +103,99 @@ export default function Header() {
   }, [pathname]);
 
   useEffect(() => {
+    if (!menuIsOpen || !window.matchMedia("(max-width: 767px)").matches) {
+      return;
+    }
+
+    const isOutsideMenu = (target: EventTarget | null) => {
+      const targetNode = target as Node | null;
+
+      if (!targetNode) {
+        return false;
+      }
+
+      if (pillRef.current?.contains(targetNode)) {
+        return false;
+      }
+
+      return true;
+    };
+
+    const consumeOutsideInteraction = (event: Event) => {
+      if (!isOutsideMenu(event.target)) {
+        return;
+      }
+
+      setMenuIsOpen(false);
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+    };
+
+    const handlePointerDownOutsideMenu = (event: PointerEvent) => {
+      consumeOutsideInteraction(event);
+    };
+
+    const handleClickOutsideMenu = (event: MouseEvent) => {
+      consumeOutsideInteraction(event);
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuIsOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDownOutsideMenu, true);
+    document.addEventListener("click", handleClickOutsideMenu, true);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDownOutsideMenu, true);
+      document.removeEventListener("click", handleClickOutsideMenu, true);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [menuIsOpen]);
+
+  useEffect(() => {
+    if (!menuIsOpen || !window.matchMedia("(max-width: 767px)").matches) {
+      return;
+    }
+
+    const lockedScrollY = window.scrollY;
+    const { style } = document.body;
+    const previousBodyStyles = {
+      left: style.left,
+      overflow: style.overflow,
+      position: style.position,
+      right: style.right,
+      top: style.top,
+      width: style.width,
+    };
+
+    style.overflow = "hidden";
+    style.position = "fixed";
+    style.top = `-${lockedScrollY}px`;
+    style.left = "0";
+    style.right = "0";
+    style.width = "100%";
+
+    return () => {
+      style.overflow = previousBodyStyles.overflow;
+      style.position = previousBodyStyles.position;
+      style.top = previousBodyStyles.top;
+      style.left = previousBodyStyles.left;
+      style.right = previousBodyStyles.right;
+      style.width = previousBodyStyles.width;
+      window.scrollTo(0, lockedScrollY);
+    };
+  }, [menuIsOpen]);
+
+  useEffect(() => {
     const routeChanged = previousPathnameRef.current !== pathname;
     let hashScrollTimeoutId: number | null = null;
 
     if (routeChanged) {
-      if (previousPathnameRef.current === "/payment" && pathname !== "/payment") {
-        paymentStore.resetCheckoutForm();
-      }
-
       const hashTargetId = getHashTargetFromLocation();
 
       if (hashTargetId) {
@@ -143,7 +227,7 @@ export default function Header() {
         window.clearTimeout(hashScrollTimeoutId);
       }
     };
-  }, [pathname, paymentStore]);
+  }, [pathname]);
 
   useEffect(() => {
     const connection = (
@@ -273,7 +357,7 @@ export default function Header() {
   ];
   return (
     <HeaderWrap>
-      <Pill $isOpen={menuIsOpen}>
+      <Pill ref={pillRef} $isOpen={menuIsOpen}>
         <Brand href="/" aria-label={t("aria.home")} onClick={onBrandClick}>
           <Logo />
         </Brand>

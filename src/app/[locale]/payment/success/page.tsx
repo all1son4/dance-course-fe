@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import styled from "styled-components";
 
 import {
   getSellableProductById,
@@ -8,9 +7,9 @@ import {
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
 import { isChoreoChannelOfferId, isFirstTouchOfferId } from "@/lib/telegram/offer-access";
-import { glass } from "@/styles/mixins/glass";
 import { Success } from "@/svg";
 
+import { Container, ResultCard } from "./page.styles";
 import SuccessContent from "./success-content";
 import SuccessRedirectGuard from "./success-redirect-guard";
 
@@ -34,34 +33,6 @@ const getParamValue = (searchParams: SuccessPageSearchParams, key: string): stri
 
   return "";
 };
-
-const Container = styled.div`
-  display: flex;
-  width: 100%;
-  min-height: 100dvh;
-  align-items: center;
-  justify-content: center;
-
-  @media (max-width: 1024px) {
-    padding: 0 20px;
-  }
-`;
-
-const ResultCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  padding: 60px;
-  max-width: 740px;
-
-  ${glass({
-    radius: "40px",
-  })}
-
-  @media (max-width: 767px) {
-    border-radius: 40px !important;
-    padding: 30px 20px;
-  }
-`;
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
