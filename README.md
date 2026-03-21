@@ -39,7 +39,6 @@ Optional Telegram env variables:
 - `TELEGRAM_LESSON_SOURCES_JSON`
 - `TELEGRAM_START_TOKEN_TTL_HOURS` (e.g. `720` for 30 days)
 - `TELEGRAM_CHANNEL_ACCESS_DAYS` (optional; default `30`; supports decimal values for testing, e.g. `0.01`)
-- `TELEGRAM_REVOKE_CRON_INTERVAL_MINUTES` (optional; default `1440`; controls how often revoke job actually runs)
 - `TELEGRAM_ALERT_CHAT_ID` (Telegram group chat id for purchase alerts)
 - `TELEGRAM_ALERT_BOT_TOKEN` (optional; falls back to `TELEGRAM_BOT_TOKEN`)
 - `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in production)
@@ -55,7 +54,7 @@ Important production notes:
 - Browser-facing POST APIs validate `Origin/Referer` in production; missing headers are rejected.
 - After changing `TELEGRAM_LESSON_SOURCES_JSON`, restart the app process (source map is cached in-memory).
 - Operational timestamps persisted by backend flows are recorded in `Europe/Warsaw` timezone format.
-- Vercel cron for `/api/telegram/revoke-expired-access` is minute-based; execution frequency is throttled by `TELEGRAM_REVOKE_CRON_INTERVAL_MINUTES`.
+- Vercel cron for `/api/telegram/revoke-expired-access` runs by configured schedule in `vercel.json`.
 
 `TELEGRAM_LESSON_SOURCES_JSON` supports both a single source per offer and language-specific sources:
 
