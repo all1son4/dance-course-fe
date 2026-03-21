@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { Button, Contacts, RoadmapContainer, TextContentCard } from "@/components";
+import {
+  Button,
+  Contacts,
+  RoadmapContainer,
+  TextContentCard,
+  VideoPlayer,
+} from "@/components";
 import SvgAsset from "@/components/common/SvgAsset";
-import LazyVideoPlayer from "@/components/other/VideoPlayer/LazyVideoPlayer";
 import {
   buildCheckoutHref,
   DEFAULT_CHECKOUT_PRODUCT,
@@ -146,7 +151,7 @@ export default function FirstTouch() {
 
       <SpecialWrapper>
         <VideoSection>
-          <LazyVideoPlayer
+          <VideoPlayer
             src={t("hero.introductionVideoSrc")}
             playLabel={t("hero.playLabel")}
             poster="/images/first_touch_poster.webp"

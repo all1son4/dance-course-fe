@@ -1,5 +1,5 @@
 import Link from "next/link";
-import styled, { css } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
@@ -9,6 +9,10 @@ type StyledProps = {
   $variant: ButtonVariant;
   $size: ButtonSize;
   $width: string;
+};
+
+type ControlProps = StyledProps & {
+  $isLoading?: boolean;
 };
 
 const sizeStyles = {
@@ -61,7 +65,7 @@ const variantStyles = {
   `,
 };
 
-const controlStyles = css<StyledProps>`
+const controlStyles = css<ControlProps>`
   appearance: none;
   border: none;
   padding: 14px 40px;
@@ -75,6 +79,7 @@ const controlStyles = css<StyledProps>`
   white-space: nowrap;
   text-align: center;
   text-decoration: none !important;
+  position: relative;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   flex-shrink: 1;
@@ -95,6 +100,12 @@ const controlStyles = css<StyledProps>`
     box-shadow 0.2s ease,
     filter 0.12s ease,
     opacity 0.12s ease;
+
+  ${({ $isLoading }) =>
+    $isLoading &&
+    css`
+      pointer-events: none;
+    `}
 
   &:focus-visible {
     outline: 2px solid rgba(124, 0, 2, 0.32);
@@ -121,14 +132,73 @@ const controlStyles = css<StyledProps>`
   }
 `;
 
-export const ButtonLinkWrapper = styled(Link)<StyledProps>`
+export const ButtonLinkWrapper = styled(Link)<ControlProps>`
   ${controlStyles}
 `;
 
-export const ButtonAnchorWrapper = styled.a<StyledProps>`
+export const ButtonAnchorWrapper = styled.a<ControlProps>`
   ${controlStyles}
 `;
 
-export const StyledButton = styled.button<StyledProps>`
+export const StyledButton = styled.button<ControlProps>`
   ${controlStyles}
+`;
+
+export const ButtonContent = styled.span`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1em;
+`;
+
+export const ButtonLabel = styled.span``;
+
+const buttonRingOrbit = keyframes`
+  0% {
+    transform: rotate(0turn) translateX(8px);
+  }
+
+  100% {
+    transform: rotate(1turn) translateX(8px);
+  }
+`;
+
+export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
+  position: absolute;
+  left: calc(100% + 12px);
+  top: calc(50% - 7px);
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 1.6px solid color-mix(in srgb, currentColor 26%, transparent);
+  border-top-color: currentColor;
+  animation: maintenance-ring-spin 0.9s linear infinite;
+  opacity: ${({ $isLoading }) => ($isLoading ? 1 : 0)};
+  transform: translate(${({ $isLoading }) => ($isLoading ? "0px" : "-6px")}, -50%);
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  pointer-events: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    width: 2.6px;
+    height: 2.6px;
+    border-radius: 999px;
+    background: currentColor;
+    top: 50%;
+    left: 50%;
+    transform-origin: center;
+    animation: ${buttonRingOrbit} 1.8s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: maintenance-ring-spin 1.6s linear infinite !important;
+
+    &::after {
+      animation: ${buttonRingOrbit} 2.8s linear infinite !important;
+    }
+  }
 `;

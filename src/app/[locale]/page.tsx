@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { Button, ContactCard, Contacts, CourseCard } from "@/components";
+import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
 import SvgAsset from "@/components/common/SvgAsset";
-import LazyFAQ from "@/components/other/FAQ/LazyFAQ";
 import {
   INSTAGRAM_DIB_GALA_URL,
   INSTAGRAM_PROFILE_HANDLE,
@@ -235,7 +234,7 @@ export default function Home() {
         </CourseOptionsBox>
       </CourseSection>
       <FAQSection>
-        <LazyFAQ />
+        <FAQ />
       </FAQSection>
       <ContactSection>
         <Contacts />
