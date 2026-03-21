@@ -3,7 +3,6 @@ const createNextIntlPlugin = require("next-intl/plugin");
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const path = require("path");
 const isProduction = process.env.NODE_ENV === "production";
-const shouldUseUnoptimizedImages = process.env.NEXT_IMAGE_UNOPTIMIZED === "1";
 const vercelLiveSource = "https://vercel.live";
 const scriptSources = [
   "'self'",
@@ -75,8 +74,7 @@ const nextConfig = {
   },
   images: {
     // Keep optimizer enabled by default for responsive image variants and better LCP.
-    // Set NEXT_IMAGE_UNOPTIMIZED=1 only if you need a quick rollback.
-    unoptimized: shouldUseUnoptimizedImages,
+    unoptimized: true,
   },
   turbopack: {
     root: path.join(__dirname),
