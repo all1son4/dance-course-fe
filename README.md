@@ -41,7 +41,7 @@ Optional Telegram env variables:
 - `TELEGRAM_CHANNEL_ACCESS_DAYS` (optional; default `30`; supports decimal values for testing, e.g. `0.01`)
 - `TELEGRAM_ALERT_CHAT_ID` (Telegram group chat id for purchase alerts)
 - `TELEGRAM_ALERT_BOT_TOKEN` (optional; falls back to `TELEGRAM_BOT_TOKEN`)
-- `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in production)
+- `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in non-production environments like Vercel Preview)
 - `SHOW_SITE` (optional; set `false`/`0`/`off`/`no` to show a "coming soon" screen instead of site pages)
 
 `TELEGRAM_WEBHOOK_SECRET` is required in production (`NODE_ENV=production`).

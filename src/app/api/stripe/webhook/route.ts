@@ -39,7 +39,10 @@ import { buildPurchaseSuccessEmail } from "./purchase-success-email";
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
-const isProduction = process.env.NODE_ENV === "production";
+const vercelEnvironment = process.env.VERCEL_ENV;
+const isProductionDeployment =
+  vercelEnvironment === "production" ||
+  (!vercelEnvironment && process.env.NODE_ENV === "production");
 const allowTestModeNotifications = process.env.ALLOW_TEST_MODE_NOTIFICATIONS === "1";
 
 export const runtime = "nodejs";
@@ -540,8 +543,8 @@ const sendPurchaseSuccessEmail = async ({
     return;
   }
 
-  if (isProduction && !allowTestModeNotifications && !event.livemode) {
-    console.warn("Skipping purchase email for Stripe test-mode event in production", {
+  if (!isProductionDeployment && !allowTestModeNotifications && !event.livemode) {
+    console.warn("Skipping purchase email for Stripe test-mode event in non-production", {
       eventId: handledEvent.eventId,
       paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
     });
@@ -701,9 +704,9 @@ const sendPurchaseAlert = async ({
     return;
   }
 
-  if (isProduction && !allowTestModeNotifications && !event.livemode) {
+  if (!isProductionDeployment && !allowTestModeNotifications && !event.livemode) {
     console.warn(
-      "Skipping purchase Telegram alert for Stripe test-mode event in production",
+      "Skipping purchase Telegram alert for Stripe test-mode event in non-production",
       {
         eventId: handledEvent.eventId,
         paymentIntentId: handledEvent.paymentRecord.payment_intent_id,

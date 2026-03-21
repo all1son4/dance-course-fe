@@ -65,6 +65,10 @@ export async function generateMetadata({
       description: t("description"),
       images: [seoImagePath],
     },
+    icons: {
+      icon: [{ url: "/svg/favicon.svg", type: "image/svg+xml" }],
+      shortcut: ["/svg/favicon.svg"],
+    },
     robots: {
       index: true,
       follow: true,
