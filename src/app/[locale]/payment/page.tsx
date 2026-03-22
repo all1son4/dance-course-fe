@@ -1,10 +1,9 @@
 "use client";
 
 import { observer } from "mobx-react-lite";
-import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   Checkbox,
@@ -24,7 +23,10 @@ import {
   getResolvedCheckoutCurrency,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
+import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 import { usePaymentStore } from "@/stores";
+import type { PaymentCheckoutDraft } from "@/stores/payment-store";
 
 import {
   AdditionalNotification,
@@ -57,6 +59,7 @@ import {
   type PaymentAgreementFieldName,
   type PaymentCustomerFieldName,
 } from "./payment.constants";
+import { resolvePaymentValidationLocale } from "./payment.validation";
 
 const getCompactSummaryTitle = (fullTitle: string) => {
   const quotedNameMatch = fullTitle.match(/["“”«»]([^"“”«»]+)["“”«»]/u);
@@ -64,16 +67,18 @@ const getCompactSummaryTitle = (fullTitle: string) => {
   return quotedNameMatch?.[1]?.trim() || fullTitle;
 };
 
+const PAYMENT_DRAFT_SAVE_DEBOUNCE_MS = 240;
+
 const PaymentPage = observer(function PaymentPage() {
   const paymentStore = usePaymentStore();
   const locale = useLocale();
-  const searchParams = useSearchParams();
   const t = useTranslations("PaymentPage");
   const productT = useTranslations("SellableProducts");
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>(
     getFallbackCountryOptions,
   );
-  const hasAppliedCurrencyFromQuery = useRef(false);
+  const [searchKey, setSearchKey] = useState("");
+  const hasHydratedCheckoutDraftRef = useRef(false);
   const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
   const visiblePaymentInputs = isChoreoProduct
     ? PAYMENT_INPUTS
@@ -84,6 +89,17 @@ const PaymentPage = observer(function PaymentPage() {
   }));
   const selectedProductTitle = productT(paymentStore.selectedProduct.titleKey);
   const selectedProductCompactTitle = getCompactSummaryTitle(selectedProductTitle);
+  const persistCheckoutDraftNow = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const checkoutDraft = paymentStore.getCheckoutDraftSnapshot();
+    sessionStorage.setItem(
+      PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY,
+      JSON.stringify(checkoutDraft),
+    );
+  }, [paymentStore]);
 
   useEffect(() => {
     document.body.removeAttribute("data-hide-footer");
@@ -99,18 +115,35 @@ const PaymentPage = observer(function PaymentPage() {
   }, [locale]);
 
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    ensureLocationChangeEvents();
+
+    const syncSearchKey = () => {
+      setSearchKey(window.location.search);
+    };
+
+    syncSearchKey();
+    window.addEventListener(LOCATION_CHANGE_EVENT, syncSearchKey);
+
+    return () => {
+      window.removeEventListener(LOCATION_CHANGE_EVENT, syncSearchKey);
+    };
+  }, []);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(searchKey);
+
     paymentStore.configureCheckoutSelection({
       offerId: searchParams.get("offer"),
       productId: searchParams.get("product"),
     });
-  }, [paymentStore, searchParams]);
+  }, [paymentStore, searchKey]);
 
   useEffect(() => {
-    if (hasAppliedCurrencyFromQuery.current) {
-      return;
-    }
-
-    hasAppliedCurrencyFromQuery.current = true;
+    const searchParams = new URLSearchParams(searchKey);
     const queryCurrency = searchParams.get("currency");
 
     if (!queryCurrency) {
@@ -119,7 +152,77 @@ const PaymentPage = observer(function PaymentPage() {
 
     const nextCurrency = getResolvedCheckoutCurrency(queryCurrency);
     paymentStore.setSelectedCurrency(nextCurrency);
-  }, [paymentStore, searchParams]);
+  }, [paymentStore, searchKey]);
+
+  useEffect(() => {
+    if (hasHydratedCheckoutDraftRef.current || typeof window === "undefined") {
+      return;
+    }
+
+    hasHydratedCheckoutDraftRef.current = true;
+
+    const serializedDraft = sessionStorage.getItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+
+    if (!serializedDraft) {
+      return;
+    }
+
+    try {
+      const parsedDraft = JSON.parse(serializedDraft) as Partial<PaymentCheckoutDraft>;
+      const searchParams = new URLSearchParams(window.location.search);
+      const queryOfferId = searchParams.get("offer");
+      const queryProductId = searchParams.get("product");
+      const queryCurrency = searchParams.get("currency");
+
+      paymentStore.applyCheckoutDraft({
+        ...parsedDraft,
+        selectedCurrency: queryCurrency
+          ? getResolvedCheckoutCurrency(queryCurrency)
+          : parsedDraft.selectedCurrency,
+        selectedOfferId: queryOfferId ?? parsedDraft.selectedOfferId,
+        selectedProductId: queryProductId ?? parsedDraft.selectedProductId,
+        validationLocale: resolvePaymentValidationLocale(locale),
+      });
+    } catch {
+      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+    }
+  }, [locale, paymentStore]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      persistCheckoutDraftNow();
+    }, PAYMENT_DRAFT_SAVE_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    persistCheckoutDraftNow,
+    paymentStore.agreements.digitalContentAgreement,
+    paymentStore.agreements.immediateAccessConsent,
+    paymentStore.agreements.privacyPolicyAcknowledgement,
+    paymentStore.agreements.withdrawalNoticeAcknowledgement,
+    paymentStore.checkoutSessionId,
+    paymentStore.customerData.country,
+    paymentStore.customerData.email,
+    paymentStore.customerData.fullName,
+    paymentStore.customerData.lessonLanguage,
+    paymentStore.customerData.nickname,
+    paymentStore.selectedCurrency,
+    paymentStore.selectedOfferId,
+    paymentStore.selectedProductId,
+    paymentStore.validationLocale,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      persistCheckoutDraftNow();
+    };
+  }, [persistCheckoutDraftNow]);
 
   useEffect(() => {
     if (!paymentStore.canShowStripe) {

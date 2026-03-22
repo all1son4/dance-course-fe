@@ -524,6 +524,7 @@
     },
     "status": {
       "preparing": "Przygotowujemy bezpieczną płatność przez Stripe...",
+      "preparingSlow": "Przygotowanie trwa dłużej niż zwykle. Poczekaj chwilę lub odśwież stronę.",
       "succeeded": "Płatność zakończona pomyślnie.",
       "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok."
     },

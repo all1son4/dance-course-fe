@@ -1,6 +1,5 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { Fragment, useEffect, useRef, useState } from "react";
@@ -32,7 +31,6 @@ export default function Header() {
   const t = useTranslations("Header");
   const locale = useLocale();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
   const pillRef = useRef<HTMLDivElement | null>(null);
   const previousPathnameRef = useRef(pathname);
@@ -306,8 +304,8 @@ export default function Header() {
     }
 
     event.preventDefault();
-    const query = searchParams.toString();
-    const nextHref = `/${query ? `?${query}` : ""}`;
+    const query = window.location.search;
+    const nextHref = `/${query}`;
     router.replace(nextHref, { scroll: false });
     scrollToTopInstant();
   };

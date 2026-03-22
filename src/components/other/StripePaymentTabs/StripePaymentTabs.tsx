@@ -12,7 +12,7 @@ import type {
 } from "@stripe/stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useLocale, useTranslations } from "next-intl";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { GOOGLE_FONTS_MANROPE_CSS_URL } from "@/constants/links";
@@ -21,6 +21,7 @@ import {
   Actions,
   Card,
   Description,
+  ErrorText,
   Header,
   LoadingAction,
   LoadingField,
@@ -43,6 +44,7 @@ const PAYMENT_STATUS_REQUEST_TIMEOUT_MS = 8_000;
 const PAYMENT_STATUS_MAX_ATTEMPTS = 3;
 const PAYMENT_STATUS_RETRY_BASE_DELAY_MS = 320;
 const PAYMENT_STATUS_RETRY_MAX_DELAY_MS = 1_400;
+const PAYMENT_PREPARING_SLOW_THRESHOLD_MS = 8_000;
 
 const wait = (delayMs: number) =>
   new Promise<void>((resolve) => {
@@ -254,6 +256,7 @@ type StripePaymentFormProps = {
   billingName?: string | null;
   checkoutSessionId?: string | null;
   confirmedText: string;
+  confirmPaymentFailedText: string;
   isContentVisible: boolean;
   onPaymentElementReadyChange?: (isReady: boolean) => void;
   paymentIntentId?: string | null;
@@ -367,6 +370,7 @@ const StripePaymentForm = ({
   billingName,
   checkoutSessionId,
   confirmedText,
+  confirmPaymentFailedText,
   isContentVisible,
   onPaymentElementReadyChange,
   paymentIntentId,
@@ -383,6 +387,7 @@ const StripePaymentForm = ({
     createPaymentElementOptions(billingCountry, billingEmail, billingName),
   );
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const resolvedBillingEmail = billingEmail?.trim() ?? "";
   const resolvedBillingName = billingName?.trim() ?? "";
@@ -451,6 +456,7 @@ const StripePaymentForm = ({
     }
 
     setIsSubmitting(true);
+    setSubmitError(null);
     setSubmitSuccess(null);
 
     let shouldKeepSubmitting = false;
@@ -482,7 +488,7 @@ const StripePaymentForm = ({
       });
 
       if (error) {
-        void error;
+        setSubmitError(error.message?.trim() || confirmPaymentFailedText);
         return;
       }
 
@@ -522,7 +528,7 @@ const StripePaymentForm = ({
 
       setSubmitSuccess(confirmedText);
     } catch {
-      // Keep current UI state when Stripe/network confirmation fails.
+      setSubmitError(confirmPaymentFailedText);
     } finally {
       if (!shouldKeepSubmitting) {
         setIsSubmitting(false);
@@ -556,6 +562,11 @@ const StripePaymentForm = ({
             {submitSuccess}
           </StatusText>
         ) : null}
+        {submitError && isContentVisible ? (
+          <ErrorText role="alert" aria-live="assertive" aria-atomic="true">
+            {submitError}
+          </ErrorText>
+        ) : null}
         <Button
           buttonText={isSubmitting ? processingText : payButtonText}
           disabled={!stripe || !elements || isSubmitting || !isPaymentElementReady}
@@ -588,9 +599,45 @@ export const StripePaymentTabs = ({
   const stripeLocale = getStripeLocale(locale);
   const paymentFormReadyKey = `${resolvedClientSecret}:${publishableKey}:${stripeLocale}`;
   const [readyPaymentFormKey, setReadyPaymentFormKey] = useState<string | null>(null);
+  const [isPreparingSlow, setIsPreparingSlow] = useState(false);
   const isPaymentFormReady = readyPaymentFormKey === paymentFormReadyKey;
 
   const shouldShowLoadingSkeleton = !isReady || !isPaymentFormReady;
+
+  useEffect(() => {
+    const resetId = window.setTimeout(() => {
+      setIsPreparingSlow(false);
+    }, 0);
+
+    if (!shouldShowLoadingSkeleton) {
+      return () => {
+        window.clearTimeout(resetId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsPreparingSlow(true);
+    }, PAYMENT_PREPARING_SLOW_THRESHOLD_MS);
+
+    return () => {
+      window.clearTimeout(resetId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [paymentFormReadyKey, shouldShowLoadingSkeleton]);
+
+  const loadingStatusText = (() => {
+    if (!publishableKey) {
+      return t("placeholder.missingPublishableKey");
+    }
+
+    if (!resolvedClientSecret) {
+      return isPreparingSlow
+        ? t("status.preparingSlow")
+        : t("placeholder.awaitingClientSecret");
+    }
+
+    return isPreparingSlow ? t("status.preparingSlow") : t("status.preparing");
+  })();
 
   return (
     <Card aria-busy={!isReady}>
@@ -620,6 +667,7 @@ export const StripePaymentTabs = ({
                 billingName={billingName}
                 checkoutSessionId={checkoutSessionId}
                 confirmedText={t("status.confirmed")}
+                confirmPaymentFailedText={t("errors.confirmPaymentFailed")}
                 isContentVisible={!shouldShowLoadingSkeleton}
                 onPaymentElementReadyChange={(isFormReady) => {
                   if (isFormReady) {
@@ -655,7 +703,7 @@ export const StripePaymentTabs = ({
             </LoadingFieldRow>
             <LoadingFooter>
               <LoadingPulse />
-              <StatusText>{t("status.preparing")}</StatusText>
+              <StatusText>{loadingStatusText}</StatusText>
             </LoadingFooter>
             <LoadingAction aria-hidden />
           </LoadingState>

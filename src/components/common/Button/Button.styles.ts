@@ -94,12 +94,12 @@ const controlStyles = css<ControlProps>`
 
   /* Re-apply full transition after variant glass styles (glass() also defines transition). */
   transition:
-    transform 0.12s ease,
-    color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.12s ease,
-    opacity 0.12s ease;
+    transform var(--motion-fast, 160ms) var(--ease-standard, ease),
+    color var(--motion-base, 220ms) var(--ease-standard, ease),
+    background-color var(--motion-base, 220ms) var(--ease-standard, ease),
+    box-shadow var(--motion-base, 220ms) var(--ease-standard, ease),
+    filter var(--motion-fast, 160ms) var(--ease-standard, ease),
+    opacity var(--motion-fast, 160ms) var(--ease-standard, ease);
 
   ${({ $isLoading }) =>
     $isLoading &&
@@ -166,7 +166,7 @@ const buttonRingOrbit = keyframes`
 
 export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
   position: absolute;
-  left: calc(100% + 12px);
+  left: 0;
   top: calc(50% - 7px);
   width: 14px;
   height: 14px;
@@ -175,10 +175,11 @@ export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
   border-top-color: currentColor;
   animation: maintenance-ring-spin 0.9s linear infinite;
   opacity: ${({ $isLoading }) => ($isLoading ? 1 : 0)};
-  transform: translate(${({ $isLoading }) => ($isLoading ? "0px" : "-6px")}, -50%);
+  transform: translate(${({ $isLoading }) => ($isLoading ? "0px" : "-12px")}, -50%)
+    scale(${({ $isLoading }) => ($isLoading ? 1 : 0.86)});
   transition:
-    opacity 0.16s ease,
-    transform 0.16s ease;
+    opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
+    transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
   pointer-events: none;
 
   &::after {
@@ -201,4 +202,19 @@ export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
       animation: ${buttonRingOrbit} 2.8s linear infinite !important;
     }
   }
+`;
+
+export const ButtonSpinnerSlot = styled.span<{ $isLoading?: boolean }>`
+  position: relative;
+  width: ${({ $isLoading }) => ($isLoading ? "14px" : "0px")};
+  height: 14px;
+  margin-left: ${({ $isLoading }) => ($isLoading ? "12px" : "0px")};
+  transition:
+    width 0.2s ease,
+    margin-left 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  flex: 0 0 auto;
 `;

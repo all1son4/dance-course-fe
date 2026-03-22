@@ -76,9 +76,9 @@ export const TopInfoRow = styled.div<{ $isCollapsed?: boolean }>`
   opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
   transform: translateY(${({ $isCollapsed }) => ($isCollapsed ? "-8px" : "0")});
   transition:
-    max-height 0.32s ease,
-    opacity 0.2s ease,
-    transform 0.32s ease;
+    max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
+    opacity var(--motion-base, 220ms) var(--ease-standard, ease),
+    transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
   pointer-events: ${({ $isCollapsed }) => ($isCollapsed ? "none" : "auto")};
 
   @media (prefers-reduced-motion: reduce) {
@@ -106,9 +106,9 @@ export const Divider = styled.div<{ $isCollapsed?: boolean }>`
   margin: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "40px 0")};
   opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
   transition:
-    height 0.28s ease,
-    margin 0.28s ease,
-    opacity 0.2s ease;
+    height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
+    margin var(--motion-slow, 320ms) var(--ease-emphasized, ease),
+    opacity var(--motion-base, 220ms) var(--ease-standard, ease);
   overflow: hidden;
 
   @media (max-width: 880px) {
@@ -155,7 +155,7 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   z-index: 2;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
   ${({ $isCollapsed }) =>
     $isCollapsed
       ? css`
@@ -166,7 +166,7 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
         `}
 
   & svg {
-    transition: transform 0.2s ease;
+    transition: transform var(--motion-base, 220ms) var(--ease-standard, ease);
     transform: rotate(${({ $isCollapsed }) => ($isCollapsed ? "0deg" : "180deg")});
   }
 

@@ -89,7 +89,7 @@ export const QuestionBox = styled.button<{ $isOpened: boolean }>`
   text-align: left;
 
   & > p {
-    transition: color 0.2s ease;
+    transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
     ${({ $isOpened }) =>
       $isOpened &&
       `
@@ -98,12 +98,12 @@ export const QuestionBox = styled.button<{ $isOpened: boolean }>`
   }
 
   & svg {
-    transition: transform 0.2s ease;
+    transition: transform var(--motion-base, 220ms) var(--ease-standard, ease);
     transform: rotate(${({ $isOpened }) => ($isOpened ? "180deg" : "0deg")});
   }
 
   & svg path {
-    transition: stroke 0.2s ease;
+    transition: stroke var(--motion-base, 220ms) var(--ease-standard, ease);
     ${({ $isOpened }) =>
       $isOpened &&
       `
@@ -145,8 +145,8 @@ export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
   display: grid;
   grid-template-rows: ${({ $isOpened }) => ($isOpened ? "1fr" : "0fr")};
   transition:
-    grid-template-rows 200ms ease,
-    padding-top 200ms ease;
+    grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease),
+    padding-top var(--motion-base, 220ms) var(--ease-emphasized, ease);
   padding-top: ${({ $isOpened }) => ($isOpened ? "16px" : "0px")};
   overflow: hidden;
 
@@ -159,13 +159,13 @@ export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
     display: block;
     max-height: ${({ $isOpened }) => ($isOpened ? "420px" : "0px")};
     transition:
-      max-height 180ms ease,
-      padding-top 180ms ease;
+      max-height var(--motion-fast, 160ms) var(--ease-emphasized, ease),
+      padding-top var(--motion-fast, 160ms) var(--ease-emphasized, ease);
     will-change: max-height;
 
     & > * {
       opacity: ${({ $isOpened }) => ($isOpened ? 1 : 0)};
-      transition: opacity 160ms ease;
+      transition: opacity var(--motion-fast, 160ms) var(--ease-standard, ease);
     }
   }
 `;

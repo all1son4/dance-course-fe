@@ -40,6 +40,17 @@ type StripeIntentErrorCode =
   | "payment_intent_failed"
   | "payment_intent_request_failed";
 
+export type PaymentCheckoutDraft = {
+  agreements: PaymentAgreementState;
+  checkoutSessionId: string;
+  customerData: PaymentCustomerData;
+  selectedCurrency: SupportedCheckoutCurrency;
+  selectedOfferId: string;
+  selectedProductId: string;
+  updatedAt: number;
+  validationLocale: PaymentValidationLocale;
+};
+
 const createCheckoutSessionId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -120,6 +131,92 @@ export class PaymentStore {
 
   get stripePaymentIntentId() {
     return this.getStripePaymentIntentId(this.selectedCurrency);
+  }
+
+  getCheckoutDraftSnapshot(): PaymentCheckoutDraft {
+    return {
+      agreements: { ...this.agreements },
+      checkoutSessionId: this.checkoutSessionId,
+      customerData: { ...this.customerData },
+      selectedCurrency: this.selectedCurrency,
+      selectedOfferId: this.selectedOfferId,
+      selectedProductId: this.selectedProductId,
+      updatedAt: Date.now(),
+      validationLocale: this.validationLocale,
+    };
+  }
+
+  applyCheckoutDraft(draft: Partial<PaymentCheckoutDraft>) {
+    const nextProduct =
+      getSellableProductById(draft.selectedProductId) ?? this.selectedProduct;
+    const nextOffer =
+      getSellableProductOfferById(nextProduct, draft.selectedOfferId) ??
+      getDefaultProductOffer(nextProduct);
+    const nextCurrency = getResolvedCheckoutCurrency(
+      draft.selectedCurrency ?? this.selectedCurrency,
+    );
+    const nextCheckoutSessionId = (draft.checkoutSessionId ?? "").trim();
+    const nextValidationLocale = resolvePaymentValidationLocale(
+      draft.validationLocale ?? this.validationLocale,
+    );
+
+    this.selectedProductId = nextProduct.id;
+    this.selectedOfferId = nextOffer.id;
+    this.selectedCurrency = nextCurrency;
+    this.checkoutCurrencyInitialized = true;
+    this.checkoutSessionId = nextCheckoutSessionId || createCheckoutSessionId();
+    this.validationLocale = nextValidationLocale;
+
+    const draftCustomerData: Partial<PaymentCustomerData> = draft.customerData ?? {};
+
+    this.customerData = {
+      ...INITIAL_CUSTOMER_DATA,
+      fullName: normalizePaymentCustomerFieldValue(
+        "fullName",
+        draftCustomerData.fullName ?? INITIAL_CUSTOMER_DATA.fullName,
+      ),
+      email: normalizePaymentCustomerFieldValue(
+        "email",
+        draftCustomerData.email ?? INITIAL_CUSTOMER_DATA.email,
+      ),
+      nickname: normalizePaymentCustomerFieldValue(
+        "nickname",
+        draftCustomerData.nickname ?? INITIAL_CUSTOMER_DATA.nickname,
+      ),
+      country: normalizePaymentCustomerFieldValue(
+        "country",
+        draftCustomerData.country ?? INITIAL_CUSTOMER_DATA.country,
+      ),
+      lessonLanguage: normalizePaymentCustomerFieldValue(
+        "lessonLanguage",
+        draftCustomerData.lessonLanguage ?? INITIAL_CUSTOMER_DATA.lessonLanguage,
+      ),
+    };
+
+    const draftAgreements: Partial<PaymentAgreementState> = draft.agreements ?? {};
+
+    this.agreements = {
+      digitalContentAgreement: Boolean(
+        draftAgreements.digitalContentAgreement ??
+        INITIAL_AGREEMENTS.digitalContentAgreement,
+      ),
+      immediateAccessConsent: Boolean(
+        draftAgreements.immediateAccessConsent ??
+        INITIAL_AGREEMENTS.immediateAccessConsent,
+      ),
+      privacyPolicyAcknowledgement: Boolean(
+        draftAgreements.privacyPolicyAcknowledgement ??
+        INITIAL_AGREEMENTS.privacyPolicyAcknowledgement,
+      ),
+      withdrawalNoticeAcknowledgement: Boolean(
+        draftAgreements.withdrawalNoticeAcknowledgement ??
+        INITIAL_AGREEMENTS.withdrawalNoticeAcknowledgement,
+      ),
+    };
+
+    this.customerErrors = {};
+    this.touchedFields = {};
+    this.clearStripeIntentState(false);
   }
 
   configureCheckoutSelection({

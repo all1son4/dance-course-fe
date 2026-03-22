@@ -124,10 +124,10 @@ export const StripeReveal = styled.div<{ $isVisible: boolean }>`
   transform: translateY(${({ $isVisible }) => ($isVisible ? "0" : "-18px")});
   pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
   transition:
-    padding-top 0.45s ease,
-    max-height 0.45s ease,
-    opacity 0.16s ease,
-    transform 0.45s ease;
+    padding-top var(--motion-slow, 320ms) var(--ease-emphasized, ease),
+    max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
+    opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
+    transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
 
   @media (max-width: 767px) {
     max-height: ${({ $isVisible }) => ($isVisible ? "1240px" : "0")};

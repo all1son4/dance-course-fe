@@ -1,14 +1,20 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import type {
   AnchorHTMLAttributes,
   ButtonHTMLAttributes,
   ElementType,
   MouseEvent as ReactMouseEvent,
 } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
+import {
+  NAVIGATION_BUTTON_LOADING_END_EVENT,
+  NAVIGATION_BUTTON_LOADING_START_EVENT,
+  NAVIGATION_PROGRESS_START_EVENT,
+} from "@/lib/navigation-events";
 import { getHashTargetFromHref, scrollToHashTarget } from "@/lib/scroll";
 
 import {
@@ -17,11 +23,12 @@ import {
   ButtonLabel,
   ButtonLinkWrapper,
   ButtonSpinner,
+  ButtonSpinnerSlot,
   StyledButton,
 } from "./Button.styles";
 import type { ButtonProps } from "./Button.types";
 
-const NAVIGATION_SPINNER_DELAY_MS = 120;
+const NAVIGATION_SPINNER_DELAY_MS = 140;
 const NAVIGATION_SPINNER_FAILSAFE_MS = 10_000;
 
 const isInternalNavigationHref = (value: string) => {
@@ -59,9 +66,9 @@ export default function Button<T extends ElementType = "button">({
   ...rest
 }: ButtonProps<T>) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamsKey = searchParams.toString();
+  const [searchKey, setSearchKey] = useState("");
   const [isRouteLoading, setIsRouteLoading] = useState(false);
+  const hasActiveRouteLoadingRef = useRef(false);
   const revealTimerRef = useRef<number | null>(null);
   const failSafeTimerRef = useRef<number | null>(null);
   const buttonProps = rest as ButtonHTMLAttributes<HTMLButtonElement>;
@@ -82,7 +89,7 @@ export default function Button<T extends ElementType = "button">({
     [href, target],
   );
 
-  const clearRouteLoadingTimers = () => {
+  const clearRouteLoadingTimers = useCallback(() => {
     if (revealTimerRef.current !== null) {
       window.clearTimeout(revealTimerRef.current);
       revealTimerRef.current = null;
@@ -92,9 +99,27 @@ export default function Button<T extends ElementType = "button">({
       window.clearTimeout(failSafeTimerRef.current);
       failSafeTimerRef.current = null;
     }
-  };
+  }, []);
 
-  const startRouteLoadingState = () => {
+  const stopRouteLoadingState = useCallback(() => {
+    clearRouteLoadingTimers();
+    setIsRouteLoading(false);
+
+    if (!hasActiveRouteLoadingRef.current) {
+      return;
+    }
+
+    hasActiveRouteLoadingRef.current = false;
+    window.dispatchEvent(new Event(NAVIGATION_BUTTON_LOADING_END_EVENT));
+  }, [clearRouteLoadingTimers]);
+
+  const startRouteLoadingState = useCallback(() => {
+    window.dispatchEvent(new Event(NAVIGATION_PROGRESS_START_EVENT));
+    if (!hasActiveRouteLoadingRef.current) {
+      hasActiveRouteLoadingRef.current = true;
+      window.dispatchEvent(new Event(NAVIGATION_BUTTON_LOADING_START_EVENT));
+    }
+
     clearRouteLoadingTimers();
 
     revealTimerRef.current = window.setTimeout(() => {
@@ -102,33 +127,52 @@ export default function Button<T extends ElementType = "button">({
     }, NAVIGATION_SPINNER_DELAY_MS);
 
     failSafeTimerRef.current = window.setTimeout(() => {
-      setIsRouteLoading(false);
-      clearRouteLoadingTimers();
+      stopRouteLoadingState();
     }, NAVIGATION_SPINNER_FAILSAFE_MS);
-  };
+  }, [clearRouteLoadingTimers, stopRouteLoadingState]);
 
   useEffect(() => {
-    clearRouteLoadingTimers();
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    ensureLocationChangeEvents();
+
+    const syncSearchKey = () => {
+      setSearchKey(window.location.search);
+    };
+
+    syncSearchKey();
+    window.addEventListener(LOCATION_CHANGE_EVENT, syncSearchKey);
+
+    return () => {
+      window.removeEventListener(LOCATION_CHANGE_EVENT, syncSearchKey);
+    };
+  }, []);
+
+  useEffect(() => {
     const resetId = window.setTimeout(() => {
-      setIsRouteLoading(false);
+      stopRouteLoadingState();
     }, 0);
 
     return () => {
       window.clearTimeout(resetId);
     };
-  }, [pathname, searchParamsKey]);
+  }, [pathname, searchKey, stopRouteLoadingState]);
 
   useEffect(
     () => () => {
-      clearRouteLoadingTimers();
+      stopRouteLoadingState();
     },
-    [],
+    [stopRouteLoadingState],
   );
 
   const buttonContent = (
     <ButtonContent>
       <ButtonLabel>{buttonText}</ButtonLabel>
-      <ButtonSpinner aria-hidden $isLoading={isRouteLoading} />
+      <ButtonSpinnerSlot $isLoading={isRouteLoading}>
+        <ButtonSpinner aria-hidden $isLoading={isRouteLoading} />
+      </ButtonSpinnerSlot>
     </ButtonContent>
   );
 
