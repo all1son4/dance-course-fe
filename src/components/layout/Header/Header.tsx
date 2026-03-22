@@ -22,6 +22,7 @@ import {
   Divider,
   HeaderWrap,
   IconBox,
+  MobileMenuBackdrop,
   Pill,
   Right,
 } from "./Header.styles";
@@ -33,7 +34,6 @@ export default function Header() {
   const locale = useLocale();
   const pathname = usePathname();
   const router = useRouter();
-  const pillRef = useRef<HTMLDivElement | null>(null);
   const previousPathnameRef = useRef(pathname);
   const mobileMenuId = "header-mobile-menu";
 
@@ -99,42 +99,9 @@ export default function Header() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!menuIsOpen || !window.matchMedia("(max-width: 767px)").matches) {
+    if (!menuIsOpen) {
       return;
     }
-
-    const isOutsideMenu = (target: EventTarget | null) => {
-      const targetNode = target as Node | null;
-
-      if (!targetNode) {
-        return false;
-      }
-
-      if (pillRef.current?.contains(targetNode)) {
-        return false;
-      }
-
-      return true;
-    };
-
-    const consumeOutsideInteraction = (event: Event) => {
-      if (!isOutsideMenu(event.target)) {
-        return;
-      }
-
-      setMenuIsOpen(false);
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-    };
-
-    const handlePointerDownOutsideMenu = (event: PointerEvent) => {
-      consumeOutsideInteraction(event);
-    };
-
-    const handleClickOutsideMenu = (event: MouseEvent) => {
-      consumeOutsideInteraction(event);
-    };
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -142,44 +109,10 @@ export default function Header() {
       }
     };
 
-    document.addEventListener("pointerdown", handlePointerDownOutsideMenu, true);
-    document.addEventListener("click", handleClickOutsideMenu, true);
     document.addEventListener("keydown", handleEscape);
 
     return () => {
-      document.removeEventListener("pointerdown", handlePointerDownOutsideMenu, true);
-      document.removeEventListener("click", handleClickOutsideMenu, true);
       document.removeEventListener("keydown", handleEscape);
-    };
-  }, [menuIsOpen]);
-
-  useEffect(() => {
-    if (!menuIsOpen || !window.matchMedia("(max-width: 767px)").matches) {
-      return;
-    }
-
-    const { style: bodyStyle } = document.body;
-    const { style: htmlStyle } = document.documentElement;
-    const previousBodyStyles = {
-      overflow: bodyStyle.overflow,
-      touchAction: bodyStyle.touchAction,
-    };
-    const previousHtmlStyles = {
-      overflow: htmlStyle.overflow,
-      overscrollBehavior: htmlStyle.overscrollBehavior,
-    };
-
-    // Keep iOS Safari bottom bar behavior stable: avoid body position:fixed while menu is open.
-    bodyStyle.overflow = "hidden";
-    bodyStyle.touchAction = "none";
-    htmlStyle.overflow = "hidden";
-    htmlStyle.overscrollBehavior = "none";
-
-    return () => {
-      bodyStyle.overflow = previousBodyStyles.overflow;
-      bodyStyle.touchAction = previousBodyStyles.touchAction;
-      htmlStyle.overflow = previousHtmlStyles.overflow;
-      htmlStyle.overscrollBehavior = previousHtmlStyles.overscrollBehavior;
     };
   }, [menuIsOpen]);
 
@@ -349,7 +282,8 @@ export default function Header() {
   ];
   return (
     <HeaderWrap>
-      <Pill ref={pillRef} $isOpen={menuIsOpen}>
+      <MobileMenuBackdrop $isOpen={menuIsOpen} onClick={() => setMenuIsOpen(false)} />
+      <Pill $isOpen={menuIsOpen}>
         <Brand href="/" aria-label={t("aria.home")} onClick={onBrandClick}>
           <Logo />
         </Brand>

@@ -24,10 +24,26 @@ export const HeaderWrap = styled.header`
   }
 `;
 
+export const MobileMenuBackdrop = styled.div<{ $isOpen: boolean }>`
+  display: none;
+
+  @media (max-width: 767px) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 1;
+    opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
+    pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
+    transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+  }
+`;
+
 export const Pill = styled.div<{ $isOpen: boolean }>`
   width: 100%;
   margin: 0 auto;
   position: relative;
+  z-index: 2;
   height: 84px;
 
   display: flex;
@@ -56,11 +72,11 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
 
     max-height: ${({ $isOpen }) => ($isOpen ? "420px" : "59px")};
     overflow: visible;
-    transition: max-height 220ms ease;
+    transition: max-height var(--motion-base, 220ms) var(--ease-emphasized, ease);
 
     /* Safari often stutters on max-height + backdrop-filter in fixed header */
     @supports (-webkit-touch-callout: none) {
-      transition: max-height 160ms cubic-bezier(0.2, 0, 0, 1);
+      transition: max-height var(--motion-fast, 160ms) var(--ease-emphasized, ease);
       will-change: max-height;
       contain: layout style;
     }
@@ -114,11 +130,11 @@ export const IconBox = styled.button<{ $isOpen: boolean }>`
   }
 
   & svg path:nth-child(1) {
-    transition: transform 0.2s ease;
+    transition: transform var(--motion-fast, 160ms) var(--ease-standard, ease);
   }
 
   & svg path:nth-child(3) {
-    transition: transform 0.2s ease;
+    transition: transform var(--motion-fast, 160ms) var(--ease-standard, ease);
   }
 
   ${({ $isOpen }) =>
@@ -160,8 +176,8 @@ export const Bottom = styled.div<{ $isOpen: boolean }>`
     opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
     transform: ${({ $isOpen }) => ($isOpen ? "translateY(0)" : "translateY(-6px)")};
     transition:
-      opacity 200ms ease,
-      transform 200ms ease;
+      opacity var(--motion-base, 220ms) var(--ease-standard, ease),
+      transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
     will-change: opacity, transform;
     pointer-events: ${({ $isOpen }) => ($isOpen ? "all" : "none")};
   }
