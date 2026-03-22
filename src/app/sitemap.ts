@@ -17,6 +17,7 @@ const indexableRoutes = [
   "/online/choreo",
   "/offline",
   "/privacy-policy",
+  "/cookie-policy",
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

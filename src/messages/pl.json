@@ -45,6 +45,12 @@
         "description": "Polityka prywatności strony Anna Strok: zasady przetwarzania danych osobowych, podstawa prawna i dane kontaktowe.",
         "ogImageAlt": "Strona polityki prywatności Anna Strok",
         "keywords": "polityka prywatności anna strok, przetwarzanie danych osobowych, privacy policy dance website"
+      },
+      "cookiePolicy": {
+        "title": "Polityka cookies",
+        "description": "Polityka cookies serwisu Anna Strok: jakie technologie przechowywania są używane, w jakim celu i jak zarządzać zgodą.",
+        "ogImageAlt": "Polityka cookies Anna Strok",
+        "keywords": "polityka cookies anna strok, zgoda na cookies, ustawienia cookies, pliki cookies serwisu"
       }
     }
   },
@@ -92,7 +98,8 @@
       "button": "Napisz do wsparcia"
     },
     "copyright": "© 2026 Dance Platform. Wszelkie prawa zastrzeżone",
-    "privacyPolicy": "Polityka prywatności"
+    "privacyPolicy": "Polityka prywatności",
+    "cookieSettings": "Ustawienia cookies"
   },
   "Contacts": {
     "title": "Kontakt",
@@ -622,6 +629,64 @@
       "9": {
         "title": "9. Zautomatyzowane podejmowanie decyzji / profilowanie",
         "text": "Dane osobowe nie są poddawane zautomatyzowanemu podejmowaniu decyzji ani profilowaniu."
+      }
+    }
+  },
+  "CookieConsent": {
+    "banner": {
+      "title": "Ustawienia cookies",
+      "description": "Używamy niezbędnych cookies do działania serwisu. Dodatkowe cookies dla wygody i analityki uruchamiamy wyłącznie za Twoją zgodą. Więcej: <cookies>Polityka cookies</cookies>.",
+      "acceptAll": "Akceptuj",
+      "defaultNote": "W ustawieniach domyślnie zaznaczone są wszystkie kategorie cookies. Zastosują się dopiero po kliknięciu „Akceptuj”.",
+      "declineOptional": "Odrzuć",
+      "settings": "Dostosuj wybór"
+    },
+    "settings": {
+      "categories": {
+        "necessary": {
+          "title": "Niezbędne",
+          "description": "Wymagane do podstawowego działania serwisu, bezpieczeństwa i obsługi płatności.",
+          "alwaysOn": "Zawsze aktywne"
+        },
+        "functional": {
+          "title": "Funkcjonalne",
+          "description": "Zapamiętują dodatkowe preferencje użytkownika i zwiększają wygodę korzystania z serwisu."
+        },
+        "analytics": {
+          "title": "Analityczne",
+          "description": "Pomagają zrozumieć sposób korzystania z serwisu, aby ulepszać treści i nawigację."
+        }
+      }
+    }
+  },
+  "CookiePolicyPage": {
+    "title": "Polityka cookies",
+    "description": "Na tej stronie wyjaśniamy, jakie pliki cookies i podobne technologie przechowywania danych są używane w serwisie, w jakim celu oraz jak możesz zarządzać zgodami.",
+    "contactLine": "W sprawach dotyczących cookies i ustawień zgody skontaktuj się z nami: kroxxxxx92@gmail.com",
+    "items": {
+      "1": {
+        "title": "1. Czym są cookies i podobne technologie",
+        "text": "Cookies to niewielkie pliki tekstowe zapisywane w przeglądarce. Do podobnych technologii należą m.in. sessionStorage/localStorage oraz inne mechanizmy przechowywania danych na urządzeniu użytkownika."
+      },
+      "2": {
+        "title": "2. Jakie kategorie stosujemy",
+        "text": "W serwisie stosujemy następujące technologie przechowywania:\na) Niezbędne (zawsze aktywne):\n- cookie `NEXT_LOCALE` (nasz serwis) do zapamiętania wybranego języka interfejsu, do 12 miesięcy;\n- wpis `cookie-consent:v1` w localStorage (nasz serwis) do zapisania Twojego wyboru cookies, przechowywany do zmiany decyzji albo wyczyszczenia danych przeglądarki;\n- techniczne cookies dostawcy płatności Stripe (np. `__stripe_mid`, `__stripe_sid`) podczas korzystania z formularza płatności.\nb) Funkcjonalne (na podstawie zgody):\n- `payment-checkout-draft:v1` w sessionStorage do przywracania szkicu płatności, przechowywany do zamknięcia karty lub wyczyszczenia pamięci.\nc) Analityczne (na podstawie zgody):\n- Vercel Analytics (`@vercel/analytics`) do pomiaru ruchu i korzystania z serwisu w formie zagregowanej lub pseudonimizowanej."
+      },
+      "3": {
+        "title": "3. Podstawa prawna",
+        "text": "Technologie niezbędne stosujemy w zakresie wyjątku, gdy są konieczne do świadczenia usługi żądanej przez użytkownika. Technologie funkcjonalne i analityczne uruchamiane są wyłącznie po uzyskaniu zgody, którą możesz wycofać w każdej chwili."
+      },
+      "4": {
+        "title": "4. Okres przechowywania",
+        "text": "Okres przechowywania zależy od technologii:\n- `NEXT_LOCALE` — do 12 miesięcy;\n- `cookie-consent:v1` (localStorage) — do zmiany wyboru lub wyczyszczenia danych przeglądarki;\n- `payment-checkout-draft:v1` (sessionStorage) — do zamknięcia karty;\n- cookies Stripe i dane Vercel Analytics — przez okresy wynikające z polityk tych dostawców."
+      },
+      "5": {
+        "title": "5. Jak zmienić lub wycofać zgodę",
+        "text": "W dowolnym momencie możesz otworzyć „Ustawienia cookies” w stopce serwisu i zmienić swój wybór. Wycofanie zgody działa na przyszłość i nie wpływa na zgodność z prawem przetwarzania dokonanego przed wycofaniem."
+      },
+      "6": {
+        "title": "6. Dodatkowe informacje",
+        "text": "Szczegółowe informacje o przetwarzaniu danych osobowych, Twoich prawach i danych administratora znajdziesz w Polityce prywatności."
       }
     }
   }

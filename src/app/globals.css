@@ -88,6 +88,10 @@ svg {
   background-color: transparent;
 }
 
+img {
+  height: auto;
+}
+
 img[data-nimg] {
   background-color: transparent !important;
 }

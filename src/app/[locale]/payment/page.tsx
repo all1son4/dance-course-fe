@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import Checkbox from "@/components/common/Checkbox";
+import { useCookieConsent } from "@/components/common/CookieConsent";
 import Input from "@/components/common/Input";
 import CurrencySwitch from "@/components/other/CurrencySwitch";
 import StripePaymentTabs from "@/components/other/StripePaymentTabs";
@@ -69,6 +70,7 @@ const PAYMENT_DRAFT_SAVE_DEBOUNCE_MS = 240;
 
 const PaymentPage = observer(function PaymentPage() {
   const paymentStore = usePaymentStore();
+  const { canUseFunctionalStorage } = useCookieConsent();
   const locale = useLocale();
   const t = useTranslations("PaymentPage");
   const productT = useTranslations("SellableProducts");
@@ -88,7 +90,7 @@ const PaymentPage = observer(function PaymentPage() {
   const selectedProductTitle = productT(paymentStore.selectedProduct.titleKey);
   const selectedProductCompactTitle = getCompactSummaryTitle(selectedProductTitle);
   const persistCheckoutDraftNow = useCallback(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !canUseFunctionalStorage) {
       return;
     }
 
@@ -97,7 +99,7 @@ const PaymentPage = observer(function PaymentPage() {
       PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY,
       JSON.stringify(checkoutDraft),
     );
-  }, [paymentStore]);
+  }, [canUseFunctionalStorage, paymentStore]);
 
   useEffect(() => {
     document.body.removeAttribute("data-hide-footer");
@@ -153,7 +155,11 @@ const PaymentPage = observer(function PaymentPage() {
   }, [paymentStore, searchKey]);
 
   useEffect(() => {
-    if (hasHydratedCheckoutDraftRef.current || typeof window === "undefined") {
+    if (
+      hasHydratedCheckoutDraftRef.current ||
+      typeof window === "undefined" ||
+      !canUseFunctionalStorage
+    ) {
       return;
     }
 
@@ -184,10 +190,10 @@ const PaymentPage = observer(function PaymentPage() {
     } catch {
       sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
     }
-  }, [locale, paymentStore]);
+  }, [canUseFunctionalStorage, locale, paymentStore]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === "undefined" || !canUseFunctionalStorage) {
       return;
     }
 
@@ -199,6 +205,7 @@ const PaymentPage = observer(function PaymentPage() {
       window.clearTimeout(timeoutId);
     };
   }, [
+    canUseFunctionalStorage,
     persistCheckoutDraftNow,
     paymentStore.agreements.digitalContentAgreement,
     paymentStore.agreements.immediateAccessConsent,
@@ -217,10 +224,14 @@ const PaymentPage = observer(function PaymentPage() {
   ]);
 
   useEffect(() => {
+    if (!canUseFunctionalStorage) {
+      return;
+    }
+
     return () => {
       persistCheckoutDraftNow();
     };
-  }, [persistCheckoutDraftNow]);
+  }, [canUseFunctionalStorage, persistCheckoutDraftNow]);
 
   useEffect(() => {
     if (!paymentStore.canShowStripe) {

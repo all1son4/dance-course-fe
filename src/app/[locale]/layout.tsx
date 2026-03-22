@@ -4,6 +4,7 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
+import { CookieConsentBanner } from "@/components/common/CookieConsent";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import PageContainer from "@/components/layout/PageContainer";
@@ -130,6 +131,7 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
         <PageContainer>{children}</PageContainer>
       </main>
       <Footer />
+      <CookieConsentBanner />
     </NextIntlClientProvider>
   );
 }

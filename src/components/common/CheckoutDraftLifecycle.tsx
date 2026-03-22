@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
+import { useCookieConsent } from "@/components/common/CookieConsent";
 import {
   isCheckoutPaymentPathname,
   PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY,
@@ -10,9 +11,15 @@ import {
 
 export default function CheckoutDraftLifecycle() {
   const pathname = usePathname();
+  const { canUseFunctionalStorage } = useCookieConsent();
   const previousPathnameRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!canUseFunctionalStorage) {
+      previousPathnameRef.current = pathname;
+      return;
+    }
+
     const previousPathname = previousPathnameRef.current;
 
     if (
@@ -24,7 +31,7 @@ export default function CheckoutDraftLifecycle() {
     }
 
     previousPathnameRef.current = pathname;
-  }, [pathname]);
+  }, [canUseFunctionalStorage, pathname]);
 
   return null;
 }

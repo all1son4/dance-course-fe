@@ -6,6 +6,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
+import { getLocaleCookieName } from "@/lib/cookie-consent";
 import {
   getHashTargetFromLocation,
   scrollToHashTarget,
@@ -37,14 +38,11 @@ export default function Header() {
   const mobileMenuId = "header-mobile-menu";
 
   const syncLocaleCookie = (nextLocale: (typeof routing.locales)[number]) => {
-    if (routing.localeCookie === false) {
+    const cookieName = getLocaleCookieName();
+
+    if (!cookieName) {
       return;
     }
-
-    const cookieName =
-      typeof routing.localeCookie === "object" && routing.localeCookie.name
-        ? routing.localeCookie.name
-        : "NEXT_LOCALE";
 
     document.cookie = `${cookieName}=${nextLocale}; path=/; Max-Age=31536000; SameSite=Lax`;
   };

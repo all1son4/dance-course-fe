@@ -1,10 +1,11 @@
 import "./globals.css";
 
-import { Analytics } from "@vercel/analytics/next";
 import { Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 
 import CheckoutDraftLifecycle from "@/components/common/CheckoutDraftLifecycle";
+import ConsentAwareAnalytics from "@/components/common/ConsentAwareAnalytics";
+import { CookieConsentProvider } from "@/components/common/CookieConsent";
 import NavigationProgress from "@/components/common/NavigationProgress";
 import SiteComingSoon from "@/components/maintenance/SiteComingSoon";
 import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
@@ -27,12 +28,14 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ru">
       <body className={manrope.variable}>
-        <Analytics />
-        <NavigationProgress />
-        <CheckoutDraftLifecycle />
-        <StyledComponentsRegistry>
-          {showSite ? children : <SiteComingSoon />}
-        </StyledComponentsRegistry>
+        <CookieConsentProvider>
+          <ConsentAwareAnalytics />
+          <NavigationProgress />
+          <CheckoutDraftLifecycle />
+          <StyledComponentsRegistry>
+            {showSite ? children : <SiteComingSoon />}
+          </StyledComponentsRegistry>
+        </CookieConsentProvider>
       </body>
     </html>
   );

@@ -45,6 +45,12 @@
         "description": "Privacy policy for Anna Strok website: personal data processing rules, legal basis, and contact details.",
         "ogImageAlt": "Anna Strok privacy policy page",
         "keywords": "Anna Strok privacy policy, personal data processing, dance website privacy"
+      },
+      "cookiePolicy": {
+        "title": "Cookie Policy",
+        "description": "Cookie policy for Anna Strok website: what storage technologies are used, for what purposes, and how to manage consent.",
+        "ogImageAlt": "Anna Strok cookie policy page",
+        "keywords": "cookie policy anna strok, cookie consent settings, website cookies, analytics consent"
       }
     }
   },
@@ -92,7 +98,8 @@
       "button": "Contact support"
     },
     "copyright": "© 2026 Dance Platform. All rights reserved",
-    "privacyPolicy": "Privacy policy"
+    "privacyPolicy": "Privacy policy",
+    "cookieSettings": "Cookie settings"
   },
   "Contacts": {
     "title": "Contacts",
@@ -622,6 +629,64 @@
       "9": {
         "title": "9. Automated decision-making / profiling",
         "text": "Personal data is not subject to automated decision-making or profiling."
+      }
+    }
+  },
+  "CookieConsent": {
+    "banner": {
+      "title": "Cookie settings",
+      "description": "We use necessary cookies to run the website. Additional cookies for convenience and analytics are used only with your consent. Learn more in our <cookies>Cookie Policy</cookies>.",
+      "acceptAll": "Accept",
+      "defaultNote": "All cookie categories are preselected in settings. They are applied only after you press \"Accept\".",
+      "declineOptional": "Reject",
+      "settings": "Customize selection"
+    },
+    "settings": {
+      "categories": {
+        "necessary": {
+          "title": "Necessary",
+          "description": "Required for core website functionality, security, and payment processing.",
+          "alwaysOn": "Always active"
+        },
+        "functional": {
+          "title": "Functional",
+          "description": "Remember additional user preferences and improve convenience while using the website."
+        },
+        "analytics": {
+          "title": "Analytics",
+          "description": "Help us understand website usage so we can improve content and navigation."
+        }
+      }
+    }
+  },
+  "CookiePolicyPage": {
+    "title": "Cookie Policy",
+    "description": "This page explains which cookies and similar storage technologies are used on the website, for what purposes, and how you can manage your consent choices.",
+    "contactLine": "For questions about cookies and consent settings, please contact us: kroxxxxx92@gmail.com",
+    "items": {
+      "1": {
+        "title": "1. What cookies and similar technologies are",
+        "text": "Cookies are small text files stored in your browser. Similar technologies include, among others, sessionStorage/localStorage and other mechanisms used to store data on your device."
+      },
+      "2": {
+        "title": "2. Categories we use",
+        "text": "The website uses the following storage technologies:\na) Necessary (always active):\n- `NEXT_LOCALE` cookie (our website) to remember the selected interface language, up to 12 months;\n- `cookie-consent:v1` in localStorage (our website) to store your cookie choice, kept until you change the choice or clear browser data;\n- technical Stripe cookies (for example `__stripe_mid`, `__stripe_sid`) when the payment form is used.\nb) Functional (consent-based):\n- `payment-checkout-draft:v1` in sessionStorage for checkout draft recovery, kept until the tab is closed or storage is cleared.\nc) Analytics (consent-based):\n- Vercel Analytics (`@vercel/analytics`) to measure website usage in an aggregated or pseudonymous form."
+      },
+      "3": {
+        "title": "3. Legal basis",
+        "text": "Necessary technologies are used under the exemption where they are required to provide a service explicitly requested by the user. Functional and analytics technologies are used only after obtaining your consent, which you can withdraw at any time."
+      },
+      "4": {
+        "title": "4. Storage period",
+        "text": "Storage duration depends on the technology:\n- `NEXT_LOCALE` — up to 12 months;\n- `cookie-consent:v1` (localStorage) — until you change your choice or clear browser data;\n- `payment-checkout-draft:v1` (sessionStorage) — until the tab is closed;\n- Stripe cookies and Vercel Analytics data — according to each provider's retention policy."
+      },
+      "5": {
+        "title": "5. How to change or withdraw consent",
+        "text": "At any time, you can open “Cookie settings” in the website footer and change your selection. Consent withdrawal applies going forward and does not affect the lawfulness of processing performed before withdrawal."
+      },
+      "6": {
+        "title": "6. Additional information",
+        "text": "Detailed information about personal data processing, your rights, and controller details is available in the Privacy Policy."
       }
     }
   }

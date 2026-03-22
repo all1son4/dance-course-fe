@@ -20,6 +20,7 @@ import { Insta, Logo, Quote } from "@/svg";
 
 import {
   AboutMeImageBox,
+  AboutMeImageFrame,
   AboutMeList,
   AboutMeParagraph,
   AboutMeParagraphs,
@@ -167,13 +168,14 @@ export default function Home() {
           </AboutMeList>
         </AboutMeTextBox>
         <AboutMeImageBox>
-          <StyledImage
-            src={"/images/main_page_second.webp"}
-            alt={t("about.imageAlt")}
-            width={560}
-            height={635}
-            sizes="(max-width: 880px) 100vw, 560px"
-          />
+          <AboutMeImageFrame>
+            <StyledImage
+              src={"/images/main_page_second.webp"}
+              alt={t("about.imageAlt")}
+              fill
+              sizes="(max-width: 880px) 100vw, 560px"
+            />
+          </AboutMeImageFrame>
           <ImageDescriptionBox>
             <IconPositionWrap>
               <Quote />

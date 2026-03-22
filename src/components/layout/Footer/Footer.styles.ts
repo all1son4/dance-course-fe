@@ -163,6 +163,7 @@ export const BottomRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 20px;
 
   @media (max-width: 600px) {
     flex-direction: column-reverse;
@@ -191,6 +192,37 @@ export const PrivacyPolicy = styled(Link)`
   text-decoration: underline;
   text-underline-offset: 2px;
   margin: 0;
+  color: rgba(72, 72, 72, 1);
+  transition: color 0.2s ease;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #000000;
+    }
+  }
+`;
+
+export const BottomLinks = styled.div`
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+
+export const CookieSettingsButton = styled.button`
+  font-weight: 400;
+  font-style: normal;
+  font-size: 13px;
+  line-height: 110%;
+  letter-spacing: 0;
+  background: transparent;
+  border: none;
+  appearance: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  margin: 0;
+  padding: 0;
   color: rgba(72, 72, 72, 1);
   transition: color 0.2s ease;
 

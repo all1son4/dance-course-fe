@@ -4,11 +4,14 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const path = require("path");
 const isProduction = process.env.NODE_ENV === "production";
 const vercelLiveSource = "https://vercel.live";
+const vercelAnalyticsScriptSource = "https://va.vercel-scripts.com";
+const vercelAnalyticsIngestSource = "https://vitals.vercel-insights.com";
 const scriptSources = [
   "'self'",
   "'unsafe-inline'",
   ...(isProduction ? [] : ["'unsafe-eval'"]),
   "https://js.stripe.com",
+  vercelAnalyticsScriptSource,
   ...(isProduction ? [] : [vercelLiveSource]),
 ].join(" ");
 const contentSecurityPolicy = [
@@ -22,7 +25,7 @@ const contentSecurityPolicy = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
-  `connect-src 'self' https://api.stripe.com https://r.stripe.com https://js.stripe.com https://hooks.stripe.com https://fonts.googleapis.com ${
+  `connect-src 'self' https://api.stripe.com https://r.stripe.com https://js.stripe.com https://hooks.stripe.com ${vercelAnalyticsIngestSource} https://fonts.googleapis.com ${
     isProduction ? "" : vercelLiveSource
   }`.trim(),
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://www.youtube-nocookie.com",

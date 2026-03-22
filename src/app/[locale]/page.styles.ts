@@ -330,9 +330,22 @@ export const AboutMeImageBox = styled.div`
   }
 `;
 
-export const StyledImage = styled(Image)`
+export const AboutMeImageFrame = styled.div`
+  position: relative;
   width: 100%;
-  height: auto;
+  aspect-ratio: 560 / 635;
+  border-radius: 100px;
+  overflow: hidden;
+
+  @media (max-width: 767px) {
+    border-radius: 40px;
+  }
+`;
+
+export const StyledImage = styled(Image)`
+  display: block;
+  width: 100%;
+  height: 100%;
   border-radius: 100px;
   object-fit: cover;
 

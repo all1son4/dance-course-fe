@@ -1,15 +1,20 @@
+"use client";
+
 import { useTranslations } from "next-intl";
 
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { COOKIE_CONSENT_OPEN_SETTINGS_EVENT } from "@/lib/cookie-consent";
 import { Logo, SmallMail, SmallPhone } from "@/svg";
 
 import {
   AddressBox,
   AddressItem,
+  BottomLinks,
   BottomRow,
   Contact,
   ContactBox,
+  CookieSettingsButton,
   CopyRight,
   Divider,
   FooterBox,
@@ -22,6 +27,9 @@ import {
 
 export default function Footer() {
   const t = useTranslations("Footer");
+  const openCookieSettings = () => {
+    window.dispatchEvent(new Event(COOKIE_CONSENT_OPEN_SETTINGS_EVENT));
+  };
 
   return (
     <FooterBox>
@@ -59,7 +67,12 @@ export default function Footer() {
       <Divider />
       <BottomRow>
         <CopyRight>{t("copyright")}</CopyRight>
-        <PrivacyPolicy href="/privacy-policy">{t("privacyPolicy")}</PrivacyPolicy>
+        <BottomLinks>
+          <PrivacyPolicy href="/privacy-policy">{t("privacyPolicy")}</PrivacyPolicy>
+          <CookieSettingsButton type="button" onClick={openCookieSettings}>
+            {t("cookieSettings")}
+          </CookieSettingsButton>
+        </BottomLinks>
       </BottomRow>
     </FooterBox>
   );
