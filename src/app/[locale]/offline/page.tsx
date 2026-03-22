@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { Contacts, CourseCard, InteractiveCard } from "@/components";
+import CourseCard from "@/components/cards/CourseCard";
+import InteractiveCard from "@/components/cards/InteractiveCard";
 import SvgAsset from "@/components/common/SvgAsset";
+import Contacts from "@/components/other/Contacts";
 import { buildPageMetadata } from "@/lib/seo";
 
 import { getOfflineCoursesArray } from "./constants";

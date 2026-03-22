@@ -5,13 +5,11 @@ import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import {
-  Checkbox,
-  CurrencySwitch,
-  Input,
-  InteractiveCard,
-  StripePaymentTabs,
-} from "@/components";
+import InteractiveCard from "@/components/cards/InteractiveCard";
+import Checkbox from "@/components/common/Checkbox";
+import Input from "@/components/common/Input";
+import CurrencySwitch from "@/components/other/CurrencySwitch";
+import StripePaymentTabs from "@/components/other/StripePaymentTabs";
 import {
   type CountryOption,
   getFallbackCountryOptions,

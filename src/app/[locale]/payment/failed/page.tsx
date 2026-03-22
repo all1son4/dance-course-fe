@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { Button } from "@/components";
+import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { Failed } from "@/svg";
 

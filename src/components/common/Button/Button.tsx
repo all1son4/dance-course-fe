@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import type {
   AnchorHTMLAttributes,
   ButtonHTMLAttributes,
@@ -9,10 +8,11 @@ import type {
 } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
+import { LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import {
   NAVIGATION_BUTTON_LOADING_END_EVENT,
   NAVIGATION_BUTTON_LOADING_START_EVENT,
+  NAVIGATION_PROGRESS_COMPLETE_EVENT,
   NAVIGATION_PROGRESS_START_EVENT,
 } from "@/lib/navigation-events";
 import { getHashTargetFromHref, scrollToHashTarget } from "@/lib/scroll";
@@ -65,8 +65,6 @@ export default function Button<T extends ElementType = "button">({
   target = "_self",
   ...rest
 }: ButtonProps<T>) {
-  const pathname = usePathname();
-  const [searchKey, setSearchKey] = useState("");
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const hasActiveRouteLoadingRef = useRef(false);
   const revealTimerRef = useRef<number | null>(null);
@@ -101,7 +99,7 @@ export default function Button<T extends ElementType = "button">({
     }
   }, []);
 
-  const stopRouteLoadingState = useCallback(() => {
+  const finishRouteLoadingState = useCallback(() => {
     clearRouteLoadingTimers();
     setIsRouteLoading(false);
 
@@ -112,6 +110,20 @@ export default function Button<T extends ElementType = "button">({
     hasActiveRouteLoadingRef.current = false;
     window.dispatchEvent(new Event(NAVIGATION_BUTTON_LOADING_END_EVENT));
   }, [clearRouteLoadingTimers]);
+
+  const onNavigationSettled = useCallback(() => {
+    finishRouteLoadingState();
+  }, [finishRouteLoadingState]);
+
+  const clearNavigationCompleteListeners = useCallback(() => {
+    window.removeEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled);
+    window.removeEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationSettled);
+  }, [onNavigationSettled]);
+
+  const stopRouteLoadingState = useCallback(() => {
+    clearNavigationCompleteListeners();
+    finishRouteLoadingState();
+  }, [clearNavigationCompleteListeners, finishRouteLoadingState]);
 
   const startRouteLoadingState = useCallback(() => {
     window.dispatchEvent(new Event(NAVIGATION_PROGRESS_START_EVENT));
@@ -129,36 +141,12 @@ export default function Button<T extends ElementType = "button">({
     failSafeTimerRef.current = window.setTimeout(() => {
       stopRouteLoadingState();
     }, NAVIGATION_SPINNER_FAILSAFE_MS);
-  }, [clearRouteLoadingTimers, stopRouteLoadingState]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    ensureLocationChangeEvents();
-
-    const syncSearchKey = () => {
-      setSearchKey(window.location.search);
-    };
-
-    syncSearchKey();
-    window.addEventListener(LOCATION_CHANGE_EVENT, syncSearchKey);
-
-    return () => {
-      window.removeEventListener(LOCATION_CHANGE_EVENT, syncSearchKey);
-    };
-  }, []);
-
-  useEffect(() => {
-    const resetId = window.setTimeout(() => {
-      stopRouteLoadingState();
-    }, 0);
-
-    return () => {
-      window.clearTimeout(resetId);
-    };
-  }, [pathname, searchKey, stopRouteLoadingState]);
+    window.addEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled, { once: true });
+    window.addEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationSettled, {
+      once: true,
+    });
+  }, [clearRouteLoadingTimers, onNavigationSettled, stopRouteLoadingState]);
 
   useEffect(
     () => () => {

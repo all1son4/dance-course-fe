@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { Button, ContactCard, Contacts, CourseCard, FAQ } from "@/components";
+import ContactCard from "@/components/cards/ContactCard";
+import CourseCard from "@/components/cards/CourseCard";
+import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
+import Contacts from "@/components/other/Contacts";
+import FAQ from "@/components/other/FAQ";
 import {
   INSTAGRAM_DIB_GALA_URL,
   INSTAGRAM_PROFILE_HANDLE,

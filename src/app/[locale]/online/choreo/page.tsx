@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { Button, Contacts, TextContentCard } from "@/components";
 import ChoreoCard from "@/components/cards/ChoreoCard";
+import TextContentCard from "@/components/cards/TextContentCard";
+import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
+import Contacts from "@/components/other/Contacts";
 import { buildPageMetadata } from "@/lib/seo";
 
 import { getChoreos, getOnlineSuggestions } from "./constants";

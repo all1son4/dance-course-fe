@@ -160,32 +160,28 @@ export default function Header() {
       return;
     }
 
-    const lockedScrollY = window.scrollY;
-    const { style } = document.body;
+    const { style: bodyStyle } = document.body;
+    const { style: htmlStyle } = document.documentElement;
     const previousBodyStyles = {
-      left: style.left,
-      overflow: style.overflow,
-      position: style.position,
-      right: style.right,
-      top: style.top,
-      width: style.width,
+      overflow: bodyStyle.overflow,
+      touchAction: bodyStyle.touchAction,
+    };
+    const previousHtmlStyles = {
+      overflow: htmlStyle.overflow,
+      overscrollBehavior: htmlStyle.overscrollBehavior,
     };
 
-    style.overflow = "hidden";
-    style.position = "fixed";
-    style.top = `-${lockedScrollY}px`;
-    style.left = "0";
-    style.right = "0";
-    style.width = "100%";
+    // Keep iOS Safari bottom bar behavior stable: avoid body position:fixed while menu is open.
+    bodyStyle.overflow = "hidden";
+    bodyStyle.touchAction = "none";
+    htmlStyle.overflow = "hidden";
+    htmlStyle.overscrollBehavior = "none";
 
     return () => {
-      style.overflow = previousBodyStyles.overflow;
-      style.position = previousBodyStyles.position;
-      style.top = previousBodyStyles.top;
-      style.left = previousBodyStyles.left;
-      style.right = previousBodyStyles.right;
-      style.width = previousBodyStyles.width;
-      window.scrollTo(0, lockedScrollY);
+      bodyStyle.overflow = previousBodyStyles.overflow;
+      bodyStyle.touchAction = previousBodyStyles.touchAction;
+      htmlStyle.overflow = previousHtmlStyles.overflow;
+      htmlStyle.overscrollBehavior = previousHtmlStyles.overscrollBehavior;
     };
   }, [menuIsOpen]);
 

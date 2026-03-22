@@ -3,7 +3,7 @@
 import { useState } from "react";
 import styled from "styled-components";
 
-import { Button } from "@/components";
+import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 
 import TelegramAccessButton from "./telegram-access-button";

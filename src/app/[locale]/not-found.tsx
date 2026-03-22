@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 
-import { Button } from "@/components";
+import Button from "@/components/common/Button";
 import { Logo } from "@/svg";
 
 import { AbsoluteLogo, Content, ErrorText, NotFoundContainer } from "./not-found.styles";

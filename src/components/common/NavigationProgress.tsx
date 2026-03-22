@@ -8,6 +8,7 @@ import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/locatio
 import {
   NAVIGATION_BUTTON_LOADING_END_EVENT,
   NAVIGATION_BUTTON_LOADING_START_EVENT,
+  NAVIGATION_PROGRESS_COMPLETE_EVENT,
   NAVIGATION_PROGRESS_START_EVENT,
 } from "@/lib/navigation-events";
 
@@ -37,7 +38,7 @@ const ProgressWrap = styled.div`
   top: 0;
   left: 0;
   width: 100%;
-  height: 1px;
+  height: 1.5px;
   z-index: 120;
   pointer-events: none;
 `;
@@ -260,6 +261,7 @@ export default function NavigationProgress() {
     completedRequestCountRef.current = 0;
     setProgress(1);
     setIsActive(false);
+    window.dispatchEvent(new Event(NAVIGATION_PROGRESS_COMPLETE_EVENT));
 
     hideRef.current = window.setTimeout(() => {
       setIsVisible(false);

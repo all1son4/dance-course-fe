@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import styled, { keyframes } from "styled-components";
 
-import { Button } from "@/components";
+import Button from "@/components/common/Button";
 
 type TelegramAccessButtonProps = {
   buttonText: string;

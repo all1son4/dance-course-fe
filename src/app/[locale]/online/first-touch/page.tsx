@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import {
-  Button,
-  Contacts,
-  RoadmapContainer,
-  TextContentCard,
-  VideoPlayer,
-} from "@/components";
+import TextContentCard from "@/components/cards/TextContentCard";
+import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
+import Contacts from "@/components/other/Contacts";
+import RoadmapContainer from "@/components/other/ProgramRoadmap";
+import VideoPlayer from "@/components/other/VideoPlayer";
 import {
   buildCheckoutHref,
   DEFAULT_CHECKOUT_PRODUCT,

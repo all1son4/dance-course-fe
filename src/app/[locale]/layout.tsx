@@ -4,7 +4,9 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import { Footer, Header, PageContainer } from "@/components";
+import Footer from "@/components/layout/Footer";
+import Header from "@/components/layout/Header";
+import PageContainer from "@/components/layout/PageContainer";
 import { routing } from "@/i18n/routing";
 import { instagramUrl, normalizedSiteUrl, seoImagePath, telegramUrl } from "@/lib/seo";
 
