@@ -80,21 +80,6 @@ body[data-hide-footer="true"] main + footer {
   display: none;
 }
 
-body[data-payment-result="true"] main {
-  display: flex;
-  min-height: var(--payment-result-vh, 100dvh);
-}
-
-body[data-payment-result="true"] {
-  min-height: var(--payment-result-vh, 100dvh);
-}
-
-body[data-payment-result="true"] main > div {
-  display: flex;
-  flex-direction: column;
-  min-height: 100%;
-}
-
 /* Media defaults */
 img,
 picture,

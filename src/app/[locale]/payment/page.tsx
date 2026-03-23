@@ -128,7 +128,6 @@ const PaymentPage = observer(function PaymentPage() {
 
   useEffect(() => {
     document.body.removeAttribute("data-hide-footer");
-    document.body.removeAttribute("data-payment-result");
   }, []);
 
   useEffect(() => {

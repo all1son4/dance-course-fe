@@ -43,6 +43,15 @@ const subscribeToMobileViewport = (onStoreChange: () => void) => {
 
 const getMobileViewportSnapshot = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 const getMobileViewportServerSnapshot = () => false;
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
+const isPaymentResultPathname = (pathname: string) => {
+  const normalizedPathname = trimTrailingSlash(pathname);
+
+  return (
+    normalizedPathname.endsWith("/payment/success") ||
+    normalizedPathname.endsWith("/payment/failed")
+  );
+};
 
 export default function Header() {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
@@ -302,6 +311,11 @@ export default function Header() {
       ),
     },
   ];
+
+  if (pathname && isPaymentResultPathname(pathname)) {
+    return null;
+  }
+
   return (
     <HeaderWrap>
       <MobileMenuBackdrop
