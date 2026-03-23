@@ -53,6 +53,7 @@ html {
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   scroll-behavior: auto;
+  background: var(--bg);
 }
 
 body {
@@ -81,9 +82,11 @@ body[data-hide-footer="true"] main + footer {
 
 body[data-payment-result="true"] main {
   display: flex;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
+  min-height: var(--payment-result-vh, 100dvh);
+}
+
+body[data-payment-result="true"] {
+  min-height: var(--payment-result-vh, 100dvh);
 }
 
 body[data-payment-result="true"] main > div {

@@ -5,9 +5,7 @@ import { glass } from "@/styles/mixins/glass";
 export const Container = styled.div`
   display: flex;
   width: 100%;
-  min-height: 100vh;
-  min-height: 100svh;
-  min-height: 100dvh;
+  min-height: var(--payment-result-vh, 100dvh);
   height: auto;
   align-items: center;
   justify-content: center;
@@ -15,7 +13,9 @@ export const Container = styled.div`
   padding: 0;
 
   @media (max-width: 1024px) {
-    padding: 0 20px;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: calc(var(--safe-area-top) + 86px) 20px calc(var(--safe-area-bottom) + 20px);
   }
 `;
 
