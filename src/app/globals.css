@@ -57,6 +57,8 @@ html {
 
 body {
   margin: 0;
+  min-height: 100vh;
+  min-height: 100svh;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -75,6 +77,18 @@ main {
 
 body[data-hide-footer="true"] main + footer {
   display: none;
+}
+
+body[data-hide-footer="true"] main {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+body[data-hide-footer="true"] main > div {
+  display: flex;
+  flex-direction: column;
+  min-height: inherit;
 }
 
 /* Media defaults */
