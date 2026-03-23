@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 
 import Button from "@/components/common/Button";
@@ -25,8 +26,24 @@ import {
   TopRow,
 } from "./Footer.styles";
 
+const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
+const isPaymentResultPathname = (pathname: string) => {
+  const normalizedPathname = trimTrailingSlash(pathname);
+
+  return (
+    normalizedPathname.endsWith("/payment/success") ||
+    normalizedPathname.endsWith("/payment/failed")
+  );
+};
+
 export default function Footer() {
+  const pathname = usePathname();
   const t = useTranslations("Footer");
+
+  if (pathname && isPaymentResultPathname(pathname)) {
+    return null;
+  }
+
   const openCookieSettings = () => {
     window.dispatchEvent(new Event(COOKIE_CONSENT_OPEN_SETTINGS_EVENT));
   };
