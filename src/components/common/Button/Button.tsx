@@ -8,10 +8,7 @@ import type {
 } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import {
-  NAVIGATION_BUTTON_LOADING_END_EVENT,
-  NAVIGATION_BUTTON_LOADING_START_EVENT,
   NAVIGATION_PROGRESS_COMPLETE_EVENT,
   NAVIGATION_PROGRESS_START_EVENT,
 } from "@/lib/navigation-events";
@@ -28,7 +25,7 @@ import {
 } from "./Button.styles";
 import type { ButtonProps } from "./Button.types";
 
-const NAVIGATION_SPINNER_DELAY_MS = 130;
+const NAVIGATION_SPINNER_DELAY_MS = 135;
 const NAVIGATION_SPINNER_FAILSAFE_MS = 10_000;
 
 const isInternalNavigationHref = (value: string) => {
@@ -63,10 +60,10 @@ export default function Button<T extends ElementType = "button">({
   size = "lg",
   href = "",
   target = "_self",
+  isLoading = false,
   ...rest
 }: ButtonProps<T>) {
   const [isRouteLoading, setIsRouteLoading] = useState(false);
-  const hasActiveRouteLoadingRef = useRef(false);
   const revealTimerRef = useRef<number | null>(null);
   const failSafeTimerRef = useRef<number | null>(null);
   const buttonProps = rest as ButtonHTMLAttributes<HTMLButtonElement>;
@@ -86,6 +83,7 @@ export default function Button<T extends ElementType = "button">({
     () => target === "_self" && isInternalNavigationHref(href),
     [href, target],
   );
+  const isButtonLoading = isLoading || isRouteLoading;
 
   const clearRouteLoadingTimers = useCallback(() => {
     if (revealTimerRef.current !== null) {
@@ -102,13 +100,6 @@ export default function Button<T extends ElementType = "button">({
   const finishRouteLoadingState = useCallback(() => {
     clearRouteLoadingTimers();
     setIsRouteLoading(false);
-
-    if (!hasActiveRouteLoadingRef.current) {
-      return;
-    }
-
-    hasActiveRouteLoadingRef.current = false;
-    window.dispatchEvent(new Event(NAVIGATION_BUTTON_LOADING_END_EVENT));
   }, [clearRouteLoadingTimers]);
 
   const onNavigationSettled = useCallback(() => {
@@ -116,8 +107,8 @@ export default function Button<T extends ElementType = "button">({
   }, [finishRouteLoadingState]);
 
   const clearNavigationCompleteListeners = useCallback(() => {
-    window.removeEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled);
     window.removeEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationSettled);
+    window.removeEventListener("pagehide", onNavigationSettled);
   }, [onNavigationSettled]);
 
   const stopRouteLoadingState = useCallback(() => {
@@ -127,10 +118,6 @@ export default function Button<T extends ElementType = "button">({
 
   const startRouteLoadingState = useCallback(() => {
     window.dispatchEvent(new Event(NAVIGATION_PROGRESS_START_EVENT));
-    if (!hasActiveRouteLoadingRef.current) {
-      hasActiveRouteLoadingRef.current = true;
-      window.dispatchEvent(new Event(NAVIGATION_BUTTON_LOADING_START_EVENT));
-    }
 
     clearRouteLoadingTimers();
 
@@ -142,10 +129,10 @@ export default function Button<T extends ElementType = "button">({
       stopRouteLoadingState();
     }, NAVIGATION_SPINNER_FAILSAFE_MS);
 
-    window.addEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled, { once: true });
     window.addEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationSettled, {
       once: true,
     });
+    window.addEventListener("pagehide", onNavigationSettled, { once: true });
   }, [clearRouteLoadingTimers, onNavigationSettled, stopRouteLoadingState]);
 
   useEffect(
@@ -158,8 +145,8 @@ export default function Button<T extends ElementType = "button">({
   const buttonContent = (
     <ButtonContent>
       <ButtonLabel>{buttonText}</ButtonLabel>
-      <ButtonSpinnerSlot $isLoading={isRouteLoading}>
-        <ButtonSpinner aria-hidden $isLoading={isRouteLoading} />
+      <ButtonSpinnerSlot $isLoading={isButtonLoading}>
+        <ButtonSpinner aria-hidden $isLoading={isButtonLoading} />
       </ButtonSpinnerSlot>
     </ButtonContent>
   );
@@ -224,6 +211,10 @@ export default function Button<T extends ElementType = "button">({
 
       onLinkClick?.(event);
 
+      if (event.defaultPrevented) {
+        return;
+      }
+
       if (
         !shouldTrackRouteLoading ||
         isModifiedClickEvent(event as ReactMouseEvent<HTMLAnchorElement>)
@@ -239,15 +230,15 @@ export default function Button<T extends ElementType = "button">({
         $size={size}
         $variant={variant}
         $width={width}
-        $isLoading={isRouteLoading}
+        $isLoading={isButtonLoading}
         href={href}
         scroll={shouldDisableAutoScroll ? false : undefined}
         rel={linkRel}
         target={target}
         {...restLinkProps}
         onClick={onRouteLinkClick}
-        aria-busy={isRouteLoading || undefined}
-        aria-disabled={isDisabled || undefined}
+        aria-busy={isButtonLoading || undefined}
+        aria-disabled={isDisabled || isButtonLoading || undefined}
       >
         {buttonContent}
       </ButtonLinkWrapper>
@@ -259,10 +250,13 @@ export default function Button<T extends ElementType = "button">({
       $variant={variant}
       $width={width}
       $size={size}
+      $isLoading={isButtonLoading}
       {...buttonProps}
+      disabled={buttonProps.disabled || isButtonLoading}
+      aria-busy={isButtonLoading || undefined}
       type={buttonProps.type ?? "button"}
     >
-      {buttonText}
+      {buttonContent}
     </StyledButton>
   );
 }

@@ -210,8 +210,8 @@ export const ButtonSpinnerSlot = styled.span<{ $isLoading?: boolean }>`
   height: 14px;
   margin-left: ${({ $isLoading }) => ($isLoading ? "12px" : "0px")};
   transition:
-    width 0.2s ease,
-    margin-left 0.2s ease;
+    width var(--motion-fast, 160ms) var(--ease-standard, ease),
+    margin-left var(--motion-fast, 160ms) var(--ease-standard, ease);
   display: inline-flex;
   align-items: center;
   justify-content: center;

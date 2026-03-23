@@ -47,6 +47,8 @@ const GearIcon = ({ size = 24 }: { size?: number }) => (
   </svg>
 );
 
+type ConsentCategoryKey = "necessary" | "functional" | "analytics";
+
 export default function CookieConsentBanner() {
   const t = useTranslations("CookieConsent");
   const {
@@ -72,6 +74,7 @@ export default function CookieConsentBanner() {
   const shouldRenderPanel = isBannerVisible || isSettingsOpen;
   const functionalEnabled = selection.functional;
   const analyticsEnabled = selection.analytics;
+  const categories: ConsentCategoryKey[] = ["necessary", "functional", "analytics"];
 
   if (!shouldRenderPanel) {
     return null;
@@ -89,63 +92,51 @@ export default function CookieConsentBanner() {
         <InlineSettings $isOpen={isSettingsOpen} aria-hidden={!isSettingsOpen}>
           <InlineSettingsContent $isOpen={isSettingsOpen}>
             <Categories>
-              <CategoryCard>
-                <CategoryInfo>
-                  <CategoryTitle>
-                    {t("settings.categories.necessary.title")}
-                  </CategoryTitle>
-                  <CategoryDescription>
-                    {t("settings.categories.necessary.description")}
-                  </CategoryDescription>
-                </CategoryInfo>
-                <StaticTag>{t("settings.categories.necessary.alwaysOn")}</StaticTag>
-              </CategoryCard>
-              <CategoryCard>
-                <CategoryInfo>
-                  <CategoryTitle>
-                    {t("settings.categories.functional.title")}
-                  </CategoryTitle>
-                  <CategoryDescription>
-                    {t("settings.categories.functional.description")}
-                  </CategoryDescription>
-                </CategoryInfo>
-                <ToggleLabel>
-                  <ToggleInput
-                    type="checkbox"
-                    checked={functionalEnabled}
-                    onChange={(event) =>
-                      saveCustom({
-                        functional: event.target.checked,
-                        analytics: analyticsEnabled,
-                      })
-                    }
-                  />
-                  <ToggleTrack aria-hidden />
-                </ToggleLabel>
-              </CategoryCard>
-              <CategoryCard>
-                <CategoryInfo>
-                  <CategoryTitle>
-                    {t("settings.categories.analytics.title")}
-                  </CategoryTitle>
-                  <CategoryDescription>
-                    {t("settings.categories.analytics.description")}
-                  </CategoryDescription>
-                </CategoryInfo>
-                <ToggleLabel>
-                  <ToggleInput
-                    type="checkbox"
-                    checked={analyticsEnabled}
-                    onChange={(event) =>
-                      saveCustom({
-                        functional: functionalEnabled,
-                        analytics: event.target.checked,
-                      })
-                    }
-                  />
-                  <ToggleTrack aria-hidden />
-                </ToggleLabel>
-              </CategoryCard>
+              {categories.map((categoryKey) => {
+                const isNecessary = categoryKey === "necessary";
+                const isFunctional = categoryKey === "functional";
+                const checked = isFunctional ? functionalEnabled : analyticsEnabled;
+
+                return (
+                  <CategoryCard key={categoryKey}>
+                    <CategoryInfo>
+                      <CategoryTitle>
+                        {t(`settings.categories.${categoryKey}.title`)}
+                      </CategoryTitle>
+                      <CategoryDescription>
+                        {t(`settings.categories.${categoryKey}.description`)}
+                      </CategoryDescription>
+                    </CategoryInfo>
+
+                    {isNecessary ? (
+                      <StaticTag>{t("settings.categories.necessary.alwaysOn")}</StaticTag>
+                    ) : (
+                      <ToggleLabel>
+                        <ToggleInput
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(event) => {
+                            const nextChecked = event.target.checked;
+
+                            saveCustom(
+                              isFunctional
+                                ? {
+                                    functional: nextChecked,
+                                    analytics: analyticsEnabled,
+                                  }
+                                : {
+                                    functional: functionalEnabled,
+                                    analytics: nextChecked,
+                                  },
+                            );
+                          }}
+                        />
+                        <ToggleTrack aria-hidden />
+                      </ToggleLabel>
+                    )}
+                  </CategoryCard>
+                );
+              })}
             </Categories>
           </InlineSettingsContent>
         </InlineSettings>

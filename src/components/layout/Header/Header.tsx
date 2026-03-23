@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
@@ -27,8 +27,30 @@ import {
   Right,
 } from "./Header.styles";
 
+const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
+
+const subscribeToMobileViewport = (onStoreChange: () => void) => {
+  const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
+  const handleChange = () => {
+    onStoreChange();
+  };
+
+  mediaQuery.addEventListener("change", handleChange);
+  return () => {
+    mediaQuery.removeEventListener("change", handleChange);
+  };
+};
+
+const getMobileViewportSnapshot = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
+const getMobileViewportServerSnapshot = () => false;
+
 export default function Header() {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
+  const isMobileViewport = useSyncExternalStore(
+    subscribeToMobileViewport,
+    getMobileViewportSnapshot,
+    getMobileViewportServerSnapshot,
+  );
   const [isLocaleSwitching, setIsLocaleSwitching] = useState(false);
   const t = useTranslations("Header");
   const locale = useLocale();
@@ -282,7 +304,10 @@ export default function Header() {
   ];
   return (
     <HeaderWrap>
-      <MobileMenuBackdrop $isOpen={menuIsOpen} onClick={() => setMenuIsOpen(false)} />
+      <MobileMenuBackdrop
+        $isOpen={isMobileViewport && menuIsOpen}
+        onClick={() => setMenuIsOpen(false)}
+      />
       <Pill $isOpen={menuIsOpen}>
         <Brand href="/" aria-label={t("aria.home")} onClick={onBrandClick}>
           <Logo />
@@ -297,16 +322,19 @@ export default function Header() {
         >
           <MenuButton />
         </IconBox>
-        <Right>
-          {headerInteractiveContent.map((item) => (
-            <Fragment key={item.key}>{item.node}</Fragment>
-          ))}
-        </Right>
-        <Bottom id={mobileMenuId} $isOpen={menuIsOpen}>
-          {headerInteractiveContent.map((item) => (
-            <Fragment key={item.key}>{item.node}</Fragment>
-          ))}
-        </Bottom>
+        {!isMobileViewport ? (
+          <Right>
+            {headerInteractiveContent.map((item) => (
+              <Fragment key={item.key}>{item.node}</Fragment>
+            ))}
+          </Right>
+        ) : (
+          <Bottom id={mobileMenuId} $isOpen={menuIsOpen}>
+            {headerInteractiveContent.map((item) => (
+              <Fragment key={item.key}>{item.node}</Fragment>
+            ))}
+          </Bottom>
+        )}
       </Pill>
     </HeaderWrap>
   );

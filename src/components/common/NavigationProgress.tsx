@@ -6,8 +6,6 @@ import styled, { css, keyframes } from "styled-components";
 
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import {
-  NAVIGATION_BUTTON_LOADING_END_EVENT,
-  NAVIGATION_BUTTON_LOADING_START_EVENT,
   NAVIGATION_PROGRESS_COMPLETE_EVENT,
   NAVIGATION_PROGRESS_START_EVENT,
 } from "@/lib/navigation-events";
@@ -19,6 +17,7 @@ const PROGRESS_TICK_MS = 120;
 const COMPLETE_HIDE_DELAY_MS = 220;
 const FAILSAFE_COMPLETE_MS = 20_000;
 const NETWORK_QUIET_COMPLETE_DELAY_MS = 120;
+const MIN_NAVIGATION_PROGRESS_MS = 420;
 const IDLE_PHASE_ONE_MS = 600;
 const IDLE_PHASE_TWO_MS = 2_400;
 const IDLE_PHASE_THREE_MS = 7_000;
@@ -39,7 +38,7 @@ const ProgressWrap = styled.div`
   left: 0;
   width: 100%;
   height: 1.5px;
-  z-index: 120;
+  z-index: 9999;
   pointer-events: none;
 `;
 
@@ -217,7 +216,6 @@ export default function NavigationProgress() {
   const isNavigatingRef = useRef(false);
   const hasSettledRouteRef = useRef(false);
   const hasTrackedNetworkRef = useRef(false);
-  const activeButtonLoadersRef = useRef(0);
   const inFlightRequestsRef = useRef(0);
   const observedRequestCountRef = useRef(0);
   const completedRequestCountRef = useRef(0);
@@ -274,10 +272,6 @@ export default function NavigationProgress() {
       return;
     }
 
-    if (activeButtonLoadersRef.current > 0) {
-      return;
-    }
-
     if (inFlightRequestsRef.current > 0) {
       return;
     }
@@ -286,9 +280,13 @@ export default function NavigationProgress() {
       window.clearTimeout(completeDelayRef.current);
     }
 
+    const elapsedSinceStartMs = Math.max(0, Date.now() - navigationStartedAtRef.current);
+    const minRemainingMs = Math.max(0, MIN_NAVIGATION_PROGRESS_MS - elapsedSinceStartMs);
+    const completionDelayMs = Math.max(NETWORK_QUIET_COMPLETE_DELAY_MS, minRemainingMs);
+
     completeDelayRef.current = window.setTimeout(() => {
       completeProgress();
-    }, NETWORK_QUIET_COMPLETE_DELAY_MS);
+    }, completionDelayMs);
   }, [completeProgress]);
 
   const startProgress = useCallback(() => {
@@ -299,7 +297,6 @@ export default function NavigationProgress() {
     isNavigatingRef.current = true;
     hasSettledRouteRef.current = false;
     hasTrackedNetworkRef.current = false;
-    activeButtonLoadersRef.current = 0;
     inFlightRequestsRef.current = 0;
     observedRequestCountRef.current = 0;
     completedRequestCountRef.current = 0;
@@ -384,15 +381,6 @@ export default function NavigationProgress() {
       startProgress();
     };
 
-    const onButtonLoadingStart = () => {
-      activeButtonLoadersRef.current += 1;
-    };
-
-    const onButtonLoadingEnd = () => {
-      activeButtonLoadersRef.current = Math.max(0, activeButtonLoadersRef.current - 1);
-      maybeCompleteWhenQuiet();
-    };
-
     const onPopState = () => {
       startProgress();
     };
@@ -402,14 +390,6 @@ export default function NavigationProgress() {
       NAVIGATION_PROGRESS_START_EVENT,
       onStartEvent as EventListener,
     );
-    window.addEventListener(
-      NAVIGATION_BUTTON_LOADING_START_EVENT,
-      onButtonLoadingStart as EventListener,
-    );
-    window.addEventListener(
-      NAVIGATION_BUTTON_LOADING_END_EVENT,
-      onButtonLoadingEnd as EventListener,
-    );
     window.addEventListener("popstate", onPopState);
 
     return () => {
@@ -418,18 +398,10 @@ export default function NavigationProgress() {
         NAVIGATION_PROGRESS_START_EVENT,
         onStartEvent as EventListener,
       );
-      window.removeEventListener(
-        NAVIGATION_BUTTON_LOADING_START_EVENT,
-        onButtonLoadingStart as EventListener,
-      );
-      window.removeEventListener(
-        NAVIGATION_BUTTON_LOADING_END_EVENT,
-        onButtonLoadingEnd as EventListener,
-      );
       window.removeEventListener("popstate", onPopState);
       clearTimers();
     };
-  }, [clearTimers, maybeCompleteWhenQuiet, startProgress]);
+  }, [clearTimers, startProgress]);
 
   useEffect(() => {
     const originalFetch = window.fetch.bind(window);

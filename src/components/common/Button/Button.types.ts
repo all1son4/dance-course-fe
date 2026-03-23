@@ -10,6 +10,7 @@ export type ButtonBaseProps = {
   href?: string;
   target?: string;
   size?: "lg" | "sm";
+  isLoading?: boolean;
 };
 
 // Polymorphic-ish typing (good enough for Next Link `as={Link}`)

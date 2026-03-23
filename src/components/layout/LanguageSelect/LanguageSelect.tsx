@@ -64,6 +64,10 @@ export default function LanguageSelect({
   );
 
   useEffect(() => {
+    if (!open) {
+      return;
+    }
+
     function onDocClick(e: MouseEvent) {
       const el = wrapRef.current;
       if (!el) return;
@@ -79,7 +83,7 @@ export default function LanguageSelect({
       document.removeEventListener("pointerdown", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     if (!open || optionsCount === 0) {

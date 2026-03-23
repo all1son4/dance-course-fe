@@ -23,11 +23,26 @@ import {
   hasCookieConsentFor,
   persistCookieConsent,
 } from "@/lib/cookie-consent";
+import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
+
+type CookieSelection = { functional: boolean; analytics: boolean };
+
+const DEFAULT_SELECTION: CookieSelection = {
+  functional: true,
+  analytics: true,
+};
+
+const getSelectionFromConsent = (
+  nextConsent: CookieConsentRecord | null,
+): CookieSelection => ({
+  functional: nextConsent?.functional ?? DEFAULT_SELECTION.functional,
+  analytics: nextConsent?.analytics ?? DEFAULT_SELECTION.analytics,
+});
 
 type CookieConsentContextValue = {
   isReady: boolean;
   consent: CookieConsentRecord | null;
-  selection: { functional: boolean; analytics: boolean };
+  selection: CookieSelection;
   canUseFunctionalStorage: boolean;
   canUseAnalytics: boolean;
   isBannerVisible: boolean;
@@ -36,7 +51,7 @@ type CookieConsentContextValue = {
   closeSettings: () => void;
   acceptAll: () => void;
   rejectOptional: () => void;
-  saveCustom: (next: { functional: boolean; analytics: boolean }) => void;
+  saveCustom: (next: CookieSelection) => void;
 };
 
 const CookieConsentContext = createContext<CookieConsentContextValue | null>(null);
@@ -44,28 +59,29 @@ const CookieConsentContext = createContext<CookieConsentContextValue | null>(nul
 export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const [consent, setConsent] = useState<CookieConsentRecord | null>(null);
-  const [selection, setSelection] = useState<{ functional: boolean; analytics: boolean }>(
-    {
-      functional: true,
-      analytics: true,
-    },
-  );
+  const [selection, setSelection] = useState<CookieSelection>(DEFAULT_SELECTION);
   const [isBannerVisible, setIsBannerVisible] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const syncConsentState = useCallback(
+    (
+      nextConsent: CookieConsentRecord | null,
+      options?: { isBannerVisible?: boolean; isSettingsOpen?: boolean },
+    ) => {
+      setConsent(nextConsent);
+      setSelection(getSelectionFromConsent(nextConsent));
+      setIsBannerVisible(options?.isBannerVisible ?? !nextConsent);
+      setIsSettingsOpen(options?.isSettingsOpen ?? false);
+    },
+    [],
+  );
 
   useEffect(() => {
     const storedConsent = getStoredCookieConsent();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate consent from client storage after mount.
-    setConsent(storedConsent);
-    if (storedConsent) {
-      setSelection({
-        functional: storedConsent.functional,
-        analytics: storedConsent.analytics,
-      });
-    }
-    setIsBannerVisible(!storedConsent);
+    syncConsentState(storedConsent);
     setIsReady(true);
-  }, []);
+  }, [syncConsentState]);
 
   const closeSettings = useCallback(() => {
     setIsSettingsOpen(false);
@@ -75,10 +91,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     setIsBannerVisible(true);
     setIsSettingsOpen(true);
     if (consent) {
-      setSelection({
-        functional: consent.functional,
-        analytics: consent.analytics,
-      });
+      setSelection(getSelectionFromConsent(consent));
     }
   }, [consent]);
 
@@ -99,55 +112,54 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
       }
 
       const storedConsent = getStoredCookieConsent();
-
-      setConsent(storedConsent);
-      setIsBannerVisible(!storedConsent);
-      setIsSettingsOpen(false);
-      setSelection({
-        functional: storedConsent?.functional ?? true,
-        analytics: storedConsent?.analytics ?? true,
-      });
+      syncConsentState(storedConsent);
     };
 
     const handleConsentUpdated = (event: Event) => {
       const detail = (event as CustomEvent<CookieConsentRecord>).detail;
 
       if (detail) {
-        setConsent(detail);
-        setIsBannerVisible(false);
-        setIsSettingsOpen(false);
-        setSelection({
-          functional: detail.functional,
-          analytics: detail.analytics,
+        syncConsentState(detail, {
+          isBannerVisible: false,
+          isSettingsOpen: false,
         });
         return;
       }
 
       const storedConsent = getStoredCookieConsent();
-
-      setConsent(storedConsent);
-      setIsBannerVisible(!storedConsent);
-      setIsSettingsOpen(false);
-      setSelection({
-        functional: storedConsent?.functional ?? true,
-        analytics: storedConsent?.analytics ?? true,
-      });
+      syncConsentState(storedConsent);
     };
 
     const handleSettingsOpen = () => {
       openSettings();
     };
 
+    const handleLocationChange = () => {
+      const storedConsent = getStoredCookieConsent();
+
+      if (!storedConsent) {
+        return;
+      }
+
+      syncConsentState(storedConsent, {
+        isBannerVisible: false,
+        isSettingsOpen: false,
+      });
+    };
+
+    ensureLocationChangeEvents();
     window.addEventListener("storage", handleStorage);
     window.addEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdated);
     window.addEventListener(COOKIE_CONSENT_OPEN_SETTINGS_EVENT, handleSettingsOpen);
+    window.addEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
 
     return () => {
       window.removeEventListener("storage", handleStorage);
       window.removeEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdated);
       window.removeEventListener(COOKIE_CONSENT_OPEN_SETTINGS_EVENT, handleSettingsOpen);
+      window.removeEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
     };
-  }, [openSettings]);
+  }, [openSettings, syncConsentState]);
 
   const applyConsent = useCallback(
     (
@@ -158,19 +170,12 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
         options ?? {};
 
       persistCookieConsent(nextConsent);
-      setConsent(nextConsent);
-      setSelection({
-        functional: nextConsent.functional,
-        analytics: nextConsent.analytics,
+      syncConsentState(nextConsent, {
+        isBannerVisible: dismissBannerAfterApply ? false : isBannerVisible,
+        isSettingsOpen: closeSettingsAfterApply ? false : isSettingsOpen,
       });
-      if (closeSettingsAfterApply) {
-        setIsSettingsOpen(false);
-      }
-      if (dismissBannerAfterApply) {
-        setIsBannerVisible(false);
-      }
     },
-    [],
+    [isBannerVisible, isSettingsOpen, syncConsentState],
   );
 
   const acceptAll = useCallback(() => {
@@ -192,7 +197,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     applyConsent(createRejectedCookieConsent());
   }, [applyConsent]);
 
-  const saveCustom = useCallback((next: { functional: boolean; analytics: boolean }) => {
+  const saveCustom = useCallback((next: CookieSelection) => {
     setSelection(next);
   }, []);
 
