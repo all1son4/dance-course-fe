@@ -43,6 +43,7 @@ Optional Telegram env variables:
 - `TELEGRAM_ALERT_BOT_TOKEN` (optional; falls back to `TELEGRAM_BOT_TOKEN`)
 - `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in non-production environments like Vercel Preview)
 - `SHOW_SITE` (optional; set `false`/`0`/`off`/`no` to show a "coming soon" screen instead of site pages)
+- `ADMIN_INVITE_LINKS_PASSWORD` (required for `/admin` password access)
 
 `TELEGRAM_WEBHOOK_SECRET` is required in production (`NODE_ENV=production`).
 
@@ -83,6 +84,15 @@ The server exposes:
 - `POST /api/stripe/webhook`
 - `POST /api/telegram/access-link`
 - `POST /api/telegram/webhook`
+- `POST /admin/api/invite-links` (manual admin invite-link generator)
+- `GET /admin/auth` (admin session status)
+- `POST /admin/auth` (password -> sets admin cookie for 30 days)
+- `DELETE /admin/auth` (logout and clear admin session cookie)
+
+Admin utility page:
+
+- `/admin` (password form + httpOnly cookie session for 30 days)
+- `/admin/invite-links` (legacy path, redirects to `/admin`)
 
 For local webhook testing with the Stripe CLI:
 

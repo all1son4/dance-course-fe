@@ -18,6 +18,7 @@ import {
 } from "@/lib/google-sheets";
 import { toWarsawIso } from "@/lib/time";
 
+import { isAdminOfferAccessWorkflow } from "./admin-offer-access";
 import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
 import {
   buildTelegramBotStartLink,
@@ -131,11 +132,22 @@ const getStartTokenExpiryIso = () => {
   return toWarsawIso(new Date(expiresAt));
 };
 
-const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentSheetRecord) =>
-  parseTimestamp(paymentRecord.successful_customer_logged_at) ||
-  parseTimestamp(paymentRecord.updated_at) ||
-  parseTimestamp(paymentRecord.first_seen_at) ||
-  Date.now();
+const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentSheetRecord) => {
+  if (isAdminOfferAccessWorkflow(paymentRecord.access_workflow)) {
+    const activatedAtTs = parseTimestamp(paymentRecord.telegram_token_used_at);
+
+    if (activatedAtTs > 0) {
+      return activatedAtTs;
+    }
+  }
+
+  return (
+    parseTimestamp(paymentRecord.successful_customer_logged_at) ||
+    parseTimestamp(paymentRecord.updated_at) ||
+    parseTimestamp(paymentRecord.first_seen_at) ||
+    Date.now()
+  );
+};
 
 const getComputedAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) =>
   toWarsawIso(
@@ -345,7 +357,30 @@ export const isOfferEligibleForTelegramBotAccess = (offerId: string) =>
 export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
   isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
 
-const isOfferTimedTelegramAccess = (offerId: string) => isChoreoChannelOfferId(offerId);
+const isPaymentTimedTelegramAccess = (paymentRecord: PaymentSheetRecord) =>
+  isChoreoChannelOfferId(paymentRecord.offer_id) ||
+  isAdminOfferAccessWorkflow(paymentRecord.access_workflow);
+
+const prepareAdminOfferAccessWindowStartOnJoin = async (
+  paymentRecord: PaymentSheetRecord,
+) => {
+  if (
+    !isAdminOfferAccessWorkflow(paymentRecord.access_workflow) ||
+    paymentRecord.telegram_token_used_at.trim()
+  ) {
+    return paymentRecord;
+  }
+
+  const joinedAt = toWarsawIso();
+
+  return upsertPaymentRecord({
+    ...paymentRecord,
+    telegram_access_expires_at: "",
+    telegram_token_expires_at: "",
+    telegram_token_used_at: joinedAt,
+    updated_at: joinedAt,
+  });
+};
 
 const ensureTelegramAccessLinkForPaymentInternal = async (
   paymentRecord: PaymentSheetRecord,
@@ -386,7 +421,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
   }
 
   const normalizedChatId = channelTarget.chatId.trim();
-  const hasTimedAccess = isOfferTimedTelegramAccess(paymentRecord.offer_id);
+  const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecord);
   const cachedAccessLink = getCachedAccessLink({
     chatId: normalizedChatId,
     paymentIntentId: paymentRecord.payment_intent_id,
@@ -755,10 +790,15 @@ export const syncTelegramChannelMembership = async ({
     };
   }
 
-  const hasTimedAccess = isOfferTimedTelegramAccess(paymentRecord.offer_id);
-  const paymentRecordWithWindow = hasTimedAccess
-    ? (await updatePaymentAccessWindow(paymentRecord)).paymentRecord
+  const paymentRecordForAccessWindow = isAdminOfferAccessWorkflow(
+    paymentRecord.access_workflow,
+  )
+    ? await prepareAdminOfferAccessWindowStartOnJoin(paymentRecord)
     : paymentRecord;
+  const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecordForAccessWindow);
+  const paymentRecordWithWindow = hasTimedAccess
+    ? (await updatePaymentAccessWindow(paymentRecordForAccessWindow)).paymentRecord
+    : paymentRecordForAccessWindow;
   const accessExpiresAt = hasTimedAccess
     ? getPaymentAccessExpiresAtIso(paymentRecordWithWindow)
     : "";

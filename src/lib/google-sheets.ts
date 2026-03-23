@@ -310,6 +310,17 @@ export type TelegramUserBindingSheetRecord = Record<
   TelegramUserBindingsSheetHeader,
   string
 >;
+export type AdminInviteLinkHistorySourceRecord = {
+  accessUrl: string;
+  adminLabel: string;
+  createdAt: string;
+  lessonLanguage: string;
+  offerLabel: string;
+  productTitle: string;
+  purchaseItem: string;
+  tokenExpiresAt: string;
+  tokenUsedAt: string;
+};
 
 export class GoogleSheetsError extends Error {
   code: string;
@@ -1500,6 +1511,100 @@ export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
 
     return rightTs - leftTs;
   })[0];
+};
+
+export const findAdminInviteLinkHistorySourceRecords = async ({
+  accessWorkflow,
+  limit,
+}: {
+  accessWorkflow: string;
+  limit?: number;
+}) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const normalizedAccessWorkflow = accessWorkflow.trim().toLowerCase();
+
+  if (!normalizedAccessWorkflow) {
+    return [] as AdminInviteLinkHistorySourceRecord[];
+  }
+
+  const paymentRows = await getRows(
+    config,
+    config.paymentsSheetName,
+    PAYMENT_SHEET_HEADERS,
+    PAYMENT_SHEET_HEADER_LABELS,
+  );
+  const adminPaymentRows = paymentRows.filter(
+    (row) =>
+      row.access_workflow.trim().toLowerCase() === normalizedAccessWorkflow &&
+      row.payment_intent_id.trim(),
+  );
+
+  if (adminPaymentRows.length === 0) {
+    return [] as AdminInviteLinkHistorySourceRecord[];
+  }
+
+  const tokenRows = await getRows(
+    config,
+    config.telegramAccessTokensSheetName,
+    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+  );
+  const tokenById = new Map(
+    tokenRows
+      .map((row) => [row.token_id.trim(), row] as const)
+      .filter(([tokenId]) => Boolean(tokenId)),
+  );
+
+  const historyRows = adminPaymentRows
+    .map((paymentRow) => {
+      const tokenRecord = tokenById.get(paymentRow.telegram_token_id.trim());
+      const accessUrl = tokenRecord?.token_value.trim() ?? "";
+      const createdAt =
+        paymentRow.successful_customer_logged_at.trim() ||
+        paymentRow.first_seen_at.trim() ||
+        paymentRow.updated_at.trim() ||
+        tokenRecord?.created_at.trim() ||
+        "";
+
+      if (!accessUrl) {
+        return null;
+      }
+
+      return {
+        accessUrl,
+        adminLabel: paymentRow.customer_nickname.trim(),
+        createdAt,
+        lessonLanguage: paymentRow.lesson_language.trim(),
+        offerLabel: paymentRow.offer_label.trim(),
+        productTitle: paymentRow.product_title.trim(),
+        purchaseItem: paymentRow.purchase_item.trim(),
+        tokenExpiresAt:
+          paymentRow.telegram_token_expires_at.trim() ||
+          tokenRecord?.expires_at.trim() ||
+          "",
+        tokenUsedAt:
+          paymentRow.telegram_token_used_at.trim() || tokenRecord?.used_at.trim() || "",
+      } satisfies AdminInviteLinkHistorySourceRecord;
+    })
+    .filter((row): row is AdminInviteLinkHistorySourceRecord => Boolean(row))
+    .sort(
+      (left, right) => parseTimestamp(right.createdAt) - parseTimestamp(left.createdAt),
+    );
+
+  if (typeof limit === "number" && Number.isFinite(limit) && limit > 0) {
+    return historyRows.slice(0, limit);
+  }
+
+  return historyRows;
 };
 
 export const upsertTelegramAccessTokenRecord = async (
