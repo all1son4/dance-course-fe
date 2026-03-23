@@ -49,6 +49,12 @@ body {
   padding: 0;
 }
 
+@supports (-webkit-touch-callout: none) {
+  html {
+    height: -webkit-fill-available;
+  }
+}
+
 html {
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
@@ -70,6 +76,12 @@ body {
   overflow-x: hidden;
 }
 
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+  }
+}
+
 main {
   flex: 1;
   width: 100%;
@@ -83,6 +95,13 @@ body[data-hide-footer="true"] {
   height: 100vh;
   height: 100svh;
   height: 100dvh;
+}
+
+@supports (-webkit-touch-callout: none) {
+  body[data-hide-footer="true"] {
+    height: -webkit-fill-available;
+    min-height: -webkit-fill-available;
+  }
 }
 
 body[data-hide-footer="true"] main {

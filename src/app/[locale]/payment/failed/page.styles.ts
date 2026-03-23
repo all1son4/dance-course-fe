@@ -19,6 +19,10 @@ export const Container = styled.div`
   @media (max-width: 1024px) {
     padding: 0 20px;
   }
+
+  @supports (-webkit-touch-callout: none) {
+    min-height: -webkit-fill-available;
+  }
 `;
 
 export const ResultCard = styled.div`
