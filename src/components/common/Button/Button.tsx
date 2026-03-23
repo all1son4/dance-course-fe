@@ -27,6 +27,7 @@ import type { ButtonProps } from "./Button.types";
 
 const NAVIGATION_SPINNER_DELAY_MS = 135;
 const NAVIGATION_SPINNER_FAILSAFE_MS = 10_000;
+const NAVIGATION_SPINNER_COMPLETE_DELAY_MS = 220;
 
 const isInternalNavigationHref = (value: string) => {
   if (!value || value.startsWith("#") || value.startsWith("//")) {
@@ -66,6 +67,7 @@ export default function Button<T extends ElementType = "button">({
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const revealTimerRef = useRef<number | null>(null);
   const failSafeTimerRef = useRef<number | null>(null);
+  const completeTimerRef = useRef<number | null>(null);
   const buttonProps = rest as ButtonHTMLAttributes<HTMLButtonElement>;
   const {
     disabled: isDisabled,
@@ -95,6 +97,11 @@ export default function Button<T extends ElementType = "button">({
       window.clearTimeout(failSafeTimerRef.current);
       failSafeTimerRef.current = null;
     }
+
+    if (completeTimerRef.current !== null) {
+      window.clearTimeout(completeTimerRef.current);
+      completeTimerRef.current = null;
+    }
   }, []);
 
   const finishRouteLoadingState = useCallback(() => {
@@ -102,14 +109,25 @@ export default function Button<T extends ElementType = "button">({
     setIsRouteLoading(false);
   }, [clearRouteLoadingTimers]);
 
-  const onNavigationSettled = useCallback(() => {
+  const onNavigationPageHide = useCallback(() => {
     finishRouteLoadingState();
   }, [finishRouteLoadingState]);
 
+  const onNavigationComplete = useCallback(() => {
+    if (completeTimerRef.current !== null) {
+      window.clearTimeout(completeTimerRef.current);
+    }
+
+    // Keep in sync with NavigationProgress COMPLETE_HIDE_DELAY_MS.
+    completeTimerRef.current = window.setTimeout(() => {
+      finishRouteLoadingState();
+    }, NAVIGATION_SPINNER_COMPLETE_DELAY_MS);
+  }, [finishRouteLoadingState]);
+
   const clearNavigationCompleteListeners = useCallback(() => {
-    window.removeEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationSettled);
-    window.removeEventListener("pagehide", onNavigationSettled);
-  }, [onNavigationSettled]);
+    window.removeEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationComplete);
+    window.removeEventListener("pagehide", onNavigationPageHide);
+  }, [onNavigationComplete, onNavigationPageHide]);
 
   const stopRouteLoadingState = useCallback(() => {
     clearNavigationCompleteListeners();
@@ -129,11 +147,16 @@ export default function Button<T extends ElementType = "button">({
       stopRouteLoadingState();
     }, NAVIGATION_SPINNER_FAILSAFE_MS);
 
-    window.addEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationSettled, {
+    window.addEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationComplete, {
       once: true,
     });
-    window.addEventListener("pagehide", onNavigationSettled, { once: true });
-  }, [clearRouteLoadingTimers, onNavigationSettled, stopRouteLoadingState]);
+    window.addEventListener("pagehide", onNavigationPageHide, { once: true });
+  }, [
+    clearRouteLoadingTimers,
+    onNavigationComplete,
+    onNavigationPageHide,
+    stopRouteLoadingState,
+  ]);
 
   useEffect(
     () => () => {
