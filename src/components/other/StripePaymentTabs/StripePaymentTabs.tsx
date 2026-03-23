@@ -577,6 +577,7 @@ const StripePaymentForm = ({
         <Button
           buttonText={isSubmitting ? processingText : payButtonText}
           disabled={!stripe || !elements || isSubmitting || !isPaymentElementReady}
+          isLoading={isSubmitting}
           onClick={handlePayment}
           type="button"
           width="240px"
