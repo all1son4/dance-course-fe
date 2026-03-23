@@ -434,7 +434,7 @@ export const Form = styled.form`
   margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 `;
 
 export const FormControl = styled.div`
@@ -448,7 +448,7 @@ export const ButtonRow = styled.div`
 `;
 
 export const StatusText = styled.p<{ $tone: StatusTone }>`
-  margin: 8px 0 0;
+  margin: 0;
   font-size: 14px;
   line-height: 1.45;
   color: ${({ $tone }) => {

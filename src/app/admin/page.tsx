@@ -705,10 +705,9 @@ export default function AdminPage() {
       <AdminInvitePage>
         <LockViewport>
           <LockCard>
-            <LockTitle>Вход в админку</LockTitle>
+            <LockTitle>Вход в админ-панель</LockTitle>
             <LockDescription>
-              Один пароль открывает доступ ко всей админ-панели. Сессия хранится 30 дней в
-              httpOnly cookie.
+              Пароль открывает доступ ко всей админ-панели
             </LockDescription>
             <Form onSubmit={handleUnlockSubmit}>
               <FormControl>
