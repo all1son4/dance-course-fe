@@ -28,9 +28,21 @@ export const Title = styled.h2`
   line-height: 110%;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+  position: sticky;
+  top: calc(116px + var(--safe-area-top));
+  align-self: start;
+
+  @media (max-width: 767px) {
+    top: calc(84px + var(--safe-area-top));
+  }
 
   @media (max-width: 880px) {
     font-size: 40px;
+  }
+
+  @media (max-width: 680px) {
+    position: static;
+    top: auto;
   }
 `;
 

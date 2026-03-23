@@ -133,7 +133,6 @@ export const SupportText = styled.p`
   font-size: 20px;
   line-height: 110%;
   letter-spacing: 0;
-  text-align: right;
   margin: 0;
   color: #000000;
 

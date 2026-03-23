@@ -8,10 +8,8 @@ import type {
 } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  NAVIGATION_PROGRESS_COMPLETE_EVENT,
-  NAVIGATION_PROGRESS_START_EVENT,
-} from "@/lib/navigation-events";
+import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
+import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation-events";
 import { getHashTargetFromHref, scrollToHashTarget } from "@/lib/scroll";
 
 import {
@@ -27,7 +25,7 @@ import type { ButtonProps } from "./Button.types";
 
 const NAVIGATION_SPINNER_DELAY_MS = 135;
 const NAVIGATION_SPINNER_FAILSAFE_MS = 10_000;
-const NAVIGATION_SPINNER_COMPLETE_DELAY_MS = 220;
+const getRouteKey = (pathname: string, search: string) => `${pathname}${search}`;
 
 const isInternalNavigationHref = (value: string) => {
   if (!value || value.startsWith("#") || value.startsWith("//")) {
@@ -67,7 +65,6 @@ export default function Button<T extends ElementType = "button">({
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const revealTimerRef = useRef<number | null>(null);
   const failSafeTimerRef = useRef<number | null>(null);
-  const completeTimerRef = useRef<number | null>(null);
   const buttonProps = rest as ButtonHTMLAttributes<HTMLButtonElement>;
   const {
     disabled: isDisabled,
@@ -97,11 +94,6 @@ export default function Button<T extends ElementType = "button">({
       window.clearTimeout(failSafeTimerRef.current);
       failSafeTimerRef.current = null;
     }
-
-    if (completeTimerRef.current !== null) {
-      window.clearTimeout(completeTimerRef.current);
-      completeTimerRef.current = null;
-    }
   }, []);
 
   const finishRouteLoadingState = useCallback(() => {
@@ -109,25 +101,14 @@ export default function Button<T extends ElementType = "button">({
     setIsRouteLoading(false);
   }, [clearRouteLoadingTimers]);
 
-  const onNavigationPageHide = useCallback(() => {
+  const onNavigationSettled = useCallback(() => {
     finishRouteLoadingState();
   }, [finishRouteLoadingState]);
 
-  const onNavigationComplete = useCallback(() => {
-    if (completeTimerRef.current !== null) {
-      window.clearTimeout(completeTimerRef.current);
-    }
-
-    // Keep in sync with NavigationProgress COMPLETE_HIDE_DELAY_MS.
-    completeTimerRef.current = window.setTimeout(() => {
-      finishRouteLoadingState();
-    }, NAVIGATION_SPINNER_COMPLETE_DELAY_MS);
-  }, [finishRouteLoadingState]);
-
   const clearNavigationCompleteListeners = useCallback(() => {
-    window.removeEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationComplete);
-    window.removeEventListener("pagehide", onNavigationPageHide);
-  }, [onNavigationComplete, onNavigationPageHide]);
+    window.removeEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled);
+    window.removeEventListener("pagehide", onNavigationSettled);
+  }, [onNavigationSettled]);
 
   const stopRouteLoadingState = useCallback(() => {
     clearNavigationCompleteListeners();
@@ -136,6 +117,7 @@ export default function Button<T extends ElementType = "button">({
 
   const startRouteLoadingState = useCallback(() => {
     window.dispatchEvent(new Event(NAVIGATION_PROGRESS_START_EVENT));
+    ensureLocationChangeEvents();
 
     clearRouteLoadingTimers();
 
@@ -147,16 +129,11 @@ export default function Button<T extends ElementType = "button">({
       stopRouteLoadingState();
     }, NAVIGATION_SPINNER_FAILSAFE_MS);
 
-    window.addEventListener(NAVIGATION_PROGRESS_COMPLETE_EVENT, onNavigationComplete, {
+    window.addEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled, {
       once: true,
     });
-    window.addEventListener("pagehide", onNavigationPageHide, { once: true });
-  }, [
-    clearRouteLoadingTimers,
-    onNavigationComplete,
-    onNavigationPageHide,
-    stopRouteLoadingState,
-  ]);
+    window.addEventListener("pagehide", onNavigationSettled, { once: true });
+  }, [clearRouteLoadingTimers, onNavigationSettled, stopRouteLoadingState]);
 
   useEffect(
     () => () => {
@@ -242,6 +219,21 @@ export default function Button<T extends ElementType = "button">({
         !shouldTrackRouteLoading ||
         isModifiedClickEvent(event as ReactMouseEvent<HTMLAnchorElement>)
       ) {
+        return;
+      }
+
+      try {
+        const targetUrl = new URL(href, window.location.href);
+        const targetRouteKey = getRouteKey(targetUrl.pathname, targetUrl.search);
+        const currentRouteKey = getRouteKey(
+          window.location.pathname,
+          window.location.search,
+        );
+
+        if (targetRouteKey === currentRouteKey) {
+          return;
+        }
+      } catch {
         return;
       }
 

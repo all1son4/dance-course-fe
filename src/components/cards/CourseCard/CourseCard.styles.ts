@@ -18,6 +18,12 @@ export const CardContainer = styled.div<{ $bgColor?: string }>`
   flex-direction: column;
   justify-content: space-between;
   z-index: 20;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover .courseCardIconBox {
+      transform: translateY(-10px);
+    }
+  }
 `;
 
 export const TitleBox = styled.div`
@@ -64,4 +70,10 @@ export const IconBox = styled.div`
   top: -42px;
   right: 5px;
   z-index: 25;
+  transform: translateY(0);
+  transition: transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
