@@ -14,6 +14,7 @@ import { instagramUrl, normalizedSiteUrl, seoImagePath, telegramUrl } from "@/li
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#d8dade",
   viewportFit: "cover",
 };
 

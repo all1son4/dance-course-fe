@@ -4,13 +4,11 @@ import { glass } from "@/styles/mixins/glass";
 
 export const Container = styled.div`
   display: flex;
-  flex: 1;
   width: 100%;
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
-  min-height: 100%;
-  height: 100%;
+  height: auto;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
@@ -18,10 +16,6 @@ export const Container = styled.div`
 
   @media (max-width: 1024px) {
     padding: 0 20px;
-  }
-
-  @supports (-webkit-touch-callout: none) {
-    min-height: -webkit-fill-available;
   }
 `;
 
