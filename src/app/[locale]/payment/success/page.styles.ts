@@ -5,12 +5,16 @@ import { glass } from "@/styles/mixins/glass";
 export const Container = styled.div`
   display: flex;
   width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
   min-height: 100dvh;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  padding: 0 0 var(--safe-area-bottom);
 
   @media (max-width: 1024px) {
-    padding: 0 20px;
+    padding: 0 20px var(--safe-area-bottom);
   }
 `;
 

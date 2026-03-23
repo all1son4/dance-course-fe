@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { GOOGLE_FONTS_MANROPE_CSS_URL } from "@/constants/links";
+import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 
 import {
   Actions,
@@ -445,6 +446,12 @@ const StripePaymentForm = ({
   const redirectToResultPage = (pathname: string, nextPaymentIntentId?: string) => {
     if (typeof window === "undefined") {
       return;
+    }
+
+    try {
+      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+    } catch {
+      // Ignore storage access failures (e.g. strict browser privacy mode).
     }
 
     window.location.assign(createResultPageUrl(pathname, nextPaymentIntentId));

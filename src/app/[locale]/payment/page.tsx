@@ -67,6 +67,31 @@ const getCompactSummaryTitle = (fullTitle: string) => {
 };
 
 const PAYMENT_DRAFT_SAVE_DEBOUNCE_MS = 240;
+const LEGACY_NAVIGATION_TYPE_RELOAD = 1;
+
+const isReloadNavigation = () => {
+  if (typeof window === "undefined" || typeof window.performance === "undefined") {
+    return false;
+  }
+
+  const [navigationEntry] = window.performance.getEntriesByType(
+    "navigation",
+  ) as PerformanceNavigationTiming[];
+
+  if (navigationEntry?.type) {
+    return navigationEntry.type === "reload";
+  }
+
+  const legacyNavigation = (
+    window.performance as Performance & {
+      navigation?: {
+        type?: number;
+      };
+    }
+  ).navigation;
+
+  return legacyNavigation?.type === LEGACY_NAVIGATION_TYPE_RELOAD;
+};
 
 const PaymentPage = observer(function PaymentPage() {
   const paymentStore = usePaymentStore();
@@ -165,6 +190,11 @@ const PaymentPage = observer(function PaymentPage() {
 
     hasHydratedCheckoutDraftRef.current = true;
 
+    if (!isReloadNavigation()) {
+      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+      return;
+    }
+
     const serializedDraft = sessionStorage.getItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
 
     if (!serializedDraft) {
@@ -222,16 +252,6 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.selectedProductId,
     paymentStore.validationLocale,
   ]);
-
-  useEffect(() => {
-    if (!canUseFunctionalStorage) {
-      return;
-    }
-
-    return () => {
-      persistCheckoutDraftNow();
-    };
-  }, [canUseFunctionalStorage, persistCheckoutDraftNow]);
 
   useEffect(() => {
     if (!paymentStore.canShowStripe) {

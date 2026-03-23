@@ -21,6 +21,11 @@ export default function CheckoutDraftLifecycle() {
     }
 
     const previousPathname = previousPathnameRef.current;
+    const isCurrentPathCheckout = isCheckoutPaymentPathname(pathname);
+
+    if (!isCurrentPathCheckout) {
+      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+    }
 
     if (
       previousPathname &&
