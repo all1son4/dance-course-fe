@@ -1,1 +1,3 @@
-export { DELETE, GET, POST, runtime } from "../../auth/route";
+export { DELETE, GET, POST } from "../../auth/route";
+
+export const runtime = "nodejs";

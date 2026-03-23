@@ -1,1 +1,3 @@
-export { POST, runtime } from "../../api/invite-links/route";
+export { POST } from "../../api/invite-links/route";
+
+export const runtime = "nodejs";
