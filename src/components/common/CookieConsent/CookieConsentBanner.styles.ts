@@ -22,7 +22,7 @@ export const BannerViewport = styled.div`
 export const BannerCard = styled.div`
   ${glass({
     radius: "60px",
-    bgParam: "rgba(255, 255, 255, 0.6)",
+    bgParam: "rgba(255, 255, 255, 0.8)",
   })}
   padding: 40px;
   box-sizing: border-box;

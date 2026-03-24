@@ -100,7 +100,7 @@ export const Menu = styled.div`
 
   ${glass({
     radius: "30px",
-    bgParam: "rgba(255, 255, 255, 0.95)",
+    bgParam: "rgba(255, 255, 255, 0.9)",
   })}
 
   display: flex;

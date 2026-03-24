@@ -33,6 +33,7 @@ const sizeStyles = {
 const variantStyles = {
   primary: css`
     ${glass({
+      variant: "control",
       radius: "100px",
       bgParam: "rgba(124, 0, 2, 1)",
     })}
@@ -41,6 +42,7 @@ const variantStyles = {
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         ${glass({
+          variant: "control",
           radius: "100px",
           bgParam: "rgba(11, 11, 11, 1)",
         })}
@@ -49,6 +51,7 @@ const variantStyles = {
   `,
   secondary: css`
     ${glass({
+      variant: "control",
       radius: "100px",
     })}
     color: #000000;
@@ -56,6 +59,7 @@ const variantStyles = {
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         ${glass({
+          variant: "control",
           radius: "100px",
           bgParam: "rgba(11, 11, 11, 1)",
         })}

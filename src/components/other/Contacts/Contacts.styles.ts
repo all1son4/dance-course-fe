@@ -11,8 +11,9 @@ export const Container = styled.div<{ $bgColor?: string }>`
 
   ${({ $bgColor }) =>
     glass({
+      variant: "surface",
       radius: "100px",
-      bgParam: $bgColor ? $bgColor : `rgba(255, 255, 255, 0.5)`,
+      bgParam: $bgColor ?? "rgba(255, 255, 255, 0.5)",
     })}
 
   @media (max-width: 1340px) {
