@@ -293,7 +293,7 @@ export const glass = ({
       content: "";
       position: absolute;
       inset: ${innerInsetPx}px;
-      border-radius: calc(${radius} - ${innerInsetPx}px);
+      border-radius: inherit;
       pointer-events: none;
       opacity: ${hasSolidTint ? 0.7 : 0.82};
       transition: opacity 0.2s ease;
