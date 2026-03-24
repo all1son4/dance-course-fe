@@ -406,7 +406,7 @@ export default function AdminPage() {
 
         if (data.errorCode === "auth_not_configured") {
           setAuthStatus({
-            text: "Не задан ADMIN_INVITE_LINKS_PASSWORD на сервере.",
+            text: "Не задан ADMIN_PASSWORD на сервере.",
             tone: "error",
           });
           return;
@@ -554,7 +554,7 @@ export default function AdminPage() {
 
       if (data.errorCode === "auth_not_configured") {
         setAuthStatus({
-          text: "Не задан ADMIN_INVITE_LINKS_PASSWORD на сервере.",
+          text: "Не задан ADMIN_PASSWORD на сервере.",
           tone: "error",
         });
         return;

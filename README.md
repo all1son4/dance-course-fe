@@ -43,7 +43,7 @@ Optional Telegram env variables:
 - `TELEGRAM_ALERT_BOT_TOKEN` (optional; falls back to `TELEGRAM_BOT_TOKEN`)
 - `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in non-production environments like Vercel Preview)
 - `SHOW_SITE` (optional; set `false`/`0`/`off`/`no` to show a "coming soon" screen instead of site pages)
-- `ADMIN_INVITE_LINKS_PASSWORD` (required for `/admin` password access)
+- `ADMIN_PASSWORD` (required for `/admin` password access)
 
 `TELEGRAM_WEBHOOK_SECRET` is required in production (`NODE_ENV=production`).
 

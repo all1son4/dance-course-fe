@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 export const ADMIN_INVITE_LINKS_SESSION_COOKIE_NAME = "admin_invite_links_session";
 export const ADMIN_INVITE_LINKS_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
 
-const getConfiguredPassword = () => process.env.ADMIN_INVITE_LINKS_PASSWORD?.trim() ?? "";
+const getConfiguredPassword = () => process.env.ADMIN_PASSWORD?.trim() ?? "";
 
 const getNowUnixSeconds = () => Math.floor(Date.now() / 1000);
 
