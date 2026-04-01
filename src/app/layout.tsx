@@ -26,7 +26,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const showSite = isSiteVisible();
 
   return (
-    <html lang="ru">
+    <html lang="en">
       <body className={manrope.variable}>
         <CookieConsentProvider>
           <ConsentAwareAnalytics />

@@ -15,7 +15,7 @@ import {
   INSTAGRAM_STAGE18_URL,
   INSTAGRAM_WORLD_OF_DANCE_POLAND_URL,
 } from "@/constants/links";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
 import { Insta, Logo, Quote } from "@/svg";
 
 import {
@@ -57,12 +57,18 @@ type HomePageMetadataProps = {
 export async function generateMetadata({
   params,
 }: HomePageMetadataProps): Promise<Metadata> {
-  const { locale } = await params;
-  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
-  const pageT = await getTranslations({ locale, namespace: "Metadata.pages.home" });
+  await params;
+  const metadataT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata",
+  });
+  const pageT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata.pages.home",
+  });
 
   return buildPageMetadata({
-    locale,
+    locale: seoTargetLocale,
     path: "/",
     title: pageT("title"),
     description: pageT("description"),

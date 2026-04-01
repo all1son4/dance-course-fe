@@ -10,7 +10,7 @@ import {
   upsertPaymentRecord,
 } from "@/lib/google-sheets";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
-import { toWarsawIso } from "@/lib/time";
+import { toUtcIso } from "@/lib/time";
 
 import { getManagedPaymentIntentSnapshot } from "../payment-intent/lib";
 
@@ -100,7 +100,7 @@ const mapPaymentIntentToPaymentRecord = (
   existingRecord: PaymentSheetRecord | null,
 ) => {
   const snapshot = getManagedPaymentIntentSnapshot(paymentIntent);
-  const timestamp = toWarsawIso();
+  const timestamp = toUtcIso();
   const offerId = paymentIntent.metadata.offer_id ?? "";
   const localizedOfferMetadata = getLocalizedOfferMetadataByOfferId(
     offerId,
@@ -267,7 +267,7 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
       event_type: event.type,
       outcome: paymentRecord.outcome,
       payment_intent_id: paymentRecord.payment_intent_id,
-      processed_at: toWarsawIso(),
+      processed_at: toUtcIso(),
       status: paymentRecord.status,
     });
 
@@ -301,7 +301,7 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
     });
     savedPaymentRecord = await upsertPaymentRecord({
       ...savedPaymentRecord,
-      successful_customer_logged_at: toWarsawIso(),
+      successful_customer_logged_at: toUtcIso(),
     });
   }
 
@@ -310,7 +310,7 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
     event_type: event.type,
     outcome: savedPaymentRecord.outcome,
     payment_intent_id: savedPaymentRecord.payment_intent_id,
-    processed_at: toWarsawIso(),
+    processed_at: toUtcIso(),
     status: savedPaymentRecord.status,
   });
 

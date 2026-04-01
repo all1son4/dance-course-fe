@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Fragment } from "react";
 
-import { buildPageMetadata } from "@/lib/seo";
+import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
 
 import { getPrivacyPolicyItems } from "./constants";
 import {
@@ -26,15 +26,18 @@ type PrivacyPolicyPageMetadataProps = {
 export async function generateMetadata({
   params,
 }: PrivacyPolicyPageMetadataProps): Promise<Metadata> {
-  const { locale } = await params;
-  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
+  await params;
+  const metadataT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata",
+  });
   const pageT = await getTranslations({
-    locale,
+    locale: seoTargetLocale,
     namespace: "Metadata.pages.privacyPolicy",
   });
 
   return buildPageMetadata({
-    locale,
+    locale: seoTargetLocale,
     path: "/privacy-policy",
     title: pageT("title"),
     description: pageT("description"),

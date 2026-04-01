@@ -24,7 +24,7 @@ import {
   getTelegramAlertsChatId,
   isTelegramAlertsConfigured,
 } from "@/lib/telegram/config";
-import { toWarsawIso, WARSAW_TIME_ZONE_LABEL } from "@/lib/time";
+import { toUtcIso, UTC_TIME_ZONE_LABEL } from "@/lib/time";
 
 import {
   getResolvedCheckoutLessonLanguage,
@@ -189,7 +189,7 @@ const tryAcquirePaymentProcessingLease = async ({
     };
   }
 
-  const now = toWarsawIso();
+  const now = toUtcIso();
   const leaseStatus = createPaymentProcessingStatus();
   await upsertPaymentRecord({
     ...latestPaymentRecord,
@@ -385,12 +385,10 @@ const buildPurchaseAlertText = ({
     `<b>Offer ID:</b> <code>${escapeTelegramHtml(paymentRecord.offer_id || "—")}</code>`,
     `<b>Stripe Event:</b> <code>${escapeTelegramHtml(eventId)}</code>`,
     `<b>Тип события:</b> ${escapeTelegramHtml(eventType)}`,
-    `<b>Время события Stripe (${WARSAW_TIME_ZONE_LABEL}):</b> ${escapeTelegramHtml(
+    `<b>Время события Stripe (${UTC_TIME_ZONE_LABEL}):</b> ${escapeTelegramHtml(
       eventCreatedAtIso,
     )}`,
-    `<b>Обработано (${WARSAW_TIME_ZONE_LABEL}):</b> ${escapeTelegramHtml(
-      processedAtIso,
-    )}`,
+    `<b>Обработано (${UTC_TIME_ZONE_LABEL}):</b> ${escapeTelegramHtml(processedAtIso)}`,
   ];
 
   return lines.join("\n");
@@ -461,7 +459,7 @@ const updatePaymentEmailDeliveryStatus = async ({
   paymentRecord: PaymentSheetRecord;
   status: "failed" | "sent" | "skipped";
 }) => {
-  const now = toWarsawIso();
+  const now = toUtcIso();
   const latestPaymentRecord = await getFreshPaymentRecord({
     fallbackPaymentRecord: paymentRecord,
     paymentIntentId: paymentRecord.payment_intent_id,
@@ -499,7 +497,7 @@ const updatePurchaseAlertStatus = async ({
   paymentRecord: PaymentSheetRecord;
   status: "failed" | "sent";
 }) => {
-  const now = toWarsawIso();
+  const now = toUtcIso();
   const latestPaymentRecord = await getFreshPaymentRecord({
     fallbackPaymentRecord: paymentRecord,
     paymentIntentId: paymentRecord.payment_intent_id,
@@ -780,11 +778,11 @@ const sendPurchaseAlert = async ({
     }
 
     const alertText = buildPurchaseAlertText({
-      eventCreatedAtIso: toWarsawIso(event.created * 1000),
+      eventCreatedAtIso: toUtcIso(event.created * 1000),
       eventId: handledEvent.eventId,
       eventType: handledEvent.eventType,
       paymentRecord: latestPaymentRecord,
-      processedAtIso: toWarsawIso(),
+      processedAtIso: toUtcIso(),
     });
 
     try {

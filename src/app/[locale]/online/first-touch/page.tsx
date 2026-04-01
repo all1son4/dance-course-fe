@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
 import TextContentCard from "@/components/cards/TextContentCard";
@@ -13,7 +13,7 @@ import {
   DEFAULT_CHECKOUT_PRODUCT,
   getDefaultProductOffer,
 } from "@/constants/sellable-products";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
 
 import { getOnlineSuggestions } from "./constants";
 import {
@@ -50,15 +50,18 @@ type FirstTouchPageMetadataProps = {
 export async function generateMetadata({
   params,
 }: FirstTouchPageMetadataProps): Promise<Metadata> {
-  const { locale } = await params;
-  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
+  await params;
+  const metadataT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata",
+  });
   const pageT = await getTranslations({
-    locale,
+    locale: seoTargetLocale,
     namespace: "Metadata.pages.firstTouch",
   });
 
   return buildPageMetadata({
-    locale,
+    locale: seoTargetLocale,
     path: "/online/first-touch",
     title: pageT("title"),
     description: pageT("description"),
@@ -72,15 +75,50 @@ export async function generateMetadata({
 }
 
 export default function FirstTouch() {
+  const locale = useLocale();
   const t = useTranslations("FirstTouchPage");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
+  const defaultOffer = getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT);
   const checkoutHref = buildCheckoutHref({
-    offerId: getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT).id,
+    offerId: defaultOffer.id,
     productId: DEFAULT_CHECKOUT_PRODUCT.id,
   });
+  const courseStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    name: t("hero.title"),
+    description: `${t("hero.description.1")} ${t("hero.description.2")}`,
+    inLanguage: locale,
+    provider: {
+      "@type": "Person",
+      name: "Anna Strok",
+      url: normalizedSiteUrl,
+    },
+    url: `${normalizedSiteUrl}/online/first-touch`,
+    offers: [
+      {
+        "@type": "Offer",
+        availability: "https://schema.org/InStock",
+        price: defaultOffer.prices.eur,
+        priceCurrency: "EUR",
+        url: `${normalizedSiteUrl}${checkoutHref}&currency=eur`,
+      },
+      {
+        "@type": "Offer",
+        availability: "https://schema.org/InStock",
+        price: defaultOffer.prices.pln,
+        priceCurrency: "PLN",
+        url: `${normalizedSiteUrl}${checkoutHref}&currency=pln`,
+      },
+    ],
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(courseStructuredData) }}
+      />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>

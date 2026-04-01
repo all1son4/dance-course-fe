@@ -72,6 +72,8 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
 
 export const Flag = styled.span`
   display: flex;
+  border: 1px solid rgba(72, 72, 72, 0.3);
+  border-radius: 9999px;
 `;
 
 export const TriggerLabel = styled.span`

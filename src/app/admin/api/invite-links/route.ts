@@ -26,7 +26,7 @@ import {
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
-import { toWarsawIso } from "@/lib/time";
+import { toUtcIso } from "@/lib/time";
 
 export const runtime = "nodejs";
 
@@ -142,7 +142,7 @@ const createAdminOfferPaymentRecord = ({
 }: ResolvedAdminSelection & {
   adminLabel: string;
 }): PaymentSheetRecord => {
-  const now = toWarsawIso();
+  const now = toUtcIso();
   const paymentIntentId = createSyntheticId("adm_offer_pi_");
   const checkoutSessionId = createSyntheticId("adm_offer_cs_");
   const eventId = createSyntheticId("adm_offer_evt_");

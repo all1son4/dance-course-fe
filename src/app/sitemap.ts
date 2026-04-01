@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import { toWarsawIso } from "@/lib/time";
+import { toUtcIso } from "@/lib/time";
 
 const siteUrl =
   process.env.SITE_URL?.trim() ||
@@ -21,7 +21,7 @@ const indexableRoutes = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = toWarsawIso();
+  const lastModified = toUtcIso();
 
   return indexableRoutes.map((route) => ({
     url: `${normalizedSiteUrl}${route}`,

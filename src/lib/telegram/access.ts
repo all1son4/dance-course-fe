@@ -16,7 +16,7 @@ import {
   upsertTelegramAccessTokenRecord,
   upsertTelegramUserBindingRecord,
 } from "@/lib/google-sheets";
-import { toWarsawIso } from "@/lib/time";
+import { toUtcIso } from "@/lib/time";
 
 import { isAdminOfferAccessWorkflow } from "./admin-offer-access";
 import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
@@ -129,7 +129,7 @@ const getStartTokenExpiryIso = () => {
   const ttlHours = getTelegramStartTokenTtlHours();
   const expiresAt = Date.now() + ttlHours * 60 * 60 * 1000;
 
-  return toWarsawIso(new Date(expiresAt));
+  return toUtcIso(new Date(expiresAt));
 };
 
 const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentSheetRecord) => {
@@ -150,7 +150,7 @@ const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentSheetRecord) =>
 };
 
 const getComputedAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) =>
-  toWarsawIso(
+  toUtcIso(
     new Date(
       getPaymentAccessWindowStartedAtTs(paymentRecord) +
         getTelegramChannelAccessDurationMs(),
@@ -250,7 +250,7 @@ const updatePaymentAccessWindow = async (paymentRecord: PaymentSheetRecord) => {
     };
   }
 
-  const now = toWarsawIso();
+  const now = toUtcIso();
   const nextPaymentRecord = await upsertPaymentRecord({
     ...paymentRecord,
     telegram_access_expires_at: computedAccessExpiresAt,
@@ -312,7 +312,7 @@ const trySyncPaymentByExistingActiveBinding = async ({
     return;
   }
 
-  const now = toWarsawIso();
+  const now = toUtcIso();
   const existingBindingForPayment = await findTelegramUserBindingByPaymentIntentId(
     paymentRecord.payment_intent_id,
   );
@@ -371,7 +371,7 @@ const prepareAdminOfferAccessWindowStartOnJoin = async (
     return paymentRecord;
   }
 
-  const joinedAt = toWarsawIso();
+  const joinedAt = toUtcIso();
 
   return upsertPaymentRecord({
     ...paymentRecord,
@@ -444,7 +444,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     : "";
 
   if (hasTimedAccess && isIsoExpired(accessExpiresAt)) {
-    const now = toWarsawIso();
+    const now = toUtcIso();
 
     await upsertPaymentRecord({
       ...paymentRecordWithWindow,
@@ -533,7 +533,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
   }
 
   const tokenId = createTelegramTokenId("tgi");
-  const createdAt = toWarsawIso();
+  const createdAt = toUtcIso();
 
   try {
     const inviteLink = await createTelegramChatInviteLink({
@@ -699,7 +699,7 @@ export const syncTelegramChannelMembership = async ({
   const normalizedChatId = chatId.trim();
   const normalizedUserId = telegramUserId.trim();
   const normalizedUsername = telegramUsername?.trim() ?? "";
-  const now = toWarsawIso();
+  const now = toUtcIso();
 
   if (!normalizedChatId || !normalizedUserId) {
     return {
@@ -1064,7 +1064,7 @@ export const revokeExpiredTelegramChannelAccess =
         continue;
       }
 
-      const now = toWarsawIso();
+      const now = toUtcIso();
       revokedGroups += 1;
 
       for (const binding of group.bindings) {
@@ -1183,7 +1183,7 @@ export const activateTelegramStartToken = async ({
     };
   }
 
-  const now = toWarsawIso();
+  const now = toUtcIso();
   const normalizedUsername = telegramUsername.trim();
 
   await Promise.all([
@@ -1260,7 +1260,7 @@ export const ensureLegacyTelegramBotStartLinkForPayment = async (
 
   const tokenId = createTelegramTokenId("tga");
   const tokenHash = hashToken(tokenValue);
-  const createdAt = toWarsawIso();
+  const createdAt = toUtcIso();
   const expiresAt = getStartTokenExpiryIso();
 
   await upsertTelegramAccessTokenRecord({

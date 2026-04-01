@@ -12,6 +12,8 @@ export const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
 export const seoImagePath = "/images/seo_photo.jpg";
 export const instagramUrl = INSTAGRAM_PROFILE_URL;
 export const telegramUrl = PERSONAL_TELEGRAM_URL;
+export const seoTargetLocale = "en" as const;
+export const seoTargetOpenGraphLocale = "en_US" as const;
 
 const getOpenGraphLocale = (locale: string) => {
   if (locale === "en") {

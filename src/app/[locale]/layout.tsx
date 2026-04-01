@@ -9,7 +9,12 @@ import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import PageContainer from "@/components/layout/PageContainer";
 import { routing } from "@/i18n/routing";
-import { instagramUrl, normalizedSiteUrl, seoImagePath, telegramUrl } from "@/lib/seo";
+import {
+  normalizedSiteUrl,
+  seoImagePath,
+  seoTargetLocale,
+  seoTargetOpenGraphLocale,
+} from "@/lib/seo";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -30,13 +35,12 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: Omit<LocaleLayoutProps, "children">): Promise<Metadata> {
-  const { locale } = await params;
-  const t = await getTranslations({ locale, namespace: "Metadata" });
+  await params;
+  const t = await getTranslations({ locale: seoTargetLocale, namespace: "Metadata" });
   const keywords = t("keywords")
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-  const openGraphLocale = locale === "en" ? "en_US" : locale === "pl" ? "pl_PL" : "ru_RU";
 
   return {
     title: {
@@ -55,7 +59,7 @@ export async function generateMetadata({
       siteName: t("siteName"),
       title: t("title.default"),
       description: t("description"),
-      locale: openGraphLocale,
+      locale: seoTargetOpenGraphLocale,
       images: [
         {
           url: seoImagePath,
@@ -100,33 +104,9 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
 
   setRequestLocale(locale);
   const messages = await getMessages();
-  const t = await getTranslations({ locale, namespace: "Metadata" });
-  const structuredData = [
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: t("siteName"),
-      url: normalizedSiteUrl,
-      description: t("description"),
-      inLanguage: locale,
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "Person",
-      name: "Anna Strok",
-      url: normalizedSiteUrl,
-      image: `${normalizedSiteUrl}${seoImagePath}`,
-      sameAs: [instagramUrl, telegramUrl],
-      jobTitle: "Dance Teacher",
-    },
-  ];
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
       <Header />
       <main lang={locale}>
         <PageContainer>{children}</PageContainer>

@@ -54,7 +54,7 @@ Important production notes:
 - Next.js image optimization is enabled by default. Set `NEXT_IMAGE_UNOPTIMIZED=1` only as a temporary rollback.
 - Browser-facing POST APIs validate `Origin/Referer` in production; missing headers are rejected.
 - After changing `TELEGRAM_LESSON_SOURCES_JSON`, restart the app process (source map is cached in-memory).
-- Operational timestamps persisted by backend flows are recorded in `Europe/Warsaw` timezone format.
+- Operational timestamps persisted by backend flows are recorded in UTC (`YYYY-MM-DDTHH:mm:ss.sssZ`).
 - Vercel cron for `/api/telegram/revoke-expired-access` runs by configured schedule in `vercel.json`.
 
 `TELEGRAM_LESSON_SOURCES_JSON` supports both a single source per offer and language-specific sources:

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
 import ChoreoCard from "@/components/cards/ChoreoCard";
@@ -7,7 +7,8 @@ import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
 
 import { getChoreos, getOnlineSuggestions } from "./constants";
 import {
@@ -37,12 +38,18 @@ type ChoreoPageMetadataProps = {
 export async function generateMetadata({
   params,
 }: ChoreoPageMetadataProps): Promise<Metadata> {
-  const { locale } = await params;
-  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
-  const pageT = await getTranslations({ locale, namespace: "Metadata.pages.choreo" });
+  await params;
+  const metadataT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata",
+  });
+  const pageT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata.pages.choreo",
+  });
 
   return buildPageMetadata({
-    locale,
+    locale: seoTargetLocale,
     path: "/online/choreo",
     title: pageT("title"),
     description: pageT("description"),
@@ -56,12 +63,62 @@ export async function generateMetadata({
 }
 
 export default function FirstTouch() {
+  const locale = useLocale();
   const t = useTranslations("ChoreoPage");
+  const productT = useTranslations("SellableProducts");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
   const choreos = getChoreos((key) => t(key));
+  const sellableChoreoProducts = [
+    SELLABLE_PRODUCTS["choreo-still-alive"],
+    SELLABLE_PRODUCTS["choreo-her-lies"],
+  ];
+  const choreographyProductsStructuredData = sellableChoreoProducts.map((product) => ({
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: productT(product.titleKey),
+    description: product.descriptionKeys.map((key) => productT(key)).join(" "),
+    category: "Dance choreography tutorial",
+    inLanguage: locale,
+    brand: {
+      "@type": "Brand",
+      name: "Anna Strok",
+    },
+    offers: product.offers.flatMap((offer) => {
+      const checkoutHref = buildCheckoutHref({
+        offerId: offer.id,
+        productId: product.id,
+      });
+
+      return [
+        {
+          "@type": "Offer",
+          name: productT(offer.labelKey),
+          availability: "https://schema.org/InStock",
+          price: offer.prices.eur,
+          priceCurrency: "EUR",
+          url: `${normalizedSiteUrl}${checkoutHref}&currency=eur`,
+        },
+        {
+          "@type": "Offer",
+          name: productT(offer.labelKey),
+          availability: "https://schema.org/InStock",
+          price: offer.prices.pln,
+          priceCurrency: "PLN",
+          url: `${normalizedSiteUrl}${checkoutHref}&currency=pln`,
+        },
+      ];
+    }),
+    url: `${normalizedSiteUrl}/online/choreo`,
+  }));
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(choreographyProductsStructuredData),
+        }}
+      />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>

@@ -6,7 +6,7 @@ import InteractiveCard from "@/components/cards/InteractiveCard";
 import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
 
 import { getOnlineCoursesArray } from "./constants";
 import {
@@ -36,12 +36,18 @@ type OnlinePageMetadataProps = {
 export async function generateMetadata({
   params,
 }: OnlinePageMetadataProps): Promise<Metadata> {
-  const { locale } = await params;
-  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
-  const pageT = await getTranslations({ locale, namespace: "Metadata.pages.online" });
+  await params;
+  const metadataT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata",
+  });
+  const pageT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata.pages.online",
+  });
 
   return buildPageMetadata({
-    locale,
+    locale: seoTargetLocale,
     path: "/online",
     title: pageT("title"),
     description: pageT("description"),

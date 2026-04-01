@@ -6,7 +6,7 @@ import CourseCard from "@/components/cards/CourseCard";
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
 
 import { getOfflineCoursesArray } from "./constants";
 import {
@@ -36,12 +36,18 @@ type OfflinePageMetadataProps = {
 export async function generateMetadata({
   params,
 }: OfflinePageMetadataProps): Promise<Metadata> {
-  const { locale } = await params;
-  const metadataT = await getTranslations({ locale, namespace: "Metadata" });
-  const pageT = await getTranslations({ locale, namespace: "Metadata.pages.offline" });
+  await params;
+  const metadataT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata",
+  });
+  const pageT = await getTranslations({
+    locale: seoTargetLocale,
+    namespace: "Metadata.pages.offline",
+  });
 
   return buildPageMetadata({
-    locale,
+    locale: seoTargetLocale,
     path: "/offline",
     title: pageT("title"),
     description: pageT("description"),
