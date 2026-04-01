@@ -95,6 +95,7 @@ export default function Home() {
             height={900}
             sizes="(max-width: 1240px) 0px, (max-width: 1440px) 52vw, 775px"
             priority
+            unoptimized
           />
         </AbsolutePageImage>
         <MainTextBox>
@@ -119,6 +120,7 @@ export default function Home() {
             className="hero-mobile-bg"
             sizes="(max-width: 450px) 100vw, (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
             priority
+            unoptimized
           />
           <div className="hero-brand-logo">
             <Logo width={350} height={77} />

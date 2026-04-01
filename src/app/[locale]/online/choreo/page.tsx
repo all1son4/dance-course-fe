@@ -145,7 +145,8 @@ export default function FirstTouch() {
               width={794}
               height={989}
               sizes="(max-width: 767px) 100vw, 0px"
-              loading="eager"
+              priority
+              unoptimized
             />
           </ImageBox>
 
@@ -166,6 +167,7 @@ export default function FirstTouch() {
             height={989}
             sizes="(max-width: 767px) 0px, (max-width: 880px) 490px, (max-width: 1140px) 540px, (max-width: 1240px) 640px, 794px"
             priority
+            unoptimized
           />
         </ImageBox>
 

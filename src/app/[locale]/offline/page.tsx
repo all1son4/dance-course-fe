@@ -80,7 +80,8 @@ export default function Offline() {
               width={558}
               height={738}
               sizes="(max-width: 767px) 100vw, 0px"
-              loading="eager"
+              priority
+              unoptimized
             />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
@@ -99,6 +100,7 @@ export default function Offline() {
             height={738}
             sizes="(max-width: 767px) 0px, (max-width: 880px) 400px, (max-width: 960px) 460px, (max-width: 1240px) 500px, 558px"
             priority
+            unoptimized
           />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">

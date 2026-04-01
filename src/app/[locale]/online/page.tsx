@@ -82,7 +82,8 @@ export default function Online() {
               width={598}
               height={846}
               sizes="(max-width: 767px) 100vw, 0px"
-              loading="eager"
+              priority
+              unoptimized
             />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
@@ -101,6 +102,7 @@ export default function Online() {
             height={846}
             sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
             priority
+            unoptimized
           />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">

@@ -8,6 +8,8 @@ type SvgAssetProps = {
   priority?: boolean;
   loading?: "lazy" | "eager";
   sizes?: string;
+  unoptimized?: boolean;
+  quality?: number;
 };
 
 export default function SvgAsset({
@@ -18,8 +20,11 @@ export default function SvgAsset({
   priority = false,
   loading = "lazy",
   sizes = "100vw",
+  unoptimized = false,
+  quality,
 }: SvgAssetProps) {
-  const shouldBypassOptimization = src.trim().toLowerCase().endsWith(".svg");
+  const shouldBypassOptimization =
+    unoptimized || src.trim().toLowerCase().endsWith(".svg");
 
   return (
     <Image
@@ -36,6 +41,7 @@ export default function SvgAsset({
       placeholder="empty"
       decoding={priority ? "sync" : "async"}
       fetchPriority={priority ? "high" : "auto"}
+      quality={quality}
       style={{ backgroundColor: "transparent" }}
     />
   );
