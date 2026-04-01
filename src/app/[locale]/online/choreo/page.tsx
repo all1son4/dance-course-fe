@@ -145,7 +145,7 @@ export default function FirstTouch() {
               width={794}
               height={989}
               sizes="(max-width: 767px) 100vw, 0px"
-              priority
+              loading="eager"
             />
           </ImageBox>
 

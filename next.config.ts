@@ -76,8 +76,8 @@ const nextConfig = {
     ];
   },
   images: {
-    // Use Next.js image optimizer for responsive variants and smaller mobile payloads.
-    formats: ["image/avif", "image/webp"],
+    // Favor faster on-demand transformations on first hit.
+    formats: ["image/webp"],
   },
   turbopack: {
     root: path.join(__dirname),
