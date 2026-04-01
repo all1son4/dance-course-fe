@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import Checkbox from "@/components/common/Checkbox";
-import { useCookieConsent } from "@/components/common/CookieConsent";
+import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
 import Input from "@/components/common/Input";
 import CurrencySwitch from "@/components/other/CurrencySwitch";
 import StripePaymentTabs from "@/components/other/StripePaymentTabs";

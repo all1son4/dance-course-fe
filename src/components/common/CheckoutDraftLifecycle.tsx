@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-import { useCookieConsent } from "@/components/common/CookieConsent";
+import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
 import {
   isCheckoutPaymentPathname,
   PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY,

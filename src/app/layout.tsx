@@ -3,10 +3,8 @@ import "./globals.css";
 import { Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 
-import CheckoutDraftLifecycle from "@/components/common/CheckoutDraftLifecycle";
-import ConsentAwareAnalytics from "@/components/common/ConsentAwareAnalytics";
-import { CookieConsentProvider } from "@/components/common/CookieConsent";
-import NavigationProgress from "@/components/common/NavigationProgress";
+import { CookieConsentProvider } from "@/components/common/CookieConsent/CookieConsentProvider";
+import DeferredClientFeatures from "@/components/common/DeferredClientFeatures";
 import SiteComingSoon from "@/components/maintenance/SiteComingSoon";
 import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
 
@@ -29,9 +27,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body className={manrope.variable}>
         <CookieConsentProvider>
-          <ConsentAwareAnalytics />
-          <NavigationProgress />
-          <CheckoutDraftLifecycle />
+          <DeferredClientFeatures />
           <StyledComponentsRegistry>
             {showSite ? children : <SiteComingSoon />}
           </StyledComponentsRegistry>
