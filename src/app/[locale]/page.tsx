@@ -94,6 +94,7 @@ export default function Home() {
             width={775}
             height={900}
             sizes="(max-width: 1240px) 0px, (max-width: 1440px) 52vw, 775px"
+            priority
           />
         </AbsolutePageImage>
         <MainTextBox>
