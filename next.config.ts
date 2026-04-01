@@ -76,8 +76,8 @@ const nextConfig = {
     ];
   },
   images: {
-    // Keep optimizer enabled by default for responsive image variants and better LCP.
-    unoptimized: true,
+    // Use Next.js image optimizer for responsive variants and smaller mobile payloads.
+    formats: ["image/avif", "image/webp"],
   },
   turbopack: {
     root: path.join(__dirname),
