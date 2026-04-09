@@ -8,6 +8,7 @@ import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import RoadmapContainer from "@/components/other/ProgramRoadmap";
 import VideoPlayer from "@/components/other/VideoPlayer";
+import { FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
 import {
   buildCheckoutHref,
   DEFAULT_CHECKOUT_PRODUCT,
@@ -34,6 +35,7 @@ import {
   From,
   IconBox,
   ImageBox,
+  InfoBoxGroup,
   IntroductionSection,
   MobileImagesBox,
   SpecialWrapper,
@@ -83,6 +85,7 @@ export default function FirstTouch() {
     offerId: defaultOffer.id,
     productId: DEFAULT_CHECKOUT_PRODUCT.id,
   });
+  const coursePrice = `${defaultOffer.prices.pln} PLN / ${defaultOffer.prices.eur} €`;
   const courseStructuredData = {
     "@context": "https://schema.org",
     "@type": "Course",
@@ -129,13 +132,25 @@ export default function FirstTouch() {
             <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
           </Description>
 
-          <DateBox>
-            <From>{t("hero.startLabel")}</From>
-            <Date>{t("hero.startDate")}</Date>
-          </DateBox>
+          <InfoBoxGroup>
+            <DateBox>
+              <From>{t("hero.startLabel")}</From>
+              <Date>{t("hero.startDate")}</Date>
+            </DateBox>
+
+            <DateBox>
+              <From>{t("hero.priceLabel")}</From>
+              <Date>{coursePrice}</Date>
+            </DateBox>
+          </InfoBoxGroup>
 
           <ButtonBox>
-            <Button buttonText={t("hero.buyButton")} href={checkoutHref} />
+            {/* <Button buttonText={t("hero.buyButton")} href={checkoutHref} /> */}
+            <Button
+              buttonText={t("hero.enrollButton")}
+              href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
+              target="_blank"
+            />
             <Button
               buttonText={t("hero.programButton")}
               variant="secondary"
@@ -214,7 +229,12 @@ export default function FirstTouch() {
             <CourseProgramTitle>{t("program.title")}</CourseProgramTitle>
             <RoadmapContainer />
             <CourseProgramButtonBox>
-              <Button buttonText={t("program.buyButton")} href={checkoutHref} />
+              {/* <Button buttonText={t("program.buyButton")} href={checkoutHref} /> */}
+              <Button
+                buttonText={t("hero.enrollButton")}
+                href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
+                target="_blank"
+              />
             </CourseProgramButtonBox>
           </CourseProgramTextBox>
           <CourseProgramImage

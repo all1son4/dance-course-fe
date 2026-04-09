@@ -365,8 +365,10 @@
         "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
       },
       "startLabel": "Start kursu",
+      "priceLabel": "Cena kursu",
       "startDate": "4 maja 2026",
       "buyButton": "Kup za 250 PLN / 50 €",
+      "enrollButton": "Zapisz się",
       "programButton": "Program kursu",
       "playLabel": "Odtwórz wideo",
       "introductionVideoSrc": "/videos/introduction_first_touch_en.mp4"

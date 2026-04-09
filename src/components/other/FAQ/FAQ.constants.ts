@@ -1,4 +1,4 @@
-import { TRIAL_REGISTRATION_FORM_EDIT_URL } from "@/constants/links";
+import { TRIAL_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
 
 import { TQuestionsArray } from "./FAQ.types";
 
@@ -15,7 +15,7 @@ export const getQuestionsArray = (t: Translate): TQuestionsArray =>
       ...(id === 8
         ? {
             link: {
-              href: TRIAL_REGISTRATION_FORM_EDIT_URL,
+              href: TRIAL_REGISTRATION_FORM_VIEW_URL,
               label: t("items.8.linkLabel"),
             },
           }

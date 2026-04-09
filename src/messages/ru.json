@@ -365,8 +365,10 @@
         "2": "Мы будем работать над базовой техникой, стопами, эмоциями и в конце выучим вашу первую хореографию."
       },
       "startLabel": "Старт курса",
+      "priceLabel": "Стоимость курса",
       "startDate": "4 мая 2026 г.",
       "buyButton": "Купить за 250 PLN / 50 €",
+      "enrollButton": "Записаться",
       "programButton": "Программа курса",
       "playLabel": "Воспроизвести видео",
       "introductionVideoSrc": "/videos/introduction_first_touch_ru.mp4"

@@ -1,4 +1,4 @@
-export const DEFAULT_SITE_HOME_URL = "https://frameupstrip.com";
+export const DEFAULT_SITE_HOME_URL = "https://annastrok.com";
 
 export const SUPPORT_TELEGRAM_HANDLE = "@annastroksupport";
 export const SUPPORT_TELEGRAM_URL = "https://t.me/annastroksupport";
@@ -18,10 +18,10 @@ export const INSTAGRAM_WORLD_OF_DANCE_POLAND_URL =
 export const INSTAGRAM_DIB_GALA_URL =
   "https://www.instagram.com/dib.gala?igsh=MWZ3eXgwYnFrMWU2dA==";
 
-export const TRIAL_REGISTRATION_FORM_EDIT_URL =
-  "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/edit";
 export const TRIAL_REGISTRATION_FORM_VIEW_URL =
-  "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/viewform?pli=1&pli=1&edit_requested=true";
+  "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/viewform";
+export const FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL =
+  "https://docs.google.com/forms/d/1CQj--QKVTDUOeYMeZm8QBCKvBBD_I9xdS-6Y126oO00/viewform";
 
 export const CHOREO_STILL_ALIVE_REEL_URL =
   "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2";

@@ -11,17 +11,12 @@ export const IntroductionSection = styled.section`
   width: 100%;
 
   @media (max-width: 1240px) {
-    padding: 0 20px;
-    min-height: 800px;
-  }
-
-  @media (max-width: 1100px) {
+    padding: 60px 20px 0;
     min-height: 740px;
-    padding: 40px 20px 0;
   }
 
   @media (max-width: 920px) {
-    min-height: 780px;
+    min-height: 914px;
     padding: 80px 20px 0;
   }
 
@@ -198,19 +193,18 @@ export const ImageBox = styled.div`
   @media (max-width: 1240px) {
     max-width: 500px;
     height: 100%;
-    bottom: 0;
+    bottom: -40px;
   }
 
   @media (max-width: 1100px) {
     max-width: 470px;
     height: 100%;
-    bottom: 50px;
     right: 6%;
   }
 
   @media (max-width: 920px) {
     max-width: 54%;
-    bottom: 60px;
+    bottom: -60px;
   }
 `;
 
@@ -231,23 +225,28 @@ export const IconBox = styled.div`
   @media (max-width: 1240px) {
     max-width: 280px;
     height: 100%;
-    top: 150px;
+    top: 170px;
   }
 
   @media (max-width: 1100px) {
     max-width: 250px;
-    top: 110px;
   }
 
   @media (max-width: 920px) {
-    top: 90px;
     max-width: 26%;
+    top: 196px;
   }
 `;
 
 export const DateBox = styled.div`
   display: flex;
   flex-direction: column;
+`;
+
+export const InfoBoxGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   margin: 0 0 30px 0;
 `;
 
@@ -273,7 +272,7 @@ export const Date = styled.p`
 
 export const ButtonBox = styled.div`
   display: grid;
-  grid-template-columns: calc(58% - 10px) calc(42% - 10px);
+  grid-template-columns: calc(52% - 10px) calc(48% - 10px);
   gap: 20px;
   width: 100%;
   max-width: 100%;

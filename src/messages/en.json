@@ -365,8 +365,10 @@
         "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
       },
       "startLabel": "Course starts",
+      "priceLabel": "Course price",
       "startDate": "May 4, 2026",
       "buyButton": "Buy for 250 PLN / 50 €",
+      "enrollButton": "Sign up",
       "programButton": "Course program",
       "playLabel": "Play video",
       "introductionVideoSrc": "/videos/introduction_first_touch_en.mp4"
