@@ -5,6 +5,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
+import { getOfferAccessDurationDaysByOfferId } from "@/lib/telegram/offer-access";
 
 import {
   AdminInvitePage,
@@ -223,6 +224,18 @@ const formatDateTime = (value: string) => {
   }).format(date);
 };
 
+const formatAccessDurationLabel = (days: number | null | undefined) => {
+  if (!days || days <= 0) {
+    return "Без ограничения после вступления";
+  }
+
+  if (days === 60) {
+    return "60 дней с момента вступления";
+  }
+
+  return `${days} дней с момента вступления`;
+};
+
 const resolveLinkStateLabel = (state: LinkState) =>
   state === "used" ? "Использована" : "Активна";
 
@@ -319,6 +332,21 @@ export default function AdminPage() {
   const activeFeature =
     ADMIN_FEATURES.find((feature) => feature.id === activeFeatureId) ?? ADMIN_FEATURES[0];
   const isInviteLinksFeatureActive = activeFeature.id === "invite-links";
+  const accessPolicyLabel = useMemo(() => {
+    if (kind === "choreo" && resolvedChoreoSelection) {
+      return formatAccessDurationLabel(
+        getOfferAccessDurationDaysByOfferId(resolvedChoreoSelection.offerId),
+      );
+    }
+
+    const firstTouchOfferId =
+      SELLABLE_PRODUCTS_LIST.find((product) => product.code === "first-touch")?.offers[0]
+        ?.id ?? "";
+
+    return formatAccessDurationLabel(
+      getOfferAccessDurationDaysByOfferId(firstTouchOfferId),
+    );
+  }, [kind, resolvedChoreoSelection]);
 
   const isChecking = authState === "checking";
   const isAuthorized = authState === "authorized";
@@ -935,11 +963,11 @@ export default function AdminPage() {
                     <PolicyList>
                       <PolicyRow>
                         <PolicyLabel>Доступ по ссылке</PolicyLabel>
-                        <PolicyValue>Одноразовый invite</PolicyValue>
+                        <PolicyValue>Одноразовый invite, 30 дней</PolicyValue>
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Срок доступа</PolicyLabel>
-                        <PolicyValue>30 дней с момента вступления</PolicyValue>
+                        <PolicyValue>{accessPolicyLabel}</PolicyValue>
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Источник данных</PolicyLabel>

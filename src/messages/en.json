@@ -270,7 +270,7 @@
           "3": "We work on basic technique, feet, emotions, and by the end you will learn your first choreography."
         },
         "startLabel": "Course starts",
-        "startValue": "May 4, 2026",
+        "startValue": "May 11, 2026",
         "button": "Learn more"
       },
       "choreo": {
@@ -366,7 +366,7 @@
       },
       "startLabel": "Course starts",
       "priceLabel": "Course price",
-      "startDate": "May 4, 2026",
+      "startDate": "May 11, 2026",
       "buyButton": "Buy for 250 PLN / 50 €",
       "enrollButton": "Sign up",
       "programButton": "Course program",
@@ -390,8 +390,8 @@
         "text": "From feet and waves to performance and first choreography - you get a complete base for confident movement in Frame Up and related styles."
       },
       "4": {
-        "title": "Course access for 1 month",
-        "text": "Enough time to study at your own pace, revisit materials and polish movement quality."
+        "title": "Course duration: 1.5 months",
+        "text": "Access to the lessons for 4 months for your independent practice. Enough time to study at your own pace, revisit the materials and polish movement quality."
       },
       "5": {
         "title": "Instant access via private Telegram chats",
@@ -428,7 +428,7 @@
         "text": "Every movement is broken down clearly so you understand what to do, how and why."
       },
       "3": {
-        "title": "Access to materials for 1 month",
+        "title": "Access to materials for 2 months",
         "text": "A convenient format that gives you time to learn, repeat and consolidate everything at your own pace."
       },
       "4": {
@@ -559,7 +559,7 @@
         "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
         "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
       },
-      "accessNote": "Access to materials for 1.5 months via a private Telegram chat.",
+      "accessNote": "Course duration is 1.5 months, with 4 months of access to the lessons via a private Telegram chat.",
       "offers": {
         "standard": "Standard access"
       }
@@ -571,7 +571,7 @@
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
-      "accessNote": "Access to materials for 30 days via a private Telegram channel.",
+      "accessNote": "Access to materials for 2 months via a private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
@@ -584,7 +584,7 @@
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
-      "accessNote": "Access to materials for 30 days via a private Telegram channel.",
+      "accessNote": "Access to materials for 2 months via a private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"

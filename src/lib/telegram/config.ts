@@ -360,16 +360,6 @@ export const getTelegramAlertsChatId = () => getEnvValue("TELEGRAM_ALERT_CHAT_ID
 export const isTelegramAlertsConfigured = () =>
   Boolean(getTelegramAlertsBotToken() && getTelegramAlertsChatId());
 
-export const getTelegramStartTokenTtlHours = () => {
-  const parsedValue = Number.parseInt(getEnvValue("TELEGRAM_START_TOKEN_TTL_HOURS"), 10);
-
-  if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
-    return 24 * 30;
-  }
-
-  return parsedValue;
-};
-
 export const isTelegramBotConfigured = () => Boolean(getTelegramBotToken());
 
 export const buildTelegramBotStartLink = (startToken: string) => {

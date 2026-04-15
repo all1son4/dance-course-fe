@@ -37,8 +37,10 @@ Optional Telegram env variables:
 - `TELEGRAM_BOT_USERNAME`
 - `TELEGRAM_WEBHOOK_SECRET`
 - `TELEGRAM_LESSON_SOURCES_JSON`
-- `TELEGRAM_START_TOKEN_TTL_HOURS` (e.g. `720` for 30 days)
-- `TELEGRAM_CHANNEL_ACCESS_DAYS` (optional; default `30`; supports decimal values for testing, e.g. `0.01`)
+- `TELEGRAM_CHANNEL_TARGETS_JSON`
+- `TELEGRAM_ACCESS_LINK_TTL_DAYS` (optional; default `30`; supports decimal values for testing, e.g. `0.01`)
+- `TELEGRAM_CHOREO_ACCESS_DAYS` (optional; default `60`; supports decimal values for testing, e.g. `0.01`)
+- `TELEGRAM_START_TOKEN_TTL_HOURS` (optional legacy bot-token TTL override; default matches `TELEGRAM_ACCESS_LINK_TTL_DAYS * 24`)
 - `TELEGRAM_ALERT_CHAT_ID` (Telegram group chat id for purchase alerts)
 - `TELEGRAM_ALERT_BOT_TOKEN` (optional; falls back to `TELEGRAM_BOT_TOKEN`)
 - `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in non-production environments like Vercel Preview)
@@ -53,7 +55,7 @@ Important production notes:
 - `.nvmrc` is set to `24.13.0` for local/dev parity.
 - Next.js image optimization is enabled by default. Set `NEXT_IMAGE_UNOPTIMIZED=1` only as a temporary rollback.
 - Browser-facing POST APIs validate `Origin/Referer` in production; missing headers are rejected.
-- After changing `TELEGRAM_LESSON_SOURCES_JSON`, restart the app process (source map is cached in-memory).
+- After changing `TELEGRAM_LESSON_SOURCES_JSON` or `TELEGRAM_CHANNEL_TARGETS_JSON`, restart the app process (maps are cached in-memory).
 - Operational timestamps persisted by backend flows are recorded in UTC (`YYYY-MM-DDTHH:mm:ss.sssZ`).
 - Vercel cron for `/api/telegram/revoke-expired-access` runs by configured schedule in `vercel.json`.
 

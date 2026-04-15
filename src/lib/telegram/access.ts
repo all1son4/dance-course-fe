@@ -18,14 +18,10 @@ import {
 } from "@/lib/google-sheets";
 import { toUtcIso } from "@/lib/time";
 
-import { isAdminOfferAccessWorkflow } from "./admin-offer-access";
 import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
+import { buildTelegramBotStartLink, getTelegramChannelTargetByOfferId } from "./config";
 import {
-  buildTelegramBotStartLink,
-  getTelegramChannelTargetByOfferId,
-  getTelegramStartTokenTtlHours,
-} from "./config";
-import {
+  getOfferAccessDurationDaysByOfferId,
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
   isWithoutMentorOfferId,
@@ -87,7 +83,8 @@ type TelegramAccessLinkCacheEntry = {
   tokenId: string;
 };
 
-const DEFAULT_TELEGRAM_CHANNEL_ACCESS_DAYS = 30;
+const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
+const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
 const TELEGRAM_START_TOKEN_BYTES = 24;
 const TELEGRAM_TEMP_KICK_SECONDS = 60;
 const pendingTelegramAccessLinkEnsures = new Map<
@@ -96,18 +93,41 @@ const pendingTelegramAccessLinkEnsures = new Map<
 >();
 const telegramAccessLinkCache = new Map<string, TelegramAccessLinkCacheEntry>();
 
-const getTelegramChannelAccessDurationMs = () => {
-  // TELEGRAM_CHANNEL_ACCESS_DAYS controls how long user access is valid after purchase.
-  // Example: 30 -> 30 days (production), 0.01 -> ~14.4 minutes (testing).
-  const parsedDays = Number.parseFloat(
-    process.env.TELEGRAM_CHANNEL_ACCESS_DAYS?.trim() ?? "",
-  );
-  const resolvedDays =
-    Number.isFinite(parsedDays) && parsedDays > 0
-      ? parsedDays
-      : DEFAULT_TELEGRAM_CHANNEL_ACCESS_DAYS;
+const parsePositiveEnvNumber = (name: string) => {
+  const parsedValue = Number.parseFloat(process.env[name]?.trim() ?? "");
 
-  return resolvedDays * 24 * 60 * 60 * 1000;
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+};
+
+const getTelegramAccessLinkTtlDays = () =>
+  parsePositiveEnvNumber("TELEGRAM_ACCESS_LINK_TTL_DAYS") ??
+  DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS;
+
+const getTelegramAccessLinkTtlMs = () =>
+  getTelegramAccessLinkTtlDays() * 24 * 60 * 60 * 1000;
+
+const getTelegramChoreoAccessDurationDays = (offerId: string) => {
+  if (!isChoreoChannelOfferId(offerId)) {
+    return null;
+  }
+
+  return (
+    parsePositiveEnvNumber("TELEGRAM_CHOREO_ACCESS_DAYS") ??
+    getOfferAccessDurationDaysByOfferId(offerId) ??
+    DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS
+  );
+};
+
+const getTelegramChannelAccessDurationMs = (offerId: string) => {
+  const durationDays = getTelegramChoreoAccessDurationDays(offerId);
+
+  if (!durationDays) {
+    return 0;
+  }
+
+  // Duration controls how long choreo access stays active after joining.
+  // Example: 60 -> 60 days, 0.01 -> ~14.4 minutes (testing).
+  return durationDays * 24 * 60 * 60 * 1000;
 };
 
 const parseTimestamp = (value: string) => {
@@ -125,37 +145,35 @@ const createTelegramStartToken = () =>
 const createTelegramTokenId = (prefix: "tga" | "tgi" = "tgi") =>
   `${prefix}_${randomBytes(8).toString("hex")}`;
 
-const getStartTokenExpiryIso = () => {
-  const ttlHours = getTelegramStartTokenTtlHours();
-  const expiresAt = Date.now() + ttlHours * 60 * 60 * 1000;
+const getTelegramAccessLinkExpiryIso = (issuedAtIso: string) => {
+  const issuedAtTs = parseTimestamp(issuedAtIso) || Date.now();
+  const expiresAt = issuedAtTs + getTelegramAccessLinkTtlMs();
 
   return toUtcIso(new Date(expiresAt));
 };
 
-const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentSheetRecord) => {
-  if (isAdminOfferAccessWorkflow(paymentRecord.access_workflow)) {
-    const activatedAtTs = parseTimestamp(paymentRecord.telegram_token_used_at);
+const getStartTokenExpiryIso = (issuedAtIso: string) => {
+  const configuredHours = parsePositiveEnvNumber("TELEGRAM_START_TOKEN_TTL_HOURS");
+  const ttlMs = (configuredHours ?? getTelegramAccessLinkTtlDays() * 24) * 60 * 60 * 1000;
+  const issuedAtTs = parseTimestamp(issuedAtIso) || Date.now();
 
-    if (activatedAtTs > 0) {
-      return activatedAtTs;
-    }
-  }
-
-  return (
-    parseTimestamp(paymentRecord.successful_customer_logged_at) ||
-    parseTimestamp(paymentRecord.updated_at) ||
-    parseTimestamp(paymentRecord.first_seen_at) ||
-    Date.now()
-  );
+  return toUtcIso(new Date(issuedAtTs + ttlMs));
 };
 
-const getComputedAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) =>
-  toUtcIso(
-    new Date(
-      getPaymentAccessWindowStartedAtTs(paymentRecord) +
-        getTelegramChannelAccessDurationMs(),
-    ),
-  );
+const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentSheetRecord) => {
+  return parseTimestamp(paymentRecord.telegram_token_used_at);
+};
+
+const getComputedAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) => {
+  const accessStartedAtTs = getPaymentAccessWindowStartedAtTs(paymentRecord);
+  const accessDurationMs = getTelegramChannelAccessDurationMs(paymentRecord.offer_id);
+
+  if (accessStartedAtTs <= 0 || accessDurationMs <= 0) {
+    return "";
+  }
+
+  return toUtcIso(new Date(accessStartedAtTs + accessDurationMs));
+};
 
 const getPaymentAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) =>
   paymentRecord.telegram_access_expires_at.trim() ||
@@ -242,6 +260,13 @@ const markTokenAsExpired = async ({
 
 const updatePaymentAccessWindow = async (paymentRecord: PaymentSheetRecord) => {
   const computedAccessExpiresAt = getPaymentAccessExpiresAtIso(paymentRecord);
+
+  if (!computedAccessExpiresAt) {
+    return {
+      accessExpiresAt: "",
+      paymentRecord,
+    };
+  }
 
   if (paymentRecord.telegram_access_expires_at === computedAccessExpiresAt) {
     return {
@@ -358,28 +383,40 @@ export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
   isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
 
 const isPaymentTimedTelegramAccess = (paymentRecord: PaymentSheetRecord) =>
-  isChoreoChannelOfferId(paymentRecord.offer_id) ||
-  isAdminOfferAccessWorkflow(paymentRecord.access_workflow);
+  isChoreoChannelOfferId(paymentRecord.offer_id);
 
-const prepareAdminOfferAccessWindowStartOnJoin = async (
-  paymentRecord: PaymentSheetRecord,
-) => {
-  if (
-    !isAdminOfferAccessWorkflow(paymentRecord.access_workflow) ||
-    paymentRecord.telegram_token_used_at.trim()
-  ) {
-    return paymentRecord;
+const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentSheetRecord) => {
+  if (!isPaymentTimedTelegramAccess(paymentRecord)) {
+    return {
+      accessExpiresAt: "",
+      paymentRecord,
+    };
   }
 
-  const joinedAt = toUtcIso();
+  if (paymentRecord.telegram_access_expires_at.trim()) {
+    return {
+      accessExpiresAt: paymentRecord.telegram_access_expires_at.trim(),
+      paymentRecord,
+    };
+  }
 
-  return upsertPaymentRecord({
-    ...paymentRecord,
-    telegram_access_expires_at: "",
-    telegram_token_expires_at: "",
-    telegram_token_used_at: joinedAt,
-    updated_at: joinedAt,
-  });
+  const joinedAt = paymentRecord.telegram_token_used_at.trim() || toUtcIso();
+  const paymentRecordWithJoinTimestamp = paymentRecord.telegram_token_used_at.trim()
+    ? paymentRecord
+    : await upsertPaymentRecord({
+        ...paymentRecord,
+        telegram_token_used_at: joinedAt,
+        updated_at: joinedAt,
+      });
+
+  if (paymentRecordWithJoinTimestamp.telegram_access_expires_at.trim()) {
+    return {
+      accessExpiresAt: paymentRecordWithJoinTimestamp.telegram_access_expires_at.trim(),
+      paymentRecord: paymentRecordWithJoinTimestamp,
+    };
+  }
+
+  return updatePaymentAccessWindow(paymentRecordWithJoinTimestamp);
 };
 
 const ensureTelegramAccessLinkForPaymentInternal = async (
@@ -422,6 +459,9 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
   const normalizedChatId = channelTarget.chatId.trim();
   const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecord);
+  const accessExpiresAt = hasTimedAccess
+    ? getPaymentAccessExpiresAtIso(paymentRecord)
+    : "";
   const cachedAccessLink = getCachedAccessLink({
     chatId: normalizedChatId,
     paymentIntentId: paymentRecord.payment_intent_id,
@@ -436,18 +476,11 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     };
   }
 
-  const paymentRecordWithWindow = hasTimedAccess
-    ? (await updatePaymentAccessWindow(paymentRecord)).paymentRecord
-    : paymentRecord;
-  const accessExpiresAt = hasTimedAccess
-    ? getPaymentAccessExpiresAtIso(paymentRecordWithWindow)
-    : "";
-
-  if (hasTimedAccess && isIsoExpired(accessExpiresAt)) {
+  if (hasTimedAccess && accessExpiresAt && isIsoExpired(accessExpiresAt)) {
     const now = toUtcIso();
 
     await upsertPaymentRecord({
-      ...paymentRecordWithWindow,
+      ...paymentRecord,
       telegram_access_status: "expired",
       telegram_channel_chat_id: normalizedChatId,
       telegram_access_revoked_at: now,
@@ -470,7 +503,6 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     currentTokenRecord?.link_kind === "channel_invite" &&
     currentTokenRecord.chat_id.trim() === normalizedChatId;
   const isIssuedTokenExpired =
-    hasTimedAccess &&
     currentTokenRecord?.status === "issued" &&
     isIsoExpired(currentTokenRecord.expires_at);
 
@@ -534,11 +566,12 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
   const tokenId = createTelegramTokenId("tgi");
   const createdAt = toUtcIso();
+  const linkExpiresAt = getTelegramAccessLinkExpiryIso(createdAt);
 
   try {
     const inviteLink = await createTelegramChatInviteLink({
       chatId: normalizedChatId,
-      expireDateUnix: hasTimedAccess ? getUnixSeconds(accessExpiresAt) : undefined,
+      expireDateUnix: getUnixSeconds(linkExpiresAt),
       memberLimit: 1,
       name: tokenId,
     });
@@ -551,11 +584,11 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     }
 
     await upsertTelegramAccessTokenRecord({
-      access_expires_at: hasTimedAccess ? accessExpiresAt : "",
+      access_expires_at: accessExpiresAt,
       chat_id: normalizedChatId,
       created_at: createdAt,
       customer_email: paymentRecord.customer_email,
-      expires_at: hasTimedAccess ? accessExpiresAt : "",
+      expires_at: linkExpiresAt,
       last_error: "",
       link_kind: "channel_invite",
       offer_id: paymentRecord.offer_id,
@@ -571,18 +604,18 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     });
 
     const nextPaymentRecord = await upsertPaymentRecord({
-      ...paymentRecordWithWindow,
-      telegram_access_expires_at: hasTimedAccess ? accessExpiresAt : "",
+      ...paymentRecord,
+      telegram_access_expires_at: accessExpiresAt,
       telegram_access_revoked_at: "",
       telegram_access_status: "token_issued",
       telegram_channel_chat_id: normalizedChatId,
-      telegram_token_expires_at: hasTimedAccess ? accessExpiresAt : "",
+      telegram_token_expires_at: linkExpiresAt,
       telegram_token_id: tokenId,
-      telegram_token_used_at: "",
+      telegram_token_used_at: paymentRecord.telegram_token_used_at,
       updated_at: createdAt,
     });
 
-    if (hasTimedAccess) {
+    if (hasTimedAccess && accessExpiresAt) {
       try {
         await trySyncPaymentByExistingActiveBinding({
           accessExpiresAt,
@@ -610,14 +643,14 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
       accessUrl: inviteLink.invite_link,
       chatId: normalizedChatId,
       paymentIntentId: paymentRecord.payment_intent_id,
-      tokenExpiresAt: hasTimedAccess ? accessExpiresAt : "",
+      tokenExpiresAt: linkExpiresAt,
       tokenId,
     });
 
     return {
       accessUrl: inviteLink.invite_link,
       status: "ready",
-      tokenExpiresAt: hasTimedAccess ? accessExpiresAt : "",
+      tokenExpiresAt: linkExpiresAt,
       tokenId,
     };
   } catch (error) {
@@ -635,7 +668,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
     try {
       await upsertPaymentRecord({
-        ...paymentRecordWithWindow,
+        ...paymentRecord,
         telegram_access_status: "link_failed",
         telegram_channel_chat_id: normalizedChatId,
         updated_at: createdAt,
@@ -790,15 +823,10 @@ export const syncTelegramChannelMembership = async ({
     };
   }
 
-  const paymentRecordForAccessWindow = isAdminOfferAccessWorkflow(
-    paymentRecord.access_workflow,
-  )
-    ? await prepareAdminOfferAccessWindowStartOnJoin(paymentRecord)
-    : paymentRecord;
-  const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecordForAccessWindow);
+  const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecord);
   const paymentRecordWithWindow = hasTimedAccess
-    ? (await updatePaymentAccessWindow(paymentRecordForAccessWindow)).paymentRecord
-    : paymentRecordForAccessWindow;
+    ? (await startTimedAccessWindowOnJoin(paymentRecord)).paymentRecord
+    : paymentRecord;
   const accessExpiresAt = hasTimedAccess
     ? getPaymentAccessExpiresAtIso(paymentRecordWithWindow)
     : "";
@@ -948,7 +976,6 @@ export const syncTelegramChannelMembership = async ({
       ...tokenRecord,
       access_expires_at: hasTimedAccess ? accessExpiresAt : "",
       chat_id: normalizedChatId,
-      expires_at: hasTimedAccess ? accessExpiresAt : "",
       last_error: "",
       status: "used" satisfies TelegramAccessTokenStatus,
       telegram_user_id: normalizedUserId,
@@ -977,6 +1004,7 @@ export const syncTelegramChannelMembership = async ({
       telegram_access_revoked_at: "",
       telegram_access_status: "activated",
       telegram_channel_chat_id: normalizedChatId,
+      telegram_token_expires_at: tokenRecord.expires_at,
       telegram_token_id: tokenRecord.token_id,
       telegram_token_used_at: now,
       telegram_user_id: normalizedUserId,
@@ -1261,7 +1289,7 @@ export const ensureLegacyTelegramBotStartLinkForPayment = async (
   const tokenId = createTelegramTokenId("tga");
   const tokenHash = hashToken(tokenValue);
   const createdAt = toUtcIso();
-  const expiresAt = getStartTokenExpiryIso();
+  const expiresAt = getStartTokenExpiryIso(createdAt);
 
   await upsertTelegramAccessTokenRecord({
     access_expires_at: "",

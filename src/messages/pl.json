@@ -270,7 +270,7 @@
           "3": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
         },
         "startLabel": "Start kursu",
-        "startValue": "4 maja 2026",
+        "startValue": "11 maja 2026",
         "button": "Więcej o kursie"
       },
       "choreo": {
@@ -366,7 +366,7 @@
       },
       "startLabel": "Start kursu",
       "priceLabel": "Cena kursu",
-      "startDate": "4 maja 2026",
+      "startDate": "11 maja 2026",
       "buyButton": "Kup za 250 PLN / 50 €",
       "enrollButton": "Zapisz się",
       "programButton": "Program kursu",
@@ -390,8 +390,8 @@
         "text": "Od pracy stóp i fal po ekspresję i pierwszą choreografię - dostajesz pełną bazę, by pewnie poruszać się w Frame Up i pokrewnych stylach."
       },
       "4": {
-        "title": "Dostęp do kursu przez 1 miesiąc",
-        "text": "Wystarczająco czasu, by przejść materiał we własnym tempie, wracać do lekcji i dopracować ruch."
+        "title": "Czas trwania kursu: 1,5 miesiąca",
+        "text": "Dostęp do lekcji przez 4 miesiące do samodzielnego przepracowania materiału. To wystarczająco dużo czasu, by przejść kurs we własnym tempie, wracać do materiałów i dopracować ruch."
       },
       "5": {
         "title": "Szybki dostęp przez zamknięte czaty Telegram",
@@ -428,7 +428,7 @@
         "text": "Każdy ruch jest rozłożony krok po kroku, więc dokładnie wiesz, co robisz i dlaczego."
       },
       "3": {
-        "title": "Dostęp do materiałów przez 1 miesiąc",
+        "title": "Dostęp do materiałów przez 2 miesiące",
         "text": "Wygodny format: masz czas, by przejść, powtórzyć i utrwalić materiał we własnym tempie."
       },
       "4": {
@@ -559,7 +559,7 @@
         "1": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czucia ciała, pewności siebie i ruchu.",
         "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
       },
-      "accessNote": "Dostęp do materiałów przez 1,5 miesiąca przez prywatny czat Telegram.",
+      "accessNote": "Kurs trwa 1,5 miesiąca, a dostęp do lekcji przez prywatny czat Telegram otrzymujesz na 4 miesiące.",
       "offers": {
         "standard": "Dostęp standardowy"
       }
@@ -571,7 +571,7 @@
         "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
-      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny kanał Telegram.",
+      "accessNote": "Dostęp do materiałów przez 2 miesiące przez prywatny kanał Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"
@@ -584,7 +584,7 @@
         "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
-      "accessNote": "Dostęp do materiałów przez 30 dni przez prywatny kanał Telegram.",
+      "accessNote": "Dostęp do materiałów przez 2 miesiące przez prywatny kanał Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"

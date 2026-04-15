@@ -30,6 +30,11 @@ const FIRST_TOUCH_OFFER_IDS = new Set(
     product.code === "first-touch" ? product.offers.map((offer) => offer.id) : [],
   ),
 );
+const OFFER_ACCESS_DURATION_DAYS_BY_ID = new Map(
+  SELLABLE_PRODUCTS_LIST.flatMap((product) =>
+    product.offers.map((offer) => [offer.id, offer.telegramAccessDurationDays] as const),
+  ),
+);
 
 const OFFER_METADATA_BY_ID = new Map(
   SELLABLE_PRODUCTS_LIST.flatMap((product) =>
@@ -61,3 +66,6 @@ export const isFirstTouchOfferId = (offerId: string) =>
 
 export const getOfferMetadataById = (offerId: string) =>
   OFFER_METADATA_BY_ID.get(offerId) ?? null;
+
+export const getOfferAccessDurationDaysByOfferId = (offerId: string) =>
+  OFFER_ACCESS_DURATION_DAYS_BY_ID.get(offerId) ?? null;

@@ -15,6 +15,7 @@ export type SellableProductOffer = {
   label: string;
   labelKey: string;
   prices: SellableProductPrices;
+  telegramAccessDurationDays: number;
 };
 
 export type SellableProduct = {
@@ -39,7 +40,8 @@ type CheckoutHrefOptions = {
 
 export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
   "first-touch": {
-    accessNote: "Доступ к материалам 1,5 месяца через приватный Telegram-чат.",
+    accessNote:
+      "Продолжительность курса - 1,5 месяца, доступ к урокам - 4 месяца через приватный Telegram-чат.",
     accessNoteKey: "firstTouch.accessNote",
     code: "first-touch",
     description: [
@@ -63,11 +65,12 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           pln: 250,
           eur: 50,
         },
+        telegramAccessDurationDays: 0,
       },
     ],
   },
   "choreo-still-alive": {
-    accessNote: "Доступ к материалам 30 дней через приватный Telegram-канал.",
+    accessNote: "Доступ к материалам 2 месяца через приватный Telegram-канал.",
     accessNoteKey: "choreoStillAlive.accessNote",
     code: "choreo-still-alive",
     description: [
@@ -96,6 +99,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           pln: 60,
           eur: 15,
         },
+        telegramAccessDurationDays: 60,
       },
       {
         code: "with-mentor",
@@ -106,11 +110,12 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           pln: 100,
           eur: 25,
         },
+        telegramAccessDurationDays: 60,
       },
     ],
   },
   "choreo-her-lies": {
-    accessNote: "Доступ к материалам 30 дней через приватный Telegram-канал.",
+    accessNote: "Доступ к материалам 2 месяца через приватный Telegram-канал.",
     accessNoteKey: "choreoHerLies.accessNote",
     code: "choreo-her-lies",
     description: [
@@ -139,6 +144,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           pln: 60,
           eur: 15,
         },
+        telegramAccessDurationDays: 60,
       },
       {
         code: "with-mentor",
@@ -149,6 +155,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           pln: 100,
           eur: 25,
         },
+        telegramAccessDurationDays: 60,
       },
     ],
   },
