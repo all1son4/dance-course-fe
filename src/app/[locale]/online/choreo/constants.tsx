@@ -69,7 +69,7 @@ const getChoreoPresentation = (code: SellableProductCode) => {
 
   if (code === "choreo-bundle") {
     return {
-      posterSrc: "/images/bundle_poster.webp",
+      posterSrc: "",
     };
   }
 
