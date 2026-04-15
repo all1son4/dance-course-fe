@@ -37,6 +37,21 @@ export const InteractiveBox = styled.div`
   }
 `;
 
+export const PosterBox = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 0.67;
+  overflow: hidden;
+  border-radius: 40px 40px 0 0;
+
+  & img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+`;
+
 export const CardTitle = styled.p`
   font-weight: 400;
   font-style: normal;

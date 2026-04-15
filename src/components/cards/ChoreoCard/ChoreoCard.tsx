@@ -1,7 +1,14 @@
 import Button from "@/components/common/Button";
+import SvgAsset from "@/components/common/SvgAsset";
 import VideoPlayer from "@/components/other/VideoPlayer/VideoPlayer";
 
-import { ButtonBox, CardContainer, CardTitle, InteractiveBox } from "./ChoreoCard.styles";
+import {
+  ButtonBox,
+  CardContainer,
+  CardTitle,
+  InteractiveBox,
+  PosterBox,
+} from "./ChoreoCard.styles";
 import type { TChoreoCard } from "./ChoreoCard.types";
 
 export default function ChoreoCard(choreo: TChoreoCard) {
@@ -16,6 +23,17 @@ export default function ChoreoCard(choreo: TChoreoCard) {
           radius="40px 40px 0 0"
           aspectRatio="1 / 0.67"
         />
+      )}
+      {!choreo?.videoSrc && choreo?.posterSrc && (
+        <PosterBox>
+          <SvgAsset
+            src={choreo.posterSrc}
+            width={1290}
+            height={966}
+            sizes="(max-width: 767px) 100vw, (max-width: 1300px) 50vw, 485px"
+            unoptimized
+          />
+        </PosterBox>
       )}
       <InteractiveBox>
         <CardTitle>{choreo.title}</CardTitle>

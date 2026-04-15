@@ -3,7 +3,8 @@ export type SupportedCheckoutCurrency = "pln" | "eur";
 export type SellableProductCode =
   | "first-touch"
   | "choreo-still-alive"
-  | "choreo-her-lies";
+  | "choreo-her-lies"
+  | "choreo-bundle";
 
 export type SellableProductOfferCode = "standard" | "without-mentor" | "with-mentor";
 
@@ -154,6 +155,52 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         prices: {
           pln: 100,
           eur: 25,
+        },
+        telegramAccessDurationDays: 60,
+      },
+    ],
+  },
+  "choreo-bundle": {
+    accessNote:
+      "Доступ к материалам 2 месяца через приватный Telegram-канал с двумя хореографиями.",
+    accessNoteKey: "choreoBundle.accessNote",
+    code: "choreo-bundle",
+    description: [
+      "Два онлайн-разбора хореографий в одном доступе для тех, кто хочет сразу работать с разной динамикой, подачей и музыкальностью.",
+      "Внутри бандла — Still Alive и Her Lies: можно проходить материалы в удобном темпе, пересматривать уроки и собирать обе хореографии в музыку.",
+      "Доступен формат самостоятельного прохождения или участие с куратором и обратной связью.",
+    ],
+    descriptionKeys: [
+      "choreoBundle.description.1",
+      "choreoBundle.description.2",
+      "choreoBundle.description.3",
+    ],
+    id: "prd_choreo_bundle_duo",
+    slug: "still-alive-her-lies-bundle",
+    title: 'Бандл разборов "Still Alive" + "Her Lies"',
+    titleKey: "choreoBundle.title",
+    type: "choreo",
+    defaultOfferId: "off_choreo_bundle_duo_without_mentor",
+    offers: [
+      {
+        code: "without-mentor",
+        id: "off_choreo_bundle_duo_without_mentor",
+        label: "Без куратора",
+        labelKey: "choreoBundle.offers.withoutMentor",
+        prices: {
+          pln: 120,
+          eur: 30,
+        },
+        telegramAccessDurationDays: 60,
+      },
+      {
+        code: "with-mentor",
+        id: "off_choreo_bundle_duo_with_mentor",
+        label: "С куратором",
+        labelKey: "choreoBundle.offers.withMentor",
+        prices: {
+          pln: 200,
+          eur: 50,
         },
         telegramAccessDurationDays: 60,
       },

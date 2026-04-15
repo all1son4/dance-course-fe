@@ -30,9 +30,9 @@
       },
       "choreo": {
         "title": "Tutoriale choreografii Frame Up Strip",
-        "description": "Szczegółowe tutoriale choreografii Still Alive i Her Lies: struktura ruchu, technika oraz wyraz sceniczny w wygodnym formacie online.",
+        "description": "Szczegółowe tutoriale choreografii Still Alive i Her Lies oraz bundle z dwoma tutorialami: struktura ruchu, technika oraz wyraz sceniczny w wygodnym formacie online.",
         "ogImageAlt": "Tutoriale choreografii Frame Up Strip od Anny Strok",
-        "keywords": "tutorial choreografii online, still alive choreografia, her lies choreografia, frame up tutorial, Anna Strok choreografia"
+        "keywords": "tutorial choreografii online, still alive choreografia, her lies choreografia, bundle choreografii, frame up tutorial, Anna Strok choreografia"
       },
       "offline": {
         "title": "Zajęcia offline Frame Up Strip w Warszawie",
@@ -585,6 +585,19 @@
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
       "accessNote": "Dostęp do materiałów przez 2 miesiące przez prywatny kanał Telegram.",
+      "offers": {
+        "withoutMentor": "Bez mentora",
+        "withMentor": "Z mentorem"
+      }
+    },
+    "choreoBundle": {
+      "title": "Bundle tutoriali \"Still Alive\" + \"Her Lies\"",
+      "description": {
+        "1": "Dwa tutoriale choreograficzne online w jednym dostępie dla osób, które chcą od razu pracować z różną dynamiką, ekspresją i muzykalnością.",
+        "2": "W bundle znajdują się Still Alive i Her Lies: możesz przechodzić materiał we własnym tempie, wracać do lekcji i składać obie choreografie do muzyki.",
+        "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
+      },
+      "accessNote": "Dostęp do materiałów przez 2 miesiące przez prywatny kanał Telegram z dwiema choreografiami.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"

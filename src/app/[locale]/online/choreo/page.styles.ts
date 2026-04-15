@@ -309,15 +309,17 @@ export const AboutChoreoTitle = styled.h2`
 
 export const ChoreoSection = styled.section`
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
   padding: 100px 0 150px;
   box-sizing: border-box;
+  gap: 30px;
   justify-content: center;
   align-items: stretch;
-  gap: 30px;
 
   & > div {
-    max-width: 485px;
+    width: min(485px, calc((100% - 30px) / 2));
+    max-width: 100%;
   }
 
   @media (max-width: 880px) {
@@ -328,7 +330,7 @@ export const ChoreoSection = styled.section`
     flex-direction: column;
 
     & > div {
-      max-width: 100%;
+      width: 100%;
     }
   }
 `;

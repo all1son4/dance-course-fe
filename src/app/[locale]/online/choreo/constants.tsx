@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 
 import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constants/links";
-import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import {
+  buildCheckoutHref,
+  SELLABLE_PRODUCTS_LIST,
+  type SellableProductCode,
+  type SellableProductOffer,
+} from "@/constants/sellable-products";
 import {
   OnlineCalendar,
   OnlineGroup,
@@ -20,7 +25,7 @@ export type TOnlineSuggestion = {
 export type TChoreoCard = {
   id: number;
   videoSrc?: string;
-  posterSrc: string;
+  posterSrc?: string;
   title?: string;
   firstButtonOptions?: {
     href?: string;
@@ -33,6 +38,46 @@ export type TChoreoCard = {
 };
 
 type Translate = (key: string) => string;
+
+const getCompactChoreoTitle = (title: string) => {
+  const quotedMatches = Array.from(
+    title.matchAll(/["“”«»]([^"“”«»]+)["“”«»]/gu),
+    (match) => match[1]?.trim() ?? "",
+  ).filter(Boolean);
+
+  if (quotedMatches.length > 0) {
+    return quotedMatches.join(" + ");
+  }
+
+  return title;
+};
+
+const getChoreoPresentation = (code: SellableProductCode) => {
+  if (code === "choreo-still-alive") {
+    return {
+      posterSrc: "/images/still_alive_poster.webp",
+      videoSrc: CHOREO_STILL_ALIVE_REEL_URL,
+    };
+  }
+
+  if (code === "choreo-her-lies") {
+    return {
+      posterSrc: "/images/her_lies_poster.webp",
+      videoSrc: CHOREO_HER_LIES_REEL_URL,
+    };
+  }
+
+  if (code === "choreo-bundle") {
+    return {
+      posterSrc: "/images/bundle_poster.webp",
+    };
+  }
+
+  return {};
+};
+
+const formatOfferButtonText = (t: Translate, offer: SellableProductOffer) =>
+  `${t(offer.labelKey)} ${offer.prices.pln} PLN / ${offer.prices.eur} €`;
 
 export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
   {
@@ -67,50 +112,40 @@ export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
   },
 ];
 
-export const getChoreos = (t: Translate): TChoreoCard[] => {
-  const stillAlive = SELLABLE_PRODUCTS["choreo-still-alive"];
-  const herLies = SELLABLE_PRODUCTS["choreo-her-lies"];
+export const getChoreos = (t: Translate): TChoreoCard[] =>
+  SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo").map(
+    (product, index) => {
+      const presentation = getChoreoPresentation(product.code);
+      const withoutMentorOffer = product.offers.find(
+        (offer) => offer.code === "without-mentor",
+      );
+      const withMentorOffer = product.offers.find(
+        (offer) => offer.code === "with-mentor",
+      );
 
-  return [
-    {
-      id: 1,
-      videoSrc: CHOREO_STILL_ALIVE_REEL_URL,
-      posterSrc: "/images/still_alive_poster.webp",
-      title: "Still Alive",
-      firstButtonOptions: {
-        href: buildCheckoutHref({
-          offerId: stillAlive.offers[0]?.id,
-          productId: stillAlive.id,
-        }),
-        text: t("pricing.withoutMentor"),
-      },
-      secondButtonOptions: {
-        href: buildCheckoutHref({
-          offerId: stillAlive.offers[1]?.id,
-          productId: stillAlive.id,
-        }),
-        text: t("pricing.withMentor"),
-      },
+      return {
+        id: index + 1,
+        posterSrc: presentation.posterSrc,
+        title: getCompactChoreoTitle(t(product.titleKey)),
+        videoSrc: presentation.videoSrc,
+        firstButtonOptions: withoutMentorOffer
+          ? {
+              href: buildCheckoutHref({
+                offerId: withoutMentorOffer.id,
+                productId: product.id,
+              }),
+              text: formatOfferButtonText(t, withoutMentorOffer),
+            }
+          : undefined,
+        secondButtonOptions: withMentorOffer
+          ? {
+              href: buildCheckoutHref({
+                offerId: withMentorOffer.id,
+                productId: product.id,
+              }),
+              text: formatOfferButtonText(t, withMentorOffer),
+            }
+          : undefined,
+      };
     },
-    {
-      id: 2,
-      videoSrc: CHOREO_HER_LIES_REEL_URL,
-      posterSrc: "/images/her_lies_poster.webp",
-      title: "Her Lies",
-      firstButtonOptions: {
-        href: buildCheckoutHref({
-          offerId: herLies.offers[0]?.id,
-          productId: herLies.id,
-        }),
-        text: t("pricing.withoutMentor"),
-      },
-      secondButtonOptions: {
-        href: buildCheckoutHref({
-          offerId: herLies.offers[1]?.id,
-          productId: herLies.id,
-        }),
-        text: t("pricing.withMentor"),
-      },
-    },
-  ];
-};
+  );

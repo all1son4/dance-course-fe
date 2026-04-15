@@ -7,7 +7,7 @@ import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import { buildCheckoutHref, SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
 
 import { getChoreos, getOnlineSuggestions } from "./constants";
@@ -67,11 +67,10 @@ export default function FirstTouch() {
   const t = useTranslations("ChoreoPage");
   const productT = useTranslations("SellableProducts");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
-  const choreos = getChoreos((key) => t(key));
-  const sellableChoreoProducts = [
-    SELLABLE_PRODUCTS["choreo-still-alive"],
-    SELLABLE_PRODUCTS["choreo-her-lies"],
-  ];
+  const choreos = getChoreos((key) => productT(key));
+  const sellableChoreoProducts = SELLABLE_PRODUCTS_LIST.filter(
+    (product) => product.type === "choreo",
+  );
   const choreographyProductsStructuredData = sellableChoreoProducts.map((product) => ({
     "@context": "https://schema.org",
     "@type": "Product",

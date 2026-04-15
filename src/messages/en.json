@@ -30,9 +30,9 @@
       },
       "choreo": {
         "title": "Frame Up Strip Choreography Tutorials",
-        "description": "Detailed choreography tutorials for Still Alive and Her Lies with structure, technique, and performance guidance in a flexible online format.",
+        "description": "Detailed choreography tutorials for Still Alive and Her Lies, plus a bundle with both tutorials, structure, technique, and performance guidance in a flexible online format.",
         "ogImageAlt": "Frame Up Strip choreography tutorials by Anna Strok",
-        "keywords": "choreography tutorial, still alive choreography, her lies choreography, frame up dance tutorial, Anna Strok choreography"
+        "keywords": "choreography tutorial, still alive choreography, her lies choreography, choreography bundle, frame up dance tutorial, Anna Strok choreography"
       },
       "offline": {
         "title": "Offline Frame Up Strip Classes in Warsaw",
@@ -585,6 +585,19 @@
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
       "accessNote": "Access to materials for 2 months via a private Telegram channel.",
+      "offers": {
+        "withoutMentor": "Without mentor",
+        "withMentor": "With mentor"
+      }
+    },
+    "choreoBundle": {
+      "title": "Bundle tutorial \"Still Alive\" + \"Her Lies\"",
+      "description": {
+        "1": "Two online choreography tutorials in one access for dancers who want to work with different dynamics, performance qualities and musicality right away.",
+        "2": "Inside the bundle are Still Alive and Her Lies: you can move through the material at your own pace, replay the lessons and assemble both choreographies to music.",
+        "3": "Choose between a self-paced format or participation with mentor support and feedback."
+      },
+      "accessNote": "Access to materials for 2 months via a private Telegram channel with both choreographies.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
