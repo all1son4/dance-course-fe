@@ -188,8 +188,8 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         label: "Без куратора",
         labelKey: "choreoBundle.offers.withoutMentor",
         prices: {
-          pln: 120,
-          eur: 30,
+          pln: 85,
+          eur: 20,
         },
         telegramAccessDurationDays: 60,
       },
@@ -199,8 +199,8 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         label: "С куратором",
         labelKey: "choreoBundle.offers.withMentor",
         prices: {
-          pln: 200,
-          eur: 50,
+          pln: 170,
+          eur: 40,
         },
         telegramAccessDurationDays: 60,
       },
