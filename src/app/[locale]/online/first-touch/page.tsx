@@ -4,18 +4,19 @@ import { getTranslations } from "next-intl/server";
 
 import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
+import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import RoadmapContainer from "@/components/other/ProgramRoadmap";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import { FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
 import {
-  buildCheckoutHref,
   DEFAULT_CHECKOUT_PRODUCT,
   getDefaultProductOffer,
 } from "@/constants/sellable-products";
 import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
 
+import { buildCheckoutOffersStructuredData } from "../_shared/structured-data";
 import { getOnlineSuggestions } from "./constants";
 import {
   AboutCourseCards,
@@ -45,14 +46,7 @@ import {
   VideoSection,
 } from "./page.styles";
 
-type FirstTouchPageMetadataProps = {
-  params: Promise<{ locale: string }>;
-};
-
-export async function generateMetadata({
-  params,
-}: FirstTouchPageMetadataProps): Promise<Metadata> {
-  await params;
+export async function generateMetadata(): Promise<Metadata> {
   const metadataT = await getTranslations({
     locale: seoTargetLocale,
     namespace: "Metadata",
@@ -81,10 +75,6 @@ export default function FirstTouch() {
   const t = useTranslations("FirstTouchPage");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
   const defaultOffer = getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT);
-  const checkoutHref = buildCheckoutHref({
-    offerId: defaultOffer.id,
-    productId: DEFAULT_CHECKOUT_PRODUCT.id,
-  });
   const coursePrice = `${defaultOffer.prices.pln} PLN / ${defaultOffer.prices.eur} €`;
   const courseStructuredData = {
     "@context": "https://schema.org",
@@ -98,30 +88,15 @@ export default function FirstTouch() {
       url: normalizedSiteUrl,
     },
     url: `${normalizedSiteUrl}/online/first-touch`,
-    offers: [
-      {
-        "@type": "Offer",
-        availability: "https://schema.org/InStock",
-        price: defaultOffer.prices.eur,
-        priceCurrency: "EUR",
-        url: `${normalizedSiteUrl}${checkoutHref}&currency=eur`,
-      },
-      {
-        "@type": "Offer",
-        availability: "https://schema.org/InStock",
-        price: defaultOffer.prices.pln,
-        priceCurrency: "PLN",
-        url: `${normalizedSiteUrl}${checkoutHref}&currency=pln`,
-      },
-    ],
+    offers: buildCheckoutOffersStructuredData({
+      offer: defaultOffer,
+      productId: DEFAULT_CHECKOUT_PRODUCT.id,
+    }),
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(courseStructuredData) }}
-      />
+      <StructuredData data={courseStructuredData} />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>
@@ -145,7 +120,6 @@ export default function FirstTouch() {
           </InfoBoxGroup>
 
           <ButtonBox>
-            {/* <Button buttonText={t("hero.buyButton")} href={checkoutHref} /> */}
             <Button
               buttonText={t("hero.enrollButton")}
               href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
@@ -214,13 +188,8 @@ export default function FirstTouch() {
         <AboutCourseSection>
           <AboutCourseTitle>{t("about.title")}</AboutCourseTitle>
           <AboutCourseCards>
-            {onlineSuggestions.map((suggestion) => (
-              <TextContentCard
-                key={suggestion.id}
-                icon={suggestion.icon}
-                title={suggestion.title}
-                text={suggestion.text}
-              />
+            {onlineSuggestions.map(({ id, ...suggestion }) => (
+              <TextContentCard key={id} {...suggestion} />
             ))}
           </AboutCourseCards>
         </AboutCourseSection>
@@ -229,7 +198,6 @@ export default function FirstTouch() {
             <CourseProgramTitle>{t("program.title")}</CourseProgramTitle>
             <RoadmapContainer />
             <CourseProgramButtonBox>
-              {/* <Button buttonText={t("program.buyButton")} href={checkoutHref} /> */}
               <Button
                 buttonText={t("hero.enrollButton")}
                 href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}

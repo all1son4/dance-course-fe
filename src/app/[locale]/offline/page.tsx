@@ -15,6 +15,7 @@ import {
   CourseList,
   CoursesSection,
   Description,
+  HighlightText,
   IconBox,
   ImageBox,
   IntroductionSection,
@@ -29,14 +30,7 @@ import {
   Title,
 } from "./page.styles";
 
-type OfflinePageMetadataProps = {
-  params: Promise<{ locale: string }>;
-};
-
-export async function generateMetadata({
-  params,
-}: OfflinePageMetadataProps): Promise<Metadata> {
-  await params;
+export async function generateMetadata(): Promise<Metadata> {
   const metadataT = await getTranslations({
     locale: seoTargetLocale,
     namespace: "Metadata",
@@ -113,17 +107,8 @@ export default function Offline() {
         </IconBox>
       </IntroductionSection>
       <CoursesSection>
-        {offlineCoursesArray.map((course) => (
-          <InteractiveCard
-            key={course.id}
-            title={course.title}
-            topRowContent={course.topRowContent}
-            bottomRowContent={course.bottomRowContent}
-            buttonText={course.buttonText}
-            buttonHref={course.buttonHref}
-            buttonTarget={course.buttonTarget}
-            buttonRel={course.buttonRel}
-          />
+        {offlineCoursesArray.map(({ id, ...course }) => (
+          <InteractiveCard key={id} {...course} />
         ))}
       </CoursesSection>
       <PromoteOnlineSection>
@@ -143,9 +128,9 @@ export default function Offline() {
               <CourseList>
                 <li>
                   {t("promo.card.items.1.prefix")}{" "}
-                  <span style={{ fontWeight: 600 }}>
+                  <HighlightText>
                     &quot;{t("promo.card.items.1.highlight")}&quot;
-                  </span>
+                  </HighlightText>
                 </li>
                 <li>{t("promo.card.items.2")}</li>
               </CourseList>

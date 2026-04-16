@@ -29,14 +29,7 @@ import {
   Title,
 } from "./page.styles";
 
-type OnlinePageMetadataProps = {
-  params: Promise<{ locale: string }>;
-};
-
-export async function generateMetadata({
-  params,
-}: OnlinePageMetadataProps): Promise<Metadata> {
-  await params;
+export async function generateMetadata(): Promise<Metadata> {
   const metadataT = await getTranslations({
     locale: seoTargetLocale,
     namespace: "Metadata",
@@ -115,15 +108,8 @@ export default function Online() {
         </IconBox>
       </IntroductionSection>
       <CoursesSection>
-        {onlineCoursesArray.map((course) => (
-          <InteractiveCard
-            key={course.id}
-            title={course.title}
-            topRowContent={course.topRowContent}
-            bottomRowContent={course.bottomRowContent}
-            buttonText={course.buttonText}
-            buttonHref={course.buttonHref}
-          />
+        {onlineCoursesArray.map(({ id, ...course }) => (
+          <InteractiveCard key={id} {...course} />
         ))}
       </CoursesSection>
       <StudioDanceSection>

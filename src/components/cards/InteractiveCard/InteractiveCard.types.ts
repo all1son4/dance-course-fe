@@ -1,6 +1,6 @@
 import type { AnchorHTMLAttributes, HTMLAttributeAnchorTarget, ReactNode } from "react";
 
-export type TInteractiveCard = {
+export type InteractiveCardProps = {
   title: string;
   topRowContent?: ReactNode;
   bottomRowContent?: ReactNode;

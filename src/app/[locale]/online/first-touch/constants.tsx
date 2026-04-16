@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 import {
   OnlineCalendar,
   OnlineGroup,
@@ -8,44 +6,49 @@ import {
   OnlineVideo,
 } from "@/svg";
 
-export type TOnlineSuggestion = {
-  id: number;
-  icon?: ReactNode;
-  title?: ReactNode;
-  text?: ReactNode;
-};
+import {
+  buildOnlineSuggestionCards,
+  type OnlineSuggestionCard,
+  type OnlineSuggestionDefinition,
+} from "../_shared/content";
 
 type Translate = (key: string) => string;
 
-export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
+const FIRST_TOUCH_SUGGESTION_DEFINITIONS = [
   {
-    id: 1,
-    icon: <OnlineGroup />,
-    title: t("suggestions.1.title"),
-    text: t("suggestions.1.text"),
+    id: "group",
+    icon: OnlineGroup,
+    titleKey: "suggestions.1.title",
+    textKey: "suggestions.1.text",
   },
   {
-    id: 2,
-    icon: <OnlineHome />,
-    title: t("suggestions.2.title"),
-    text: t("suggestions.2.text"),
+    id: "home",
+    icon: OnlineHome,
+    titleKey: "suggestions.2.title",
+    textKey: "suggestions.2.text",
   },
   {
-    id: 3,
-    icon: <OnlineVideo />,
-    title: t("suggestions.3.title"),
-    text: t("suggestions.3.text"),
+    id: "video",
+    icon: OnlineVideo,
+    titleKey: "suggestions.3.title",
+    textKey: "suggestions.3.text",
   },
   {
-    id: 4,
-    icon: <OnlineCalendar />,
-    title: t("suggestions.4.title"),
-    text: t("suggestions.4.text"),
+    id: "calendar",
+    icon: OnlineCalendar,
+    titleKey: "suggestions.4.title",
+    textKey: "suggestions.4.text",
   },
   {
-    id: 5,
-    icon: <OnlineTelegram />,
-    title: t("suggestions.5.title"),
-    text: t("suggestions.5.text"),
+    id: "telegram",
+    icon: OnlineTelegram,
+    titleKey: "suggestions.5.title",
+    textKey: "suggestions.5.text",
   },
-];
+] satisfies readonly OnlineSuggestionDefinition[];
+
+export const getOnlineSuggestions = (t: Translate): OnlineSuggestionCard[] =>
+  buildOnlineSuggestionCards({
+    definitions: FIRST_TOUCH_SUGGESTION_DEFINITIONS,
+    t,
+  });

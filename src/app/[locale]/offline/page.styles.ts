@@ -355,6 +355,10 @@ export const CourseList = styled.ul`
   }
 `;
 
+export const HighlightText = styled.span`
+  font-weight: 600;
+`;
+
 export const TextBlock = styled.div`
   display: flex;
   flex-direction: column;

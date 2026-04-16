@@ -9,23 +9,31 @@ import {
   Title,
   TitleBox,
 } from "./CourseCard.styles";
-import { TCourseCard } from "./CourseCard.types";
+import type { CourseCardProps } from "./CourseCard.types";
 
-export default function ContactCard(course: TCourseCard) {
+export default function CourseCard({
+  bgColor,
+  buttonHref,
+  buttonText,
+  cardContent,
+  icon,
+  subtitle,
+  title,
+}: CourseCardProps) {
   return (
-    <CardContainer $bgColor={course.bgColor} className="courseCardContainer">
-      <IconBox className="courseCardIconBox">{course.icon}</IconBox>
+    <CardContainer $bgColor={bgColor} className="courseCardContainer">
+      <IconBox className="courseCardIconBox">{icon}</IconBox>
       <TitleBox>
-        <Title className="courseCardTitle">{course.title}</Title>
-        <Subtitle className="courseCardSubtitle">{course.subtitle}</Subtitle>
+        <Title className="courseCardTitle">{title}</Title>
+        <Subtitle className="courseCardSubtitle">{subtitle}</Subtitle>
       </TitleBox>
       <ContentBox>
-        <Content className="courseCardContent">{course.cardContent}</Content>
+        <Content className="courseCardContent">{cardContent}</Content>
         <Button
           className="courseCardButton"
-          buttonText={course.buttonText}
+          buttonText={buttonText}
           width="200px"
-          href={course.buttonHref}
+          href={buttonHref}
         />
       </ContentBox>
     </CardContainer>

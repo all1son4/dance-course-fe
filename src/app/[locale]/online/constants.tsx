@@ -1,84 +1,50 @@
-import styled from "styled-components";
+import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
 
-import type { TInteractiveCard as TInteractiveCardBase } from "@/components/cards/InteractiveCard/InteractiveCard.types";
-
-export type TInteractiveCard = TInteractiveCardBase & {
-  id: number;
-};
+import {
+  ContentStack,
+  DetailText,
+  DetailValueText,
+} from "../_shared/interactive-card-content";
 
 type Translate = (key: string) => string;
+type InteractiveCourseCard = InteractiveCardProps & {
+  id: string;
+};
 
-const Content = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-`;
-
-const CommonText = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(50, 49, 52, 1);
-`;
-
-const BigText = styled.p`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 30px;
-  line-height: 110%;
-  letter-spacing: 0;
-  margin: 0;
-`;
-
-const DateBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-`;
-
-export const getOnlineCoursesArray = (t: Translate): TInteractiveCard[] => [
+export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => [
   {
-    id: 1,
+    id: "first-touch",
     title: t("cards.firstTouch.title"),
     topRowContent: (
-      <Content>
-        <CommonText style={{ marginBottom: 16 }}>
-          {t("cards.firstTouch.description.1")}
-        </CommonText>
-        <CommonText style={{ marginBottom: 16 }}>
-          {t("cards.firstTouch.description.2")}
-        </CommonText>
-        <CommonText>{t("cards.firstTouch.description.3")}</CommonText>
-      </Content>
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.firstTouch.description.1")}</DetailText>
+        <DetailText>{t("cards.firstTouch.description.2")}</DetailText>
+        <DetailText>{t("cards.firstTouch.description.3")}</DetailText>
+      </ContentStack>
     ),
     bottomRowContent: (
-      <DateBox>
-        <CommonText>{t("cards.firstTouch.startLabel")}</CommonText>
-        <BigText>{t("cards.firstTouch.startValue")}</BigText>
-      </DateBox>
+      <ContentStack>
+        <DetailText>{t("cards.firstTouch.startLabel")}</DetailText>
+        <DetailValueText>{t("cards.firstTouch.startValue")}</DetailValueText>
+      </ContentStack>
     ),
     buttonText: t("cards.firstTouch.button"),
     buttonHref: "/online/first-touch",
   },
   {
-    id: 2,
+    id: "choreo",
     title: t("cards.choreo.title"),
     topRowContent: (
-      <Content>
-        <CommonText style={{ marginBottom: 16 }}>
-          {t("cards.choreo.description.1")}
-        </CommonText>
-        <CommonText>{t("cards.choreo.description.2")}</CommonText>
-      </Content>
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.choreo.description.1")}</DetailText>
+        <DetailText>{t("cards.choreo.description.2")}</DetailText>
+      </ContentStack>
     ),
     bottomRowContent: (
-      <DateBox>
-        <CommonText>{t("cards.choreo.startLabel")}</CommonText>
-        <BigText>{t("cards.choreo.startValue")}</BigText>
-      </DateBox>
+      <ContentStack>
+        <DetailText>{t("cards.choreo.startLabel")}</DetailText>
+        <DetailValueText>{t("cards.choreo.startValue")}</DetailValueText>
+      </ContentStack>
     ),
     buttonText: t("cards.choreo.button"),
     buttonHref: "/online/choreo",

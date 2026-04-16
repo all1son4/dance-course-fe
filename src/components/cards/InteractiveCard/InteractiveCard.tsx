@@ -18,27 +18,39 @@ import {
   TitleBlock,
   TopInfoRow,
 } from "./InteractiveCard.styles";
-import { TInteractiveCard } from "./InteractiveCard.types";
+import type { InteractiveCardProps } from "./InteractiveCard.types";
 
-export default function InteractiveCard(card: TInteractiveCard) {
+export default function InteractiveCard({
+  bottomRowContent,
+  buttonHref,
+  buttonRel,
+  buttonTarget,
+  buttonText,
+  collapseTopRow,
+  defaultCollapseTopRow,
+  isTopRowCollapsible,
+  onCollapseTopRowChange,
+  title,
+  topRowContent,
+}: InteractiveCardProps) {
   const t = useTranslations("Common");
-  const hasTopRow = Boolean(card.topRowContent);
-  const canCollapseTopRow = hasTopRow && Boolean(card.isTopRowCollapsible);
-  const isCollapseStateControlled = typeof card.collapseTopRow === "boolean";
+  const hasTopRow = Boolean(topRowContent);
+  const canCollapseTopRow = hasTopRow && Boolean(isTopRowCollapsible);
+  const isCollapseStateControlled = typeof collapseTopRow === "boolean";
   const [isTopRowCollapsedInternal, setIsTopRowCollapsedInternal] = useState<boolean>(
-    card.defaultCollapseTopRow ?? false,
+    defaultCollapseTopRow ?? false,
   );
   const isTopRowCollapsed = canCollapseTopRow
     ? isCollapseStateControlled
-      ? Boolean(card.collapseTopRow)
+      ? Boolean(collapseTopRow)
       : isTopRowCollapsedInternal
-    : Boolean(card.collapseTopRow);
+    : Boolean(collapseTopRow);
   const topRowId = useId();
-  const buttonLinkProps = card.buttonHref
+  const buttonLinkProps = buttonHref
     ? {
-        href: card.buttonHref,
-        target: card.buttonTarget,
-        rel: card.buttonRel,
+        href: buttonHref,
+        target: buttonTarget,
+        rel: buttonRel,
       }
     : {};
   const onCollapseToggleClick = () => {
@@ -52,30 +64,28 @@ export default function InteractiveCard(card: TInteractiveCard) {
       setIsTopRowCollapsedInternal(nextCollapsedState);
     }
 
-    card.onCollapseTopRowChange?.(nextCollapsedState);
+    onCollapseTopRowChange?.(nextCollapsedState);
   };
 
   return (
     <CardContainer $hasCollapseToggle={canCollapseTopRow}>
       <TitleBlock>
-        <Title>{card.title}</Title>
+        <Title>{title}</Title>
       </TitleBlock>
 
       <ContentWrapper>
         {hasTopRow ? (
           <TopInfoRow id={topRowId} $isCollapsed={isTopRowCollapsed}>
-            {card.topRowContent}
+            {topRowContent}
           </TopInfoRow>
         ) : null}
 
         <BottomBlock>
           {hasTopRow ? <Divider $isCollapsed={isTopRowCollapsed} /> : null}
-          {card.bottomRowContent && (
-            <BottomInfoRow>{card.bottomRowContent}</BottomInfoRow>
-          )}
-          {card.buttonText && (
+          {bottomRowContent && <BottomInfoRow>{bottomRowContent}</BottomInfoRow>}
+          {buttonText && (
             <ButtonBox>
-              <Button buttonText={card.buttonText} {...buttonLinkProps} />
+              <Button buttonText={buttonText} {...buttonLinkProps} />
             </ButtonBox>
           )}
         </BottomBlock>

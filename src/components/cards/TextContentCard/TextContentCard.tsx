@@ -1,13 +1,13 @@
 import { CardContainer, IconBox, Text, TextBox, Title } from "./TextContentCard.styles";
-import { TTextContentCard } from "./TextContentCard.types";
+import type { TextContentCardProps } from "./TextContentCard.types";
 
-export default function TextContentCard(card: TTextContentCard) {
+export default function TextContentCard({ icon, title, text }: TextContentCardProps) {
   return (
     <CardContainer>
-      <IconBox>{card.icon}</IconBox>
+      <IconBox>{icon}</IconBox>
       <TextBox>
-        <Title>{card.title}</Title>
-        <Text>{card.text}</Text>
+        <Title>{title}</Title>
+        <Text>{text}</Text>
       </TextBox>
     </CardContainer>
   );

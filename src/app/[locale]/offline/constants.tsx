@@ -1,132 +1,85 @@
-import styled from "styled-components";
-
-import type { TInteractiveCard as TInteractiveCardBase } from "@/components/cards/InteractiveCard/InteractiveCard.types";
+import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
 import {
   INSTAGRAM_PROFILE_URL,
   TRIAL_REGISTRATION_FORM_VIEW_URL,
 } from "@/constants/links";
 import { SmallClock, SmallMap } from "@/svg";
 
-export type TInteractiveCard = TInteractiveCardBase & {
-  id: number;
-};
+import {
+  ContentStack,
+  DetailStrongText,
+  DetailText,
+  DetailValueText,
+  IconCell,
+  InfoGrid,
+  InfoSection,
+  PriceFrequency,
+  PriceRow,
+} from "../_shared/interactive-card-content";
 
 type Translate = (key: string) => string;
+type InteractiveCourseCard = InteractiveCardProps & {
+  id: string;
+};
 
-const Content = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-`;
+const buildPriceRow = (t: Translate, priceKey: string, suffixKey: string) => (
+  <PriceRow>
+    <DetailValueText>{t(priceKey)}</DetailValueText>
+    <PriceFrequency>{t(suffixKey)}</PriceFrequency>
+  </PriceRow>
+);
 
-const CommonText = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(50, 49, 52, 1);
-`;
+const buildScheduleAndLocationContent = (
+  t: Translate,
+  scheduleKeys: [string, string],
+) => (
+  <>
+    <InfoSection>
+      <InfoGrid>
+        <IconCell>
+          <SmallClock />
+        </IconCell>
+        <DetailStrongText>{t("cards.common.schedule")}</DetailStrongText>
 
-const BoldText = styled.p`
-  font-weight: 600;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 110%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-`;
+        <div />
+        <DetailText>{t(scheduleKeys[0])}</DetailText>
 
-const Section = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
+        <div />
+        <DetailText>{t(scheduleKeys[1])}</DetailText>
+      </InfoGrid>
+    </InfoSection>
 
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: 18px 1fr;
-  column-gap: 10px;
-  row-gap: 10px;
-`;
+    <InfoSection>
+      <InfoGrid>
+        <IconCell>
+          <SmallMap />
+        </IconCell>
+        <DetailStrongText>{t("cards.common.location")}</DetailStrongText>
 
-const IconCell = styled.div`
-  display: flex;
-  align-items: flex-start;
-  padding-top: 2px;
-`;
+        <div />
+        <DetailText>{t("cards.common.locationValue")}</DetailText>
+      </InfoGrid>
+    </InfoSection>
+  </>
+);
 
-export const PriceBox = styled.div`
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-`;
-
-export const Price = styled.p`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 30px;
-  line-height: 110%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-`;
-
-export const Frequency = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 16px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(72, 72, 72, 1);
-`;
-
-export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
+export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] => [
   {
-    id: 1,
+    id: "from-zero",
     title: t("cards.fromZero.title"),
     topRowContent: (
-      <Content>
-        <CommonText style={{ marginBottom: 26 }}>
-          {t("cards.fromZero.description")}
-        </CommonText>
-
-        <Section style={{ marginBottom: 26 }}>
-          <Grid>
-            <IconCell>
-              <SmallClock />
-            </IconCell>
-            <BoldText>{t("cards.common.schedule")}</BoldText>
-
-            <div />
-            <CommonText>{t("cards.fromZero.schedule.1")}</CommonText>
-
-            <div />
-            <CommonText>{t("cards.fromZero.schedule.2")}</CommonText>
-          </Grid>
-        </Section>
-
-        <Section>
-          <Grid>
-            <IconCell>
-              <SmallMap />
-            </IconCell>
-            <BoldText>{t("cards.common.location")}</BoldText>
-
-            <div />
-            <CommonText>{t("cards.common.locationValue")}</CommonText>
-          </Grid>
-        </Section>
-      </Content>
+      <ContentStack $gap="26px">
+        <DetailText>{t("cards.fromZero.description")}</DetailText>
+        {buildScheduleAndLocationContent(t, [
+          "cards.fromZero.schedule.1",
+          "cards.fromZero.schedule.2",
+        ])}
+      </ContentStack>
     ),
-    bottomRowContent: (
-      <PriceBox>
-        <Price>{t("cards.fromZero.price")}</Price>
-        <Frequency>{t("cards.fromZero.priceSuffix")}</Frequency>
-      </PriceBox>
+    bottomRowContent: buildPriceRow(
+      t,
+      "cards.fromZero.price",
+      "cards.fromZero.priceSuffix",
     ),
     buttonText: t("cards.common.button"),
     buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
@@ -134,47 +87,21 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
     buttonRel: "noopener noreferrer",
   },
   {
-    id: 2,
+    id: "advanced",
     title: t("cards.advanced.title"),
     topRowContent: (
-      <Content>
-        <CommonText style={{ marginBottom: 26 }}>
-          {t("cards.advanced.description")}
-        </CommonText>
-
-        <Section style={{ marginBottom: 26 }}>
-          <Grid>
-            <IconCell>
-              <SmallClock />
-            </IconCell>
-            <BoldText>{t("cards.common.schedule")}</BoldText>
-
-            <div />
-            <CommonText>{t("cards.advanced.schedule.1")}</CommonText>
-
-            <div />
-            <CommonText>{t("cards.advanced.schedule.2")}</CommonText>
-          </Grid>
-        </Section>
-
-        <Section>
-          <Grid>
-            <IconCell>
-              <SmallMap />
-            </IconCell>
-            <BoldText>{t("cards.common.location")}</BoldText>
-
-            <div />
-            <CommonText>{t("cards.common.locationValue")}</CommonText>
-          </Grid>
-        </Section>
-      </Content>
+      <ContentStack $gap="26px">
+        <DetailText>{t("cards.advanced.description")}</DetailText>
+        {buildScheduleAndLocationContent(t, [
+          "cards.advanced.schedule.1",
+          "cards.advanced.schedule.2",
+        ])}
+      </ContentStack>
     ),
-    bottomRowContent: (
-      <PriceBox>
-        <Price>{t("cards.advanced.price")}</Price>
-        <Frequency>{t("cards.advanced.priceSuffix")}</Frequency>
-      </PriceBox>
+    bottomRowContent: buildPriceRow(
+      t,
+      "cards.advanced.price",
+      "cards.advanced.priceSuffix",
     ),
     buttonText: t("cards.common.button"),
     buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
@@ -182,23 +109,16 @@ export const getOfflineCoursesArray = (t: Translate): TInteractiveCard[] => [
     buttonRel: "noopener noreferrer",
   },
   {
-    id: 3,
+    id: "impro",
     title: t("cards.impro.title"),
     topRowContent: (
-      <Content>
-        <CommonText style={{ marginBottom: 16 }}>
-          {t("cards.impro.description")}
-        </CommonText>
-        <BoldText style={{ marginBottom: 16 }}>{t("cards.impro.note")}</BoldText>
-        <CommonText>{t("cards.impro.details")}</CommonText>
-      </Content>
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.impro.description")}</DetailText>
+        <DetailStrongText>{t("cards.impro.note")}</DetailStrongText>
+        <DetailText>{t("cards.impro.details")}</DetailText>
+      </ContentStack>
     ),
-    bottomRowContent: (
-      <PriceBox>
-        <Price>{t("cards.impro.price")}</Price>
-        <Frequency>{t("cards.impro.priceSuffix")}</Frequency>
-      </PriceBox>
-    ),
+    bottomRowContent: buildPriceRow(t, "cards.impro.price", "cards.impro.priceSuffix"),
     buttonText: t("cards.common.button"),
     buttonHref: INSTAGRAM_PROFILE_URL,
     buttonTarget: "_blank",

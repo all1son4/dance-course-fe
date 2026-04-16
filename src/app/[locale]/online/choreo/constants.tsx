@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 
+import type {
+  ChoreoCardButtonProps,
+  ChoreoCardProps,
+} from "@/components/cards/ChoreoCard";
 import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constants/links";
 import {
   buildCheckoutHref,
@@ -16,30 +20,17 @@ import {
   OnlineVideo,
 } from "@/svg";
 
-export type TOnlineSuggestion = {
-  id: number;
-  icon?: ReactNode;
-  title?: ReactNode;
-  text?: ReactNode;
-};
-
-export type TChoreoCard = {
-  id: number;
-  videoSrc?: string;
-  posterSrc?: string;
-  title?: string;
-  firstButtonOptions?: {
-    href?: string;
-    text?: string;
-  };
-  secondButtonOptions?: {
-    href?: string;
-    text?: string;
-  };
-};
+import {
+  buildOnlineSuggestionCards,
+  type OnlineSuggestionCard,
+  type OnlineSuggestionDefinition,
+} from "../_shared/content";
 
 type Translate = (key: string) => string;
 type RichTranslate = (key: string) => ReactNode;
+type ChoreoCardData = ChoreoCardProps & {
+  id: SellableProductCode;
+};
 
 const getCompactChoreoTitle = (title: string) => {
   const quotedMatches = Array.from(
@@ -54,109 +45,111 @@ const getCompactChoreoTitle = (title: string) => {
   return title;
 };
 
+const CHOREO_PRESENTATIONS = {
+  "choreo-still-alive": {
+    posterSrc: "/images/still_alive_poster.webp",
+    videoSrc: CHOREO_STILL_ALIVE_REEL_URL,
+  },
+  "choreo-her-lies": {
+    posterSrc: "/images/her_lies_poster.webp",
+    videoSrc: CHOREO_HER_LIES_REEL_URL,
+  },
+  "choreo-bundle": {
+    posterSrc: "",
+  },
+} satisfies Partial<
+  Record<SellableProductCode, Pick<ChoreoCardProps, "posterSrc" | "videoSrc">>
+>;
+
 const getChoreoPresentation = (code: SellableProductCode) => {
-  if (code === "choreo-still-alive") {
-    return {
-      posterSrc: "/images/still_alive_poster.webp",
-      videoSrc: CHOREO_STILL_ALIVE_REEL_URL,
-    };
-  }
-
-  if (code === "choreo-her-lies") {
-    return {
-      posterSrc: "/images/her_lies_poster.webp",
-      videoSrc: CHOREO_HER_LIES_REEL_URL,
-    };
-  }
-
-  if (code === "choreo-bundle") {
-    return {
-      posterSrc: "",
-    };
+  if (code in CHOREO_PRESENTATIONS) {
+    return CHOREO_PRESENTATIONS[code as keyof typeof CHOREO_PRESENTATIONS];
   }
 
   return {};
 };
 
+const CHOREO_SUGGESTION_DEFINITIONS = [
+  {
+    id: "video",
+    icon: OnlineVideo,
+    titleKey: "suggestions.1.title",
+    textKey: "suggestions.1.text",
+  },
+  {
+    id: "structure",
+    icon: OnlineStructure,
+    titleKey: "suggestions.2.title",
+    textKey: "suggestions.2.text",
+  },
+  {
+    id: "calendar",
+    icon: OnlineCalendar,
+    titleKey: "suggestions.3.title",
+    textKey: "suggestions.3.text",
+  },
+  {
+    id: "telegram",
+    icon: OnlineTelegram,
+    titleKey: "suggestions.4.title",
+    textKey: "suggestions.4.text",
+  },
+  {
+    id: "group",
+    icon: OnlineGroup,
+    titleKey: "suggestions.5.title",
+    textKey: "suggestions.5.text",
+  },
+  {
+    id: "payment",
+    icon: OnlineCreditCard,
+    titleKey: "suggestions.6.title",
+    textKey: "suggestions.6.text",
+    textResolver: "rich",
+  },
+] satisfies readonly OnlineSuggestionDefinition[];
+
 const formatOfferButtonText = (t: Translate, offer: SellableProductOffer) =>
   `${t(offer.labelKey)} ${offer.prices.pln} PLN / ${offer.prices.eur} €`;
+
+const buildChoreoButtonOptions = (
+  productId: string,
+  t: Translate,
+  offer?: SellableProductOffer,
+): ChoreoCardButtonProps | undefined =>
+  offer
+    ? {
+        href: buildCheckoutHref({
+          offerId: offer.id,
+          productId,
+        }),
+        text: formatOfferButtonText(t, offer),
+      }
+    : undefined;
 
 export const getOnlineSuggestions = (
   t: Translate,
   tRich: RichTranslate,
-): TOnlineSuggestion[] => [
-  {
-    id: 1,
-    icon: <OnlineVideo />,
-    title: t("suggestions.1.title"),
-    text: t("suggestions.1.text"),
-  },
-  {
-    id: 2,
-    icon: <OnlineStructure />,
-    title: t("suggestions.2.title"),
-    text: t("suggestions.2.text"),
-  },
-  {
-    id: 3,
-    icon: <OnlineCalendar />,
-    title: t("suggestions.3.title"),
-    text: t("suggestions.3.text"),
-  },
-  {
-    id: 4,
-    icon: <OnlineTelegram />,
-    title: t("suggestions.4.title"),
-    text: t("suggestions.4.text"),
-  },
-  {
-    id: 5,
-    icon: <OnlineGroup />,
-    title: t("suggestions.5.title"),
-    text: t("suggestions.5.text"),
-  },
-  {
-    id: 6,
-    icon: <OnlineCreditCard />,
-    title: t("suggestions.6.title"),
-    text: tRich("suggestions.6.text"),
-  },
-];
+): OnlineSuggestionCard[] =>
+  buildOnlineSuggestionCards({
+    definitions: CHOREO_SUGGESTION_DEFINITIONS,
+    t,
+    tRich,
+  });
 
-export const getChoreos = (t: Translate): TChoreoCard[] =>
-  SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo").map(
-    (product, index) => {
-      const presentation = getChoreoPresentation(product.code);
-      const withoutMentorOffer = product.offers.find(
-        (offer) => offer.code === "without-mentor",
-      );
-      const withMentorOffer = product.offers.find(
-        (offer) => offer.code === "with-mentor",
-      );
+export const getChoreos = (t: Translate): ChoreoCardData[] =>
+  SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo").map((product) => {
+    const presentation = getChoreoPresentation(product.code);
+    const withoutMentorOffer = product.offers.find(
+      (offer) => offer.code === "without-mentor",
+    );
+    const withMentorOffer = product.offers.find((offer) => offer.code === "with-mentor");
 
-      return {
-        id: index + 1,
-        posterSrc: presentation.posterSrc,
-        title: getCompactChoreoTitle(t(product.titleKey)),
-        videoSrc: presentation.videoSrc,
-        firstButtonOptions: withoutMentorOffer
-          ? {
-              href: buildCheckoutHref({
-                offerId: withoutMentorOffer.id,
-                productId: product.id,
-              }),
-              text: formatOfferButtonText(t, withoutMentorOffer),
-            }
-          : undefined,
-        secondButtonOptions: withMentorOffer
-          ? {
-              href: buildCheckoutHref({
-                offerId: withMentorOffer.id,
-                productId: product.id,
-              }),
-              text: formatOfferButtonText(t, withMentorOffer),
-            }
-          : undefined,
-      };
-    },
-  );
+    return {
+      id: product.code,
+      ...presentation,
+      title: getCompactChoreoTitle(t(product.titleKey)),
+      firstButtonOptions: buildChoreoButtonOptions(product.id, t, withoutMentorOffer),
+      secondButtonOptions: buildChoreoButtonOptions(product.id, t, withMentorOffer),
+    };
+  });

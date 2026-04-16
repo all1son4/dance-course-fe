@@ -5,11 +5,13 @@ import { getTranslations } from "next-intl/server";
 import ChoreoCard from "@/components/cards/ChoreoCard";
 import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
+import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import { buildCheckoutHref, SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
+import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
 
+import { buildCheckoutOffersStructuredData } from "../_shared/structured-data";
 import { getChoreos, getOnlineSuggestions } from "./constants";
 import {
   AboutChoreoCards,
@@ -31,14 +33,7 @@ import {
   Title,
 } from "./page.styles";
 
-type ChoreoPageMetadataProps = {
-  params: Promise<{ locale: string }>;
-};
-
-export async function generateMetadata({
-  params,
-}: ChoreoPageMetadataProps): Promise<Metadata> {
-  await params;
+export async function generateMetadata(): Promise<Metadata> {
   const metadataT = await getTranslations({
     locale: seoTargetLocale,
     namespace: "Metadata",
@@ -62,7 +57,7 @@ export async function generateMetadata({
   });
 }
 
-export default function FirstTouch() {
+export default function ChoreoPage() {
   const locale = useLocale();
   const t = useTranslations("ChoreoPage");
   const productT = useTranslations("SellableProducts");
@@ -89,42 +84,19 @@ export default function FirstTouch() {
       "@type": "Brand",
       name: "Anna Strok",
     },
-    offers: product.offers.flatMap((offer) => {
-      const checkoutHref = buildCheckoutHref({
-        offerId: offer.id,
+    offers: product.offers.flatMap((offer) =>
+      buildCheckoutOffersStructuredData({
+        offer,
+        offerName: productT(offer.labelKey),
         productId: product.id,
-      });
-
-      return [
-        {
-          "@type": "Offer",
-          name: productT(offer.labelKey),
-          availability: "https://schema.org/InStock",
-          price: offer.prices.eur,
-          priceCurrency: "EUR",
-          url: `${normalizedSiteUrl}${checkoutHref}&currency=eur`,
-        },
-        {
-          "@type": "Offer",
-          name: productT(offer.labelKey),
-          availability: "https://schema.org/InStock",
-          price: offer.prices.pln,
-          priceCurrency: "PLN",
-          url: `${normalizedSiteUrl}${checkoutHref}&currency=pln`,
-        },
-      ];
-    }),
+      }),
+    ),
     url: `${normalizedSiteUrl}/online/choreo`,
   }));
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(choreographyProductsStructuredData),
-        }}
-      />
+      <StructuredData data={choreographyProductsStructuredData} />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>
@@ -190,26 +162,14 @@ export default function FirstTouch() {
         <AboutChoreoSection>
           <AboutChoreoTitle>{t("about.title")}</AboutChoreoTitle>
           <AboutChoreoCards>
-            {onlineSuggestions.map((suggestion) => (
-              <TextContentCard
-                key={suggestion.id}
-                icon={suggestion.icon}
-                title={suggestion.title}
-                text={suggestion.text}
-              />
+            {onlineSuggestions.map(({ id, ...suggestion }) => (
+              <TextContentCard key={id} {...suggestion} />
             ))}
           </AboutChoreoCards>
         </AboutChoreoSection>
         <ChoreoSection id="choreo-section">
-          {choreos.map((choreo) => (
-            <ChoreoCard
-              key={choreo.id}
-              videoSrc={choreo.videoSrc}
-              posterSrc={choreo.posterSrc}
-              title={choreo.title}
-              firstButtonOptions={choreo.firstButtonOptions}
-              secondButtonOptions={choreo.secondButtonOptions}
-            />
+          {choreos.map(({ id, ...choreo }) => (
+            <ChoreoCard key={id} {...choreo} />
           ))}
         </ChoreoSection>
         <Contacts bgColor="rgba(200, 204, 210, 0.4)" />

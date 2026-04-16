@@ -546,6 +546,10 @@ export const CourseList = styled.ul`
   }
 `;
 
+export const HighlightText = styled.span`
+  font-weight: 600;
+`;
+
 export const FAQSection = styled.section`
   padding: 50px 50px 100px;
   display: flex;

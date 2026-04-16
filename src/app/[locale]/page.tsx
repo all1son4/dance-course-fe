@@ -39,6 +39,7 @@ import {
   DescriptionText,
   DescriptionTitle,
   FAQSection,
+  HighlightText,
   IconPositionWrap,
   ImageDescriptionBox,
   ImageDescriptionCard,
@@ -50,14 +51,7 @@ import {
   StyledImage,
 } from "./page.styles";
 
-type HomePageMetadataProps = {
-  params: Promise<{ locale: string }>;
-};
-
-export async function generateMetadata({
-  params,
-}: HomePageMetadataProps): Promise<Metadata> {
-  await params;
+export async function generateMetadata(): Promise<Metadata> {
   const metadataT = await getTranslations({
     locale: seoTargetLocale,
     namespace: "Metadata",
@@ -205,21 +199,15 @@ export default function Home() {
             cardContent={
               <CourseList>
                 <li>
-                  <span style={{ fontWeight: 600 }}>
-                    {t("courses.offline.items.1.highlight")}
-                  </span>{" "}
+                  <HighlightText>{t("courses.offline.items.1.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.1.text")}
                 </li>
                 <li>
-                  <span style={{ fontWeight: 600 }}>
-                    {t("courses.offline.items.2.highlight")}
-                  </span>{" "}
+                  <HighlightText>{t("courses.offline.items.2.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.2.text")}
                 </li>
                 <li>
-                  <span style={{ fontWeight: 600 }}>
-                    {t("courses.offline.items.3.highlight")}
-                  </span>{" "}
+                  <HighlightText>{t("courses.offline.items.3.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.3.text")}
                 </li>
               </CourseList>
@@ -235,9 +223,9 @@ export default function Home() {
               <CourseList>
                 <li>
                   {t("courses.online.items.1.prefix")}{" "}
-                  <span style={{ fontWeight: 600 }}>
+                  <HighlightText>
                     &quot;{t("courses.online.items.1.highlight")}&quot;
-                  </span>
+                  </HighlightText>
                 </li>
                 <li>{t("courses.online.items.2")}</li>
               </CourseList>

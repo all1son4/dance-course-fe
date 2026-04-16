@@ -1,6 +1,6 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
-export type TCourseCard = {
+export type CourseCardProps = {
   icon?: ReactNode;
   title?: string;
   subtitle?: string;

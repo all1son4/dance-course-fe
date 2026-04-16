@@ -9,25 +9,31 @@ import {
   InteractiveBox,
   PosterBox,
 } from "./ChoreoCard.styles";
-import type { TChoreoCard } from "./ChoreoCard.types";
+import type { ChoreoCardProps } from "./ChoreoCard.types";
 
-export default function ChoreoCard(choreo: TChoreoCard) {
+export default function ChoreoCard({
+  firstButtonOptions,
+  posterSrc,
+  secondButtonOptions,
+  title,
+  videoSrc,
+}: ChoreoCardProps) {
   return (
     <CardContainer>
-      {choreo?.videoSrc && (
+      {videoSrc && (
         <VideoPlayer
-          src={choreo.videoSrc}
-          poster={choreo.posterSrc}
+          src={videoSrc}
+          poster={posterSrc}
           iconSize="40px"
           buttonSize="80px"
           radius="40px 40px 0 0"
           aspectRatio="1 / 0.67"
         />
       )}
-      {!choreo?.videoSrc && choreo?.posterSrc && (
+      {!videoSrc && posterSrc && (
         <PosterBox>
           <SvgAsset
-            src={choreo.posterSrc}
+            src={posterSrc}
             width={1290}
             height={966}
             sizes="(max-width: 767px) 100vw, (max-width: 1300px) 50vw, 485px"
@@ -36,18 +42,15 @@ export default function ChoreoCard(choreo: TChoreoCard) {
         </PosterBox>
       )}
       <InteractiveBox>
-        <CardTitle>{choreo.title}</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <ButtonBox>
-          {choreo.firstButtonOptions?.text && (
-            <Button
-              buttonText={choreo.firstButtonOptions.text}
-              href={choreo.firstButtonOptions.href}
-            />
+          {firstButtonOptions?.text && (
+            <Button buttonText={firstButtonOptions.text} href={firstButtonOptions.href} />
           )}
-          {choreo.secondButtonOptions?.text && (
+          {secondButtonOptions?.text && (
             <Button
-              buttonText={choreo.secondButtonOptions.text}
-              href={choreo.secondButtonOptions.href}
+              buttonText={secondButtonOptions.text}
+              href={secondButtonOptions.href}
             />
           )}
         </ButtonBox>

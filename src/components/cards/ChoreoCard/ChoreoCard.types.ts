@@ -1,13 +1,12 @@
-export type TChoreoCard = {
+export type ChoreoCardButtonProps = {
+  href?: string;
+  text?: string;
+};
+
+export type ChoreoCardProps = {
   videoSrc?: string;
   posterSrc?: string;
   title?: string;
-  firstButtonOptions?: {
-    href?: string;
-    text?: string;
-  };
-  secondButtonOptions?: {
-    href?: string;
-    text?: string;
-  };
+  firstButtonOptions?: ChoreoCardButtonProps;
+  secondButtonOptions?: ChoreoCardButtonProps;
 };
