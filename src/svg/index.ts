@@ -6,6 +6,7 @@ export * from "./Insta";
 export * from "./Logo";
 export * from "./MenuButton";
 export * from "./OnlineCalendar";
+export * from "./OnlineCreditCard";
 export * from "./OnlineGroup";
 export * from "./OnlineHome";
 export * from "./OnlineStructure";

@@ -438,6 +438,10 @@
       "5": {
         "title": "Participation formats: mentored or self-paced",
         "text": "Choose what fits you: guidance and feedback, or a free self-paced format."
+      },
+      "6": {
+        "title": "Pay from any country",
+        "text": "<p>You can pay by <strong>Visa / Mastercard</strong>, via <strong>BLIK</strong>, or with <strong>Google/Apple Pay</strong> from any country, including Belarus.</p><p>Available currencies: <strong>PLN</strong> and <strong>EUR</strong>. If your card is in another currency, your bank will automatically convert the amount.</p>"
       }
     },
     "pricing": {

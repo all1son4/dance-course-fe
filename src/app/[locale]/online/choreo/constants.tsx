@@ -9,6 +9,7 @@ import {
 } from "@/constants/sellable-products";
 import {
   OnlineCalendar,
+  OnlineCreditCard,
   OnlineGroup,
   OnlineStructure,
   OnlineTelegram,
@@ -18,8 +19,8 @@ import {
 export type TOnlineSuggestion = {
   id: number;
   icon?: ReactNode;
-  title?: string;
-  text?: string;
+  title?: ReactNode;
+  text?: ReactNode;
 };
 
 export type TChoreoCard = {
@@ -38,6 +39,7 @@ export type TChoreoCard = {
 };
 
 type Translate = (key: string) => string;
+type RichTranslate = (key: string) => ReactNode;
 
 const getCompactChoreoTitle = (title: string) => {
   const quotedMatches = Array.from(
@@ -79,7 +81,10 @@ const getChoreoPresentation = (code: SellableProductCode) => {
 const formatOfferButtonText = (t: Translate, offer: SellableProductOffer) =>
   `${t(offer.labelKey)} ${offer.prices.pln} PLN / ${offer.prices.eur} €`;
 
-export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
+export const getOnlineSuggestions = (
+  t: Translate,
+  tRich: RichTranslate,
+): TOnlineSuggestion[] => [
   {
     id: 1,
     icon: <OnlineVideo />,
@@ -109,6 +114,12 @@ export const getOnlineSuggestions = (t: Translate): TOnlineSuggestion[] => [
     icon: <OnlineGroup />,
     title: t("suggestions.5.title"),
     text: t("suggestions.5.text"),
+  },
+  {
+    id: 6,
+    icon: <OnlineCreditCard />,
+    title: t("suggestions.6.title"),
+    text: tRich("suggestions.6.text"),
   },
 ];
 

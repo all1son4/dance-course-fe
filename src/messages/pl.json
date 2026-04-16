@@ -438,6 +438,10 @@
       "5": {
         "title": "Formaty udziału: z mentorem lub samodzielnie",
         "text": "Wybierz to, co dla Ciebie najlepsze: wsparcie i feedback albo swobodne tempo bez opieki."
+      },
+      "6": {
+        "title": "Płatność z dowolnego kraju",
+        "text": "<p>Możesz zapłacić kartą <strong>Visa / Mastercard</strong>, przez <strong>BLIK</strong> lub za pomocą <strong>Google/Apple Pay</strong> z dowolnego kraju, w tym z Białorusi.</p><p>Dostępne waluty: <strong>PLN</strong> i <strong>EUR</strong>. Jeśli Twoja karta jest w innej walucie, bank automatycznie przeliczy płatność.</p>"
       }
     },
     "pricing": {

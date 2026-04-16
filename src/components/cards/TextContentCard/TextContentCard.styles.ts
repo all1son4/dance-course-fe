@@ -49,7 +49,7 @@ export const Title = styled.p`
   color: rgba(0, 0, 0, 1);
 `;
 
-export const Text = styled.p`
+export const Text = styled.div`
   font-weight: 300;
   font-style: normal;
   font-size: 17px;
@@ -57,4 +57,17 @@ export const Text = styled.p`
   letter-spacing: 0;
   margin: 0;
   color: rgba(72, 72, 72, 1);
+
+  p {
+    margin: 0;
+  }
+
+  p + p {
+    margin-top: 20px;
+  }
+
+  strong {
+    font-weight: 600;
+    color: rgba(0, 0, 0, 1);
+  }
 `;

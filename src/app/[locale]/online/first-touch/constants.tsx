@@ -11,8 +11,8 @@ import {
 export type TOnlineSuggestion = {
   id: number;
   icon?: ReactNode;
-  title?: string;
-  text?: string;
+  title?: ReactNode;
+  text?: ReactNode;
 };
 
 type Translate = (key: string) => string;
