@@ -282,7 +282,7 @@
         "startLabel": "Start",
         "startValue": "Anytime",
         "salesLabel": "Sales until",
-        "salesValue": "May 5",
+        "salesValue": "May 5, 2026",
         "button": "Learn more"
       }
     },
@@ -416,7 +416,7 @@
       "startLabel": "Start",
       "startValue": "Anytime",
       "salesLabel": "Sales until",
-      "salesValue": "May 5",
+      "salesValue": "May 5, 2026",
       "button": "Choose choreography"
     },
     "about": {
