@@ -41,9 +41,15 @@ export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => 
       </ContentStack>
     ),
     bottomRowContent: (
-      <ContentStack>
-        <DetailText>{t("cards.choreo.startLabel")}</DetailText>
-        <DetailValueText>{t("cards.choreo.startValue")}</DetailValueText>
+      <ContentStack $gap="20px">
+        <ContentStack>
+          <DetailText>{t("cards.choreo.startLabel")}</DetailText>
+          <DetailValueText>{t("cards.choreo.startValue")}</DetailValueText>
+        </ContentStack>
+        <ContentStack>
+          <DetailText>{t("cards.choreo.salesLabel")}</DetailText>
+          <DetailValueText>{t("cards.choreo.salesValue")}</DetailValueText>
+        </ContentStack>
       </ContentStack>
     ),
     buttonText: t("cards.choreo.button"),

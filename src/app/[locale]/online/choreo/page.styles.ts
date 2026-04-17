@@ -162,18 +162,17 @@ export const ImageBox = styled.div`
 
   @media (max-width: 1240px) {
     max-width: 640px;
-    bottom: -100px;
+    bottom: 0;
     right: 0;
   }
 
   @media (max-width: 1140px) {
     max-width: 540px;
-    bottom: -150px;
   }
 
   @media (max-width: 880px) {
     max-width: 490px;
-    bottom: -160px;
+    bottom: 30px;
     right: -10px;
   }
 `;
@@ -189,18 +188,19 @@ export const IconBox = styled.div`
   }
 
   @media (max-width: 1240px) {
-    top: 90px;
+    top: 130px;
     max-width: 320px;
     right: 0;
   }
 
   @media (max-width: 1140px) {
-    top: 120px;
+    top: 160px;
     max-width: 260px;
   }
 
   @media (max-width: 880px) {
-    top: 120px;
+    top: 180px;
+    right: -4px;
     max-width: 240px;
   }
 `;
@@ -208,6 +208,12 @@ export const IconBox = styled.div`
 export const DateBox = styled.div`
   display: flex;
   flex-direction: column;
+`;
+
+export const InfoBoxGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   margin: 0 0 30px 0;
 `;
 

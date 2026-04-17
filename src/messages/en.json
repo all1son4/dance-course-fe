@@ -279,8 +279,10 @@
           "1": "Online video tutorials of my choreographies.",
           "2": "Learn online with unlimited replay so you can confidently build everything into the music."
         },
-        "startLabel": "Course starts",
+        "startLabel": "Start",
         "startValue": "Anytime",
+        "salesLabel": "Sales until",
+        "salesValue": "May 5",
         "button": "Learn more"
       }
     },
@@ -411,8 +413,10 @@
         "1": "Online video tutorials of my choreographies.",
         "2": "Learn online with replay support to confidently assemble choreography into music."
       },
-      "startLabel": "Course starts",
+      "startLabel": "Start",
       "startValue": "Anytime",
+      "salesLabel": "Sales until",
+      "salesValue": "May 5",
       "button": "Choose choreography"
     },
     "about": {

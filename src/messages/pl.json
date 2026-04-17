@@ -279,8 +279,10 @@
           "1": "Samouczki online moich choreografii.",
           "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
         },
-        "startLabel": "Start kursu",
+        "startLabel": "Start",
         "startValue": "W dowolnym momencie",
+        "salesLabel": "Sprzedaż do",
+        "salesValue": "5 maja",
         "button": "Więcej o kursie"
       }
     },
@@ -411,8 +413,10 @@
         "1": "Samouczki online moich choreografii.",
         "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
       },
-      "startLabel": "Start kursu",
+      "startLabel": "Start",
       "startValue": "W dowolnym momencie",
+      "salesLabel": "Sprzedaż do",
+      "salesValue": "5 maja",
       "button": "Wybierz choreografię"
     },
     "about": {

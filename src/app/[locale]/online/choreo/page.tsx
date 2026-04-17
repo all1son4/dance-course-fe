@@ -26,6 +26,7 @@ import {
   From,
   IconBox,
   ImageBox,
+  InfoBoxGroup,
   IntroductionSection,
   MobileImagesBox,
   SpecialWrapper,
@@ -106,10 +107,17 @@ export default function ChoreoPage() {
             <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
           </Description>
 
-          <DateBox>
-            <From>{t("hero.startLabel")}</From>
-            <Date>{t("hero.startValue")}</Date>
-          </DateBox>
+          <InfoBoxGroup>
+            <DateBox>
+              <From>{t("hero.startLabel")}</From>
+              <Date>{t("hero.startValue")}</Date>
+            </DateBox>
+
+            <DateBox>
+              <From>{t("hero.salesLabel")}</From>
+              <Date>{t("hero.salesValue")}</Date>
+            </DateBox>
+          </InfoBoxGroup>
 
           <ButtonBox>
             <Button buttonText={t("hero.button")} href="#choreo-section" />
