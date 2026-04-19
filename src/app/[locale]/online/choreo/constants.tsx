@@ -4,6 +4,7 @@ import type {
   ChoreoCardButtonProps,
   ChoreoCardProps,
 } from "@/components/cards/ChoreoCard";
+import SvgAsset from "@/components/common/SvgAsset";
 import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constants/links";
 import {
   buildCheckoutHref,
@@ -55,7 +56,7 @@ const CHOREO_PRESENTATIONS = {
     videoSrc: CHOREO_HER_LIES_REEL_URL,
   },
   "choreo-bundle": {
-    posterSrc: "",
+    posterSrc: "/images/bundle_poster.webp",
   },
 } satisfies Partial<
   Record<SellableProductCode, Pick<ChoreoCardProps, "posterSrc" | "videoSrc">>
@@ -67,6 +68,25 @@ const getChoreoPresentation = (code: SellableProductCode) => {
   }
 
   return {};
+};
+
+const getChoreoCardCopy = (
+  code: SellableProductCode,
+  title: string,
+  t: Translate,
+): Pick<ChoreoCardProps, "icon" | "specialOffer" | "subtitle" | "title"> => {
+  if (code === "choreo-bundle") {
+    return {
+      icon: <SvgAsset src="/svg/Discount30.png" width={87} height={93} sizes="87px" />,
+      specialOffer: true,
+      subtitle: getCompactChoreoTitle(title),
+      title: t("choreoBundle.cardTitle"),
+    };
+  }
+
+  return {
+    title: getCompactChoreoTitle(title),
+  };
 };
 
 const CHOREO_SUGGESTION_DEFINITIONS = [
@@ -140,6 +160,8 @@ export const getOnlineSuggestions = (
 export const getChoreos = (t: Translate): ChoreoCardData[] =>
   SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo").map((product) => {
     const presentation = getChoreoPresentation(product.code);
+    const title = t(product.titleKey);
+    const copy = getChoreoCardCopy(product.code, title, t);
     const withoutMentorOffer = product.offers.find(
       (offer) => offer.code === "without-mentor",
     );
@@ -148,7 +170,7 @@ export const getChoreos = (t: Translate): ChoreoCardData[] =>
     return {
       id: product.code,
       ...presentation,
-      title: getCompactChoreoTitle(t(product.titleKey)),
+      ...copy,
       firstButtonOptions: buildChoreoButtonOptions(product.id, t, withoutMentorOffer),
       secondButtonOptions: buildChoreoButtonOptions(product.id, t, withMentorOffer),
     };

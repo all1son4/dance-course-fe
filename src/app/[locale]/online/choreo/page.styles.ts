@@ -316,27 +316,22 @@ export const AboutChoreoTitle = styled.h2`
 export const ChoreoSection = styled.section`
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   width: 100%;
   padding: 100px 0 150px;
   box-sizing: border-box;
   gap: 30px;
-  justify-content: center;
   align-items: stretch;
 
-  & > div {
-    width: min(485px, calc((100% - 30px) / 2));
-    max-width: 100%;
+  & > * {
+    width: 100%;
+    max-width: 480px;
+    flex: 1 1 310px;
+    min-width: 0;
   }
 
   @media (max-width: 880px) {
     padding: 40px 0;
-  }
-
-  @media (max-width: 767px) {
-    flex-direction: column;
-
-    & > div {
-      width: 100%;
-    }
+    gap: 24px;
   }
 `;
