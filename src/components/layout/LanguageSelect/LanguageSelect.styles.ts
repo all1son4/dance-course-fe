@@ -101,6 +101,7 @@ export const Menu = styled.div`
   padding: 30px;
 
   ${glass({
+    variant: "dialog",
     radius: "30px",
     bgParam: "rgba(255, 255, 255, 0.9)",
   })}

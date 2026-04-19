@@ -1,8 +1,6 @@
 import Link from "next/link";
 import styled, { css, keyframes } from "styled-components";
 
-import { glass } from "@/styles/mixins/glass";
-
 import type { ButtonSize, ButtonVariant } from "./Button.types";
 
 type StyledProps = {
@@ -32,37 +30,30 @@ const sizeStyles = {
 
 const variantStyles = {
   primary: css`
-    ${glass({
-      variant: "control",
-      radius: "100px",
-      bgParam: "rgba(124, 0, 2, 1)",
-    })}
+    background: rgba(124, 0, 2, 1);
+    border-color: rgba(124, 0, 2, 0.96);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
     color: rgba(255, 255, 255, 1);
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        ${glass({
-          variant: "control",
-          radius: "100px",
-          bgParam: "rgba(11, 11, 11, 1)",
-        })}
+        background: rgba(11, 11, 11, 1);
+        border-color: rgba(11, 11, 11, 1);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
       }
     }
   `,
   secondary: css`
-    ${glass({
-      variant: "control",
-      radius: "100px",
-    })}
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(18, 18, 18, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
     color: #000000;
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
-        ${glass({
-          variant: "control",
-          radius: "100px",
-          bgParam: "rgba(11, 11, 11, 1)",
-        })}
+        background: rgba(11, 11, 11, 1);
+        border-color: rgba(11, 11, 11, 1);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
         color: rgba(255, 255, 255, 1);
       }
     }
@@ -71,7 +62,9 @@ const variantStyles = {
 
 const controlStyles = css<ControlProps>`
   appearance: none;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: 100px;
+  background-clip: padding-box;
   padding: 14px 40px;
 
   display: flex;
@@ -96,11 +89,11 @@ const controlStyles = css<ControlProps>`
 
   ${({ $variant }) => variantStyles[$variant]};
 
-  /* Re-apply full transition after variant glass styles (glass() also defines transition). */
   transition:
     transform var(--motion-fast, 160ms) var(--ease-standard, ease),
     color var(--motion-base, 220ms) var(--ease-standard, ease),
     background-color var(--motion-base, 220ms) var(--ease-standard, ease),
+    border-color var(--motion-base, 220ms) var(--ease-standard, ease),
     box-shadow var(--motion-base, 220ms) var(--ease-standard, ease),
     filter var(--motion-fast, 160ms) var(--ease-standard, ease),
     opacity var(--motion-fast, 160ms) var(--ease-standard, ease);

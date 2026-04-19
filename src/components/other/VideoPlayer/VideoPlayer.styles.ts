@@ -13,10 +13,13 @@ type VideoWrapProps = {
 
 export const CenterButton = styled.button<{ $isPlaying: boolean }>`
   ${glass({
+    variant: "control",
     radius: "100px",
-    bgParam: "rgba(255, 255, 255, 0.3)",
-    frostPx: 10,
-    depth: 45,
+    bgParam: "rgba(255, 255, 255, 0.24)",
+    frostPx: 12,
+    depth: 24,
+    borderOpacity: 0.82,
+    sparkleBoost: 0.96,
   })}
 
   position: absolute;

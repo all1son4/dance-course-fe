@@ -52,6 +52,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
   padding: 26px 50px;
 
   ${glass({
+    variant: "chrome",
     radius: "100px",
   })}
 
@@ -67,6 +68,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
     height: auto;
 
     ${glass({
+      variant: "chrome",
       radius: "40px",
     })}
 
