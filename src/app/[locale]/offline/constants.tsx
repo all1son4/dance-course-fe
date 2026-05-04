@@ -64,28 +64,28 @@ const buildScheduleAndLocationContent = (
 );
 
 export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] => [
-  {
-    id: "from-zero",
-    title: t("cards.fromZero.title"),
-    topRowContent: (
-      <ContentStack $gap="26px">
-        <DetailText>{t("cards.fromZero.description")}</DetailText>
-        {buildScheduleAndLocationContent(t, [
-          "cards.fromZero.schedule.1",
-          "cards.fromZero.schedule.2",
-        ])}
-      </ContentStack>
-    ),
-    bottomRowContent: buildPriceRow(
-      t,
-      "cards.fromZero.price",
-      "cards.fromZero.priceSuffix",
-    ),
-    buttonText: t("cards.common.button"),
-    buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
-    buttonTarget: "_blank",
-    buttonRel: "noopener noreferrer",
-  },
+  // {
+  //   id: "from-zero",
+  //   title: t("cards.fromZero.title"),
+  //   topRowContent: (
+  //     <ContentStack $gap="26px">
+  //       <DetailText>{t("cards.fromZero.description")}</DetailText>
+  //       {buildScheduleAndLocationContent(t, [
+  //         "cards.fromZero.schedule.1",
+  //         "cards.fromZero.schedule.2",
+  //       ])}
+  //     </ContentStack>
+  //   ),
+  //   bottomRowContent: buildPriceRow(
+  //     t,
+  //     "cards.fromZero.price",
+  //     "cards.fromZero.priceSuffix",
+  //   ),
+  //   buttonText: t("cards.common.button"),
+  //   buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
+  //   buttonTarget: "_blank",
+  //   buttonRel: "noopener noreferrer",
+  // },
   {
     id: "advanced",
     title: t("cards.advanced.title"),

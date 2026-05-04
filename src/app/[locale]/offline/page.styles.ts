@@ -234,10 +234,15 @@ export const IconBox = styled.div`
 export const CoursesSection = styled.section`
   display: flex;
   align-items: stretch;
+  justify-content: center;
   width: 100%;
   padding: 100px 50px;
   gap: 20px;
   box-sizing: border-box;
+
+  & > div {
+    max-width: 500px;
+  }
 
   @media (max-width: 1440px) {
     padding: 100px 0;
@@ -255,6 +260,10 @@ export const CoursesSection = styled.section`
 
   @media (max-width: 880px) {
     padding: 40px 20px;
+
+    & > div {
+      max-width: unset;
+    }
   }
 
   @media (max-width: 450px) {
