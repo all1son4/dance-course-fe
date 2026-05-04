@@ -198,10 +198,10 @@ export default function Home() {
             subtitle={t("courses.offline.subtitle")}
             cardContent={
               <CourseList>
-                <li>
+                {/* <li>
                   <HighlightText>{t("courses.offline.items.1.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.1.text")}
-                </li>
+                </li> */}
                 <li>
                   <HighlightText>{t("courses.offline.items.2.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.2.text")}
