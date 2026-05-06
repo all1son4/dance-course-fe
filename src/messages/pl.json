@@ -415,6 +415,7 @@
       },
       "startLabel": "Start",
       "startValue": "W dowolnym momencie",
+      "closedValue": "Sprzedaż jest tymczasowo zamknięta",
       "salesLabel": "Sprzedaż do",
       "salesValue": "5 maja 2026",
       "button": "Wybierz choreografię"

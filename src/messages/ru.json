@@ -415,6 +415,7 @@
       },
       "startLabel": "Старт",
       "startValue": "В любое время",
+      "closedValue": "Продажи временно закрыты",
       "salesLabel": "Продажи до",
       "salesValue": "5 мая 2026 г.",
       "button": "Выбрать хореографию"

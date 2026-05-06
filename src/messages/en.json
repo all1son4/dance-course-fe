@@ -415,6 +415,7 @@
       },
       "startLabel": "Start",
       "startValue": "Anytime",
+      "closedValue": "Sales are temporarily closed",
       "salesLabel": "Sales until",
       "salesValue": "May 5, 2026",
       "button": "Choose choreography"
