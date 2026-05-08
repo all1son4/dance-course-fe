@@ -4,6 +4,10 @@ const resendReplyTo = process.env.RESEND_REPLY_TO?.trim() ?? "";
 const RESEND_REQUEST_TIMEOUT_MS = 4_000;
 
 export type SendResendEmailInput = {
+  attachments?: Array<{
+    content: string;
+    filename: string;
+  }>;
   html: string;
   subject: string;
   text: string;
@@ -13,6 +17,7 @@ export type SendResendEmailInput = {
 export const isResendConfigured = () => Boolean(resendApiKey);
 
 export const sendResendEmail = async ({
+  attachments,
   html,
   subject,
   text,
@@ -29,6 +34,10 @@ export const sendResendEmail = async ({
     text,
     to: [to],
   };
+
+  if (attachments?.length) {
+    payload.attachments = attachments;
+  }
 
   if (resendReplyTo) {
     payload.reply_to = [resendReplyTo];

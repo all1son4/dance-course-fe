@@ -46,6 +46,9 @@ Optional Telegram env variables:
 - `ALLOW_TEST_MODE_NOTIFICATIONS` (optional; set `1` to allow Stripe test-mode emails/alerts in non-production environments like Vercel Preview)
 - `SHOW_SITE` (optional; set `false`/`0`/`off`/`no` to show a "coming soon" screen instead of site pages)
 - `ADMIN_PASSWORD` (required for `/admin` password access)
+- `RESEND_API_KEY` (required for email delivery)
+- `RESEND_FROM_EMAIL` (optional; defaults to `onboarding@resend.dev`)
+- `RESEND_REPLY_TO` (optional; used as the recipient for the monthly sales report)
 
 `TELEGRAM_WEBHOOK_SECRET` is required in production (`NODE_ENV=production`).
 
@@ -57,7 +60,8 @@ Important production notes:
 - Browser-facing POST APIs validate `Origin/Referer` in production; missing headers are rejected.
 - After changing `TELEGRAM_LESSON_SOURCES_JSON` or `TELEGRAM_CHANNEL_TARGETS_JSON`, restart the app process (maps are cached in-memory).
 - Operational timestamps persisted by backend flows are recorded in UTC (`YYYY-MM-DDTHH:mm:ss.sssZ`).
-- Vercel cron for `/api/telegram/revoke-expired-access` runs by configured schedule in `vercel.json`.
+- Vercel cron calls `/api/cron/daily-maintenance` by configured schedule in `vercel.json`; that handler runs Telegram access revocation daily and sends the monthly sales report on the last day of the month when there are successful payments.
+- The admin reports section can manually send a sales CSV for a selected UTC month. Current-month reports run from the 1st day to the click time; previous months use the full calendar month. Manual sends are forced every time the button is clicked.
 
 `TELEGRAM_LESSON_SOURCES_JSON` supports both a single source per offer and language-specific sources:
 
@@ -87,6 +91,7 @@ The server exposes:
 - `POST /api/telegram/access-link`
 - `POST /api/telegram/webhook`
 - `POST /admin/api/invite-links` (manual admin invite-link generator)
+- `POST /admin/api/reports/monthly-sales` (manual monthly sales CSV email)
 - `GET /admin/auth` (admin session status)
 - `POST /admin/auth` (password -> sets admin cookie for 30 days)
 - `DELETE /admin/auth` (logout and clear admin session cookie)

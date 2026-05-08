@@ -6,6 +6,7 @@ const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
 const DEFAULT_PAYMENTS_SHEET_NAME = "Payments";
 const DEFAULT_STRIPE_EVENTS_SHEET_NAME = "StripeEvents";
 const DEFAULT_SUCCESSFUL_CUSTOMERS_SHEET_NAME = "SuccessfulCustomers";
+const DEFAULT_MONTHLY_SALES_REPORT_RUNS_SHEET_NAME = "MonthlySalesReports";
 const DEFAULT_TELEGRAM_ACCESS_TOKENS_SHEET_NAME = "TelegramAccessTokens";
 const DEFAULT_TELEGRAM_USER_BINDINGS_SHEET_NAME = "TelegramUserBindings";
 
@@ -203,6 +204,18 @@ const TELEGRAM_USER_BINDINGS_SHEET_HEADERS = [
   "revoked_reason",
   "status",
 ] as const;
+const MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS = [
+  "report_key",
+  "report_family",
+  "period_start_utc",
+  "period_end_utc",
+  "generated_at_utc",
+  "delivery_status",
+  "delivered_at_utc",
+  "delivered_to",
+  "row_count",
+  "csv_sha256",
+] as const;
 const TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS: Record<
   (typeof TELEGRAM_USER_BINDINGS_SHEET_HEADERS)[number],
   string
@@ -221,6 +234,21 @@ const TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS: Record<
   revoked_at: "Когда доступ отозван",
   revoked_reason: "Причина отзыва",
   status: "Статус привязки",
+};
+const MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS: Record<
+  (typeof MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS)[number],
+  string
+> = {
+  report_key: "Ключ отчета",
+  report_family: "Тип отчета",
+  period_start_utc: "Начало периода (UTC)",
+  period_end_utc: "Конец периода (UTC)",
+  generated_at_utc: "Когда сгенерировано (UTC)",
+  delivery_status: "Статус отправки",
+  delivered_at_utc: "Когда отправлено (UTC)",
+  delivered_to: "Кому отправлено",
+  row_count: "Количество строк",
+  csv_sha256: "SHA256 CSV",
 };
 
 type GoogleSheetsTokenResponse = {
@@ -249,6 +277,7 @@ type GoogleSheetsValueRangeBody = {
 
 type GoogleSheetsConfig = {
   paymentsSheetName: string;
+  monthlySalesReportRunsSheetName: string;
   privateKey: string;
   serviceAccountEmail: string;
   spreadsheetId: string;
@@ -295,6 +324,8 @@ type TelegramAccessTokensSheetHeader =
   (typeof TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS)[number];
 type TelegramUserBindingsSheetHeader =
   (typeof TELEGRAM_USER_BINDINGS_SHEET_HEADERS)[number];
+type MonthlySalesReportRunsSheetHeader =
+  (typeof MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS)[number];
 
 export type PaymentSheetRecord = Record<PaymentSheetHeader, string>;
 export type StripeEventSheetRecord = Record<StripeEventSheetHeader, string>;
@@ -308,6 +339,10 @@ export type TelegramAccessTokenSheetRecord = Record<
 >;
 export type TelegramUserBindingSheetRecord = Record<
   TelegramUserBindingsSheetHeader,
+  string
+>;
+export type MonthlySalesReportRunSheetRecord = Record<
+  MonthlySalesReportRunsSheetHeader,
   string
 >;
 export type AdminInviteLinkHistorySourceRecord = {
@@ -437,6 +472,7 @@ const getGoogleSheetsConfig = (): GoogleSheetsConfig | null => {
 
   return {
     paymentsSheetName: DEFAULT_PAYMENTS_SHEET_NAME,
+    monthlySalesReportRunsSheetName: DEFAULT_MONTHLY_SALES_REPORT_RUNS_SHEET_NAME,
     privateKey,
     serviceAccountEmail,
     spreadsheetId,
@@ -1114,6 +1150,12 @@ export const ensureGoogleSheetsSchema = async () => {
       ),
       ensureSheetHeaders(
         config,
+        config.monthlySalesReportRunsSheetName,
+        MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
+        MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
+      ),
+      ensureSheetHeaders(
+        config,
         config.telegramAccessTokensSheetName,
         TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
         TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
@@ -1181,6 +1223,65 @@ export const findPaymentRecordByIntentId = async (
   }
 
   return record;
+};
+
+export const listSucceededPaymentRecordsInUtcRange = async ({
+  endUtcIsoExclusive,
+  startUtcIso,
+}: {
+  endUtcIsoExclusive: string;
+  startUtcIso: string;
+}) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const startTimestamp = Date.parse(startUtcIso);
+  const endTimestamp = Date.parse(endUtcIsoExclusive);
+
+  if (!Number.isFinite(startTimestamp) || !Number.isFinite(endTimestamp)) {
+    return [] as PaymentSheetRecord[];
+  }
+
+  const rows = await getRows(
+    config,
+    config.paymentsSheetName,
+    PAYMENT_SHEET_HEADERS,
+    PAYMENT_SHEET_HEADER_LABELS,
+  );
+
+  return rows
+    .filter((row) => row.outcome.trim() === "succeeded")
+    .filter((row) => {
+      const saleTimestamp = Date.parse(
+        row.successful_customer_logged_at || row.updated_at || row.first_seen_at || "",
+      );
+
+      return saleTimestamp >= startTimestamp && saleTimestamp < endTimestamp;
+    })
+    .sort((left, right) => {
+      const leftTimestamp = Date.parse(
+        left.successful_customer_logged_at || left.updated_at || left.first_seen_at || "",
+      );
+      const rightTimestamp = Date.parse(
+        right.successful_customer_logged_at ||
+          right.updated_at ||
+          right.first_seen_at ||
+          "",
+      );
+
+      if (leftTimestamp !== rightTimestamp) {
+        return leftTimestamp - rightTimestamp;
+      }
+
+      return left.payment_intent_id.localeCompare(right.payment_intent_id);
+    });
 };
 
 export const findLatestPaymentRecordByCheckoutSessionId = async (
@@ -1675,6 +1776,76 @@ export const findTelegramUserBindingByPaymentIntentId = async (
     labelsMap: TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
     sheetTitle: config.telegramUserBindingsSheetName,
   });
+
+  return record;
+};
+
+export const findMonthlySalesReportRunByKey = async (reportKey: string) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const { record } = await findRecordAndRowByFieldValue({
+    config,
+    fieldName: "report_key",
+    fieldValue: reportKey.trim(),
+    headers: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
+    labelsMap: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
+    sheetTitle: config.monthlySalesReportRunsSheetName,
+  });
+
+  return record;
+};
+
+export const upsertMonthlySalesReportRun = async (
+  record: MonthlySalesReportRunSheetRecord,
+) => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  const { rowNumber } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
+    config,
+    fieldName: "report_key",
+    fieldValue: record.report_key,
+    headers: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
+    labelsMap: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
+    sheetTitle: config.monthlySalesReportRunsSheetName,
+  });
+  const lastColumnLetter = columnIndexToLetter(
+    MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS.length,
+  );
+
+  if (rowNumber) {
+    await updateSheetValues(
+      config,
+      config.monthlySalesReportRunsSheetName,
+      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
+      [toOrderedRow(MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS, record)],
+    );
+
+    return record;
+  }
+
+  await appendSheetValues(
+    config,
+    config.monthlySalesReportRunsSheetName,
+    `A1:${lastColumnLetter}`,
+    [toOrderedRow(MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS, record)],
+  );
 
   return record;
 };

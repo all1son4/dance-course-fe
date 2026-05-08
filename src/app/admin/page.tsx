@@ -118,6 +118,24 @@ type HistoryResponse = {
   items?: GeneratedLinkEntry[];
   stale?: boolean;
 };
+type MonthlySalesReportMonthsResponse = {
+  errorCode?: string;
+  months?: SelectOption[];
+};
+type MonthlySalesReportResponse = {
+  deliveredAtUtc?: string | null;
+  deliveredTo?: string;
+  endUtcIso?: string;
+  errorCode?: string;
+  generatedAtUtc?: string;
+  isAlreadyDelivered?: boolean;
+  month?: string;
+  rowCount?: number;
+  sha256?: string;
+  skippedReason?: "already_delivered" | "empty" | null;
+  startUtcIso?: string;
+  status?: "failed" | "sent" | "skipped";
+};
 
 const ADMIN_FEATURES: AdminFeature[] = [
   {
@@ -140,9 +158,9 @@ const ADMIN_FEATURES: AdminFeature[] = [
   },
   {
     id: "reports",
-    isAvailable: false,
+    isAvailable: true,
     label: "Отчеты",
-    description: "Срезы по активациям (скоро)",
+    description: "Ежемесячный отчет по продажам Stripe",
   },
 ];
 
@@ -313,6 +331,18 @@ export default function AdminPage() {
   const [copyingUrl, setCopyingUrl] = useState("");
   const [hasLoadedJournalOnce, setHasLoadedJournalOnce] = useState(false);
   const [isJournalLoading, setIsJournalLoading] = useState(false);
+  const [isGeneratingMonthlySalesReport, setIsGeneratingMonthlySalesReport] =
+    useState(false);
+  const [isLoadingMonthlySalesReportMonths, setIsLoadingMonthlySalesReportMonths] =
+    useState(false);
+  const [hasLoadedMonthlySalesReportMonths, setHasLoadedMonthlySalesReportMonths] =
+    useState(false);
+  const [monthlyReportMonthOptions, setMonthlyReportMonthOptions] = useState<
+    SelectOption[]
+  >([]);
+  const [monthlySalesReportStatus, setMonthlySalesReportStatus] =
+    useState<StatusMessage>(null);
+  const [monthlySalesReportMonth, setMonthlySalesReportMonth] = useState("");
   const [recentLinks, setRecentLinks] = useState<GeneratedLinkEntry[]>([]);
   const journalLoadInFlightRef = useRef(false);
 
@@ -332,6 +362,7 @@ export default function AdminPage() {
   const activeFeature =
     ADMIN_FEATURES.find((feature) => feature.id === activeFeatureId) ?? ADMIN_FEATURES[0];
   const isInviteLinksFeatureActive = activeFeature.id === "invite-links";
+  const isReportsFeatureActive = activeFeature.id === "reports";
   const accessPolicyLabel = useMemo(() => {
     if (kind === "choreo" && resolvedChoreoSelection) {
       return formatAccessDurationLabel(
@@ -398,6 +429,144 @@ export default function AdminPage() {
   );
 
   const isJournalInitialLoading = isJournalLoading && !hasLoadedJournalOnce;
+  const isMonthlySalesReportDisabled =
+    isGeneratingMonthlySalesReport ||
+    isLoadingMonthlySalesReportMonths ||
+    !monthlySalesReportMonth;
+
+  const loadMonthlySalesReportMonths = useCallback(async () => {
+    setIsLoadingMonthlySalesReportMonths(true);
+
+    try {
+      const response = await fetch("/admin/api/reports/monthly-sales", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const data = (await response.json()) as MonthlySalesReportMonthsResponse;
+
+      if (!response.ok) {
+        if (data.errorCode === "unauthorized") {
+          setAuthState("locked");
+          setAuthStatus({
+            text: "Сессия истекла. Введи пароль снова.",
+            tone: "error",
+          });
+          return;
+        }
+
+        setMonthlySalesReportStatus({
+          text: "Не удалось загрузить список месяцев для отчета.",
+          tone: "error",
+        });
+        return;
+      }
+
+      const months = Array.isArray(data.months) ? data.months : [];
+
+      setMonthlyReportMonthOptions(months);
+      setMonthlySalesReportMonth((currentMonth) =>
+        months.some((month) => month.value === currentMonth)
+          ? currentMonth
+          : (months[0]?.value ?? ""),
+      );
+
+      if (months.length === 0) {
+        setMonthlySalesReportStatus({
+          text: "Пока нет месяцев с успешными продажами.",
+          tone: "info",
+        });
+      }
+    } catch {
+      setMonthlySalesReportStatus({
+        text: "Не удалось загрузить список месяцев для отчета.",
+        tone: "error",
+      });
+    } finally {
+      setHasLoadedMonthlySalesReportMonths(true);
+      setIsLoadingMonthlySalesReportMonths(false);
+    }
+  }, []);
+
+  const handleGenerateMonthlySalesReport = useCallback(async () => {
+    if (isMonthlySalesReportDisabled) {
+      return;
+    }
+
+    setIsGeneratingMonthlySalesReport(true);
+    setMonthlySalesReportStatus({
+      text: "Генерирую и отправляю отчет...",
+      tone: "info",
+    });
+
+    try {
+      const response = await fetch("/admin/api/reports/monthly-sales", {
+        method: "POST",
+        cache: "no-store",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          reportMonth: monthlySalesReportMonth,
+        }),
+      });
+      const data = (await response.json()) as MonthlySalesReportResponse;
+
+      if (!response.ok) {
+        if (data.errorCode === "unauthorized") {
+          setAuthState("locked");
+          setAuthStatus({
+            text: "Сессия истекла. Введи пароль снова.",
+            tone: "error",
+          });
+        }
+
+        if (
+          data.errorCode === "invalid_monthly_sales_report_month" ||
+          data.errorCode === "future_monthly_sales_report_month"
+        ) {
+          setMonthlySalesReportStatus({
+            text: "Выбранный месяц невалиден. Обнови страницу и попробуй снова.",
+            tone: "error",
+          });
+          return;
+        }
+
+        setMonthlySalesReportStatus({
+          text: "Не удалось отправить отчет. Проверь настройки и попробуй снова.",
+          tone: "error",
+        });
+        return;
+      }
+
+      if (data.status === "skipped" && data.skippedReason === "empty") {
+        setMonthlySalesReportStatus({
+          text: "За выбранный период продаж нет, письмо не отправлено.",
+          tone: "info",
+        });
+        return;
+      }
+
+      if (data.status === "skipped" || data.isAlreadyDelivered) {
+        setMonthlySalesReportStatus({
+          text: "Отчет за этот период уже отправлялся.",
+          tone: "info",
+        });
+        return;
+      }
+
+      setMonthlySalesReportStatus({
+        text: `Отчет отправлен на ${data.deliveredTo || "адрес из RESEND_REPLY_TO"}. Строк: ${data.rowCount ?? 0}.`,
+        tone: "success",
+      });
+    } catch {
+      setMonthlySalesReportStatus({
+        text: "Не удалось отправить отчет. Проверь настройки и попробуй снова.",
+        tone: "error",
+      });
+    } finally {
+      setIsGeneratingMonthlySalesReport(false);
+    }
+  }, [isMonthlySalesReportDisabled, monthlySalesReportMonth]);
 
   useEffect(() => {
     if (!isAuthorized) {
@@ -409,6 +578,33 @@ export default function AdminPage() {
 
     void loadRecentLinksHistory();
   }, [isAuthorized, loadRecentLinksHistory]);
+
+  useEffect(() => {
+    if (!isAuthorized) {
+      setHasLoadedMonthlySalesReportMonths(false);
+      setIsLoadingMonthlySalesReportMonths(false);
+      setMonthlyReportMonthOptions([]);
+      setMonthlySalesReportMonth("");
+      setMonthlySalesReportStatus(null);
+      return;
+    }
+
+    if (
+      !isReportsFeatureActive ||
+      hasLoadedMonthlySalesReportMonths ||
+      isLoadingMonthlySalesReportMonths
+    ) {
+      return;
+    }
+
+    void loadMonthlySalesReportMonths();
+  }, [
+    hasLoadedMonthlySalesReportMonths,
+    isAuthorized,
+    isLoadingMonthlySalesReportMonths,
+    isReportsFeatureActive,
+    loadMonthlySalesReportMonths,
+  ]);
 
   const checkAuthState = useCallback(
     async ({ silent = false }: { silent?: boolean } = {}) => {
@@ -838,10 +1034,16 @@ export default function AdminPage() {
                 <Description>
                   {isInviteLinksFeatureActive
                     ? "Генерация одноразовых Telegram invite-ссылок с той же бизнес-логикой, что и в боевом платежном потоке."
-                    : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
+                    : isReportsFeatureActive
+                      ? "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц."
+                      : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
                 </Description>
                 <HeaderMeta>
-                  Для каждого invite добавляй идентификатор, чтобы журнал был понятным.
+                  {isInviteLinksFeatureActive
+                    ? "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."
+                    : isReportsFeatureActive
+                      ? "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи."
+                      : "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."}
                 </HeaderMeta>
               </HeaderInfo>
             </HeaderRow>
@@ -1057,6 +1259,97 @@ export default function AdminPage() {
                   </SurfaceCard>
                 </WorkspaceSecondary>
               </WorkspaceGrid>
+            ) : isReportsFeatureActive ? (
+              <WorkspaceGrid>
+                <WorkspacePrimary>
+                  <SurfaceCard>
+                    <SurfaceTitle>Ежемесячный отчет по продажам</SurfaceTitle>
+                    <SurfaceDescription>
+                      Генерирует CSV по успешным Stripe-платежам за выбранный месяц и
+                      отправляет его на адрес из RESEND_REPLY_TO.
+                    </SurfaceDescription>
+                    <Form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        void handleGenerateMonthlySalesReport();
+                      }}
+                    >
+                      {monthlyReportMonthOptions.length > 0 && (
+                        <FormControl>
+                          <Input
+                            id="monthly-sales-report-month"
+                            name="monthlySalesReportMonth"
+                            label="Месяц отчета"
+                            value={monthlySalesReportMonth}
+                            placeholder="Выбери месяц"
+                            selectOptions={monthlyReportMonthOptions}
+                            onChange={(event) => {
+                              setMonthlySalesReportMonth(event.target.value);
+                              setMonthlySalesReportStatus(null);
+                            }}
+                            disabled={isGeneratingMonthlySalesReport}
+                            width="100%"
+                          />
+                        </FormControl>
+                      )}
+                      <ButtonRow>
+                        <Button
+                          buttonText={
+                            isGeneratingMonthlySalesReport
+                              ? "Отправляю..."
+                              : isLoadingMonthlySalesReportMonths
+                                ? "Загружаю месяцы..."
+                                : monthlyReportMonthOptions.length === 0
+                                  ? "Нет продаж для отчета"
+                                  : "Сформировать и отправить отчет"
+                          }
+                          type="submit"
+                          disabled={isMonthlySalesReportDisabled}
+                          isLoading={isGeneratingMonthlySalesReport}
+                          width="100%"
+                        />
+                      </ButtonRow>
+                      {monthlySalesReportStatus && (
+                        <StatusText $tone={monthlySalesReportStatus.tone}>
+                          {monthlySalesReportStatus.text}
+                        </StatusText>
+                      )}
+                    </Form>
+                  </SurfaceCard>
+                </WorkspacePrimary>
+
+                <WorkspaceSecondary>
+                  <SurfaceCard>
+                    <SurfaceTitle>Как это работает</SurfaceTitle>
+                    <PolicyList>
+                      <PolicyRow>
+                        <PolicyLabel>Источник</PolicyLabel>
+                        <PolicyValue>Google Sheets Payments</PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Период</PolicyLabel>
+                        <PolicyValue>
+                          Выбранный месяц; текущий месяц до момента запуска
+                        </PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Пустой отчет</PolicyLabel>
+                        <PolicyValue>Если продаж нет, письмо не отправляется</PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Защита от дублей</PolicyLabel>
+                        <PolicyValue>
+                          Cron не дублирует отправку, кнопка отправляет каждый раз
+                        </PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Канал доставки</PolicyLabel>
+                        <PolicyValue>Resend email</PolicyValue>
+                      </PolicyRow>
+                    </PolicyList>
+                  </SurfaceCard>
+                </WorkspaceSecondary>
+              </WorkspaceGrid>
             ) : (
               <FeaturePlaceholder>
                 Раздел <strong>{activeFeature.label}</strong> пока не реализован. Дальше
@@ -1064,7 +1357,7 @@ export default function AdminPage() {
               </FeaturePlaceholder>
             )}
 
-            {!isInviteLinksFeatureActive && (
+            {!isInviteLinksFeatureActive && !isReportsFeatureActive && (
               <SectionHeading>Скоро здесь появятся инструменты управления</SectionHeading>
             )}
           </MainPanel>
