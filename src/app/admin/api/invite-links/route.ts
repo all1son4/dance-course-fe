@@ -134,6 +134,15 @@ const buildPurchaseItemLabel = ({
   return baseLabel || normalizedAdminLabel;
 };
 
+const getCustomerFullAddress = (paymentRecord: PaymentSheetRecord) =>
+  [
+    paymentRecord.customer_address.trim(),
+    paymentRecord.customer_city.trim(),
+    paymentRecord.customer_postal_code.trim(),
+  ]
+    .filter(Boolean)
+    .join(", ");
+
 const createAdminOfferPaymentRecord = ({
   adminLabel,
   lessonLanguage,
@@ -158,10 +167,13 @@ const createAdminOfferPaymentRecord = ({
     checkout_locale: "ru",
     checkout_session_id: checkoutSessionId,
     currency: "pln",
+    customer_address: "",
+    customer_city: "",
     customer_country: "",
     customer_email: "",
     customer_full_name: "",
     customer_nickname: adminLabel,
+    customer_postal_code: "",
     delivery_channel: "telegram",
     access_workflow: ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW,
     email_delivery_status: "",
@@ -287,6 +299,7 @@ export async function POST(request: Request) {
       payment_intent_id: paymentRecord.payment_intent_id,
       customer_country: paymentRecord.customer_country,
       customer_email: paymentRecord.customer_email,
+      customer_full_address: getCustomerFullAddress(paymentRecord),
       customer_full_name: paymentRecord.customer_full_name,
       customer_nickname: paymentRecord.customer_nickname,
       purchase_item: paymentRecord.purchase_item,

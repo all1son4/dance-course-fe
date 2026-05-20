@@ -10,6 +10,8 @@ import ruMessages from "@/messages/ru.json";
 export type LocalizedSellableProductsLocale = "en" | "pl" | "ru";
 
 type LocalizedOfferMetadata = {
+  accessWorkflow: string;
+  deliveryChannel: string;
   offerCode: string;
   offerId: string;
   offerLabel: string;
@@ -29,6 +31,8 @@ const OFFER_METADATA_BY_ID = new Map(
     product.offers.map((offer) => [
       offer.id,
       {
+        accessWorkflow: offer.accessWorkflow ?? "",
+        deliveryChannel: offer.deliveryChannel ?? "",
         offerCode: offer.code,
         offerId: offer.id,
         offerLabel: offer.label,

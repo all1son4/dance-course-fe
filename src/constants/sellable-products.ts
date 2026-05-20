@@ -4,14 +4,17 @@ export type SellableProductCode =
   | "first-touch"
   | "choreo-still-alive"
   | "choreo-her-lies"
-  | "choreo-bundle";
+  | "choreo-bundle"
+  | "online-group-anna-strok";
 
 export type SellableProductOfferCode = "standard" | "without-mentor" | "with-mentor";
 
 export type SellableProductPrices = Record<SupportedCheckoutCurrency, number>;
 
 export type SellableProductOffer = {
+  accessWorkflow?: string;
   code: SellableProductOfferCode;
+  deliveryChannel?: string;
   id: string;
   label: string;
   labelKey: string;
@@ -203,6 +206,40 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           eur: 40,
         },
         telegramAccessDurationDays: 60,
+      },
+    ],
+  },
+  "online-group-anna-strok": {
+    accessNote: "После оплаты админ вручную добавит участника в онлайн-группу.",
+    accessNoteKey: "onlineGroupAnnaStrok.accessNote",
+    code: "online-group-anna-strok",
+    description: [
+      "Регулярная онлайн-группа по танцам с Анной Строк.",
+      "После оплаты админ свяжется с участником и вручную добавит его в группу.",
+    ],
+    descriptionKeys: [
+      "onlineGroupAnnaStrok.description.1",
+      "onlineGroupAnnaStrok.description.2",
+    ],
+    id: "prd_L9aK3mT7qP2x",
+    slug: "online-group-anna-strok",
+    title: "Online group by Anna Strok",
+    titleKey: "onlineGroupAnnaStrok.title",
+    type: "course",
+    defaultOfferId: "off_R6vN2cH9sW4y",
+    offers: [
+      {
+        accessWorkflow: "manual-admin",
+        code: "standard",
+        deliveryChannel: "manual",
+        id: "off_R6vN2cH9sW4y",
+        label: "Online group",
+        labelKey: "onlineGroupAnnaStrok.offers.standard",
+        prices: {
+          pln: 200,
+          eur: 45,
+        },
+        telegramAccessDurationDays: 0,
       },
     ],
   },

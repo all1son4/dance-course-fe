@@ -1,5 +1,7 @@
 import { createSign } from "node:crypto";
 
+import { isAdminOfferAccessWorkflow } from "@/lib/telegram/admin-offer-access";
+
 const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE_URL = "https://sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
@@ -51,6 +53,9 @@ const PAYMENT_SHEET_HEADERS = [
   "email_delivery_updated_at",
   "with_mentor_alert_status",
   "with_mentor_alert_updated_at",
+  "customer_address",
+  "customer_city",
+  "customer_postal_code",
 ] as const;
 const PAYMENT_SHEET_HEADER_LABELS: Record<
   (typeof PAYMENT_SHEET_HEADERS)[number],
@@ -96,6 +101,9 @@ const PAYMENT_SHEET_HEADER_LABELS: Record<
   email_delivery_updated_at: "Когда обновлен статус email",
   with_mentor_alert_status: "Статус admin Telegram-алерта",
   with_mentor_alert_updated_at: "Когда обновлен admin Telegram-алерт",
+  customer_address: "Адрес клиента",
+  customer_city: "Город клиента",
+  customer_postal_code: "Почтовый код клиента",
 };
 
 const STRIPE_EVENT_SHEET_HEADERS = [
@@ -123,6 +131,7 @@ const SUCCESSFUL_CUSTOMERS_SHEET_HEADERS = [
   "customer_email",
   "customer_full_name",
   "customer_nickname",
+  "customer_full_address",
   "customer_country",
   "purchase_item",
   "product_id",
@@ -138,6 +147,7 @@ const SUCCESSFUL_CUSTOMERS_SHEET_HEADER_LABELS: Record<
   customer_email: "Email клиента",
   customer_full_name: "ФИО",
   customer_nickname: "Telegram username",
+  customer_full_address: "Полный адрес клиента",
   customer_country: "Страна",
   purchase_item: "Что купили",
   product_id: "ID продукта",
@@ -1258,6 +1268,7 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
 
   return rows
     .filter((row) => row.outcome.trim() === "succeeded")
+    .filter((row) => !isAdminOfferAccessWorkflow(row.access_workflow))
     .filter((row) => {
       const saleTimestamp = Date.parse(
         row.successful_customer_logged_at || row.updated_at || row.first_seen_at || "",

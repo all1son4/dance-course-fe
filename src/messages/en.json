@@ -270,7 +270,7 @@
           "3": "We work on basic technique, feet, emotions, and by the end you will learn your first choreography."
         },
         "startLabel": "Course starts",
-        "startValue": "May 11, 2026",
+        "startValue": "December 2026",
         "button": "Learn more"
       },
       "choreo": {
@@ -368,7 +368,7 @@
       },
       "startLabel": "Course starts",
       "priceLabel": "Course price",
-      "startDate": "May 11, 2026",
+      "startDate": "December 2026",
       "buyButton": "Buy for 250 PLN / 50 €",
       "enrollButton": "Sign up",
       "programButton": "Course program",
@@ -611,6 +611,17 @@
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
+      }
+    },
+    "onlineGroupAnnaStrok": {
+      "title": "Online group by Anna Strok",
+      "description": {
+        "1": "A regular online dance group with Anna Strok.",
+        "2": "After payment, the admin will contact the participant and add them to the group manually."
+      },
+      "accessNote": "After payment, the admin will manually add the participant to the online group.",
+      "offers": {
+        "standard": "Online group"
       }
     }
   },

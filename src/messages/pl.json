@@ -270,7 +270,7 @@
           "3": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
         },
         "startLabel": "Start kursu",
-        "startValue": "11 maja 2026",
+        "startValue": "Grudzień 2026",
         "button": "Więcej o kursie"
       },
       "choreo": {
@@ -368,7 +368,7 @@
       },
       "startLabel": "Start kursu",
       "priceLabel": "Cena kursu",
-      "startDate": "11 maja 2026",
+      "startDate": "Grudzień 2026",
       "buyButton": "Kup za 250 PLN / 50 €",
       "enrollButton": "Zapisz się",
       "programButton": "Program kursu",
@@ -611,6 +611,17 @@
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"
+      }
+    },
+    "onlineGroupAnnaStrok": {
+      "title": "Online group by Anna Strok",
+      "description": {
+        "1": "Regularna grupa taneczna online z Anną Strok.",
+        "2": "Po płatności administrator skontaktuje się z uczestnikiem i ręcznie doda go do grupy."
+      },
+      "accessNote": "Po płatności administrator ręcznie doda uczestnika do grupy online.",
+      "offers": {
+        "standard": "Grupa online"
       }
     }
   },

@@ -9,7 +9,6 @@ import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import RoadmapContainer from "@/components/other/ProgramRoadmap";
 import VideoPlayer from "@/components/other/VideoPlayer";
-import { FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
 import {
   DEFAULT_CHECKOUT_PRODUCT,
   getDefaultProductOffer,
@@ -24,7 +23,6 @@ import {
   AboutCourseTitle,
   ButtonBox,
   ContactSection,
-  CourseProgramButtonBox,
   CourseProgramImage,
   CourseProgramSection,
   CourseProgramTextBox,
@@ -120,11 +118,11 @@ export default function FirstTouch() {
           </InfoBoxGroup>
 
           <ButtonBox>
-            <Button
+            {/* <Button
               buttonText={t("hero.enrollButton")}
               href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
               target="_blank"
-            />
+            /> */}
             <Button
               buttonText={t("hero.programButton")}
               variant="secondary"
@@ -197,13 +195,13 @@ export default function FirstTouch() {
           <CourseProgramTextBox>
             <CourseProgramTitle>{t("program.title")}</CourseProgramTitle>
             <RoadmapContainer />
-            <CourseProgramButtonBox>
+            {/* <CourseProgramButtonBox>
               <Button
                 buttonText={t("hero.enrollButton")}
                 href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
                 target="_blank"
               />
-            </CourseProgramButtonBox>
+            </CourseProgramButtonBox> */}
           </CourseProgramTextBox>
           <CourseProgramImage
             src={"/images/first_touch_program_photo.webp"}

@@ -41,6 +41,8 @@ const OFFER_METADATA_BY_ID = new Map(
     product.offers.map((offer) => [
       offer.id,
       {
+        accessWorkflow: offer.accessWorkflow ?? "",
+        deliveryChannel: offer.deliveryChannel ?? "",
         offerCode: offer.code,
         offerId: offer.id,
         offerLabel: offer.label,

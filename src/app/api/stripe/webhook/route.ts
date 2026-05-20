@@ -319,6 +319,18 @@ const getAccessWorkflowLabel = (workflow: string) => {
     return "Telegram-бот";
   }
 
+  if (workflow === "online-group") {
+    return "Онлайн-группа";
+  }
+
+  if (workflow === "online-live") {
+    return "Онлайн-занятия";
+  }
+
+  if (workflow === "manual-admin") {
+    return "Ручное добавление админом";
+  }
+
   return workflow || "—";
 };
 
@@ -942,6 +954,19 @@ export async function POST(request: Request) {
         received: true,
         type: event.type,
       });
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const checkoutSession = event.data.object as Stripe.Checkout.Session;
+
+      if (checkoutSession.mode !== "payment" || !checkoutSession.payment_intent) {
+        return jsonNoStore({
+          eventId: event.id,
+          ignored: true,
+          received: true,
+          type: event.type,
+        });
+      }
     }
 
     const handledEvent = await syncStripePaymentEventToGoogleSheets(event);
