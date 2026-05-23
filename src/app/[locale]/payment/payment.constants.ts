@@ -4,6 +4,9 @@ export type PaymentCustomerFieldName =
   | "fullName"
   | "email"
   | "nickname"
+  | "address"
+  | "city"
+  | "postalCode"
   | "country"
   | "lessonLanguage";
 
@@ -22,6 +25,7 @@ export type PaymentAgreementState = Record<PaymentAgreementFieldName, boolean>;
 export type PaymentInputConfig = {
   id: PaymentCustomerFieldName;
   labelKey: string;
+  layout?: "full" | "half";
   name: PaymentCustomerFieldName;
   placeholderKey: string;
   type?: "text" | "email";
@@ -37,6 +41,9 @@ export const INITIAL_CUSTOMER_DATA: PaymentCustomerData = {
   fullName: "",
   email: "",
   nickname: "",
+  address: "",
+  city: "",
+  postalCode: "",
   country: "",
   lessonLanguage: "ru",
 };
@@ -67,6 +74,29 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     labelKey: "inputs.nickname.label",
     name: "nickname",
     placeholderKey: "inputs.nickname.placeholder",
+    type: "text",
+  },
+  {
+    id: "address",
+    labelKey: "inputs.address.label",
+    name: "address",
+    placeholderKey: "inputs.address.placeholder",
+    type: "text",
+  },
+  {
+    id: "city",
+    labelKey: "inputs.city.label",
+    layout: "half",
+    name: "city",
+    placeholderKey: "inputs.city.placeholder",
+    type: "text",
+  },
+  {
+    id: "postalCode",
+    labelKey: "inputs.postalCode.label",
+    layout: "half",
+    name: "postalCode",
+    placeholderKey: "inputs.postalCode.placeholder",
     type: "text",
   },
   {
@@ -153,5 +183,5 @@ export const normalizePaymentCustomerFieldValue = (
     return normalizedValue === "en" ? "en" : "ru";
   }
 
-  return value;
+  return value.replace(/\s+/g, " ").trimStart();
 };

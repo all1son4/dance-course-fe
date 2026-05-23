@@ -475,6 +475,18 @@
         "label": "Nick w Telegramie",
         "placeholder": "@yournickname"
       },
+      "address": {
+        "label": "Adres",
+        "placeholder": "Ulica, nr domu / mieszkania"
+      },
+      "city": {
+        "label": "Miasto",
+        "placeholder": "Miasto"
+      },
+      "postalCode": {
+        "label": "Kod pocztowy",
+        "placeholder": "Kod pocztowy"
+      },
       "country": {
         "label": "Kraj",
         "placeholder": "Wybierz kraj"

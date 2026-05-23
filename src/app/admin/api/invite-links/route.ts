@@ -179,6 +179,8 @@ const createAdminOfferPaymentRecord = ({
     email_delivery_status: "",
     email_delivery_updated_at: "",
     first_seen_at: now,
+    invoice_issued_at: "",
+    invoice_number: "",
     last_payment_error_code: "",
     last_payment_error_message: "",
     latest_event_id: eventId,

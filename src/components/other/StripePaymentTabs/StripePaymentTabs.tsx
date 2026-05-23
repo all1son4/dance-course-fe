@@ -66,13 +66,19 @@ const getStripePromise = (publishableKey: string) => {
 };
 
 const createPaymentElementOptions = (
+  billingAddressLine1?: string | null,
+  billingCity?: string | null,
   billingCountry?: string | null,
   billingEmail?: string | null,
   billingName?: string | null,
+  billingPostalCode?: string | null,
 ): StripePaymentElementOptions => {
+  const trimmedAddressLine1 = billingAddressLine1?.trim();
+  const trimmedCity = billingCity?.trim();
   const trimmedCountry = billingCountry?.trim().toUpperCase();
   const trimmedEmail = billingEmail?.trim();
   const trimmedName = billingName?.trim();
+  const trimmedPostalCode = billingPostalCode?.trim();
 
   return {
     layout: {
@@ -82,7 +88,10 @@ const createPaymentElementOptions = (
     defaultValues: {
       billingDetails: {
         address: {
+          city: trimmedCity || undefined,
           country: trimmedCountry || undefined,
+          line1: trimmedAddressLine1 || undefined,
+          postal_code: trimmedPostalCode || undefined,
         },
         email: trimmedEmail || undefined,
         name: trimmedName || undefined,
@@ -252,9 +261,12 @@ const getStripeLocale = (locale: string): StripeElementsOptions["locale"] => {
 
 type StripePaymentFormProps = {
   allPaymentIntentIds?: string[] | null;
+  billingAddressLine1?: string | null;
+  billingCity?: string | null;
   billingCountry?: string | null;
   billingEmail?: string | null;
   billingName?: string | null;
+  billingPostalCode?: string | null;
   checkoutSessionId?: string | null;
   confirmedText: string;
   confirmPaymentFailedText: string;
@@ -366,9 +378,12 @@ const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: st
 
 const StripePaymentForm = ({
   allPaymentIntentIds,
+  billingAddressLine1,
+  billingCity,
   billingCountry,
   billingEmail,
   billingName,
+  billingPostalCode,
   checkoutSessionId,
   confirmedText,
   confirmPaymentFailedText,
@@ -385,13 +400,23 @@ const StripePaymentForm = ({
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentElementOptions] = useState(() =>
-    createPaymentElementOptions(billingCountry, billingEmail, billingName),
+    createPaymentElementOptions(
+      billingAddressLine1,
+      billingCity,
+      billingCountry,
+      billingEmail,
+      billingName,
+      billingPostalCode,
+    ),
   );
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
+  const resolvedBillingAddressLine1 = billingAddressLine1?.trim() ?? "";
+  const resolvedBillingCity = billingCity?.trim() ?? "";
   const resolvedBillingEmail = billingEmail?.trim() ?? "";
   const resolvedBillingName = billingName?.trim() ?? "";
+  const resolvedBillingPostalCode = billingPostalCode?.trim() ?? "";
   const resolvedBillingCountry = billingCountry?.trim().toUpperCase() ?? "";
 
   const cancelUnusedPaymentIntents = (usedPaymentIntentId: string) => {
@@ -482,7 +507,10 @@ const StripePaymentForm = ({
               email: resolvedBillingEmail,
               name: resolvedBillingName || undefined,
               address: {
+                city: resolvedBillingCity || undefined,
                 country: resolvedBillingCountry || undefined,
+                line1: resolvedBillingAddressLine1 || undefined,
+                postal_code: resolvedBillingPostalCode || undefined,
               },
             },
           },
@@ -589,9 +617,12 @@ const StripePaymentForm = ({
 
 export const StripePaymentTabs = ({
   allPaymentIntentIds,
+  billingAddressLine1,
+  billingCity,
   billingCountry,
   billingEmail,
   billingName,
+  billingPostalCode,
   checkoutSessionId,
   clientSecret,
   paymentIntentId,
@@ -670,9 +701,12 @@ export const StripePaymentTabs = ({
               <StripePaymentForm
                 key={paymentFormReadyKey}
                 allPaymentIntentIds={allPaymentIntentIds}
+                billingAddressLine1={billingAddressLine1}
+                billingCity={billingCity}
                 billingCountry={billingCountry}
                 billingEmail={billingEmail}
                 billingName={billingName}
+                billingPostalCode={billingPostalCode}
                 checkoutSessionId={checkoutSessionId}
                 confirmedText={t("status.confirmed")}
                 confirmPaymentFailedText={t("errors.confirmPaymentFailed")}

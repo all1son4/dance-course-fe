@@ -13,6 +13,8 @@ import {
   upsertPaymentRecord,
 } from "@/lib/google-sheets";
 import { isPayloadTooLarge, jsonNoStore } from "@/lib/http-security";
+import { ensureInvoiceNumberForPayment } from "@/lib/invoices/invoice-numbering";
+import { buildPurchaseInvoiceAttachment } from "@/lib/invoices/purchase-invoice";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 import {
   ensureTelegramAccessLinkForPayment,
@@ -80,6 +82,10 @@ const PAYMENT_PROCESSING_STATUS_PREFIX = "sending:";
 const PAYMENT_PROCESSING_LEASE_TTL_MS = 2 * 60 * 1000;
 const PURCHASE_ALERT_FALLBACK_DEDUPE_TTL_MS = 10 * 60 * 1000;
 const FRESH_PAYMENT_LOOKUP_CACHE_TTL_MS = 30 * 1000;
+const PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES = new Set([
+  "checkout.session.completed",
+  "payment_intent.succeeded",
+]);
 
 type PaymentStatusField = "email_delivery_status" | "with_mentor_alert_status";
 type PaymentStatusUpdatedField =
@@ -453,6 +459,35 @@ const getReceiptData = async (
   }
 };
 
+const getPurchaseSideEffectPaymentIntent = async ({
+  event,
+  stripe,
+}: {
+  event: Stripe.Event;
+  stripe: Stripe;
+}) => {
+  if (!PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES.has(event.type)) {
+    return null;
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    return event.data.object as Stripe.PaymentIntent;
+  }
+
+  const checkoutSession = event.data.object as Stripe.Checkout.Session;
+  const paymentIntent = checkoutSession.payment_intent;
+
+  if (!paymentIntent) {
+    return null;
+  }
+
+  if (typeof paymentIntent !== "string") {
+    return paymentIntent;
+  }
+
+  return stripe.paymentIntents.retrieve(paymentIntent);
+};
+
 const isExpectedResendRestrictionError = (error: unknown) => {
   if (!(error instanceof Error)) {
     return false;
@@ -549,7 +584,11 @@ const sendPurchaseSuccessEmail = async ({
   handledEvent: Awaited<ReturnType<typeof syncStripePaymentEventToGoogleSheets>>;
   stripe: Stripe;
 }) => {
-  if (event.type !== "payment_intent.succeeded") {
+  if (
+    !PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES.has(event.type) ||
+    handledEvent.skipped ||
+    handledEvent.paymentRecord.outcome !== "succeeded"
+  ) {
     return;
   }
 
@@ -569,7 +608,20 @@ const sendPurchaseSuccessEmail = async ({
     return;
   }
 
-  const paymentIntent = event.data.object as Stripe.PaymentIntent;
+  const paymentIntent = await getPurchaseSideEffectPaymentIntent({
+    event,
+    stripe,
+  });
+
+  if (!paymentIntent) {
+    console.warn("Missing PaymentIntent for purchase success email", {
+      eventId: handledEvent.eventId,
+      eventType: handledEvent.eventType,
+      paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
+    });
+    return;
+  }
+
   const paymentIntentId = paymentIntent.id;
   const pendingSync = pendingPurchaseEmailSyncs.get(paymentIntentId);
 
@@ -595,7 +647,7 @@ const sendPurchaseSuccessEmail = async ({
     const paymentRecord = emailLease.paymentRecord;
 
     const checkoutLocale = getResolvedCheckoutLocale(
-      paymentIntent.metadata.checkout_locale,
+      paymentRecord.checkout_locale || paymentIntent.metadata.checkout_locale,
     );
     const localizedOfferMetadata = getLocalizedOfferMetadataByOfferId(
       paymentRecord.offer_id,
@@ -647,7 +699,17 @@ const sendPurchaseSuccessEmail = async ({
     });
 
     try {
+      const invoiceIssuedAt = new Date(event.created * 1000);
+      const invoicedPaymentRecord = await ensureInvoiceNumberForPayment({
+        issuedAt: invoiceIssuedAt,
+        paymentRecord,
+      });
+      const invoiceAttachment = await buildPurchaseInvoiceAttachment({
+        issuedAt: invoiceIssuedAt,
+        paymentRecord: invoicedPaymentRecord,
+      });
       const { emailId } = await sendResendEmail({
+        attachments: [invoiceAttachment],
         html,
         subject,
         text,
@@ -707,7 +769,7 @@ const sendPurchaseAlert = async ({
   handledEvent: Awaited<ReturnType<typeof syncStripePaymentEventToGoogleSheets>>;
 }) => {
   if (
-    event.type !== "payment_intent.succeeded" ||
+    !PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES.has(event.type) ||
     handledEvent.skipped ||
     handledEvent.paymentRecord.outcome !== "succeeded"
   ) {

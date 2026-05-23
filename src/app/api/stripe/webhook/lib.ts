@@ -559,6 +559,8 @@ const mapPaymentIntentToPaymentRecord = (
     email_delivery_status: existingRecord?.email_delivery_status ?? "",
     email_delivery_updated_at: existingRecord?.email_delivery_updated_at ?? "",
     first_seen_at: existingRecord?.first_seen_at || timestamp,
+    invoice_issued_at: existingRecord?.invoice_issued_at ?? "",
+    invoice_number: existingRecord?.invoice_number ?? "",
     last_payment_error_code: snapshot.lastPaymentErrorCode ?? "",
     last_payment_error_message: snapshot.lastPaymentErrorMessage ?? "",
     latest_event_id: event.id,

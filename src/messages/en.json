@@ -475,6 +475,18 @@
         "label": "Telegram username",
         "placeholder": "@yournickname"
       },
+      "address": {
+        "label": "Address",
+        "placeholder": "Street and building / apartment"
+      },
+      "city": {
+        "label": "City",
+        "placeholder": "City"
+      },
+      "postalCode": {
+        "label": "Postal code",
+        "placeholder": "Postal code"
+      },
       "country": {
         "label": "Country",
         "placeholder": "Select a country"

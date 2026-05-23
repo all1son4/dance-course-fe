@@ -95,7 +95,10 @@ export class PaymentStore {
   }
 
   get isCustomerDataValid() {
-    return this.customerSchema.isValidSync(this.customerData);
+    return this.customerSchema.isValidSync({
+      ...INITIAL_CUSTOMER_DATA,
+      ...this.customerData,
+    });
   }
 
   get canShowStripe() {
@@ -134,6 +137,8 @@ export class PaymentStore {
   }
 
   getCheckoutDraftSnapshot(): PaymentCheckoutDraft {
+    this.ensureCustomerDataShape();
+
     return {
       agreements: { ...this.agreements },
       checkoutSessionId: this.checkoutSessionId,
@@ -182,6 +187,18 @@ export class PaymentStore {
       nickname: normalizePaymentCustomerFieldValue(
         "nickname",
         draftCustomerData.nickname ?? INITIAL_CUSTOMER_DATA.nickname,
+      ),
+      address: normalizePaymentCustomerFieldValue(
+        "address",
+        draftCustomerData.address ?? INITIAL_CUSTOMER_DATA.address,
+      ),
+      city: normalizePaymentCustomerFieldValue(
+        "city",
+        draftCustomerData.city ?? INITIAL_CUSTOMER_DATA.city,
+      ),
+      postalCode: normalizePaymentCustomerFieldValue(
+        "postalCode",
+        draftCustomerData.postalCode ?? INITIAL_CUSTOMER_DATA.postalCode,
       ),
       country: normalizePaymentCustomerFieldValue(
         "country",
@@ -268,6 +285,8 @@ export class PaymentStore {
     value: string,
     options?: { skipStripeIntentReset?: boolean },
   ) {
+    this.ensureCustomerDataShape();
+
     const nextValue = normalizePaymentCustomerFieldValue(fieldName, value);
     const hasValueChanged = this.customerData[fieldName] !== nextValue;
 
@@ -486,6 +505,8 @@ export class PaymentStore {
   }
 
   validateCustomerField(fieldName: PaymentCustomerFieldName) {
+    this.ensureCustomerDataShape();
+
     try {
       this.customerSchema.validateSyncAt(fieldName, this.customerData);
       this.clearFieldError(fieldName);
@@ -500,6 +521,7 @@ export class PaymentStore {
   }
 
   validateCustomerForm() {
+    this.ensureCustomerDataShape();
     this.markAllFieldsTouched();
 
     try {
@@ -572,6 +594,22 @@ export class PaymentStore {
     const nextErrors = { ...this.customerErrors };
     delete nextErrors[fieldName];
     this.customerErrors = nextErrors;
+  }
+
+  private ensureCustomerDataShape() {
+    const nextCustomerData = {
+      ...INITIAL_CUSTOMER_DATA,
+      ...this.customerData,
+    };
+    const hasMissingField = PAYMENT_INPUTS.some(
+      (field) => typeof this.customerData[field.name] !== "string",
+    );
+
+    if (!hasMissingField) {
+      return;
+    }
+
+    this.customerData = nextCustomerData;
   }
 
   private markAllFieldsTouched() {

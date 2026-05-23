@@ -69,20 +69,28 @@ const trimAndCollapseSpaces = (value: string | null | undefined) =>
   (value ?? "").replace(/\s+/g, " ").trim();
 
 export type PaymentIntentCustomerData = {
+  address: string;
+  city: string;
   country: string;
   email: string;
   fullName: string;
   lessonLanguage: CheckoutLessonLanguage;
   nickname: string;
+  postalCode: string;
 };
 
 export const normalizePaymentIntentCustomerData = (customerData: {
+  address?: string;
+  city?: string;
   country?: string;
   email?: string;
   fullName?: string;
   lessonLanguage?: string;
   nickname?: string;
+  postalCode?: string;
 }): PaymentIntentCustomerData => {
+  const normalizedAddress = trimAndCollapseSpaces(customerData.address).slice(0, 160);
+  const normalizedCity = trimAndCollapseSpaces(customerData.city).slice(0, 80);
   const normalizedCountry = trimAndCollapseSpaces(customerData.country)
     .toUpperCase()
     .replace(/[^A-Z]/g, "")
@@ -95,16 +103,23 @@ export const normalizePaymentIntentCustomerData = (customerData: {
     .replace(/\s+/g, "")
     .replace(/[^A-Za-z0-9_@]/g, "")
     .slice(0, 33);
+  const normalizedPostalCode = trimAndCollapseSpaces(customerData.postalCode).slice(
+    0,
+    24,
+  );
   const normalizedLessonLanguage = getResolvedCheckoutLessonLanguage(
     customerData.lessonLanguage,
   );
 
   return {
+    address: normalizedAddress,
+    city: normalizedCity,
     country: normalizedCountry,
     email: normalizedEmail,
     fullName: normalizedFullName,
     lessonLanguage: normalizedLessonLanguage,
     nickname: normalizedNickname,
+    postalCode: normalizedPostalCode,
   };
 };
 
@@ -118,11 +133,14 @@ export const createPaymentIntentIdempotencyKey = ({
   checkoutSessionId: string;
   currency: string;
   customerData: {
+    address?: string;
+    city?: string;
     country?: string;
     email?: string;
     fullName?: string;
     lessonLanguage?: string;
     nickname?: string;
+    postalCode?: string;
   };
   offerId: string;
   productId: string;
@@ -130,11 +148,14 @@ export const createPaymentIntentIdempotencyKey = ({
   const customerFingerprint = createHash("sha256")
     .update(
       JSON.stringify({
+        address: customerData.address?.trim() ?? "",
+        city: customerData.city?.trim() ?? "",
         country: customerData.country?.trim().toUpperCase() ?? "",
         email: customerData.email?.trim().toLowerCase() ?? "",
         fullName: customerData.fullName?.trim() ?? "",
         lessonLanguage: getResolvedCheckoutLessonLanguage(customerData.lessonLanguage),
         nickname: customerData.nickname?.trim() ?? "",
+        postalCode: customerData.postalCode?.trim() ?? "",
       }),
     )
     .digest("hex")

@@ -30,11 +30,14 @@ type CreatePaymentIntentBody = {
   checkoutLocale?: string;
   checkoutSessionId?: string;
   customerData?: {
+    address?: string;
+    city?: string;
     country?: string;
     fullName?: string;
     lessonLanguage?: string;
     email?: string;
     nickname?: string;
+    postalCode?: string;
   };
   currency?: string;
   offerId?: string;
@@ -159,9 +162,12 @@ export async function POST(request: Request) {
           checkout_session_id: checkoutSessionId,
           offer_id: offer.id,
           offer_label: localizedOfferLabel,
+          customer_address: customerData.address,
+          customer_city: customerData.city,
           customer_full_name: customerData.fullName,
           customer_nickname: customerData.nickname,
           customer_country: customerData.country,
+          customer_postal_code: customerData.postalCode,
           lesson_language: product.type === "choreo" ? customerData.lessonLanguage : "",
           product_id: product.id,
           product_title: localizedProductTitle,

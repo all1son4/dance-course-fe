@@ -475,6 +475,18 @@
         "label": "Ник в Telegram",
         "placeholder": "@yournickname"
       },
+      "address": {
+        "label": "Адрес",
+        "placeholder": "Улица, дом / квартира"
+      },
+      "city": {
+        "label": "Город",
+        "placeholder": "Город"
+      },
+      "postalCode": {
+        "label": "Почтовый код",
+        "placeholder": "Почтовый код"
+      },
       "country": {
         "label": "Страна",
         "placeholder": "Выберите страну"

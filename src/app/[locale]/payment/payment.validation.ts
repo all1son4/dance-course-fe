@@ -7,6 +7,10 @@ import type { PaymentCustomerData } from "./payment.constants";
 export type PaymentValidationLocale = "ru" | "en" | "pl";
 
 type PaymentValidationMessages = {
+  addressMax: string;
+  addressRequired: string;
+  cityMax: string;
+  cityRequired: string;
   countryRequired: string;
   countryInvalid: string;
   emailInvalid: string;
@@ -18,6 +22,8 @@ type PaymentValidationMessages = {
   lessonLanguageRequired: string;
   nicknameInvalid: string;
   nicknameRequired: string;
+  postalCodeMax: string;
+  postalCodeRequired: string;
 };
 
 const PAYMENT_VALIDATION_MESSAGES: Record<
@@ -25,6 +31,10 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
   PaymentValidationMessages
 > = {
   ru: {
+    addressMax: "Адрес должен содержать не больше 160 символов",
+    addressRequired: "Введите адрес",
+    cityMax: "Город должен содержать не больше 80 символов",
+    cityRequired: "Введите город",
     countryRequired: "Выберите страну",
     countryInvalid: "Выберите страну из списка",
     emailInvalid: "Введите корректный email",
@@ -36,8 +46,14 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     lessonLanguageRequired: "Выберите язык материалов",
     nicknameInvalid: "Введите корректный ник Telegram в формате @username",
     nicknameRequired: "Введите ник в Telegram",
+    postalCodeMax: "Почтовый код должен содержать не больше 24 символов",
+    postalCodeRequired: "Введите почтовый код",
   },
   en: {
+    addressMax: "Address must be 160 characters or fewer",
+    addressRequired: "Enter your address",
+    cityMax: "City must be 80 characters or fewer",
+    cityRequired: "Enter your city",
     countryRequired: "Select your country",
     countryInvalid: "Select a country from the list",
     emailInvalid: "Enter a valid email address",
@@ -49,8 +65,14 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     lessonLanguageRequired: "Select material language",
     nicknameInvalid: "Enter a valid Telegram username in the @username format",
     nicknameRequired: "Enter your Telegram username",
+    postalCodeMax: "Postal code must be 24 characters or fewer",
+    postalCodeRequired: "Enter your postal code",
   },
   pl: {
+    addressMax: "Adres moze miec maksymalnie 160 znakow",
+    addressRequired: "Wpisz adres",
+    cityMax: "Miasto moze miec maksymalnie 80 znakow",
+    cityRequired: "Wpisz miasto",
     countryRequired: "Wybierz kraj",
     countryInvalid: "Wybierz kraj z listy",
     emailInvalid: "Wpisz poprawny adres e-mail",
@@ -62,13 +84,13 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     lessonLanguageRequired: "Wybierz język materiałów",
     nicknameInvalid: "Wpisz poprawny nick Telegram w formacie @username",
     nicknameRequired: "Wpisz nick Telegram",
+    postalCodeMax: "Kod pocztowy moze miec maksymalnie 24 znaki",
+    postalCodeRequired: "Wpisz kod pocztowy",
   },
 };
 
-const schemaCache = new Map<
-  PaymentValidationLocale,
-  yup.ObjectSchema<PaymentCustomerData>
->();
+const PAYMENT_CUSTOMER_SCHEMA_VERSION = "invoice-address-fields-v1";
+const schemaCache = new Map<string, yup.ObjectSchema<PaymentCustomerData>>();
 
 const trimmedRequiredText = (message: string) =>
   yup
@@ -96,7 +118,8 @@ export const getPaymentCustomerSchema = (
   locale: string | null | undefined,
 ): yup.ObjectSchema<PaymentCustomerData> => {
   const resolvedLocale = resolvePaymentValidationLocale(locale);
-  const cachedSchema = schemaCache.get(resolvedLocale);
+  const cacheKey = `${PAYMENT_CUSTOMER_SCHEMA_VERSION}:${resolvedLocale}`;
+  const cachedSchema = schemaCache.get(cacheKey);
 
   if (cachedSchema) {
     return cachedSchema;
@@ -116,6 +139,12 @@ export const getPaymentCustomerSchema = (
       .string()
       .matches(/^@[A-Za-z0-9_]{1,32}$/, messages.nicknameInvalid)
       .required(messages.nicknameRequired),
+    address: trimmedRequiredText(messages.addressRequired).max(160, messages.addressMax),
+    city: trimmedRequiredText(messages.cityRequired).max(80, messages.cityMax),
+    postalCode: trimmedRequiredText(messages.postalCodeRequired).max(
+      24,
+      messages.postalCodeMax,
+    ),
     country: yup
       .string()
       .transform((value) => (typeof value === "string" ? value.trim().toUpperCase() : ""))
@@ -132,7 +161,7 @@ export const getPaymentCustomerSchema = (
       .oneOf(["ru", "en"], messages.lessonLanguageInvalid),
   });
 
-  schemaCache.set(resolvedLocale, schema);
+  schemaCache.set(cacheKey, schema);
 
   return schema;
 };

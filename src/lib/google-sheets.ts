@@ -56,6 +56,8 @@ const PAYMENT_SHEET_HEADERS = [
   "customer_address",
   "customer_city",
   "customer_postal_code",
+  "invoice_number",
+  "invoice_issued_at",
 ] as const;
 const PAYMENT_SHEET_HEADER_LABELS: Record<
   (typeof PAYMENT_SHEET_HEADERS)[number],
@@ -104,6 +106,8 @@ const PAYMENT_SHEET_HEADER_LABELS: Record<
   customer_address: "Адрес клиента",
   customer_city: "Город клиента",
   customer_postal_code: "Почтовый код клиента",
+  invoice_number: "Номер инвойса",
+  invoice_issued_at: "Когда выдан инвойс",
 };
 
 const STRIPE_EVENT_SHEET_HEADERS = [
@@ -1293,6 +1297,30 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
 
       return left.payment_intent_id.localeCompare(right.payment_intent_id);
     });
+};
+
+export const listPaymentRecords = async (options?: {
+  cacheTtlMs?: number;
+}): Promise<PaymentSheetRecord[]> => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  return getRows(
+    config,
+    config.paymentsSheetName,
+    PAYMENT_SHEET_HEADERS,
+    PAYMENT_SHEET_HEADER_LABELS,
+    {
+      cacheTtlMs: options?.cacheTtlMs ?? 0,
+    },
+  ) as Promise<PaymentSheetRecord[]>;
 };
 
 export const findLatestPaymentRecordByCheckoutSessionId = async (

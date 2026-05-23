@@ -150,14 +150,20 @@ export const PersonalDataTitle = styled.h2`
 `;
 
 export const Inputs = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22px;
   width: 100%;
 
   @media (max-width: 767px) {
-    gap: 20px;
+    column-gap: 12px;
+    row-gap: 20px;
   }
+`;
+
+export const InputField = styled.div<{ $layout: "full" | "half" }>`
+  grid-column: ${({ $layout }) => ($layout === "half" ? "span 1" : "1 / -1")};
+  min-width: 0;
 `;
 
 export const Checkboxes = styled.div`

@@ -33,6 +33,7 @@ import {
   Checkboxes,
   CurrencyBox,
   FormBox,
+  InputField,
   Inputs,
   InteractiveBox,
   MoneyTitle,
@@ -243,10 +244,13 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.agreements.withdrawalNoticeAcknowledgement,
     paymentStore.checkoutSessionId,
     paymentStore.customerData.country,
+    paymentStore.customerData.address,
+    paymentStore.customerData.city,
     paymentStore.customerData.email,
     paymentStore.customerData.fullName,
     paymentStore.customerData.lessonLanguage,
     paymentStore.customerData.nickname,
+    paymentStore.customerData.postalCode,
     paymentStore.selectedCurrency,
     paymentStore.selectedOfferId,
     paymentStore.selectedProductId,
@@ -274,6 +278,9 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.customerData.email,
     paymentStore.customerData.fullName,
     paymentStore.customerData.nickname,
+    paymentStore.customerData.address,
+    paymentStore.customerData.city,
+    paymentStore.customerData.postalCode,
     paymentStore.customerData.country,
     paymentStore.customerData.lessonLanguage,
   ]);
@@ -386,19 +393,20 @@ const PaymentPage = observer(function PaymentPage() {
             <PersonalDataTitle>{t("personalDataTitle")}</PersonalDataTitle>
             <Inputs>
               {visiblePaymentInputs.map((inputConfig) => (
-                <Input
-                  key={inputConfig.name}
-                  errorMessage={paymentStore.customerErrors[inputConfig.name] ?? ""}
-                  id={inputConfig.id}
-                  label={t(inputConfig.labelKey)}
-                  name={inputConfig.name}
-                  onBlur={handleInputBlur}
-                  onChange={handleInputChange}
-                  placeholder={t(inputConfig.placeholderKey)}
-                  selectOptions={getInputSelectOptions(inputConfig.name)}
-                  type={inputConfig.type}
-                  value={paymentStore.customerData[inputConfig.name]}
-                />
+                <InputField key={inputConfig.name} $layout={inputConfig.layout ?? "full"}>
+                  <Input
+                    errorMessage={paymentStore.customerErrors[inputConfig.name] ?? ""}
+                    id={inputConfig.id}
+                    label={t(inputConfig.labelKey)}
+                    name={inputConfig.name}
+                    onBlur={handleInputBlur}
+                    onChange={handleInputChange}
+                    placeholder={t(inputConfig.placeholderKey)}
+                    selectOptions={getInputSelectOptions(inputConfig.name)}
+                    type={inputConfig.type}
+                    value={paymentStore.customerData[inputConfig.name] ?? ""}
+                  />
+                </InputField>
               ))}
             </Inputs>
             <Checkboxes>
@@ -436,6 +444,9 @@ const PaymentPage = observer(function PaymentPage() {
               billingCountry={paymentStore.customerData.country}
               billingEmail={paymentStore.customerData.email}
               billingName={paymentStore.customerData.fullName.trim()}
+              billingAddressLine1={paymentStore.customerData.address}
+              billingCity={paymentStore.customerData.city}
+              billingPostalCode={paymentStore.customerData.postalCode}
               checkoutSessionId={paymentStore.checkoutSessionId}
               clientSecret={
                 paymentStore.stripeClientSecrets?.[paymentStore.selectedCurrency] ?? ""
