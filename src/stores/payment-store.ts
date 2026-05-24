@@ -39,6 +39,11 @@ type StripeIntentErrorCode =
   | "missing_secret_key"
   | "payment_intent_failed"
   | "payment_intent_request_failed";
+type StripeIntentResponse = {
+  clientSecret?: string;
+  errorCode?: StripeIntentErrorCode;
+  paymentIntentId?: string;
+};
 
 export type PaymentCheckoutDraft = {
   agreements: PaymentAgreementState;
@@ -62,6 +67,53 @@ const createCheckoutSessionId = () => {
 const PAYMENT_INTENT_REQUEST_TIMEOUT_MS = 10_000;
 const PAYMENT_INTENT_MAX_RETRY_ATTEMPTS = 2;
 const PAYMENT_INTENT_RETRY_BASE_DELAY_MS = 300;
+const PAYMENT_CUSTOMER_FIELD_NAMES = PAYMENT_INPUTS.map(({ name }) => name);
+const PAYMENT_AGREEMENT_FIELD_NAMES = Object.keys(
+  INITIAL_AGREEMENTS,
+) as PaymentAgreementFieldName[];
+
+const normalizePaymentCustomerDataDraft = (
+  customerData: Partial<PaymentCustomerData> = {},
+) =>
+  PAYMENT_CUSTOMER_FIELD_NAMES.reduce<PaymentCustomerData>(
+    (acc, fieldName) => {
+      acc[fieldName] = normalizePaymentCustomerFieldValue(
+        fieldName,
+        customerData[fieldName] ?? INITIAL_CUSTOMER_DATA[fieldName],
+      );
+
+      return acc;
+    },
+    { ...INITIAL_CUSTOMER_DATA },
+  );
+
+const normalizePaymentAgreementDraft = (
+  agreements: Partial<PaymentAgreementState> = {},
+) =>
+  PAYMENT_AGREEMENT_FIELD_NAMES.reduce<PaymentAgreementState>(
+    (acc, fieldName) => {
+      acc[fieldName] = Boolean(agreements[fieldName] ?? INITIAL_AGREEMENTS[fieldName]);
+
+      return acc;
+    },
+    { ...INITIAL_AGREEMENTS },
+  );
+
+const getStripeIntentErrorCode = (error: unknown): StripeIntentErrorCode => {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return "payment_intent_request_failed";
+  }
+
+  if (error instanceof TypeError) {
+    return "payment_intent_request_failed";
+  }
+
+  if (error instanceof Error) {
+    return error.message as StripeIntentErrorCode;
+  }
+
+  return "payment_intent_request_failed";
+};
 
 export class PaymentStore {
   checkoutSessionId = createCheckoutSessionId();
@@ -172,64 +224,8 @@ export class PaymentStore {
     this.checkoutSessionId = nextCheckoutSessionId || createCheckoutSessionId();
     this.validationLocale = nextValidationLocale;
 
-    const draftCustomerData: Partial<PaymentCustomerData> = draft.customerData ?? {};
-
-    this.customerData = {
-      ...INITIAL_CUSTOMER_DATA,
-      fullName: normalizePaymentCustomerFieldValue(
-        "fullName",
-        draftCustomerData.fullName ?? INITIAL_CUSTOMER_DATA.fullName,
-      ),
-      email: normalizePaymentCustomerFieldValue(
-        "email",
-        draftCustomerData.email ?? INITIAL_CUSTOMER_DATA.email,
-      ),
-      nickname: normalizePaymentCustomerFieldValue(
-        "nickname",
-        draftCustomerData.nickname ?? INITIAL_CUSTOMER_DATA.nickname,
-      ),
-      address: normalizePaymentCustomerFieldValue(
-        "address",
-        draftCustomerData.address ?? INITIAL_CUSTOMER_DATA.address,
-      ),
-      city: normalizePaymentCustomerFieldValue(
-        "city",
-        draftCustomerData.city ?? INITIAL_CUSTOMER_DATA.city,
-      ),
-      postalCode: normalizePaymentCustomerFieldValue(
-        "postalCode",
-        draftCustomerData.postalCode ?? INITIAL_CUSTOMER_DATA.postalCode,
-      ),
-      country: normalizePaymentCustomerFieldValue(
-        "country",
-        draftCustomerData.country ?? INITIAL_CUSTOMER_DATA.country,
-      ),
-      lessonLanguage: normalizePaymentCustomerFieldValue(
-        "lessonLanguage",
-        draftCustomerData.lessonLanguage ?? INITIAL_CUSTOMER_DATA.lessonLanguage,
-      ),
-    };
-
-    const draftAgreements: Partial<PaymentAgreementState> = draft.agreements ?? {};
-
-    this.agreements = {
-      digitalContentAgreement: Boolean(
-        draftAgreements.digitalContentAgreement ??
-        INITIAL_AGREEMENTS.digitalContentAgreement,
-      ),
-      immediateAccessConsent: Boolean(
-        draftAgreements.immediateAccessConsent ??
-        INITIAL_AGREEMENTS.immediateAccessConsent,
-      ),
-      privacyPolicyAcknowledgement: Boolean(
-        draftAgreements.privacyPolicyAcknowledgement ??
-        INITIAL_AGREEMENTS.privacyPolicyAcknowledgement,
-      ),
-      withdrawalNoticeAcknowledgement: Boolean(
-        draftAgreements.withdrawalNoticeAcknowledgement ??
-        INITIAL_AGREEMENTS.withdrawalNoticeAcknowledgement,
-      ),
-    };
+    this.customerData = normalizePaymentCustomerDataDraft(draft.customerData);
+    this.agreements = normalizePaymentAgreementDraft(draft.agreements);
 
     this.customerErrors = {};
     this.touchedFields = {};
@@ -358,13 +354,11 @@ export class PaymentStore {
     this.pendingStripeCurrencies.add(resolvedCurrency);
     this.setStripeIntentError(resolvedCurrency, null);
     try {
-      let data: {
-        clientSecret?: string;
-        errorCode?: StripeIntentErrorCode;
-        paymentIntentId?: string;
-      } | null = null;
+      let data: StripeIntentResponse | null = null;
       let lastErrorCode: StripeIntentErrorCode = "payment_intent_request_failed";
 
+      // Stripe intent creation is a network boundary in the checkout flow, so retry
+      // only transport-like failures and keep API validation failures visible.
       for (let attempt = 0; attempt <= PAYMENT_INTENT_MAX_RETRY_ATTEMPTS; attempt += 1) {
         const requestController = new AbortController();
         const timeoutId = window.setTimeout(() => {
@@ -388,11 +382,7 @@ export class PaymentStore {
             signal: requestController.signal,
           });
 
-          const responseData = (await response.json()) as {
-            clientSecret?: string;
-            errorCode?: StripeIntentErrorCode;
-            paymentIntentId?: string;
-          };
+          const responseData = (await response.json()) as StripeIntentResponse;
 
           if (!response.ok) {
             const errorCode = responseData.errorCode ?? "payment_intent_request_failed";
@@ -417,14 +407,7 @@ export class PaymentStore {
           data = responseData;
           break;
         } catch (error) {
-          const errorCode =
-            error instanceof DOMException && error.name === "AbortError"
-              ? "payment_intent_request_failed"
-              : error instanceof TypeError
-                ? "payment_intent_request_failed"
-                : error instanceof Error
-                  ? (error.message as StripeIntentErrorCode)
-                  : "payment_intent_request_failed";
+          const errorCode = getStripeIntentErrorCode(error);
 
           lastErrorCode = errorCode;
 
@@ -447,6 +430,8 @@ export class PaymentStore {
       }
 
       if (this.isStripeIntentRequestStale(requestRevision)) {
+        // The customer changed checkout data while this request was in flight.
+        // The old intent is canceled so Stripe does not keep unused attempts open.
         if (data.paymentIntentId) {
           this.cancelStripePaymentIntents([data.paymentIntentId], this.checkoutSessionId);
         }
@@ -470,12 +455,7 @@ export class PaymentStore {
       }
 
       runInAction(() => {
-        const errorCode =
-          error instanceof DOMException && error.name === "AbortError"
-            ? "payment_intent_request_failed"
-            : error instanceof Error
-              ? (error.message as StripeIntentErrorCode)
-              : "payment_intent_request_failed";
+        const errorCode = getStripeIntentErrorCode(error);
 
         this.stripeClientSecrets = {
           ...this.stripeClientSecrets,
@@ -555,10 +535,10 @@ export class PaymentStore {
 
     this.clearStripeIntentState(true, previousCheckoutSessionId);
     this.checkoutSessionId = createCheckoutSessionId();
-    this.customerData = { ...INITIAL_CUSTOMER_DATA };
+    this.customerData = normalizePaymentCustomerDataDraft();
     this.customerErrors = {};
     this.touchedFields = {};
-    this.agreements = { ...INITIAL_AGREEMENTS };
+    this.agreements = normalizePaymentAgreementDraft();
     this.validationLocale = "ru";
     this.selectedCurrency = DEFAULT_CHECKOUT_CURRENCY;
     this.selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
@@ -572,6 +552,8 @@ export class PaymentStore {
   ) {
     this.stripeIntentStateRevision += 1;
 
+    // Resetting the revision invalidates any in-flight creation request. When the
+    // reset is caused by a real checkout change, cancel the already-created intents.
     const activePaymentIntentIds = cancelActiveIntents
       ? Object.values(this.stripePaymentIntentIds).filter(Boolean)
       : [];

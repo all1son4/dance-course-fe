@@ -85,6 +85,39 @@ export const hasJsonContentType = (request: Request) => {
   return contentType.includes("application/json");
 };
 
+export const jsonErrorNoStore = (
+  errorCode: string,
+  init: {
+    headers?: Record<string, string>;
+    status: number;
+  },
+) =>
+  jsonNoStore(
+    {
+      errorCode,
+    },
+    init,
+  );
+
+export const getBrowserJsonRequestErrorResponse = (
+  request: Request,
+  maxBodyBytes: number,
+) => {
+  if (!isTrustedBrowserOrigin(request)) {
+    return jsonErrorNoStore("invalid_origin", { status: 403 });
+  }
+
+  if (isPayloadTooLarge(request, maxBodyBytes)) {
+    return jsonErrorNoStore("payload_too_large", { status: 413 });
+  }
+
+  if (!hasJsonContentType(request)) {
+    return jsonErrorNoStore("unsupported_media_type", { status: 415 });
+  }
+
+  return null;
+};
+
 export const parseJsonBody = async <T>(request: Request): Promise<T | null> => {
   try {
     return (await request.json()) as T;

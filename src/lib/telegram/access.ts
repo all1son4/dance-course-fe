@@ -28,6 +28,13 @@ import {
 } from "./offer-access";
 
 type TelegramAccessTokenStatus = "expired" | "issued" | "revoked" | "used";
+type TelegramAccessUnavailableReason =
+  | "access_window_expired"
+  | "already_activated"
+  | "channel_not_configured"
+  | "not_succeeded_payment"
+  | "offer_not_supported"
+  | "telegram_api_failed";
 
 type TelegramAccessLinkResult =
   | {
@@ -38,13 +45,7 @@ type TelegramAccessLinkResult =
     }
   | {
       accessUrl: null;
-      reason:
-        | "access_window_expired"
-        | "already_activated"
-        | "channel_not_configured"
-        | "not_succeeded_payment"
-        | "offer_not_supported"
-        | "telegram_api_failed";
+      reason: TelegramAccessUnavailableReason;
       status: "not_available";
       tokenExpiresAt: null;
       tokenId: null;
@@ -92,6 +93,27 @@ const pendingTelegramAccessLinkEnsures = new Map<
   Promise<TelegramAccessLinkResult>
 >();
 const telegramAccessLinkCache = new Map<string, TelegramAccessLinkCacheEntry>();
+
+const getReadyTelegramAccessLinkResult = ({
+  accessUrl,
+  tokenExpiresAt,
+  tokenId,
+}: TelegramAccessLinkCacheEntry): TelegramAccessLinkResult => ({
+  accessUrl,
+  status: "ready",
+  tokenExpiresAt,
+  tokenId,
+});
+
+const getUnavailableTelegramAccessLinkResult = (
+  reason: TelegramAccessUnavailableReason,
+): TelegramAccessLinkResult => ({
+  accessUrl: null,
+  reason,
+  status: "not_available",
+  tokenExpiresAt: null,
+  tokenId: null,
+});
 
 const parsePositiveEnvNumber = (name: string) => {
   const parsedValue = Number.parseFloat(process.env[name]?.trim() ?? "");
@@ -400,6 +422,8 @@ const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentSheetRecord) =
     };
   }
 
+  // Choreo channel access starts when the buyer actually joins, not when they pay.
+  // That keeps the purchased access window fair if they open the invite later.
   const joinedAt = paymentRecord.telegram_token_used_at.trim() || toUtcIso();
   const paymentRecordWithJoinTimestamp = paymentRecord.telegram_token_used_at.trim()
     ? paymentRecord
@@ -423,23 +447,11 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
   paymentRecord: PaymentSheetRecord,
 ): Promise<TelegramAccessLinkResult> => {
   if (!isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)) {
-    return {
-      accessUrl: null,
-      reason: "offer_not_supported",
-      status: "not_available",
-      tokenExpiresAt: null,
-      tokenId: null,
-    };
+    return getUnavailableTelegramAccessLinkResult("offer_not_supported");
   }
 
   if (paymentRecord.outcome !== "succeeded") {
-    return {
-      accessUrl: null,
-      reason: "not_succeeded_payment",
-      status: "not_available",
-      tokenExpiresAt: null,
-      tokenId: null,
-    };
+    return getUnavailableTelegramAccessLinkResult("not_succeeded_payment");
   }
 
   const channelTarget = getTelegramChannelTargetByOfferId({
@@ -448,13 +460,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
   });
 
   if (!channelTarget) {
-    return {
-      accessUrl: null,
-      reason: "channel_not_configured",
-      status: "not_available",
-      tokenExpiresAt: null,
-      tokenId: null,
-    };
+    return getUnavailableTelegramAccessLinkResult("channel_not_configured");
   }
 
   const normalizedChatId = channelTarget.chatId.trim();
@@ -468,12 +474,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
   });
 
   if (cachedAccessLink) {
-    return {
-      accessUrl: cachedAccessLink.accessUrl,
-      status: "ready",
-      tokenExpiresAt: cachedAccessLink.tokenExpiresAt,
-      tokenId: cachedAccessLink.tokenId,
-    };
+    return getReadyTelegramAccessLinkResult(cachedAccessLink);
   }
 
   if (hasTimedAccess && accessExpiresAt && isIsoExpired(accessExpiresAt)) {
@@ -487,15 +488,11 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
       updated_at: now,
     });
 
-    return {
-      accessUrl: null,
-      reason: "access_window_expired",
-      status: "not_available",
-      tokenExpiresAt: null,
-      tokenId: null,
-    };
+    return getUnavailableTelegramAccessLinkResult("access_window_expired");
   }
 
+  // Telegram channel invite links are one-use. Reuse a still-valid issued token,
+  // otherwise mark old issued tokens as expired/revoked before creating a new one.
   const currentTokenRecord = await findLatestTelegramAccessTokenRecordByPaymentIntentId(
     paymentRecord.payment_intent_id,
   );
@@ -521,12 +518,12 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
       tokenId: currentTokenRecord.token_id,
     });
 
-    return {
+    return getReadyTelegramAccessLinkResult({
       accessUrl: currentTokenRecord.token_value,
-      status: "ready",
+      chatId: normalizedChatId,
       tokenExpiresAt: currentTokenRecord.expires_at,
       tokenId: currentTokenRecord.token_id,
-    };
+    });
   }
 
   if (currentTokenRecord && isIssuedTokenExpired) {
@@ -555,13 +552,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
   ) {
     telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
 
-    return {
-      accessUrl: null,
-      reason: "already_activated",
-      status: "not_available",
-      tokenExpiresAt: null,
-      tokenId: null,
-    };
+    return getUnavailableTelegramAccessLinkResult("already_activated");
   }
 
   const tokenId = createTelegramTokenId("tgi");
@@ -647,12 +638,12 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
       tokenId,
     });
 
-    return {
+    return getReadyTelegramAccessLinkResult({
       accessUrl: inviteLink.invite_link,
-      status: "ready",
+      chatId: normalizedChatId,
       tokenExpiresAt: linkExpiresAt,
       tokenId,
-    };
+    });
   } catch (error) {
     telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
 
@@ -680,13 +671,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
       });
     }
 
-    return {
-      accessUrl: null,
-      reason: "telegram_api_failed",
-      status: "not_available",
-      tokenExpiresAt: null,
-      tokenId: null,
-    };
+    return getUnavailableTelegramAccessLinkResult("telegram_api_failed");
   }
 };
 
@@ -705,6 +690,8 @@ export const ensureTelegramAccessLinkForPayment = async (
     return pendingEnsure;
   }
 
+  // Avoid creating two Telegram invite links when the success page and webhook
+  // ask for the same payment almost simultaneously.
   const ensurePromise = ensureTelegramAccessLinkForPaymentInternal(paymentRecord).finally(
     () => {
       pendingTelegramAccessLinkEnsures.delete(paymentIntentId);

@@ -191,6 +191,8 @@ const PaymentPage = observer(function PaymentPage() {
 
     hasHydratedCheckoutDraftRef.current = true;
 
+    // Drafts are a reload-only safety net. A fresh visit should start a new checkout
+    // session, while a browser refresh should keep typed customer data intact.
     if (!isReloadNavigation()) {
       sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
       return;
@@ -262,6 +264,8 @@ const PaymentPage = observer(function PaymentPage() {
       return;
     }
 
+    // Let the last keystroke/checkbox update settle before creating a billable Stripe
+    // intent, reducing the chance of immediately canceling stale intents.
     const timeoutId = window.setTimeout(() => {
       void paymentStore.ensureStripePaymentIntent(paymentStore.selectedCurrency);
     }, 420);

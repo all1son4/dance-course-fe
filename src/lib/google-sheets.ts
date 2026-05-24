@@ -12,6 +12,8 @@ const DEFAULT_MONTHLY_SALES_REPORT_RUNS_SHEET_NAME = "MonthlySalesReports";
 const DEFAULT_TELEGRAM_ACCESS_TOKENS_SHEET_NAME = "TelegramAccessTokens";
 const DEFAULT_TELEGRAM_USER_BINDINGS_SHEET_NAME = "TelegramUserBindings";
 
+// Header arrays are the storage schema. Existing row values are read by position,
+// so append new columns at the end unless a deliberate sheet migration is planned.
 const PAYMENT_SHEET_HEADERS = [
   "payment_intent_id",
   "customer_email",
@@ -495,6 +497,20 @@ const getGoogleSheetsConfig = (): GoogleSheetsConfig | null => {
     telegramAccessTokensSheetName: DEFAULT_TELEGRAM_ACCESS_TOKENS_SHEET_NAME,
     telegramUserBindingsSheetName: DEFAULT_TELEGRAM_USER_BINDINGS_SHEET_NAME,
   };
+};
+
+const getRequiredGoogleSheetsConfig = () => {
+  const config = getGoogleSheetsConfig();
+
+  if (!config) {
+    throw new GoogleSheetsError(
+      "google_sheets_not_configured",
+      "Google Sheets env variables are missing.",
+      null,
+    );
+  }
+
+  return config;
 };
 
 const getJwtAssertion = (config: GoogleSheetsConfig) => {
@@ -985,6 +1001,8 @@ const ensureSheetHeaders = async (
     const hasExpectedHeaders = areHeadersEqual(expectedHeaderRow, currentHeaderRow);
 
     if (!hasExpectedHeaders) {
+      // Keep row 1 readable for humans, while application code keeps using the
+      // stable internal header arrays above to map cells back into records.
       const lastColumnLetter = columnIndexToLetter(headers.length);
 
       await updateSheetValues(config, sheetTitle, `A1:${lastColumnLetter}1`, [
@@ -1113,6 +1131,53 @@ const findRecordAndRowByFieldValue = async <T extends string>({
   };
 };
 
+const upsertRecordByFieldValue = async <T extends string>({
+  config,
+  fieldName,
+  fieldValue,
+  headers,
+  labelsMap,
+  record,
+  sheetTitle,
+}: {
+  config: GoogleSheetsConfig;
+  fieldName: T;
+  fieldValue: string;
+  headers: readonly T[];
+  labelsMap?: Partial<Record<T, string>>;
+  record: Record<T, string>;
+  sheetTitle: string;
+}) => {
+  await ensureSheetHeaders(config, sheetTitle, headers, labelsMap);
+
+  const lastColumnLetter = columnIndexToLetter(headers.length);
+  const { rowNumber } = await findRecordAndRowByFieldValue({
+    cacheTtlMs: 0,
+    config,
+    fieldName,
+    fieldValue,
+    headers,
+    labelsMap,
+    sheetTitle,
+  });
+  const orderedRow = [toOrderedRow(headers, record)];
+
+  if (rowNumber) {
+    await updateSheetValues(
+      config,
+      sheetTitle,
+      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
+      orderedRow,
+    );
+
+    return record;
+  }
+
+  await appendSheetValues(config, sheetTitle, `A1:${lastColumnLetter}`, orderedRow);
+
+  return record;
+};
+
 const toOrderedRow = <T extends string>(
   headers: readonly T[],
   record: Record<T, string>,
@@ -1133,15 +1198,7 @@ export const ensureGoogleSheetsSchema = async () => {
   }
 
   schemaSyncPromise = (async () => {
-    const config = getGoogleSheetsConfig();
-
-    if (!config) {
-      throw new GoogleSheetsError(
-        "google_sheets_not_configured",
-        "Google Sheets env variables are missing.",
-        null,
-      );
-    }
+    const config = getRequiredGoogleSheetsConfig();
 
     await Promise.all([
       ensureSheetHeaders(
@@ -1209,15 +1266,7 @@ export const findPaymentRecordByIntentId = async (
     return cachedEntry.record;
   }
 
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
     cacheTtlMs: options?.cacheTtlMs,
@@ -1246,15 +1295,7 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
   endUtcIsoExclusive: string;
   startUtcIso: string;
 }) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const startTimestamp = Date.parse(startUtcIso);
   const endTimestamp = Date.parse(endUtcIsoExclusive);
@@ -1302,15 +1343,7 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
 export const listPaymentRecords = async (options?: {
   cacheTtlMs?: number;
 }): Promise<PaymentSheetRecord[]> => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   return getRows(
     config,
@@ -1326,15 +1359,7 @@ export const listPaymentRecords = async (options?: {
 export const findLatestPaymentRecordByCheckoutSessionId = async (
   checkoutSessionId: string,
 ) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
     config,
@@ -1372,15 +1397,7 @@ export const findLatestSucceededPaymentRecordByCheckoutSessionId = async (
 };
 
 export const findStripeEventRecordByEventId = async (eventId: string) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
     cacheTtlMs: 0,
@@ -1396,117 +1413,37 @@ export const findStripeEventRecordByEventId = async (eventId: string) => {
 };
 
 export const appendStripeEventRecord = async (record: StripeEventSheetRecord) => {
-  const config = getGoogleSheetsConfig();
+  const config = getRequiredGoogleSheetsConfig();
 
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
-
-  await ensureSheetHeaders(
-    config,
-    config.stripeEventsSheetName,
-    STRIPE_EVENT_SHEET_HEADERS,
-    STRIPE_EVENT_SHEET_HEADER_LABELS,
-  );
-  const lastColumnLetter = columnIndexToLetter(STRIPE_EVENT_SHEET_HEADERS.length);
-
-  const { rowNumber } = await findRecordAndRowByFieldValue({
-    cacheTtlMs: 0,
+  return upsertRecordByFieldValue({
     config,
     fieldName: "event_id",
     fieldValue: record.event_id,
     headers: STRIPE_EVENT_SHEET_HEADERS,
     labelsMap: STRIPE_EVENT_SHEET_HEADER_LABELS,
+    record,
     sheetTitle: config.stripeEventsSheetName,
   });
-
-  if (rowNumber) {
-    await updateSheetValues(
-      config,
-      config.stripeEventsSheetName,
-      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
-      [toOrderedRow(STRIPE_EVENT_SHEET_HEADERS, record)],
-    );
-
-    return record;
-  }
-
-  await appendSheetValues(
-    config,
-    config.stripeEventsSheetName,
-    `A1:${lastColumnLetter}`,
-    [toOrderedRow(STRIPE_EVENT_SHEET_HEADERS, record)],
-  );
-
-  return record;
 };
 
 export const appendSuccessfulCustomerRecord = async (
   record: SuccessfulCustomersSheetRecord,
 ) => {
-  const config = getGoogleSheetsConfig();
+  const config = getRequiredGoogleSheetsConfig();
 
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
-
-  await ensureSheetHeaders(
-    config,
-    config.successfulCustomersSheetName,
-    SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
-    SUCCESSFUL_CUSTOMERS_SHEET_HEADER_LABELS,
-  );
-  const lastColumnLetter = columnIndexToLetter(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS.length);
-
-  const { rowNumber } = await findRecordAndRowByFieldValue({
-    cacheTtlMs: 0,
+  return upsertRecordByFieldValue({
     config,
     fieldName: "payment_intent_id",
     fieldValue: record.payment_intent_id,
     headers: SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
     labelsMap: SUCCESSFUL_CUSTOMERS_SHEET_HEADER_LABELS,
+    record,
     sheetTitle: config.successfulCustomersSheetName,
   });
-
-  if (rowNumber) {
-    await updateSheetValues(
-      config,
-      config.successfulCustomersSheetName,
-      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
-      [toOrderedRow(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS, record)],
-    );
-
-    return record;
-  }
-
-  await appendSheetValues(
-    config,
-    config.successfulCustomersSheetName,
-    `A1:${lastColumnLetter}`,
-    [toOrderedRow(SUCCESSFUL_CUSTOMERS_SHEET_HEADERS, record)],
-  );
-
-  return record;
 };
 
 export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record: existingRecord, rowNumber } = await findRecordAndRowByFieldValue({
     cacheTtlMs: 0,
@@ -1552,15 +1489,7 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
 };
 
 export const findTelegramAccessTokenRecordByTokenId = async (tokenId: string) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
     config,
@@ -1575,15 +1504,7 @@ export const findTelegramAccessTokenRecordByTokenId = async (tokenId: string) =>
 };
 
 export const findTelegramAccessTokenRecordByTokenHash = async (tokenHash: string) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
     config,
@@ -1598,15 +1519,7 @@ export const findTelegramAccessTokenRecordByTokenHash = async (tokenHash: string
 };
 
 export const findTelegramAccessTokenRecordByTokenValue = async (tokenValue: string) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
     config,
@@ -1623,15 +1536,7 @@ export const findTelegramAccessTokenRecordByTokenValue = async (tokenValue: stri
 export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
   paymentIntentId: string,
 ) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
     config,
@@ -1660,15 +1565,7 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
   accessWorkflow: string;
   limit?: number;
 }) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const normalizedAccessWorkflow = accessWorkflow.trim().toLowerCase();
 
@@ -1750,62 +1647,23 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
 export const upsertTelegramAccessTokenRecord = async (
   record: TelegramAccessTokenSheetRecord,
 ) => {
-  const config = getGoogleSheetsConfig();
+  const config = getRequiredGoogleSheetsConfig();
 
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
-
-  const { rowNumber } = await findRecordAndRowByFieldValue({
-    cacheTtlMs: 0,
+  return upsertRecordByFieldValue({
     config,
     fieldName: "token_id",
     fieldValue: record.token_id,
     headers: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
     labelsMap: TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    record,
     sheetTitle: config.telegramAccessTokensSheetName,
   });
-  const lastColumnLetter = columnIndexToLetter(
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS.length,
-  );
-
-  if (rowNumber) {
-    await updateSheetValues(
-      config,
-      config.telegramAccessTokensSheetName,
-      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
-      [toOrderedRow(TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS, record)],
-    );
-
-    return record;
-  }
-
-  await appendSheetValues(
-    config,
-    config.telegramAccessTokensSheetName,
-    `A1:${lastColumnLetter}`,
-    [toOrderedRow(TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS, record)],
-  );
-
-  return record;
 };
 
 export const findTelegramUserBindingByPaymentIntentId = async (
   paymentIntentId: string,
 ) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
     config,
@@ -1820,15 +1678,7 @@ export const findTelegramUserBindingByPaymentIntentId = async (
 };
 
 export const findMonthlySalesReportRunByKey = async (reportKey: string) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
     config,
@@ -1845,62 +1695,23 @@ export const findMonthlySalesReportRunByKey = async (reportKey: string) => {
 export const upsertMonthlySalesReportRun = async (
   record: MonthlySalesReportRunSheetRecord,
 ) => {
-  const config = getGoogleSheetsConfig();
+  const config = getRequiredGoogleSheetsConfig();
 
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
-
-  const { rowNumber } = await findRecordAndRowByFieldValue({
-    cacheTtlMs: 0,
+  return upsertRecordByFieldValue({
     config,
     fieldName: "report_key",
     fieldValue: record.report_key,
     headers: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
     labelsMap: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
+    record,
     sheetTitle: config.monthlySalesReportRunsSheetName,
   });
-  const lastColumnLetter = columnIndexToLetter(
-    MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS.length,
-  );
-
-  if (rowNumber) {
-    await updateSheetValues(
-      config,
-      config.monthlySalesReportRunsSheetName,
-      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
-      [toOrderedRow(MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS, record)],
-    );
-
-    return record;
-  }
-
-  await appendSheetValues(
-    config,
-    config.monthlySalesReportRunsSheetName,
-    `A1:${lastColumnLetter}`,
-    [toOrderedRow(MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS, record)],
-  );
-
-  return record;
 };
 
 export const findTelegramUserBindingsByTelegramUserId = async (
   telegramUserId: string,
 ) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
     config,
@@ -1913,15 +1724,7 @@ export const findTelegramUserBindingsByTelegramUserId = async (
 };
 
 export const findTelegramUserBindingsByCustomerEmail = async (customerEmail: string) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
     config,
@@ -1943,15 +1746,7 @@ export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
   chatId: string;
   telegramUserId: string;
 }) => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
     config,
@@ -1968,15 +1763,7 @@ export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
 };
 
 export const findActiveTelegramUserBindings = async () => {
-  const config = getGoogleSheetsConfig();
-
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
+  const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
     config,
@@ -1991,46 +1778,15 @@ export const findActiveTelegramUserBindings = async () => {
 export const upsertTelegramUserBindingRecord = async (
   record: TelegramUserBindingSheetRecord,
 ) => {
-  const config = getGoogleSheetsConfig();
+  const config = getRequiredGoogleSheetsConfig();
 
-  if (!config) {
-    throw new GoogleSheetsError(
-      "google_sheets_not_configured",
-      "Google Sheets env variables are missing.",
-      null,
-    );
-  }
-
-  const { rowNumber } = await findRecordAndRowByFieldValue({
-    cacheTtlMs: 0,
+  return upsertRecordByFieldValue({
     config,
     fieldName: "payment_intent_id",
     fieldValue: record.payment_intent_id,
     headers: TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
     labelsMap: TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+    record,
     sheetTitle: config.telegramUserBindingsSheetName,
   });
-  const lastColumnLetter = columnIndexToLetter(
-    TELEGRAM_USER_BINDINGS_SHEET_HEADERS.length,
-  );
-
-  if (rowNumber) {
-    await updateSheetValues(
-      config,
-      config.telegramUserBindingsSheetName,
-      `A${rowNumber}:${lastColumnLetter}${rowNumber}`,
-      [toOrderedRow(TELEGRAM_USER_BINDINGS_SHEET_HEADERS, record)],
-    );
-
-    return record;
-  }
-
-  await appendSheetValues(
-    config,
-    config.telegramUserBindingsSheetName,
-    `A1:${lastColumnLetter}`,
-    [toOrderedRow(TELEGRAM_USER_BINDINGS_SHEET_HEADERS, record)],
-  );
-
-  return record;
 };

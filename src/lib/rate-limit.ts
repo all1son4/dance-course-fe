@@ -9,6 +9,11 @@ type ConsumeRateLimitParams = {
   windowMs: number;
 };
 
+type ConsumeRequestRateLimitParams = Omit<ConsumeRateLimitParams, "key"> & {
+  keyPrefix: string;
+  request: Request;
+};
+
 type ConsumeRateLimitResult = {
   limited: boolean;
   retryAfterSeconds: number;
@@ -265,3 +270,15 @@ export const consumeRateLimit = async ({
     });
   }
 };
+
+export const consumeRequestRateLimit = ({
+  keyPrefix,
+  limit,
+  request,
+  windowMs,
+}: ConsumeRequestRateLimitParams) =>
+  consumeRateLimit({
+    key: `${keyPrefix}:${getRequestIp(request)}`,
+    limit,
+    windowMs,
+  });

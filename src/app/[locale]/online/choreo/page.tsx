@@ -8,7 +8,6 @@ import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
 
 import { buildCheckoutOffersStructuredData } from "../_shared/structured-data";
-import { getChoreos, getOnlineSuggestions } from "./constants";
 import {
   Date,
   DateBox,
@@ -49,15 +48,6 @@ export default function ChoreoPage() {
   const locale = useLocale();
   const t = useTranslations("ChoreoPage");
   const productT = useTranslations("SellableProducts");
-  const onlineSuggestions = getOnlineSuggestions(
-    (key) => t(key),
-    (key) =>
-      t.rich(key, {
-        p: (chunks) => <p>{chunks}</p>,
-        strong: (chunks) => <strong>{chunks}</strong>,
-      }),
-  );
-  const choreos = getChoreos((key) => productT(key));
   const sellableChoreoProducts = SELLABLE_PRODUCTS_LIST.filter(
     (product) => product.type === "choreo",
   );

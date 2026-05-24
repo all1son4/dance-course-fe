@@ -23,6 +23,21 @@ export type ManagedPaymentIntentSnapshot = {
   paymentIntentId: string;
   status: Stripe.PaymentIntent.Status;
 };
+type CheckoutOwnedPaymentIntentErrorCode =
+  | "missing_checkout_session_id"
+  | "missing_payment_intent_id"
+  | "payment_intent_access_denied";
+type CheckoutOwnedPaymentIntentResult =
+  | {
+      errorCode: CheckoutOwnedPaymentIntentErrorCode;
+      paymentIntent?: never;
+      status: 400 | 403;
+    }
+  | {
+      errorCode?: never;
+      paymentIntent: Stripe.PaymentIntent;
+      status?: never;
+    };
 
 export const normalizePaymentIntentId = (value: string | null | undefined) => {
   const normalizedValue = value?.trim() ?? "";
@@ -202,6 +217,54 @@ export const getManagedPaymentIntentSnapshot = (
   paymentIntentId: paymentIntent.id,
   status: paymentIntent.status,
 });
+
+export const getCheckoutOwnedPaymentIntent = async ({
+  checkoutSessionId,
+  paymentIntentId,
+  stripe,
+}: {
+  checkoutSessionId?: string;
+  paymentIntentId?: string;
+  stripe: Stripe;
+}): Promise<CheckoutOwnedPaymentIntentResult> => {
+  const normalizedPaymentIntentId = normalizePaymentIntentId(paymentIntentId);
+  const normalizedCheckoutSessionId = normalizeCheckoutSessionId(checkoutSessionId);
+
+  if (!normalizedPaymentIntentId) {
+    return {
+      errorCode: "missing_payment_intent_id",
+      status: 400,
+    };
+  }
+
+  if (!normalizedCheckoutSessionId) {
+    return {
+      errorCode: "missing_checkout_session_id",
+      status: 400,
+    };
+  }
+
+  const paymentIntent = await stripe.paymentIntents.retrieve(normalizedPaymentIntentId);
+  const paymentIntentCheckoutSessionId = normalizeCheckoutSessionId(
+    paymentIntent.metadata.checkout_session_id,
+  );
+
+  // Status polling and cancellation are client-callable endpoints. The checkout
+  // session id in Stripe metadata binds the intent to the browser checkout session.
+  if (
+    !paymentIntentCheckoutSessionId ||
+    paymentIntentCheckoutSessionId !== normalizedCheckoutSessionId
+  ) {
+    return {
+      errorCode: "payment_intent_access_denied",
+      status: 403,
+    };
+  }
+
+  return {
+    paymentIntent,
+  };
+};
 
 export const getStripeServer = () => {
   if (!stripeSecretKey) {

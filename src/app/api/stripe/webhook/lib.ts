@@ -111,6 +111,8 @@ const getMetadataValue = (
   sourceMetadata: StripeMetadata,
   keys: string[],
 ) => {
+  // PaymentIntent metadata is written by our checkout API and is the most reliable
+  // source. PaymentLink/Checkout metadata is kept as a compatibility fallback.
   for (const key of keys) {
     const paymentIntentValue = trimString(paymentIntentMetadata[key]);
 
@@ -287,6 +289,8 @@ const getPaymentSourceContext = async (
   event: Stripe.Event,
   paymentIntent: Stripe.PaymentIntent,
 ): Promise<StripePaymentSourceContext> => {
+  // Older Payment Link events may miss product/offer metadata on the intent itself.
+  // When that happens, enrich the record from the related Checkout Session and link.
   const checkoutSession = SUPPORTED_CHECKOUT_SESSION_EVENT_TYPES.has(event.type)
     ? (event.data.object as Stripe.Checkout.Session)
     : shouldLookupCheckoutSession(paymentIntent)
@@ -614,6 +618,8 @@ const withPaymentIntentSyncLock = async <T>(
   const lockReleasePromise = new Promise<void>((resolve) => {
     releaseLock = resolve;
   });
+  // Stripe can deliver several status events for one PaymentIntent almost at once.
+  // Queue writes per intent so Google Sheets keeps a single coherent row.
   const lockQueueEntry = previousSyncSafe.then(() => lockReleasePromise);
 
   pendingStripePaymentIntentSyncs.set(normalizedPaymentIntentId, lockQueueEntry);
@@ -639,6 +645,8 @@ export const syncStripePaymentEventToGoogleSheets = async (
   const pendingSync = pendingStripeWebhookSyncs.get(event.id);
 
   if (pendingSync) {
+    // Same event id, same in-flight work. Return the original result but mark this
+    // invocation as duplicate for observability in the route response.
     const result = await pendingSync;
 
     return {
