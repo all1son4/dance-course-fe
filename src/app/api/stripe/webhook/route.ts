@@ -2,7 +2,6 @@ import { randomBytes } from "node:crypto";
 
 import type Stripe from "stripe";
 
-import { normalizeCountryCode } from "@/constants/countries";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
 import {
   findPaymentRecordByIntentId,
@@ -26,17 +25,14 @@ import {
   getTelegramAlertsChatId,
   isTelegramAlertsConfigured,
 } from "@/lib/telegram/config";
-import { toUtcIso, UTC_TIME_ZONE_LABEL } from "@/lib/time";
+import { toUtcIso } from "@/lib/time";
 
-import {
-  getResolvedCheckoutLessonLanguage,
-  getResolvedCheckoutLocale,
-  getStripeServer,
-} from "../payment-intent/lib";
+import { getResolvedCheckoutLocale, getStripeServer } from "../payment-intent/lib";
 import {
   isSupportedStripePaymentIntentEvent,
   syncStripePaymentEventToGoogleSheets,
 } from "./lib";
+import { buildPurchaseAlertText } from "./purchase-alert";
 import { buildPurchaseSuccessEmail } from "./purchase-success-email";
 
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
@@ -61,20 +57,6 @@ const DEFAULT_PRODUCT_TITLE_BY_LOCALE = {
   ru: "Покупка курса",
 } as const;
 
-const CHECKOUT_LOCALE_TO_INTL_LOCALE = {
-  en: "en-US",
-  pl: "pl-PL",
-  ru: "ru-RU",
-} as const;
-const CHECKOUT_LANGUAGE_LABEL_BY_LOCALE = {
-  en: "English",
-  pl: "Polski",
-  ru: "Русский",
-} as const;
-const LESSON_LANGUAGE_LABEL_BY_LANGUAGE = {
-  en: "English",
-  ru: "Русский",
-} as const;
 const pendingPurchaseEmailSyncs = new Map<string, Promise<void>>();
 const pendingPurchaseAlertSyncs = new Map<string, Promise<void>>();
 const fallbackPurchaseAlertDedupe = new Map<string, number>();
@@ -91,9 +73,6 @@ type PaymentStatusField = "email_delivery_status" | "with_mentor_alert_status";
 type PaymentStatusUpdatedField =
   | "email_delivery_updated_at"
   | "with_mentor_alert_updated_at";
-
-const escapeTelegramHtml = (value: string) =>
-  value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
 const parseTimestamp = (value: string) => {
   const timestamp = Date.parse(value);
@@ -213,203 +192,6 @@ const tryAcquirePaymentProcessingLease = async ({
     acquired: verifiedPaymentRecord[statusField].trim() === leaseStatus,
     paymentRecord: verifiedPaymentRecord,
   };
-};
-
-const getFormattedAmountLabel = ({
-  amountMinor,
-  checkoutCurrency,
-  checkoutLocale,
-}: {
-  amountMinor: string;
-  checkoutCurrency: string;
-  checkoutLocale: "en" | "pl" | "ru";
-}) => {
-  const parsedAmountMinor = Number.parseInt(amountMinor, 10);
-  const normalizedCurrency = checkoutCurrency.trim().toUpperCase();
-
-  if (!Number.isFinite(parsedAmountMinor) || !normalizedCurrency) {
-    return [amountMinor.trim(), normalizedCurrency].filter(Boolean).join(" ").trim();
-  }
-
-  const amount = parsedAmountMinor / 100;
-  const locale = CHECKOUT_LOCALE_TO_INTL_LOCALE[checkoutLocale];
-
-  try {
-    return new Intl.NumberFormat(locale, {
-      currency: normalizedCurrency,
-      style: "currency",
-    }).format(amount);
-  } catch {
-    return `${amount.toFixed(2)} ${normalizedCurrency}`;
-  }
-};
-
-const getPurchaseItemLabel = (paymentRecord: PaymentSheetRecord) => {
-  const purchaseItem = paymentRecord.purchase_item.trim();
-
-  if (purchaseItem) {
-    return purchaseItem;
-  }
-
-  const productTitle = paymentRecord.product_title.trim();
-  const offerLabel = paymentRecord.offer_label.trim();
-
-  if (productTitle && offerLabel) {
-    return `${productTitle} — ${offerLabel}`;
-  }
-
-  return productTitle || offerLabel;
-};
-
-const getCheckoutLanguageLabel = (checkoutLocale: "en" | "pl" | "ru") =>
-  CHECKOUT_LANGUAGE_LABEL_BY_LOCALE[checkoutLocale];
-
-const getLessonLanguageLabel = ({
-  checkoutLocale,
-  lessonLanguage,
-}: {
-  checkoutLocale: "en" | "pl" | "ru";
-  lessonLanguage: string;
-}) => {
-  const fallbackLessonLanguage = checkoutLocale === "en" ? "en" : "ru";
-  const resolvedLessonLanguage = getResolvedCheckoutLessonLanguage(
-    lessonLanguage || fallbackLessonLanguage,
-  );
-
-  return LESSON_LANGUAGE_LABEL_BY_LANGUAGE[resolvedLessonLanguage];
-};
-
-const getFormattedCountryLabel = ({
-  checkoutLocale,
-  customerCountry,
-}: {
-  checkoutLocale: "en" | "pl" | "ru";
-  customerCountry: string;
-}) => {
-  const normalizedCountryCode = normalizeCountryCode(customerCountry);
-
-  if (!normalizedCountryCode) {
-    return customerCountry.trim() || "—";
-  }
-
-  if (typeof Intl.DisplayNames !== "function") {
-    return normalizedCountryCode;
-  }
-
-  try {
-    const locale = CHECKOUT_LOCALE_TO_INTL_LOCALE[checkoutLocale];
-    const displayName = new Intl.DisplayNames([locale], { type: "region" }).of(
-      normalizedCountryCode,
-    );
-
-    return displayName || normalizedCountryCode;
-  } catch {
-    return normalizedCountryCode;
-  }
-};
-
-const getAccessWorkflowLabel = (workflow: string) => {
-  if (workflow === "with-mentor") {
-    return "С куратором";
-  }
-
-  if (workflow === "telegram-channel") {
-    return "Telegram-канал";
-  }
-
-  if (workflow === "telegram-chat") {
-    return "Telegram-чат";
-  }
-
-  if (workflow === "telegram-bot") {
-    return "Telegram-бот";
-  }
-
-  if (workflow === "online-group") {
-    return "Онлайн-группа";
-  }
-
-  if (workflow === "online-live") {
-    return "Онлайн-занятия";
-  }
-
-  if (workflow === "manual-admin") {
-    return "Ручное добавление админом";
-  }
-
-  return workflow || "—";
-};
-
-const buildPurchaseAlertText = ({
-  eventCreatedAtIso,
-  eventId,
-  eventType,
-  processedAtIso,
-  paymentRecord,
-}: {
-  eventCreatedAtIso: string;
-  eventId: string;
-  eventType: string;
-  processedAtIso: string;
-  paymentRecord: PaymentSheetRecord;
-}) => {
-  const checkoutLocale = getResolvedCheckoutLocale(paymentRecord.checkout_locale);
-  const fullName = paymentRecord.customer_full_name.trim();
-  const purchaseItem = getPurchaseItemLabel(paymentRecord);
-  const amountLabel = getFormattedAmountLabel({
-    amountMinor: paymentRecord.amount,
-    checkoutCurrency: paymentRecord.checkout_currency || paymentRecord.currency,
-    checkoutLocale,
-  });
-  const checkoutLanguageLabel = getCheckoutLanguageLabel(checkoutLocale);
-  const lessonLanguageLabel = getLessonLanguageLabel({
-    checkoutLocale,
-    lessonLanguage: paymentRecord.lesson_language,
-  });
-  const countryLabel = getFormattedCountryLabel({
-    checkoutLocale,
-    customerCountry: paymentRecord.customer_country,
-  });
-  const customerNickname = paymentRecord.customer_nickname.trim();
-  const normalizedNickname = customerNickname
-    ? customerNickname.startsWith("@")
-      ? customerNickname
-      : `@${customerNickname}`
-    : "";
-  const lines = [
-    "<b>Новая покупка</b>",
-    "",
-    `<b>Что купили:</b> ${escapeTelegramHtml(purchaseItem || "—")}`,
-    `<b>Формат доступа:</b> ${escapeTelegramHtml(
-      getAccessWorkflowLabel(paymentRecord.access_workflow),
-    )}`,
-    `<b>Сумма:</b> ${escapeTelegramHtml(amountLabel || "—")}`,
-    `<b>Язык checkout:</b> ${escapeTelegramHtml(
-      `${checkoutLanguageLabel} (${checkoutLocale.toUpperCase()})`,
-    )}`,
-    `<b>Язык материалов:</b> ${escapeTelegramHtml(lessonLanguageLabel)}`,
-    `<b>Email:</b> ${escapeTelegramHtml(paymentRecord.customer_email.trim() || "—")}`,
-    `<b>ФИО:</b> ${escapeTelegramHtml(fullName || "—")}`,
-    `<b>Telegram:</b> ${escapeTelegramHtml(normalizedNickname || "—")}`,
-    `<b>Страна:</b> ${escapeTelegramHtml(countryLabel)}`,
-    "",
-    `<b>PaymentIntent:</b> <code>${escapeTelegramHtml(
-      paymentRecord.payment_intent_id || "—",
-    )}</code>`,
-    `<b>Checkout session:</b> <code>${escapeTelegramHtml(
-      paymentRecord.checkout_session_id || "—",
-    )}</code>`,
-    `<b>Product ID:</b> <code>${escapeTelegramHtml(paymentRecord.product_id || "—")}</code>`,
-    `<b>Offer ID:</b> <code>${escapeTelegramHtml(paymentRecord.offer_id || "—")}</code>`,
-    `<b>Stripe Event:</b> <code>${escapeTelegramHtml(eventId)}</code>`,
-    `<b>Тип события:</b> ${escapeTelegramHtml(eventType)}`,
-    `<b>Время события Stripe (${UTC_TIME_ZONE_LABEL}):</b> ${escapeTelegramHtml(
-      eventCreatedAtIso,
-    )}`,
-    `<b>Обработано (${UTC_TIME_ZONE_LABEL}):</b> ${escapeTelegramHtml(processedAtIso)}`,
-  ];
-
-  return lines.join("\n");
 };
 
 const getReceiptData = async (
@@ -605,6 +387,10 @@ const sendPurchaseSuccessEmail = async ({
       eventId: handledEvent.eventId,
       paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
     });
+    await tryUpdatePaymentEmailDeliveryStatus({
+      paymentRecord: handledEvent.paymentRecord,
+      status: "skipped",
+    });
     return;
   }
 
@@ -618,6 +404,10 @@ const sendPurchaseSuccessEmail = async ({
       eventId: handledEvent.eventId,
       eventType: handledEvent.eventType,
       paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
+    });
+    await tryUpdatePaymentEmailDeliveryStatus({
+      paymentRecord: handledEvent.paymentRecord,
+      status: "failed",
     });
     return;
   }
