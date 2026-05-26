@@ -6,7 +6,7 @@ import { UTC_TIME_ZONE_LABEL } from "@/lib/time";
 import {
   getResolvedCheckoutLessonLanguage,
   getResolvedCheckoutLocale,
-} from "../payment-intent/lib";
+} from "../../payment-intent/lib";
 
 const PAYMENT_PROCESSING_STATUS_PREFIX = "sending:";
 const CHECKOUT_LOCALE_TO_INTL_LOCALE = {

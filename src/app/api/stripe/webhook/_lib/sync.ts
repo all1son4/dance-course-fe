@@ -12,7 +12,10 @@ import {
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 import { toUtcIso } from "@/lib/time";
 
-import { getManagedPaymentIntentSnapshot, getStripeServer } from "../payment-intent/lib";
+import {
+  getManagedPaymentIntentSnapshot,
+  getStripeServer,
+} from "../../payment-intent/lib";
 
 const SUPPORTED_PAYMENT_INTENT_EVENT_TYPES = new Set([
   "payment_intent.canceled",
