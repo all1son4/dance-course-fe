@@ -80,6 +80,36 @@ const parseTimestamp = (value: string) => {
   return Number.isFinite(timestamp) ? timestamp : 0;
 };
 
+const getCheckoutSessionPaymentIntentId = (event: Stripe.Event) => {
+  if (event.type !== "checkout.session.completed") {
+    return "";
+  }
+
+  const checkoutSession = event.data.object as Stripe.Checkout.Session;
+  const paymentIntent = checkoutSession.payment_intent;
+
+  if (typeof paymentIntent === "string") {
+    return paymentIntent;
+  }
+
+  return paymentIntent?.id ?? "";
+};
+
+const shouldRunPurchaseSuccessSideEffects = (event: Stripe.Event) => {
+  if (!PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES.has(event.type)) {
+    return false;
+  }
+
+  if (event.type === "payment_intent.succeeded") {
+    return true;
+  }
+
+  // Stripe Payment Links commonly emit both checkout.session.completed and
+  // payment_intent.succeeded for one payment. Keep Checkout Session for Sheets
+  // enrichment, but run email/admin alerts only once on the PaymentIntent event.
+  return !getCheckoutSessionPaymentIntentId(event);
+};
+
 const createPaymentProcessingStatus = () =>
   `${PAYMENT_PROCESSING_STATUS_PREFIX}${randomBytes(10).toString("hex")}`;
 
@@ -248,7 +278,7 @@ const getPurchaseSideEffectPaymentIntent = async ({
   event: Stripe.Event;
   stripe: Stripe;
 }) => {
-  if (!PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES.has(event.type)) {
+  if (!shouldRunPurchaseSuccessSideEffects(event)) {
     return null;
   }
 
@@ -367,7 +397,7 @@ const sendPurchaseSuccessEmail = async ({
   stripe: Stripe;
 }) => {
   if (
-    !PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES.has(event.type) ||
+    !shouldRunPurchaseSuccessSideEffects(event) ||
     handledEvent.skipped ||
     handledEvent.paymentRecord.outcome !== "succeeded"
   ) {
@@ -559,7 +589,7 @@ const sendPurchaseAlert = async ({
   handledEvent: Awaited<ReturnType<typeof syncStripePaymentEventToGoogleSheets>>;
 }) => {
   if (
-    !PURCHASE_SUCCESS_SIDE_EFFECT_EVENT_TYPES.has(event.type) ||
+    !shouldRunPurchaseSuccessSideEffects(event) ||
     handledEvent.skipped ||
     handledEvent.paymentRecord.outcome !== "succeeded"
   ) {
