@@ -305,7 +305,7 @@ const resolveGeneratorErrorMessage = (errorCode: string, reason: string) => {
 };
 
 export default function AdminPage() {
-  const choreoSelections = useMemo(getChoreoSelections, []);
+  const choreoSelections = useMemo(() => getChoreoSelections(), []);
   const choreoSelectionMap = useMemo(
     () => new Map(choreoSelections.map((item) => [item.key, item])),
     [choreoSelections],

@@ -78,7 +78,6 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const storedConsent = getStoredCookieConsent();
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate consent from client storage after mount.
     syncConsentState(storedConsent);
     setIsReady(true);
   }, [syncConsentState]);
