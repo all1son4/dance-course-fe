@@ -285,7 +285,18 @@ const getCheckoutSessionForPaymentIntent = async (
 const shouldLookupCheckoutSession = (paymentIntent: Stripe.PaymentIntent) => {
   const metadata = getStripeMetadata(paymentIntent.metadata);
 
-  return !trimString(metadata.offer_id) || !trimString(metadata.product_id);
+  if (!trimString(paymentIntent.receipt_email)) {
+    return true;
+  }
+
+  return [
+    metadata.checkout_session_id,
+    metadata.customer_country,
+    metadata.customer_full_name,
+    metadata.customer_nickname,
+    metadata.offer_id,
+    metadata.product_id,
+  ].some((value) => !trimString(value));
 };
 
 const getPaymentSourceContext = async (
@@ -581,7 +592,9 @@ const mapPaymentIntentToPaymentRecord = (
     lesson_language: lessonLanguage,
     checkout_locale: checkoutLocale,
     purchase_item:
-      existingRecord?.purchase_item || buildPurchaseItemLabel(productTitle, offerLabel),
+      buildPurchaseItemLabel(productTitle, offerLabel) ||
+      existingRecord?.purchase_item ||
+      "",
     successful_customer_logged_at: existingRecord?.successful_customer_logged_at ?? "",
     telegram_access_status: shouldKeepExistingTelegramAccessStatus
       ? existingRecord?.telegram_access_status
@@ -727,10 +740,7 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
 
   let savedPaymentRecord = await upsertPaymentRecord(paymentRecord);
 
-  if (
-    savedPaymentRecord.outcome === "succeeded" &&
-    !savedPaymentRecord.successful_customer_logged_at
-  ) {
+  if (savedPaymentRecord.outcome === "succeeded") {
     await appendSuccessfulCustomerRecord({
       payment_intent_id: savedPaymentRecord.payment_intent_id,
       customer_country: savedPaymentRecord.customer_country,
@@ -744,10 +754,13 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
       offer_id: savedPaymentRecord.offer_id,
       offer_label: savedPaymentRecord.offer_label,
     });
-    savedPaymentRecord = await upsertPaymentRecord({
-      ...savedPaymentRecord,
-      successful_customer_logged_at: toUtcIso(),
-    });
+
+    if (!savedPaymentRecord.successful_customer_logged_at) {
+      savedPaymentRecord = await upsertPaymentRecord({
+        ...savedPaymentRecord,
+        successful_customer_logged_at: toUtcIso(),
+      });
+    }
   }
 
   await appendStripeEventRecord({

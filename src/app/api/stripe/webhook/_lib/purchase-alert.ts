@@ -27,6 +27,9 @@ const LESSON_LANGUAGE_LABEL_BY_LANGUAGE = {
 const escapeTelegramHtml = (value: string) =>
   value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
+const escapeTelegramHtmlAttribute = (value: string) =>
+  escapeTelegramHtml(value).replaceAll('"', "&quot;");
+
 const getFormattedAmountLabel = ({
   amountMinor,
   checkoutCurrency,
@@ -165,19 +168,68 @@ const buildServiceStatusLine = ({
     detail ? `: ${escapeTelegramHtml(detail)}` : ""
   }`;
 
-const normalizeAlertTableValue = (value: string) =>
+const normalizeAlertFieldValue = (value: string) =>
   value.trim().replace(/\s+/gu, " ") || "—";
 
-const buildAlertTable = (rows: Array<{ label: string; value: string }>) => {
-  const labelWidth = Math.max(...rows.map((row) => row.label.length));
-  const table = rows
-    .map(
-      ({ label, value }) =>
-        `${label.padEnd(labelWidth, " ")}  ${normalizeAlertTableValue(value)}`,
-    )
-    .join("\n");
+const padAlertLabel = (label: string, width: number) =>
+  `${label}:${"\u00a0".repeat(Math.max(width - label.length, 0))}`;
 
-  return `<pre>${escapeTelegramHtml(table)}</pre>`;
+const buildAlertFieldLine = ({
+  label,
+  labelWidth,
+  value,
+  valueHtml,
+}: {
+  label: string;
+  labelWidth: number;
+  value: string;
+  valueHtml?: string;
+}) =>
+  `<b>${escapeTelegramHtml(padAlertLabel(label, labelWidth))}</b> ${
+    valueHtml ?? escapeTelegramHtml(normalizeAlertFieldValue(value))
+  }`;
+
+const buildAlertFieldLines = (
+  rows: Array<{ label: string; value: string; valueHtml?: string }>,
+) => {
+  const labelWidth = Math.max(...rows.map((row) => row.label.length)) + 1;
+
+  return rows.map((row) => buildAlertFieldLine({ ...row, labelWidth }));
+};
+
+const buildEmailValueHtml = (email: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedEmail) {
+    return escapeTelegramHtml("—");
+  }
+
+  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/u.test(normalizedEmail)) {
+    return escapeTelegramHtml(normalizedEmail);
+  }
+
+  return escapeTelegramHtml(normalizedEmail);
+};
+
+const buildTelegramUsernameValueHtml = (nickname: string) => {
+  const normalizedNickname = nickname.trim()
+    ? nickname.trim().startsWith("@")
+      ? nickname.trim()
+      : `@${nickname.trim()}`
+    : "";
+  const username = normalizedNickname.replace(/^@/u, "");
+
+  if (!normalizedNickname) {
+    return escapeTelegramHtml("—");
+  }
+
+  if (!/^[A-Za-z0-9_]{5,32}$/u.test(username)) {
+    return escapeTelegramHtml(normalizedNickname);
+  }
+
+  return `<a href="https://t.me/${escapeTelegramHtmlAttribute(username)}">${escapeTelegramHtml(
+    normalizedNickname,
+  )}</a>`;
 };
 
 const getEmailServiceStatusLine = (paymentRecord: PaymentSheetRecord) => {
@@ -371,12 +423,6 @@ export const buildPurchaseAlertText = ({
     checkoutLocale,
     customerCountry: paymentRecord.customer_country,
   });
-  const customerNickname = paymentRecord.customer_nickname.trim();
-  const normalizedNickname = customerNickname
-    ? customerNickname.startsWith("@")
-      ? customerNickname
-      : `@${customerNickname}`
-    : "";
   const accessWorkflowLabel = getAccessWorkflowLabel(paymentRecord.access_workflow);
   const lines = [
     "🛒 <b>Новая покупка</b>",
@@ -384,7 +430,7 @@ export const buildPurchaseAlertText = ({
     `💰 ${escapeTelegramHtml(amountLabel || "—")}`,
     "",
     "📦 <b>Покупка</b>",
-    buildAlertTable([
+    ...buildAlertFieldLines([
       {
         label: "Что купили",
         value: purchaseItem,
@@ -408,10 +454,11 @@ export const buildPurchaseAlertText = ({
     ]),
     "",
     "👤 <b>Клиент</b>",
-    buildAlertTable([
+    ...buildAlertFieldLines([
       {
         label: "Email",
         value: paymentRecord.customer_email,
+        valueHtml: buildEmailValueHtml(paymentRecord.customer_email),
       },
       {
         label: "ФИО",
@@ -419,7 +466,8 @@ export const buildPurchaseAlertText = ({
       },
       {
         label: "Telegram",
-        value: normalizedNickname,
+        value: paymentRecord.customer_nickname,
+        valueHtml: buildTelegramUsernameValueHtml(paymentRecord.customer_nickname),
       },
       {
         label: "Страна",
@@ -431,7 +479,7 @@ export const buildPurchaseAlertText = ({
     ...getPurchaseServiceStatusLines(paymentRecord),
     "",
     "🧾 <b>Техника</b>",
-    buildAlertTable([
+    ...buildAlertFieldLines([
       {
         label: "PaymentIntent",
         value: paymentRecord.payment_intent_id,
