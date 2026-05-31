@@ -8,9 +8,18 @@ import {
   ensureTelegramAccessLinkForPayment,
   isOfferEligibleForTelegramAccessLink,
 } from "@/lib/telegram/access";
+import {
+  getOfferMetadataById,
+  isChoreoChannelOfferId,
+  isFirstTouchOfferId,
+  isWithMentorOfferId,
+} from "@/lib/telegram/offer-access";
 
 import { getResolvedCheckoutLocale } from "../../../payment-intent/lib";
-import { buildPurchaseSuccessEmail } from "../purchase-success-email";
+import {
+  buildPurchaseSuccessEmail,
+  type PurchaseSuccessEmailAccessKind,
+} from "../purchase-success-email";
 import { getPurchaseSideEffectPaymentIntent } from "./eligibility";
 import {
   tryAcquirePaymentProcessingLease,
@@ -27,6 +36,33 @@ const DEFAULT_PRODUCT_TITLE_BY_LOCALE = {
 } as const;
 
 const pendingPurchaseEmailSyncs = new Map<string, Promise<void>>();
+
+const getPurchaseSuccessEmailAccessKind = ({
+  accessWorkflow,
+  offerId,
+}: {
+  accessWorkflow: string;
+  offerId: string;
+}): PurchaseSuccessEmailAccessKind => {
+  const configuredAccessWorkflow =
+    accessWorkflow.trim().toLowerCase() ||
+    getOfferMetadataById(offerId)?.accessWorkflow.trim().toLowerCase() ||
+    "";
+
+  if (configuredAccessWorkflow === "manual-admin") {
+    return "manual-admin";
+  }
+
+  if (isFirstTouchOfferId(offerId)) {
+    return "telegram-chat";
+  }
+
+  if (isChoreoChannelOfferId(offerId)) {
+    return "telegram-channel";
+  }
+
+  return "support";
+};
 
 const isExpectedResendRestrictionError = (error: unknown) => {
   if (!(error instanceof Error)) {
@@ -147,6 +183,10 @@ export const sendPurchaseSuccessEmail = async ({
     }
 
     const { html, subject, text } = buildPurchaseSuccessEmail({
+      accessKind: getPurchaseSuccessEmailAccessKind({
+        accessWorkflow: paymentRecord.access_workflow,
+        offerId: paymentRecord.offer_id,
+      }),
       amountMinor: paymentRecord.amount,
       checkoutCurrency: paymentRecord.checkout_currency || paymentRecord.currency,
       checkoutLocale,
@@ -162,6 +202,7 @@ export const sendPurchaseSuccessEmail = async ({
         DEFAULT_PRODUCT_TITLE_BY_LOCALE[checkoutLocale],
       receiptKind,
       receiptLink,
+      showMentorFollowupNote: isWithMentorOfferId(paymentRecord.offer_id),
       telegramAccessUrl:
         telegramAccessLink?.status === "ready" ? telegramAccessLink.accessUrl : null,
     });

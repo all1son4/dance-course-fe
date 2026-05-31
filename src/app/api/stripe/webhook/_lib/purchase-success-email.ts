@@ -8,7 +8,6 @@ const SITE_HOME_URL =
 
 const EMAIL_COPY = {
   en: {
-    accessTitle: "Access your materials",
     amountLabel: "Amount",
     autoReplyNote:
       "This is an automatic email. If you have any questions, contact support",
@@ -30,12 +29,36 @@ const EMAIL_COPY = {
     siteLabel: "Website",
     subjectPrefix: "Payment confirmed",
     summaryTitle: "Purchase summary",
-    telegramCta: "Open Telegram channel",
-    telegramPending:
-      "Telegram access link is being prepared. If it is still unavailable, open the payment success page or contact support.",
+    access: {
+      manualAdmin: {
+        title: "Next step",
+        body: "The admin will contact you and add you to the online group manually. No Telegram access link is required for this purchase.",
+      },
+      support: {
+        title: "Access details",
+        body: "We have received your payment. If access is not delivered shortly, contact support and we will help.",
+      },
+      telegramChannel: {
+        title: "Access your materials",
+        ready:
+          "Use the button below to open your personal one-use invite link to the private Telegram channel. Access to the materials is provided for 2 months.",
+        pending:
+          "Your personal Telegram channel invite link is being prepared. If the button is missing, contact support and we will send access manually.",
+        cta: "Open Telegram channel",
+        mentorNote:
+          "For the mentor option, the admin will also contact you separately about feedback.",
+      },
+      telegramChat: {
+        title: "Access your course",
+        ready:
+          "Use the button below to open your personal one-use invite link to the private Telegram chat with the course materials. Access to the lessons is provided for 4 months.",
+        pending:
+          "Your personal Telegram chat invite link is being prepared. If the button is missing, contact support and we will send access manually.",
+        cta: "Open Telegram chat",
+      },
+    },
   },
   pl: {
-    accessTitle: "Dostęp do materiałów",
     amountLabel: "Kwota",
     autoReplyNote:
       "To wiadomość automatyczna. Jeśli masz pytania, skontaktuj się ze wsparciem",
@@ -56,12 +79,36 @@ const EMAIL_COPY = {
     siteLabel: "Strona",
     subjectPrefix: "Płatność potwierdzona",
     summaryTitle: "Podsumowanie zakupu",
-    telegramCta: "Otwórz Telegram",
-    telegramPending:
-      "Link dostępu do Telegrama jest przygotowywany. Jeśli nadal go nie ma, otwórz stronę sukcesu płatności lub skontaktuj się ze wsparciem.",
+    access: {
+      manualAdmin: {
+        title: "Następny krok",
+        body: "Administrator skontaktuje się z Tobą i ręcznie doda Cię do grupy online. Ta płatność nie wymaga linku dostępu do Telegrama.",
+      },
+      support: {
+        title: "Szczegóły dostępu",
+        body: "Otrzymaliśmy płatność. Jeśli dostęp nie zostanie wkrótce dostarczony, skontaktuj się ze wsparciem, a pomożemy.",
+      },
+      telegramChannel: {
+        title: "Dostęp do materiałów",
+        ready:
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów otrzymujesz na 2 miesiące.",
+        pending:
+          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        cta: "Otwórz kanał Telegram",
+        mentorNote:
+          "W opcji z mentorem administrator skontaktuje się z Tobą osobno w sprawie feedbacku.",
+      },
+      telegramChat: {
+        title: "Dostęp do kursu",
+        ready:
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na 4 miesiące.",
+        pending:
+          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        cta: "Otwórz czat Telegram",
+      },
+    },
   },
   ru: {
-    accessTitle: "Доступ к материалам",
     amountLabel: "Сумма",
     autoReplyNote:
       "Это автоматическое письмо. Если у вас есть вопросы, свяжитесь с поддержкой",
@@ -83,11 +130,42 @@ const EMAIL_COPY = {
     siteLabel: "Сайт",
     subjectPrefix: "Оплата подтверждена",
     summaryTitle: "Кратко о покупке",
-    telegramCta: "Открыть Telegram-канал",
-    telegramPending:
-      "Ссылка на доступ в Telegram подготавливается. Если она всё ещё недоступна, откройте страницу успешной оплаты или свяжитесь с поддержкой.",
+    access: {
+      manualAdmin: {
+        title: "Следующий шаг",
+        body: "Администратор свяжется с вами и вручную добавит вас в онлайн-группу. Для этой покупки ссылка доступа в Telegram не нужна.",
+      },
+      support: {
+        title: "Детали доступа",
+        body: "Мы получили оплату. Если доступ не придет в ближайшее время, свяжитесь с поддержкой, и мы поможем.",
+      },
+      telegramChannel: {
+        title: "Доступ к материалам",
+        ready:
+          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам предоставляется на 2 месяца.",
+        pending:
+          "Личная ссылка-приглашение в Telegram-канал подготавливается. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+        cta: "Открыть Telegram-канал",
+        mentorNote:
+          "Для тарифа с куратором администратор также отдельно свяжется с вами по поводу обратной связи.",
+      },
+      telegramChat: {
+        title: "Доступ к курсу",
+        ready:
+          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на 4 месяца.",
+        pending:
+          "Личная ссылка-приглашение в Telegram-чат подготавливается. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+        cta: "Открыть Telegram-чат",
+      },
+    },
   },
 } as const;
+
+export type PurchaseSuccessEmailAccessKind =
+  | "manual-admin"
+  | "support"
+  | "telegram-channel"
+  | "telegram-chat";
 
 const escapeHtml = (value: string) =>
   value
@@ -130,12 +208,13 @@ export type BuildPurchaseSuccessEmailInput = {
   productTitle: string;
   receiptKind?: "pdf" | "receipt" | null;
   receiptLink: string | null;
+  showMentorFollowupNote?: boolean;
+  accessKind: PurchaseSuccessEmailAccessKind;
   telegramAccessUrl?: string | null;
 };
 
-export const getTelegramAccessLinkByProductId = () => null;
-
 export const buildPurchaseSuccessEmail = ({
+  accessKind,
   amountMinor,
   checkoutCurrency,
   checkoutLocale,
@@ -143,11 +222,12 @@ export const buildPurchaseSuccessEmail = ({
   productTitle,
   receiptKind,
   receiptLink,
+  showMentorFollowupNote = false,
   telegramAccessUrl,
 }: BuildPurchaseSuccessEmailInput) => {
   const locale = getResolvedCheckoutLocale(checkoutLocale);
   const copy = EMAIL_COPY[locale];
-  const telegramLink = telegramAccessUrl ?? getTelegramAccessLinkByProductId();
+  const telegramLink = telegramAccessUrl ?? null;
   const amountLabel = formatCheckoutAmount({
     amountMinor,
     currency: checkoutCurrency,
@@ -160,6 +240,39 @@ export const buildPurchaseSuccessEmail = ({
   const safeSupportTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
   const safeTelegramLink = telegramLink ? escapeHtml(telegramLink) : "";
   const safeSiteHomeUrl = escapeHtml(SITE_HOME_URL);
+
+  let accessTitle = "";
+  let accessDescription = "";
+  let accessCta = "";
+  let mentorFollowupNote = "";
+
+  switch (accessKind) {
+    case "telegram-channel":
+      accessTitle = copy.access.telegramChannel.title;
+      accessDescription = telegramLink
+        ? copy.access.telegramChannel.ready
+        : copy.access.telegramChannel.pending;
+      accessCta = copy.access.telegramChannel.cta;
+      mentorFollowupNote = showMentorFollowupNote
+        ? copy.access.telegramChannel.mentorNote
+        : "";
+      break;
+    case "telegram-chat":
+      accessTitle = copy.access.telegramChat.title;
+      accessDescription = telegramLink
+        ? copy.access.telegramChat.ready
+        : copy.access.telegramChat.pending;
+      accessCta = copy.access.telegramChat.cta;
+      break;
+    case "manual-admin":
+      accessTitle = copy.access.manualAdmin.title;
+      accessDescription = copy.access.manualAdmin.body;
+      break;
+    case "support":
+      accessTitle = copy.access.support.title;
+      accessDescription = copy.access.support.body;
+      break;
+  }
 
   const resolvedReceiptKind =
     receiptKind ??
@@ -183,17 +296,21 @@ export const buildPurchaseSuccessEmail = ({
         ${copy.receiptPending}
       </p>
     `;
-  const telegramButton = telegramLink
+  const accessButton =
+    (accessKind === "telegram-channel" || accessKind === "telegram-chat") && telegramLink
+      ? `
+        <a href="${safeTelegramLink}" style="display:inline-block;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">
+          ${accessCta}
+        </a>
+      `
+      : "";
+  const mentorFollowupParagraph = mentorFollowupNote
     ? `
-      <a href="${safeTelegramLink}" style="display:inline-block;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">
-        ${copy.telegramCta}
-      </a>
-    `
-    : `
-      <p style="margin:0;color:#5f5f5f;font-size:14px;line-height:22px;">
-        ${copy.telegramPending}
+      <p style="margin:10px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">
+        ${mentorFollowupNote}
       </p>
-    `;
+    `
+    : "";
 
   const html = `
     <div style="margin:0;padding:32px 12px;background:#f3f2ef;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#121212;">
@@ -225,8 +342,12 @@ export const buildPurchaseSuccessEmail = ({
         </div>
 
         <div style="border-top:1px solid rgba(18,18,18,0.08);padding-top:22px;margin:0 0 22px 0;">
-          <p style="margin:0 0 10px 0;font-size:16px;line-height:24px;color:#121212;font-weight:700;">${copy.accessTitle}</p>
-          ${telegramButton}
+          <p style="margin:0 0 10px 0;font-size:16px;line-height:24px;color:#121212;font-weight:700;">${accessTitle}</p>
+          <p style="margin:0 0 12px 0;color:#5f5f5f;font-size:14px;line-height:22px;">
+            ${accessDescription}
+          </p>
+          ${accessButton}
+          ${mentorFollowupParagraph}
         </div>
 
         <div style="background:#f7f7f5;border-radius:16px;padding:16px 18px;margin:0 0 22px 0;">
@@ -253,7 +374,12 @@ export const buildPurchaseSuccessEmail = ({
     `${copy.productLabel}: ${productTitle}`,
     `${copy.offerLabel}: ${offerLabel || copy.defaultOfferLabel}`,
     `${copy.amountLabel}: ${amountLabel}`,
-    telegramLink ? `${copy.telegramCta}: ${telegramLink}` : copy.telegramPending,
+    accessTitle,
+    accessDescription,
+    telegramLink && (accessKind === "telegram-channel" || accessKind === "telegram-chat")
+      ? `${accessCta}: ${telegramLink}`
+      : "",
+    mentorFollowupNote,
     copy.invoiceAttached,
     receiptLink
       ? `${receiptButtonLabel}: ${receiptLink}${
@@ -266,6 +392,6 @@ export const buildPurchaseSuccessEmail = ({
   return {
     html,
     subject,
-    text: textParts.join("\n"),
+    text: textParts.filter(Boolean).join("\n"),
   };
 };
