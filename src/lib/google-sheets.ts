@@ -2,12 +2,16 @@ import { createSign } from "node:crypto";
 
 import {
   type AdminInviteLinkHistorySourceRecord,
+  DEFAULT_EMAIL_CAMPAIGN_LEADS_SHEET_NAME,
   DEFAULT_MONTHLY_SALES_REPORT_RUNS_SHEET_NAME,
   DEFAULT_PAYMENTS_SHEET_NAME,
   DEFAULT_STRIPE_EVENTS_SHEET_NAME,
   DEFAULT_SUCCESSFUL_CUSTOMERS_SHEET_NAME,
   DEFAULT_TELEGRAM_ACCESS_TOKENS_SHEET_NAME,
   DEFAULT_TELEGRAM_USER_BINDINGS_SHEET_NAME,
+  EMAIL_CAMPAIGN_LEADS_SHEET_HEADER_LABELS,
+  EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
+  type EmailCampaignLeadSheetRecord,
   MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
   MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
   type MonthlySalesReportRunSheetRecord,
@@ -31,6 +35,7 @@ import { isAdminOfferAccessWorkflow } from "@/lib/telegram/admin-offer-access";
 
 export type {
   AdminInviteLinkHistorySourceRecord,
+  EmailCampaignLeadSheetRecord,
   MonthlySalesReportRunSheetRecord,
   PaymentSheetRecord,
   StripeEventSheetRecord,
@@ -68,6 +73,7 @@ type GoogleSheetsValueRangeBody = {
 };
 
 type GoogleSheetsConfig = {
+  emailCampaignLeadsSheetName: string;
   paymentsSheetName: string;
   monthlySalesReportRunsSheetName: string;
   privateKey: string;
@@ -223,6 +229,7 @@ const getGoogleSheetsConfig = (): GoogleSheetsConfig | null => {
   }
 
   return {
+    emailCampaignLeadsSheetName: DEFAULT_EMAIL_CAMPAIGN_LEADS_SHEET_NAME,
     paymentsSheetName: DEFAULT_PAYMENTS_SHEET_NAME,
     monthlySalesReportRunsSheetName: DEFAULT_MONTHLY_SALES_REPORT_RUNS_SHEET_NAME,
     privateKey,
@@ -963,6 +970,12 @@ export const ensureGoogleSheetsSchema = async () => {
       ),
       ensureSheetHeaders(
         config,
+        config.emailCampaignLeadsSheetName,
+        EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
+        EMAIL_CAMPAIGN_LEADS_SHEET_HEADER_LABELS,
+      ),
+      ensureSheetHeaders(
+        config,
         config.telegramAccessTokensSheetName,
         TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
         TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
@@ -1441,6 +1454,65 @@ export const upsertMonthlySalesReportRun = async (
     labelsMap: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
     record,
     sheetTitle: config.monthlySalesReportRunsSheetName,
+  });
+};
+
+export const listEmailCampaignLeadRecords = async (options?: {
+  cacheTtlMs?: number;
+}): Promise<EmailCampaignLeadSheetRecord[]> => {
+  const config = getRequiredGoogleSheetsConfig();
+
+  return getRows(
+    config,
+    config.emailCampaignLeadsSheetName,
+    EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
+    EMAIL_CAMPAIGN_LEADS_SHEET_HEADER_LABELS,
+    {
+      cacheTtlMs: options?.cacheTtlMs ?? 0,
+    },
+  ) as Promise<EmailCampaignLeadSheetRecord[]>;
+};
+
+export const findEmailCampaignLeadByCampaignAndEmail = async ({
+  campaignKey,
+  email,
+}: {
+  campaignKey: string;
+  email: string;
+}) => {
+  const normalizedCampaignKey = campaignKey.trim();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  if (!normalizedCampaignKey || !normalizedEmail) {
+    return null;
+  }
+
+  const rows = await listEmailCampaignLeadRecords({
+    cacheTtlMs: 0,
+  });
+
+  return (
+    rows.find(
+      (row) =>
+        row.campaign_key.trim() === normalizedCampaignKey &&
+        row.email.trim().toLowerCase() === normalizedEmail,
+    ) ?? null
+  );
+};
+
+export const upsertEmailCampaignLeadRecord = async (
+  record: EmailCampaignLeadSheetRecord,
+) => {
+  const config = getRequiredGoogleSheetsConfig();
+
+  return upsertRecordByFieldValue({
+    config,
+    fieldName: "lead_id",
+    fieldValue: record.lead_id,
+    headers: EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
+    labelsMap: EMAIL_CAMPAIGN_LEADS_SHEET_HEADER_LABELS,
+    record,
+    sheetTitle: config.emailCampaignLeadsSheetName,
   });
 };
 

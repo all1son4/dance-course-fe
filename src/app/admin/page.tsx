@@ -136,6 +136,19 @@ type MonthlySalesReportResponse = {
   startUtcIso?: string;
   status?: "failed" | "sent" | "skipped";
 };
+type BroadcastStats = {
+  failed: number;
+  pending: number;
+  sent: number;
+  total: number;
+};
+type FirstTouchBroadcastResponse = {
+  errorCode?: string;
+  result?: BroadcastStats & {
+    attempted: number;
+  };
+  stats?: BroadcastStats;
+};
 
 const ADMIN_FEATURES: AdminFeature[] = [
   {
@@ -152,9 +165,9 @@ const ADMIN_FEATURES: AdminFeature[] = [
   },
   {
     id: "broadcasts",
-    isAvailable: false,
+    isAvailable: true,
     label: "Рассылки",
-    description: "Сервисные уведомления (скоро)",
+    description: "Разовые email-кампании",
   },
   {
     id: "reports",
@@ -343,6 +356,15 @@ export default function AdminPage() {
   const [monthlySalesReportStatus, setMonthlySalesReportStatus] =
     useState<StatusMessage>(null);
   const [monthlySalesReportMonth, setMonthlySalesReportMonth] = useState("");
+  const [firstTouchBroadcastStats, setFirstTouchBroadcastStats] =
+    useState<BroadcastStats | null>(null);
+  const [firstTouchBroadcastStatus, setFirstTouchBroadcastStatus] =
+    useState<StatusMessage>(null);
+  const [isLoadingFirstTouchBroadcastStats, setIsLoadingFirstTouchBroadcastStats] =
+    useState(false);
+  const [isSendingFirstTouchBroadcast, setIsSendingFirstTouchBroadcast] = useState(false);
+  const [hasLoadedFirstTouchBroadcastStats, setHasLoadedFirstTouchBroadcastStats] =
+    useState(false);
   const [recentLinks, setRecentLinks] = useState<GeneratedLinkEntry[]>([]);
   const journalLoadInFlightRef = useRef(false);
 
@@ -362,6 +384,7 @@ export default function AdminPage() {
   const activeFeature =
     ADMIN_FEATURES.find((feature) => feature.id === activeFeatureId) ?? ADMIN_FEATURES[0];
   const isInviteLinksFeatureActive = activeFeature.id === "invite-links";
+  const isBroadcastsFeatureActive = activeFeature.id === "broadcasts";
   const isReportsFeatureActive = activeFeature.id === "reports";
   const accessPolicyLabel = useMemo(() => {
     if (kind === "choreo" && resolvedChoreoSelection) {
@@ -433,6 +456,51 @@ export default function AdminPage() {
     isGeneratingMonthlySalesReport ||
     isLoadingMonthlySalesReportMonths ||
     !monthlySalesReportMonth;
+  const firstTouchBroadcastPendingCount =
+    (firstTouchBroadcastStats?.pending ?? 0) + (firstTouchBroadcastStats?.failed ?? 0);
+  const isFirstTouchBroadcastDisabled =
+    isLoadingFirstTouchBroadcastStats ||
+    isSendingFirstTouchBroadcast ||
+    firstTouchBroadcastPendingCount === 0;
+
+  const loadFirstTouchBroadcastStats = useCallback(async () => {
+    setIsLoadingFirstTouchBroadcastStats(true);
+
+    try {
+      const response = await fetch("/admin/api/broadcasts/first-touch-sales-start", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const data = (await response.json()) as FirstTouchBroadcastResponse;
+
+      if (!response.ok) {
+        if (data.errorCode === "unauthorized") {
+          setAuthState("locked");
+          setAuthStatus({
+            text: "Сессия истекла. Введи пароль снова.",
+            tone: "error",
+          });
+          return;
+        }
+
+        setFirstTouchBroadcastStatus({
+          text: "Не удалось загрузить статистику рассылки.",
+          tone: "error",
+        });
+        return;
+      }
+
+      setFirstTouchBroadcastStats(data.stats ?? null);
+    } catch {
+      setFirstTouchBroadcastStatus({
+        text: "Не удалось загрузить статистику рассылки.",
+        tone: "error",
+      });
+    } finally {
+      setHasLoadedFirstTouchBroadcastStats(true);
+      setIsLoadingFirstTouchBroadcastStats(false);
+    }
+  }, []);
 
   const loadMonthlySalesReportMonths = useCallback(async () => {
     setIsLoadingMonthlySalesReportMonths(true);
@@ -568,6 +636,65 @@ export default function AdminPage() {
     }
   }, [isMonthlySalesReportDisabled, monthlySalesReportMonth]);
 
+  const handleSendFirstTouchBroadcast = useCallback(async () => {
+    if (isFirstTouchBroadcastDisabled) {
+      return;
+    }
+
+    setIsSendingFirstTouchBroadcast(true);
+    setFirstTouchBroadcastStatus({
+      text: "Отправляю рассылку First Touch...",
+      tone: "info",
+    });
+
+    try {
+      const response = await fetch("/admin/api/broadcasts/first-touch-sales-start", {
+        method: "POST",
+        cache: "no-store",
+      });
+      const data = (await response.json()) as FirstTouchBroadcastResponse;
+
+      if (!response.ok) {
+        if (data.errorCode === "unauthorized") {
+          setAuthState("locked");
+          setAuthStatus({
+            text: "Сессия истекла. Введи пароль снова.",
+            tone: "error",
+          });
+          return;
+        }
+
+        setFirstTouchBroadcastStatus({
+          text: "Не удалось отправить рассылку. Проверь настройки Resend и таблицу.",
+          tone: "error",
+        });
+        return;
+      }
+
+      const result = data.result;
+
+      if (result) {
+        setFirstTouchBroadcastStats({
+          failed: result.failed,
+          pending: result.pending,
+          sent: result.sent,
+          total: result.total,
+        });
+        setFirstTouchBroadcastStatus({
+          text: `Рассылка обработана. Попыток: ${result.attempted}. Отправлено: ${result.sent}. Ошибок: ${result.failed}.`,
+          tone: result.failed > 0 ? "info" : "success",
+        });
+      }
+    } catch {
+      setFirstTouchBroadcastStatus({
+        text: "Ошибка сети при отправке рассылки.",
+        tone: "error",
+      });
+    } finally {
+      setIsSendingFirstTouchBroadcast(false);
+    }
+  }, [isFirstTouchBroadcastDisabled]);
+
   useEffect(() => {
     if (!isAuthorized) {
       setHasLoadedJournalOnce(false);
@@ -604,6 +731,32 @@ export default function AdminPage() {
     isLoadingMonthlySalesReportMonths,
     isReportsFeatureActive,
     loadMonthlySalesReportMonths,
+  ]);
+
+  useEffect(() => {
+    if (!isAuthorized) {
+      setHasLoadedFirstTouchBroadcastStats(false);
+      setIsLoadingFirstTouchBroadcastStats(false);
+      setFirstTouchBroadcastStats(null);
+      setFirstTouchBroadcastStatus(null);
+      return;
+    }
+
+    if (
+      !isBroadcastsFeatureActive ||
+      hasLoadedFirstTouchBroadcastStats ||
+      isLoadingFirstTouchBroadcastStats
+    ) {
+      return;
+    }
+
+    void loadFirstTouchBroadcastStats();
+  }, [
+    hasLoadedFirstTouchBroadcastStats,
+    isAuthorized,
+    isBroadcastsFeatureActive,
+    isLoadingFirstTouchBroadcastStats,
+    loadFirstTouchBroadcastStats,
   ]);
 
   const checkAuthState = useCallback(
@@ -1034,16 +1187,20 @@ export default function AdminPage() {
                 <Description>
                   {isInviteLinksFeatureActive
                     ? "Генерация одноразовых Telegram invite-ссылок с той же бизнес-логикой, что и в боевом платежном потоке."
-                    : isReportsFeatureActive
-                      ? "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц."
-                      : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
+                    : isBroadcastsFeatureActive
+                      ? "Разовые email-рассылки по заявкам из Google Sheets."
+                      : isReportsFeatureActive
+                        ? "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц."
+                        : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
                 </Description>
                 <HeaderMeta>
                   {isInviteLinksFeatureActive
                     ? "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."
-                    : isReportsFeatureActive
-                      ? "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи."
-                      : "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."}
+                    : isBroadcastsFeatureActive
+                      ? "Повторный запуск отправляет письма только тем, у кого еще нет успешной отправки."
+                      : isReportsFeatureActive
+                        ? "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи."
+                        : "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."}
                 </HeaderMeta>
               </HeaderInfo>
             </HeaderRow>
@@ -1259,6 +1416,97 @@ export default function AdminPage() {
                   </SurfaceCard>
                 </WorkspaceSecondary>
               </WorkspaceGrid>
+            ) : isBroadcastsFeatureActive ? (
+              <WorkspaceGrid>
+                <WorkspacePrimary>
+                  <SurfaceCard>
+                    <SurfaceHeaderRow>
+                      <SurfaceTitle>First Touch: старт продаж</SurfaceTitle>
+                      <IconActionButton
+                        type="button"
+                        onClick={loadFirstTouchBroadcastStats}
+                        disabled={isLoadingFirstTouchBroadcastStats}
+                        $isLoading={isLoadingFirstTouchBroadcastStats}
+                        aria-label="Обновить статистику рассылки"
+                        title="Обновить статистику рассылки"
+                      >
+                        <RefreshIcon />
+                      </IconActionButton>
+                    </SurfaceHeaderRow>
+                    <SurfaceDescription>
+                      Отправляет разовое письмо со ссылкой на checkout курса First Touch.
+                      Уже успешно отправленные адреса не затрагиваются.
+                    </SurfaceDescription>
+                    <PolicyList>
+                      <PolicyRow>
+                        <PolicyLabel>Всего заявок</PolicyLabel>
+                        <PolicyValue>{firstTouchBroadcastStats?.total ?? 0}</PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Ожидают отправки</PolicyLabel>
+                        <PolicyValue>
+                          {firstTouchBroadcastStats?.pending ?? 0}
+                        </PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Уже отправлено</PolicyLabel>
+                        <PolicyValue>{firstTouchBroadcastStats?.sent ?? 0}</PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>С ошибкой</PolicyLabel>
+                        <PolicyValue>{firstTouchBroadcastStats?.failed ?? 0}</PolicyValue>
+                      </PolicyRow>
+                    </PolicyList>
+                    <ButtonRow>
+                      <Button
+                        buttonText={
+                          isSendingFirstTouchBroadcast
+                            ? "Отправляю..."
+                            : isLoadingFirstTouchBroadcastStats
+                              ? "Загружаю статистику..."
+                              : firstTouchBroadcastPendingCount === 0
+                                ? "Нет адресов для отправки"
+                                : "Отправить рассылку"
+                        }
+                        type="button"
+                        onClick={handleSendFirstTouchBroadcast}
+                        disabled={isFirstTouchBroadcastDisabled}
+                        isLoading={isSendingFirstTouchBroadcast}
+                        width="100%"
+                      />
+                    </ButtonRow>
+                    {firstTouchBroadcastStatus && (
+                      <StatusText $tone={firstTouchBroadcastStatus.tone}>
+                        {firstTouchBroadcastStatus.text}
+                      </StatusText>
+                    )}
+                  </SurfaceCard>
+                </WorkspacePrimary>
+
+                <WorkspaceSecondary>
+                  <SurfaceCard>
+                    <SurfaceTitle>Правила отправки</SurfaceTitle>
+                    <PolicyList>
+                      <PolicyRow>
+                        <PolicyLabel>Источник</PolicyLabel>
+                        <PolicyValue>Google Sheets EmailCampaignLeads</PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Кампания</PolicyLabel>
+                        <PolicyValue>first_touch_sales_start</PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Повторный запуск</PolicyLabel>
+                        <PolicyValue>Только pending и failed</PolicyValue>
+                      </PolicyRow>
+                      <PolicyRow>
+                        <PolicyLabel>Канал доставки</PolicyLabel>
+                        <PolicyValue>Resend email</PolicyValue>
+                      </PolicyRow>
+                    </PolicyList>
+                  </SurfaceCard>
+                </WorkspaceSecondary>
+              </WorkspaceGrid>
             ) : isReportsFeatureActive ? (
               <WorkspaceGrid>
                 <WorkspacePrimary>
@@ -1357,9 +1605,13 @@ export default function AdminPage() {
               </FeaturePlaceholder>
             )}
 
-            {!isInviteLinksFeatureActive && !isReportsFeatureActive && (
-              <SectionHeading>Скоро здесь появятся инструменты управления</SectionHeading>
-            )}
+            {!isInviteLinksFeatureActive &&
+              !isBroadcastsFeatureActive &&
+              !isReportsFeatureActive && (
+                <SectionHeading>
+                  Скоро здесь появятся инструменты управления
+                </SectionHeading>
+              )}
           </MainPanel>
         </Card>
       </AdminShell>

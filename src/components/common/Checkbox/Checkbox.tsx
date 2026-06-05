@@ -5,6 +5,7 @@ import { CheckboxIcon } from "@/svg";
 import {
   CheckboxWrapper,
   Container,
+  ErrorMessage,
   InputField,
   Label,
   Mark,
@@ -15,10 +16,14 @@ import { TCheckbox } from "./Checkbox.types";
 export const Checkbox: FC<TCheckbox> = ({
   name = "checkbox",
   checked,
+  disabled = false,
+  errorMessage = "",
   onChange,
   placeholder,
 }) => {
   const inputId = name;
+  const hasError = Boolean(errorMessage);
+  const errorMessageId = hasError ? `${inputId}-error` : undefined;
 
   return (
     <CheckboxWrapper>
@@ -26,15 +31,19 @@ export const Checkbox: FC<TCheckbox> = ({
         <Label htmlFor={inputId}>
           <InputField
             checked={checked}
+            disabled={disabled}
             id={inputId}
             name={name}
             onChange={onChange}
             type="checkbox"
+            aria-describedby={errorMessageId}
+            aria-invalid={hasError}
           />
-          <Mark>{checked && <CheckboxIcon />}</Mark>
+          <Mark $hasError={hasError}>{checked && <CheckboxIcon />}</Mark>
           <PlaceholderText>{placeholder}</PlaceholderText>
         </Label>
       </Container>
+      {hasError && <ErrorMessage id={errorMessageId}>{errorMessage}</ErrorMessage>}
     </CheckboxWrapper>
   );
 };

@@ -270,7 +270,7 @@
           "3": "We work on basic technique, feet, emotions, and by the end you will learn your first choreography."
         },
         "startLabel": "Course starts",
-        "startValue": "December 2026",
+        "startValue": "Winter 2026-2027 or once the group is full",
         "button": "Learn more"
       },
       "choreo": {
@@ -368,12 +368,59 @@
       },
       "startLabel": "Course starts",
       "priceLabel": "Course price",
-      "startDate": "December 2026",
+      "startDate": "Winter 2026-2027 or once the group is full",
+      "startNote": "You can reserve a place in the next group now. When the course start gets closer and the group is ready to launch, we will email you the payment link.",
       "buyButton": "Buy for 250 PLN / 50 €",
       "enrollButton": "Sign up",
       "programButton": "Course program",
       "playLabel": "Play video",
       "introductionVideoSrc": "/videos/introduction_first_touch_en.mp4"
+    },
+    "signupDialog": {
+      "title": "Reserve a place in First Touch",
+      "description": {
+        "intro": "Leave your contacts and we will add you to the next group list.",
+        "step1": "Closer to the start, we will email the payment link. After payment, you will receive instructions and course access."
+      },
+      "closeLabel": "Close signup dialog",
+      "closeButton": "I'll wait",
+      "retryButton": "Try again",
+      "submitButton": "Send request",
+      "successMessage": "Your request has been saved. We will email you the payment link when the course start gets closer.",
+      "errorMessage": "Could not save the request. Try again or contact us directly.",
+      "failure": {
+        "title": "Something went wrong",
+        "reasons": {
+          "network": "It looks like the connection dropped or the request did not reach the server. Check your internet connection and try again.",
+          "rateLimited": "Too many attempts in a short time. Wait a little and try again.",
+          "server": "We could not save your request on our side. Try again a bit later or contact us directly.",
+          "validation": "The submitted data did not pass validation. Go back to the form and check the fields.",
+          "unknown": "We could not save your request. Try again or contact us directly."
+        }
+      },
+      "fields": {
+        "fullName": {
+          "label": "Full name",
+          "placeholder": "First and last name",
+          "error": "Enter your full name"
+        },
+        "socialContact": {
+          "label": "Telegram or Instagram",
+          "placeholder": "@username",
+          "error": "Enter Telegram or Instagram"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "requiredError": "Enter your email",
+          "invalidError": "Enter a valid email",
+          "duplicateError": "This email is already signed up"
+        },
+        "consent": {
+          "label": "I agree to receive an email about the course start and payment link",
+          "error": "Confirm consent for the course start email"
+        }
+      }
     },
     "about": {
       "title": "What awaits you in this course"

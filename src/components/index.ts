@@ -5,6 +5,7 @@ import InteractiveCard from "./cards/InteractiveCard";
 import TextContentCard from "./cards/TextContentCard";
 import Button from "./common/Button";
 import Checkbox from "./common/Checkbox";
+import Dialog from "./common/Dialog";
 import Input from "./common/Input";
 import Footer from "./layout/Footer";
 import Header from "./layout/Header";
@@ -25,6 +26,7 @@ export {
   Contacts,
   CourseCard,
   CurrencySwitch,
+  Dialog,
   FAQ,
   Footer,
   Header,

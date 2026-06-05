@@ -270,7 +270,7 @@
           "3": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
         },
         "startLabel": "Start kursu",
-        "startValue": "Grudzień 2026",
+        "startValue": "Zima 2026-2027 albo po zebraniu pełnej grupy",
         "button": "Więcej o kursie"
       },
       "choreo": {
@@ -368,12 +368,59 @@
       },
       "startLabel": "Start kursu",
       "priceLabel": "Cena kursu",
-      "startDate": "Grudzień 2026",
+      "startDate": "Zima 2026-2027 albo po zebraniu pełnej grupy",
+      "startNote": "Już teraz możesz zarezerwować miejsce w kolejnej grupie. Gdy start kursu będzie bliżej i grupa będzie gotowa, wyślemy email z linkiem do płatności.",
       "buyButton": "Kup za 250 PLN / 50 €",
       "enrollButton": "Zapisz się",
       "programButton": "Program kursu",
       "playLabel": "Odtwórz wideo",
       "introductionVideoSrc": "/videos/introduction_first_touch_en.mp4"
+    },
+    "signupDialog": {
+      "title": "Zarezerwuj miejsce w First Touch",
+      "description": {
+        "intro": "Zostaw kontakt, a dodamy Cię do listy kolejnej grupy.",
+        "step1": "Bliżej startu wyślemy email z linkiem do płatności. Po płatności otrzymasz instrukcje i dostęp do kursu."
+      },
+      "closeLabel": "Zamknij okno zapisu",
+      "closeButton": "Będę czekać",
+      "retryButton": "Spróbuj ponownie",
+      "submitButton": "Wyślij zgłoszenie",
+      "successMessage": "Zgłoszenie zostało zapisane. Wyślemy email z linkiem do płatności, gdy start kursu będzie bliżej.",
+      "errorMessage": "Nie udało się zapisać zgłoszenia. Spróbuj ponownie albo napisz do nas bezpośrednio.",
+      "failure": {
+        "title": "Coś poszło nie tak",
+        "reasons": {
+          "network": "Wygląda na to, że połączenie zostało przerwane albo zgłoszenie nie dotarło do serwera. Sprawdź internet i spróbuj ponownie.",
+          "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
+          "server": "Nie udało się zapisać zgłoszenia po naszej stronie. Spróbuj ponownie za chwilę albo napisz do nas bezpośrednio.",
+          "validation": "Dane nie przeszły walidacji. Wróć do formularza i sprawdź pola.",
+          "unknown": "Nie udało się zapisać zgłoszenia. Spróbuj ponownie albo napisz do nas bezpośrednio."
+        }
+      },
+      "fields": {
+        "fullName": {
+          "label": "Imię i nazwisko",
+          "placeholder": "Imię i nazwisko",
+          "error": "Podaj imię i nazwisko"
+        },
+        "socialContact": {
+          "label": "Telegram lub Instagram",
+          "placeholder": "@username",
+          "error": "Podaj Telegram lub Instagram"
+        },
+        "email": {
+          "label": "Email",
+          "placeholder": "name@example.com",
+          "requiredError": "Podaj email",
+          "invalidError": "Podaj poprawny email",
+          "duplicateError": "Ten email jest już zapisany"
+        },
+        "consent": {
+          "label": "Wyrażam zgodę na otrzymanie emaila o starcie kursu i linku do płatności",
+          "error": "Potwierdź zgodę na email o starcie kursu"
+        }
+      }
     },
     "about": {
       "title": "Co czeka Cię na kursie"

@@ -4,6 +4,7 @@ export const DEFAULT_SUCCESSFUL_CUSTOMERS_SHEET_NAME = "SuccessfulCustomers";
 export const DEFAULT_MONTHLY_SALES_REPORT_RUNS_SHEET_NAME = "MonthlySalesReports";
 export const DEFAULT_TELEGRAM_ACCESS_TOKENS_SHEET_NAME = "TelegramAccessTokens";
 export const DEFAULT_TELEGRAM_USER_BINDINGS_SHEET_NAME = "TelegramUserBindings";
+export const DEFAULT_EMAIL_CAMPAIGN_LEADS_SHEET_NAME = "EmailCampaignLeads";
 
 // Header arrays are the storage schema. Existing row values are read by position,
 // so append new columns at the end unless a deliberate sheet migration is planned.
@@ -267,6 +268,37 @@ export const MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS: Record<
   csv_sha256: "SHA256 CSV",
 };
 
+export const EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS = [
+  "lead_id",
+  "campaign_key",
+  "email_send_status",
+  "full_name",
+  "social_contact",
+  "email",
+  "locale",
+  "created_at",
+  "email_sent_at",
+  "email_send_attempts",
+  "last_email_error",
+] as const;
+
+export const EMAIL_CAMPAIGN_LEADS_SHEET_HEADER_LABELS: Record<
+  (typeof EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS)[number],
+  string
+> = {
+  lead_id: "ID заявки",
+  campaign_key: "Тип рассылки",
+  email_send_status: "Статус отправки письма",
+  full_name: "Полное имя",
+  social_contact: "Telegram / Instagram",
+  email: "Email",
+  locale: "Язык страницы",
+  created_at: "Когда заявка создана",
+  email_sent_at: "Когда письмо отправлено",
+  email_send_attempts: "Количество попыток отправки",
+  last_email_error: "Последняя ошибка отправки",
+};
+
 type PaymentSheetHeader = (typeof PAYMENT_SHEET_HEADERS)[number];
 type StripeEventSheetHeader = (typeof STRIPE_EVENT_SHEET_HEADERS)[number];
 type SuccessfulCustomersSheetHeader = (typeof SUCCESSFUL_CUSTOMERS_SHEET_HEADERS)[number];
@@ -276,6 +308,7 @@ type TelegramUserBindingsSheetHeader =
   (typeof TELEGRAM_USER_BINDINGS_SHEET_HEADERS)[number];
 type MonthlySalesReportRunsSheetHeader =
   (typeof MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS)[number];
+type EmailCampaignLeadSheetHeader = (typeof EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS)[number];
 
 export type PaymentSheetRecord = Record<PaymentSheetHeader, string>;
 export type StripeEventSheetRecord = Record<StripeEventSheetHeader, string>;
@@ -295,6 +328,7 @@ export type MonthlySalesReportRunSheetRecord = Record<
   MonthlySalesReportRunsSheetHeader,
   string
 >;
+export type EmailCampaignLeadSheetRecord = Record<EmailCampaignLeadSheetHeader, string>;
 
 export type AdminInviteLinkHistorySourceRecord = {
   accessUrl: string;

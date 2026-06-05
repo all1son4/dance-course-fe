@@ -13,6 +13,7 @@ import {
   DEFAULT_CHECKOUT_PRODUCT,
   getDefaultProductOffer,
 } from "@/constants/sellable-products";
+import CourseSignupDialog from "@/features/course-signup";
 import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
 
 import { buildCheckoutOffersStructuredData } from "../_shared/structured-data";
@@ -38,6 +39,7 @@ import {
   IntroductionSection,
   MobileImagesBox,
   SpecialWrapper,
+  StartNote,
   Subtitle,
   TextBox,
   Title,
@@ -109,6 +111,7 @@ export default function FirstTouch() {
             <DateBox>
               <From>{t("hero.startLabel")}</From>
               <Date>{t("hero.startDate")}</Date>
+              <StartNote>{t("hero.startNote")}</StartNote>
             </DateBox>
 
             <DateBox>
@@ -118,6 +121,7 @@ export default function FirstTouch() {
           </InfoBoxGroup>
 
           <ButtonBox>
+            <CourseSignupDialog triggerText={t("hero.enrollButton")} />
             {/* <Button
               buttonText={t("hero.enrollButton")}
               href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}

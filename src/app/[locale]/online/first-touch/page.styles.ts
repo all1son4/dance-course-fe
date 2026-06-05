@@ -5,18 +5,21 @@ export const IntroductionSection = styled.section`
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 914px;
+  // min-height: 914px;
+  min-height: 920px;
   padding: 0 25px;
   box-sizing: border-box;
   width: 100%;
 
   @media (max-width: 1240px) {
     padding: 60px 20px 0;
-    min-height: 740px;
+    // min-height: 740px;
+    min-height: 840px;
   }
 
   @media (max-width: 920px) {
-    min-height: 914px;
+    // min-height: 914px;
+    min-height: 1020px;
     padding: 80px 20px 0;
   }
 
@@ -268,6 +271,16 @@ export const Date = styled.p`
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+`;
+
+export const StartNote = styled.p`
+  font-weight: 300;
+  font-style: normal;
+  font-size: 15px;
+  line-height: 150%;
+  letter-spacing: 0;
+  margin: 10px 0 0;
+  color: rgba(72, 72, 72, 1);
 `;
 
 export const ButtonBox = styled.div`

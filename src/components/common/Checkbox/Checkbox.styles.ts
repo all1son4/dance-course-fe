@@ -1,5 +1,9 @@
 import styled from "styled-components";
 
+type MarkStyleProps = {
+  $hasError: boolean;
+};
+
 export const CheckboxWrapper = styled.div`
   position: relative;
   display: flex;
@@ -26,8 +30,13 @@ export const Label = styled.label`
     background: rgba(0, 0, 0, 1);
   }
 
+  &:has(input:disabled) {
+    cursor: not-allowed;
+    opacity: 0.56;
+  }
+
   @media (hover: hover) and (pointer: fine) {
-    &:hover > input:not(:checked) + div {
+    &:hover > input:not(:checked):not(:disabled) + div {
       border-color: rgba(0, 0, 0, 1);
     }
   }
@@ -35,6 +44,10 @@ export const Label = styled.label`
   & > input:focus-visible + div {
     border-color: rgba(0, 0, 0, 1);
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+  }
+
+  & > input[aria-invalid="true"]:not(:checked) + div {
+    border-color: rgba(213, 0, 4, 1);
   }
 `;
 
@@ -46,7 +59,7 @@ export const InputField = styled.input`
   pointer-events: none;
 `;
 
-export const Mark = styled.div`
+export const Mark = styled.div<MarkStyleProps>`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,7 +69,8 @@ export const Mark = styled.div`
   margin-top: 2px;
   box-sizing: border-box;
   background: transparent;
-  border: 1px solid rgba(125, 125, 125, 1);
+  border: 1px solid
+    ${({ $hasError }) => ($hasError ? "rgba(213, 0, 4, 1)" : "rgba(125, 125, 125, 1)")};
   border-radius: 6px;
   transition:
     border-color 0.2s ease,
@@ -83,4 +97,12 @@ export const PlaceholderText = styled.span`
   letter-spacing: 0;
   position: relative;
   z-index: 2;
+`;
+
+export const ErrorMessage = styled.p`
+  margin: 6px 0 0 31px;
+  color: rgba(213, 0, 4, 1);
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.35;
 `;
