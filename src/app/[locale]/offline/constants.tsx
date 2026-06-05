@@ -1,8 +1,5 @@
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
-import {
-  INSTAGRAM_PROFILE_URL,
-  TRIAL_REGISTRATION_FORM_VIEW_URL,
-} from "@/constants/links";
+import { INSTAGRAM_PROFILE_URL } from "@/constants/links";
 import { SmallClock, SmallMap } from "@/svg";
 
 import {
@@ -86,28 +83,28 @@ export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] =>
   //   buttonTarget: "_blank",
   //   buttonRel: "noopener noreferrer",
   // },
-  {
-    id: "advanced",
-    title: t("cards.advanced.title"),
-    topRowContent: (
-      <ContentStack $gap="26px">
-        <DetailText>{t("cards.advanced.description")}</DetailText>
-        {buildScheduleAndLocationContent(t, [
-          "cards.advanced.schedule.1",
-          "cards.advanced.schedule.2",
-        ])}
-      </ContentStack>
-    ),
-    bottomRowContent: buildPriceRow(
-      t,
-      "cards.advanced.price",
-      "cards.advanced.priceSuffix",
-    ),
-    buttonText: t("cards.common.button"),
-    buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
-    buttonTarget: "_blank",
-    buttonRel: "noopener noreferrer",
-  },
+  // {
+  //   id: "advanced",
+  //   title: t("cards.advanced.title"),
+  //   topRowContent: (
+  //     <ContentStack $gap="26px">
+  //       <DetailText>{t("cards.advanced.description")}</DetailText>
+  //       {buildScheduleAndLocationContent(t, [
+  //         "cards.advanced.schedule.1",
+  //         "cards.advanced.schedule.2",
+  //       ])}
+  //     </ContentStack>
+  //   ),
+  //   bottomRowContent: buildPriceRow(
+  //     t,
+  //     "cards.advanced.price",
+  //     "cards.advanced.priceSuffix",
+  //   ),
+  //   buttonText: t("cards.common.button"),
+  //   buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
+  //   buttonTarget: "_blank",
+  //   buttonRel: "noopener noreferrer",
+  // },
   {
     id: "impro",
     title: t("cards.impro.title"),

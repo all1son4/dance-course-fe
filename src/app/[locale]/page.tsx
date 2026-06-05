@@ -202,10 +202,10 @@ export default function Home() {
                   <HighlightText>{t("courses.offline.items.1.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.1.text")}
                 </li> */}
-                <li>
+                {/* <li>
                   <HighlightText>{t("courses.offline.items.2.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.2.text")}
-                </li>
+                </li> */}
                 <li>
                   <HighlightText>{t("courses.offline.items.3.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.3.text")}
