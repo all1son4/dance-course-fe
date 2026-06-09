@@ -92,6 +92,7 @@ const pendingTelegramAccessLinkEnsures = new Map<
   string,
   Promise<TelegramAccessLinkResult>
 >();
+const pendingTelegramStartTokenActivations = new Map<string, Promise<void>>();
 const telegramAccessLinkCache = new Map<string, TelegramAccessLinkCacheEntry>();
 
 const getReadyTelegramAccessLinkResult = ({
@@ -1118,7 +1119,7 @@ export const revokeExpiredTelegramChannelAccess =
     };
   };
 
-export const activateTelegramStartToken = async ({
+const activateTelegramStartTokenInternal = async ({
   telegramUserId,
   telegramUsername,
   tokenValue,
@@ -1240,6 +1241,43 @@ export const activateTelegramStartToken = async ({
     paymentRecord,
     status: existingBinding ? "already_activated" : "activated",
   };
+};
+
+export const activateTelegramStartToken = async ({
+  telegramUserId,
+  telegramUsername,
+  tokenValue,
+}: {
+  telegramUserId: string;
+  telegramUsername: string;
+  tokenValue: string;
+}): Promise<ActivateTelegramStartTokenResult> => {
+  const tokenHash = hashToken(tokenValue);
+  const previousActivation =
+    pendingTelegramStartTokenActivations.get(tokenHash) ?? Promise.resolve();
+  let releaseActivation!: () => void;
+  const activationReleasePromise = new Promise<void>((resolve) => {
+    releaseActivation = resolve;
+  });
+  const activationQueueEntry = previousActivation.then(() => activationReleasePromise);
+
+  pendingTelegramStartTokenActivations.set(tokenHash, activationQueueEntry);
+
+  await previousActivation;
+
+  try {
+    return await activateTelegramStartTokenInternal({
+      telegramUserId,
+      telegramUsername,
+      tokenValue,
+    });
+  } finally {
+    releaseActivation();
+
+    if (pendingTelegramStartTokenActivations.get(tokenHash) === activationQueueEntry) {
+      pendingTelegramStartTokenActivations.delete(tokenHash);
+    }
+  }
 };
 
 export const getActivatedPaymentsByTelegramUserId = async (telegramUserId: string) => {

@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { createHash } from "node:crypto";
 
 import {
   DEFAULT_SITE_HOME_URL,
@@ -56,6 +56,12 @@ const SITE_HOME_URL =
   DEFAULT_SITE_HOME_URL;
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+const pendingEmailCampaignLeadCreates = new Map<
+  string,
+  Promise<CreateEmailCampaignLeadResult>
+>();
+let pendingFirstTouchSalesStartCampaignDelivery: Promise<EmailCampaignDeliveryResult> | null =
+  null;
 
 export const normalizeEmailCampaignEmail = (value: string) =>
   value.trim().toLowerCase().slice(0, 254);
@@ -63,7 +69,19 @@ export const normalizeEmailCampaignEmail = (value: string) =>
 export const isValidEmailCampaignEmail = (value: string) =>
   EMAIL_RE.test(normalizeEmailCampaignEmail(value));
 
-const createLeadId = () => `lead_${randomBytes(12).toString("hex")}`;
+const getEmailCampaignLeadDedupeKey = ({
+  campaignKey,
+  email,
+}: {
+  campaignKey: string;
+  email: string;
+}) => `${campaignKey.trim()}:${normalizeEmailCampaignEmail(email)}`;
+
+const createLeadId = ({ campaignKey, email }: { campaignKey: string; email: string }) =>
+  `lead_${createHash("sha256")
+    .update(getEmailCampaignLeadDedupeKey({ campaignKey, email }))
+    .digest("hex")
+    .slice(0, 24)}`;
 
 const escapeHtml = (value: string) =>
   value
@@ -228,7 +246,7 @@ const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadSheetRecord) => {
   };
 };
 
-export const createEmailCampaignLead = async ({
+const createEmailCampaignLeadInternal = async ({
   campaignKey,
   email,
   fullName,
@@ -250,7 +268,7 @@ export const createEmailCampaignLead = async ({
 
   const now = toUtcIso();
   const lead: EmailCampaignLeadSheetRecord = {
-    campaign_key: campaignKey,
+    campaign_key: campaignKey.trim(),
     created_at: now,
     email: normalizedEmail,
     email_send_attempts: "0",
@@ -258,7 +276,10 @@ export const createEmailCampaignLead = async ({
     email_sent_at: "",
     full_name: fullName.trim().slice(0, 120),
     last_email_error: "",
-    lead_id: createLeadId(),
+    lead_id: createLeadId({
+      campaignKey,
+      email: normalizedEmail,
+    }),
     locale: locale.trim().slice(0, 20),
     social_contact: socialContact.trim().slice(0, 160),
   };
@@ -269,6 +290,33 @@ export const createEmailCampaignLead = async ({
     duplicate: false,
     lead,
   };
+};
+
+export const createEmailCampaignLead = async (
+  input: CreateEmailCampaignLeadInput,
+): Promise<CreateEmailCampaignLeadResult> => {
+  const dedupeKey = getEmailCampaignLeadDedupeKey({
+    campaignKey: input.campaignKey,
+    email: input.email,
+  });
+  const pendingCreate = pendingEmailCampaignLeadCreates.get(dedupeKey);
+
+  if (pendingCreate) {
+    const result = await pendingCreate;
+
+    return {
+      duplicate: true,
+      lead: result.lead,
+    };
+  }
+
+  const createPromise = createEmailCampaignLeadInternal(input).finally(() => {
+    pendingEmailCampaignLeadCreates.delete(dedupeKey);
+  });
+
+  pendingEmailCampaignLeadCreates.set(dedupeKey, createPromise);
+
+  return createPromise;
 };
 
 export const getEmailCampaignStats = async (campaignKey: string) => {
@@ -300,7 +348,7 @@ export const getEmailCampaignStats = async (campaignKey: string) => {
   );
 };
 
-export const deliverFirstTouchSalesStartCampaign =
+const deliverFirstTouchSalesStartCampaignInternal =
   async (): Promise<EmailCampaignDeliveryResult> => {
     const rows = await listEmailCampaignLeadRecords({
       cacheTtlMs: 0,
@@ -348,4 +396,18 @@ export const deliverFirstTouchSalesStartCampaign =
       ...(await getEmailCampaignStats(FIRST_TOUCH_SALES_START_CAMPAIGN_KEY)),
       attempted,
     };
+  };
+
+export const deliverFirstTouchSalesStartCampaign =
+  async (): Promise<EmailCampaignDeliveryResult> => {
+    if (pendingFirstTouchSalesStartCampaignDelivery) {
+      return pendingFirstTouchSalesStartCampaignDelivery;
+    }
+
+    pendingFirstTouchSalesStartCampaignDelivery =
+      deliverFirstTouchSalesStartCampaignInternal().finally(() => {
+        pendingFirstTouchSalesStartCampaignDelivery = null;
+      });
+
+    return pendingFirstTouchSalesStartCampaignDelivery;
   };

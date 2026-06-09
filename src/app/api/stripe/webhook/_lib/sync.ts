@@ -25,6 +25,12 @@ const SUPPORTED_PAYMENT_INTENT_EVENT_TYPES = new Set([
   "payment_intent.succeeded",
 ]);
 const SUPPORTED_CHECKOUT_SESSION_EVENT_TYPES = new Set(["checkout.session.completed"]);
+const SUCCESSFUL_CUSTOMER_LOG_EVENT_TYPE = "payment_intent.succeeded";
+const SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX = "pending:";
+const SUCCESSFUL_CUSTOMER_LOG_SENT_STATUS = "sent";
+const SUCCESSFUL_CUSTOMER_LOG_LEASE_TTL_MS = 2 * 60 * 1000;
+const SUCCESSFUL_CUSTOMER_LOG_WAIT_RETRIES = 4;
+const SUCCESSFUL_CUSTOMER_LOG_WAIT_DELAY_MS = 500;
 const pendingStripeWebhookSyncs = new Map<string, Promise<StripePaymentWebhookResult>>();
 const pendingStripePaymentIntentSyncs = new Map<string, Promise<void>>();
 const WITH_MENTOR_OFFER_IDS = new Set(
@@ -100,6 +106,11 @@ const buildPurchaseItemLabel = (productTitle: string, offerLabel: string) => {
 };
 
 const trimString = (value: string | null | undefined) => value?.trim() ?? "";
+
+const sleep = (delayMs: number) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
 
 const normalizeStripeLookupKey = (value: string | null | undefined) =>
   trimString(value)
@@ -579,6 +590,7 @@ const mapPaymentIntentToPaymentRecord = (
     first_seen_at: existingRecord?.first_seen_at || timestamp,
     invoice_issued_at: existingRecord?.invoice_issued_at ?? "",
     invoice_number: existingRecord?.invoice_number ?? "",
+    successful_customer_log_status: existingRecord?.successful_customer_log_status ?? "",
     last_payment_error_code: snapshot.lastPaymentErrorCode ?? "",
     last_payment_error_message: snapshot.lastPaymentErrorMessage ?? "",
     latest_event_id: event.id,
@@ -653,6 +665,198 @@ const withPaymentIntentSyncLock = async <T>(
       pendingStripePaymentIntentSyncs.delete(normalizedPaymentIntentId);
     }
   }
+};
+
+// Payment Links can deliver Checkout Session and PaymentIntent webhooks close
+// together, sometimes on different serverless instances. Store a short-lived
+// lease in Payments so SuccessfulCustomers is written once per PaymentIntent.
+const getSuccessfulCustomerLogLeaseStatus = (eventId: string) =>
+  `${SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX}${Date.now()}:${eventId}`;
+
+const getSuccessfulCustomerLogLeaseTimestamp = (status: string) => {
+  if (!status.startsWith(SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX)) {
+    return 0;
+  }
+
+  const timestamp = Number(
+    status.slice(SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX.length).split(":")[0],
+  );
+
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const isFreshSuccessfulCustomerLogLease = (status: string) => {
+  const timestamp = getSuccessfulCustomerLogLeaseTimestamp(status);
+
+  return timestamp > 0 && timestamp + SUCCESSFUL_CUSTOMER_LOG_LEASE_TTL_MS > Date.now();
+};
+
+const hasCompletedSuccessfulCustomerLog = (paymentRecord: PaymentSheetRecord) =>
+  paymentRecord.successful_customer_log_status.trim() ===
+    SUCCESSFUL_CUSTOMER_LOG_SENT_STATUS ||
+  Boolean(paymentRecord.successful_customer_logged_at.trim());
+
+const getFreshPaymentRecord = async (fallbackPaymentRecord: PaymentSheetRecord) =>
+  (await findPaymentRecordByIntentId(fallbackPaymentRecord.payment_intent_id, {
+    cacheTtlMs: 0,
+  })) ?? fallbackPaymentRecord;
+
+const waitForSuccessfulCustomerLogLease = async (paymentRecord: PaymentSheetRecord) => {
+  let latestPaymentRecord = paymentRecord;
+
+  for (let attempt = 0; attempt < SUCCESSFUL_CUSTOMER_LOG_WAIT_RETRIES; attempt += 1) {
+    await sleep(SUCCESSFUL_CUSTOMER_LOG_WAIT_DELAY_MS);
+
+    latestPaymentRecord = await getFreshPaymentRecord(latestPaymentRecord);
+
+    if (hasCompletedSuccessfulCustomerLog(latestPaymentRecord)) {
+      return {
+        completed: true,
+        paymentRecord: latestPaymentRecord,
+      };
+    }
+
+    if (
+      !isFreshSuccessfulCustomerLogLease(
+        latestPaymentRecord.successful_customer_log_status.trim(),
+      )
+    ) {
+      return {
+        completed: false,
+        paymentRecord: latestPaymentRecord,
+      };
+    }
+  }
+
+  return {
+    completed: false,
+    paymentRecord: latestPaymentRecord,
+  };
+};
+
+const tryAcquireSuccessfulCustomerLogLease = async ({
+  event,
+  paymentRecord,
+}: {
+  event: Stripe.Event;
+  paymentRecord: PaymentSheetRecord;
+}) => {
+  let latestPaymentRecord = await getFreshPaymentRecord(paymentRecord);
+
+  if (hasCompletedSuccessfulCustomerLog(latestPaymentRecord)) {
+    return {
+      acquired: false,
+      paymentRecord: latestPaymentRecord,
+    };
+  }
+
+  const currentStatus = latestPaymentRecord.successful_customer_log_status.trim();
+
+  if (isFreshSuccessfulCustomerLogLease(currentStatus)) {
+    const leaseResult = await waitForSuccessfulCustomerLogLease(latestPaymentRecord);
+
+    if (leaseResult.completed) {
+      return {
+        acquired: false,
+        paymentRecord: leaseResult.paymentRecord,
+      };
+    }
+
+    throw new Error("successful_customer_log_in_progress");
+  }
+
+  const leaseStatus = getSuccessfulCustomerLogLeaseStatus(event.id);
+  const now = toUtcIso();
+
+  await upsertPaymentRecord({
+    ...latestPaymentRecord,
+    successful_customer_log_status: leaseStatus,
+    updated_at: now,
+  });
+
+  latestPaymentRecord = await getFreshPaymentRecord(latestPaymentRecord);
+
+  if (hasCompletedSuccessfulCustomerLog(latestPaymentRecord)) {
+    return {
+      acquired: false,
+      paymentRecord: latestPaymentRecord,
+    };
+  }
+
+  if (latestPaymentRecord.successful_customer_log_status.trim() === leaseStatus) {
+    return {
+      acquired: true,
+      paymentRecord: latestPaymentRecord,
+    };
+  }
+
+  const leaseResult = await waitForSuccessfulCustomerLogLease(latestPaymentRecord);
+
+  if (leaseResult.completed) {
+    return {
+      acquired: false,
+      paymentRecord: leaseResult.paymentRecord,
+    };
+  }
+
+  throw new Error("successful_customer_log_in_progress");
+};
+
+const appendSuccessfulCustomerRecordOnce = async ({
+  event,
+  paymentRecord,
+}: {
+  event: Stripe.Event;
+  paymentRecord: PaymentSheetRecord;
+}) => {
+  if (
+    event.type !== SUCCESSFUL_CUSTOMER_LOG_EVENT_TYPE ||
+    paymentRecord.outcome !== "succeeded"
+  ) {
+    return paymentRecord;
+  }
+
+  const lease = await tryAcquireSuccessfulCustomerLogLease({
+    event,
+    paymentRecord,
+  });
+
+  if (!lease.acquired) {
+    return lease.paymentRecord;
+  }
+
+  try {
+    await appendSuccessfulCustomerRecord({
+      payment_intent_id: lease.paymentRecord.payment_intent_id,
+      customer_country: lease.paymentRecord.customer_country,
+      customer_email: lease.paymentRecord.customer_email,
+      customer_full_address: getCustomerFullAddress(lease.paymentRecord),
+      customer_full_name: lease.paymentRecord.customer_full_name,
+      customer_nickname: lease.paymentRecord.customer_nickname,
+      purchase_item: getPurchaseItemLabel(lease.paymentRecord),
+      product_id: lease.paymentRecord.product_id,
+      product_title: lease.paymentRecord.product_title,
+      offer_id: lease.paymentRecord.offer_id,
+      offer_label: lease.paymentRecord.offer_label,
+    });
+  } catch (error) {
+    await upsertPaymentRecord({
+      ...lease.paymentRecord,
+      successful_customer_log_status: "failed",
+      updated_at: toUtcIso(),
+    });
+
+    throw error;
+  }
+
+  const loggedAt = toUtcIso();
+
+  return upsertPaymentRecord({
+    ...lease.paymentRecord,
+    successful_customer_logged_at: loggedAt,
+    successful_customer_log_status: SUCCESSFUL_CUSTOMER_LOG_SENT_STATUS,
+    updated_at: loggedAt,
+  });
 };
 
 export const syncStripePaymentEventToGoogleSheets = async (
@@ -739,29 +943,10 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
   }
 
   let savedPaymentRecord = await upsertPaymentRecord(paymentRecord);
-
-  if (savedPaymentRecord.outcome === "succeeded") {
-    await appendSuccessfulCustomerRecord({
-      payment_intent_id: savedPaymentRecord.payment_intent_id,
-      customer_country: savedPaymentRecord.customer_country,
-      customer_email: savedPaymentRecord.customer_email,
-      customer_full_address: getCustomerFullAddress(savedPaymentRecord),
-      customer_full_name: savedPaymentRecord.customer_full_name,
-      customer_nickname: savedPaymentRecord.customer_nickname,
-      purchase_item: getPurchaseItemLabel(savedPaymentRecord),
-      product_id: savedPaymentRecord.product_id,
-      product_title: savedPaymentRecord.product_title,
-      offer_id: savedPaymentRecord.offer_id,
-      offer_label: savedPaymentRecord.offer_label,
-    });
-
-    if (!savedPaymentRecord.successful_customer_logged_at) {
-      savedPaymentRecord = await upsertPaymentRecord({
-        ...savedPaymentRecord,
-        successful_customer_logged_at: toUtcIso(),
-      });
-    }
-  }
+  savedPaymentRecord = await appendSuccessfulCustomerRecordOnce({
+    event,
+    paymentRecord: savedPaymentRecord,
+  });
 
   await appendStripeEventRecord({
     event_id: event.id,

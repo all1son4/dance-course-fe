@@ -54,6 +54,7 @@ export const PAYMENT_SHEET_HEADERS = [
   "customer_postal_code",
   "invoice_number",
   "invoice_issued_at",
+  "successful_customer_log_status",
 ] as const;
 
 export const PAYMENT_SHEET_HEADER_LABELS: Record<
@@ -105,6 +106,7 @@ export const PAYMENT_SHEET_HEADER_LABELS: Record<
   customer_postal_code: "Почтовый код клиента",
   invoice_number: "Номер инвойса",
   invoice_issued_at: "Когда выдан инвойс",
+  successful_customer_log_status: "Статус записи в SuccessfulCustomers",
 };
 
 export const STRIPE_EVENT_SHEET_HEADERS = [

@@ -11,6 +11,10 @@ import {
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
 const MONTHLY_SALES_REPORT_RECIPIENT = process.env.RESEND_REPLY_TO?.trim() ?? "";
+const pendingMonthlySalesReportRuns = new Map<
+  string,
+  Promise<MonthlySalesReportRunResult>
+>();
 
 export type MonthlySalesReportPeriod = {
   endUtcIso: string;
@@ -390,26 +394,19 @@ export const toMonthlySalesReportDeliveryResponse = (
   status: result.status,
 });
 
-export const generateAndDeliverMonthlySalesReport = async ({
-  force = false,
-  referenceDate = new Date(),
-  reportMonth,
+const generateAndDeliverMonthlySalesReportInternal = async ({
+  force,
+  generatedAtUtc,
+  period,
+  referenceDate,
+  reportRecipient,
 }: {
-  force?: boolean;
-  referenceDate?: Date;
-  reportMonth?: string;
+  force: boolean;
+  generatedAtUtc: string;
+  period: MonthlySalesReportPeriod;
+  referenceDate: Date;
+  reportRecipient: string;
 }) => {
-  const reportRecipient = MONTHLY_SALES_REPORT_RECIPIENT;
-  const generatedAtUtc = referenceDate.toISOString();
-  const period = getMonthlySalesReportPeriod({
-    referenceDate,
-    reportMonth,
-  });
-
-  if (!reportRecipient) {
-    throw new Error("missing_monthly_sales_report_recipient");
-  }
-
   const existingRun = await findMonthlySalesReportRunByKey(period.key);
 
   if (!force && existingRun?.delivery_status === "sent") {
@@ -515,4 +512,45 @@ export const generateAndDeliverMonthlySalesReport = async ({
 
     throw error;
   }
+};
+
+export const generateAndDeliverMonthlySalesReport = async ({
+  force = false,
+  referenceDate = new Date(),
+  reportMonth,
+}: {
+  force?: boolean;
+  referenceDate?: Date;
+  reportMonth?: string;
+}) => {
+  const reportRecipient = MONTHLY_SALES_REPORT_RECIPIENT;
+  const generatedAtUtc = referenceDate.toISOString();
+  const period = getMonthlySalesReportPeriod({
+    referenceDate,
+    reportMonth,
+  });
+
+  if (!reportRecipient) {
+    throw new Error("missing_monthly_sales_report_recipient");
+  }
+
+  const pendingRun = pendingMonthlySalesReportRuns.get(period.key);
+
+  if (pendingRun) {
+    return pendingRun;
+  }
+
+  const reportRunPromise = generateAndDeliverMonthlySalesReportInternal({
+    force,
+    generatedAtUtc,
+    period,
+    referenceDate,
+    reportRecipient,
+  }).finally(() => {
+    pendingMonthlySalesReportRuns.delete(period.key);
+  });
+
+  pendingMonthlySalesReportRuns.set(period.key, reportRunPromise);
+
+  return reportRunPromise;
 };

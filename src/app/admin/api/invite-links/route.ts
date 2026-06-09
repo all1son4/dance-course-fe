@@ -195,6 +195,7 @@ const createAdminOfferPaymentRecord = ({
     purchase_item: purchaseItem,
     status: "succeeded",
     successful_customer_logged_at: now,
+    successful_customer_log_status: "sent",
     telegram_access_expires_at: "",
     telegram_access_revoked_at: "",
     telegram_access_status: "pending",
