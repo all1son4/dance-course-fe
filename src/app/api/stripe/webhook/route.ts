@@ -1,9 +1,14 @@
 import type Stripe from "stripe";
 
+import { getDatabaseEnvSelection } from "@/db/env";
 import { GoogleSheetsError, isGoogleSheetsConfigured } from "@/lib/google-sheets";
 import { isPayloadTooLarge, jsonNoStore } from "@/lib/http-security";
 
 import { getStripeServer } from "../payment-intent/lib";
+import {
+  syncStripeChargeSettlementToDatabase,
+  syncStripeWebhookEventToDatabase,
+} from "./_lib/database-sync";
 import { runWebhookSideEffects } from "./_lib/side-effects";
 import {
   isSupportedStripePaymentIntentEvent,
@@ -14,6 +19,59 @@ const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
 
 export const runtime = "nodejs";
+
+const STRIPE_CHARGE_SETTLEMENT_EVENT_TYPES = new Set([
+  "charge.succeeded",
+  "charge.updated",
+]);
+
+const trySyncStripeWebhookEventToDatabase = async ({
+  event,
+  handledEvent,
+  stripe,
+}: {
+  event: Stripe.Event;
+  handledEvent: Awaited<ReturnType<typeof syncStripePaymentEventToGoogleSheets>>;
+  stripe: Stripe;
+}) => {
+  const databaseEnv = getDatabaseEnvSelection("pooled");
+
+  try {
+    await syncStripeWebhookEventToDatabase({
+      event,
+      handledEvent,
+      stripe,
+    });
+
+    console.warn("Stripe webhook synced to database", {
+      databaseEnv,
+      eventId: handledEvent.eventId,
+      paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
+    });
+
+    return {
+      databaseEnv,
+      status: "synced" as const,
+    };
+  } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown database sync error.";
+
+    console.error("Failed to sync Stripe webhook to database", {
+      databaseEnv,
+      error,
+      eventId: handledEvent.eventId,
+      paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
+    });
+
+    return {
+      databaseEnv,
+      error,
+      errorMessage,
+      status: "failed" as const,
+    };
+  }
+};
 
 export async function POST(request: Request) {
   if (isPayloadTooLarge(request, MAX_WEBHOOK_BODY_BYTES)) {
@@ -82,6 +140,49 @@ export async function POST(request: Request) {
       );
     }
 
+    if (STRIPE_CHARGE_SETTLEMENT_EVENT_TYPES.has(event.type)) {
+      try {
+        const settlementSync = await syncStripeChargeSettlementToDatabase({
+          event,
+          stripe,
+        });
+
+        console.warn("Stripe charge settlement synced to database", {
+          eventId: event.id,
+          eventType: event.type,
+          paymentIntentId: settlementSync.paymentIntentId,
+          status: settlementSync.status,
+          stripeBalanceTransactionId: settlementSync.stripeBalanceTransactionId,
+        });
+
+        return jsonNoStore({
+          databaseSync: settlementSync,
+          eventId: event.id,
+          received: true,
+          type: event.type,
+        });
+      } catch (error) {
+        console.error("Failed to sync Stripe charge settlement to database", {
+          error,
+          eventId: event.id,
+          eventType: event.type,
+        });
+
+        if (process.env.NODE_ENV !== "production") {
+          throw error;
+        }
+
+        return jsonNoStore({
+          databaseSync: {
+            status: "failed",
+          },
+          eventId: event.id,
+          received: true,
+          type: event.type,
+        });
+      }
+    }
+
     if (!isSupportedStripePaymentIntentEvent(event.type)) {
       return jsonNoStore({
         eventId: event.id,
@@ -106,11 +207,34 @@ export async function POST(request: Request) {
 
     const handledEvent = await syncStripePaymentEventToGoogleSheets(event);
 
+    const initialDatabaseSync = await trySyncStripeWebhookEventToDatabase({
+      event,
+      handledEvent,
+      stripe,
+    });
+
+    if (
+      initialDatabaseSync.status === "failed" &&
+      process.env.NODE_ENV !== "production"
+    ) {
+      throw initialDatabaseSync.error;
+    }
+
     await runWebhookSideEffects({
       event,
       handledEvent,
       stripe,
     });
+
+    const finalDatabaseSync = await trySyncStripeWebhookEventToDatabase({
+      event,
+      handledEvent,
+      stripe,
+    });
+
+    if (finalDatabaseSync.status === "failed" && process.env.NODE_ENV !== "production") {
+      throw finalDatabaseSync.error;
+    }
 
     if (
       !handledEvent.skipped &&
@@ -126,7 +250,13 @@ export async function POST(request: Request) {
       });
     }
 
-    return jsonNoStore(handledEvent);
+    return jsonNoStore({
+      ...handledEvent,
+      databaseSync: {
+        afterSheets: initialDatabaseSync,
+        afterSideEffects: finalDatabaseSync,
+      },
+    });
   } catch (error) {
     if (error instanceof GoogleSheetsError) {
       console.error("Failed to sync Stripe webhook to Google Sheets", {

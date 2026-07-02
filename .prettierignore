@@ -3,6 +3,7 @@ out
 dist
 coverage
 node_modules
+drizzle/meta/*.json
 package-lock.json
 pnpm-lock.yaml
 yarn.lock

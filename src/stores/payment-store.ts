@@ -22,8 +22,8 @@ import {
   getDefaultProductOffer,
   getProductPrice,
   getResolvedCheckoutCurrency,
-  getSellableProductById,
-  getSellableProductOfferById,
+  SELLABLE_PRODUCTS_LIST,
+  type SellableProduct,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
 
@@ -131,6 +131,7 @@ export class PaymentStore {
   stripeIntentErrors: StripeIntentErrors = {};
   pendingStripeCurrencies = new Set<SupportedCheckoutCurrency>();
   stripeIntentStateRevision = 0;
+  sellableProducts: SellableProduct[] = SELLABLE_PRODUCTS_LIST;
 
   constructor() {
     makeAutoObservable(
@@ -158,12 +159,14 @@ export class PaymentStore {
   }
 
   get selectedProduct() {
-    return getSellableProductById(this.selectedProductId) ?? DEFAULT_CHECKOUT_PRODUCT;
+    return (
+      this.getSellableProductById(this.selectedProductId) ?? DEFAULT_CHECKOUT_PRODUCT
+    );
   }
 
   get selectedOffer() {
     return (
-      getSellableProductOfferById(this.selectedProduct, this.selectedOfferId) ??
+      this.getSellableProductOfferById(this.selectedProduct, this.selectedOfferId) ??
       getDefaultProductOffer(this.selectedProduct)
     );
   }
@@ -203,11 +206,40 @@ export class PaymentStore {
     };
   }
 
+  setSellableProducts(products: SellableProduct[]) {
+    if (products.length === 0) {
+      return;
+    }
+
+    const previousProductId = this.selectedProduct.id;
+    const previousOfferId = this.selectedOffer.id;
+    const previousPrice = this.selectedPrice;
+
+    this.sellableProducts = products;
+
+    const nextProduct =
+      this.getSellableProductById(this.selectedProductId) ?? DEFAULT_CHECKOUT_PRODUCT;
+    const nextOffer =
+      this.getSellableProductOfferById(nextProduct, this.selectedOfferId) ??
+      getDefaultProductOffer(nextProduct);
+
+    this.selectedProductId = nextProduct.id;
+    this.selectedOfferId = nextOffer.id;
+
+    if (
+      previousProductId !== nextProduct.id ||
+      previousOfferId !== nextOffer.id ||
+      previousPrice !== this.selectedPrice
+    ) {
+      this.clearStripeIntentState(true);
+    }
+  }
+
   applyCheckoutDraft(draft: Partial<PaymentCheckoutDraft>) {
     const nextProduct =
-      getSellableProductById(draft.selectedProductId) ?? this.selectedProduct;
+      this.getSellableProductById(draft.selectedProductId) ?? this.selectedProduct;
     const nextOffer =
-      getSellableProductOfferById(nextProduct, draft.selectedOfferId) ??
+      this.getSellableProductOfferById(nextProduct, draft.selectedOfferId) ??
       getDefaultProductOffer(nextProduct);
     const nextCurrency = getResolvedCheckoutCurrency(
       draft.selectedCurrency ?? this.selectedCurrency,
@@ -239,9 +271,10 @@ export class PaymentStore {
     offerId?: string | null;
     productId?: string | null;
   }) {
-    const nextProduct = getSellableProductById(productId) ?? DEFAULT_CHECKOUT_PRODUCT;
+    const nextProduct =
+      this.getSellableProductById(productId) ?? DEFAULT_CHECKOUT_PRODUCT;
     const nextOffer =
-      getSellableProductOfferById(nextProduct, offerId) ??
+      this.getSellableProductOfferById(nextProduct, offerId) ??
       getDefaultProductOffer(nextProduct);
     const hasSelectionChanged =
       nextProduct.id !== this.selectedProductId || nextOffer.id !== this.selectedOfferId;
@@ -544,6 +577,17 @@ export class PaymentStore {
     this.selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
     this.selectedProductId = DEFAULT_CHECKOUT_PRODUCT.id;
     this.checkoutCurrencyInitialized = false;
+  }
+
+  private getSellableProductById(productId: string | null | undefined) {
+    return this.sellableProducts.find((product) => product.id === productId);
+  }
+
+  private getSellableProductOfferById(
+    product: SellableProduct,
+    offerId: string | null | undefined,
+  ) {
+    return product.offers.find((offer) => offer.id === offerId);
   }
 
   clearStripeIntentState(

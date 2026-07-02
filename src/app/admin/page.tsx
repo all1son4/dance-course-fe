@@ -1188,7 +1188,7 @@ export default function AdminPage() {
                   {isInviteLinksFeatureActive
                     ? "Генерация одноразовых Telegram invite-ссылок с той же бизнес-логикой, что и в боевом платежном потоке."
                     : isBroadcastsFeatureActive
-                      ? "Разовые email-рассылки по заявкам из Google Sheets."
+                      ? "Разовые email-рассылки по заявкам из Neon с зеркалом в Google Sheets."
                       : isReportsFeatureActive
                         ? "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц."
                         : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
@@ -1330,7 +1330,7 @@ export default function AdminPage() {
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Источник данных</PolicyLabel>
-                        <PolicyValue>Google Sheets + Telegram workflow</PolicyValue>
+                        <PolicyValue>Neon primary + Google Sheets mirror</PolicyValue>
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Защита API</PolicyLabel>
@@ -1489,7 +1489,7 @@ export default function AdminPage() {
                     <PolicyList>
                       <PolicyRow>
                         <PolicyLabel>Источник</PolicyLabel>
-                        <PolicyValue>Google Sheets EmailCampaignLeads</PolicyValue>
+                        <PolicyValue>Neon EmailCampaignLeads + Sheets mirror</PolicyValue>
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Кампания</PolicyLabel>
@@ -1572,7 +1572,7 @@ export default function AdminPage() {
                     <PolicyList>
                       <PolicyRow>
                         <PolicyLabel>Источник</PolicyLabel>
-                        <PolicyValue>Google Sheets Payments</PolicyValue>
+                        <PolicyValue>Neon purchases + fallback Google Sheets</PolicyValue>
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Период</PolicyLabel>

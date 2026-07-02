@@ -1,5 +1,9 @@
 import { createHash } from "node:crypto";
 
+import { and, asc, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
+
+import { getDatabase } from "@/db/client";
+import { purchases } from "@/db/schema";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
   findMonthlySalesReportRunByKey,
@@ -41,6 +45,17 @@ export type MonthlySalesReportDeliveryResponse = Omit<MonthlySalesReportRunResul
 export type MonthlySalesReportMonthOption = {
   label: string;
   value: string;
+};
+
+type MonthlySalesReportSaleRecord = {
+  amountMinor: string;
+  currency: string;
+  customerCountry: string;
+  customerFullName: string;
+  paymentIntentId: string;
+  saleTimestampIso: string;
+  settlementAmountMinor: string;
+  settlementCurrency: string;
 };
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
@@ -102,6 +117,19 @@ const getSaleTimestampIso = (paymentRecord: PaymentSheetRecord) =>
   paymentRecord.updated_at.trim() ||
   paymentRecord.first_seen_at.trim() ||
   "";
+
+const mapPaymentRecordToSaleRecord = (
+  paymentRecord: PaymentSheetRecord,
+): MonthlySalesReportSaleRecord => ({
+  amountMinor: paymentRecord.amount,
+  currency: paymentRecord.currency,
+  customerCountry: paymentRecord.customer_country,
+  customerFullName: paymentRecord.customer_full_name,
+  paymentIntentId: paymentRecord.payment_intent_id,
+  saleTimestampIso: getSaleTimestampIso(paymentRecord),
+  settlementAmountMinor: "",
+  settlementCurrency: "",
+});
 
 const parseReportMonth = (reportMonth: string) => {
   const match = /^(\d{4})-(\d{2})$/u.exec(reportMonth.trim());
@@ -188,12 +216,15 @@ const buildCsv = (rows: string[][]) => {
     .join("\n");
 };
 
-const buildCsvRows = (paymentRecords: PaymentSheetRecord[]) =>
-  paymentRecords.map((paymentRecord) => [
-    paymentRecord.customer_full_name.trim(),
-    getCountryDisplayName(paymentRecord.customer_country),
-    getSaleTimestampIso(paymentRecord),
-    formatAmount(paymentRecord.amount, paymentRecord.currency),
+const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) =>
+  saleRecords.map((saleRecord) => [
+    saleRecord.customerFullName.trim(),
+    getCountryDisplayName(saleRecord.customerCountry),
+    saleRecord.saleTimestampIso,
+    formatAmount(
+      saleRecord.settlementAmountMinor || saleRecord.amountMinor,
+      saleRecord.settlementCurrency || saleRecord.currency,
+    ),
   ]);
 
 const formatReportMonthForSubject = (monthValue: string) =>
@@ -347,20 +378,109 @@ export const getMonthlySalesReportPeriodForNow = (date: Date = new Date()) =>
     referenceDate: date,
   });
 
+const listSucceededSaleRecordsFromSheetsInUtcRange = async ({
+  endUtcIsoExclusive,
+  startUtcIso,
+}: {
+  endUtcIsoExclusive: string;
+  startUtcIso: string;
+}) => {
+  const paymentRecords = await listSucceededPaymentRecordsInUtcRange({
+    endUtcIsoExclusive,
+    source: "sheets",
+    startUtcIso,
+  });
+
+  return paymentRecords.map(mapPaymentRecordToSaleRecord);
+};
+
+const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
+  endUtcIsoExclusive,
+  startUtcIso,
+}: {
+  endUtcIsoExclusive: string;
+  startUtcIso: string;
+}): Promise<MonthlySalesReportSaleRecord[]> => {
+  const startDate = new Date(startUtcIso);
+  const endDate = new Date(endUtcIsoExclusive);
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return [];
+  }
+
+  const db = getDatabase();
+  const rows = await db
+    .select({
+      amountMinor: purchases.amountMinor,
+      currency: purchases.currency,
+      customerCountrySnapshot: purchases.customerCountrySnapshot,
+      customerFullNameSnapshot: purchases.customerFullNameSnapshot,
+      paymentIntentId: purchases.paymentIntentId,
+      settlementAmountMinor: purchases.settlementAmountMinor,
+      settlementCurrency: purchases.settlementCurrency,
+      succeededAt: purchases.succeededAt,
+    })
+    .from(purchases)
+    .where(
+      and(
+        eq(purchases.outcome, "succeeded"),
+        ne(purchases.source, "admin_offer_link"),
+        isNotNull(purchases.succeededAt),
+        gte(purchases.succeededAt, startDate),
+        lt(purchases.succeededAt, endDate),
+      ),
+    )
+    .orderBy(asc(purchases.succeededAt), asc(purchases.paymentIntentId));
+
+  return rows.map((row) => ({
+    amountMinor: String(row.amountMinor),
+    currency: row.currency,
+    customerCountry: row.customerCountrySnapshot ?? "",
+    customerFullName: row.customerFullNameSnapshot ?? "",
+    paymentIntentId: row.paymentIntentId,
+    saleTimestampIso: row.succeededAt?.toISOString() ?? "",
+    settlementAmountMinor:
+      row.settlementAmountMinor === null ? "" : String(row.settlementAmountMinor),
+    settlementCurrency: row.settlementCurrency ?? "",
+  }));
+};
+
+const listSucceededSaleRecordsInUtcRange = async ({
+  endUtcIsoExclusive,
+  startUtcIso,
+}: {
+  endUtcIsoExclusive: string;
+  startUtcIso: string;
+}) => {
+  try {
+    return await listSucceededSaleRecordsFromDatabaseInUtcRange({
+      endUtcIsoExclusive,
+      startUtcIso,
+    });
+  } catch (error) {
+    console.error("Failed to load monthly sales report rows from database", error);
+
+    return listSucceededSaleRecordsFromSheetsInUtcRange({
+      endUtcIsoExclusive,
+      startUtcIso,
+    });
+  }
+};
+
 export const listAvailableMonthlySalesReportMonths = async (
   referenceDate: Date = new Date(),
 ): Promise<MonthlySalesReportMonthOption[]> => {
   const startUtcIso = "1970-01-01T00:00:00.000Z";
   const endUtcIsoExclusive = referenceDate.toISOString();
-  const paymentRecords = await listSucceededPaymentRecordsInUtcRange({
+  const saleRecords = await listSucceededSaleRecordsInUtcRange({
     endUtcIsoExclusive,
     startUtcIso,
   });
   const monthValues = Array.from(
     new Set(
-      paymentRecords
-        .map((paymentRecord) => {
-          const saleDate = new Date(getSaleTimestampIso(paymentRecord));
+      saleRecords
+        .map((saleRecord) => {
+          const saleDate = new Date(saleRecord.saleTimestampIso);
 
           if (Number.isNaN(saleDate.getTime())) {
             return "";
@@ -426,14 +546,14 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
     };
   }
 
-  const paymentRecords = await listSucceededPaymentRecordsInUtcRange({
+  const saleRecords = await listSucceededSaleRecordsInUtcRange({
     endUtcIsoExclusive: period.endUtcIso,
     startUtcIso: period.startUtcIso,
   });
-  const csvRows = buildCsvRows(paymentRecords);
+  const csvRows = buildCsvRows(saleRecords);
   const csv = buildCsv(csvRows);
   const sha256 = createHash("sha256").update(csv).digest("hex");
-  const rowCount = paymentRecords.length;
+  const rowCount = saleRecords.length;
 
   if (rowCount === 0) {
     return {

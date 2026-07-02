@@ -1,6 +1,38 @@
 import { createSign } from "node:crypto";
 
 import {
+  findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
+  findPaymentRecordByIntentIdFromDatabase,
+  listPaymentRecordsFromDatabase,
+  listSucceededPaymentRecordsFromDatabaseInUtcRange,
+  upsertPaymentRecordToDatabase,
+} from "@/db/payment-records";
+import {
+  findActiveTelegramUserBindingsFromDatabase,
+  findEmailCampaignLeadByCampaignAndEmailFromDatabase,
+  findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
+  findMonthlySalesReportRunByKeyFromDatabase,
+  findStripeEventRecordByEventIdFromDatabase,
+  findTelegramAccessTokenRecordByTokenHashFromDatabase,
+  findTelegramAccessTokenRecordByTokenIdFromDatabase,
+  findTelegramAccessTokenRecordByTokenValueFromDatabase,
+  findTelegramUserBindingByPaymentIntentIdFromDatabase,
+  findTelegramUserBindingsByCustomerEmailFromDatabase,
+  findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
+  findTelegramUserBindingsByTelegramUserIdFromDatabase,
+  listEmailCampaignLeadRecordsFromDatabase,
+  listMonthlySalesReportRunRecordsFromDatabase,
+  listStripeEventRecordsFromDatabase,
+  listTelegramAccessTokenRecordsFromDatabase,
+  listTelegramUserBindingRecordsFromDatabase,
+  recordSuccessfulCustomerExportToDatabase,
+  upsertEmailCampaignLeadRecordToDatabase,
+  upsertMonthlySalesReportRunToDatabase,
+  upsertStripeEventRecordToDatabase,
+  upsertTelegramAccessTokenRecordToDatabase,
+  upsertTelegramUserBindingRecordToDatabase,
+} from "@/db/sheet-records";
+import {
   type AdminInviteLinkHistorySourceRecord,
   DEFAULT_EMAIL_CAMPAIGN_LEADS_SHEET_NAME,
   DEFAULT_MONTHLY_SALES_REPORT_RUNS_SHEET_NAME,
@@ -114,6 +146,8 @@ type PaymentRecordByIntentCacheEntry = {
   expiresAt: number;
   record: PaymentSheetRecord | null;
 };
+
+type RecordSource = "auto" | "database" | "sheets";
 
 export class GoogleSheetsError extends Error {
   code: string;
@@ -1000,6 +1034,7 @@ export const findPaymentRecordByIntentId = async (
   paymentIntentId: string,
   options?: {
     cacheTtlMs?: number;
+    source?: RecordSource;
   },
 ) => {
   const normalizedPaymentIntentId = paymentIntentId.trim();
@@ -1008,11 +1043,44 @@ export const findPaymentRecordByIntentId = async (
     return null;
   }
 
+  const source = options?.source ?? "auto";
   const cacheTtlMs = options?.cacheTtlMs ?? PAYMENT_RECORD_CACHE_TTL_MS;
-  const cachedEntry = paymentRecordByIntentCache.get(normalizedPaymentIntentId);
+  const cacheKey = `${source}:${normalizedPaymentIntentId}`;
+  const cachedEntry = paymentRecordByIntentCache.get(cacheKey);
 
   if (cacheTtlMs > 0 && cachedEntry && cachedEntry.expiresAt > Date.now()) {
     return cachedEntry.record;
+  }
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord = await findPaymentRecordByIntentIdFromDatabase(
+        normalizedPaymentIntentId,
+      );
+
+      if (databaseRecord || source === "database") {
+        if (cacheTtlMs > 0) {
+          paymentRecordByIntentCache.set(cacheKey, {
+            expiresAt: Date.now() + cacheTtlMs,
+            record: databaseRecord,
+          });
+        }
+
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load payment record from database, falling back to Sheets",
+        {
+          error,
+          paymentIntentId: normalizedPaymentIntentId,
+        },
+      );
+    }
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1028,7 +1096,7 @@ export const findPaymentRecordByIntentId = async (
   });
 
   if (cacheTtlMs > 0) {
-    paymentRecordByIntentCache.set(normalizedPaymentIntentId, {
+    paymentRecordByIntentCache.set(cacheKey, {
       expiresAt: Date.now() + cacheTtlMs,
       record: record ?? null,
     });
@@ -1039,11 +1107,31 @@ export const findPaymentRecordByIntentId = async (
 
 export const listSucceededPaymentRecordsInUtcRange = async ({
   endUtcIsoExclusive,
+  source = "auto",
   startUtcIso,
 }: {
   endUtcIsoExclusive: string;
+  source?: RecordSource;
   startUtcIso: string;
 }) => {
+  if (source !== "sheets") {
+    try {
+      return await listSucceededPaymentRecordsFromDatabaseInUtcRange({
+        endUtcIsoExclusive,
+        startUtcIso,
+      });
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load succeeded payment records from database, falling back to Sheets",
+        error,
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const startTimestamp = Date.parse(startUtcIso);
@@ -1091,7 +1179,27 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
 
 export const listPaymentRecords = async (options?: {
   cacheTtlMs?: number;
+  source?: RecordSource;
 }): Promise<PaymentSheetRecord[]> => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await listPaymentRecordsFromDatabase();
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to list payment records from database, falling back to Sheets",
+        {
+          error,
+        },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   return getRows(
@@ -1107,7 +1215,32 @@ export const listPaymentRecords = async (options?: {
 
 export const findLatestPaymentRecordByCheckoutSessionId = async (
   checkoutSessionId: string,
+  options?: {
+    source?: RecordSource;
+  },
 ) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord =
+        await findLatestPaymentRecordByCheckoutSessionIdFromDatabase(checkoutSessionId);
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load latest checkout payment record from database, falling back to Sheets",
+        { checkoutSessionId, error },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
@@ -1134,9 +1267,14 @@ export const findLatestPaymentRecordByCheckoutSessionId = async (
 
 export const findLatestSucceededPaymentRecordByCheckoutSessionId = async (
   checkoutSessionId: string,
+  options?: {
+    source?: RecordSource;
+  },
 ) => {
-  const latestPaymentRecord =
-    await findLatestPaymentRecordByCheckoutSessionId(checkoutSessionId);
+  const latestPaymentRecord = await findLatestPaymentRecordByCheckoutSessionId(
+    checkoutSessionId,
+    options,
+  );
 
   if (!latestPaymentRecord || latestPaymentRecord.outcome !== "succeeded") {
     return null;
@@ -1145,7 +1283,33 @@ export const findLatestSucceededPaymentRecordByCheckoutSessionId = async (
   return latestPaymentRecord;
 };
 
-export const findStripeEventRecordByEventId = async (eventId: string) => {
+export const findStripeEventRecordByEventId = async (
+  eventId: string,
+  options?: {
+    source?: RecordSource;
+  },
+) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord = await findStripeEventRecordByEventIdFromDatabase(eventId);
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn("Failed to load Stripe event from database, falling back to Sheets", {
+        error,
+        eventId,
+      });
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
@@ -1161,7 +1325,41 @@ export const findStripeEventRecordByEventId = async (eventId: string) => {
   return record;
 };
 
+export const listStripeEventRecords = async (options?: {
+  cacheTtlMs?: number;
+  source?: RecordSource;
+}): Promise<StripeEventSheetRecord[]> => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await listStripeEventRecordsFromDatabase();
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn("Failed to list Stripe events from database, falling back to Sheets", {
+        error,
+      });
+    }
+  }
+
+  const config = getRequiredGoogleSheetsConfig();
+
+  return getRows(
+    config,
+    config.stripeEventsSheetName,
+    STRIPE_EVENT_SHEET_HEADERS,
+    STRIPE_EVENT_SHEET_HEADER_LABELS,
+    {
+      cacheTtlMs: options?.cacheTtlMs ?? 0,
+    },
+  ) as Promise<StripeEventSheetRecord[]>;
+};
+
 export const appendStripeEventRecord = async (record: StripeEventSheetRecord) => {
+  const databaseRecord = await upsertStripeEventRecordToDatabase(record);
   const config = getRequiredGoogleSheetsConfig();
 
   return upsertRecordByFieldValue({
@@ -1170,7 +1368,7 @@ export const appendStripeEventRecord = async (record: StripeEventSheetRecord) =>
     fieldValue: record.event_id,
     headers: STRIPE_EVENT_SHEET_HEADERS,
     labelsMap: STRIPE_EVENT_SHEET_HEADER_LABELS,
-    record,
+    record: databaseRecord,
     sheetTitle: config.stripeEventsSheetName,
   });
 };
@@ -1178,6 +1376,7 @@ export const appendStripeEventRecord = async (record: StripeEventSheetRecord) =>
 export const appendSuccessfulCustomerRecord = async (
   record: SuccessfulCustomersSheetRecord,
 ) => {
+  await recordSuccessfulCustomerExportToDatabase(record);
   const config = getRequiredGoogleSheetsConfig();
 
   return upsertRecordByFieldValue({
@@ -1191,7 +1390,24 @@ export const appendSuccessfulCustomerRecord = async (
   });
 };
 
-export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
+export const upsertPaymentRecord = async (
+  record: PaymentSheetRecord,
+  options?: {
+    mirrorToSheets?: boolean;
+  },
+) => {
+  const databaseRecord = await upsertPaymentRecordToDatabase(record);
+  const shouldMirrorToSheets = options?.mirrorToSheets ?? true;
+
+  if (!shouldMirrorToSheets) {
+    paymentRecordByIntentCache.set(`auto:${databaseRecord.payment_intent_id}`, {
+      expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
+      record: databaseRecord,
+    });
+
+    return databaseRecord;
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const { record: existingRecord, rowNumber } = await findRecordAndRowByFieldValue({
@@ -1204,8 +1420,8 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
     sheetTitle: config.paymentsSheetName,
   });
   const nextRecord: PaymentSheetRecord = {
-    ...record,
-    first_seen_at: existingRecord?.first_seen_at || record.first_seen_at,
+    ...databaseRecord,
+    first_seen_at: existingRecord?.first_seen_at || databaseRecord.first_seen_at,
   };
   const lastColumnLetter = columnIndexToLetter(PAYMENT_SHEET_HEADERS.length);
 
@@ -1217,7 +1433,11 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
       [toOrderedRow(PAYMENT_SHEET_HEADERS, nextRecord)],
     );
 
-    paymentRecordByIntentCache.set(nextRecord.payment_intent_id, {
+    paymentRecordByIntentCache.set(`auto:${nextRecord.payment_intent_id}`, {
+      expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
+      record: nextRecord,
+    });
+    paymentRecordByIntentCache.set(`sheets:${nextRecord.payment_intent_id}`, {
       expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
       record: nextRecord,
     });
@@ -1229,7 +1449,11 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
     toOrderedRow(PAYMENT_SHEET_HEADERS, nextRecord),
   ]);
 
-  paymentRecordByIntentCache.set(nextRecord.payment_intent_id, {
+  paymentRecordByIntentCache.set(`auto:${nextRecord.payment_intent_id}`, {
+    expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
+    record: nextRecord,
+  });
+  paymentRecordByIntentCache.set(`sheets:${nextRecord.payment_intent_id}`, {
     expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
     record: nextRecord,
   });
@@ -1237,7 +1461,34 @@ export const upsertPaymentRecord = async (record: PaymentSheetRecord) => {
   return nextRecord;
 };
 
-export const findTelegramAccessTokenRecordByTokenId = async (tokenId: string) => {
+export const findTelegramAccessTokenRecordByTokenId = async (
+  tokenId: string,
+  options?: {
+    source?: RecordSource;
+  },
+) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord =
+        await findTelegramAccessTokenRecordByTokenIdFromDatabase(tokenId);
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load Telegram access token by id from database, falling back to Sheets",
+        { error, tokenId },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
@@ -1252,7 +1503,34 @@ export const findTelegramAccessTokenRecordByTokenId = async (tokenId: string) =>
   return record;
 };
 
-export const findTelegramAccessTokenRecordByTokenHash = async (tokenHash: string) => {
+export const findTelegramAccessTokenRecordByTokenHash = async (
+  tokenHash: string,
+  options?: {
+    source?: RecordSource;
+  },
+) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord =
+        await findTelegramAccessTokenRecordByTokenHashFromDatabase(tokenHash);
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load Telegram access token by hash from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
@@ -1267,7 +1545,34 @@ export const findTelegramAccessTokenRecordByTokenHash = async (tokenHash: string
   return record;
 };
 
-export const findTelegramAccessTokenRecordByTokenValue = async (tokenValue: string) => {
+export const findTelegramAccessTokenRecordByTokenValue = async (
+  tokenValue: string,
+  options?: {
+    source?: RecordSource;
+  },
+) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord =
+        await findTelegramAccessTokenRecordByTokenValueFromDatabase(tokenValue);
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load Telegram access token by value from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
@@ -1282,9 +1587,70 @@ export const findTelegramAccessTokenRecordByTokenValue = async (tokenValue: stri
   return record;
 };
 
+export const listTelegramAccessTokenRecords = async (options?: {
+  cacheTtlMs?: number;
+  source?: RecordSource;
+}): Promise<TelegramAccessTokenSheetRecord[]> => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await listTelegramAccessTokenRecordsFromDatabase();
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to list Telegram access tokens from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
+  const config = getRequiredGoogleSheetsConfig();
+
+  return getRows(
+    config,
+    config.telegramAccessTokensSheetName,
+    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    {
+      cacheTtlMs: options?.cacheTtlMs ?? 0,
+    },
+  ) as Promise<TelegramAccessTokenSheetRecord[]>;
+};
+
 export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
   paymentIntentId: string,
+  options?: {
+    source?: RecordSource;
+  },
 ) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord =
+        await findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase(
+          paymentIntentId,
+        );
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load latest Telegram access token from database, falling back to Sheets",
+        { error, paymentIntentId },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
@@ -1314,20 +1680,13 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
   accessWorkflow: string;
   limit?: number;
 }) => {
-  const config = getRequiredGoogleSheetsConfig();
-
   const normalizedAccessWorkflow = accessWorkflow.trim().toLowerCase();
 
   if (!normalizedAccessWorkflow) {
     return [] as AdminInviteLinkHistorySourceRecord[];
   }
 
-  const paymentRows = await getRows(
-    config,
-    config.paymentsSheetName,
-    PAYMENT_SHEET_HEADERS,
-    PAYMENT_SHEET_HEADER_LABELS,
-  );
+  const paymentRows = await listPaymentRecords();
   const adminPaymentRows = paymentRows.filter(
     (row) =>
       row.access_workflow.trim().toLowerCase() === normalizedAccessWorkflow &&
@@ -1338,12 +1697,7 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
     return [] as AdminInviteLinkHistorySourceRecord[];
   }
 
-  const tokenRows = await getRows(
-    config,
-    config.telegramAccessTokensSheetName,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
-    TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
-  );
+  const tokenRows = await listTelegramAccessTokenRecords();
   const tokenById = new Map(
     tokenRows
       .map((row) => [row.token_id.trim(), row] as const)
@@ -1396,6 +1750,7 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
 export const upsertTelegramAccessTokenRecord = async (
   record: TelegramAccessTokenSheetRecord,
 ) => {
+  const databaseRecord = await upsertTelegramAccessTokenRecordToDatabase(record);
   const config = getRequiredGoogleSheetsConfig();
 
   return upsertRecordByFieldValue({
@@ -1404,14 +1759,39 @@ export const upsertTelegramAccessTokenRecord = async (
     fieldValue: record.token_id,
     headers: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
     labelsMap: TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
-    record,
+    record: databaseRecord,
     sheetTitle: config.telegramAccessTokensSheetName,
   });
 };
 
 export const findTelegramUserBindingByPaymentIntentId = async (
   paymentIntentId: string,
+  options?: {
+    source?: RecordSource;
+  },
 ) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord =
+        await findTelegramUserBindingByPaymentIntentIdFromDatabase(paymentIntentId);
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load Telegram user binding by payment from database, falling back to Sheets",
+        { error, paymentIntentId },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
@@ -1426,7 +1806,33 @@ export const findTelegramUserBindingByPaymentIntentId = async (
   return record;
 };
 
-export const findMonthlySalesReportRunByKey = async (reportKey: string) => {
+export const findMonthlySalesReportRunByKey = async (
+  reportKey: string,
+  options?: {
+    source?: RecordSource;
+  },
+) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      const databaseRecord = await findMonthlySalesReportRunByKeyFromDatabase(reportKey);
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load monthly sales report run from database, falling back to Sheets",
+        { error, reportKey },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const { record } = await findRecordAndRowByFieldValue({
@@ -1441,9 +1847,44 @@ export const findMonthlySalesReportRunByKey = async (reportKey: string) => {
   return record;
 };
 
+export const listMonthlySalesReportRunRecords = async (options?: {
+  cacheTtlMs?: number;
+  source?: RecordSource;
+}): Promise<MonthlySalesReportRunSheetRecord[]> => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await listMonthlySalesReportRunRecordsFromDatabase();
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to list monthly sales report runs from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
+  const config = getRequiredGoogleSheetsConfig();
+
+  return getRows(
+    config,
+    config.monthlySalesReportRunsSheetName,
+    MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
+    MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
+    {
+      cacheTtlMs: options?.cacheTtlMs ?? 0,
+    },
+  ) as Promise<MonthlySalesReportRunSheetRecord[]>;
+};
+
 export const upsertMonthlySalesReportRun = async (
   record: MonthlySalesReportRunSheetRecord,
 ) => {
+  const databaseRecord = await upsertMonthlySalesReportRunToDatabase(record);
   const config = getRequiredGoogleSheetsConfig();
 
   return upsertRecordByFieldValue({
@@ -1452,14 +1893,32 @@ export const upsertMonthlySalesReportRun = async (
     fieldValue: record.report_key,
     headers: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
     labelsMap: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
-    record,
+    record: databaseRecord,
     sheetTitle: config.monthlySalesReportRunsSheetName,
   });
 };
 
 export const listEmailCampaignLeadRecords = async (options?: {
   cacheTtlMs?: number;
+  source?: RecordSource;
 }): Promise<EmailCampaignLeadSheetRecord[]> => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await listEmailCampaignLeadRecordsFromDatabase();
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to list email campaign leads from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   return getRows(
@@ -1476,9 +1935,11 @@ export const listEmailCampaignLeadRecords = async (options?: {
 export const findEmailCampaignLeadByCampaignAndEmail = async ({
   campaignKey,
   email,
+  source = "auto",
 }: {
   campaignKey: string;
   email: string;
+  source?: RecordSource;
 }) => {
   const normalizedCampaignKey = campaignKey.trim();
   const normalizedEmail = email.trim().toLowerCase();
@@ -1487,8 +1948,31 @@ export const findEmailCampaignLeadByCampaignAndEmail = async ({
     return null;
   }
 
+  if (source !== "sheets") {
+    try {
+      const databaseRecord = await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+        campaignKey: normalizedCampaignKey,
+        email: normalizedEmail,
+      });
+
+      if (databaseRecord || source === "database") {
+        return databaseRecord;
+      }
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load email campaign lead from database, falling back to Sheets",
+        { campaignKey: normalizedCampaignKey, error },
+      );
+    }
+  }
+
   const rows = await listEmailCampaignLeadRecords({
     cacheTtlMs: 0,
+    source: "sheets",
   });
 
   return (
@@ -1503,6 +1987,7 @@ export const findEmailCampaignLeadByCampaignAndEmail = async ({
 export const upsertEmailCampaignLeadRecord = async (
   record: EmailCampaignLeadSheetRecord,
 ) => {
+  const databaseRecord = await upsertEmailCampaignLeadRecordToDatabase(record);
   const config = getRequiredGoogleSheetsConfig();
 
   return upsertRecordByFieldValue({
@@ -1511,14 +1996,34 @@ export const upsertEmailCampaignLeadRecord = async (
     fieldValue: record.lead_id,
     headers: EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
     labelsMap: EMAIL_CAMPAIGN_LEADS_SHEET_HEADER_LABELS,
-    record,
+    record: databaseRecord,
     sheetTitle: config.emailCampaignLeadsSheetName,
   });
 };
 
 export const findTelegramUserBindingsByTelegramUserId = async (
   telegramUserId: string,
+  options?: {
+    source?: RecordSource;
+  },
 ) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await findTelegramUserBindingsByTelegramUserIdFromDatabase(telegramUserId);
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load Telegram user bindings by user id from database, falling back to Sheets",
+        { error, telegramUserId },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
@@ -1531,7 +2036,29 @@ export const findTelegramUserBindingsByTelegramUserId = async (
   return rows.filter((row) => row.telegram_user_id === telegramUserId);
 };
 
-export const findTelegramUserBindingsByCustomerEmail = async (customerEmail: string) => {
+export const findTelegramUserBindingsByCustomerEmail = async (
+  customerEmail: string,
+  options?: {
+    source?: RecordSource;
+  },
+) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await findTelegramUserBindingsByCustomerEmailFromDatabase(customerEmail);
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load Telegram user bindings by customer email from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
@@ -1549,11 +2076,31 @@ export const findTelegramUserBindingsByCustomerEmail = async (customerEmail: str
 
 export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
   chatId,
+  source = "auto",
   telegramUserId,
 }: {
   chatId: string;
+  source?: RecordSource;
   telegramUserId: string;
 }) => {
+  if (source !== "sheets") {
+    try {
+      return await findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase({
+        chatId,
+        telegramUserId,
+      });
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load Telegram user bindings by user/chat from database, falling back to Sheets",
+        { error, telegramUserId },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
@@ -1570,7 +2117,26 @@ export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
   );
 };
 
-export const findActiveTelegramUserBindings = async () => {
+export const findActiveTelegramUserBindings = async (options?: {
+  source?: RecordSource;
+}) => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await findActiveTelegramUserBindingsFromDatabase();
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to load active Telegram user bindings from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
   const config = getRequiredGoogleSheetsConfig();
 
   const rows = await getRows(
@@ -1583,9 +2149,44 @@ export const findActiveTelegramUserBindings = async () => {
   return rows.filter((row) => row.status === "active");
 };
 
+export const listTelegramUserBindingRecords = async (options?: {
+  cacheTtlMs?: number;
+  source?: RecordSource;
+}): Promise<TelegramUserBindingSheetRecord[]> => {
+  const source = options?.source ?? "auto";
+
+  if (source !== "sheets") {
+    try {
+      return await listTelegramUserBindingRecordsFromDatabase();
+    } catch (error) {
+      if (source === "database") {
+        throw error;
+      }
+
+      console.warn(
+        "Failed to list Telegram user bindings from database, falling back to Sheets",
+        { error },
+      );
+    }
+  }
+
+  const config = getRequiredGoogleSheetsConfig();
+
+  return getRows(
+    config,
+    config.telegramUserBindingsSheetName,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
+    TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
+    {
+      cacheTtlMs: options?.cacheTtlMs ?? 0,
+    },
+  ) as Promise<TelegramUserBindingSheetRecord[]>;
+};
+
 export const upsertTelegramUserBindingRecord = async (
   record: TelegramUserBindingSheetRecord,
 ) => {
+  const databaseRecord = await upsertTelegramUserBindingRecordToDatabase(record);
   const config = getRequiredGoogleSheetsConfig();
 
   return upsertRecordByFieldValue({
@@ -1594,7 +2195,7 @@ export const upsertTelegramUserBindingRecord = async (
     fieldValue: record.payment_intent_id,
     headers: TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
     labelsMap: TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
-    record,
+    record: databaseRecord,
     sheetTitle: config.telegramUserBindingsSheetName,
   });
 };

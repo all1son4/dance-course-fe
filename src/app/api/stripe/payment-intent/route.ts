@@ -5,6 +5,7 @@ import {
   getSellableProductById,
   getSellableProductOfferById,
 } from "@/constants/sellable-products";
+import { getCheckoutSelectionFromDatabase } from "@/db/sellable-products";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -46,6 +47,61 @@ type CreatePaymentIntentBody = {
 export const runtime = "nodejs";
 
 const MAX_PAYMENT_INTENT_BODY_BYTES = 16 * 1024;
+
+const getFallbackCheckoutSelection = ({
+  currency,
+  offerId,
+  productId,
+}: {
+  currency: ReturnType<typeof getResolvedCheckoutCurrency>;
+  offerId?: string;
+  productId?: string;
+}) => {
+  const product = getSellableProductById(productId) ?? DEFAULT_CHECKOUT_PRODUCT;
+  const offer =
+    getSellableProductOfferById(product, offerId) ??
+    product.offers.find((item) => item.id === product.defaultOfferId) ??
+    product.offers[0];
+
+  return {
+    amountMinor: getProductPrice(product, offer.id, currency) * 100,
+    offer,
+    product,
+  };
+};
+
+const getCheckoutSelection = async ({
+  currency,
+  offerId,
+  productId,
+}: {
+  currency: ReturnType<typeof getResolvedCheckoutCurrency>;
+  offerId?: string;
+  productId?: string;
+}) => {
+  const fallbackSelection = getFallbackCheckoutSelection({
+    currency,
+    offerId,
+    productId,
+  });
+
+  try {
+    return (
+      (await getCheckoutSelectionFromDatabase({
+        currency,
+        offerId,
+        productId: fallbackSelection.product.id,
+      })) ?? fallbackSelection
+    );
+  } catch (error) {
+    console.warn(
+      "Failed to load checkout product selection from database, falling back to constants",
+      { error, productId: fallbackSelection.product.id },
+    );
+
+    return fallbackSelection;
+  }
+};
 
 export async function POST(request: Request) {
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -89,12 +145,12 @@ export async function POST(request: Request) {
     const checkoutSessionId = normalizeCheckoutSessionId(body.checkoutSessionId);
     const checkoutLocale = getResolvedCheckoutLocale(body.checkoutLocale);
     const customerData = normalizePaymentIntentCustomerData(body.customerData ?? {});
-    const product = getSellableProductById(body.productId) ?? DEFAULT_CHECKOUT_PRODUCT;
-    const offer =
-      getSellableProductOfferById(product, body.offerId) ??
-      product.offers.find((item) => item.id === product.defaultOfferId) ??
-      product.offers[0];
     const currency = getResolvedCheckoutCurrency(body.currency);
+    const { amountMinor, offer, product } = await getCheckoutSelection({
+      currency,
+      offerId: body.offerId,
+      productId: body.productId,
+    });
     const localizedProductTitle = getLocalizedSellableProductTitle(
       product,
       checkoutLocale,
@@ -110,7 +166,7 @@ export async function POST(request: Request) {
 
     const paymentIntent = await stripe.paymentIntents.create(
       {
-        amount: getProductPrice(product, offer.id, currency) * 100,
+        amount: amountMinor,
         currency,
         automatic_payment_methods: {
           enabled: true,

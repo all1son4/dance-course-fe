@@ -20,6 +20,7 @@ import {
   formatCheckoutPrice,
   getDefaultCheckoutCurrencyByLocale,
   getResolvedCheckoutCurrency,
+  type SellableProduct,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
@@ -69,6 +70,10 @@ const getCompactSummaryTitle = (fullTitle: string) => {
 
 const PAYMENT_DRAFT_SAVE_DEBOUNCE_MS = 240;
 const LEGACY_NAVIGATION_TYPE_RELOAD = 1;
+
+type SellableProductsCatalogResponse = {
+  products?: SellableProduct[];
+};
 
 const isReloadNavigation = () => {
   if (typeof window === "undefined" || typeof window.performance === "undefined") {
@@ -130,6 +135,37 @@ const PaymentPage = observer(function PaymentPage() {
   useEffect(() => {
     document.body.removeAttribute("data-hide-footer");
   }, []);
+
+  useEffect(() => {
+    const requestController = new AbortController();
+
+    void fetch("/api/catalog/sellable-products", {
+      signal: requestController.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+
+        return (await response.json()) as SellableProductsCatalogResponse;
+      })
+      .then((data) => {
+        if (data?.products?.length) {
+          paymentStore.setSellableProducts(data.products);
+        }
+      })
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+
+        console.warn("Failed to load sellable products catalog", error);
+      });
+
+    return () => {
+      requestController.abort();
+    };
+  }, [paymentStore]);
 
   useEffect(() => {
     paymentStore.setValidationLocale(locale);

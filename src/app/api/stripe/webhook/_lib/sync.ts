@@ -699,6 +699,7 @@ const hasCompletedSuccessfulCustomerLog = (paymentRecord: PaymentSheetRecord) =>
 const getFreshPaymentRecord = async (fallbackPaymentRecord: PaymentSheetRecord) =>
   (await findPaymentRecordByIntentId(fallbackPaymentRecord.payment_intent_id, {
     cacheTtlMs: 0,
+    source: "sheets",
   })) ?? fallbackPaymentRecord;
 
 const waitForSuccessfulCustomerLogLease = async (paymentRecord: PaymentSheetRecord) => {
@@ -897,9 +898,12 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
   }
 
   const [existingEvent, existingPaymentRecord] = await Promise.all([
-    findStripeEventRecordByEventId(event.id),
+    findStripeEventRecordByEventId(event.id, {
+      source: "sheets",
+    }),
     findPaymentRecordByIntentId(paymentIntent.id, {
       cacheTtlMs: 0,
+      source: "sheets",
     }),
   ]);
   const sourceContext = await getPaymentSourceContext(event, paymentIntent);
