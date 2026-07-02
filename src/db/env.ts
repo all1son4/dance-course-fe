@@ -112,9 +112,7 @@ const getEnvironmentSpecificNames = (kind: DatabaseConnectionKind) => {
       ? PROD_UNPOOLED_DATABASE_URL_NAMES
       : PROD_POOLED_DATABASE_URL_NAMES;
 
-  return deploymentEnvironment === "production"
-    ? [...prodNames, ...devNames]
-    : [...devNames, ...prodNames];
+  return deploymentEnvironment === "production" ? prodNames : devNames;
 };
 
 const getStandardNames = (kind: DatabaseConnectionKind) =>
