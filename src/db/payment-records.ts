@@ -708,7 +708,18 @@ export const listSucceededPaymentRecordsFromDatabaseInUtcRange = async ({
       ),
     )
     .orderBy(asc(stripeEvents.stripeCreatedAt), asc(purchases.paymentIntentId));
-  const records = await hydratePaymentRecords(rows.map((row) => row.purchase));
+  const seenPaymentIntentIds = new Set<string>();
+  const purchasesByFirstSucceededEvent = rows
+    .map((row) => row.purchase)
+    .filter((purchase) => {
+      if (seenPaymentIntentIds.has(purchase.paymentIntentId)) {
+        return false;
+      }
+
+      seenPaymentIntentIds.add(purchase.paymentIntentId);
+      return true;
+    });
+  const records = await hydratePaymentRecords(purchasesByFirstSucceededEvent);
 
   return records;
 };

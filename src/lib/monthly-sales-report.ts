@@ -236,6 +236,47 @@ const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) =>
     formatNullableAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
   ]);
 
+const dedupeSaleRecordsByPaymentIntent = (
+  saleRecords: MonthlySalesReportSaleRecord[],
+) => {
+  const saleRecordByPaymentIntentId = new Map<string, MonthlySalesReportSaleRecord>();
+
+  for (const saleRecord of saleRecords) {
+    if (!saleRecord.paymentIntentId.trim()) {
+      continue;
+    }
+
+    const existingSaleRecord = saleRecordByPaymentIntentId.get(
+      saleRecord.paymentIntentId,
+    );
+
+    if (!existingSaleRecord) {
+      saleRecordByPaymentIntentId.set(saleRecord.paymentIntentId, saleRecord);
+      continue;
+    }
+
+    const existingTimestamp = Date.parse(existingSaleRecord.saleTimestampIso);
+    const nextTimestamp = Date.parse(saleRecord.saleTimestampIso);
+
+    if (
+      Number.isFinite(nextTimestamp) &&
+      (!Number.isFinite(existingTimestamp) || nextTimestamp < existingTimestamp)
+    ) {
+      saleRecordByPaymentIntentId.set(saleRecord.paymentIntentId, saleRecord);
+    }
+  }
+
+  return Array.from(saleRecordByPaymentIntentId.values()).sort((left, right) => {
+    const leftTimestamp = Date.parse(left.saleTimestampIso);
+    const rightTimestamp = Date.parse(right.saleTimestampIso);
+    const timestampDiff =
+      (Number.isFinite(leftTimestamp) ? leftTimestamp : 0) -
+      (Number.isFinite(rightTimestamp) ? rightTimestamp : 0);
+
+    return timestampDiff || left.paymentIntentId.localeCompare(right.paymentIntentId);
+  });
+};
+
 const formatReportMonthForSubject = (monthValue: string) =>
   formatReportMonthLabel(monthValue).toLocaleLowerCase("ru-RU");
 
@@ -443,28 +484,30 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
     )
     .orderBy(asc(saleTimestamp), asc(purchases.paymentIntentId));
 
-  return rows.map((row) => ({
-    amountMinor: String(row.amountMinor),
-    currency: row.currency,
-    customerCountry: row.customerCountrySnapshot ?? "",
-    customerEmail: row.customerEmailSnapshot ?? "",
-    customerFullName: row.customerFullNameSnapshot ?? "",
-    invoiceNumber: row.invoiceNumber ?? "",
-    paymentIntentId: row.paymentIntentId,
-    purchaseItem:
-      row.purchaseItemSnapshot ??
-      row.productTitleSnapshot ??
-      row.offerLabelSnapshot ??
-      "",
-    saleTimestampIso: row.saleTimestamp?.toISOString() ?? "",
-    settlementAmountMinor:
-      row.settlementAmountMinor === null ? "" : String(row.settlementAmountMinor),
-    settlementCurrency: row.settlementCurrency ?? "",
-    stripeFeeAmountMinor:
-      row.stripeFeeAmountMinor === null ? "" : String(row.stripeFeeAmountMinor),
-    stripeNetAmountMinor:
-      row.stripeNetAmountMinor === null ? "" : String(row.stripeNetAmountMinor),
-  }));
+  return dedupeSaleRecordsByPaymentIntent(
+    rows.map((row) => ({
+      amountMinor: String(row.amountMinor),
+      currency: row.currency,
+      customerCountry: row.customerCountrySnapshot ?? "",
+      customerEmail: row.customerEmailSnapshot ?? "",
+      customerFullName: row.customerFullNameSnapshot ?? "",
+      invoiceNumber: row.invoiceNumber ?? "",
+      paymentIntentId: row.paymentIntentId,
+      purchaseItem:
+        row.purchaseItemSnapshot ??
+        row.productTitleSnapshot ??
+        row.offerLabelSnapshot ??
+        "",
+      saleTimestampIso: row.saleTimestamp?.toISOString() ?? "",
+      settlementAmountMinor:
+        row.settlementAmountMinor === null ? "" : String(row.settlementAmountMinor),
+      settlementCurrency: row.settlementCurrency ?? "",
+      stripeFeeAmountMinor:
+        row.stripeFeeAmountMinor === null ? "" : String(row.stripeFeeAmountMinor),
+      stripeNetAmountMinor:
+        row.stripeNetAmountMinor === null ? "" : String(row.stripeNetAmountMinor),
+    })),
+  );
 };
 
 const listSucceededSaleRecordsInUtcRange = async ({

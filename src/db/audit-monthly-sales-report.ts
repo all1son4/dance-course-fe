@@ -19,6 +19,11 @@ type MonthCountRow = {
   sale_count: number;
 };
 
+type DuplicateSaleEventRow = {
+  event_count: number;
+  payment_intent_id: string;
+};
+
 type SampleRow = {
   customer_email_snapshot: string | null;
   outcome: string;
@@ -47,6 +52,8 @@ const main = async () => {
     succeededNonStripePurchaseRows,
     reportEligiblePurchaseRows,
     reportJoinCountRows,
+    reportUniqueCountRows,
+    duplicateSaleEventRows,
     succeededStripeEventRows,
     sourceCounts,
     reportMonths,
@@ -91,6 +98,38 @@ const main = async () => {
         and se.stripe_created_at < now()
     `,
     client<CountRow[]>`
+      select count(distinct p.payment_intent_id)::int as count
+      from purchases p
+      inner join stripe_events se
+        on se.payment_intent_id = p.payment_intent_id
+        and se.event_type = 'payment_intent.succeeded'
+      where p.outcome = 'succeeded'
+        and p.source <> 'admin_offer_link'
+        and se.processing_status = 'processed'
+        and se.outcome_snapshot = 'succeeded'
+        and se.stripe_created_at is not null
+        and se.stripe_created_at < now()
+    `,
+    client<DuplicateSaleEventRow[]>`
+      select
+        p.payment_intent_id,
+        count(*)::int as event_count
+      from purchases p
+      inner join stripe_events se
+        on se.payment_intent_id = p.payment_intent_id
+        and se.event_type = 'payment_intent.succeeded'
+      where p.outcome = 'succeeded'
+        and p.source <> 'admin_offer_link'
+        and se.processing_status = 'processed'
+        and se.outcome_snapshot = 'succeeded'
+        and se.stripe_created_at is not null
+        and se.stripe_created_at < now()
+      group by p.payment_intent_id
+      having count(*) > 1
+      order by event_count desc, p.payment_intent_id asc
+      limit 20
+    `,
+    client<CountRow[]>`
       select count(*)::int as count
       from stripe_events
       where event_type = 'payment_intent.succeeded'
@@ -108,7 +147,7 @@ const main = async () => {
     client<MonthCountRow[]>`
       select
         to_char(se.stripe_created_at at time zone 'UTC', 'YYYY-MM') as month,
-        count(*)::int as sale_count
+        count(distinct p.payment_intent_id)::int as sale_count
       from purchases p
       inner join stripe_events se
         on se.payment_intent_id = p.payment_intent_id
@@ -147,14 +186,17 @@ const main = async () => {
   const succeededNonStripePurchases = succeededNonStripePurchaseRows[0]?.count ?? 0;
   const reportEligiblePurchases = reportEligiblePurchaseRows[0]?.count ?? 0;
   const reportJoinRows = reportJoinCountRows[0]?.count ?? 0;
+  const reportUniqueRows = reportUniqueCountRows[0]?.count ?? 0;
   const succeededStripeEvents = succeededStripeEventRows[0]?.count ?? 0;
 
   console.warn(
     JSON.stringify(
       {
         report: {
+          duplicateSaleEvents: duplicateSaleEventRows,
           months: reportMonths,
-          rowCount: reportJoinRows,
+          rawJoinRowCount: reportJoinRows,
+          uniqueSaleCount: reportUniqueRows,
         },
         samples: reportSamples,
         stripeEvents: {
