@@ -50,12 +50,14 @@ export type MonthlySalesReportMonthOption = {
 type MonthlySalesReportSaleRecord = {
   amountMinor: string;
   currency: string;
+  customerCountry: string;
   customerEmail: string;
   customerFullName: string;
   invoiceNumber: string;
   paymentIntentId: string;
   purchaseItem: string;
   saleTimestampIso: string;
+  settlementAmountMinor: string;
   settlementCurrency: string;
   stripeFeeAmountMinor: string;
   stripeNetAmountMinor: string;
@@ -108,6 +110,7 @@ const mapPaymentRecordToSaleRecord = (
 ): MonthlySalesReportSaleRecord => ({
   amountMinor: paymentRecord.amount,
   currency: paymentRecord.currency,
+  customerCountry: paymentRecord.customer_country,
   customerEmail: paymentRecord.customer_email,
   customerFullName: paymentRecord.customer_full_name,
   invoiceNumber: paymentRecord.invoice_number,
@@ -117,6 +120,7 @@ const mapPaymentRecordToSaleRecord = (
     paymentRecord.product_title ||
     paymentRecord.offer_label,
   saleTimestampIso: getSaleTimestampIso(paymentRecord),
+  settlementAmountMinor: "",
   settlementCurrency: "",
   stripeFeeAmountMinor: "",
   stripeNetAmountMinor: "",
@@ -203,6 +207,7 @@ const buildCsv = (rows: string[][]) => {
     "Дата продажи",
     "Номер инвойса",
     "ФИО / Email",
+    "Страна покупки",
     "Что купили",
     "Сумма продажи",
     "Комиссия Stripe",
@@ -218,6 +223,28 @@ const buildCsv = (rows: string[][]) => {
 const formatNullableAmount = (amountMinor: string, currency: string) =>
   amountMinor.trim() && currency.trim() ? formatAmount(amountMinor, currency) : "";
 
+const formatPlnSaleAmount = ({
+  amountMinor,
+  currency,
+  settlementAmountMinor,
+  settlementCurrency,
+}: {
+  amountMinor: string;
+  currency: string;
+  settlementAmountMinor: string;
+  settlementCurrency: string;
+}) => {
+  if (settlementAmountMinor.trim() && settlementCurrency.trim().toLowerCase() === "pln") {
+    return formatAmount(settlementAmountMinor, settlementCurrency);
+  }
+
+  if (currency.trim().toLowerCase() === "pln") {
+    return formatAmount(amountMinor, currency);
+  }
+
+  return "";
+};
+
 const formatCustomerIdentity = ({
   customerEmail,
   customerFullName,
@@ -231,8 +258,9 @@ const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) =>
     saleRecord.saleTimestampIso,
     saleRecord.invoiceNumber.trim(),
     formatCustomerIdentity(saleRecord),
+    saleRecord.customerCountry.trim(),
     saleRecord.purchaseItem.trim(),
-    formatAmount(saleRecord.amountMinor, saleRecord.currency),
+    formatPlnSaleAmount(saleRecord),
     formatNullableAmount(saleRecord.stripeFeeAmountMinor, saleRecord.settlementCurrency),
     formatNullableAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
   ]);
@@ -423,6 +451,7 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
     .select({
       amountMinor: purchases.amountMinor,
       currency: purchases.currency,
+      customerCountrySnapshot: purchases.customerCountrySnapshot,
       customerEmailSnapshot: purchases.customerEmailSnapshot,
       customerFullNameSnapshot: purchases.customerFullNameSnapshot,
       invoiceNumber: invoices.invoiceNumber,
@@ -430,8 +459,9 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
       paymentIntentId: purchases.paymentIntentId,
       productTitleSnapshot: purchases.productTitleSnapshot,
       purchaseItemSnapshot: purchases.purchaseItemSnapshot,
+      settlementAmountMinor: purchases.settlementAmountMinor,
       settlementCurrency: purchases.settlementCurrency,
-      succeededAt: purchases.succeededAt,
+      saleTimestamp: purchases.succeededAt,
       stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
       stripeNetAmountMinor: purchases.stripeNetAmountMinor,
     })
@@ -451,6 +481,7 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
   return rows.map((row) => ({
     amountMinor: String(row.amountMinor),
     currency: row.currency,
+    customerCountry: row.customerCountrySnapshot ?? "",
     customerEmail: row.customerEmailSnapshot ?? "",
     customerFullName: row.customerFullNameSnapshot ?? "",
     invoiceNumber: row.invoiceNumber ?? "",
@@ -460,7 +491,9 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
       row.productTitleSnapshot ??
       row.offerLabelSnapshot ??
       "",
-    saleTimestampIso: row.succeededAt?.toISOString() ?? "",
+    saleTimestampIso: row.saleTimestamp?.toISOString() ?? "",
+    settlementAmountMinor:
+      row.settlementAmountMinor === null ? "" : String(row.settlementAmountMinor),
     settlementCurrency: row.settlementCurrency ?? "",
     stripeFeeAmountMinor:
       row.stripeFeeAmountMinor === null ? "" : String(row.stripeFeeAmountMinor),
