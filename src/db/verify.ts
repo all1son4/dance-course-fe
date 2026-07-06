@@ -1,7 +1,7 @@
-import { loadEnvConfig } from "@next/env";
 import { count } from "drizzle-orm";
 
 import { getDatabase, getDatabaseClient } from "./client";
+import { loadDatabaseEnvConfig } from "./load-env";
 import {
   accessEntitlements,
   customers,
@@ -18,7 +18,7 @@ import {
   telegramUserBindings,
 } from "./schema";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 const TABLES = {
   accessEntitlements,

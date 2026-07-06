@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
 
 import {
   PAYMENT_SHEET_HEADERS,
@@ -14,6 +14,7 @@ import {
   products,
   purchases,
   purchaseSideEffects,
+  stripeEvents,
 } from "./schema";
 
 const trim = (value: string | null | undefined) => value?.trim() ?? "";
@@ -155,11 +156,7 @@ const normalizeSideEffectStatus = (
   return "pending";
 };
 
-const getSaleTimestamp = (paymentRecord: PaymentSheetRecord) =>
-  parseDate(paymentRecord.successful_customer_logged_at) ??
-  (paymentRecord.outcome.trim() === "succeeded"
-    ? (parseDate(paymentRecord.updated_at) ?? parseDate(paymentRecord.first_seen_at))
-    : null);
+const getSaleTimestamp = () => null;
 
 const getPurchaseSource = (paymentIntentId: string) =>
   paymentIntentId.startsWith("adm_offer_pi_") ? "admin_offer_link" : "stripe";
@@ -487,6 +484,7 @@ export const upsertPaymentRecordToDatabase = async (
         stripeExchangeRate: purchases.stripeExchangeRate,
         stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
         stripeNetAmountMinor: purchases.stripeNetAmountMinor,
+        succeededAt: purchases.succeededAt,
       })
       .from(purchases)
       .where(eq(purchases.paymentIntentId, paymentIntentId))
@@ -527,7 +525,7 @@ export const upsertPaymentRecordToDatabase = async (
       stripeFeeAmountMinor: existingPurchase[0]?.stripeFeeAmountMinor ?? null,
       stripeNetAmountMinor: existingPurchase[0]?.stripeNetAmountMinor ?? null,
       stripeStatus: trim(paymentRecord.status) || "unknown",
-      succeededAt: getSaleTimestamp(paymentRecord),
+      succeededAt: getSaleTimestamp() ?? existingPurchase[0]?.succeededAt ?? null,
       updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),
     };
     const [savedPurchase] = await tx
@@ -688,37 +686,29 @@ export const listSucceededPaymentRecordsFromDatabaseInUtcRange = async ({
 
   const db = getDatabase();
   const rows = await db
-    .select()
-    .from(purchases)
-    .where(and(eq(purchases.outcome, "succeeded"), eq(purchases.source, "stripe")));
-  const records = await hydratePaymentRecords(rows);
-
-  return records
-    .filter((record) => {
-      const saleTimestamp = Date.parse(
-        record.successful_customer_logged_at ||
-          record.updated_at ||
-          record.first_seen_at ||
-          "",
-      );
-
-      return saleTimestamp >= startDate.getTime() && saleTimestamp < endDate.getTime();
+    .select({
+      purchase: purchases,
     })
-    .sort((left, right) => {
-      const leftTimestamp = Date.parse(
-        left.successful_customer_logged_at || left.updated_at || left.first_seen_at || "",
-      );
-      const rightTimestamp = Date.parse(
-        right.successful_customer_logged_at ||
-          right.updated_at ||
-          right.first_seen_at ||
-          "",
-      );
+    .from(purchases)
+    .innerJoin(
+      stripeEvents,
+      and(
+        eq(stripeEvents.paymentIntentId, purchases.paymentIntentId),
+        eq(stripeEvents.eventType, "payment_intent.succeeded"),
+      ),
+    )
+    .where(
+      and(
+        eq(purchases.outcome, "succeeded"),
+        eq(purchases.source, "stripe"),
+        eq(stripeEvents.processingStatus, "processed"),
+        eq(stripeEvents.outcomeSnapshot, "succeeded"),
+        gte(stripeEvents.stripeCreatedAt, startDate),
+        lt(stripeEvents.stripeCreatedAt, endDate),
+      ),
+    )
+    .orderBy(asc(stripeEvents.stripeCreatedAt), asc(purchases.paymentIntentId));
+  const records = await hydratePaymentRecords(rows.map((row) => row.purchase));
 
-      if (leftTimestamp !== rightTimestamp) {
-        return leftTimestamp - rightTimestamp;
-      }
-
-      return left.payment_intent_id.localeCompare(right.payment_intent_id);
-    });
+  return records;
 };

@@ -1,4 +1,3 @@
-import { loadEnvConfig } from "@next/env";
 import { eq, isNotNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -14,6 +13,7 @@ import {
 } from "@/lib/google-sheets";
 
 import { getRequiredDatabaseUrlFromEnv } from "./env";
+import { loadDatabaseEnvConfig } from "./load-env";
 import {
   accessEntitlements,
   customers,
@@ -29,7 +29,7 @@ import {
   telegramUserBindings,
 } from "./schema";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 type BackfillStats = {
   accessEntitlements: number;
@@ -258,11 +258,7 @@ const normalizeEmailSendStatus = (value: string): "pending" | "sent" | "failed" 
   return "pending";
 };
 
-const getSaleTimestamp = (paymentRecord: PaymentSheetRecord) =>
-  parseDate(paymentRecord.successful_customer_logged_at) ??
-  (paymentRecord.outcome.trim() === "succeeded"
-    ? (parseDate(paymentRecord.updated_at) ?? parseDate(paymentRecord.first_seen_at))
-    : null);
+const getSaleTimestamp = () => null;
 
 const getPurchaseSource = (paymentIntentId: string) =>
   paymentIntentId.startsWith("adm_offer_pi_") ? "admin_offer_link" : "stripe";
@@ -578,7 +574,7 @@ const backfill = async ({ dryRun, limit }: { dryRun: boolean; limit: number | nu
             purchaseItemSnapshot: nullIfEmpty(paymentRecord.purchase_item),
             source: getPurchaseSource(paymentIntentId),
             stripeStatus: trim(paymentRecord.status) || "unknown",
-            succeededAt: getSaleTimestamp(paymentRecord),
+            succeededAt: getSaleTimestamp(),
             updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),
           })
           .onConflictDoUpdate({
@@ -618,7 +614,6 @@ const backfill = async ({ dryRun, limit }: { dryRun: boolean; limit: number | nu
               purchaseItemSnapshot: nullIfEmpty(paymentRecord.purchase_item),
               source: getPurchaseSource(paymentIntentId),
               stripeStatus: trim(paymentRecord.status) || "unknown",
-              succeededAt: getSaleTimestamp(paymentRecord),
               updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),
             },
             target: purchases.paymentIntentId,

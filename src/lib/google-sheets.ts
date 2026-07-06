@@ -63,7 +63,6 @@ import {
   type TelegramAccessTokenSheetRecord,
   type TelegramUserBindingSheetRecord,
 } from "@/lib/google-sheets-schema";
-import { isAdminOfferAccessWorkflow } from "@/lib/telegram/admin-offer-access";
 
 export type {
   AdminInviteLinkHistorySourceRecord,
@@ -1114,67 +1113,14 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
   source?: RecordSource;
   startUtcIso: string;
 }) => {
-  if (source !== "sheets") {
-    try {
-      return await listSucceededPaymentRecordsFromDatabaseInUtcRange({
-        endUtcIsoExclusive,
-        startUtcIso,
-      });
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
-      console.warn(
-        "Failed to load succeeded payment records from database, falling back to Sheets",
-        error,
-      );
-    }
+  if (source === "sheets") {
+    throw new Error("sheets_successful_payment_date_unavailable");
   }
 
-  const config = getRequiredGoogleSheetsConfig();
-
-  const startTimestamp = Date.parse(startUtcIso);
-  const endTimestamp = Date.parse(endUtcIsoExclusive);
-
-  if (!Number.isFinite(startTimestamp) || !Number.isFinite(endTimestamp)) {
-    return [] as PaymentSheetRecord[];
-  }
-
-  const rows = await getRows(
-    config,
-    config.paymentsSheetName,
-    PAYMENT_SHEET_HEADERS,
-    PAYMENT_SHEET_HEADER_LABELS,
-  );
-
-  return rows
-    .filter((row) => row.outcome.trim() === "succeeded")
-    .filter((row) => !isAdminOfferAccessWorkflow(row.access_workflow))
-    .filter((row) => {
-      const saleTimestamp = Date.parse(
-        row.successful_customer_logged_at || row.updated_at || row.first_seen_at || "",
-      );
-
-      return saleTimestamp >= startTimestamp && saleTimestamp < endTimestamp;
-    })
-    .sort((left, right) => {
-      const leftTimestamp = Date.parse(
-        left.successful_customer_logged_at || left.updated_at || left.first_seen_at || "",
-      );
-      const rightTimestamp = Date.parse(
-        right.successful_customer_logged_at ||
-          right.updated_at ||
-          right.first_seen_at ||
-          "",
-      );
-
-      if (leftTimestamp !== rightTimestamp) {
-        return leftTimestamp - rightTimestamp;
-      }
-
-      return left.payment_intent_id.localeCompare(right.payment_intent_id);
-    });
+  return listSucceededPaymentRecordsFromDatabaseInUtcRange({
+    endUtcIsoExclusive,
+    startUtcIso,
+  });
 };
 
 export const listPaymentRecords = async (options?: {

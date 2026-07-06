@@ -1,8 +1,7 @@
-import { loadEnvConfig } from "@next/env";
-
 import { getDatabaseEnvSelection } from "./env";
+import { loadDatabaseEnvConfig } from "./load-env";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 console.warn(
   JSON.stringify(

@@ -3,13 +3,11 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import { invoices, purchases } from "@/db/schema";
+import { invoices, purchases, stripeEvents } from "@/db/schema";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
   findMonthlySalesReportRunByKey,
-  listSucceededPaymentRecordsInUtcRange,
   type MonthlySalesReportRunSheetRecord,
-  type PaymentSheetRecord,
   upsertMonthlySalesReportRun,
 } from "@/lib/google-sheets";
 
@@ -98,33 +96,6 @@ const formatAmount = (amountMinor: string, currency: string) => {
 
   return `${majorAmount} ${normalizedCurrency}`;
 };
-
-const getSaleTimestampIso = (paymentRecord: PaymentSheetRecord) =>
-  paymentRecord.successful_customer_logged_at.trim() ||
-  paymentRecord.updated_at.trim() ||
-  paymentRecord.first_seen_at.trim() ||
-  "";
-
-const mapPaymentRecordToSaleRecord = (
-  paymentRecord: PaymentSheetRecord,
-): MonthlySalesReportSaleRecord => ({
-  amountMinor: paymentRecord.amount,
-  currency: paymentRecord.currency,
-  customerCountry: paymentRecord.customer_country,
-  customerEmail: paymentRecord.customer_email,
-  customerFullName: paymentRecord.customer_full_name,
-  invoiceNumber: paymentRecord.invoice_number,
-  paymentIntentId: paymentRecord.payment_intent_id,
-  purchaseItem:
-    paymentRecord.purchase_item ||
-    paymentRecord.product_title ||
-    paymentRecord.offer_label,
-  saleTimestampIso: getSaleTimestampIso(paymentRecord),
-  settlementAmountMinor: "",
-  settlementCurrency: "",
-  stripeFeeAmountMinor: "",
-  stripeNetAmountMinor: "",
-});
 
 const parseReportMonth = (reportMonth: string) => {
   const match = /^(\d{4})-(\d{2})$/u.exec(reportMonth.trim());
@@ -416,22 +387,6 @@ export const getMonthlySalesReportPeriodForNow = (date: Date = new Date()) =>
     referenceDate: date,
   });
 
-const listSucceededSaleRecordsFromSheetsInUtcRange = async ({
-  endUtcIsoExclusive,
-  startUtcIso,
-}: {
-  endUtcIsoExclusive: string;
-  startUtcIso: string;
-}) => {
-  const paymentRecords = await listSucceededPaymentRecordsInUtcRange({
-    endUtcIsoExclusive,
-    source: "sheets",
-    startUtcIso,
-  });
-
-  return paymentRecords.map(mapPaymentRecordToSaleRecord);
-};
-
 const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
   endUtcIsoExclusive,
   startUtcIso,
@@ -447,6 +402,7 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
   }
 
   const db = getDatabase();
+  const saleTimestamp = stripeEvents.stripeCreatedAt;
   const rows = await db
     .select({
       amountMinor: purchases.amountMinor,
@@ -461,22 +417,31 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
       purchaseItemSnapshot: purchases.purchaseItemSnapshot,
       settlementAmountMinor: purchases.settlementAmountMinor,
       settlementCurrency: purchases.settlementCurrency,
-      saleTimestamp: purchases.succeededAt,
+      saleTimestamp,
       stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
       stripeNetAmountMinor: purchases.stripeNetAmountMinor,
     })
     .from(purchases)
     .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
+    .innerJoin(
+      stripeEvents,
+      and(
+        eq(stripeEvents.paymentIntentId, purchases.paymentIntentId),
+        eq(stripeEvents.eventType, "payment_intent.succeeded"),
+      ),
+    )
     .where(
       and(
         eq(purchases.outcome, "succeeded"),
         ne(purchases.source, "admin_offer_link"),
-        isNotNull(purchases.succeededAt),
-        gte(purchases.succeededAt, startDate),
-        lt(purchases.succeededAt, endDate),
+        eq(stripeEvents.processingStatus, "processed"),
+        eq(stripeEvents.outcomeSnapshot, "succeeded"),
+        isNotNull(saleTimestamp),
+        gte(saleTimestamp, startDate),
+        lt(saleTimestamp, endDate),
       ),
     )
-    .orderBy(asc(purchases.succeededAt), asc(purchases.paymentIntentId));
+    .orderBy(asc(saleTimestamp), asc(purchases.paymentIntentId));
 
   return rows.map((row) => ({
     amountMinor: String(row.amountMinor),
@@ -509,19 +474,10 @@ const listSucceededSaleRecordsInUtcRange = async ({
   endUtcIsoExclusive: string;
   startUtcIso: string;
 }) => {
-  try {
-    return await listSucceededSaleRecordsFromDatabaseInUtcRange({
-      endUtcIsoExclusive,
-      startUtcIso,
-    });
-  } catch (error) {
-    console.error("Failed to load monthly sales report rows from database", error);
-
-    return listSucceededSaleRecordsFromSheetsInUtcRange({
-      endUtcIsoExclusive,
-      startUtcIso,
-    });
-  }
+  return listSucceededSaleRecordsFromDatabaseInUtcRange({
+    endUtcIsoExclusive,
+    startUtcIso,
+  });
 };
 
 export const listAvailableMonthlySalesReportMonths = async (

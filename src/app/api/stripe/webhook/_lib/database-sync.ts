@@ -154,11 +154,22 @@ const normalizeSideEffectStatus = (
   return "pending";
 };
 
-const getSaleTimestamp = (paymentRecord: PaymentSheetRecord) =>
-  parseDate(paymentRecord.successful_customer_logged_at) ??
-  (paymentRecord.outcome.trim() === "succeeded"
-    ? (parseDate(paymentRecord.updated_at) ?? parseDate(paymentRecord.first_seen_at))
-    : null);
+const getSaleTimestamp = ({
+  event,
+  paymentRecord,
+}: {
+  event: Stripe.Event;
+  paymentRecord: PaymentSheetRecord;
+}) => {
+  if (
+    event.type === "payment_intent.succeeded" &&
+    paymentRecord.outcome.trim() === "succeeded"
+  ) {
+    return new Date(event.created * 1000);
+  }
+
+  return null;
+};
 
 const getPurchaseSource = (paymentIntentId: string) =>
   paymentIntentId.startsWith("adm_offer_pi_") ? "admin_offer_link" : "stripe";
@@ -537,6 +548,26 @@ export const syncStripeWebhookEventToDatabase = async ({
       const firstSeenAt = parseRequiredDate(
         paymentRecord.first_seen_at || paymentRecord.updated_at,
       );
+      const [existingPurchase] = await tx
+        .select({
+          settlementAmountMinor: purchases.settlementAmountMinor,
+          settlementCurrency: purchases.settlementCurrency,
+          stripeBalanceTransactionId: purchases.stripeBalanceTransactionId,
+          stripeExchangeRate: purchases.stripeExchangeRate,
+          stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
+          stripeNetAmountMinor: purchases.stripeNetAmountMinor,
+          succeededAt: purchases.succeededAt,
+        })
+        .from(purchases)
+        .where(eq(purchases.paymentIntentId, paymentIntentId))
+        .limit(1);
+      const succeededAt =
+        getSaleTimestamp({
+          event,
+          paymentRecord,
+        }) ??
+        existingPurchase?.succeededAt ??
+        null;
       const purchaseValues = {
         amountMinor: parseInteger(paymentRecord.amount),
         checkoutCurrency: nullIfEmpty(paymentRecord.checkout_currency),
@@ -566,15 +597,33 @@ export const syncStripeWebhookEventToDatabase = async ({
         productId,
         productTitleSnapshot: nullIfEmpty(paymentRecord.product_title),
         purchaseItemSnapshot: nullIfEmpty(paymentRecord.purchase_item),
-        settlementAmountMinor: settlementSnapshot.settlementAmountMinor,
-        settlementCurrency: settlementSnapshot.settlementCurrency,
-        stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
-        stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
+        settlementAmountMinor:
+          settlementSnapshot.settlementAmountMinor ??
+          existingPurchase?.settlementAmountMinor ??
+          null,
+        settlementCurrency:
+          settlementSnapshot.settlementCurrency ??
+          existingPurchase?.settlementCurrency ??
+          null,
+        stripeFeeAmountMinor:
+          settlementSnapshot.stripeFeeAmountMinor ??
+          existingPurchase?.stripeFeeAmountMinor ??
+          null,
+        stripeNetAmountMinor:
+          settlementSnapshot.stripeNetAmountMinor ??
+          existingPurchase?.stripeNetAmountMinor ??
+          null,
         source: getPurchaseSource(paymentIntentId),
-        stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
-        stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
+        stripeBalanceTransactionId:
+          settlementSnapshot.stripeBalanceTransactionId ??
+          existingPurchase?.stripeBalanceTransactionId ??
+          null,
+        stripeExchangeRate:
+          settlementSnapshot.stripeExchangeRate ??
+          existingPurchase?.stripeExchangeRate ??
+          null,
         stripeStatus: trim(paymentRecord.status) || "unknown",
-        succeededAt: getSaleTimestamp(paymentRecord),
+        succeededAt,
         updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),
       };
       const [savedPurchase] = await tx

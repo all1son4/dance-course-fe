@@ -1,13 +1,13 @@
-import { loadEnvConfig } from "@next/env";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 
 import { getRequiredDatabaseUrlFromEnv } from "./env";
+import { loadDatabaseEnvConfig } from "./load-env";
 import { offerPrices, productOffers, products } from "./schema";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 const toMinorUnits = (amountMajor: number) => Math.round(amountMajor * 100);
 

@@ -1,9 +1,9 @@
-import { loadEnvConfig } from "@next/env";
 import { defineConfig } from "drizzle-kit";
 
 import { getRequiredDatabaseUrlFromEnv } from "./src/db/env";
+import { loadDatabaseEnvConfig } from "./src/db/load-env";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 const databaseUrl = getRequiredDatabaseUrlFromEnv({
   kind: "unpooled",

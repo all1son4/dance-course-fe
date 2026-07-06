@@ -1,9 +1,9 @@
-import { loadEnvConfig } from "@next/env";
 import postgres from "postgres";
 
 import { getDatabaseEnvSelection, getRequiredDatabaseUrlFromEnv } from "./env";
+import { loadDatabaseEnvConfig } from "./load-env";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 type ConnectionKind = "pooled" | "unpooled";
 

@@ -1,15 +1,16 @@
-import { loadEnvConfig } from "@next/env";
 import { and, eq, isNull, or } from "drizzle-orm";
 import Stripe from "stripe";
 
 import { getDatabase, getDatabaseClient } from "./client";
-import { purchases } from "./schema";
+import { loadDatabaseEnvConfig } from "./load-env";
+import { purchases, stripeEvents } from "./schema";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 type SettlementSnapshot = {
   settlementAmountMinor: number | null;
   settlementCurrency: string | null;
+  succeededAt: Date | null;
   stripeBalanceTransactionId: string | null;
   stripeExchangeRate: string | null;
   stripeFeeAmountMinor: number | null;
@@ -49,10 +50,17 @@ const getSettlementSnapshot = async ({
   });
   const latestCharge = paymentIntent.latest_charge;
 
-  if (!latestCharge || typeof latestCharge === "string") {
+  if (
+    paymentIntent.status !== "succeeded" ||
+    !latestCharge ||
+    typeof latestCharge === "string" ||
+    latestCharge.status !== "succeeded" ||
+    !latestCharge.paid
+  ) {
     return {
       settlementAmountMinor: null,
       settlementCurrency: null,
+      succeededAt: null,
       stripeBalanceTransactionId: null,
       stripeExchangeRate: null,
       stripeFeeAmountMinor: null,
@@ -66,6 +74,7 @@ const getSettlementSnapshot = async ({
     return {
       settlementAmountMinor: null,
       settlementCurrency: null,
+      succeededAt: null,
       stripeBalanceTransactionId:
         typeof balanceTransaction === "string" ? balanceTransaction : null,
       stripeExchangeRate: null,
@@ -77,6 +86,7 @@ const getSettlementSnapshot = async ({
   return {
     settlementAmountMinor: balanceTransaction.amount,
     settlementCurrency: balanceTransaction.currency,
+    succeededAt: new Date(latestCharge.created * 1000),
     stripeBalanceTransactionId: balanceTransaction.id,
     stripeExchangeRate:
       balanceTransaction.exchange_rate === null ||
@@ -104,6 +114,7 @@ const main = async () => {
         eq(purchases.outcome, "succeeded"),
         or(
           isNull(purchases.settlementAmountMinor),
+          isNull(purchases.succeededAt),
           isNull(purchases.stripeFeeAmountMinor),
           isNull(purchases.stripeNetAmountMinor),
         ),
@@ -136,18 +147,54 @@ const main = async () => {
       }
 
       if (!dryRun) {
-        await db
-          .update(purchases)
-          .set({
-            settlementAmountMinor: settlementSnapshot.settlementAmountMinor,
-            settlementCurrency: settlementSnapshot.settlementCurrency,
-            stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
-            stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
-            stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
-            stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
-            updatedAt: new Date(),
-          })
-          .where(eq(purchases.id, row.id));
+        await db.transaction(async (tx) => {
+          await tx
+            .update(purchases)
+            .set({
+              settlementAmountMinor: settlementSnapshot.settlementAmountMinor,
+              settlementCurrency: settlementSnapshot.settlementCurrency,
+              succeededAt: settlementSnapshot.succeededAt,
+              stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
+              stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
+              stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
+              stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
+              updatedAt: new Date(),
+            })
+            .where(eq(purchases.id, row.id));
+
+          if (settlementSnapshot.succeededAt) {
+            await tx
+              .insert(stripeEvents)
+              .values({
+                eventType: "payment_intent.succeeded",
+                outcomeSnapshot: "succeeded",
+                paymentIntentId: row.paymentIntentId,
+                paymentStatusSnapshot: "succeeded",
+                payload: {
+                  source: "stripe_settlement_backfill",
+                },
+                processedAt: new Date(),
+                processingStatus: "processed",
+                purchaseId: row.id,
+                stripeCreatedAt: settlementSnapshot.succeededAt,
+                stripeEventId: `backfill:payment_intent.succeeded:${row.paymentIntentId}`,
+                updatedAt: new Date(),
+              })
+              .onConflictDoUpdate({
+                set: {
+                  outcomeSnapshot: "succeeded",
+                  paymentIntentId: row.paymentIntentId,
+                  paymentStatusSnapshot: "succeeded",
+                  processedAt: new Date(),
+                  processingStatus: "processed",
+                  purchaseId: row.id,
+                  stripeCreatedAt: settlementSnapshot.succeededAt,
+                  updatedAt: new Date(),
+                },
+                target: stripeEvents.stripeEventId,
+              });
+          }
+        });
       }
 
       stats.updated += 1;

@@ -1,5 +1,3 @@
-import { loadEnvConfig } from "@next/env";
-
 import {
   listEmailCampaignLeadRecords,
   listMonthlySalesReportRunRecords,
@@ -10,9 +8,10 @@ import {
 } from "@/lib/google-sheets";
 
 import { getDatabase, getDatabaseClient } from "./client";
+import { loadDatabaseEnvConfig } from "./load-env";
 import { purchases } from "./schema";
 
-loadEnvConfig(process.cwd());
+loadDatabaseEnvConfig();
 
 const DEFAULT_LIMIT = 20;
 
