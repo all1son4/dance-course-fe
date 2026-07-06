@@ -1548,7 +1548,7 @@ export default function AdminPage() {
                               : isLoadingMonthlySalesReportMonths
                                 ? "Загружаю месяцы..."
                                 : monthlyReportMonthOptions.length === 0
-                                  ? "Нет продаж для отчета"
+                                  ? "Нет подтвержденных продаж"
                                   : "Сформировать и отправить отчет"
                           }
                           type="submit"
@@ -1572,13 +1572,11 @@ export default function AdminPage() {
                     <PolicyList>
                       <PolicyRow>
                         <PolicyLabel>Источник</PolicyLabel>
-                        <PolicyValue>Neon purchases + fallback Google Sheets</PolicyValue>
+                        <PolicyValue>Neon purchases + Stripe success events</PolicyValue>
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Период</PolicyLabel>
-                        <PolicyValue>
-                          Выбранный месяц; текущий месяц до момента запуска
-                        </PolicyValue>
+                        <PolicyValue>По времени успешной оплаты Stripe</PolicyValue>
                       </PolicyRow>
                       <PolicyRow>
                         <PolicyLabel>Пустой отчет</PolicyLabel>

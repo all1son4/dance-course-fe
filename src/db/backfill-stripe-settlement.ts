@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, like, or } from "drizzle-orm";
 import Stripe from "stripe";
 
 import { getDatabase, getDatabaseClient } from "./client";
@@ -109,10 +109,22 @@ const main = async () => {
       paymentIntentId: purchases.paymentIntentId,
     })
     .from(purchases)
+    .leftJoin(
+      stripeEvents,
+      and(
+        eq(stripeEvents.paymentIntentId, purchases.paymentIntentId),
+        eq(stripeEvents.eventType, "payment_intent.succeeded"),
+        eq(stripeEvents.processingStatus, "processed"),
+        eq(stripeEvents.outcomeSnapshot, "succeeded"),
+        isNotNull(stripeEvents.stripeCreatedAt),
+      ),
+    )
     .where(
       and(
         eq(purchases.outcome, "succeeded"),
+        like(purchases.paymentIntentId, "pi_%"),
         or(
+          isNull(stripeEvents.id),
           isNull(purchases.settlementAmountMinor),
           isNull(purchases.succeededAt),
           isNull(purchases.stripeFeeAmountMinor),

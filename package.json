@@ -11,6 +11,7 @@
     "build:with-migrations": "npm run db:migrate && npm run build",
     "start": "next start",
     "db:generate": "drizzle-kit generate",
+    "db:audit:monthly-sales-report": "tsx src/db/audit-monthly-sales-report.ts",
     "db:backfill:sheets": "tsx src/db/backfill-google-sheets.ts",
     "db:backfill:stripe-settlement": "tsx src/db/backfill-stripe-settlement.ts",
     "db:backfill:stripe-settlement:dev": "env -u STRIPE_SECRET_KEY NODE_ENV=development DATABASE_ENV=development tsx src/db/backfill-stripe-settlement.ts",
