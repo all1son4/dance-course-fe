@@ -24,6 +24,8 @@ type StripeSettlementSnapshot = {
   settlementCurrency: string | null;
   stripeBalanceTransactionId: string | null;
   stripeExchangeRate: string | null;
+  stripeFeeAmountMinor: number | null;
+  stripeNetAmountMinor: number | null;
 };
 
 const trim = (value: string | null | undefined) => value?.trim() ?? "";
@@ -228,6 +230,8 @@ const getBalanceTransactionSnapshot = (
       stripeBalanceTransactionId:
         typeof balanceTransaction === "string" ? balanceTransaction : null,
       stripeExchangeRate: null,
+      stripeFeeAmountMinor: null,
+      stripeNetAmountMinor: null,
     };
   }
 
@@ -240,6 +244,8 @@ const getBalanceTransactionSnapshot = (
       balanceTransaction.exchange_rate === undefined
         ? null
         : String(balanceTransaction.exchange_rate),
+    stripeFeeAmountMinor: balanceTransaction.fee,
+    stripeNetAmountMinor: balanceTransaction.net,
   };
 };
 
@@ -280,6 +286,8 @@ const getStripeSettlementSnapshotFromCharge = async ({
       settlementCurrency: null,
       stripeBalanceTransactionId: null,
       stripeExchangeRate: null,
+      stripeFeeAmountMinor: null,
+      stripeNetAmountMinor: null,
     };
   }
 
@@ -303,6 +311,8 @@ const getStripeSettlementSnapshotFromCharge = async ({
       settlementCurrency: null,
       stripeBalanceTransactionId: balanceTransaction,
       stripeExchangeRate: null,
+      stripeFeeAmountMinor: null,
+      stripeNetAmountMinor: null,
     };
   }
 };
@@ -319,6 +329,8 @@ const getStripeSettlementSnapshot = async ({
     settlementCurrency: null,
     stripeBalanceTransactionId: null,
     stripeExchangeRate: null,
+    stripeFeeAmountMinor: null,
+    stripeNetAmountMinor: null,
   };
 
   try {
@@ -439,6 +451,8 @@ export const syncStripeWebhookEventToDatabase = async ({
               settlementCurrency: null,
               stripeBalanceTransactionId: null,
               stripeExchangeRate: null,
+              stripeFeeAmountMinor: null,
+              stripeNetAmountMinor: null,
             };
       const normalizedEmail = normalizeEmail(paymentRecord.customer_email);
       const stripeCustomerId = getStripeCustomerId(event);
@@ -554,6 +568,8 @@ export const syncStripeWebhookEventToDatabase = async ({
         purchaseItemSnapshot: nullIfEmpty(paymentRecord.purchase_item),
         settlementAmountMinor: settlementSnapshot.settlementAmountMinor,
         settlementCurrency: settlementSnapshot.settlementCurrency,
+        stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
+        stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
         source: getPurchaseSource(paymentIntentId),
         stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
         stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
@@ -780,6 +796,8 @@ export const syncStripeChargeSettlementToDatabase = async ({
       settlementCurrency: settlementSnapshot.settlementCurrency,
       stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
       stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
+      stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
+      stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
       updatedAt: new Date(),
     })
     .where(eq(purchases.paymentIntentId, paymentIntentId))

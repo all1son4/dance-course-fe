@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:with-migrations": "npm run db:migrate && npm run build",
     "start": "next start",
     "db:generate": "drizzle-kit generate",
     "db:backfill:sheets": "tsx src/db/backfill-google-sheets.ts",
@@ -16,6 +17,8 @@
     "db:env": "tsx src/db/print-env.ts",
     "db:health": "tsx src/db/health.ts",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:dev": "DATABASE_ENV=development drizzle-kit migrate",
+    "db:migrate:prod": "DATABASE_ENV=production drizzle-kit migrate",
     "db:seed:products": "tsx src/db/seed-products.ts",
     "db:studio": "drizzle-kit studio",
     "db:verify": "tsx src/db/verify.ts",

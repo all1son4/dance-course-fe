@@ -485,6 +485,8 @@ export const upsertPaymentRecordToDatabase = async (
         settlementCurrency: purchases.settlementCurrency,
         stripeBalanceTransactionId: purchases.stripeBalanceTransactionId,
         stripeExchangeRate: purchases.stripeExchangeRate,
+        stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
+        stripeNetAmountMinor: purchases.stripeNetAmountMinor,
       })
       .from(purchases)
       .where(eq(purchases.paymentIntentId, paymentIntentId))
@@ -522,6 +524,8 @@ export const upsertPaymentRecordToDatabase = async (
       source: getPurchaseSource(paymentIntentId),
       stripeBalanceTransactionId: existingPurchase[0]?.stripeBalanceTransactionId ?? null,
       stripeExchangeRate: existingPurchase[0]?.stripeExchangeRate ?? null,
+      stripeFeeAmountMinor: existingPurchase[0]?.stripeFeeAmountMinor ?? null,
+      stripeNetAmountMinor: existingPurchase[0]?.stripeNetAmountMinor ?? null,
       stripeStatus: trim(paymentRecord.status) || "unknown",
       succeededAt: getSaleTimestamp(paymentRecord),
       updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),

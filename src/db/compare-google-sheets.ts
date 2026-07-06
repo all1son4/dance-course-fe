@@ -89,6 +89,8 @@ const getBindingKey = ({
   paymentIntentId: string;
 }) => `${paymentIntentId.trim()}::${chatId.trim()}`;
 
+const isStripePaymentIntentId = (value: string) => value.trim().startsWith("pi_");
+
 const getSettlementAudit = async (limit: number) => {
   const db = getDatabase();
   const purchaseRows = await db
@@ -106,9 +108,13 @@ const getSettlementAudit = async (limit: number) => {
   const eurSucceededRows = purchaseRows.filter(
     (row) =>
       row.outcome === "succeeded" &&
+      isStripePaymentIntentId(row.paymentIntentId) &&
       (row.currency.trim().toLowerCase() === "eur" ||
         row.checkoutCurrency?.trim().toLowerCase() === "eur"),
   );
+  const ignoredNonStripePaymentIntentIds = purchaseRows.filter(
+    (row) => row.outcome === "succeeded" && !isStripePaymentIntentId(row.paymentIntentId),
+  ).length;
   const missingSettlementRows = eurSucceededRows.filter(
     (row) =>
       row.settlementAmountMinor === null ||
@@ -118,6 +124,7 @@ const getSettlementAudit = async (limit: number) => {
 
   return {
     checkedEurSucceededPurchases: eurSucceededRows.length,
+    ignoredNonStripePaymentIntentIds,
     missingSettlement: missingSettlementRows.slice(0, limit).map((row) => ({
       amountMinor: row.amountMinor,
       checkoutCurrency: row.checkoutCurrency,

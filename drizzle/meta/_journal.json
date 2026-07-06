@@ -22,6 +22,13 @@
       "when": 1782826173160,
       "tag": "0002_fresh_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783355681229,
+      "tag": "0003_blushing_aqueduct",
+      "breakpoints": true
     }
   ]
 }

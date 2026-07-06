@@ -1,5 +1,5 @@
 import { loadEnvConfig } from "@next/env";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 import Stripe from "stripe";
 
 import { getDatabase, getDatabaseClient } from "./client";
@@ -12,6 +12,8 @@ type SettlementSnapshot = {
   settlementCurrency: string | null;
   stripeBalanceTransactionId: string | null;
   stripeExchangeRate: string | null;
+  stripeFeeAmountMinor: number | null;
+  stripeNetAmountMinor: number | null;
 };
 
 const getStripe = () => {
@@ -33,6 +35,8 @@ const getLimit = () => {
 
 const isWriteMode = () => process.argv.includes("--write");
 
+const isStripePaymentIntentId = (value: string) => value.trim().startsWith("pi_");
+
 const getSettlementSnapshot = async ({
   paymentIntentId,
   stripe,
@@ -51,6 +55,8 @@ const getSettlementSnapshot = async ({
       settlementCurrency: null,
       stripeBalanceTransactionId: null,
       stripeExchangeRate: null,
+      stripeFeeAmountMinor: null,
+      stripeNetAmountMinor: null,
     };
   }
 
@@ -63,6 +69,8 @@ const getSettlementSnapshot = async ({
       stripeBalanceTransactionId:
         typeof balanceTransaction === "string" ? balanceTransaction : null,
       stripeExchangeRate: null,
+      stripeFeeAmountMinor: null,
+      stripeNetAmountMinor: null,
     };
   }
 
@@ -75,6 +83,8 @@ const getSettlementSnapshot = async ({
       balanceTransaction.exchange_rate === undefined
         ? null
         : String(balanceTransaction.exchange_rate),
+    stripeFeeAmountMinor: balanceTransaction.fee,
+    stripeNetAmountMinor: balanceTransaction.net,
   };
 };
 
@@ -90,18 +100,27 @@ const main = async () => {
     })
     .from(purchases)
     .where(
-      and(eq(purchases.outcome, "succeeded"), isNull(purchases.settlementAmountMinor)),
+      and(
+        eq(purchases.outcome, "succeeded"),
+        or(
+          isNull(purchases.settlementAmountMinor),
+          isNull(purchases.stripeFeeAmountMinor),
+          isNull(purchases.stripeNetAmountMinor),
+        ),
+      ),
     )
     .limit(limit ?? 10_000);
+  const stripeRows = rows.filter((row) => isStripePaymentIntentId(row.paymentIntentId));
   const stats = {
     dryRun,
     failed: 0,
-    planned: rows.length,
+    ignoredNonStripePaymentIntentIds: rows.length - stripeRows.length,
+    planned: stripeRows.length,
     skipped: 0,
     updated: 0,
   };
 
-  for (const row of rows) {
+  for (const row of stripeRows) {
     try {
       const settlementSnapshot = await getSettlementSnapshot({
         paymentIntentId: row.paymentIntentId,
@@ -124,6 +143,8 @@ const main = async () => {
             settlementCurrency: settlementSnapshot.settlementCurrency,
             stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
             stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
+            stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
+            stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
             updatedAt: new Date(),
           })
           .where(eq(purchases.id, row.id));

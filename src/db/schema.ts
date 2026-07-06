@@ -140,6 +140,8 @@ export const purchases = pgTable(
     currency: text("currency").notNull(),
     settlementAmountMinor: integer("settlement_amount_minor"),
     settlementCurrency: text("settlement_currency"),
+    stripeFeeAmountMinor: integer("stripe_fee_amount_minor"),
+    stripeNetAmountMinor: integer("stripe_net_amount_minor"),
     stripeBalanceTransactionId: text("stripe_balance_transaction_id"),
     stripeExchangeRate: text("stripe_exchange_rate"),
     checkoutCurrency: text("checkout_currency"),

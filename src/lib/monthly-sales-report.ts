@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { and, asc, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
-import { purchases } from "@/db/schema";
+import { invoices, purchases } from "@/db/schema";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
   findMonthlySalesReportRunByKey,
@@ -50,12 +50,15 @@ export type MonthlySalesReportMonthOption = {
 type MonthlySalesReportSaleRecord = {
   amountMinor: string;
   currency: string;
-  customerCountry: string;
+  customerEmail: string;
   customerFullName: string;
+  invoiceNumber: string;
   paymentIntentId: string;
+  purchaseItem: string;
   saleTimestampIso: string;
-  settlementAmountMinor: string;
   settlementCurrency: string;
+  stripeFeeAmountMinor: string;
+  stripeNetAmountMinor: string;
 };
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
@@ -94,24 +97,6 @@ const formatAmount = (amountMinor: string, currency: string) => {
   return `${majorAmount} ${normalizedCurrency}`;
 };
 
-const getCountryDisplayName = (country: string) => {
-  const normalizedCountry = country.trim().toUpperCase();
-
-  if (!/^[A-Z]{2}$/u.test(normalizedCountry)) {
-    return country.trim();
-  }
-
-  try {
-    return (
-      new Intl.DisplayNames(["en"], {
-        type: "region",
-      }).of(normalizedCountry) ?? normalizedCountry
-    );
-  } catch {
-    return normalizedCountry;
-  }
-};
-
 const getSaleTimestampIso = (paymentRecord: PaymentSheetRecord) =>
   paymentRecord.successful_customer_logged_at.trim() ||
   paymentRecord.updated_at.trim() ||
@@ -123,12 +108,18 @@ const mapPaymentRecordToSaleRecord = (
 ): MonthlySalesReportSaleRecord => ({
   amountMinor: paymentRecord.amount,
   currency: paymentRecord.currency,
-  customerCountry: paymentRecord.customer_country,
+  customerEmail: paymentRecord.customer_email,
   customerFullName: paymentRecord.customer_full_name,
+  invoiceNumber: paymentRecord.invoice_number,
   paymentIntentId: paymentRecord.payment_intent_id,
+  purchaseItem:
+    paymentRecord.purchase_item ||
+    paymentRecord.product_title ||
+    paymentRecord.offer_label,
   saleTimestampIso: getSaleTimestampIso(paymentRecord),
-  settlementAmountMinor: "",
   settlementCurrency: "",
+  stripeFeeAmountMinor: "",
+  stripeNetAmountMinor: "",
 });
 
 const parseReportMonth = (reportMonth: string) => {
@@ -208,7 +199,15 @@ const getMonthlySalesReportPeriod = ({
 };
 
 const buildCsv = (rows: string[][]) => {
-  const headerRow = ["ФИО", "Страна продажи", "Дата продажи", "Сумма продажи"];
+  const headerRow = [
+    "Дата продажи",
+    "Номер инвойса",
+    "ФИО / Email",
+    "Что купили",
+    "Сумма продажи",
+    "Комиссия Stripe",
+    "Сумма после комиссии",
+  ];
   const csvRows = [headerRow, ...rows];
 
   return csvRows
@@ -216,15 +215,26 @@ const buildCsv = (rows: string[][]) => {
     .join("\n");
 };
 
+const formatNullableAmount = (amountMinor: string, currency: string) =>
+  amountMinor.trim() && currency.trim() ? formatAmount(amountMinor, currency) : "";
+
+const formatCustomerIdentity = ({
+  customerEmail,
+  customerFullName,
+}: {
+  customerEmail: string;
+  customerFullName: string;
+}) => [customerFullName.trim(), customerEmail.trim()].filter(Boolean).join(" / ");
+
 const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) =>
   saleRecords.map((saleRecord) => [
-    saleRecord.customerFullName.trim(),
-    getCountryDisplayName(saleRecord.customerCountry),
     saleRecord.saleTimestampIso,
-    formatAmount(
-      saleRecord.settlementAmountMinor || saleRecord.amountMinor,
-      saleRecord.settlementCurrency || saleRecord.currency,
-    ),
+    saleRecord.invoiceNumber.trim(),
+    formatCustomerIdentity(saleRecord),
+    saleRecord.purchaseItem.trim(),
+    formatAmount(saleRecord.amountMinor, saleRecord.currency),
+    formatNullableAmount(saleRecord.stripeFeeAmountMinor, saleRecord.settlementCurrency),
+    formatNullableAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
   ]);
 
 const formatReportMonthForSubject = (monthValue: string) =>
@@ -413,14 +423,20 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
     .select({
       amountMinor: purchases.amountMinor,
       currency: purchases.currency,
-      customerCountrySnapshot: purchases.customerCountrySnapshot,
+      customerEmailSnapshot: purchases.customerEmailSnapshot,
       customerFullNameSnapshot: purchases.customerFullNameSnapshot,
+      invoiceNumber: invoices.invoiceNumber,
+      offerLabelSnapshot: purchases.offerLabelSnapshot,
       paymentIntentId: purchases.paymentIntentId,
-      settlementAmountMinor: purchases.settlementAmountMinor,
+      productTitleSnapshot: purchases.productTitleSnapshot,
+      purchaseItemSnapshot: purchases.purchaseItemSnapshot,
       settlementCurrency: purchases.settlementCurrency,
       succeededAt: purchases.succeededAt,
+      stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
+      stripeNetAmountMinor: purchases.stripeNetAmountMinor,
     })
     .from(purchases)
+    .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
     .where(
       and(
         eq(purchases.outcome, "succeeded"),
@@ -435,13 +451,21 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
   return rows.map((row) => ({
     amountMinor: String(row.amountMinor),
     currency: row.currency,
-    customerCountry: row.customerCountrySnapshot ?? "",
+    customerEmail: row.customerEmailSnapshot ?? "",
     customerFullName: row.customerFullNameSnapshot ?? "",
+    invoiceNumber: row.invoiceNumber ?? "",
     paymentIntentId: row.paymentIntentId,
+    purchaseItem:
+      row.purchaseItemSnapshot ??
+      row.productTitleSnapshot ??
+      row.offerLabelSnapshot ??
+      "",
     saleTimestampIso: row.succeededAt?.toISOString() ?? "",
-    settlementAmountMinor:
-      row.settlementAmountMinor === null ? "" : String(row.settlementAmountMinor),
     settlementCurrency: row.settlementCurrency ?? "",
+    stripeFeeAmountMinor:
+      row.stripeFeeAmountMinor === null ? "" : String(row.stripeFeeAmountMinor),
+    stripeNetAmountMinor:
+      row.stripeNetAmountMinor === null ? "" : String(row.stripeNetAmountMinor),
   }));
 };
 
