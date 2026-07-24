@@ -702,39 +702,39 @@
     }
   },
   "PaymentSuccessPage": {
-    "title": "Thank you! Your payment was successful",
+    "title": "Payment successful",
     "description": {
       "firstTouch": {
-        "line1": "Payment confirmed. We are generating your personal link to the First Touch course.",
-        "line2": "As soon as the link is ready, the button on this page will open your Telegram group."
+        "line1": "We’re preparing your personal First Touch access.",
+        "line2": "The link will appear below and is also sent to your email."
       },
       "withoutMentor": {
-        "line1": "Payment confirmed. We are generating your personal access link to the lessons.",
-        "line2": "As soon as the link is ready, the button on this page will open your materials in Telegram."
+        "line1": "We’re preparing your personal lesson access.",
+        "line2": "The link will appear below and is also sent to your email."
       },
       "withMentor": {
-        "line1": "Payment confirmed. We are generating your personal access link to the lessons.",
-        "line2": "As soon as the link is ready, the button on this page will open your materials in Telegram."
+        "line1": "We’re preparing your personal lesson access.",
+        "line2": "The link will appear below and is also sent to your email."
       },
       "onlineGroup": {
-        "line1": "Payment confirmed. We are preparing your personal Online Group invite.",
-        "line2": "As soon as it is ready, the button on this page will open your Telegram group. The link is also sent to your email."
+        "line1": "We’re preparing your personal Online Group access.",
+        "line2": "The available links will appear below and are also sent to your email."
       },
       "renewal": {
-        "line1": "Payment confirmed. We are preparing your personal link to the new online group.",
-        "line2": "As soon as the link is ready, the button on this page will open your new Telegram group. The link is also sent to your email."
+        "line1": "We’re preparing your access to the new Online Group.",
+        "line2": "The available links will appear below and are also sent to your email."
       }
     },
     "accessNotice": {
-      "firstTouch": "Your personal invite is valid for 30 days. Lesson access is provided for 4 months from joining.",
-      "choreo": "Your personal invite is valid for 30 days. Material access is provided for 2 months from joining.",
-      "onlineGroup": "Your personal invite is valid for 30 days. After joining, group access has no automatic expiry.",
-      "onlineGroupPlus": "Your personal invites are valid for 30 days. After joining, Online Group access has no automatic expiry."
+      "firstTouch": "Invite valid for 30 days. Lesson access: 4 months after joining.",
+      "choreo": "Invite valid for 30 days. Material access: 2 months after joining.",
+      "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
+      "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically."
     },
     "telegram": {
       "active": "access is already active",
       "firstTouchLabel": "First Touch course materials:",
-      "inspirationUntil": "Your Inspiration Hub access is available until",
+      "inspirationUntil": "Inspiration Hub access until",
       "openLink": "Go to Telegram",
       "openMainGroup": "Open Online Group",
       "openInspiration": "Open Inspiration Hub",

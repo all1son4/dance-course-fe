@@ -702,39 +702,39 @@
     }
   },
   "PaymentSuccessPage": {
-    "title": "Dziękujemy! Płatność zakończyła się sukcesem",
+    "title": "Płatność zakończona pomyślnie",
     "description": {
       "firstTouch": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link do kursu First Touch.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoją grupę w Telegramie."
+        "line1": "Przygotowujemy Twój osobisty dostęp do kursu First Touch.",
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       },
       "withoutMentor": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link z dostępem do lekcji.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoje materiały w Telegramie."
+        "line1": "Przygotowujemy Twój osobisty dostęp do lekcji.",
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       },
       "withMentor": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link z dostępem do lekcji.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoje materiały w Telegramie."
+        "line1": "Przygotowujemy Twój osobisty dostęp do lekcji.",
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       },
       "onlineGroup": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link do Online Group.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy grupę Telegram. Link wysyłamy również na Twój email."
+        "line1": "Przygotowujemy Twój osobisty dostęp do Online Group.",
+        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
       },
       "renewal": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link do nowej grupy online.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoją nową grupę w Telegramie. Link wysyłamy również na Twój email."
+        "line1": "Przygotowujemy Twój dostęp do nowej Online Group.",
+        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
       }
     },
     "accessNotice": {
-      "firstTouch": "Osobisty link jest ważny przez 30 dni. Dostęp do lekcji otrzymujesz na 4 miesiące od dołączenia.",
-      "choreo": "Osobisty link jest ważny przez 30 dni. Dostęp do materiałów otrzymujesz na 2 miesiące od dołączenia.",
-      "onlineGroup": "Osobisty link jest ważny przez 30 dni. Po dołączeniu dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Twoje osobiste linki są ważne przez 30 dni. Po dołączeniu dostęp do Online Group nie wygasa automatycznie."
+      "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 4 miesiące od dołączenia.",
+      "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 2 miesiące od dołączenia.",
+      "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
       "firstTouchLabel": "Materiały kursu First Touch:",
-      "inspirationUntil": "Dostęp do Twojego Inspiration Hub jest aktywny do",
+      "inspirationUntil": "Dostęp do Inspiration Hub do",
       "openLink": "Przejdź do Telegrama",
       "openMainGroup": "Otwórz Online Group",
       "openInspiration": "Otwórz Inspiration Hub",

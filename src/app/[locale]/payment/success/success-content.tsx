@@ -34,16 +34,22 @@ const Title = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: 30px;
-  line-height: 100%;
+  line-height: 110%;
   letter-spacing: 0;
   margin: 40px 0 20px 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 767px) {
+    font-size: 25px;
+    line-height: 115%;
+    margin: 22px 0 12px;
+  }
 `;
 
 const Paragraphs = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 `;
 
 const Paragraph = styled.p`
@@ -54,6 +60,31 @@ const Paragraph = styled.p`
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+
+  @media (max-width: 767px) {
+    font-size: 15.5px;
+    line-height: 145%;
+  }
+`;
+
+const AccessDetails = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const AccessDetail = styled.p`
+  font-weight: 300;
+  font-size: 14.5px;
+  line-height: 145%;
+  letter-spacing: 0;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.68);
+
+  @media (max-width: 767px) {
+    font-size: 13.5px;
+    line-height: 140%;
+  }
 `;
 
 const ButtonBox = styled.div`
@@ -61,7 +92,7 @@ const ButtonBox = styled.div`
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  margin: 40px 0 0 0;
+  margin: 30px 0 0 0;
   max-width: 600px;
   gap: 10px;
   width: 100%;
@@ -69,10 +100,15 @@ const ButtonBox = styled.div`
   @media (max-width: 767px) {
     max-width: 100%;
     flex-direction: column;
+    gap: 8px;
+    margin-top: 22px;
 
     & button,
     & a {
       max-width: 100%;
+      min-height: 48px;
+      padding: 10px 20px;
+      font-size: 16px;
     }
   }
 `;
@@ -119,16 +155,19 @@ export default function SuccessContent({
         timeZone: "Europe/Warsaw",
       }).format(new Date(inspirationAccessExpiresAt))}.`
     : "";
-
   return (
     <>
       <Title>{title}</Title>
       <Paragraphs>
-        <Paragraph>{descriptionLine1}</Paragraph>
-        <Paragraph>{descriptionLine2}</Paragraph>
-        {accessNotice ? <Paragraph>{accessNotice}</Paragraph> : null}
-        {inspirationAccessExpiryText ? (
-          <Paragraph>{inspirationAccessExpiryText}</Paragraph>
+        {descriptionLine1 ? <Paragraph>{descriptionLine1}</Paragraph> : null}
+        {descriptionLine2 ? <Paragraph>{descriptionLine2}</Paragraph> : null}
+        {accessNotice || inspirationAccessExpiryText ? (
+          <AccessDetails>
+            {accessNotice ? <AccessDetail>{accessNotice}</AccessDetail> : null}
+            {inspirationAccessExpiryText ? (
+              <AccessDetail>{inspirationAccessExpiryText}</AccessDetail>
+            ) : null}
+          </AccessDetails>
         ) : null}
         {isTelegramAccessPurchase && showUnavailableNote ? (
           <Paragraph>{telegramUnavailableText}</Paragraph>
