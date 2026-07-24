@@ -1,12 +1,18 @@
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import {
   getSellableProductById,
   getSellableProductOfferById,
+  isOnlineGroupLibraryOfferId,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
-import { isChoreoChannelOfferId, isFirstTouchOfferId } from "@/lib/telegram/offer-access";
+import {
+  isChoreoChannelOfferId,
+  isFirstTouchOfferId,
+  isOnlineGroupAccessOfferId,
+  isRenewalDiscountOfferId,
+} from "@/lib/telegram/offer-access";
 import { Success } from "@/svg";
 
 import { Container, ResultCard } from "./page.styles";
@@ -36,7 +42,10 @@ const getParamValue = (searchParams: SuccessPageSearchParams, key: string): stri
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const t = await getTranslations("PaymentSuccessPage");
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("PaymentSuccessPage"),
+  ]);
   const productId = getParamValue(resolvedSearchParams, "product");
   const offerId = getParamValue(resolvedSearchParams, "offer");
   const redirectStatus = getParamValue(
@@ -78,13 +87,32 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   }
 
   const isWithoutMentorPurchase = selectedOffer?.code === "without-mentor";
+  const isRenewalPurchase = isRenewalDiscountOfferId(offerId);
+  const isOnlineGroupPurchase = isOnlineGroupAccessOfferId(offerId);
   const isTelegramAccessPurchase =
-    isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
+    isChoreoChannelOfferId(offerId) ||
+    isFirstTouchOfferId(offerId) ||
+    isOnlineGroupPurchase;
   const successCase = isFirstTouchPurchase
     ? "firstTouch"
-    : isWithoutMentorPurchase
-      ? "withoutMentor"
-      : "withMentor";
+    : isRenewalPurchase
+      ? "renewal"
+      : isOnlineGroupPurchase
+        ? "onlineGroup"
+        : isWithoutMentorPurchase
+          ? "withoutMentor"
+          : "withMentor";
+  const accessNotice = isFirstTouchPurchase
+    ? t("accessNotice.firstTouch")
+    : isChoreoChannelOfferId(offerId)
+      ? t("accessNotice.choreo")
+      : isOnlineGroupPurchase
+        ? t(
+            isOnlineGroupLibraryOfferId(offerId)
+              ? "accessNotice.onlineGroupPlus"
+              : "accessNotice.onlineGroup",
+          )
+        : "";
 
   return (
     <Container>
@@ -96,15 +124,21 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         />
         <Success />
         <SuccessContent
+          accessNotice={accessNotice}
           checkoutSessionId={checkoutSessionId}
           descriptionLine1={t(`description.${successCase}.line1`)}
           descriptionLine2={t(`description.${successCase}.line2`)}
+          dateLocale={locale}
           homeButtonText={t("buttons.home")}
           isTelegramAccessPurchase={isTelegramAccessPurchase}
           offerId={offerId}
           paymentIntentId={paymentIntentId}
           productId={productId}
+          telegramAccessActiveText={t("telegram.active")}
           telegramContactSupportText={t("telegram.contactSupport")}
+          telegramInspirationLinkText={t("telegram.openInspiration")}
+          telegramInspirationUntilLabel={t("telegram.inspirationUntil")}
+          telegramMainGroupLinkText={t("telegram.openMainGroup")}
           telegramOpenLinkText={t("telegram.openLink")}
           telegramPendingText={t("telegram.pending")}
           telegramUnavailableText={t("telegram.unavailable")}

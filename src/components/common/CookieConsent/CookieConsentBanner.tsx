@@ -19,13 +19,11 @@ import {
   CategoryDescription,
   CategoryInfo,
   CategoryTitle,
+  CategoryToggle,
   InlineSettings,
   InlineSettingsContent,
   SettingsIconButton,
   StaticTag,
-  ToggleInput,
-  ToggleLabel,
-  ToggleTrack,
 } from "./CookieConsentBanner.styles";
 import { useCookieConsent } from "./CookieConsentProvider";
 
@@ -111,28 +109,23 @@ export default function CookieConsentBanner() {
                     {isNecessary ? (
                       <StaticTag>{t("settings.categories.necessary.alwaysOn")}</StaticTag>
                     ) : (
-                      <ToggleLabel>
-                        <ToggleInput
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(event) => {
-                            const nextChecked = event.target.checked;
-
-                            saveCustom(
-                              isFunctional
-                                ? {
-                                    functional: nextChecked,
-                                    analytics: analyticsEnabled,
-                                  }
-                                : {
-                                    functional: functionalEnabled,
-                                    analytics: nextChecked,
-                                  },
-                            );
-                          }}
-                        />
-                        <ToggleTrack aria-hidden />
-                      </ToggleLabel>
+                      <CategoryToggle
+                        ariaLabel={t(`settings.categories.${categoryKey}.title`)}
+                        checked={checked}
+                        onChange={(nextChecked) => {
+                          saveCustom(
+                            isFunctional
+                              ? {
+                                  functional: nextChecked,
+                                  analytics: analyticsEnabled,
+                                }
+                              : {
+                                  functional: functionalEnabled,
+                                  analytics: nextChecked,
+                                },
+                          );
+                        }}
+                      />
                     )}
                   </CategoryCard>
                 );

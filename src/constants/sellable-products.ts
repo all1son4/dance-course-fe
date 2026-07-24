@@ -7,7 +7,13 @@ export type SellableProductCode =
   | "choreo-bundle"
   | "online-group-anna-strok";
 
-export type SellableProductOfferCode = "standard" | "without-mentor" | "with-mentor";
+export type SellableProductOfferCode =
+  | "standard"
+  | "library-access"
+  | "without-mentor"
+  | "with-mentor"
+  | "renewal-discount"
+  | "renewal-library-access";
 
 export type SellableProductPrices = Record<SupportedCheckoutCurrency, number>;
 
@@ -36,6 +42,33 @@ export type SellableProduct = {
   offers: SellableProductOffer[];
   defaultOfferId: string;
 };
+
+const ONLINE_GROUP_STANDARD_OFFER_ID = "off_R6vN2cH9sW4y";
+const ONLINE_GROUP_LIBRARY_OFFER_ID = "off_online_group_anna_strok_library_access";
+export const ONLINE_GROUP_RENEWAL_OFFER_ID =
+  "off_online_group_anna_strok_renewal_discount";
+export const ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID =
+  "off_online_group_anna_strok_renewal_library_access";
+
+export const ONLINE_GROUP_NEW_OFFER_IDS = [
+  ONLINE_GROUP_STANDARD_OFFER_ID,
+  ONLINE_GROUP_LIBRARY_OFFER_ID,
+] as const;
+
+const ONLINE_GROUP_RENEWAL_OFFER_IDS = [
+  ONLINE_GROUP_RENEWAL_OFFER_ID,
+  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+] as const;
+
+export const isOnlineGroupLibraryOfferId = (offerId: string) =>
+  offerId === ONLINE_GROUP_LIBRARY_OFFER_ID ||
+  offerId === ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID;
+
+export const isOnlineGroupNewOfferId = (offerId: string) =>
+  (ONLINE_GROUP_NEW_OFFER_IDS as readonly string[]).includes(offerId);
+
+export const isOnlineGroupRenewalOfferId = (offerId: string) =>
+  (ONLINE_GROUP_RENEWAL_OFFER_IDS as readonly string[]).includes(offerId);
 
 type CheckoutHrefOptions = {
   offerId?: string;
@@ -69,7 +102,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           pln: 250,
           eur: 50,
         },
-        telegramAccessDurationDays: 0,
+        telegramAccessDurationDays: 120,
       },
     ],
   },
@@ -210,12 +243,13 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
   },
   "online-group-anna-strok": {
-    accessNote: "После оплаты админ вручную добавит участника в онлайн-группу.",
+    accessNote:
+      "После оплаты мы отправим персональную одноразовую ссылку для входа в Telegram-группу.",
     accessNoteKey: "onlineGroupAnnaStrok.accessNote",
     code: "online-group-anna-strok",
     description: [
-      "Регулярная онлайн-группа по танцам с Анной Строк.",
-      "После оплаты админ свяжется с участником и вручную добавит его в группу.",
+      "Формат регулярных тренировок для тех, кто хочет продолжать развиваться, поддерживать форму и работать с телом — даже если нет возможности посещать мои офлайн-занятия.",
+      "Это возможность оставаться в процессе, получать новые задания, практиковаться дома и быть на связи со мной, где бы вы ни находились.",
     ],
     descriptionKeys: [
       "onlineGroupAnnaStrok.description.1",
@@ -223,21 +257,60 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
     id: "prd_L9aK3mT7qP2x",
     slug: "online-group-anna-strok",
-    title: "Online group by Anna Strok",
+    title: "Online Group by Anna Strok",
     titleKey: "onlineGroupAnnaStrok.title",
     type: "course",
-    defaultOfferId: "off_R6vN2cH9sW4y",
+    defaultOfferId: ONLINE_GROUP_STANDARD_OFFER_ID,
     offers: [
       {
-        accessWorkflow: "manual-admin",
+        accessWorkflow: "telegram-online-group",
         code: "standard",
-        deliveryChannel: "manual",
-        id: "off_R6vN2cH9sW4y",
-        label: "Online group",
+        deliveryChannel: "telegram",
+        id: ONLINE_GROUP_STANDARD_OFFER_ID,
+        label: "Standard",
         labelKey: "onlineGroupAnnaStrok.offers.standard",
         prices: {
-          pln: 200,
-          eur: 45,
+          pln: 220,
+          eur: 50,
+        },
+        telegramAccessDurationDays: 0,
+      },
+      {
+        accessWorkflow: "telegram-online-group",
+        code: "library-access",
+        deliveryChannel: "telegram",
+        id: ONLINE_GROUP_LIBRARY_OFFER_ID,
+        label: "Plus",
+        labelKey: "onlineGroupAnnaStrok.offers.libraryAccess",
+        prices: {
+          pln: 280,
+          eur: 65,
+        },
+        telegramAccessDurationDays: 0,
+      },
+      {
+        accessWorkflow: "telegram-renewal",
+        code: "renewal-discount",
+        deliveryChannel: "telegram",
+        id: ONLINE_GROUP_RENEWAL_OFFER_ID,
+        label: "Standard renewal",
+        labelKey: "onlineGroupAnnaStrok.offers.renewalDiscount",
+        prices: {
+          pln: 175,
+          eur: 40,
+        },
+        telegramAccessDurationDays: 0,
+      },
+      {
+        accessWorkflow: "telegram-renewal",
+        code: "renewal-library-access",
+        deliveryChannel: "telegram",
+        id: ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+        label: "Plus renewal",
+        labelKey: "onlineGroupAnnaStrok.offers.renewalLibraryAccess",
+        prices: {
+          pln: 220,
+          eur: 50,
         },
         telegramAccessDurationDays: 0,
       },

@@ -1,15 +1,11 @@
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
 import { INSTAGRAM_PROFILE_URL } from "@/constants/links";
-import { SmallClock, SmallMap } from "@/svg";
 
 import {
   ContentStack,
   DetailStrongText,
   DetailText,
   DetailValueText,
-  IconCell,
-  InfoGrid,
-  InfoSection,
   PriceFrequency,
   PriceRow,
 } from "../_shared/interactive-card-content";
@@ -24,40 +20,6 @@ const buildPriceRow = (t: Translate, priceKey: string, suffixKey: string) => (
     <DetailValueText>{t(priceKey)}</DetailValueText>
     <PriceFrequency>{t(suffixKey)}</PriceFrequency>
   </PriceRow>
-);
-
-const buildScheduleAndLocationContent = (
-  t: Translate,
-  scheduleKeys: [string, string],
-) => (
-  <>
-    <InfoSection>
-      <InfoGrid>
-        <IconCell>
-          <SmallClock />
-        </IconCell>
-        <DetailStrongText>{t("cards.common.schedule")}</DetailStrongText>
-
-        <div />
-        <DetailText>{t(scheduleKeys[0])}</DetailText>
-
-        <div />
-        <DetailText>{t(scheduleKeys[1])}</DetailText>
-      </InfoGrid>
-    </InfoSection>
-
-    <InfoSection>
-      <InfoGrid>
-        <IconCell>
-          <SmallMap />
-        </IconCell>
-        <DetailStrongText>{t("cards.common.location")}</DetailStrongText>
-
-        <div />
-        <DetailText>{t("cards.common.locationValue")}</DetailText>
-      </InfoGrid>
-    </InfoSection>
-  </>
 );
 
 export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] => [

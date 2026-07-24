@@ -5,7 +5,6 @@ export const IntroductionSection = styled.section`
   position: relative;
   display: flex;
   align-items: center;
-  // min-height: 914px;
   min-height: 920px;
   padding: 0 25px;
   box-sizing: border-box;
@@ -13,12 +12,10 @@ export const IntroductionSection = styled.section`
 
   @media (max-width: 1240px) {
     padding: 60px 20px 0;
-    // min-height: 740px;
     min-height: 840px;
   }
 
   @media (max-width: 920px) {
-    // min-height: 914px;
     min-height: 1020px;
     padding: 80px 20px 0;
   }
@@ -361,6 +358,7 @@ export const AboutCourseSection = styled.section`
   box-sizing: border-box;
   justify-content: space-between;
   gap: 40px;
+  position: relative;
 
   @media (max-width: 920px) {
     flex-direction: column;
@@ -392,6 +390,9 @@ export const AboutCourseTitle = styled.h2`
   letter-spacing: 0;
   margin: 0;
   max-width: 420px;
+  position: sticky;
+  top: calc(116px + var(--safe-area-top));
+  align-self: start;
 
   @media (max-width: 920px) {
     max-width: 100%;
@@ -399,6 +400,10 @@ export const AboutCourseTitle = styled.h2`
 
   @media (max-width: 880px) {
     font-size: 40px;
+  }
+
+  @media (max-width: 767px) {
+    top: calc(84px + var(--safe-area-top));
   }
 `;
 

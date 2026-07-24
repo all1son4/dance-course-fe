@@ -5,6 +5,7 @@ import {
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
+import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
 
@@ -32,9 +33,10 @@ export async function GET(request: Request) {
   }
 
   const now = new Date();
-  let accessRevocationResult: Awaited<
-    ReturnType<typeof revokeExpiredTelegramChannelAccess>
-  > | null = null;
+  let accessRevocationResult: {
+    onlineGroup: Awaited<ReturnType<typeof revokeExpiredOnlineGroupHubAccess>>;
+    standard: Awaited<ReturnType<typeof revokeExpiredTelegramChannelAccess>>;
+  } | null = null;
   let accessRevocationError: string | null = null;
   let monthlySalesReportResult: ReturnType<
     typeof toMonthlySalesReportDeliveryResponse
@@ -42,7 +44,11 @@ export async function GET(request: Request) {
   let monthlySalesReportError: string | null = null;
 
   try {
-    accessRevocationResult = await revokeExpiredTelegramChannelAccess();
+    const [standard, onlineGroup] = await Promise.all([
+      revokeExpiredTelegramChannelAccess(),
+      revokeExpiredOnlineGroupHubAccess(),
+    ]);
+    accessRevocationResult = { onlineGroup, standard };
   } catch (error) {
     console.error("Daily maintenance: failed to revoke expired Telegram access", error);
     accessRevocationError =

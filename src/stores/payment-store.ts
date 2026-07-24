@@ -37,8 +37,12 @@ type StripeIntentErrors = Partial<
 type StripeIntentErrorCode =
   | "missing_client_secret"
   | "missing_secret_key"
+  | "online_group_campaign_not_configured"
   | "payment_intent_failed"
-  | "payment_intent_request_failed";
+  | "payment_intent_request_failed"
+  | "renewal_campaign_inactive"
+  | "renewal_payment_context_mismatch"
+  | "telegram_renewal_verification_required";
 type StripeIntentResponse = {
   clientSecret?: string;
   errorCode?: StripeIntentErrorCode;
@@ -132,6 +136,7 @@ export class PaymentStore {
   pendingStripeCurrencies = new Set<SupportedCheckoutCurrency>();
   stripeIntentStateRevision = 0;
   sellableProducts: SellableProduct[] = SELLABLE_PRODUCTS_LIST;
+  renewalCampaignSlug = "";
 
   constructor() {
     makeAutoObservable(
@@ -343,6 +348,17 @@ export class PaymentStore {
     this.revalidateTouchedFields();
   }
 
+  setRenewalCampaignSlug(slug: string | null | undefined) {
+    const nextSlug = (slug ?? "").trim();
+
+    if (nextSlug === this.renewalCampaignSlug) {
+      return;
+    }
+
+    this.renewalCampaignSlug = nextSlug;
+    this.clearStripeIntentState(true);
+  }
+
   touchCustomerField(fieldName: PaymentCustomerFieldName) {
     this.touchedFields[fieldName] = true;
     this.validateCustomerField(fieldName);
@@ -411,6 +427,7 @@ export class PaymentStore {
               currency: resolvedCurrency,
               offerId: this.selectedOffer.id,
               productId: this.selectedProduct.id,
+              renewalCampaignSlug: this.renewalCampaignSlug,
             }),
             signal: requestController.signal,
           });
@@ -577,6 +594,7 @@ export class PaymentStore {
     this.selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
     this.selectedProductId = DEFAULT_CHECKOUT_PRODUCT.id;
     this.checkoutCurrencyInitialized = false;
+    this.renewalCampaignSlug = "";
   }
 
   private getSellableProductById(productId: string | null | undefined) {

@@ -440,7 +440,7 @@ export const CourseSection = styled.section`
   gap: 80px;
 
   @media (max-width: 1240px) {
-    padding: 100px 0;
+    padding: 100px 0px;
   }
 
   @media (max-width: 1024px) {

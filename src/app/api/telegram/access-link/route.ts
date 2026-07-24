@@ -16,6 +16,7 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
 
@@ -112,6 +113,25 @@ export async function POST(request: Request) {
           paymentRecord.outcome === "failed" || paymentRecord.outcome === "canceled"
             ? "not_available"
             : "pending",
+      });
+    }
+
+    const onlineGroupAccess = await ensureOnlineGroupAccessForPayment(paymentRecord);
+
+    if (onlineGroupAccess !== null) {
+      if (onlineGroupAccess.length === 0) {
+        return jsonNoStore({
+          status: "pending",
+        });
+      }
+
+      return jsonNoStore({
+        accesses: onlineGroupAccess,
+        status: onlineGroupAccess.some(
+          (access) => access.status === "ready" || access.status === "active",
+        )
+          ? "ready"
+          : "not_available",
       });
     }
 

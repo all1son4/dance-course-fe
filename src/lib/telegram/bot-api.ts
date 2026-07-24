@@ -218,6 +218,17 @@ type TelegramInviteLink = {
   name?: string;
 };
 
+export type TelegramChatMember = {
+  is_member?: boolean;
+  status?: string;
+  user?: {
+    first_name?: string;
+    id?: number;
+    last_name?: string;
+    username?: string;
+  };
+};
+
 export const createTelegramChatInviteLink = async ({
   botToken,
   chatId,
@@ -265,6 +276,26 @@ export const banTelegramChatMember = async ({
       chat_id: chatId,
       revoke_messages: revokeMessages,
       ...(untilDateUnix ? { until_date: untilDateUnix } : {}),
+      user_id: userId,
+    },
+    {
+      botToken,
+    },
+  );
+
+export const getTelegramChatMember = async ({
+  botToken,
+  chatId,
+  userId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  userId: number | string;
+}) =>
+  callTelegramApi<TelegramChatMember>(
+    "getChatMember",
+    {
+      chat_id: chatId,
       user_id: userId,
     },
     {

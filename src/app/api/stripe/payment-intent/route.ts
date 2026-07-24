@@ -4,7 +4,14 @@ import {
   getResolvedCheckoutCurrency,
   getSellableProductById,
   getSellableProductOfferById,
+  isOnlineGroupLibraryOfferId,
+  isOnlineGroupNewOfferId,
 } from "@/constants/sellable-products";
+import {
+  getActiveOnlineGroupCampaign,
+  getActiveOnlineGroupTargetByOfferId,
+} from "@/db/online-group-campaigns";
+import { findValidRenewalVerification } from "@/db/renewal-campaigns";
 import { getCheckoutSelectionFromDatabase } from "@/db/sellable-products";
 import {
   getBrowserJsonRequestErrorResponse,
@@ -42,6 +49,7 @@ type CreatePaymentIntentBody = {
   currency?: string;
   offerId?: string;
   productId?: string;
+  renewalCampaignSlug?: string;
 };
 
 export const runtime = "nodejs";
@@ -151,6 +159,56 @@ export async function POST(request: Request) {
       offerId: body.offerId,
       productId: body.productId,
     });
+    const renewalCampaignSlug = (body.renewalCampaignSlug ?? "").trim();
+    const renewalVerification = renewalCampaignSlug
+      ? await findValidRenewalVerification({
+          checkoutSessionId,
+          slug: renewalCampaignSlug,
+        })
+      : null;
+    const onlineGroupTarget = isOnlineGroupNewOfferId(offer.id)
+      ? await getActiveOnlineGroupTargetByOfferId(offer.id)
+      : null;
+    const renewalOnlineGroupSettings = renewalVerification
+      ? await getActiveOnlineGroupCampaign()
+      : null;
+
+    if (
+      (renewalCampaignSlug || offer.accessWorkflow === "telegram-renewal") &&
+      !renewalVerification
+    ) {
+      return jsonErrorNoStore("telegram_renewal_verification_required", {
+        status: 403,
+      });
+    }
+
+    if (
+      renewalVerification &&
+      (renewalVerification.campaign.productExternalId !== product.id ||
+        renewalVerification.campaign.offerExternalId !== offer.id)
+    ) {
+      return jsonErrorNoStore("renewal_payment_context_mismatch", {
+        status: 403,
+      });
+    }
+
+    if (
+      renewalVerification &&
+      (!renewalOnlineGroupSettings ||
+        renewalOnlineGroupSettings.regularChatId !==
+          renewalVerification.campaign.targetChatId)
+    ) {
+      return jsonErrorNoStore("renewal_campaign_inactive", {
+        status: 409,
+      });
+    }
+
+    if (isOnlineGroupNewOfferId(offer.id) && !onlineGroupTarget) {
+      return jsonErrorNoStore("online_group_campaign_not_configured", {
+        status: 409,
+      });
+    }
+
     const localizedProductTitle = getLocalizedSellableProductTitle(
       product,
       checkoutLocale,
@@ -177,6 +235,41 @@ export async function POST(request: Request) {
           checkout_currency: currency,
           checkout_locale: checkoutLocale,
           checkout_session_id: checkoutSessionId,
+          ...(renewalVerification
+            ? {
+                access_workflow: "telegram-renewal",
+                delivery_channel: "telegram",
+                renewal_campaign_id: renewalVerification.campaign.id,
+                renewal_campaign_slug: renewalVerification.campaign.slug,
+                telegram_channel_chat_id: renewalVerification.campaign.targetChatId,
+                ...(isOnlineGroupLibraryOfferId(offer.id) && renewalOnlineGroupSettings
+                  ? {
+                      telegram_inspiration_access_expires_at:
+                        renewalOnlineGroupSettings.endsAt.toISOString(),
+                      telegram_inspiration_chat_id:
+                        renewalOnlineGroupSettings.libraryChatId,
+                    }
+                  : {}),
+                telegram_user_id: renewalVerification.verification.telegramUserId,
+                telegram_username:
+                  renewalVerification.verification.telegramUsername ?? "",
+              }
+            : onlineGroupTarget
+              ? {
+                  access_workflow: "telegram-online-group",
+                  delivery_channel: "telegram",
+                  online_group_campaign_id: onlineGroupTarget.campaign.id,
+                  telegram_channel_chat_id: onlineGroupTarget.mainChatId,
+                  ...(onlineGroupTarget.inspirationChatId &&
+                  onlineGroupTarget.inspirationAccessExpiresAt
+                    ? {
+                        telegram_inspiration_access_expires_at:
+                          onlineGroupTarget.inspirationAccessExpiresAt.toISOString(),
+                        telegram_inspiration_chat_id: onlineGroupTarget.inspirationChatId,
+                      }
+                    : {}),
+                }
+              : {}),
           offer_id: offer.id,
           offer_label: localizedOfferLabel,
           customer_address: customerData.address,
@@ -193,6 +286,11 @@ export async function POST(request: Request) {
       {
         idempotencyKey: createPaymentIntentIdempotencyKey({
           checkoutSessionId,
+          contextKey: renewalVerification
+            ? `renewal:${renewalVerification.campaign.slug}:${renewalVerification.verification.updatedAt.toISOString()}`
+            : onlineGroupTarget
+              ? `online-group:${onlineGroupTarget.campaign.id}`
+              : "",
           currency,
           customerData,
           offerId: offer.id,

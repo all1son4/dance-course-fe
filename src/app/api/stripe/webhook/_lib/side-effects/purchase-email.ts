@@ -9,11 +9,13 @@ import {
   isOfferEligibleForTelegramAccessLink,
 } from "@/lib/telegram/access";
 import {
+  getOfferAccessDurationDaysByOfferId,
   getOfferMetadataById,
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
   isWithMentorOfferId,
 } from "@/lib/telegram/offer-access";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
 import { getResolvedCheckoutLocale } from "../../../payment-intent/lib";
 import {
@@ -53,6 +55,14 @@ const getPurchaseSuccessEmailAccessKind = ({
     return "manual-admin";
   }
 
+  if (configuredAccessWorkflow === "telegram-renewal") {
+    return "telegram-renewal";
+  }
+
+  if (configuredAccessWorkflow === "telegram-online-group") {
+    return "telegram-online-group";
+  }
+
   if (isFirstTouchOfferId(offerId)) {
     return "telegram-chat";
   }
@@ -84,7 +94,7 @@ export const sendPurchaseSuccessEmail = async ({
   handledEvent: StripeWebhookSyncResult;
   stripe: Stripe;
 }) => {
-  if (handledEvent.skipped || handledEvent.paymentRecord.outcome !== "succeeded") {
+  if (handledEvent.paymentRecord.outcome !== "succeeded") {
     return;
   }
 
@@ -157,11 +167,33 @@ export const sendPurchaseSuccessEmail = async ({
       paymentRecord.offer_id,
       checkoutLocale,
     );
-    const telegramAccessLink = isOfferEligibleForTelegramAccessLink(
-      paymentRecord.offer_id,
-    )
-      ? await ensureTelegramAccessLinkForPayment(paymentRecord)
-      : null;
+    const onlineGroupAccess = await ensureOnlineGroupAccessForPayment(paymentRecord);
+    const telegramAccessLink =
+      !onlineGroupAccess &&
+      paymentRecord.access_workflow.trim() !== "manual-admin" &&
+      isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)
+        ? await ensureTelegramAccessLinkForPayment(paymentRecord)
+        : null;
+
+    if (onlineGroupAccess?.some((access) => access.status === "unavailable")) {
+      await tryUpdatePaymentEmailDeliveryStatus({
+        paymentRecord,
+        status: "failed",
+      });
+      throw new Error("online_group_access_link_unavailable");
+    }
+
+    if (
+      telegramAccessLink?.status === "not_available" &&
+      telegramAccessLink.reason === "telegram_api_failed"
+    ) {
+      await tryUpdatePaymentEmailDeliveryStatus({
+        paymentRecord,
+        status: "failed",
+      });
+      throw new Error("telegram_access_link_unavailable");
+    }
+
     const {
       receiptKind,
       receiptLink,
@@ -183,6 +215,8 @@ export const sendPurchaseSuccessEmail = async ({
     }
 
     const { html, subject, text } = buildPurchaseSuccessEmail({
+      accessDurationDays:
+        getOfferAccessDurationDaysByOfferId(paymentRecord.offer_id) ?? 0,
       accessKind: getPurchaseSuccessEmailAccessKind({
         accessWorkflow: paymentRecord.access_workflow,
         offerId: paymentRecord.offer_id,
@@ -190,6 +224,7 @@ export const sendPurchaseSuccessEmail = async ({
       amountMinor: paymentRecord.amount,
       checkoutCurrency: paymentRecord.checkout_currency || paymentRecord.currency,
       checkoutLocale,
+      inspirationAccessExpiresAt: paymentRecord.telegram_inspiration_access_expires_at,
       offerLabel:
         paymentRecord.offer_label ||
         paymentIntent.metadata.offer_label ||
@@ -205,6 +240,7 @@ export const sendPurchaseSuccessEmail = async ({
       showMentorFollowupNote: isWithMentorOfferId(paymentRecord.offer_id),
       telegramAccessUrl:
         telegramAccessLink?.status === "ready" ? telegramAccessLink.accessUrl : null,
+      telegramAccessLinks: onlineGroupAccess ?? [],
     });
 
     try {
@@ -220,6 +256,7 @@ export const sendPurchaseSuccessEmail = async ({
       const { emailId } = await sendResendEmail({
         attachments: [invoiceAttachment],
         html,
+        idempotencyKey: `purchase-success/${paymentRecord.payment_intent_id}`,
         subject,
         text,
         to: recipientEmail,

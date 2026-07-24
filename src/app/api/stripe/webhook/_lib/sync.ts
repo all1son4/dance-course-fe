@@ -410,6 +410,7 @@ const mapPaymentIntentToPaymentRecord = (
       "checkoutLanguage",
       "locale",
     ]) ||
+    trimString(checkoutSession?.locale) ||
     existingRecord?.checkout_locale ||
     "";
   const offerId =
@@ -524,15 +525,31 @@ const mapPaymentIntentToPaymentRecord = (
       "access_workflow",
       "accessWorkflow",
     ]) || getAccessWorkflowByOfferId(offerId);
-  const isTelegramAccessOffer =
-    FIRST_TOUCH_OFFER_IDS.has(offerId) ||
-    WITHOUT_MENTOR_OFFER_IDS.has(offerId) ||
-    WITH_MENTOR_OFFER_IDS.has(offerId);
   const deliveryChannel =
     getMetadataValue(paymentIntentMetadata, sourceMetadata, [
       "delivery_channel",
       "deliveryChannel",
     ]) || getDeliveryChannelByOfferId(offerId);
+  const telegramChannelChatId = getMetadataValue(paymentIntentMetadata, sourceMetadata, [
+    "telegram_channel_chat_id",
+    "telegramChannelChatId",
+  ]);
+  const telegramInspirationChatId = getMetadataValue(
+    paymentIntentMetadata,
+    sourceMetadata,
+    ["telegram_inspiration_chat_id", "telegramInspirationChatId"],
+  );
+  const telegramInspirationAccessExpiresAt = getMetadataValue(
+    paymentIntentMetadata,
+    sourceMetadata,
+    ["telegram_inspiration_access_expires_at", "telegramInspirationAccessExpiresAt"],
+  );
+  const isTelegramAccessOffer =
+    FIRST_TOUCH_OFFER_IDS.has(offerId) ||
+    WITHOUT_MENTOR_OFFER_IDS.has(offerId) ||
+    WITH_MENTOR_OFFER_IDS.has(offerId) ||
+    accessWorkflow === "telegram-renewal" ||
+    deliveryChannel === "telegram";
   const telegramAccessStatus = isTelegramAccessOffer ? "pending" : "not_required";
   const shouldKeepExistingAccessWorkflow =
     Boolean(existingRecord?.access_workflow) && existingRecord?.offer_id === offerId;
@@ -614,11 +631,27 @@ const mapPaymentIntentToPaymentRecord = (
     telegram_token_expires_at: existingRecord?.telegram_token_expires_at ?? "",
     telegram_token_id: existingRecord?.telegram_token_id ?? "",
     telegram_token_used_at: existingRecord?.telegram_token_used_at ?? "",
-    telegram_user_id: existingRecord?.telegram_user_id ?? "",
-    telegram_username: existingRecord?.telegram_username ?? "",
-    telegram_channel_chat_id: existingRecord?.telegram_channel_chat_id ?? "",
+    telegram_user_id:
+      existingRecord?.telegram_user_id ||
+      getMetadataValue(paymentIntentMetadata, sourceMetadata, [
+        "telegram_user_id",
+        "telegramUserId",
+      ]),
+    telegram_username:
+      existingRecord?.telegram_username ||
+      getMetadataValue(paymentIntentMetadata, sourceMetadata, [
+        "telegram_username",
+        "telegramUsername",
+      ]),
+    telegram_channel_chat_id:
+      existingRecord?.telegram_channel_chat_id || telegramChannelChatId,
     telegram_access_expires_at: existingRecord?.telegram_access_expires_at ?? "",
     telegram_access_revoked_at: existingRecord?.telegram_access_revoked_at ?? "",
+    telegram_inspiration_chat_id:
+      existingRecord?.telegram_inspiration_chat_id || telegramInspirationChatId,
+    telegram_inspiration_access_expires_at:
+      existingRecord?.telegram_inspiration_access_expires_at ||
+      telegramInspirationAccessExpiresAt,
     status: snapshot.status,
     updated_at: timestamp,
     with_mentor_alert_status: existingRecord?.with_mentor_alert_status ?? "",

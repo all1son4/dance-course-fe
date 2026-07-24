@@ -13,6 +13,7 @@ const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
 const indexableRoutes = [
   "/",
   "/online",
+  "/online/group",
   "/online/first-touch",
   "/online/choreo",
   "/offline",

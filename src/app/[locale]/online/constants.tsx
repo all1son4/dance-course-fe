@@ -31,6 +31,24 @@ export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => 
     buttonText: t("cards.firstTouch.button"),
     buttonHref: "/online/first-touch",
   },
+  {
+    id: "online-group",
+    title: t("cards.onlineGroup.title"),
+    topRowContent: (
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.onlineGroup.description.1")}</DetailText>
+        <DetailText>{t("cards.onlineGroup.description.2")}</DetailText>
+      </ContentStack>
+    ),
+    bottomRowContent: (
+      <ContentStack>
+        <DetailText>{t("cards.onlineGroup.startLabel")}</DetailText>
+        <DetailValueText>{t("cards.onlineGroup.startValue")}</DetailValueText>
+      </ContentStack>
+    ),
+    buttonText: t("cards.onlineGroup.button"),
+    buttonHref: "/online/group",
+  },
   // {
   //   id: "choreo",
   //   title: t("cards.choreo.title"),

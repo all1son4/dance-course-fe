@@ -9,7 +9,9 @@ import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import TelegramAccessButton from "./telegram-access-button";
 
 type SuccessContentProps = {
+  accessNotice: string;
   checkoutSessionId: string;
+  dateLocale: string;
   descriptionLine1: string;
   descriptionLine2: string;
   homeButtonText: string;
@@ -17,7 +19,11 @@ type SuccessContentProps = {
   offerId: string;
   paymentIntentId: string;
   productId: string;
+  telegramAccessActiveText: string;
   telegramContactSupportText: string;
+  telegramInspirationLinkText: string;
+  telegramInspirationUntilLabel: string;
+  telegramMainGroupLinkText: string;
   telegramOpenLinkText: string;
   telegramPendingText: string;
   telegramUnavailableText: string;
@@ -71,7 +77,9 @@ const ButtonBox = styled.div`
 `;
 
 export default function SuccessContent({
+  accessNotice,
   checkoutSessionId,
+  dateLocale,
   descriptionLine1,
   descriptionLine2,
   homeButtonText,
@@ -79,7 +87,11 @@ export default function SuccessContent({
   offerId,
   paymentIntentId,
   productId,
+  telegramAccessActiveText,
   telegramContactSupportText,
+  telegramInspirationLinkText,
+  telegramInspirationUntilLabel,
+  telegramMainGroupLinkText,
   telegramOpenLinkText,
   telegramPendingText,
   telegramUnavailableText,
@@ -93,6 +105,7 @@ export default function SuccessContent({
       <Paragraphs>
         <Paragraph>{descriptionLine1}</Paragraph>
         <Paragraph>{descriptionLine2}</Paragraph>
+        {accessNotice ? <Paragraph>{accessNotice}</Paragraph> : null}
         {isTelegramAccessPurchase && showUnavailableNote ? (
           <Paragraph>{telegramUnavailableText}</Paragraph>
         ) : null}
@@ -100,8 +113,13 @@ export default function SuccessContent({
       <ButtonBox>
         {isTelegramAccessPurchase ? (
           <TelegramAccessButton
+            activeText={telegramAccessActiveText}
             buttonText={telegramOpenLinkText}
             checkoutSessionId={checkoutSessionId}
+            dateLocale={dateLocale}
+            inspirationButtonText={telegramInspirationLinkText}
+            inspirationUntilLabel={telegramInspirationUntilLabel}
+            mainButtonText={telegramMainGroupLinkText}
             offerId={offerId}
             paymentIntentId={paymentIntentId}
             pendingText={telegramPendingText}

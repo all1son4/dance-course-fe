@@ -132,7 +132,11 @@ export default function Offline() {
                     &quot;{t("promo.card.items.1.highlight")}&quot;
                   </HighlightText>
                 </li>
-                <li>{t("promo.card.items.2")}</li>
+                <li>
+                  {t("promo.card.items.2.prefix")}{" "}
+                  <HighlightText>{t("promo.card.items.2.highlight")}</HighlightText>
+                </li>
+                <li>{t("promo.card.items.3")}</li>
               </CourseList>
             }
             buttonText={commonT("details")}

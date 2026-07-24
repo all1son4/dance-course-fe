@@ -3,8 +3,14 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
+import Checkbox from "@/components/common/Checkbox";
 import Input from "@/components/common/Input";
-import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
+import ToggleSwitch from "@/components/common/ToggleSwitch";
+import {
+  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+  ONLINE_GROUP_RENEWAL_OFFER_ID,
+  SELLABLE_PRODUCTS_LIST,
+} from "@/constants/sellable-products";
 import { getOfferAccessDurationDaysByOfferId } from "@/lib/telegram/offer-access";
 
 import {
@@ -12,11 +18,13 @@ import {
   AdminShell,
   ButtonRow,
   Card,
+  CheckboxList,
   CopyButton,
   Description,
   FeaturePlaceholder,
   Form,
   FormControl,
+  FormGrid,
   HeaderInfo,
   HeaderMeta,
   HeaderRow,
@@ -30,6 +38,7 @@ import {
   LockTitle,
   LockViewport,
   MainPanel,
+  OnlineGroupWorkspace,
   PolicyLabel,
   PolicyList,
   PolicyRow,
@@ -38,6 +47,8 @@ import {
   RecentLinkHeader,
   RecentLinkMeta,
   RecentLinksList,
+  RenewalLinkControls,
+  RenewalLinksList,
   ResultBox,
   ResultValue,
   SectionHeading,
@@ -55,8 +66,13 @@ import {
   SidebarTop,
   SkeletonLine,
   StatusText,
+  SummaryGrid,
+  SummaryItem,
+  SummaryLabel,
+  SummaryValue,
   SurfaceCard,
   SurfaceDescription,
+  SurfaceHeaderActions,
   SurfaceHeaderRow,
   SurfaceTitle,
   Title,
@@ -65,7 +81,12 @@ import {
   WorkspaceSecondary,
 } from "./page.styles";
 
-type AdminFeatureId = "invite-links" | "access-control" | "broadcasts" | "reports";
+type AdminFeatureId =
+  | "invite-links"
+  | "online-group"
+  | "access-control"
+  | "broadcasts"
+  | "reports";
 type GeneratorKind = "choreo" | "first-touch";
 type LessonLanguage = "en" | "ru";
 type LinkState = "active" | "used";
@@ -100,6 +121,36 @@ type GeneratedLinkEntry = {
   selectionLabel: string;
   tokenExpiresAt: string;
 };
+type TelegramChatOption = {
+  chatId: string;
+  title: string;
+  type: string;
+  updatedAt: string;
+};
+type RenewalCampaignEntry = {
+  checkoutUrl: string;
+  createdAt: string;
+  id: string;
+  offerId: string;
+  slug: string;
+  sourceChatId: string;
+  sourceChatIds: string[];
+  sourceChatTitle: string;
+  sourceChatTitles: string[];
+  status: string;
+  targetChatId: string;
+  title: string;
+};
+type OnlineGroupCampaignEntry = {
+  createdAt: string;
+  endsAt: string;
+  id: string;
+  inspirationChatId: string;
+  mainChatId: string;
+  startsAt: string;
+  status: string;
+  title: string;
+};
 type AuthResponse = {
   authorized?: boolean;
   errorCode?: string;
@@ -117,6 +168,38 @@ type HistoryResponse = {
   errorCode?: string;
   items?: GeneratedLinkEntry[];
   stale?: boolean;
+};
+type TelegramChatsResponse = {
+  chats?: TelegramChatOption[];
+  errorCode?: string;
+};
+type RenewalCampaignsResponse = {
+  campaign?: {
+    checkoutUrl: string;
+    createdAt: string;
+    id: string;
+    offerId: string;
+    productId: string;
+    slug: string;
+    sourceChatIds: string[];
+    sourceChatTitles: string[];
+    targetChatTitle: string;
+    title: string;
+  };
+  campaigns?: RenewalCampaignEntry[];
+  errorCode?: string;
+  reused?: boolean;
+  status?: string;
+};
+type OnlineGroupCampaignsResponse = {
+  campaign?: OnlineGroupCampaignEntry & {
+    inspirationChatTitle: string;
+    mainChatTitle: string;
+  };
+  campaigns?: OnlineGroupCampaignEntry[];
+  errorCode?: string;
+  reused?: boolean;
+  status?: string;
 };
 type MonthlySalesReportMonthsResponse = {
   errorCode?: string;
@@ -156,6 +239,12 @@ const ADMIN_FEATURES: AdminFeature[] = [
     isAvailable: true,
     label: "Invite-ссылки",
     description: "Ручная выдача доступов без покупки",
+  },
+  {
+    id: "online-group",
+    isAvailable: true,
+    label: "Настройки Online Group",
+    description: "Текущий поток, Inspiration Hub и продления",
   },
   {
     id: "access-control",
@@ -255,6 +344,18 @@ const formatDateTime = (value: string) => {
   }).format(date);
 };
 
+const formatDateTimeInput = (value: string) => {
+  const date = new Date(value);
+
+  if (!Number.isFinite(date.getTime())) {
+    return "";
+  }
+
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+    .toISOString()
+    .slice(0, 16);
+};
+
 const formatAccessDurationLabel = (days: number | null | undefined) => {
   if (!days || days <= 0) {
     return "Без ограничения после вступления";
@@ -341,6 +442,27 @@ export default function AdminPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLink, setGeneratedLink] = useState("");
   const [generatorStatus, setGeneratorStatus] = useState<StatusMessage>(null);
+  const [telegramChats, setTelegramChats] = useState<TelegramChatOption[]>([]);
+  const [onlineGroupCampaigns, setOnlineGroupCampaigns] = useState<
+    OnlineGroupCampaignEntry[]
+  >([]);
+  const [onlineGroupRegularChatId, setOnlineGroupRegularChatId] = useState("");
+  const [onlineGroupLibraryChatId, setOnlineGroupLibraryChatId] = useState("");
+  const [onlineGroupStartsAt, setOnlineGroupStartsAt] = useState("");
+  const [onlineGroupTitle, setOnlineGroupTitle] = useState("");
+  const [onlineGroupStatus, setOnlineGroupStatus] = useState<StatusMessage>(null);
+  const [isOnlineGroupFormOpen, setIsOnlineGroupFormOpen] = useState(false);
+  const [isSavingOnlineGroupSettings, setIsSavingOnlineGroupSettings] = useState(false);
+  const [renewalCampaigns, setRenewalCampaigns] = useState<RenewalCampaignEntry[]>([]);
+  const [renewalSourceChatIds, setRenewalSourceChatIds] = useState<string[]>([]);
+  const [renewalOfferId, setRenewalOfferId] = useState(ONLINE_GROUP_RENEWAL_OFFER_ID);
+  const [renewalTitle, setRenewalTitle] = useState("");
+  const [generatedRenewalLink, setGeneratedRenewalLink] = useState("");
+  const [renewalStatus, setRenewalStatus] = useState<StatusMessage>(null);
+  const [isLoadingOnlineGroupData, setIsLoadingOnlineGroupData] = useState(false);
+  const [hasLoadedOnlineGroupData, setHasLoadedOnlineGroupData] = useState(false);
+  const [isGeneratingRenewal, setIsGeneratingRenewal] = useState(false);
+  const [updatingRenewalSlug, setUpdatingRenewalSlug] = useState("");
   const [copyingUrl, setCopyingUrl] = useState("");
   const [hasLoadedJournalOnce, setHasLoadedJournalOnce] = useState(false);
   const [isJournalLoading, setIsJournalLoading] = useState(false);
@@ -384,8 +506,46 @@ export default function AdminPage() {
   const activeFeature =
     ADMIN_FEATURES.find((feature) => feature.id === activeFeatureId) ?? ADMIN_FEATURES[0];
   const isInviteLinksFeatureActive = activeFeature.id === "invite-links";
+  const isOnlineGroupFeatureActive = activeFeature.id === "online-group";
   const isBroadcastsFeatureActive = activeFeature.id === "broadcasts";
   const isReportsFeatureActive = activeFeature.id === "reports";
+  const telegramChatSelectOptions: SelectOption[] = telegramChats.map((chat) => ({
+    label: `${chat.title} (${chat.chatId})`,
+    value: chat.chatId,
+  }));
+  const activeOnlineGroupCampaign = onlineGroupCampaigns.find(
+    (campaign) => campaign.status === "active",
+  );
+  const activeMainChatTitle = activeOnlineGroupCampaign
+    ? (telegramChats.find((chat) => chat.chatId === activeOnlineGroupCampaign.mainChatId)
+        ?.title ?? activeOnlineGroupCampaign.mainChatId)
+    : "";
+  const inspirationChatTitle = activeOnlineGroupCampaign
+    ? (telegramChats.find(
+        (chat) => chat.chatId === activeOnlineGroupCampaign.inspirationChatId,
+      )?.title ?? activeOnlineGroupCampaign.inspirationChatId)
+    : "";
+  const isRenewalGenerateDisabled =
+    isGeneratingRenewal ||
+    renewalSourceChatIds.length === 0 ||
+    !activeOnlineGroupCampaign ||
+    renewalSourceChatIds.includes(activeOnlineGroupCampaign.mainChatId);
+  const isOnlineGroupGenerateDisabled =
+    isSavingOnlineGroupSettings ||
+    !onlineGroupRegularChatId ||
+    !onlineGroupLibraryChatId ||
+    !onlineGroupStartsAt ||
+    onlineGroupRegularChatId === onlineGroupLibraryChatId;
+  const renewalOfferSelectOptions: SelectOption[] = [
+    {
+      label: "Standard",
+      value: ONLINE_GROUP_RENEWAL_OFFER_ID,
+    },
+    {
+      label: "Plus",
+      value: ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+    },
+  ];
   const accessPolicyLabel = useMemo(() => {
     if (kind === "choreo" && resolvedChoreoSelection) {
       return formatAccessDurationLabel(
@@ -450,6 +610,105 @@ export default function AdminPage() {
     },
     [],
   );
+
+  const loadOnlineGroupAdminData = useCallback(async () => {
+    setIsLoadingOnlineGroupData(true);
+
+    try {
+      const [chatsResponse, campaignsResponse, onlineGroupResponse] = await Promise.all([
+        fetch("/admin/api/telegram/chats", {
+          method: "GET",
+          cache: "no-store",
+        }),
+        fetch("/admin/api/renewal-campaigns", {
+          method: "GET",
+          cache: "no-store",
+        }),
+        fetch("/admin/api/online-group-settings", {
+          method: "GET",
+          cache: "no-store",
+        }),
+      ]);
+      const chatsData = (await chatsResponse.json()) as TelegramChatsResponse;
+      const campaignsData = (await campaignsResponse.json()) as RenewalCampaignsResponse;
+      const onlineGroupData =
+        (await onlineGroupResponse.json()) as OnlineGroupCampaignsResponse;
+
+      if (!chatsResponse.ok || !campaignsResponse.ok || !onlineGroupResponse.ok) {
+        if (
+          chatsData.errorCode === "unauthorized" ||
+          campaignsData.errorCode === "unauthorized" ||
+          onlineGroupData.errorCode === "unauthorized"
+        ) {
+          setAuthState("locked");
+          setAuthStatus({
+            text: "Сессия истекла. Введи пароль снова.",
+            tone: "error",
+          });
+          return;
+        }
+
+        setOnlineGroupStatus({
+          text: "Не удалось загрузить настройки Online Group.",
+          tone: "error",
+        });
+        setRenewalStatus({
+          text: "Не удалось загрузить чаты или историю продлений.",
+          tone: "error",
+        });
+        return;
+      }
+
+      const chats = Array.isArray(chatsData.chats) ? chatsData.chats : [];
+      const campaigns = Array.isArray(campaignsData.campaigns)
+        ? campaignsData.campaigns
+        : [];
+
+      setTelegramChats(chats);
+      setRenewalCampaigns(campaigns);
+      setOnlineGroupCampaigns(
+        Array.isArray(onlineGroupData.campaigns) ? onlineGroupData.campaigns : [],
+      );
+      const activeOnlineGroupCampaign = onlineGroupData.campaigns?.find(
+        (campaign) => campaign.status === "active",
+      );
+      setOnlineGroupRegularChatId(
+        activeOnlineGroupCampaign?.mainChatId ?? chats[0]?.chatId ?? "",
+      );
+      setOnlineGroupLibraryChatId(
+        activeOnlineGroupCampaign?.inspirationChatId ??
+          chats[1]?.chatId ??
+          chats[0]?.chatId ??
+          "",
+      );
+      setOnlineGroupStartsAt(
+        activeOnlineGroupCampaign?.startsAt
+          ? formatDateTimeInput(activeOnlineGroupCampaign.startsAt)
+          : "",
+      );
+      setOnlineGroupTitle(activeOnlineGroupCampaign?.title ?? "");
+      setIsOnlineGroupFormOpen(!activeOnlineGroupCampaign);
+      setRenewalSourceChatIds((currentValue) => {
+        const validValues = currentValue.filter((chatId) =>
+          chats.some((chat) => chat.chatId === chatId),
+        );
+
+        return validValues.length ? validValues : chats[0] ? [chats[0].chatId] : [];
+      });
+    } catch {
+      setOnlineGroupStatus({
+        text: "Ошибка сети при загрузке настроек Online Group.",
+        tone: "error",
+      });
+      setRenewalStatus({
+        text: "Ошибка сети при загрузке продлений.",
+        tone: "error",
+      });
+    } finally {
+      setHasLoadedOnlineGroupData(true);
+      setIsLoadingOnlineGroupData(false);
+    }
+  }, []);
 
   const isJournalInitialLoading = isJournalLoading && !hasLoadedJournalOnce;
   const isMonthlySalesReportDisabled =
@@ -700,11 +959,37 @@ export default function AdminPage() {
       setHasLoadedJournalOnce(false);
       setIsJournalLoading(false);
       journalLoadInFlightRef.current = false;
+      setHasLoadedOnlineGroupData(false);
+      setTelegramChats([]);
+      setOnlineGroupCampaigns([]);
+      setRenewalCampaigns([]);
       return;
     }
 
     void loadRecentLinksHistory();
   }, [isAuthorized, loadRecentLinksHistory]);
+
+  useEffect(() => {
+    if (!isAuthorized) {
+      return;
+    }
+
+    if (
+      !isOnlineGroupFeatureActive ||
+      hasLoadedOnlineGroupData ||
+      isLoadingOnlineGroupData
+    ) {
+      return;
+    }
+
+    void loadOnlineGroupAdminData();
+  }, [
+    hasLoadedOnlineGroupData,
+    isAuthorized,
+    isLoadingOnlineGroupData,
+    isOnlineGroupFeatureActive,
+    loadOnlineGroupAdminData,
+  ]);
 
   useEffect(() => {
     if (!isAuthorized) {
@@ -1060,6 +1345,274 @@ export default function AdminPage() {
     }
   };
 
+  const handleGenerateRenewal = async (
+    event?: FormEvent<HTMLFormElement>,
+    regenerate = false,
+  ) => {
+    event?.preventDefault();
+
+    if (isRenewalGenerateDisabled) {
+      return;
+    }
+
+    setIsGeneratingRenewal(true);
+    setGeneratedRenewalLink("");
+    setRenewalStatus({
+      text: regenerate
+        ? "Перегенерирую checkout-ссылку продления..."
+        : "Получаю checkout-ссылку продления...",
+      tone: "info",
+    });
+
+    try {
+      const response = await fetch("/admin/api/renewal-campaigns", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          offerId: renewalOfferId,
+          regenerate,
+          sourceChatIds: renewalSourceChatIds,
+          title: renewalTitle,
+        }),
+      });
+      const data = (await response.json()) as RenewalCampaignsResponse;
+
+      if (!response.ok || data.status !== "ready" || !data.campaign?.checkoutUrl) {
+        if (data.errorCode === "unauthorized") {
+          setAuthState("locked");
+          setAuthStatus({
+            text: "Сессия истекла. Введи пароль снова.",
+            tone: "error",
+          });
+          setRenewalStatus(null);
+          return;
+        }
+
+        setRenewalStatus({
+          text:
+            data.errorCode === "same_source_and_target_chat"
+              ? "Старый и новый чат должны отличаться."
+              : data.errorCode === "telegram_chat_not_registered"
+                ? "Один из чатов не зарегистрирован. Добавь бота в чат и отправь /register_chat."
+                : data.errorCode === "renewal_offer_not_seeded"
+                  ? "Скидочный offer не найден в БД. Запусти seed продуктов."
+                  : "Не удалось создать ссылку продления.",
+          tone: "error",
+        });
+        return;
+      }
+
+      setGeneratedRenewalLink(data.campaign.checkoutUrl);
+      setRenewalStatus({
+        text: data.reused
+          ? "Активная checkout-ссылка уже была создана, можно копировать."
+          : "Checkout-ссылка продления готова.",
+        tone: "success",
+      });
+      setRenewalCampaigns((previousCampaigns) => {
+        const nextCampaign: RenewalCampaignEntry = {
+          checkoutUrl: data.campaign?.checkoutUrl ?? "",
+          createdAt: data.campaign?.createdAt ?? new Date().toISOString(),
+          id: data.campaign?.id ?? "",
+          offerId: data.campaign?.offerId ?? renewalOfferId,
+          slug: data.campaign?.slug ?? "",
+          sourceChatId: renewalSourceChatIds[0] ?? "",
+          sourceChatIds: data.campaign?.sourceChatIds ?? renewalSourceChatIds,
+          sourceChatTitle:
+            data.campaign?.sourceChatTitles?.[0] ?? renewalSourceChatIds[0] ?? "",
+          sourceChatTitles: data.campaign?.sourceChatTitles ?? renewalSourceChatIds,
+          status: "active",
+          targetChatId: activeOnlineGroupCampaign?.mainChatId ?? "",
+          title: data.campaign?.title ?? renewalTitle,
+        };
+
+        return [
+          nextCampaign,
+          ...previousCampaigns
+            .filter(
+              (campaign) =>
+                campaign.id !== nextCampaign.id && campaign.slug !== nextCampaign.slug,
+            )
+            .map((campaign) =>
+              campaign.offerId === nextCampaign.offerId &&
+              campaign.targetChatId === nextCampaign.targetChatId
+                ? { ...campaign, status: "archived" }
+                : campaign,
+            ),
+        ];
+      });
+      setRenewalTitle("");
+    } catch {
+      setRenewalStatus({
+        text: "Ошибка сети при создании ссылки продления.",
+        tone: "error",
+      });
+    } finally {
+      setIsGeneratingRenewal(false);
+    }
+  };
+
+  const handleSaveOnlineGroupSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (isOnlineGroupGenerateDisabled) {
+      return;
+    }
+
+    setIsSavingOnlineGroupSettings(true);
+    setOnlineGroupStatus({
+      text: "Сохраняю настройки потока...",
+      tone: "info",
+    });
+
+    try {
+      const response = await fetch("/admin/api/online-group-settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          inspirationChatId: onlineGroupLibraryChatId,
+          mainChatId: onlineGroupRegularChatId,
+          startsAt: new Date(onlineGroupStartsAt).toISOString(),
+          title: onlineGroupTitle,
+        }),
+      });
+      const data = (await response.json()) as OnlineGroupCampaignsResponse;
+
+      if (!response.ok || data.status !== "ready" || !data.campaign) {
+        if (data.errorCode === "unauthorized") {
+          setAuthState("locked");
+          setAuthStatus({ text: "Сессия истекла. Введи пароль снова.", tone: "error" });
+          return;
+        }
+
+        const errorText =
+          data.errorCode === "same_main_and_inspiration_chat"
+            ? "Основной чат и Inspiration Hub должны отличаться."
+            : data.errorCode === "inspiration_chat_is_fixed"
+              ? "Inspiration Hub уже закреплен и не может быть заменен."
+              : data.errorCode === "telegram_chat_not_registered"
+                ? "Один из чатов не зарегистрирован через /register_chat."
+                : data.errorCode === "invalid_start_date"
+                  ? "Укажи корректную дату старта потока."
+                  : "Не удалось сохранить настройки Online Group.";
+
+        setOnlineGroupStatus({ text: errorText, tone: "error" });
+        return;
+      }
+
+      setOnlineGroupCampaigns((campaigns) => [
+        data.campaign as OnlineGroupCampaignEntry,
+        ...campaigns
+          .filter((campaign) => campaign.id !== data.campaign?.id)
+          .map((campaign) =>
+            campaign.status === "active" ? { ...campaign, status: "archived" } : campaign,
+          ),
+      ]);
+      setRenewalCampaigns((campaigns) =>
+        campaigns.map((campaign) =>
+          campaign.status === "active" &&
+          campaign.targetChatId !== data.campaign?.mainChatId
+            ? { ...campaign, status: "archived" }
+            : campaign,
+        ),
+      );
+
+      const generatedCampaign = renewalCampaigns.find(
+        (campaign) => campaign.checkoutUrl === generatedRenewalLink,
+      );
+
+      if (
+        generatedCampaign &&
+        generatedCampaign.targetChatId !== data.campaign.mainChatId
+      ) {
+        setGeneratedRenewalLink("");
+      }
+
+      setOnlineGroupStatus({
+        text: data.reused ? "Настройки уже актуальны." : "Новый поток активирован.",
+        tone: "success",
+      });
+      setIsOnlineGroupFormOpen(false);
+    } catch {
+      setOnlineGroupStatus({
+        text: "Ошибка сети при сохранении настроек Online Group.",
+        tone: "error",
+      });
+    } finally {
+      setIsSavingOnlineGroupSettings(false);
+    }
+  };
+
+  const handleToggleRenewalStatus = async (slug: string, active: boolean) => {
+    if (!slug || updatingRenewalSlug) {
+      return;
+    }
+
+    const selectedCampaign = renewalCampaigns.find((campaign) => campaign.slug === slug);
+
+    if (!selectedCampaign) {
+      return;
+    }
+
+    setUpdatingRenewalSlug(slug);
+
+    try {
+      const response = await fetch("/admin/api/renewal-campaigns", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ active, slug }),
+      });
+      const data = (await response.json()) as { errorCode?: string };
+
+      if (!response.ok) {
+        setRenewalStatus({
+          text:
+            data.errorCode === "renewal_campaign_inactive"
+              ? "Эта ссылка относится к старому потоку и не может быть включена."
+              : data.errorCode === "renewal_campaign_not_found"
+                ? "Ссылка продления не найдена."
+                : "Не удалось изменить состояние ссылки.",
+          tone: "error",
+        });
+        return;
+      }
+
+      setRenewalCampaigns((campaigns) =>
+        campaigns.map((campaign) => {
+          if (campaign.slug === slug) {
+            return { ...campaign, status: active ? "active" : "archived" };
+          }
+
+          if (
+            active &&
+            campaign.offerId === selectedCampaign.offerId &&
+            campaign.targetChatId === selectedCampaign.targetChatId
+          ) {
+            return { ...campaign, status: "archived" };
+          }
+
+          return campaign;
+        }),
+      );
+      if (!active && selectedCampaign.checkoutUrl === generatedRenewalLink) {
+        setGeneratedRenewalLink("");
+      }
+      setRenewalStatus({
+        text: active ? "Ссылка продления включена." : "Ссылка продления выключена.",
+        tone: "success",
+      });
+    } catch {
+      setRenewalStatus({
+        text: "Ошибка сети при изменении состояния ссылки.",
+        tone: "error",
+      });
+    } finally {
+      setUpdatingRenewalSlug("");
+    }
+  };
+
   const handleCopyLink = async (link: string) => {
     if (!link || copyingUrl) {
       return;
@@ -1187,20 +1740,24 @@ export default function AdminPage() {
                 <Description>
                   {isInviteLinksFeatureActive
                     ? "Генерация одноразовых Telegram invite-ссылок с той же бизнес-логикой, что и в боевом платежном потоке."
-                    : isBroadcastsFeatureActive
-                      ? "Разовые email-рассылки по заявкам из Neon с зеркалом в Google Sheets."
-                      : isReportsFeatureActive
-                        ? "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц."
-                        : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
+                    : isOnlineGroupFeatureActive
+                      ? "Настройка текущего потока, постоянного Inspiration Hub и ссылок продления."
+                      : isBroadcastsFeatureActive
+                        ? "Разовые email-рассылки по заявкам из Neon с зеркалом в Google Sheets."
+                        : isReportsFeatureActive
+                          ? "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц."
+                          : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
                 </Description>
                 <HeaderMeta>
                   {isInviteLinksFeatureActive
                     ? "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."
-                    : isBroadcastsFeatureActive
-                      ? "Повторный запуск отправляет письма только тем, у кого еще нет успешной отправки."
-                      : isReportsFeatureActive
-                        ? "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи."
-                        : "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."}
+                    : isOnlineGroupFeatureActive
+                      ? "Plus открывает основной чат на постоянной основе и Inspiration Hub до конца потока."
+                      : isBroadcastsFeatureActive
+                        ? "Повторный запуск отправляет письма только тем, у кого еще нет успешной отправки."
+                        : isReportsFeatureActive
+                          ? "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи."
+                          : "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."}
                 </HeaderMeta>
               </HeaderInfo>
             </HeaderRow>
@@ -1209,7 +1766,328 @@ export default function AdminPage() {
               <StatusText $tone={authStatus.tone}>{authStatus.text}</StatusText>
             )}
 
-            {isInviteLinksFeatureActive ? (
+            {isOnlineGroupFeatureActive ? (
+              <OnlineGroupWorkspace>
+                <SurfaceCard>
+                  <SurfaceHeaderRow>
+                    <SurfaceTitle>1. Активный поток</SurfaceTitle>
+                    <SurfaceHeaderActions>
+                      {activeOnlineGroupCampaign && (
+                        <Button
+                          buttonText={isOnlineGroupFormOpen ? "Скрыть форму" : "Изменить"}
+                          type="button"
+                          onClick={() =>
+                            setIsOnlineGroupFormOpen((currentValue) => !currentValue)
+                          }
+                          size="sm"
+                          variant="secondary"
+                          width="auto"
+                        />
+                      )}
+                      <IconActionButton
+                        type="button"
+                        onClick={loadOnlineGroupAdminData}
+                        disabled={isLoadingOnlineGroupData}
+                        $isLoading={isLoadingOnlineGroupData}
+                        aria-label="Обновить Online Group"
+                        title="Обновить Online Group"
+                      >
+                        <RefreshIcon />
+                      </IconActionButton>
+                    </SurfaceHeaderActions>
+                  </SurfaceHeaderRow>
+                  <SurfaceDescription>
+                    Куда попадут участники после новой покупки или продления.
+                  </SurfaceDescription>
+                  {activeOnlineGroupCampaign ? (
+                    <SummaryGrid>
+                      <SummaryItem>
+                        <SummaryLabel>Поток</SummaryLabel>
+                        <SummaryValue>{activeOnlineGroupCampaign.title}</SummaryValue>
+                      </SummaryItem>
+                      <SummaryItem>
+                        <SummaryLabel>Период Plus-доступа</SummaryLabel>
+                        <SummaryValue>
+                          {formatDateTime(activeOnlineGroupCampaign.startsAt)} —{" "}
+                          {formatDateTime(activeOnlineGroupCampaign.endsAt)}
+                        </SummaryValue>
+                      </SummaryItem>
+                      <SummaryItem>
+                        <SummaryLabel>Основной чат</SummaryLabel>
+                        <SummaryValue>{activeMainChatTitle}</SummaryValue>
+                      </SummaryItem>
+                      <SummaryItem>
+                        <SummaryLabel>Inspiration Hub</SummaryLabel>
+                        <SummaryValue>{inspirationChatTitle}</SummaryValue>
+                      </SummaryItem>
+                    </SummaryGrid>
+                  ) : (
+                    <StatusText $tone="info">Активный поток еще не настроен.</StatusText>
+                  )}
+                  {(isOnlineGroupFormOpen || !activeOnlineGroupCampaign) && (
+                    <Form onSubmit={handleSaveOnlineGroupSettings}>
+                      <FormGrid>
+                        <FormControl>
+                          <Input
+                            id="online-group-regular-chat"
+                            name="onlineGroupRegularChat"
+                            label="Основной чат потока"
+                            value={onlineGroupRegularChatId}
+                            placeholder="Выбери новый чат Online Group"
+                            selectOptions={telegramChatSelectOptions}
+                            onChange={(event) => {
+                              setOnlineGroupRegularChatId(event.target.value);
+                              setOnlineGroupStatus(null);
+                            }}
+                            disabled={isLoadingOnlineGroupData}
+                            width="100%"
+                          />
+                        </FormControl>
+                        <FormControl>
+                          <Input
+                            id="online-group-library-chat"
+                            name="onlineGroupLibraryChat"
+                            label="Постоянный Inspiration Hub"
+                            value={onlineGroupLibraryChatId}
+                            placeholder="Выбери чат Inspiration Hub"
+                            selectOptions={telegramChatSelectOptions}
+                            onChange={(event) => {
+                              setOnlineGroupLibraryChatId(event.target.value);
+                              setOnlineGroupStatus(null);
+                            }}
+                            disabled={
+                              isLoadingOnlineGroupData ||
+                              Boolean(activeOnlineGroupCampaign)
+                            }
+                            width="100%"
+                          />
+                        </FormControl>
+                        <FormControl>
+                          <Input
+                            id="online-group-starts-at"
+                            name="onlineGroupStartsAt"
+                            label="Дата и время старта"
+                            value={onlineGroupStartsAt}
+                            type="datetime-local"
+                            onChange={(event) => {
+                              setOnlineGroupStartsAt(event.target.value);
+                              setOnlineGroupStatus(null);
+                            }}
+                            width="100%"
+                          />
+                        </FormControl>
+                        <FormControl>
+                          <Input
+                            id="online-group-title"
+                            name="onlineGroupTitle"
+                            label="Название потока"
+                            value={onlineGroupTitle}
+                            placeholder="Например: Online Group — август"
+                            onChange={(event) => setOnlineGroupTitle(event.target.value)}
+                            width="100%"
+                          />
+                        </FormControl>
+                      </FormGrid>
+                      <ButtonRow>
+                        <Button
+                          buttonText={
+                            isSavingOnlineGroupSettings
+                              ? "Сохраняю..."
+                              : "Сохранить и активировать поток"
+                          }
+                          type="submit"
+                          disabled={isOnlineGroupGenerateDisabled}
+                          isLoading={isSavingOnlineGroupSettings}
+                          width="100%"
+                        />
+                      </ButtonRow>
+                    </Form>
+                  )}
+                  {onlineGroupStatus && (
+                    <StatusText $tone={onlineGroupStatus.tone}>
+                      {onlineGroupStatus.text}
+                    </StatusText>
+                  )}
+                </SurfaceCard>
+
+                <SurfaceCard>
+                  <SurfaceTitle>2. Создать ссылку продления</SurfaceTitle>
+                  <SurfaceDescription>
+                    Кто может купить следующий поток и по какому тарифу.
+                  </SurfaceDescription>
+                  <Form onSubmit={handleGenerateRenewal}>
+                    <FormControl>
+                      <PolicyLabel>Участники из этих чатов смогут оплатить</PolicyLabel>
+                      <CheckboxList>
+                        {telegramChats.map((chat) => (
+                          <Checkbox
+                            key={chat.chatId}
+                            checked={renewalSourceChatIds.includes(chat.chatId)}
+                            disabled={isLoadingOnlineGroupData}
+                            name={`renewal-source-${chat.chatId}`}
+                            onChange={(event) => {
+                              setRenewalSourceChatIds((currentIds) =>
+                                event.target.checked
+                                  ? [...new Set([...currentIds, chat.chatId])]
+                                  : currentIds.filter((id) => id !== chat.chatId),
+                              );
+                              setGeneratedRenewalLink("");
+                              setRenewalStatus(null);
+                            }}
+                            placeholder={`${chat.title} (${chat.chatId})`}
+                          />
+                        ))}
+                      </CheckboxList>
+                    </FormControl>
+                    <FormGrid>
+                      <FormControl>
+                        <Input
+                          id="renewal-offer"
+                          name="renewalOffer"
+                          label="Тариф"
+                          value={renewalOfferId}
+                          placeholder="Выбери тариф"
+                          selectOptions={renewalOfferSelectOptions}
+                          onChange={(event) => {
+                            setRenewalOfferId(event.target.value);
+                            setGeneratedRenewalLink("");
+                            setRenewalStatus(null);
+                          }}
+                          disabled={isLoadingOnlineGroupData}
+                          width="100%"
+                        />
+                      </FormControl>
+                      <FormControl>
+                        <Input
+                          id="renewal-title"
+                          name="renewalTitle"
+                          label="Название для админки"
+                          value={renewalTitle}
+                          placeholder="Например: поток 1 → поток 2"
+                          onChange={(event) => setRenewalTitle(event.target.value)}
+                          width="100%"
+                        />
+                      </FormControl>
+                    </FormGrid>
+                    <FormGrid>
+                      <ButtonRow>
+                        <Button
+                          buttonText={
+                            isGeneratingRenewal ? "Готовлю..." : "Создать или показать"
+                          }
+                          type="submit"
+                          disabled={isRenewalGenerateDisabled}
+                          isLoading={isGeneratingRenewal}
+                          width="100%"
+                        />
+                      </ButtonRow>
+                      <ButtonRow>
+                        <Button
+                          buttonText={
+                            isGeneratingRenewal ? "Заменяю..." : "Заменить ссылку новой"
+                          }
+                          type="button"
+                          onClick={() => void handleGenerateRenewal(undefined, true)}
+                          disabled={isRenewalGenerateDisabled}
+                          isLoading={isGeneratingRenewal}
+                          variant="secondary"
+                          width="100%"
+                        />
+                      </ButtonRow>
+                    </FormGrid>
+                    {renewalStatus && (
+                      <StatusText $tone={renewalStatus.tone}>
+                        {renewalStatus.text}
+                      </StatusText>
+                    )}
+                    {generatedRenewalLink && (
+                      <ResultBox>
+                        <ResultValue>{generatedRenewalLink}</ResultValue>
+                        <CopyButton>
+                          <IconActionButton
+                            type="button"
+                            onClick={() => handleCopyLink(generatedRenewalLink)}
+                            disabled={copyingUrl === generatedRenewalLink}
+                            $isLoading={copyingUrl === generatedRenewalLink}
+                            aria-label="Копировать ссылку продления"
+                            title="Копировать ссылку продления"
+                          >
+                            <CopyIcon />
+                          </IconActionButton>
+                        </CopyButton>
+                      </ResultBox>
+                    )}
+                  </Form>
+                </SurfaceCard>
+
+                <SurfaceCard>
+                  <SurfaceTitle>3. Ссылки продления</SurfaceTitle>
+                  <SurfaceDescription>
+                    Включай нужную ссылку свитчером и копируй ее для отправки в чат.
+                  </SurfaceDescription>
+                  {renewalCampaigns.length === 0 ? (
+                    <JournalEmptyState>Ссылок пока нет.</JournalEmptyState>
+                  ) : (
+                    <RenewalLinksList>
+                      {renewalCampaigns.map((campaign) => {
+                        const isActive = campaign.status === "active";
+
+                        return (
+                          <RecentLinkCard key={campaign.slug}>
+                            <RecentLinkHeader>
+                              <RecentLinkMeta>{campaign.title}</RecentLinkMeta>
+                              <RenewalLinkControls>
+                                <LinkStateBadge $state={isActive ? "active" : "used"}>
+                                  {campaign.offerId ===
+                                  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID
+                                    ? "Plus"
+                                    : "Standard"}
+                                </LinkStateBadge>
+                                <ToggleSwitch
+                                  ariaLabel={`${isActive ? "Выключить" : "Включить"} ссылку ${campaign.title}`}
+                                  checked={isActive}
+                                  disabled={Boolean(updatingRenewalSlug)}
+                                  onChange={(checked) =>
+                                    void handleToggleRenewalStatus(campaign.slug, checked)
+                                  }
+                                />
+                              </RenewalLinkControls>
+                            </RecentLinkHeader>
+                            <RecentLinkMeta>
+                              Проверяем: {campaign.sourceChatTitles.join(", ")}
+                            </RecentLinkMeta>
+                            <RecentLinkMeta>
+                              Создано: {formatDateTime(campaign.createdAt)}
+                            </RecentLinkMeta>
+                            <ResultBox>
+                              <ResultValue>{campaign.checkoutUrl}</ResultValue>
+                              <CopyButton>
+                                <IconActionButton
+                                  type="button"
+                                  onClick={() => handleCopyLink(campaign.checkoutUrl)}
+                                  disabled={
+                                    !isActive || copyingUrl === campaign.checkoutUrl
+                                  }
+                                  $isLoading={copyingUrl === campaign.checkoutUrl}
+                                  aria-label="Копировать ссылку"
+                                  title={
+                                    isActive
+                                      ? "Копировать ссылку"
+                                      : "Сначала включи ссылку"
+                                  }
+                                >
+                                  <CopyIcon />
+                                </IconActionButton>
+                              </CopyButton>
+                            </ResultBox>
+                          </RecentLinkCard>
+                        );
+                      })}
+                    </RenewalLinksList>
+                  )}
+                </SurfaceCard>
+              </OnlineGroupWorkspace>
+            ) : isInviteLinksFeatureActive ? (
               <WorkspaceGrid>
                 <WorkspacePrimary>
                   <SurfaceCard>
@@ -1604,6 +2482,7 @@ export default function AdminPage() {
             )}
 
             {!isInviteLinksFeatureActive &&
+              !isOnlineGroupFeatureActive &&
               !isBroadcastsFeatureActive &&
               !isReportsFeatureActive && (
                 <SectionHeading>

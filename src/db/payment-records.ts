@@ -255,9 +255,18 @@ const hydratePaymentRecords = async (
       .from(purchaseSideEffects)
       .where(inArray(purchaseSideEffects.purchaseId, purchaseIds)),
   ]);
-  const entitlementByPurchaseId = new Map(
-    entitlementRows.map((row) => [row.purchaseId, row] as const),
-  );
+  const entitlementByPurchaseId = new Map<string, (typeof entitlementRows)[number]>();
+
+  for (const entitlement of entitlementRows) {
+    const currentEntitlement = entitlementByPurchaseId.get(entitlement.purchaseId);
+
+    if (
+      !currentEntitlement ||
+      (entitlement.accessKey === "primary" && currentEntitlement.accessKey !== "primary")
+    ) {
+      entitlementByPurchaseId.set(entitlement.purchaseId, entitlement);
+    }
+  }
   const invoiceByPurchaseId = new Map(
     invoiceRows.map((row) => [row.purchaseId, row] as const),
   );
@@ -323,6 +332,10 @@ const hydratePaymentRecords = async (
     record.telegram_user_id = entitlement?.telegramUserId ?? "";
     record.telegram_username = entitlement?.telegramUsername ?? "";
     record.telegram_channel_chat_id = entitlement?.telegramChatId ?? "";
+    record.telegram_inspiration_chat_id = purchase.inspirationChatIdSnapshot ?? "";
+    record.telegram_inspiration_access_expires_at = toIso(
+      purchase.inspirationAccessExpiresAtSnapshot,
+    );
     record.telegram_access_expires_at = toIso(entitlement?.expiresAt);
     record.telegram_access_revoked_at = toIso(entitlement?.revokedAt);
     record.email_delivery_status = emailSideEffect?.status ?? "";
@@ -504,6 +517,10 @@ export const upsertPaymentRecordToDatabase = async (
       customerId,
       customerPostalCodeSnapshot: nullIfEmpty(paymentRecord.customer_postal_code),
       customerTelegramUsernameSnapshot: nullIfEmpty(paymentRecord.customer_nickname),
+      inspirationAccessExpiresAtSnapshot: parseDate(
+        paymentRecord.telegram_inspiration_access_expires_at,
+      ),
+      inspirationChatIdSnapshot: nullIfEmpty(paymentRecord.telegram_inspiration_chat_id),
       lastPaymentErrorCode: nullIfEmpty(paymentRecord.last_payment_error_code),
       lastPaymentErrorMessage: nullIfEmpty(paymentRecord.last_payment_error_message),
       latestEventId: nullIfEmpty(paymentRecord.latest_event_id),
@@ -544,6 +561,7 @@ export const upsertPaymentRecordToDatabase = async (
     await tx
       .insert(accessEntitlements)
       .values({
+        accessKey: "primary",
         accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
         currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
         customerId,
@@ -585,7 +603,7 @@ export const upsertPaymentRecordToDatabase = async (
           telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
           updatedAt: now,
         },
-        target: accessEntitlements.purchaseId,
+        target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
       });
 
     const parsedInvoice = parseInvoiceNumber(paymentRecord.invoice_number);

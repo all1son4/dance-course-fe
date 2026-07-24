@@ -9,6 +9,7 @@ export type SendResendEmailInput = {
     filename: string;
   }>;
   html: string;
+  idempotencyKey?: string;
   subject: string;
   text: string;
   to: string;
@@ -19,6 +20,7 @@ export const isResendConfigured = () => Boolean(resendApiKey);
 export const sendResendEmail = async ({
   attachments,
   html,
+  idempotencyKey,
   subject,
   text,
   to,
@@ -57,6 +59,9 @@ export const sendResendEmail = async ({
       headers: {
         Authorization: `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
+        ...(idempotencyKey?.trim()
+          ? { "Idempotency-Key": idempotencyKey.trim().slice(0, 256) }
+          : {}),
       },
       method: "POST",
       signal: abortController.signal,

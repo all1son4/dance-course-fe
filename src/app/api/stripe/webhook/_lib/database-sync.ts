@@ -584,6 +584,12 @@ export const syncStripeWebhookEventToDatabase = async ({
         customerId,
         customerPostalCodeSnapshot: nullIfEmpty(paymentRecord.customer_postal_code),
         customerTelegramUsernameSnapshot: nullIfEmpty(paymentRecord.customer_nickname),
+        inspirationAccessExpiresAtSnapshot: parseDate(
+          paymentRecord.telegram_inspiration_access_expires_at,
+        ),
+        inspirationChatIdSnapshot: nullIfEmpty(
+          paymentRecord.telegram_inspiration_chat_id,
+        ),
         lastPaymentErrorCode: nullIfEmpty(paymentRecord.last_payment_error_code),
         lastPaymentErrorMessage: nullIfEmpty(paymentRecord.last_payment_error_message),
         latestEventId: nullIfEmpty(paymentRecord.latest_event_id),
@@ -645,6 +651,7 @@ export const syncStripeWebhookEventToDatabase = async ({
       await tx
         .insert(accessEntitlements)
         .values({
+          accessKey: "primary",
           accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
           currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
           customerId,
@@ -686,7 +693,7 @@ export const syncStripeWebhookEventToDatabase = async ({
             telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
             updatedAt: now,
           },
-          target: accessEntitlements.purchaseId,
+          target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
         });
 
       const parsedInvoice = parseInvoiceNumber(paymentRecord.invoice_number);

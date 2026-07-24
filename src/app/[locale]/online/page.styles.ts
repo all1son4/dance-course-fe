@@ -309,7 +309,7 @@ export const StudioDanceParagraphs = styled.div`
 
 export const StudioDanceParagraph = styled.p`
   font-weight: 300;
-  font-style: light;
+  font-style: normal;
   font-size: 17px;
   line-height: 150%;
   letter-spacing: 0;

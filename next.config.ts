@@ -11,6 +11,7 @@ const scriptSources = [
   "'unsafe-inline'",
   ...(isProduction ? [] : ["'unsafe-eval'"]),
   "https://js.stripe.com",
+  "https://telegram.org",
   vercelAnalyticsScriptSource,
   ...(isProduction ? [] : [vercelLiveSource]),
 ].join(" ");

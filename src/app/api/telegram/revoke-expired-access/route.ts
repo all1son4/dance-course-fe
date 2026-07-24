@@ -1,5 +1,6 @@
 import { jsonNoStore } from "@/lib/http-security";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
+import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
 
@@ -27,11 +28,15 @@ export async function GET(request: Request) {
   }
 
   try {
-    const summary = await revokeExpiredTelegramChannelAccess();
+    const [standard, onlineGroup] = await Promise.all([
+      revokeExpiredTelegramChannelAccess(),
+      revokeExpiredOnlineGroupHubAccess(),
+    ]);
 
     return jsonNoStore({
-      ...summary,
       ok: true,
+      onlineGroup,
+      standard,
     });
   } catch (error) {
     console.error("Failed to revoke expired Telegram access", error);

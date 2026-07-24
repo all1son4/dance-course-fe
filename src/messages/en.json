@@ -28,6 +28,12 @@
         "ogImageAlt": "First Touch beginner course by Anna Strok",
         "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
       },
+      "onlineGroup": {
+        "title": "Online Group by Anna Strok — regular training",
+        "description": "Regular online dance training with Anna Strok: new lessons, assignments with feedback and a private Telegram chat.",
+        "ogImageAlt": "Anna Strok regular online dance training group",
+        "keywords": "online group anna strok, online dance training, frame up online, telegram dance course"
+      },
       "choreo": {
         "title": "Frame Up Strip Choreography Tutorials",
         "description": "Detailed choreography tutorials for Still Alive and Her Lies, plus a bundle with both tutorials, structure, technique, and performance guidance in a flexible online format.",
@@ -59,8 +65,8 @@
       "home": "Anna Strok — Home"
     },
     "menu": {
-      "offline": "Offline Courses",
-      "online": "Online Courses",
+      "offline": "Offline",
+      "online": "Online",
       "contacts": "Contacts",
       "ariaLabel": "Primary navigation"
     },
@@ -220,9 +226,9 @@
       "imageAlt": "Photo of Anna Strok"
     },
     "courses": {
-      "title": "Courses",
+      "title": "Classes",
       "offline": {
-        "title": "Offline courses",
+        "title": "Offline",
         "subtitle": "Warsaw, Poland",
         "items": {
           "1": {
@@ -234,27 +240,32 @@
             "text": "for intermediate level"
           },
           "3": {
-            "highlight": "Impro room",
+            "highlight": "Impro Room",
             "text": "improvisation practice"
-          }
+          },
+          "4": "Private classes"
         }
       },
       "online": {
-        "title": "Online courses",
+        "title": "Online",
         "subtitle": "In Telegram",
         "items": {
           "1": {
             "prefix": "Beginner course",
             "highlight": "First Touch"
           },
-          "2": "Choreography tutorials"
+          "2": {
+            "prefix": "Online Group",
+            "highlight": "by Anna Strok"
+          },
+          "3": "Choreography tutorials"
         }
       }
     }
   },
   "OnlinePage": {
     "hero": {
-      "title": "Online courses",
+      "title": "Online classes",
       "location": "In Telegram",
       "description": {
         "1": "Not everyone has the opportunity or confidence to come to a dance studio, and that is absolutely normal. Dance should bring joy, not stress.",
@@ -271,6 +282,16 @@
         },
         "startLabel": "Course starts",
         "startValue": "Winter 2026-2027 or once the group is full",
+        "button": "Learn more"
+      },
+      "onlineGroup": {
+        "title": "Online Group by Anna Strok",
+        "description": {
+          "1": "Regular training for anyone who wants to keep progressing, stay in shape and work with their body when attending offline classes is not possible.",
+          "2": "Stay in the process, receive new assignments, practise at home and keep in touch with me wherever you are."
+        },
+        "startLabel": "Next cycle starts",
+        "startValue": "August 10",
         "button": "Learn more"
       },
       "choreo": {
@@ -299,7 +320,7 @@
   },
   "OfflinePage": {
     "hero": {
-      "title": "Offline courses",
+      "title": "Offline classes",
       "location": "Warsaw, Poland",
       "description": "Everyone comes to Frame Up with a different story. Some wear heels for the first time, others already dance confidently and want to grow further. That is why classes are split by levels for comfortable progress without stress."
     },
@@ -321,7 +342,7 @@
         "priceSuffix": "/ per month"
       },
       "advanced": {
-        "title": "Advanced",
+        "title": "Continuing group",
         "description": "For dancers who strive for detail, dynamics and deeper style understanding, and want to improve musicality while working on technique, performance quality and memorizing more advanced choreographies.",
         "schedule": {
           "1": "Monday 19:00-20:30",
@@ -331,7 +352,7 @@
         "priceSuffix": "/ per month"
       },
       "impro": {
-        "title": "Impro room",
+        "title": "Impro Room",
         "description": "Improvisation practice.",
         "note": "This group has no fixed schedule.",
         "details": "Every month we decide when and where to meet, practice different exercises, explore details and nuances, and build our own dance language.",
@@ -346,14 +367,18 @@
         "2": "If you are not ready for offline classes yet, live in another city or want to begin in comfort, there is an online alternative for you."
       },
       "card": {
-        "title": "Online courses",
+        "title": "Online",
         "subtitle": "In Telegram",
         "items": {
           "1": {
             "prefix": "Beginner course",
             "highlight": "First Touch"
           },
-          "2": "Choreography tutorials"
+          "2": {
+            "prefix": "Online Group",
+            "highlight": "by Anna Strok"
+          },
+          "3": "Choreography tutorials"
         }
       }
     }
@@ -453,6 +478,97 @@
       "imageAlt": "First Touch program photo"
     }
   },
+  "OnlineGroupPage": {
+    "hero": {
+      "title": "Online Group by Anna Strok",
+      "description": {
+        "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body — even when attending my offline classes is not possible.",
+        "2": "We work on technique, plasticity, strength, improvisation and musicality, and learn choreography. You stay in the process, receive new tasks, practise at home and stay connected with me wherever you are.",
+        "3": "Suitable for intermediate and advanced dancers."
+      },
+      "startLabel": "Next group starts",
+      "startDate": "August 10",
+      "priceLabel": "Price for new participants",
+      "price": "220 PLN / €50",
+      "renewalNote": "Current group participants receive a special renewal price. Renewal is available only through a personal link.",
+      "buyButton": "Buy your place",
+      "offers": {
+        "regular": {
+          "title": "Standard",
+          "description": "New lessons, assignments and feedback in a private Online Group."
+        },
+        "library": {
+          "title": "Plus",
+          "description": "Online Group with access to Inspiration Hub and materials from previous cycles."
+        }
+      },
+      "programButton": "What to expect",
+      "playLabel": "Play video"
+    },
+    "tariffs": {
+      "title": "Plans",
+      "selectButton": "Choose a plan",
+      "priceLabel": "Price",
+      "buyButton": "Buy",
+      "standard": {
+        "title": "Standard",
+        "subtitle": "Online Group",
+        "features": {
+          "1": "5 new lessons",
+          "2": "Homework with feedback",
+          "3": "Private Telegram chat for your group",
+          "4": "Cycle duration — 6 weeks",
+          "5": "Communication and support within the group",
+          "6": "Extra materials for inspiration"
+        }
+      },
+      "plus": {
+        "title": "Plus",
+        "subtitle": "Online Group + Inspiration Hub",
+        "description": "Everything in the Standard plan, plus cycle-long access to the private Inspiration Hub channel with additional Frame Up materials:",
+        "features": {
+          "1": "Lessons from all previous cycles",
+          "2": "Additional exercises",
+          "3": "Playlists",
+          "4": "Moodboards",
+          "5": "Inspiration videos",
+          "6": "Helpful recommendations and other materials",
+          "7": "Access duration — 6 weeks"
+        }
+      }
+    },
+    "about": { "title": "What to expect in the Online Group" },
+    "suggestions": {
+      "1": {
+        "title": "Regular training with me",
+        "text": "A new pre-recorded lesson is uploaded to the chat every week. You can work with it at any convenient time during the week."
+      },
+      "2": {
+        "title": "New lessons in every cycle",
+        "text": "Each cycle covers new topics: technique, foundations, routines, improvisation, acrobatics and choreography, with 5 lessons on different themes."
+      },
+      "3": {
+        "title": "Homework with feedback",
+        "text": "You practise, complete assignments, send videos and receive my comments, corrections and recommendations for growth."
+      },
+      "4": {
+        "title": "A 6-week training programme",
+        "text": "Over six weeks, you complete 5 new lessons, submit homework and receive feedback on your work."
+      },
+      "5": {
+        "title": "Plus plan with Inspiration Hub",
+        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience."
+      },
+      "6": {
+        "title": "Private Telegram chat",
+        "text": "Lessons, assignments, deadlines, feedback and communication all stay in one convenient private space."
+      },
+      "7": {
+        "title": "Continue without a break",
+        "text": "Current online-group participants receive a special price when renewing for the next cycle."
+      }
+    }
+  },
   "ChoreoPage": {
     "hero": {
       "title": "Video tutorials of my choreographies",
@@ -507,7 +623,38 @@
     "personalDataTitle": "Customer details",
     "summary": {
       "currencyLabel": "Payment currency",
-      "amountLabel": "Payment amount"
+      "amountLabel": "Payment amount",
+      "offerLabel": "Plan: {offer}"
+    },
+    "renewal": {
+      "text": "Confirm Telegram to unlock renewal payment.",
+      "textVerified": "Telegram confirmed. You can pay for renewal.",
+      "title": "Confirm Telegram before payment",
+      "description": "To renew with the discount, confirm Telegram: we will check the previous chat membership and send a personal invite to the new group after payment.",
+      "summaryCard": {
+        "description": "Renew your online group access for the next cycle at the special price.",
+        "accessNote": "After payment, you will receive a personal one-time invite to the new Telegram chat."
+      },
+      "sourceChat": "Checking: {title}",
+      "targetChat": "Access after payment: {title}",
+      "buttons": {
+        "verify": "Confirm Telegram",
+        "verifying": "Checking...",
+        "verified": "Telegram confirmed"
+      },
+      "status": {
+        "loading": "Preparing check...",
+        "ready": "Tap the blue icon to confirm Telegram.",
+        "openingTelegram": "Opening Telegram...",
+        "checkingMembership": "Checking chat...",
+        "verified": "Done.",
+        "verifiedAs": "Done: {username}",
+        "verifiedAsWithProfile": "Done: {username}. Your details are filled in — please review them.",
+        "notMember": "This Telegram account was not found in the old chat.",
+        "usernameMismatch": "The entered username does not match the confirmed Telegram account.",
+        "loadFailed": "Could not load the check.",
+        "failed": "Could not confirm Telegram."
+      }
     },
     "inputs": {
       "fullName": {
@@ -568,11 +715,29 @@
       "withMentor": {
         "line1": "Payment confirmed. We are generating your personal access link to the lessons.",
         "line2": "As soon as the link is ready, the button on this page will open your materials in Telegram."
+      },
+      "onlineGroup": {
+        "line1": "Payment confirmed. We are preparing your personal Online Group invite.",
+        "line2": "As soon as it is ready, the button on this page will open your Telegram group. The link is also sent to your email."
+      },
+      "renewal": {
+        "line1": "Payment confirmed. We are preparing your personal link to the new online group.",
+        "line2": "As soon as the link is ready, the button on this page will open your new Telegram group. The link is also sent to your email."
       }
     },
+    "accessNotice": {
+      "firstTouch": "Your personal invite is valid for 30 days. Lesson access is provided for 4 months from joining.",
+      "choreo": "Your personal invite is valid for 30 days. Material access is provided for 2 months from joining.",
+      "onlineGroup": "Your personal invite is valid for 30 days. After joining, group access has no automatic expiry.",
+      "onlineGroupPlus": "The invites are valid for 30 days. Main group access has no automatic expiry; Inspiration Hub access lasts until the end of the current cycle."
+    },
     "telegram": {
+      "active": "access is already active",
       "firstTouchLabel": "First Touch course materials:",
+      "inspirationUntil": "Access until",
       "openLink": "Go to Telegram",
+      "openMainGroup": "Open Online Group",
+      "openInspiration": "Open Inspiration Hub",
       "pending": "Preparing your personal Telegram lessons link...",
       "unavailable": "The link is not ready yet. Please contact support.",
       "contactSupport": "Support"
@@ -614,6 +779,10 @@
       "missingSecretKey": "STRIPE_SECRET_KEY is missing. Add it to .env and restart the server.",
       "paymentIntentFailed": "Failed to prepare the Stripe payment. Check your Stripe settings.",
       "paymentIntentRequestFailed": "Failed to prepare the payment. Please try again.",
+      "onlineGroupCampaignNotConfigured": "The new Online Group cycle is not configured yet. Please contact support.",
+      "telegramRenewalVerificationRequired": "Confirm Telegram for this renewal first.",
+      "renewalCampaignInactive": "This renewal link is no longer active. Use the current link from the group.",
+      "renewalPaymentContextMismatch": "This renewal link does not match the selected product.",
       "confirmPaymentFailed": "Failed to complete the payment. Please try again."
     }
   },
@@ -673,14 +842,17 @@
       }
     },
     "onlineGroupAnnaStrok": {
-      "title": "Online group by Anna Strok",
+      "title": "Online Group by Anna Strok",
       "description": {
-        "1": "A regular online dance group with Anna Strok.",
-        "2": "After payment, the admin will contact the participant and add them to the group manually."
+        "1": "Regular training for anyone who wants to keep progressing, stay in shape and work with their body when attending offline classes is not possible.",
+        "2": "Stay in the process, receive new assignments, practise at home and keep in touch with me wherever you are."
       },
-      "accessNote": "After payment, the admin will manually add the participant to the online group.",
+      "accessNote": "After payment, we will send you a personal one-use invite link to the Telegram group.",
       "offers": {
-        "standard": "Online group"
+        "standard": "Standard",
+        "libraryAccess": "Plus",
+        "renewalDiscount": "Standard renewal",
+        "renewalLibraryAccess": "Plus renewal"
       }
     }
   },

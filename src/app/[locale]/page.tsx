@@ -210,6 +210,7 @@ export default function Home() {
                   <HighlightText>{t("courses.offline.items.3.highlight")}</HighlightText>{" "}
                   - {t("courses.offline.items.3.text")}
                 </li>
+                <li>{t("courses.offline.items.4")}</li>
               </CourseList>
             }
             buttonText={commonT("details")}
@@ -227,7 +228,11 @@ export default function Home() {
                     &quot;{t("courses.online.items.1.highlight")}&quot;
                   </HighlightText>
                 </li>
-                <li>{t("courses.online.items.2")}</li>
+                <li>
+                  {t("courses.online.items.2.prefix")}{" "}
+                  <HighlightText>{t("courses.online.items.2.highlight")}</HighlightText>
+                </li>
+                <li>{t("courses.online.items.3")}</li>
               </CourseList>
             }
             buttonText={commonT("details")}

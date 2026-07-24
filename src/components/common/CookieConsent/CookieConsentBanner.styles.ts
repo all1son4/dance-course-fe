@@ -1,5 +1,6 @@
 import styled from "styled-components";
 
+import ToggleSwitch from "@/components/common/ToggleSwitch";
 import { Link } from "@/i18n/navigation";
 import { glass } from "@/styles/mixins/glass";
 
@@ -273,61 +274,10 @@ export const StaticTag = styled.span`
   top: 14px;
 `;
 
-export const ToggleLabel = styled.label`
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  cursor: pointer;
-
+export const CategoryToggle = styled(ToggleSwitch)`
   @media (max-width: 767px) {
     position: absolute;
     right: 14px;
     top: 14px;
-  }
-`;
-
-export const ToggleInput = styled.input`
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-  pointer-events: none;
-`;
-
-export const ToggleTrack = styled.span`
-  width: 44px;
-  height: 26px;
-  border-radius: 999px;
-  border: 1px solid rgba(0, 0, 0, 0.14);
-  background: rgba(0, 0, 0, 0.08);
-  position: relative;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
-
-  &::after {
-    content: "";
-    width: 20px;
-    height: 20px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 1);
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    transition: transform 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
-  }
-
-  ${ToggleInput}:checked + & {
-    background: rgba(124, 0, 2, 0.95);
-    border-color: rgba(124, 0, 2, 0.95);
-  }
-
-  ${ToggleInput}:checked + &::after {
-    transform: translateX(18px);
-  }
-
-  ${ToggleInput}:focus-visible + & {
-    box-shadow: 0 0 0 3px rgba(124, 0, 2, 0.24);
   }
 `;

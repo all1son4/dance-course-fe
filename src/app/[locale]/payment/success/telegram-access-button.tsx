@@ -6,8 +6,13 @@ import styled, { keyframes } from "styled-components";
 import Button from "@/components/common/Button";
 
 type TelegramAccessButtonProps = {
+  activeText: string;
   buttonText: string;
   checkoutSessionId: string;
+  dateLocale: string;
+  inspirationButtonText: string;
+  inspirationUntilLabel: string;
+  mainButtonText: string;
   onUnavailableChange?: (isUnavailable: boolean) => void;
   offerId: string;
   paymentIntentId: string;
@@ -18,15 +23,18 @@ type TelegramAccessButtonProps = {
   unavailableText: string;
 };
 
-type AccessLinkResponse =
-  | {
-      accessUrl: string;
-      status: "ready";
-      tokenExpiresAt?: string;
-    }
-  | {
-      status: "not_available" | "pending";
-    };
+type AccessLinkResponse = {
+  accesses?: Array<{
+    accessExpiresAt: string;
+    accessKey: "inspiration-hub" | "main-group";
+    accessUrl: string;
+    status: "active" | "expired" | "ready" | "unavailable";
+    tokenExpiresAt: string;
+  }>;
+  accessUrl?: string;
+  status: "not_available" | "pending" | "ready";
+  tokenExpiresAt?: string;
+};
 
 type AccessLinkErrorResponse = {
   errorCode?: string;
@@ -105,6 +113,20 @@ const StatusMeta = styled.span`
   color: rgba(16, 16, 16, 0.55);
 `;
 
+const AccessList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+`;
+
+const AccessItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+`;
+
 const MAX_RETRY_ATTEMPTS = 15;
 const RETRY_BASE_DELAY_MS = 1_500;
 const RETRY_MAX_DELAY_MS = 5_000;
@@ -135,8 +157,13 @@ const parseRetryAfterMs = (retryAfterHeader: string | null) => {
 };
 
 export default function TelegramAccessButton({
+  activeText,
   buttonText,
   checkoutSessionId,
+  dateLocale,
+  inspirationButtonText,
+  inspirationUntilLabel,
+  mainButtonText,
   onUnavailableChange,
   offerId,
   paymentIntentId,
@@ -147,16 +174,40 @@ export default function TelegramAccessButton({
   unavailableText,
 }: TelegramAccessButtonProps) {
   const [accessUrl, setAccessUrl] = useState("");
+  const [accesses, setAccesses] = useState<
+    Array<{
+      accessExpiresAt: string;
+      accessKey: "inspiration-hub" | "main-group";
+      accessUrl: string;
+      status: "active" | "expired" | "ready" | "unavailable";
+      tokenExpiresAt: string;
+    }>
+  >([]);
   const [attemptCount, setAttemptCount] = useState(0);
   const [statusKind, setStatusKind] = useState<"pending" | "unavailable">("pending");
   const [statusText, setStatusText] = useState(pendingText);
   const isContextValid = Boolean(checkoutSessionId && offerId && productId);
+  const hasUnavailableAccess = accesses.some(
+    (access) => access.status === "expired" || access.status === "unavailable",
+  );
 
   useEffect(() => {
     onUnavailableChange?.(
-      !accessUrl && (!isContextValid || statusKind === "unavailable"),
+      hasUnavailableAccess ||
+        (!accessUrl &&
+          !accesses.some(
+            (access) => access.status === "ready" || access.status === "active",
+          ) &&
+          (!isContextValid || statusKind === "unavailable")),
     );
-  }, [accessUrl, isContextValid, onUnavailableChange, statusKind]);
+  }, [
+    accessUrl,
+    accesses,
+    hasUnavailableAccess,
+    isContextValid,
+    onUnavailableChange,
+    statusKind,
+  ]);
 
   useEffect(() => {
     if (!isContextValid) {
@@ -249,6 +300,12 @@ export default function TelegramAccessButton({
           return;
         }
 
+        if (data.status === "ready" && data.accesses?.length) {
+          setAccesses(data.accesses);
+          setAttemptCount(0);
+          return;
+        }
+
         if (data.status === "pending" && attempt < MAX_RETRY_ATTEMPTS) {
           setStatusKind("pending");
           setStatusText(pendingText);
@@ -301,6 +358,61 @@ export default function TelegramAccessButton({
 
   if (accessUrl) {
     return <Button buttonText={buttonText} href={accessUrl} target="_blank" />;
+  }
+
+  if (accesses.length) {
+    return (
+      <AccessList>
+        {accesses.map((access) => {
+          const label =
+            access.accessKey === "inspiration-hub"
+              ? inspirationButtonText
+              : mainButtonText;
+
+          if (access.status === "ready" && access.accessUrl) {
+            return (
+              <AccessItem key={access.accessKey}>
+                <Button buttonText={label} href={access.accessUrl} target="_blank" />
+                {access.accessKey === "inspiration-hub" && access.accessExpiresAt ? (
+                  <StatusMeta>
+                    {inspirationUntilLabel}:{" "}
+                    {new Intl.DateTimeFormat(dateLocale, {
+                      dateStyle: "long",
+                      timeZone: "Europe/Warsaw",
+                    }).format(new Date(access.accessExpiresAt))}
+                  </StatusMeta>
+                ) : null}
+              </AccessItem>
+            );
+          }
+
+          return (
+            <StatusBox key={access.accessKey} $kind="unavailable" role="status">
+              <StatusText>
+                {label}: {access.status === "active" ? activeText : unavailableText}
+              </StatusText>
+              {access.accessKey === "inspiration-hub" && access.accessExpiresAt ? (
+                <StatusMeta>
+                  {inspirationUntilLabel}:{" "}
+                  {new Intl.DateTimeFormat(dateLocale, {
+                    dateStyle: "long",
+                    timeZone: "Europe/Warsaw",
+                  }).format(new Date(access.accessExpiresAt))}
+                </StatusMeta>
+              ) : null}
+            </StatusBox>
+          );
+        })}
+        {hasUnavailableAccess ? (
+          <Button
+            buttonText={supportButtonText}
+            href={supportHref}
+            target="_blank"
+            variant="secondary"
+          />
+        ) : null}
+      </AccessList>
+    );
   }
 
   if (!isContextValid) {

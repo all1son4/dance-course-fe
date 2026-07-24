@@ -626,6 +626,7 @@ const backfill = async ({ dryRun, limit }: { dryRun: boolean; limit: number | nu
         const [savedEntitlement] = await tx
           .insert(accessEntitlements)
           .values({
+            accessKey: "primary",
             accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
             currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
             customerId,
@@ -667,7 +668,7 @@ const backfill = async ({ dryRun, limit }: { dryRun: boolean; limit: number | nu
               telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
               updatedAt: now,
             },
-            target: accessEntitlements.purchaseId,
+            target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
           })
           .returning({ id: accessEntitlements.id });
 

@@ -18,6 +18,8 @@ export const runWebhookSideEffects = async ({
     return;
   }
 
+  let purchaseEmailError: unknown = null;
+
   try {
     await sendPurchaseSuccessEmail({
       event,
@@ -30,6 +32,7 @@ export const runWebhookSideEffects = async ({
       eventId: handledEvent.eventId,
       paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
     });
+    purchaseEmailError = error;
   }
 
   try {
@@ -43,5 +46,9 @@ export const runWebhookSideEffects = async ({
       eventId: handledEvent.eventId,
       paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
     });
+  }
+
+  if (purchaseEmailError) {
+    throw purchaseEmailError;
   }
 };

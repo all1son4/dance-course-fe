@@ -160,14 +160,26 @@ const getPurchaseByIds = async (purchaseIds: string[]) => {
   return new Map(rows.map((row) => [row.id, row] as const));
 };
 
-const getEntitlementByPurchaseId = async (purchaseId: string) => {
-  const [entitlement] = await getDatabase()
-    .select({ id: accessEntitlements.id })
+const getEntitlementByPurchaseId = async (purchaseId: string, chatId?: string) => {
+  const entitlements = await getDatabase()
+    .select({
+      accessKey: accessEntitlements.accessKey,
+      id: accessEntitlements.id,
+      telegramChatId: accessEntitlements.telegramChatId,
+    })
     .from(accessEntitlements)
-    .where(eq(accessEntitlements.purchaseId, purchaseId))
-    .limit(1);
+    .where(eq(accessEntitlements.purchaseId, purchaseId));
+  const normalizedChatId = chatId?.trim() ?? "";
 
-  return entitlement ?? null;
+  return (
+    entitlements.find(
+      (entitlement) =>
+        normalizedChatId && entitlement.telegramChatId === normalizedChatId,
+    ) ??
+    entitlements.find((entitlement) => entitlement.accessKey === "primary") ??
+    entitlements[0] ??
+    null
+  );
 };
 
 const mapStripeEventRecordFromDatabase = (
@@ -414,7 +426,7 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
     );
   }
 
-  const entitlement = await getEntitlementByPurchaseId(purchase.id);
+  const entitlement = await getEntitlementByPurchaseId(purchase.id, record.chat_id);
   const now = new Date();
   const createdAt = parseRequiredDate(record.created_at, now);
   const values = {
@@ -501,6 +513,7 @@ export const listTelegramUserBindingRecordsFromDatabase = async () => {
 
 export const findTelegramUserBindingByPaymentIntentIdFromDatabase = async (
   paymentIntentId: string,
+  chatId?: string,
 ) => {
   const purchase = await getPurchaseByPaymentIntentId(paymentIntentId);
 
@@ -508,11 +521,14 @@ export const findTelegramUserBindingByPaymentIntentIdFromDatabase = async (
     return null;
   }
 
-  const [row] = await getDatabase()
+  const rows = await getDatabase()
     .select()
     .from(telegramUserBindings)
-    .where(eq(telegramUserBindings.purchaseId, purchase.id))
-    .limit(1);
+    .where(eq(telegramUserBindings.purchaseId, purchase.id));
+  const normalizedChatId = chatId?.trim() ?? "";
+  const row =
+    rows.find((binding) => normalizedChatId && binding.chatId === normalizedChatId) ??
+    rows[0];
   const [record] = row ? await hydrateTelegramUserBindingRecords([row]) : [];
 
   return record ?? null;
@@ -586,7 +602,7 @@ export const upsertTelegramUserBindingRecordToDatabase = async (
     );
   }
 
-  const entitlement = await getEntitlementByPurchaseId(purchase.id);
+  const entitlement = await getEntitlementByPurchaseId(purchase.id, record.chat_id);
   const now = new Date();
   const boundAt = parseRequiredDate(record.bound_at, now);
   const values = {
@@ -611,7 +627,12 @@ export const upsertTelegramUserBindingRecordToDatabase = async (
   const [existingBinding] = await getDatabase()
     .select({ id: telegramUserBindings.id })
     .from(telegramUserBindings)
-    .where(eq(telegramUserBindings.purchaseId, purchase.id))
+    .where(
+      and(
+        eq(telegramUserBindings.purchaseId, purchase.id),
+        eq(telegramUserBindings.chatId, record.chat_id.trim()),
+      ),
+    )
     .limit(1);
 
   if (existingBinding) {
@@ -631,6 +652,7 @@ export const upsertTelegramUserBindingRecordToDatabase = async (
   return (
     (await findTelegramUserBindingByPaymentIntentIdFromDatabase(
       record.payment_intent_id,
+      record.chat_id,
     )) ?? record
   );
 };

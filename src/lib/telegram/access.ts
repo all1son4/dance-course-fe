@@ -129,26 +129,30 @@ const getTelegramAccessLinkTtlDays = () =>
 const getTelegramAccessLinkTtlMs = () =>
   getTelegramAccessLinkTtlDays() * 24 * 60 * 60 * 1000;
 
-const getTelegramChoreoAccessDurationDays = (offerId: string) => {
-  if (!isChoreoChannelOfferId(offerId)) {
-    return null;
+const getTimedTelegramAccessDurationDays = (offerId: string) => {
+  if (isChoreoChannelOfferId(offerId)) {
+    return (
+      parsePositiveEnvNumber("TELEGRAM_CHOREO_ACCESS_DAYS") ??
+      getOfferAccessDurationDaysByOfferId(offerId) ??
+      DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS
+    );
   }
 
-  return (
-    parsePositiveEnvNumber("TELEGRAM_CHOREO_ACCESS_DAYS") ??
-    getOfferAccessDurationDaysByOfferId(offerId) ??
-    DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS
-  );
+  if (isFirstTouchOfferId(offerId)) {
+    return getOfferAccessDurationDaysByOfferId(offerId);
+  }
+
+  return null;
 };
 
 const getTelegramChannelAccessDurationMs = (offerId: string) => {
-  const durationDays = getTelegramChoreoAccessDurationDays(offerId);
+  const durationDays = getTimedTelegramAccessDurationDays(offerId);
 
   if (!durationDays) {
     return 0;
   }
 
-  // Duration controls how long choreo access stays active after joining.
+  // Duration controls how long timed Telegram access stays active after joining.
   // Example: 60 -> 60 days, 0.01 -> ~14.4 minutes (testing).
   return durationDays * 24 * 60 * 60 * 1000;
 };
@@ -208,6 +212,31 @@ const getUnixSeconds = (value: string) => Math.floor(parseTimestamp(value) / 100
 
 const getMaxExpiresAtTs = (values: string[]) =>
   values.reduce((maxValue, value) => Math.max(maxValue, parseTimestamp(value)), 0);
+
+const getEffectiveBindingAccessExpiresAt = ({
+  accessExpiresAt,
+  boundAt,
+  offerId,
+}: {
+  accessExpiresAt: string;
+  boundAt: string;
+  offerId: string;
+}) => {
+  const savedAccessExpiresAt = accessExpiresAt.trim();
+
+  if (savedAccessExpiresAt) {
+    return savedAccessExpiresAt;
+  }
+
+  const boundAtTimestamp = parseTimestamp(boundAt);
+  const accessDurationMs = getTelegramChannelAccessDurationMs(offerId);
+
+  if (!boundAtTimestamp || !accessDurationMs) {
+    return "";
+  }
+
+  return toUtcIso(new Date(boundAtTimestamp + accessDurationMs));
+};
 
 const shouldIgnoreKickFailure = (error: unknown) =>
   error instanceof Error &&
@@ -406,7 +435,8 @@ export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
   isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
 
 const isPaymentTimedTelegramAccess = (paymentRecord: PaymentSheetRecord) =>
-  isChoreoChannelOfferId(paymentRecord.offer_id);
+  isChoreoChannelOfferId(paymentRecord.offer_id) ||
+  isFirstTouchOfferId(paymentRecord.offer_id);
 
 const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentSheetRecord) => {
   if (!isPaymentTimedTelegramAccess(paymentRecord)) {
@@ -1008,7 +1038,20 @@ export const syncTelegramChannelMembership = async ({
 
 export const revokeExpiredTelegramChannelAccess =
   async (): Promise<RevokeExpiredTelegramAccessResult> => {
-    const activeBindings = await findActiveTelegramUserBindings();
+    const activeBindings = (await findActiveTelegramUserBindings())
+      .filter(
+        (binding) =>
+          isChoreoChannelOfferId(binding.offer_id) ||
+          isFirstTouchOfferId(binding.offer_id),
+      )
+      .map((binding) => ({
+        ...binding,
+        access_expires_at: getEffectiveBindingAccessExpiresAt({
+          accessExpiresAt: binding.access_expires_at,
+          boundAt: binding.bound_at,
+          offerId: binding.offer_id,
+        }),
+      }));
     const groups = new Map<
       string,
       {

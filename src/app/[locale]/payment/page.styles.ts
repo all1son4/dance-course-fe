@@ -112,6 +112,18 @@ export const PersonalData = styled.div`
   }
 `;
 
+export const PaymentPreparationError = styled.p`
+  margin: 18px 0 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(176, 24, 33, 0.24);
+  border-radius: 12px;
+  background: rgba(176, 24, 33, 0.05);
+  color: rgba(176, 24, 33, 1);
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 500;
+`;
+
 export const StripeReveal = styled.div<{ $isVisible: boolean }>`
   position: relative;
   z-index: 1;
@@ -139,6 +151,107 @@ export const StripeReveal = styled.div<{ $isVisible: boolean }>`
   }
 `;
 
+export const TelegramInputControl = styled.div<{
+  $status:
+    | "error"
+    | "idle"
+    | "loading"
+    | "not_member"
+    | "ready"
+    | "verified"
+    | "verifying";
+}>`
+  position: relative;
+
+  & input {
+    padding-right: 68px;
+  }
+
+  ${({ $status }) =>
+    $status === "verified"
+      ? `
+        & input {
+          border-color: rgba(24, 112, 58, 1);
+          background: rgba(24, 112, 58, 0.06);
+        }
+
+        & input:focus-visible {
+          border-color: rgba(24, 112, 58, 1);
+        }
+      `
+      : ""}
+`;
+
+export const TelegramVerifyButton = styled.button<{ $isVerified: boolean }>`
+  appearance: none;
+  position: absolute;
+  right: 8px;
+  top: 38px;
+  width: 38px;
+  height: 38px;
+  border: 1px solid
+    ${({ $isVerified }) =>
+      $isVerified ? "rgba(24, 112, 58, 0.36)" : "rgba(42, 171, 238, 0.34)"};
+  border-radius: 999px;
+  background: ${({ $isVerified }) =>
+    $isVerified ? "rgba(24, 112, 58, 1)" : "rgba(42, 171, 238, 1)"};
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
+    transform var(--motion-fast, 160ms) var(--ease-standard, ease);
+
+  & svg {
+    width: 19px;
+    height: 19px;
+    transform: translate(-1.25px, 0);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:not(:disabled):hover {
+      transform: scale(1.02);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(42, 171, 238, 0.36);
+    outline-offset: 3px;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: ${({ $isVerified }) => ($isVerified ? 1 : 0.58)};
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
+export const TelegramInputStatus = styled.p<{
+  $tone: "error" | "info" | "success";
+}>`
+  margin: 8px 0 0 2px;
+  color: ${({ $tone }) => {
+    if ($tone === "error") {
+      return "rgba(176, 24, 33, 1)";
+    }
+
+    if ($tone === "success") {
+      return "rgba(24, 112, 58, 1)";
+    }
+
+    return "rgba(72, 72, 72, 0.86)";
+  }};
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.35;
+`;
+
 export const PersonalDataTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
@@ -154,6 +267,11 @@ export const Inputs = styled.div`
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22px;
   width: 100%;
+
+  & input:disabled,
+  & select:disabled {
+    background: rgba(72, 72, 72, 0.045);
+  }
 
   @media (max-width: 767px) {
     column-gap: 12px;

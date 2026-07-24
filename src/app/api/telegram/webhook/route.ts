@@ -1,16 +1,22 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { upsertRegisteredTelegramChat } from "@/db/renewal-campaigns";
 import { isPayloadTooLarge, jsonNoStore, parseJsonBody } from "@/lib/http-security";
 import {
   activateTelegramStartToken,
   getActivatedPaymentsByTelegramUserId,
   syncTelegramChannelMembership,
 } from "@/lib/telegram/access";
-import { copyTelegramMessage, sendTelegramMessage } from "@/lib/telegram/bot-api";
+import {
+  copyTelegramMessage,
+  getTelegramChatMember,
+  sendTelegramMessage,
+} from "@/lib/telegram/bot-api";
 import {
   getTelegramLessonSourceByOfferId,
   getTelegramWebhookSecret,
   isTelegramBotConfigured,
 } from "@/lib/telegram/config";
+import { syncOnlineGroupMembership } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
 
@@ -21,6 +27,7 @@ type BotLocale = "en" | "pl" | "ru";
 type TelegramIncomingMessage = {
   chat?: {
     id?: number;
+    title?: string;
     type?: string;
   };
   from?: {
@@ -86,6 +93,9 @@ const BOT_COPY = {
     temporaryIssue:
       "Temporary technical issue while checking access. Please try /start again in a minute.",
     unknownCommand: "Command not recognized.",
+    groupRegistered: "Chat registered for renewal campaigns.",
+    groupRegistrationForbidden:
+      "Only a chat owner or administrator can register this chat.",
   },
   pl: {
     accessConfirmed: "Dostęp potwierdzony. Wysyłam Twoją lekcję.",
@@ -113,6 +123,9 @@ const BOT_COPY = {
     temporaryIssue:
       "Wystąpił chwilowy problem techniczny podczas weryfikacji dostępu. Spróbuj ponownie /start za minutę.",
     unknownCommand: "Nie rozpoznano polecenia.",
+    groupRegistered: "Czat zapisany dla kampanii kontynuacji.",
+    groupRegistrationForbidden:
+      "Tylko właściciel lub administrator może zarejestrować ten czat.",
   },
   ru: {
     accessConfirmed: "Доступ подтвержден. Отправляю ваш урок.",
@@ -140,6 +153,9 @@ const BOT_COPY = {
     temporaryIssue:
       "Временная техническая ошибка при проверке доступа. Попробуйте /start еще раз через минуту.",
     unknownCommand: "Команда не распознана.",
+    groupRegistered: "Чат зарегистрирован для продлений.",
+    groupRegistrationForbidden:
+      "Зарегистрировать чат может только его владелец или администратор.",
   },
 } as const;
 
@@ -444,20 +460,39 @@ export async function POST(request: Request) {
         const isActive = isActiveTelegramMember(newMember);
 
         if (!wasActive && isActive) {
-          await syncTelegramChannelMembership({
+          const handledByOnlineGroup = await syncOnlineGroupMembership({
             chatId: String(chatId),
             inviteLink: chatMemberUpdate.invite_link?.invite_link ?? "",
             membershipStatus: "joined",
             telegramUserId,
             telegramUsername: newMember?.user?.username ?? "",
           });
+
+          if (!handledByOnlineGroup) {
+            await syncTelegramChannelMembership({
+              chatId: String(chatId),
+              inviteLink: chatMemberUpdate.invite_link?.invite_link ?? "",
+              membershipStatus: "joined",
+              telegramUserId,
+              telegramUsername: newMember?.user?.username ?? "",
+            });
+          }
         } else if (wasActive && !isActive) {
-          await syncTelegramChannelMembership({
+          const handledByOnlineGroup = await syncOnlineGroupMembership({
             chatId: String(chatId),
             membershipStatus: "left",
             telegramUserId,
             telegramUsername: newMember?.user?.username ?? "",
           });
+
+          if (!handledByOnlineGroup) {
+            await syncTelegramChannelMembership({
+              chatId: String(chatId),
+              membershipStatus: "left",
+              telegramUserId,
+              telegramUsername: newMember?.user?.username ?? "",
+            });
+          }
         }
       }
 
@@ -471,7 +506,7 @@ export async function POST(request: Request) {
     const chatType = message?.chat?.type ?? "";
     const telegramUserId = message?.from?.id ? String(message.from.id) : "";
 
-    if (!message || !chatId || chatType !== "private" || !telegramUserId) {
+    if (!message || !chatId || !telegramUserId) {
       return jsonNoStore({
         ok: true,
       });
@@ -483,8 +518,49 @@ export async function POST(request: Request) {
     fallbackLocale = preferredLocale;
     const text = message.text?.trim() ?? "";
     const [command = "", payload = ""] = text.split(/\s+/, 2);
+    const normalizedCommand = command.split("@")[0]?.trim() ?? "";
 
-    if (command === "/start") {
+    if (chatType !== "private") {
+      if (normalizedCommand === "/register_chat") {
+        const requestingMember = await getTelegramChatMember({
+          chatId: String(chatId),
+          userId: telegramUserId,
+        });
+
+        if (
+          requestingMember.status !== "administrator" &&
+          requestingMember.status !== "creator"
+        ) {
+          await sendTelegramMessage({
+            chatId,
+            text: getBotCopy(preferredLocale).groupRegistrationForbidden,
+          });
+
+          return jsonNoStore({
+            ok: true,
+          });
+        }
+
+        const savedChat = await upsertRegisteredTelegramChat({
+          chatId: String(chatId),
+          registeredByTelegramUserId: telegramUserId,
+          registeredByTelegramUsername: telegramUsername,
+          title: message.chat?.title ?? String(chatId),
+          type: chatType,
+        });
+
+        await sendTelegramMessage({
+          chatId,
+          text: `${getBotCopy(preferredLocale).groupRegistered}\n${savedChat.title}\nID: ${savedChat.chatId}`,
+        });
+      }
+
+      return jsonNoStore({
+        ok: true,
+      });
+    }
+
+    if (normalizedCommand === "/start") {
       await handleStartCommand({
         chatId,
         commandPayload: payload,
@@ -498,7 +574,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (command === "/my_lessons") {
+    if (normalizedCommand === "/my_lessons") {
       await sendPurchasedLessons({
         chatId,
         preferredLocale,
@@ -510,7 +586,7 @@ export async function POST(request: Request) {
       });
     }
 
-    if (command === "/help") {
+    if (normalizedCommand === "/help") {
       await sendTelegramMessage({
         chatId,
         text: buildHelpText(preferredLocale),

@@ -8,6 +8,7 @@ const SITE_HOME_URL =
 
 const EMAIL_COPY = {
   en: {
+    accessUntil: "Access until",
     amountLabel: "Amount",
     autoReplyNote:
       "This is an automatic email. If you have any questions, contact support",
@@ -16,6 +17,12 @@ const EMAIL_COPY = {
     heading: "Thank you, your payment was successful",
     intro: "We have prepared your course access and receipt details.",
     invoiceAttached: "The PDF invoice is attached to this email.",
+    limitedAccessValidity:
+      "Access to the materials is provided for {days} days from joining.",
+    inspirationHubCta: "Open Inspiration Hub",
+    accessAlreadyActive: "Access is already active",
+    accessExpired: "The access period has ended",
+    accessNeedsSupport: "The invite could not be prepared. Please contact support",
     offerLabel: "Offer",
     paymentSucceededText: "Payment successful",
     productLabel: "Product",
@@ -43,7 +50,7 @@ const EMAIL_COPY = {
         ready:
           "Use the button below to open your personal one-use invite link to the private Telegram channel. Access to the materials is provided for 2 months.",
         pending:
-          "Your personal Telegram channel invite link is being prepared. If the button is missing, contact support and we will send access manually.",
+          "Your personal Telegram channel invite link is being prepared. Material access is provided for 2 months from joining. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram channel",
         mentorNote:
           "For the mentor option, the admin will also contact you separately about feedback.",
@@ -51,14 +58,31 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Access your course",
         ready:
-          "Use the button below to open your personal one-use invite link to the private Telegram chat with the course materials. Access to the lessons is provided for 4 months.",
+          "Use the button below to open your personal one-use invite link to the private Telegram chat with the course materials. Access to the lessons is provided for 4 months from joining.",
         pending:
-          "Your personal Telegram chat invite link is being prepared. If the button is missing, contact support and we will send access manually.",
+          "Your personal Telegram chat invite link is being prepared. Lesson access is provided for 4 months from joining. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram chat",
+      },
+      telegramOnlineGroup: {
+        title: "Access your online group",
+        ready:
+          "Use the button below to join your Telegram group. The personal invite is valid for 30 days; after joining, your group access has no automatic expiry.",
+        pending:
+          "Your personal Telegram group invite is being prepared. If the button is missing, contact support and we will send access manually.",
+        cta: "Open Telegram group",
+      },
+      telegramRenewal: {
+        title: "Access the next online group",
+        ready:
+          "Use the button below to join your new Telegram group. The personal invite is valid for 30 days; after joining, your group access has no automatic expiry.",
+        pending:
+          "Your personal Telegram group invite link is being prepared. If the button is missing, contact support and we will send access manually.",
+        cta: "Open new Telegram group",
       },
     },
   },
   pl: {
+    accessUntil: "Dostęp do",
     amountLabel: "Kwota",
     autoReplyNote:
       "To wiadomość automatyczna. Jeśli masz pytania, skontaktuj się ze wsparciem",
@@ -67,6 +91,13 @@ const EMAIL_COPY = {
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
     intro: "Przygotowaliśmy dostęp do kursu oraz dane dotyczące rachunku.",
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
+    limitedAccessValidity:
+      "Dostęp do materiałów jest przyznawany na {days} dni od dołączenia.",
+    inspirationHubCta: "Otwórz Inspiration Hub",
+    accessAlreadyActive: "Dostęp jest już aktywny",
+    accessExpired: "Okres dostępu dobiegł końca",
+    accessNeedsSupport:
+      "Nie udało się przygotować zaproszenia. Skontaktuj się ze wsparciem",
     offerLabel: "Pakiet",
     paymentSucceededText: "Płatność zakończyła się sukcesem",
     productLabel: "Produkt",
@@ -93,7 +124,7 @@ const EMAIL_COPY = {
         ready:
           "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów otrzymujesz na 2 miesiące.",
         pending:
-          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów otrzymujesz na 2 miesiące od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz kanał Telegram",
         mentorNote:
           "W opcji z mentorem administrator skontaktuje się z Tobą osobno w sprawie feedbacku.",
@@ -101,14 +132,31 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Dostęp do kursu",
         ready:
-          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na 4 miesiące.",
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na 4 miesiące od dołączenia.",
         pending:
-          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Dostęp do lekcji otrzymujesz na 4 miesiące od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz czat Telegram",
+      },
+      telegramOnlineGroup: {
+        title: "Dostęp do grupy online",
+        ready:
+          "Użyj przycisku poniżej, aby dołączyć do grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
+        pending:
+          "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        cta: "Otwórz grupę Telegram",
+      },
+      telegramRenewal: {
+        title: "Dostęp do kolejnej grupy online",
+        ready:
+          "Użyj przycisku poniżej, aby dołączyć do nowej grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
+        pending:
+          "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        cta: "Otwórz nową grupę Telegram",
       },
     },
   },
   ru: {
+    accessUntil: "Доступ до",
     amountLabel: "Сумма",
     autoReplyNote:
       "Это автоматическое письмо. Если у вас есть вопросы, свяжитесь с поддержкой",
@@ -117,6 +165,12 @@ const EMAIL_COPY = {
     heading: "Спасибо, оплата прошла успешно",
     intro: "Мы подготовили доступ к материалам и данные по чеку.",
     invoiceAttached: "PDF-инвойс прикреплен к этому письму.",
+    limitedAccessValidity:
+      "Доступ к материалам предоставляется на {days} дней с момента вступления.",
+    inspirationHubCta: "Открыть Inspiration Hub",
+    accessAlreadyActive: "Доступ уже активирован",
+    accessExpired: "Срок доступа завершен",
+    accessNeedsSupport: "Не удалось подготовить приглашение. Свяжитесь с поддержкой",
     offerLabel: "Тариф",
     paymentSucceededText: "Оплата прошла успешно",
     productLabel: "Продукт",
@@ -144,7 +198,7 @@ const EMAIL_COPY = {
         ready:
           "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам предоставляется на 2 месяца.",
         pending:
-          "Личная ссылка-приглашение в Telegram-канал подготавливается. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+          "Личная ссылка-приглашение в Telegram-канал подготавливается. Доступ к материалам предоставляется на 2 месяца с момента вступления. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
         cta: "Открыть Telegram-канал",
         mentorNote:
           "Для тарифа с куратором администратор также отдельно свяжется с вами по поводу обратной связи.",
@@ -152,10 +206,26 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Доступ к курсу",
         ready:
-          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на 4 месяца.",
+          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на 4 месяца с момента вступления.",
         pending:
-          "Личная ссылка-приглашение в Telegram-чат подготавливается. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+          "Личная ссылка-приглашение в Telegram-чат подготавливается. Доступ к урокам предоставляется на 4 месяца с момента вступления. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
         cta: "Открыть Telegram-чат",
+      },
+      telegramOnlineGroup: {
+        title: "Доступ в Online Group",
+        ready:
+          "Нажмите кнопку ниже, чтобы вступить в Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
+        pending:
+          "Персональная ссылка-приглашение в Telegram-группу подготавливается. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+        cta: "Открыть Telegram-группу",
+      },
+      telegramRenewal: {
+        title: "Доступ в следующую онлайн-группу",
+        ready:
+          "Нажмите кнопку ниже, чтобы вступить в новую Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
+        pending:
+          "Личная ссылка-приглашение в Telegram-группу подготавливается. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+        cta: "Открыть новую Telegram-группу",
       },
     },
   },
@@ -165,7 +235,9 @@ export type PurchaseSuccessEmailAccessKind =
   | "manual-admin"
   | "support"
   | "telegram-channel"
-  | "telegram-chat";
+  | "telegram-chat"
+  | "telegram-online-group"
+  | "telegram-renewal";
 
 const escapeHtml = (value: string) =>
   value
@@ -201,9 +273,11 @@ const formatCheckoutAmount = ({
 };
 
 export type BuildPurchaseSuccessEmailInput = {
+  accessDurationDays?: number;
   amountMinor: string;
   checkoutCurrency: string;
   checkoutLocale?: string | null;
+  inspirationAccessExpiresAt?: string | null;
   offerLabel: string;
   productTitle: string;
   receiptKind?: "pdf" | "receipt" | null;
@@ -211,23 +285,36 @@ export type BuildPurchaseSuccessEmailInput = {
   showMentorFollowupNote?: boolean;
   accessKind: PurchaseSuccessEmailAccessKind;
   telegramAccessUrl?: string | null;
+  telegramAccessLinks?: Array<{
+    accessKey: "inspiration-hub" | "main-group";
+    accessUrl: string;
+    status: "active" | "expired" | "ready" | "unavailable";
+  }>;
 };
 
 export const buildPurchaseSuccessEmail = ({
+  accessDurationDays = 0,
   accessKind,
   amountMinor,
   checkoutCurrency,
   checkoutLocale,
+  inspirationAccessExpiresAt,
   offerLabel,
   productTitle,
   receiptKind,
   receiptLink,
   showMentorFollowupNote = false,
   telegramAccessUrl,
+  telegramAccessLinks = [],
 }: BuildPurchaseSuccessEmailInput) => {
   const locale = getResolvedCheckoutLocale(checkoutLocale);
   const copy = EMAIL_COPY[locale];
   const telegramLink = telegramAccessUrl ?? null;
+  const hasOnlineGroupAccess =
+    telegramAccessLinks.length > 0 &&
+    telegramAccessLinks.every(
+      (access) => access.status === "ready" || access.status === "active",
+    );
   const amountLabel = formatCheckoutAmount({
     amountMinor,
     currency: checkoutCurrency,
@@ -240,6 +327,24 @@ export const buildPurchaseSuccessEmail = ({
   const safeSupportTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
   const safeTelegramLink = telegramLink ? escapeHtml(telegramLink) : "";
   const safeSiteHomeUrl = escapeHtml(SITE_HOME_URL);
+  const formatAccessExpiry = (value: string) => {
+    const date = new Date(value);
+
+    if (!Number.isFinite(date.getTime())) {
+      return "";
+    }
+
+    return new Intl.DateTimeFormat(
+      locale === "pl" ? "pl-PL" : locale === "en" ? "en-GB" : "ru-RU",
+      {
+        dateStyle: "long",
+        timeZone: "Europe/Warsaw",
+      },
+    ).format(date);
+  };
+  const formattedInspirationExpiry = inspirationAccessExpiresAt
+    ? formatAccessExpiry(inspirationAccessExpiresAt)
+    : "";
 
   let accessTitle = "";
   let accessDescription = "";
@@ -263,6 +368,22 @@ export const buildPurchaseSuccessEmail = ({
         ? copy.access.telegramChat.ready
         : copy.access.telegramChat.pending;
       accessCta = copy.access.telegramChat.cta;
+      break;
+    case "telegram-renewal":
+      accessTitle = copy.access.telegramRenewal.title;
+      accessDescription =
+        telegramLink || hasOnlineGroupAccess
+          ? copy.access.telegramRenewal.ready
+          : copy.access.telegramRenewal.pending;
+      accessCta = copy.access.telegramRenewal.cta;
+      break;
+    case "telegram-online-group":
+      accessTitle = copy.access.telegramOnlineGroup.title;
+      accessDescription =
+        telegramLink || hasOnlineGroupAccess
+          ? copy.access.telegramOnlineGroup.ready
+          : copy.access.telegramOnlineGroup.pending;
+      accessCta = copy.access.telegramOnlineGroup.cta;
       break;
     case "manual-admin":
       accessTitle = copy.access.manualAdmin.title;
@@ -297,13 +418,47 @@ export const buildPurchaseSuccessEmail = ({
       </p>
     `;
   const accessButton =
-    (accessKind === "telegram-channel" || accessKind === "telegram-chat") && telegramLink
+    (accessKind === "telegram-channel" ||
+      accessKind === "telegram-chat" ||
+      accessKind === "telegram-online-group" ||
+      accessKind === "telegram-renewal") &&
+    telegramLink
       ? `
         <a href="${safeTelegramLink}" style="display:inline-block;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">
           ${accessCta}
         </a>
       `
       : "";
+  const onlineGroupAccessButtons = telegramAccessLinks
+    .map((access) => {
+      const label =
+        access.accessKey === "inspiration-hub" ? copy.inspirationHubCta : accessCta;
+
+      if (access.status === "ready" && access.accessUrl) {
+        return `
+          <a href="${escapeHtml(access.accessUrl)}" style="display:inline-block;margin:0 8px 8px 0;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">
+            ${label}
+          </a>
+        `;
+      }
+
+      if (access.status === "active") {
+        return `<p style="margin:8px 0;color:#5f5f5f;font-size:14px;line-height:22px;">${label}: ${copy.accessAlreadyActive}</p>`;
+      }
+
+      const statusText =
+        access.status === "expired" ? copy.accessExpired : copy.accessNeedsSupport;
+
+      return `<p style="margin:8px 0;color:#7c0002;font-size:14px;line-height:22px;">${label}: ${statusText}</p>`;
+    })
+    .join("");
+  const inspirationExpiryParagraph = formattedInspirationExpiry
+    ? `
+      <p style="margin:0 0 12px;color:#5f5f5f;font-size:14px;line-height:22px;">
+        ${copy.inspirationHubCta}: ${copy.accessUntil.toLowerCase()} ${escapeHtml(formattedInspirationExpiry)}.
+      </p>
+    `
+    : "";
   const mentorFollowupParagraph = mentorFollowupNote
     ? `
       <p style="margin:10px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">
@@ -311,6 +466,18 @@ export const buildPurchaseSuccessEmail = ({
       </p>
     `
     : "";
+  const limitedAccessValidityParagraph =
+    accessKind === "manual-admin" && accessDurationDays > 0
+      ? `
+      <p style="margin:10px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">
+        ${copy.limitedAccessValidity.replace("{days}", String(accessDurationDays))}
+      </p>
+    `
+      : "";
+  const limitedAccessValidityText =
+    accessKind === "manual-admin" && accessDurationDays > 0
+      ? copy.limitedAccessValidity.replace("{days}", String(accessDurationDays))
+      : "";
 
   const html = `
     <div style="margin:0;padding:32px 12px;background:#f3f2ef;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#121212;">
@@ -346,7 +513,9 @@ export const buildPurchaseSuccessEmail = ({
           <p style="margin:0 0 12px 0;color:#5f5f5f;font-size:14px;line-height:22px;">
             ${accessDescription}
           </p>
-          ${accessButton}
+          ${inspirationExpiryParagraph}
+          ${onlineGroupAccessButtons || accessButton}
+          ${limitedAccessValidityParagraph}
           ${mentorFollowupParagraph}
         </div>
 
@@ -376,9 +545,33 @@ export const buildPurchaseSuccessEmail = ({
     `${copy.amountLabel}: ${amountLabel}`,
     accessTitle,
     accessDescription,
-    telegramLink && (accessKind === "telegram-channel" || accessKind === "telegram-chat")
+    telegramLink &&
+    (accessKind === "telegram-channel" ||
+      accessKind === "telegram-chat" ||
+      accessKind === "telegram-online-group" ||
+      accessKind === "telegram-renewal")
       ? `${accessCta}: ${telegramLink}`
       : "",
+    ...telegramAccessLinks.map((access) => {
+      const label =
+        access.accessKey === "inspiration-hub" ? copy.inspirationHubCta : accessCta;
+
+      if (access.status === "ready" && access.accessUrl) {
+        return `${label}: ${access.accessUrl}`;
+      }
+
+      if (access.status === "active") {
+        return `${label}: ${copy.accessAlreadyActive}`;
+      }
+
+      return `${label}: ${
+        access.status === "expired" ? copy.accessExpired : copy.accessNeedsSupport
+      }`;
+    }),
+    formattedInspirationExpiry
+      ? `${copy.inspirationHubCta}: ${copy.accessUntil} ${formattedInspirationExpiry}`
+      : "",
+    limitedAccessValidityText,
     mentorFollowupNote,
     copy.invoiceAttached,
     receiptLink

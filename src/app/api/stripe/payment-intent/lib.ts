@@ -140,12 +140,14 @@ export const normalizePaymentIntentCustomerData = (customerData: {
 
 export const createPaymentIntentIdempotencyKey = ({
   checkoutSessionId,
+  contextKey,
   currency,
   customerData,
   offerId,
   productId,
 }: {
   checkoutSessionId: string;
+  contextKey?: string;
   currency: string;
   customerData: {
     address?: string;
@@ -160,11 +162,12 @@ export const createPaymentIntentIdempotencyKey = ({
   offerId: string;
   productId: string;
 }) => {
-  const customerFingerprint = createHash("sha256")
+  const checkoutFingerprint = createHash("sha256")
     .update(
       JSON.stringify({
         address: customerData.address?.trim() ?? "",
         city: customerData.city?.trim() ?? "",
+        contextKey: contextKey?.trim() ?? "",
         country: customerData.country?.trim().toUpperCase() ?? "",
         email: customerData.email?.trim().toLowerCase() ?? "",
         fullName: customerData.fullName?.trim() ?? "",
@@ -182,7 +185,7 @@ export const createPaymentIntentIdempotencyKey = ({
     currency,
     productId,
     offerId,
-    customerFingerprint,
+    checkoutFingerprint,
   ].join(":");
 };
 
