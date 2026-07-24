@@ -729,12 +729,12 @@
       "firstTouch": "Your personal invite is valid for 30 days. Lesson access is provided for 4 months from joining.",
       "choreo": "Your personal invite is valid for 30 days. Material access is provided for 2 months from joining.",
       "onlineGroup": "Your personal invite is valid for 30 days. After joining, group access has no automatic expiry.",
-      "onlineGroupPlus": "The invites are valid for 30 days. Main group access has no automatic expiry; Inspiration Hub access lasts until the end of the current cycle."
+      "onlineGroupPlus": "Your personal invites are valid for 30 days. After joining, Online Group access has no automatic expiry."
     },
     "telegram": {
       "active": "access is already active",
       "firstTouchLabel": "First Touch course materials:",
-      "inspirationUntil": "Access until",
+      "inspirationUntil": "Your Inspiration Hub access is available until",
       "openLink": "Go to Telegram",
       "openMainGroup": "Open Online Group",
       "openInspiration": "Open Inspiration Hub",

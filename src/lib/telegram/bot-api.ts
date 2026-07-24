@@ -283,6 +283,29 @@ export const banTelegramChatMember = async ({
     },
   );
 
+export const unbanTelegramChatMember = async ({
+  botToken,
+  chatId,
+  onlyIfBanned = true,
+  userId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  onlyIfBanned?: boolean;
+  userId: number | string;
+}) =>
+  callTelegramApi<boolean>(
+    "unbanChatMember",
+    {
+      chat_id: chatId,
+      only_if_banned: onlyIfBanned,
+      user_id: userId,
+    },
+    {
+      botToken,
+    },
+  );
+
 export const getTelegramChatMember = async ({
   botToken,
   chatId,

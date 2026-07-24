@@ -58,6 +58,7 @@ const Paragraph = styled.p`
 
 const ButtonBox = styled.div`
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
   margin: 40px 0 0 0;
@@ -73,6 +74,18 @@ const ButtonBox = styled.div`
     & a {
       max-width: 100%;
     }
+  }
+`;
+
+const HomeButtonSlot = styled.div<{ $fullRow: boolean }>`
+  display: flex;
+  justify-content: center;
+  width: ${({ $fullRow }) => ($fullRow ? "100%" : "auto")};
+  flex: ${({ $fullRow }) => ($fullRow ? "1 0 100%" : "0 1 280px")};
+
+  @media (max-width: 767px) {
+    width: 100%;
+    flex-basis: 100%;
   }
 `;
 
@@ -98,6 +111,14 @@ export default function SuccessContent({
   title,
 }: SuccessContentProps) {
   const [showUnavailableNote, setShowUnavailableNote] = useState(false);
+  const [telegramAccessCount, setTelegramAccessCount] = useState(0);
+  const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");
+  const inspirationAccessExpiryText = inspirationAccessExpiresAt
+    ? `${telegramInspirationUntilLabel} ${new Intl.DateTimeFormat(dateLocale, {
+        dateStyle: "long",
+        timeZone: "Europe/Warsaw",
+      }).format(new Date(inspirationAccessExpiresAt))}.`
+    : "";
 
   return (
     <>
@@ -106,6 +127,9 @@ export default function SuccessContent({
         <Paragraph>{descriptionLine1}</Paragraph>
         <Paragraph>{descriptionLine2}</Paragraph>
         {accessNotice ? <Paragraph>{accessNotice}</Paragraph> : null}
+        {inspirationAccessExpiryText ? (
+          <Paragraph>{inspirationAccessExpiryText}</Paragraph>
+        ) : null}
         {isTelegramAccessPurchase && showUnavailableNote ? (
           <Paragraph>{telegramUnavailableText}</Paragraph>
         ) : null}
@@ -116,9 +140,7 @@ export default function SuccessContent({
             activeText={telegramAccessActiveText}
             buttonText={telegramOpenLinkText}
             checkoutSessionId={checkoutSessionId}
-            dateLocale={dateLocale}
             inspirationButtonText={telegramInspirationLinkText}
-            inspirationUntilLabel={telegramInspirationUntilLabel}
             mainButtonText={telegramMainGroupLinkText}
             offerId={offerId}
             paymentIntentId={paymentIntentId}
@@ -127,11 +149,20 @@ export default function SuccessContent({
             supportButtonText={telegramContactSupportText}
             supportHref={SUPPORT_TELEGRAM_URL}
             unavailableText={telegramUnavailableText}
+            onAccessCountChange={setTelegramAccessCount}
+            onInspirationExpiryChange={setInspirationAccessExpiresAt}
             onUnavailableChange={setShowUnavailableNote}
           />
         ) : null}
 
-        <Button buttonText={homeButtonText} href="/" variant="secondary" width="280px" />
+        <HomeButtonSlot $fullRow={telegramAccessCount > 1}>
+          <Button
+            buttonText={homeButtonText}
+            href="/"
+            variant="secondary"
+            width={telegramAccessCount > 1 ? "100%" : "280px"}
+          />
+        </HomeButtonSlot>
       </ButtonBox>
     </>
   );

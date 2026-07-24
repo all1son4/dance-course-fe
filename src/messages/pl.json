@@ -729,12 +729,12 @@
       "firstTouch": "Osobisty link jest ważny przez 30 dni. Dostęp do lekcji otrzymujesz na 4 miesiące od dołączenia.",
       "choreo": "Osobisty link jest ważny przez 30 dni. Dostęp do materiałów otrzymujesz na 2 miesiące od dołączenia.",
       "onlineGroup": "Osobisty link jest ważny przez 30 dni. Po dołączeniu dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki są ważne przez 30 dni. Dostęp do głównej grupy nie wygasa automatycznie, a dostęp do Inspiration Hub trwa do końca bieżącego cyklu."
+      "onlineGroupPlus": "Twoje osobiste linki są ważne przez 30 dni. Po dołączeniu dostęp do Online Group nie wygasa automatycznie."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
       "firstTouchLabel": "Materiały kursu First Touch:",
-      "inspirationUntil": "Dostęp do",
+      "inspirationUntil": "Dostęp do Twojego Inspiration Hub jest aktywny do",
       "openLink": "Przejdź do Telegrama",
       "openMainGroup": "Otwórz Online Group",
       "openInspiration": "Otwórz Inspiration Hub",

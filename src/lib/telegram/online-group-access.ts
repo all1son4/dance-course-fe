@@ -12,7 +12,11 @@ import {
 } from "@/db/schema";
 import type { PaymentSheetRecord } from "@/lib/google-sheets";
 
-import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
+import {
+  banTelegramChatMember,
+  createTelegramChatInviteLink,
+  unbanTelegramChatMember,
+} from "./bot-api";
 import { isOnlineGroupAccessOfferId } from "./offer-access";
 
 const INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -235,6 +239,56 @@ const findActiveHubBinding = async ({
   return binding ?? null;
 };
 
+const findKnownTelegramIdentity = async ({
+  chatId,
+  purchase,
+  telegramUserId,
+  telegramUsername,
+}: {
+  chatId: string;
+  purchase: NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
+  telegramUserId: string;
+  telegramUsername: string;
+}) => {
+  if (telegramUserId) {
+    return {
+      telegramUserId,
+      telegramUsername,
+    };
+  }
+
+  const customerMatch = purchase.customerId
+    ? eq(purchases.customerId, purchase.customerId)
+    : purchase.customerEmailSnapshot
+      ? eq(purchases.customerEmailSnapshot, purchase.customerEmailSnapshot)
+      : null;
+
+  if (!customerMatch) {
+    return null;
+  }
+
+  const [knownBinding] = await getDatabase()
+    .select({
+      telegramUserId: telegramUserBindings.telegramUserId,
+      telegramUsername: telegramUserBindings.telegramUsername,
+    })
+    .from(telegramUserBindings)
+    .innerJoin(purchases, eq(telegramUserBindings.purchaseId, purchases.id))
+    .where(and(eq(telegramUserBindings.chatId, chatId), customerMatch))
+    .orderBy(desc(telegramUserBindings.lastSeenAt))
+    .limit(1);
+  const knownTelegramUserId = knownBinding?.telegramUserId.trim() ?? "";
+
+  if (!knownTelegramUserId) {
+    return null;
+  }
+
+  return {
+    telegramUserId: knownTelegramUserId,
+    telegramUsername: knownBinding?.telegramUsername?.trim() ?? "",
+  };
+};
+
 const ensureTargetAccess = async ({
   accessExpiresAt,
   accessKey,
@@ -251,6 +305,14 @@ const ensureTargetAccess = async ({
   const now = new Date();
   const expectedTelegramUserId = paymentRecord.telegram_user_id.trim();
   const expectedTelegramUsername = paymentRecord.telegram_username.trim();
+  const knownTelegramIdentity = await findKnownTelegramIdentity({
+    chatId,
+    purchase,
+    telegramUserId: expectedTelegramUserId,
+    telegramUsername: expectedTelegramUsername,
+  });
+  const accessTelegramUserId = knownTelegramIdentity?.telegramUserId ?? "";
+  const accessTelegramUsername = knownTelegramIdentity?.telegramUsername ?? "";
 
   if (accessExpiresAt && Date.parse(accessExpiresAt) <= now.getTime()) {
     await upsertEntitlement({
@@ -259,8 +321,8 @@ const ensureTargetAccess = async ({
       chatId,
       purchase,
       status: "expired",
-      telegramUserId: expectedTelegramUserId,
-      telegramUsername: expectedTelegramUsername,
+      telegramUserId: accessTelegramUserId,
+      telegramUsername: accessTelegramUsername,
     });
 
     return {
@@ -272,10 +334,10 @@ const ensureTargetAccess = async ({
     };
   }
 
-  if (accessKey === "inspiration-hub" && expectedTelegramUserId) {
+  if (accessKey === "inspiration-hub" && accessTelegramUserId) {
     const activeBinding = await findActiveHubBinding({
       chatId,
-      telegramUserId: expectedTelegramUserId,
+      telegramUserId: accessTelegramUserId,
     });
 
     if (activeBinding) {
@@ -285,16 +347,16 @@ const ensureTargetAccess = async ({
         chatId,
         purchase,
         status: "activated",
-        telegramUserId: expectedTelegramUserId,
-        telegramUsername: expectedTelegramUsername,
+        telegramUserId: accessTelegramUserId,
+        telegramUsername: accessTelegramUsername,
       });
       await upsertBinding({
         accessExpiresAt,
         chatId,
         inviteLink: "",
         purchase,
-        telegramUserId: expectedTelegramUserId,
-        telegramUsername: expectedTelegramUsername,
+        telegramUserId: accessTelegramUserId,
+        telegramUsername: accessTelegramUsername,
       });
 
       return {
@@ -344,6 +406,14 @@ const ensureTargetAccess = async ({
     }
 
     if (currentToken.status === "issued" && currentToken.tokenValue) {
+      if (accessTelegramUserId) {
+        await unbanTelegramChatMember({
+          chatId,
+          onlyIfBanned: true,
+          userId: accessTelegramUserId,
+        });
+      }
+
       return {
         accessExpiresAt,
         accessKey,
@@ -360,6 +430,14 @@ const ensureTargetAccess = async ({
       status: "unavailable",
       tokenExpiresAt: currentToken.expiresAt.toISOString(),
     };
+  }
+
+  if (accessTelegramUserId) {
+    await unbanTelegramChatMember({
+      chatId,
+      onlyIfBanned: true,
+      userId: accessTelegramUserId,
+    });
   }
 
   const tokenId = `tgi_${randomBytes(8).toString("hex")}`;
@@ -382,8 +460,8 @@ const ensureTargetAccess = async ({
       chatId,
       purchase,
       status: "token_issued",
-      telegramUserId: expectedTelegramUserId,
-      telegramUsername: expectedTelegramUsername,
+      telegramUserId: accessTelegramUserId,
+      telegramUsername: accessTelegramUsername,
       tokenId,
     });
 
@@ -401,8 +479,8 @@ const ensureTargetAccess = async ({
         productId: purchase.productId,
         purchaseId: purchase.id,
         status: "issued",
-        telegramUserId: expectedTelegramUserId || null,
-        telegramUsername: expectedTelegramUsername || null,
+        telegramUserId: accessTelegramUserId || null,
+        telegramUsername: accessTelegramUsername || null,
         tokenHash: hashInvite(invite.invite_link),
         tokenId,
         tokenValue: invite.invite_link,
@@ -428,8 +506,8 @@ const ensureTargetAccess = async ({
       chatId,
       purchase,
       status: "link_failed",
-      telegramUserId: expectedTelegramUserId,
-      telegramUsername: expectedTelegramUsername,
+      telegramUserId: accessTelegramUserId,
+      telegramUsername: accessTelegramUsername,
     });
 
     return {

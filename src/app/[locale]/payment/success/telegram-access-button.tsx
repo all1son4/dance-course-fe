@@ -9,10 +9,10 @@ type TelegramAccessButtonProps = {
   activeText: string;
   buttonText: string;
   checkoutSessionId: string;
-  dateLocale: string;
   inspirationButtonText: string;
-  inspirationUntilLabel: string;
   mainButtonText: string;
+  onAccessCountChange?: (count: number) => void;
+  onInspirationExpiryChange?: (expiresAt: string) => void;
   onUnavailableChange?: (isUnavailable: boolean) => void;
   offerId: string;
   paymentIntentId: string;
@@ -113,17 +113,30 @@ const StatusMeta = styled.span`
   color: rgba(16, 16, 16, 0.55);
 `;
 
-const AccessList = styled.div`
+const AccessList = styled.div<{ $multiple: boolean }>`
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 10px;
-  width: 100%;
+  width: ${({ $multiple }) => ($multiple ? "100%" : "auto")};
+  flex: ${({ $multiple }) => ($multiple ? "1 0 100%" : "1 1 280px")};
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    width: 100%;
+    flex-basis: 100%;
+  }
 `;
 
 const AccessItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  flex: 1 1 0;
+  min-width: 0;
+`;
+
+const SupportAction = styled.div`
+  display: flex;
+  flex: 1 0 100%;
   width: 100%;
 `;
 
@@ -160,10 +173,10 @@ export default function TelegramAccessButton({
   activeText,
   buttonText,
   checkoutSessionId,
-  dateLocale,
   inspirationButtonText,
-  inspirationUntilLabel,
   mainButtonText,
+  onAccessCountChange,
+  onInspirationExpiryChange,
   onUnavailableChange,
   offerId,
   paymentIntentId,
@@ -190,6 +203,17 @@ export default function TelegramAccessButton({
   const hasUnavailableAccess = accesses.some(
     (access) => access.status === "expired" || access.status === "unavailable",
   );
+
+  useEffect(() => {
+    onAccessCountChange?.(accesses.length || (accessUrl ? 1 : 0));
+  }, [accessUrl, accesses.length, onAccessCountChange]);
+
+  useEffect(() => {
+    onInspirationExpiryChange?.(
+      accesses.find((access) => access.accessKey === "inspiration-hub")
+        ?.accessExpiresAt ?? "",
+    );
+  }, [accesses, onInspirationExpiryChange]);
 
   useEffect(() => {
     onUnavailableChange?.(
@@ -362,7 +386,7 @@ export default function TelegramAccessButton({
 
   if (accesses.length) {
     return (
-      <AccessList>
+      <AccessList $multiple={accesses.length > 1}>
         {accesses.map((access) => {
           const label =
             access.accessKey === "inspiration-hub"
@@ -373,15 +397,6 @@ export default function TelegramAccessButton({
             return (
               <AccessItem key={access.accessKey}>
                 <Button buttonText={label} href={access.accessUrl} target="_blank" />
-                {access.accessKey === "inspiration-hub" && access.accessExpiresAt ? (
-                  <StatusMeta>
-                    {inspirationUntilLabel}:{" "}
-                    {new Intl.DateTimeFormat(dateLocale, {
-                      dateStyle: "long",
-                      timeZone: "Europe/Warsaw",
-                    }).format(new Date(access.accessExpiresAt))}
-                  </StatusMeta>
-                ) : null}
               </AccessItem>
             );
           }
@@ -391,25 +406,18 @@ export default function TelegramAccessButton({
               <StatusText>
                 {label}: {access.status === "active" ? activeText : unavailableText}
               </StatusText>
-              {access.accessKey === "inspiration-hub" && access.accessExpiresAt ? (
-                <StatusMeta>
-                  {inspirationUntilLabel}:{" "}
-                  {new Intl.DateTimeFormat(dateLocale, {
-                    dateStyle: "long",
-                    timeZone: "Europe/Warsaw",
-                  }).format(new Date(access.accessExpiresAt))}
-                </StatusMeta>
-              ) : null}
             </StatusBox>
           );
         })}
         {hasUnavailableAccess ? (
-          <Button
-            buttonText={supportButtonText}
-            href={supportHref}
-            target="_blank"
-            variant="secondary"
-          />
+          <SupportAction>
+            <Button
+              buttonText={supportButtonText}
+              href={supportHref}
+              target="_blank"
+              variant="secondary"
+            />
+          </SupportAction>
         ) : null}
       </AccessList>
     );
