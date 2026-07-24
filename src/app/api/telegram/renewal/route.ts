@@ -14,10 +14,12 @@ import {
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { getTelegramChatMember, type TelegramChatMember } from "@/lib/telegram/bot-api";
 import {
+  createTelegramLoginNonce,
   getTelegramLoginClientId,
   getTelegramUserIdFromClaims,
   isTelegramLoginConfigured,
   verifyTelegramLoginIdToken,
+  verifyTelegramLoginNonce,
 } from "@/lib/telegram/login";
 
 export const runtime = "nodejs";
@@ -28,6 +30,7 @@ type RenewalVerifyBody = {
   checkoutSessionId?: string;
   claimedUsername?: string;
   idToken?: string;
+  nonce?: string;
   slug?: string;
 };
 
@@ -94,6 +97,10 @@ const getRenewalCampaignResponse = async ({
       title: campaign.title,
     },
     clientId: getTelegramLoginClientId(),
+    nonce: createTelegramLoginNonce({
+      checkoutSessionId,
+      slug,
+    }),
     status: "ready",
     telegramUser: verification
       ? {
@@ -135,6 +142,10 @@ export async function GET(request: Request) {
 
   if (!slug) {
     return jsonErrorNoStore("missing_renewal_slug", { status: 400 });
+  }
+
+  if (!checkoutSessionId) {
+    return jsonErrorNoStore("missing_checkout_session_id", { status: 400 });
   }
 
   return getRenewalCampaignResponse({
@@ -184,6 +195,7 @@ export async function POST(request: Request) {
     const checkoutSessionId = normalizeCheckoutSessionId(body.checkoutSessionId);
     const claimedUsername = normalizeUsername(body.claimedUsername);
     const idToken = body.idToken?.trim() ?? "";
+    const nonce = body.nonce?.trim().slice(0, 160) ?? "";
 
     if (!slug) {
       return jsonErrorNoStore("missing_renewal_slug", { status: 400 });
@@ -195,6 +207,17 @@ export async function POST(request: Request) {
 
     if (!idToken) {
       return jsonErrorNoStore("missing_telegram_id_token", { status: 400 });
+    }
+
+    if (
+      !nonce ||
+      !verifyTelegramLoginNonce({
+        checkoutSessionId,
+        nonce,
+        slug,
+      })
+    ) {
+      return jsonErrorNoStore("invalid_telegram_login_nonce", { status: 403 });
     }
 
     if (!claimedUsername) {
@@ -216,7 +239,7 @@ export async function POST(request: Request) {
       return jsonErrorNoStore("renewal_campaign_inactive", { status: 409 });
     }
 
-    const claims = await verifyTelegramLoginIdToken(idToken);
+    const claims = await verifyTelegramLoginIdToken(idToken, nonce);
     const telegramUserId = getTelegramUserIdFromClaims(claims);
     const telegramUsername = claims.preferred_username ?? "";
 

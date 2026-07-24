@@ -115,6 +115,7 @@ type RenewalCampaignResponse = {
   };
   clientId?: string;
   errorCode?: string;
+  nonce?: string;
   status?: string;
   telegramUser?: {
     id: string;
@@ -154,6 +155,7 @@ declare global {
           options: {
             client_id: number;
             lang?: string;
+            nonce?: string;
             scope?: string[];
           },
           callback: (result: TelegramLoginResult) => void,
@@ -240,6 +242,7 @@ const PaymentPage = observer(function PaymentPage() {
   );
   const [searchKey, setSearchKey] = useState("");
   const [renewalClientId, setRenewalClientId] = useState("");
+  const [renewalNonce, setRenewalNonce] = useState("");
   const [renewalStatus, setRenewalStatus] = useState<
     "error" | "idle" | "loading" | "not_member" | "ready" | "verified" | "verifying"
   >("idle");
@@ -390,6 +393,7 @@ const PaymentPage = observer(function PaymentPage() {
   useEffect(() => {
     if (!renewalSlug) {
       setRenewalClientId("");
+      setRenewalNonce("");
       setRenewalStatus("idle");
       setRenewalStatusText("");
       return;
@@ -426,6 +430,7 @@ const PaymentPage = observer(function PaymentPage() {
         }
 
         setRenewalClientId(data.clientId ?? "");
+        setRenewalNonce(data.nonce ?? "");
         setRenewalStatus(data.verified ? "verified" : "ready");
         setRenewalStatusText(
           data.verified ? t("renewal.status.verified") : t("renewal.status.ready"),
@@ -437,6 +442,7 @@ const PaymentPage = observer(function PaymentPage() {
         }
 
         setRenewalClientId("");
+        setRenewalNonce("");
         setRenewalStatus("error");
         setRenewalStatusText(t("renewal.status.loadFailed"));
       });
@@ -596,6 +602,7 @@ const PaymentPage = observer(function PaymentPage() {
 
     if (
       !renewalSlug ||
+      !renewalNonce ||
       !/^@[A-Za-z0-9_]{1,32}$/.test(claimedUsername) ||
       !Number.isFinite(numericClientId) ||
       renewalStatus === "loading" ||
@@ -619,9 +626,12 @@ const PaymentPage = observer(function PaymentPage() {
           {
             client_id: numericClientId,
             lang: locale,
+            nonce: renewalNonce,
             scope: ["profile"],
           },
           (result) => {
+            window.focus();
+
             if (result.error) {
               reject(new Error(result.error));
               return;
@@ -648,6 +658,7 @@ const PaymentPage = observer(function PaymentPage() {
           claimedUsername,
           checkoutSessionId: paymentStore.checkoutSessionId,
           idToken,
+          nonce: renewalNonce,
           slug: renewalSlug,
         }),
         cache: "no-store",
@@ -721,6 +732,31 @@ const PaymentPage = observer(function PaymentPage() {
           skipStripeIntentReset: true,
         });
       }
+
+      window.focus();
+      window.setTimeout(() => {
+        window.focus();
+
+        const nextField = productPaymentInputs.find(
+          ({ name }) => name !== "nickname" && !paymentStore.customerData[name].trim(),
+        );
+        const nextControl = nextField
+          ? document.getElementById(nextField.id)
+          : document.querySelector<HTMLInputElement>(
+              'input[name="immediate_access_consent"]',
+            );
+
+        if (
+          nextControl instanceof HTMLInputElement ||
+          nextControl instanceof HTMLSelectElement
+        ) {
+          nextControl.focus({ preventScroll: true });
+          nextControl.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }, 120);
     } catch {
       setRenewalStatus("error");
       setRenewalStatusText(t("renewal.status.failed"));
@@ -865,6 +901,7 @@ const PaymentPage = observer(function PaymentPage() {
                           renewalStatus === "verified" ||
                           renewalStatus === "verifying" ||
                           !renewalClientId ||
+                          !renewalNonce ||
                           !/^@[A-Za-z0-9_]{1,32}$/.test(
                             paymentStore.customerData.nickname.trim(),
                           )

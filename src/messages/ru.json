@@ -645,7 +645,7 @@
       "status": {
         "loading": "Готовим проверку...",
         "ready": "Нажмите синюю иконку, чтобы подтвердить Telegram.",
-        "openingTelegram": "Открываем Telegram...",
+        "openingTelegram": "Подтвердите вход в Telegram. После подтверждения мы попробуем вернуть вас к оплате автоматически.",
         "checkingMembership": "Проверяем чат...",
         "verified": "Готово.",
         "verifiedAs": "Готово: {username}",

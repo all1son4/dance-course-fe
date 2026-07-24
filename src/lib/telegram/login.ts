@@ -1,9 +1,10 @@
-import { webcrypto } from "node:crypto";
+import { createHmac, timingSafeEqual, webcrypto } from "node:crypto";
 
 const TELEGRAM_OAUTH_ISSUER = "https://oauth.telegram.org";
 const TELEGRAM_JWKS_URL = `${TELEGRAM_OAUTH_ISSUER}/.well-known/jwks.json`;
 const TELEGRAM_JWKS_CACHE_TTL_MS = 60 * 60 * 1000;
 const TELEGRAM_ID_TOKEN_CLOCK_SKEW_SECONDS = 60;
+const TELEGRAM_LOGIN_NONCE_TTL_SECONDS = 15 * 60;
 
 type TelegramJwk = JsonWebKey & {
   kid?: string;
@@ -21,6 +22,7 @@ type TelegramLoginClaims = {
   sub?: string;
   id?: number | string;
   name?: string;
+  nonce?: string;
   preferred_username?: string;
 };
 
@@ -34,7 +36,87 @@ let jwksCache: JwksCache | null = null;
 export const getTelegramLoginClientId = () =>
   process.env.TELEGRAM_LOGIN_CLIENT_ID?.trim() ?? "";
 
-export const isTelegramLoginConfigured = () => Boolean(getTelegramLoginClientId());
+const getTelegramLoginNonceSecret = () =>
+  process.env.TELEGRAM_LOGIN_NONCE_SECRET?.trim() ||
+  process.env.TELEGRAM_WEBHOOK_SECRET?.trim() ||
+  "";
+
+export const isTelegramLoginConfigured = () =>
+  Boolean(getTelegramLoginClientId() && getTelegramLoginNonceSecret());
+
+const signTelegramLoginNonce = ({
+  checkoutSessionId,
+  issuedAtSeconds,
+  slug,
+}: {
+  checkoutSessionId: string;
+  issuedAtSeconds: number;
+  slug: string;
+}) => {
+  const secret = getTelegramLoginNonceSecret();
+
+  if (!secret) {
+    throw new Error("telegram_login_nonce_not_configured");
+  }
+
+  return createHmac("sha256", secret)
+    .update(`${issuedAtSeconds}:${checkoutSessionId.trim()}:${slug.trim()}`)
+    .digest("base64url");
+};
+
+export const createTelegramLoginNonce = ({
+  checkoutSessionId,
+  slug,
+}: {
+  checkoutSessionId: string;
+  slug: string;
+}) => {
+  const issuedAtSeconds = Math.floor(Date.now() / 1000);
+  const signature = signTelegramLoginNonce({
+    checkoutSessionId,
+    issuedAtSeconds,
+    slug,
+  });
+
+  return `${issuedAtSeconds}.${signature}`;
+};
+
+export const verifyTelegramLoginNonce = ({
+  checkoutSessionId,
+  nonce,
+  slug,
+}: {
+  checkoutSessionId: string;
+  nonce: string;
+  slug: string;
+}) => {
+  const [issuedAtValue, receivedSignature, ...extraParts] = nonce.trim().split(".");
+  const issuedAtSeconds = Number.parseInt(issuedAtValue ?? "", 10);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
+  if (
+    extraParts.length > 0 ||
+    !receivedSignature ||
+    !Number.isFinite(issuedAtSeconds) ||
+    issuedAtSeconds > nowSeconds + TELEGRAM_ID_TOKEN_CLOCK_SKEW_SECONDS ||
+    issuedAtSeconds + TELEGRAM_LOGIN_NONCE_TTL_SECONDS < nowSeconds
+  ) {
+    return false;
+  }
+
+  const expectedSignature = signTelegramLoginNonce({
+    checkoutSessionId,
+    issuedAtSeconds,
+    slug,
+  });
+  const receivedBuffer = Buffer.from(receivedSignature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+
+  return (
+    receivedBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(receivedBuffer, expectedBuffer)
+  );
+};
 
 const decodeBase64Url = (value: string) => {
   const padded = value.padEnd(value.length + ((4 - (value.length % 4)) % 4), "=");
@@ -128,7 +210,10 @@ const importTelegramJwtKey = async (jwk: TelegramJwk, algorithm: string) => {
   );
 };
 
-export const verifyTelegramLoginIdToken = async (idToken: string) => {
+export const verifyTelegramLoginIdToken = async (
+  idToken: string,
+  expectedNonce?: string,
+) => {
   const tokenParts = idToken.trim().split(".");
 
   if (tokenParts.length !== 3) {
@@ -162,6 +247,10 @@ export const verifyTelegramLoginIdToken = async (idToken: string) => {
   }
 
   assertClaimsAreValid(claims);
+
+  if (expectedNonce && claims.nonce !== expectedNonce) {
+    throw new Error("telegram_login_invalid_nonce");
+  }
 
   return claims;
 };

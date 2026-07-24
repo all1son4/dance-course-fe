@@ -36,6 +36,8 @@ Optional Telegram env variables:
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_BOT_USERNAME`
 - `TELEGRAM_WEBHOOK_SECRET`
+- `TELEGRAM_LOGIN_CLIENT_ID` (required for Telegram Login on renewal checkout)
+- `TELEGRAM_LOGIN_NONCE_SECRET` (optional; falls back to `TELEGRAM_WEBHOOK_SECRET`)
 - `TELEGRAM_LESSON_SOURCES_JSON`
 - `TELEGRAM_CHANNEL_TARGETS_JSON`
 - `TELEGRAM_ACCESS_LINK_TTL_DAYS` (optional; default `30`; supports decimal values for testing, e.g. `0.01`)

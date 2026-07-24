@@ -645,7 +645,7 @@
       "status": {
         "loading": "Preparing check...",
         "ready": "Tap the blue icon to confirm Telegram.",
-        "openingTelegram": "Opening Telegram...",
+        "openingTelegram": "Confirm the login in Telegram. After confirmation, we will try to return you to checkout automatically.",
         "checkingMembership": "Checking chat...",
         "verified": "Done.",
         "verifiedAs": "Done: {username}",

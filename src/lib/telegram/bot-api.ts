@@ -257,6 +257,26 @@ export const createTelegramChatInviteLink = async ({
     },
   );
 
+export const revokeTelegramChatInviteLink = async ({
+  botToken,
+  chatId,
+  inviteLink,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  inviteLink: string;
+}) =>
+  callTelegramApi<TelegramInviteLink>(
+    "revokeChatInviteLink",
+    {
+      chat_id: chatId,
+      invite_link: inviteLink,
+    },
+    {
+      botToken,
+    },
+  );
+
 export const banTelegramChatMember = async ({
   botToken,
   chatId,

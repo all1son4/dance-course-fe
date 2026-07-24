@@ -645,7 +645,7 @@
       "status": {
         "loading": "Przygotowujemy sprawdzenie...",
         "ready": "Kliknij niebieską ikonę, aby potwierdzić konto Telegram.",
-        "openingTelegram": "Otwieramy Telegram...",
+        "openingTelegram": "Potwierdź logowanie w Telegramie. Po potwierdzeniu spróbujemy automatycznie wrócić do płatności.",
         "checkingMembership": "Sprawdzamy czat...",
         "verified": "Gotowe.",
         "verifiedAs": "Gotowe: {username}",
