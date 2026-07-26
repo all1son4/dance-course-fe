@@ -15,7 +15,7 @@ import {
 } from "@/lib/telegram/offer-access";
 import { Success } from "@/svg";
 
-import { Container, ResultCard } from "./page.styles";
+import { ResultCard, ResultContainer } from "../result-page.styles";
 import SuccessContent from "./success-content";
 import SuccessRedirectGuard from "./success-redirect-guard";
 
@@ -115,7 +115,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
         : "";
 
   return (
-    <Container>
+    <ResultContainer>
       <ResultCard>
         <SuccessRedirectGuard
           checkoutSessionId={checkoutSessionId}
@@ -145,6 +145,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           title={t("title")}
         />
       </ResultCard>
-    </Container>
+    </ResultContainer>
   );
 }

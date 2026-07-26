@@ -747,10 +747,10 @@
     }
   },
   "PaymentFailedPage": {
-    "title": "Płatność nie powiodła się!",
+    "title": "Płatność nie powiodła się",
     "description": {
-      "line1": "Nie udało się zrealizować płatności — karta mogła zostać odrzucona przez bank, wygasła lub wystąpił błąd techniczny.",
-      "line2": "Spróbuj ponownie albo wybierz inną metodę płatności. Jeśli problem się powtarza, skontaktuj się z nami — pomożemy dokończyć zakup."
+      "line1": "Nie udało się zrealizować płatności. Bank mógł odrzucić kartę lub wystąpił problem techniczny.",
+      "line2": "Spróbuj ponownie lub wybierz inną metodę płatności. Jeśli problem się powtórzy, skontaktuj się ze wsparciem."
     },
     "buttons": {
       "backToPayment": "Wróć do płatności",

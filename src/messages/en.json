@@ -747,10 +747,10 @@
     }
   },
   "PaymentFailedPage": {
-    "title": "Payment failed!",
+    "title": "Payment failed",
     "description": {
-      "line1": "We could not complete your payment — the card may have been declined by the bank, expired, or a technical issue occurred.",
-      "line2": "Please try again or choose another payment method. If the issue repeats, contact us and we will help you complete the purchase."
+      "line1": "We could not complete the payment. Your bank may have declined the card, or a technical issue occurred.",
+      "line2": "Try again or choose another payment method. If it happens again, contact support."
     },
     "buttons": {
       "backToPayment": "Back to payment",

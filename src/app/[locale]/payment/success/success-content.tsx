@@ -6,6 +6,12 @@ import styled from "styled-components";
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 
+import {
+  ResultButtonBox,
+  ResultParagraph,
+  ResultParagraphs,
+  ResultTitle,
+} from "../result-page.styles";
 import TelegramAccessButton from "./telegram-access-button";
 
 type SuccessContentProps = {
@@ -30,43 +36,6 @@ type SuccessContentProps = {
   title: string;
 };
 
-const Title = styled.p`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 30px;
-  line-height: 110%;
-  letter-spacing: 0;
-  margin: 40px 0 20px 0;
-  color: rgba(0, 0, 0, 1);
-
-  @media (max-width: 767px) {
-    font-size: 25px;
-    line-height: 115%;
-    margin: 22px 0 12px;
-  }
-`;
-
-const Paragraphs = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-const Paragraph = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-
-  @media (max-width: 767px) {
-    font-size: 15.5px;
-    line-height: 145%;
-  }
-`;
-
 const AccessDetails = styled.div`
   display: flex;
   flex-direction: column;
@@ -84,32 +53,6 @@ const AccessDetail = styled.p`
   @media (max-width: 767px) {
     font-size: 13.5px;
     line-height: 140%;
-  }
-`;
-
-const ButtonBox = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  margin: 30px 0 0 0;
-  max-width: 600px;
-  gap: 10px;
-  width: 100%;
-
-  @media (max-width: 767px) {
-    max-width: 100%;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 22px;
-
-    & button,
-    & a {
-      max-width: 100%;
-      min-height: 48px;
-      padding: 10px 20px;
-      font-size: 16px;
-    }
   }
 `;
 
@@ -157,10 +100,10 @@ export default function SuccessContent({
     : "";
   return (
     <>
-      <Title>{title}</Title>
-      <Paragraphs>
-        {descriptionLine1 ? <Paragraph>{descriptionLine1}</Paragraph> : null}
-        {descriptionLine2 ? <Paragraph>{descriptionLine2}</Paragraph> : null}
+      <ResultTitle>{title}</ResultTitle>
+      <ResultParagraphs>
+        {descriptionLine1 ? <ResultParagraph>{descriptionLine1}</ResultParagraph> : null}
+        {descriptionLine2 ? <ResultParagraph>{descriptionLine2}</ResultParagraph> : null}
         {accessNotice || inspirationAccessExpiryText ? (
           <AccessDetails>
             {accessNotice ? <AccessDetail>{accessNotice}</AccessDetail> : null}
@@ -170,10 +113,10 @@ export default function SuccessContent({
           </AccessDetails>
         ) : null}
         {isTelegramAccessPurchase && showUnavailableNote ? (
-          <Paragraph>{telegramUnavailableText}</Paragraph>
+          <ResultParagraph>{telegramUnavailableText}</ResultParagraph>
         ) : null}
-      </Paragraphs>
-      <ButtonBox>
+      </ResultParagraphs>
+      <ResultButtonBox>
         {isTelegramAccessPurchase ? (
           <TelegramAccessButton
             activeText={telegramAccessActiveText}
@@ -202,7 +145,7 @@ export default function SuccessContent({
             width={telegramAccessCount > 1 ? "100%" : "280px"}
           />
         </HomeButtonSlot>
-      </ButtonBox>
+      </ResultButtonBox>
     </>
   );
 }
