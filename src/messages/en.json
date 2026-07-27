@@ -285,10 +285,10 @@
         "button": "Learn more"
       },
       "onlineGroup": {
-        "title": "Online Group by Anna Strok",
+        "title": "Online Group\nby Anna Strok",
         "description": {
-          "1": "Regular training for anyone who wants to keep progressing, stay in shape and work with their body when attending offline classes is not possible.",
-          "2": "Stay in the process, receive new assignments, practise at home and keep in touch with me wherever you are."
+          "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body.",
+          "2": "If you cannot attend my offline classes, you can gain new knowledge, practise at home and stay in touch with me wherever you are."
         },
         "startLabel": "Next cycle starts",
         "startValue": "August 10",
@@ -480,11 +480,10 @@
   },
   "OnlineGroupPage": {
     "hero": {
-      "title": "Online Group by Anna Strok",
+      "title": "Online Group\nby Anna Strok",
       "description": {
-        "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body — even when attending my offline classes is not possible.",
-        "2": "We work on technique, plasticity, strength, improvisation and musicality, and learn choreography. You stay in the process, receive new tasks, practise at home and stay connected with me wherever you are.",
-        "3": "Suitable for intermediate and advanced dancers."
+        "1": "In the online group, we train in a convenient format, work on technique, fluidity, strength, improvisation and musicality, and learn choreography. You stay in the process, receive new assignments, practise at home and feel connected to me wherever you are.",
+        "2": "Suitable for intermediate and advanced dancers."
       },
       "startLabel": "Next group starts",
       "startDate": "August 10",
@@ -499,7 +498,7 @@
         },
         "library": {
           "title": "Plus",
-          "description": "Online Group with access to Inspiration Hub and materials from previous cycles."
+          "description": "Online Group with cycle-long access to Inspiration Hub and materials from previous cycles."
         }
       },
       "programButton": "What to expect",
@@ -516,8 +515,8 @@
         "features": {
           "1": "5 new lessons",
           "2": "Homework with feedback",
-          "3": "Private Telegram chat for your group",
-          "4": "Cycle duration — 6 weeks",
+          "3": "Cycle duration — 6 weeks",
+          "4": "Access to the private Telegram chat",
           "5": "Communication and support within the group",
           "6": "Extra materials for inspiration"
         }
@@ -525,15 +524,17 @@
       "plus": {
         "title": "Plus",
         "subtitle": "Online Group + Inspiration Hub",
-        "description": "Everything in the Standard plan, plus cycle-long access to the private Inspiration Hub channel with additional Frame Up materials:",
         "features": {
-          "1": "Lessons from all previous cycles",
-          "2": "Additional exercises",
-          "3": "Playlists",
-          "4": "Moodboards",
-          "5": "Inspiration videos",
-          "6": "Helpful recommendations and other materials",
-          "7": "Access duration — 6 weeks"
+          "1": "5 new lessons",
+          "2": "Homework assignments with feedback",
+          "3": "Cycle duration — 6 weeks",
+          "4": "Access to the private Telegram chat",
+          "5": "Communication and support within the group",
+          "6": "Inspiration Hub access for the duration of the cycle",
+          "7": "Lessons from all previous cycles",
+          "8": "Additional exercises",
+          "9": "Playlists, moodboards and inspiration videos",
+          "10": "Helpful recommendations"
         }
       }
     },
@@ -557,7 +558,7 @@
       },
       "5": {
         "title": "Plus plan with Inspiration Hub",
-        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience."
+        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience. Hub access remains active until the next cycle starts."
       },
       "6": {
         "title": "Private Telegram chat",
@@ -633,7 +634,8 @@
       "description": "To renew with the discount, confirm Telegram: we will check the previous chat membership and send a personal invite to the new group after payment.",
       "summaryCard": {
         "description": "Renew your online group access for the next cycle at the special price.",
-        "accessNote": "After payment, you will receive a personal one-time invite to the new Telegram chat."
+        "accessNote": "After payment, you will receive a personal one-time invite to the new Telegram chat.",
+        "accessNotePlus": "After payment, you will receive personal one-time invites to the new Telegram chat and Inspiration Hub. Hub access is provided for the duration of the cycle."
       },
       "sourceChat": "Checking: {title}",
       "targetChat": "Access after payment: {title}",
@@ -729,7 +731,7 @@
       "firstTouch": "Invite valid for 30 days. Lesson access: 4 months after joining.",
       "choreo": "Invite valid for 30 days. Material access: 2 months after joining.",
       "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
-      "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically."
+      "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration Hub access is provided for the duration of the cycle."
     },
     "telegram": {
       "active": "access is already active",
@@ -842,12 +844,13 @@
       }
     },
     "onlineGroupAnnaStrok": {
-      "title": "Online Group by Anna Strok",
+      "title": "Online Group\nby Anna Strok",
       "description": {
-        "1": "Regular training for anyone who wants to keep progressing, stay in shape and work with their body when attending offline classes is not possible.",
-        "2": "Stay in the process, receive new assignments, practise at home and keep in touch with me wherever you are."
+        "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body.",
+        "2": "If you cannot attend my offline classes, you can gain new knowledge, practise at home and stay in touch with me wherever you are."
       },
       "accessNote": "After payment, we will send you a personal one-use invite link to the Telegram group.",
+      "accessNotePlus": "After payment, we will send you personal one-use invite links to the Telegram group and Inspiration Hub. Hub access is provided for the duration of the cycle.",
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",

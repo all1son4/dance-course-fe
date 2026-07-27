@@ -285,10 +285,10 @@
         "button": "Więcej o kursie"
       },
       "onlineGroup": {
-        "title": "Online Group by Anna Strok",
+        "title": "Online Group\nby Anna Strok",
         "description": {
-          "1": "Regularne treningi dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem, gdy nie mogą uczestniczyć w zajęciach offline.",
-          "2": "Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i utrzymujesz ze mną kontakt niezależnie od miejsca."
+          "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
+          "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
         },
         "startLabel": "Start kolejnego cyklu",
         "startValue": "10 sierpnia",
@@ -480,11 +480,10 @@
   },
   "OnlineGroupPage": {
     "hero": {
-      "title": "Online Group by Anna Strok",
+      "title": "Online Group\nby Anna Strok",
       "description": {
-        "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem — nawet gdy nie mogą uczestniczyć w moich zajęciach offline.",
-        "2": "Pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i utrzymujesz ze mną kontakt.",
-        "3": "Dla poziomu średniozaawansowanego i zaawansowanego."
+        "1": "W Online Group trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
+        "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
       },
       "startLabel": "Start kolejnej grupy",
       "startDate": "10 sierpnia",
@@ -499,7 +498,7 @@
         },
         "library": {
           "title": "Plus",
-          "description": "Online Group z dostępem do Inspiration Hub i materiałów z poprzednich cykli."
+          "description": "Online Group z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
         }
       },
       "programButton": "Co na Ciebie czeka",
@@ -516,8 +515,8 @@
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
-          "3": "Zamknięty czat Telegram dla grupy",
-          "4": "Czas trwania cyklu — 6 tygodni",
+          "3": "Czas trwania cyklu — 6 tygodni",
+          "4": "Dostęp do zamkniętego Telegram-czatu",
           "5": "Kontakt i wsparcie w grupie",
           "6": "Dodatkowe materiały dla inspiracji"
         }
@@ -525,15 +524,17 @@
       "plus": {
         "title": "Plus",
         "subtitle": "Online Group + Inspiration Hub",
-        "description": "Wszystko z pakietu Standard oraz dostęp na czas trwania cyklu do zamkniętego kanału Inspiration Hub z dodatkowymi materiałami Frame Up:",
         "features": {
-          "1": "Lekcje ze wszystkich poprzednich cykli",
-          "2": "Dodatkowe ćwiczenia",
-          "3": "Playlisty",
-          "4": "Moodboardy",
-          "5": "Filmy dla inspiracji",
-          "6": "Przydatne rekomendacje i inne materiały",
-          "7": "Czas dostępu — 6 tygodni"
+          "1": "5 nowych lekcji",
+          "2": "Zadania domowe z feedbackiem",
+          "3": "Czas trwania cyklu — 6 tygodni",
+          "4": "Dostęp do zamkniętego Telegram-czatu",
+          "5": "Kontakt i wsparcie w grupie",
+          "6": "Dostęp do Inspiration Hub na czas trwania cyklu",
+          "7": "Lekcje ze wszystkich poprzednich cykli",
+          "8": "Dodatkowe ćwiczenia",
+          "9": "Playlisty, moodboardy i filmy dla inspiracji",
+          "10": "Przydatne rekomendacje"
         }
       }
     },
@@ -557,7 +558,7 @@
       },
       "5": {
         "title": "Pakiet Plus z Inspiration Hub",
-        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie."
+        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub pozostaje aktywny do startu kolejnego cyklu."
       },
       "6": {
         "title": "Zamknięty czat Telegram",
@@ -633,7 +634,8 @@
       "description": "Aby przedłużyć ze zniżką, potwierdź konto Telegram: sprawdzimy udział w poprzednim czacie, a po płatności wyślemy osobisty link do nowej grupy.",
       "summaryCard": {
         "description": "Przedłużenie udziału w grupie online na kolejny cykl w specjalnej cenie.",
-        "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram."
+        "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
+        "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
       },
       "sourceChat": "Sprawdzamy: {title}",
       "targetChat": "Dostęp po płatności: {title}",
@@ -729,7 +731,7 @@
       "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 4 miesiące od dołączenia.",
       "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 2 miesiące od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie."
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
@@ -842,12 +844,13 @@
       }
     },
     "onlineGroupAnnaStrok": {
-      "title": "Online Group by Anna Strok",
+      "title": "Online Group\nby Anna Strok",
       "description": {
-        "1": "Regularne treningi dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem, gdy nie mogą uczestniczyć w zajęciach offline.",
-        "2": "Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i utrzymujesz ze mną kontakt niezależnie od miejsca."
+        "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
+        "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
       },
       "accessNote": "Po płatności wyślemy Ci osobisty jednorazowy link do grupy Telegram.",
+      "accessNotePlus": "Po płatności wyślemy Ci osobiste jednorazowe linki do grupy Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu.",
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",

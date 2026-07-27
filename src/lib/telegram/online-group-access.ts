@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { and, desc, eq, gt, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
 
 import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
 import { getDatabase } from "@/db/client";
@@ -42,11 +42,19 @@ const pendingOnlineGroupAccessEnsures = new Map<
 
 const hashInvite = (value: string) => createHash("sha256").update(value).digest("hex");
 
-const getAccessTargets = (paymentRecord: PaymentSheetRecord) => {
+const getAccessTargets = (
+  paymentRecord: PaymentSheetRecord,
+  purchaseSnapshot?: {
+    inspirationAccessExpiresAt: Date | null;
+    inspirationChatId: string | null;
+  },
+) => {
   const mainChatId = paymentRecord.telegram_channel_chat_id.trim();
-  const inspirationChatId = paymentRecord.telegram_inspiration_chat_id.trim();
+  const inspirationChatId =
+    purchaseSnapshot?.inspirationChatId?.trim() ||
+    paymentRecord.telegram_inspiration_chat_id.trim();
   const inspirationAccessExpiresAt =
-    paymentRecord.telegram_inspiration_access_expires_at.trim();
+    purchaseSnapshot?.inspirationAccessExpiresAt?.toISOString() ?? "";
   const targets: Array<{
     accessExpiresAt: string;
     accessKey: OnlineGroupAccessKey;
@@ -61,11 +69,7 @@ const getAccessTargets = (paymentRecord: PaymentSheetRecord) => {
       ]
     : [];
 
-  if (
-    isOnlineGroupLibraryOfferId(paymentRecord.offer_id) &&
-    inspirationChatId &&
-    inspirationAccessExpiresAt
-  ) {
+  if (isOnlineGroupLibraryOfferId(paymentRecord.offer_id) && inspirationChatId) {
     targets.push({
       accessExpiresAt: inspirationAccessExpiresAt,
       accessKey: "inspiration-hub",
@@ -241,7 +245,10 @@ const findActiveHubBinding = async ({
         eq(telegramUserBindings.chatId, chatId),
         eq(telegramUserBindings.telegramUserId, telegramUserId),
         eq(telegramUserBindings.status, "active"),
-        gt(telegramUserBindings.accessExpiresAt, new Date()),
+        or(
+          isNull(telegramUserBindings.accessExpiresAt),
+          gt(telegramUserBindings.accessExpiresAt, new Date()),
+        ),
       ),
     )
     .orderBy(desc(telegramUserBindings.lastSeenAt))
@@ -586,7 +593,10 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
     return [];
   }
 
-  const targets = getAccessTargets(paymentRecord);
+  const targets = getAccessTargets(paymentRecord, {
+    inspirationAccessExpiresAt: purchase.inspirationAccessExpiresAtSnapshot,
+    inspirationChatId: purchase.inspirationChatIdSnapshot,
+  });
 
   return Promise.all(
     targets.map((target) =>
@@ -898,7 +908,10 @@ export const revokeExpiredOnlineGroupHubAccess = async () => {
           eq(telegramUserBindings.telegramUserId, sample.binding.telegramUserId),
           eq(telegramUserBindings.chatId, sample.binding.chatId),
           eq(telegramUserBindings.status, "active"),
-          gt(telegramUserBindings.accessExpiresAt, now),
+          or(
+            isNull(telegramUserBindings.accessExpiresAt),
+            gt(telegramUserBindings.accessExpiresAt, now),
+          ),
         ),
       )
       .limit(1);

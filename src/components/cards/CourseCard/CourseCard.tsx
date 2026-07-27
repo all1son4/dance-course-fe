@@ -27,7 +27,7 @@ export default function CourseCard({
         <Title className="courseCardTitle">{title}</Title>
         <Subtitle className="courseCardSubtitle">{subtitle}</Subtitle>
       </TitleBox>
-      <ContentBox>
+      <ContentBox className="courseCardContentBox">
         <Content className="courseCardContent">{cardContent}</Content>
         <Button
           className="courseCardButton"

@@ -26,7 +26,6 @@ const normalizeText = (value: string | null | undefined, maxLength: number) =>
 
 const serializeCampaign = (campaign: {
   createdAt: Date;
-  endsAt: Date;
   id: string;
   libraryChatId: string;
   regularChatId: string;
@@ -35,7 +34,6 @@ const serializeCampaign = (campaign: {
   title: string;
 }) => ({
   createdAt: campaign.createdAt.toISOString(),
-  endsAt: campaign.endsAt.toISOString(),
   id: campaign.id,
   inspirationChatId: campaign.libraryChatId,
   mainChatId: campaign.regularChatId,

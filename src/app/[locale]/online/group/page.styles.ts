@@ -4,7 +4,7 @@ export const IntroductionSection = styled.section`
   position: relative;
   display: flex;
   align-items: center;
-  min-height: 920px;
+  min-height: 860px;
   padding: 0 25px;
   box-sizing: border-box;
   width: 100%;
@@ -126,6 +126,7 @@ export const Title = styled.h1`
   letter-spacing: 0;
   margin: 0 0 40px;
   color: rgba(0, 0, 0, 1);
+  white-space: pre-line;
 
   max-width: 420px;
 
@@ -158,7 +159,7 @@ export const DescriptionParagraph = styled.p`
 
 export const ImageBox = styled.div`
   position: absolute;
-  bottom: 88px;
+  bottom: 38px;
   right: 10%;
   z-index: 10;
 
@@ -360,6 +361,20 @@ export const TariffOptionsBox = styled.div`
 
   & .courseCardContainer {
     gap: 20px;
+    justify-content: flex-start;
+  }
+
+  & .courseCardContent {
+    height: 100%;
+
+    & > div {
+      height: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  & .courseCardContentBox {
+    height: 100%;
   }
 
   @media (max-width: 1100px) {
@@ -420,16 +435,6 @@ export const TarifContentBox = styled.div`
   flex-direction: column;
   gap: 20px;
   width: 100%;
-`;
-
-export const AdditionalDescription = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  color: #000000;
-  margin: 0;
 `;
 
 export const TariffContentList = styled.ul`

@@ -94,10 +94,6 @@ const PAYMENT_METADATA_KEYS = {
   productId: ["product_id", "productId", "product"],
   productTitle: ["product_title", "productTitle"],
   telegramChannelChatId: ["telegram_channel_chat_id", "telegramChannelChatId"],
-  telegramInspirationAccessExpiresAt: [
-    "telegram_inspiration_access_expires_at",
-    "telegramInspirationAccessExpiresAt",
-  ],
   telegramInspirationChatId: [
     "telegram_inspiration_chat_id",
     "telegramInspirationChatId",
@@ -176,7 +172,6 @@ type ResolvedAccessDetails = {
   deliveryChannel: string;
   telegramAccessStatus: string;
   telegramChannelChatId: string;
-  telegramInspirationAccessExpiresAt: string;
   telegramInspirationChatId: string;
 };
 
@@ -705,10 +700,6 @@ const resolveAccessDetails = (
       context,
       PAYMENT_METADATA_KEYS.telegramChannelChatId,
     ),
-    telegramInspirationAccessExpiresAt: getContextMetadataValue(
-      context,
-      PAYMENT_METADATA_KEYS.telegramInspirationAccessExpiresAt,
-    ),
     telegramInspirationChatId: getContextMetadataValue(
       context,
       PAYMENT_METADATA_KEYS.telegramInspirationChatId,
@@ -836,9 +827,10 @@ const createPaymentSheetRecord = ({
     telegram_inspiration_chat_id:
       getExistingRecordValue(context, "telegram_inspiration_chat_id") ||
       access.telegramInspirationChatId,
-    telegram_inspiration_access_expires_at:
-      getExistingRecordValue(context, "telegram_inspiration_access_expires_at") ||
-      access.telegramInspirationAccessExpiresAt,
+    telegram_inspiration_access_expires_at: getExistingRecordValue(
+      context,
+      "telegram_inspiration_access_expires_at",
+    ),
     status: snapshot.status,
     updated_at: timestamp,
     with_mentor_alert_status: getExistingRecordValue(context, "with_mentor_alert_status"),

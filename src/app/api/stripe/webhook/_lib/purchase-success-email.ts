@@ -19,6 +19,8 @@ const EMAIL_COPY = {
     invoiceAttached: "The PDF invoice is attached to this email.",
     limitedAccessValidity:
       "Access to the materials is provided for {days} days from joining.",
+    inspirationHubAccessDuration:
+      "Inspiration Hub access is provided for the duration of the cycle.",
     inspirationHubCta: "Open Inspiration Hub",
     accessAlreadyActive: "Access is already active",
     accessExpired: "The access period has ended",
@@ -93,6 +95,8 @@ const EMAIL_COPY = {
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
     limitedAccessValidity:
       "Dostęp do materiałów jest przyznawany na {days} dni od dołączenia.",
+    inspirationHubAccessDuration:
+      "Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
     inspirationHubCta: "Otwórz Inspiration Hub",
     accessAlreadyActive: "Dostęp jest już aktywny",
     accessExpired: "Okres dostępu dobiegł końca",
@@ -167,6 +171,8 @@ const EMAIL_COPY = {
     invoiceAttached: "PDF-инвойс прикреплен к этому письму.",
     limitedAccessValidity:
       "Доступ к материалам предоставляется на {days} дней с момента вступления.",
+    inspirationHubAccessDuration:
+      "Доступ в Inspiration Hub предоставляется на время потока.",
     inspirationHubCta: "Открыть Inspiration Hub",
     accessAlreadyActive: "Доступ уже активирован",
     accessExpired: "Срок доступа завершен",
@@ -452,10 +458,18 @@ export const buildPurchaseSuccessEmail = ({
       return `<p style="margin:8px 0;color:#7c0002;font-size:14px;line-height:22px;">${label}: ${statusText}</p>`;
     })
     .join("");
-  const inspirationExpiryParagraph = formattedInspirationExpiry
+  const hasInspirationHubAccess = telegramAccessLinks.some(
+    (access) => access.accessKey === "inspiration-hub",
+  );
+  const inspirationAccessText = formattedInspirationExpiry
+    ? `${copy.inspirationHubCta}: ${copy.accessUntil.toLowerCase()} ${formattedInspirationExpiry}.`
+    : hasInspirationHubAccess
+      ? copy.inspirationHubAccessDuration
+      : "";
+  const inspirationAccessParagraph = inspirationAccessText
     ? `
       <p style="margin:0 0 12px;color:#5f5f5f;font-size:14px;line-height:22px;">
-        ${copy.inspirationHubCta}: ${copy.accessUntil.toLowerCase()} ${escapeHtml(formattedInspirationExpiry)}.
+        ${escapeHtml(inspirationAccessText)}
       </p>
     `
     : "";
@@ -513,7 +527,7 @@ export const buildPurchaseSuccessEmail = ({
           <p style="margin:0 0 12px 0;color:#5f5f5f;font-size:14px;line-height:22px;">
             ${accessDescription}
           </p>
-          ${inspirationExpiryParagraph}
+          ${inspirationAccessParagraph}
           ${onlineGroupAccessButtons || accessButton}
           ${limitedAccessValidityParagraph}
           ${mentorFollowupParagraph}
@@ -568,9 +582,7 @@ export const buildPurchaseSuccessEmail = ({
         access.status === "expired" ? copy.accessExpired : copy.accessNeedsSupport
       }`;
     }),
-    formattedInspirationExpiry
-      ? `${copy.inspirationHubCta}: ${copy.accessUntil} ${formattedInspirationExpiry}`
-      : "",
+    inspirationAccessText,
     limitedAccessValidityText,
     mentorFollowupNote,
     copy.invoiceAttached,

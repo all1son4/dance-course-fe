@@ -270,8 +270,6 @@ const getRenewalAccessMetadata = ({
   telegram_channel_chat_id: renewalVerification.campaign.targetChatId,
   ...(isOnlineGroupLibraryOfferId(offer.id) && renewalOnlineGroupSettings
     ? {
-        telegram_inspiration_access_expires_at:
-          renewalOnlineGroupSettings.endsAt.toISOString(),
         telegram_inspiration_chat_id: renewalOnlineGroupSettings.libraryChatId,
       }
     : {}),
@@ -286,10 +284,8 @@ const getOnlineGroupAccessMetadata = (
   delivery_channel: "telegram",
   online_group_campaign_id: onlineGroupTarget.campaign.id,
   telegram_channel_chat_id: onlineGroupTarget.mainChatId,
-  ...(onlineGroupTarget.inspirationChatId && onlineGroupTarget.inspirationAccessExpiresAt
+  ...(onlineGroupTarget.inspirationChatId
     ? {
-        telegram_inspiration_access_expires_at:
-          onlineGroupTarget.inspirationAccessExpiresAt.toISOString(),
         telegram_inspiration_chat_id: onlineGroupTarget.inspirationChatId,
       }
     : {}),

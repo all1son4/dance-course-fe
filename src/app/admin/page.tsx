@@ -143,7 +143,6 @@ type RenewalCampaignEntry = {
 };
 type OnlineGroupCampaignEntry = {
   createdAt: string;
-  endsAt: string;
   id: string;
   inspirationChatId: string;
   mainChatId: string;
@@ -325,7 +324,7 @@ const ADMIN_FEATURE_COPY: Record<
   "online-group": {
     description:
       "Настройка текущего потока, постоянного Inspiration Hub и ссылок продления.",
-    meta: "Plus открывает основной чат на постоянной основе и Inspiration Hub до конца потока.",
+    meta: "Plus открывает основной чат без автоматического срока, а Inspiration Hub — до старта следующего потока.",
   },
   reports: {
     description:
@@ -718,11 +717,8 @@ const ActiveOnlineGroupCard = ({
           <SummaryValue>{activeCampaign.title}</SummaryValue>
         </SummaryItem>
         <SummaryItem>
-          <SummaryLabel>Период Plus-доступа</SummaryLabel>
-          <SummaryValue>
-            {formatDateTime(activeCampaign.startsAt)} —{" "}
-            {formatDateTime(activeCampaign.endsAt)}
-          </SummaryValue>
+          <SummaryLabel>Старт потока</SummaryLabel>
+          <SummaryValue>{formatDateTime(activeCampaign.startsAt)}</SummaryValue>
         </SummaryItem>
         <SummaryItem>
           <SummaryLabel>Основной чат</SummaryLabel>

@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 
 import {
   isOnlineGroupLibraryOfferId,
@@ -6,9 +6,15 @@ import {
 } from "@/constants/sellable-products";
 
 import { getDatabase } from "./client";
-import { onlineGroupCampaigns, renewalCampaigns, telegramChats } from "./schema";
-
-const ONLINE_GROUP_DURATION_MS = 6 * 7 * 24 * 60 * 60 * 1000;
+import {
+  accessEntitlements,
+  onlineGroupCampaigns,
+  purchases,
+  renewalCampaigns,
+  telegramAccessTokens,
+  telegramChats,
+  telegramUserBindings,
+} from "./schema";
 
 const normalizeTitle = (value: string | null | undefined) =>
   (value ?? "").replace(/\s+/g, " ").trim();
@@ -38,8 +44,6 @@ export const saveOnlineGroupSettings = async ({
   const normalizedInspirationChatId = inspirationChatId.trim();
   const normalizedMainChatId = mainChatId.trim();
   const normalizedStartsAt = parseStartDate(startsAt);
-  const endsAt = new Date(normalizedStartsAt.getTime() + ONLINE_GROUP_DURATION_MS);
-
   if (!normalizedMainChatId || !normalizedInspirationChatId) {
     throw new Error("missing_chat_selection");
   }
@@ -91,6 +95,73 @@ export const saveOnlineGroupSettings = async ({
   }
 
   const campaign = await db.transaction(async (tx) => {
+    if (existing) {
+      const isEditingActiveCampaign = existing.regularChatId === normalizedMainChatId;
+      const purchaseDeadlineCondition = isEditingActiveCampaign
+        ? eq(purchases.inspirationAccessExpiresAtSnapshot, existing.startsAt)
+        : isNull(purchases.inspirationAccessExpiresAtSnapshot);
+      const entitlementDeadlineCondition = isEditingActiveCampaign
+        ? eq(accessEntitlements.expiresAt, existing.startsAt)
+        : isNull(accessEntitlements.expiresAt);
+      const tokenDeadlineCondition = isEditingActiveCampaign
+        ? eq(telegramAccessTokens.accessExpiresAt, existing.startsAt)
+        : isNull(telegramAccessTokens.accessExpiresAt);
+      const bindingDeadlineCondition = isEditingActiveCampaign
+        ? eq(telegramUserBindings.accessExpiresAt, existing.startsAt)
+        : isNull(telegramUserBindings.accessExpiresAt);
+      const deadlineUpdatedAt = new Date();
+
+      await tx
+        .update(purchases)
+        .set({
+          inspirationAccessExpiresAtSnapshot: normalizedStartsAt,
+          updatedAt: deadlineUpdatedAt,
+        })
+        .where(
+          and(
+            eq(purchases.inspirationChatIdSnapshot, existing.libraryChatId),
+            purchaseDeadlineCondition,
+          ),
+        );
+      await tx
+        .update(accessEntitlements)
+        .set({
+          expiresAt: normalizedStartsAt,
+          updatedAt: deadlineUpdatedAt,
+        })
+        .where(
+          and(
+            eq(accessEntitlements.accessKey, "inspiration-hub"),
+            eq(accessEntitlements.telegramChatId, existing.libraryChatId),
+            entitlementDeadlineCondition,
+          ),
+        );
+      await tx
+        .update(telegramAccessTokens)
+        .set({
+          accessExpiresAt: normalizedStartsAt,
+          updatedAt: deadlineUpdatedAt,
+        })
+        .where(
+          and(
+            eq(telegramAccessTokens.chatId, existing.libraryChatId),
+            tokenDeadlineCondition,
+          ),
+        );
+      await tx
+        .update(telegramUserBindings)
+        .set({
+          accessExpiresAt: normalizedStartsAt,
+          updatedAt: deadlineUpdatedAt,
+        })
+        .where(
+          and(
+            eq(telegramUserBindings.chatId, existing.libraryChatId),
+            bindingDeadlineCondition,
+          ),
+        );
+    }
+
     await tx
       .update(onlineGroupCampaigns)
       .set({
@@ -115,7 +186,6 @@ export const saveOnlineGroupSettings = async ({
     const [created] = await tx
       .insert(onlineGroupCampaigns)
       .values({
-        endsAt,
         libraryChatId: normalizedInspirationChatId,
         regularChatId: normalizedMainChatId,
         startsAt: normalizedStartsAt,
@@ -161,9 +231,6 @@ export const getActiveOnlineGroupTargetByOfferId = async (offerId: string) => {
 
   return {
     campaign,
-    inspirationAccessExpiresAt: isOnlineGroupLibraryOfferId(offerId)
-      ? campaign.endsAt
-      : null,
     inspirationChatId: isOnlineGroupLibraryOfferId(offerId)
       ? campaign.libraryChatId
       : null,

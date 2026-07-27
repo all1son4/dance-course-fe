@@ -224,7 +224,9 @@ export const sendPurchaseSuccessEmail = async ({
       amountMinor: paymentRecord.amount,
       checkoutCurrency: paymentRecord.checkout_currency || paymentRecord.currency,
       checkoutLocale,
-      inspirationAccessExpiresAt: paymentRecord.telegram_inspiration_access_expires_at,
+      inspirationAccessExpiresAt: onlineGroupAccess?.find(
+        (access) => access.accessKey === "inspiration-hub",
+      )?.accessExpiresAt,
       offerLabel:
         paymentRecord.offer_label ||
         paymentIntent.metadata.offer_label ||

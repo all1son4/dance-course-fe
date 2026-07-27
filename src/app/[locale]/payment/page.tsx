@@ -22,6 +22,7 @@ import {
   formatCheckoutPrice,
   getDefaultCheckoutCurrencyByLocale,
   getResolvedCheckoutCurrency,
+  isOnlineGroupLibraryOfferId,
   type SellableProduct,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
@@ -823,6 +824,8 @@ const PaymentPage = observer(function PaymentPage() {
   const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
   const isOnlineGroupCheckout =
     paymentStore.selectedProduct.code === "online-group-anna-strok";
+  const isOnlineGroupPlusCheckout =
+    isOnlineGroupCheckout && isOnlineGroupLibraryOfferId(paymentStore.selectedOffer.id);
   const lessonLanguageOptions = PAYMENT_LESSON_LANGUAGE_OPTIONS.map((option) => ({
     label: t(option.labelKey),
     value: option.value,
@@ -1302,8 +1305,16 @@ const PaymentPage = observer(function PaymentPage() {
   );
   const summaryProps: Omit<CheckoutSummaryCardProps, "isMobile" | "title"> = {
     accessNote: isRenewalCheckout
-      ? t("renewal.summaryCard.accessNote")
-      : productT(paymentStore.selectedProduct.accessNoteKey),
+      ? t(
+          isOnlineGroupPlusCheckout
+            ? "renewal.summaryCard.accessNotePlus"
+            : "renewal.summaryCard.accessNote",
+        )
+      : productT(
+          isOnlineGroupPlusCheckout
+            ? "onlineGroupAnnaStrok.accessNotePlus"
+            : paymentStore.selectedProduct.accessNoteKey,
+        ),
     amountLabel: t("summary.amountLabel"),
     currencyLabel: t("summary.currencyLabel"),
     descriptionParagraphs: paymentStore.selectedProduct.descriptionKeys.map(

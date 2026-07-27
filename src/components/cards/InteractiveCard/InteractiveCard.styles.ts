@@ -41,6 +41,7 @@ export const Title = styled.p`
   line-height: 110%;
   margin: 0;
   color: rgba(0, 0, 0, 1);
+  white-space: pre-line;
 
   @media (max-width: 880px) {
     font-size: 28px;

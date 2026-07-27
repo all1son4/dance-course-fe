@@ -18,7 +18,6 @@ import {
   AboutCourseCards,
   AboutCourseSection,
   AboutCourseTitle,
-  AdditionalDescription,
   ButtonBox,
   ContactSection,
   Date,
@@ -104,7 +103,6 @@ export default function OnlineGroupPage() {
           <Description>
             <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
             <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
-            <DescriptionParagraph>{t("hero.description.3")}</DescriptionParagraph>
           </Description>
 
           <InfoBoxGroup>
@@ -204,9 +202,6 @@ export default function OnlineGroupPage() {
                 subtitle={t("tariffs.plus.subtitle")}
                 cardContent={
                   <TarifContentBox>
-                    <AdditionalDescription>
-                      {t("tariffs.plus.description")}
-                    </AdditionalDescription>
                     <TariffContentList>
                       <li>{t("tariffs.plus.features.1")}</li>
                       <li>{t("tariffs.plus.features.2")}</li>
@@ -215,6 +210,9 @@ export default function OnlineGroupPage() {
                       <li>{t("tariffs.plus.features.5")}</li>
                       <li>{t("tariffs.plus.features.6")}</li>
                       <li>{t("tariffs.plus.features.7")}</li>
+                      <li>{t("tariffs.plus.features.8")}</li>
+                      <li>{t("tariffs.plus.features.9")}</li>
+                      <li>{t("tariffs.plus.features.10")}</li>
                     </TariffContentList>
                     <DateBox>
                       <From>{t("tariffs.priceLabel")}</From>

@@ -517,9 +517,6 @@ export const upsertPaymentRecordToDatabase = async (
       customerId,
       customerPostalCodeSnapshot: nullIfEmpty(paymentRecord.customer_postal_code),
       customerTelegramUsernameSnapshot: nullIfEmpty(paymentRecord.customer_nickname),
-      inspirationAccessExpiresAtSnapshot: parseDate(
-        paymentRecord.telegram_inspiration_access_expires_at,
-      ),
       inspirationChatIdSnapshot: nullIfEmpty(paymentRecord.telegram_inspiration_chat_id),
       lastPaymentErrorCode: nullIfEmpty(paymentRecord.last_payment_error_code),
       lastPaymentErrorMessage: nullIfEmpty(paymentRecord.last_payment_error_message),

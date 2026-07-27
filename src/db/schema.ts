@@ -165,7 +165,6 @@ export const onlineGroupCampaigns = pgTable(
       .notNull()
       .references(() => telegramChats.chatId, { onDelete: "restrict" }),
     startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
-    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     status: text("status").notNull().default("active").$type<"active" | "archived">(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
