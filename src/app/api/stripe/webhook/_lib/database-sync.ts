@@ -28,6 +28,14 @@ type StripeSettlementSnapshot = {
   stripeNetAmountMinor: number | null;
 };
 
+type ExistingPurchaseSnapshot = StripeSettlementSnapshot & {
+  succeededAt: Date | null;
+};
+
+type DatabaseTransaction = Parameters<
+  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
+>[0];
+
 const trim = (value: string | null | undefined) => value?.trim() ?? "";
 const nullIfEmpty = (value: string | null | undefined) => trim(value) || null;
 const normalizeEmail = (value: string | null | undefined) => trim(value).toLowerCase();
@@ -429,6 +437,531 @@ const getFreshPaymentRecord = async (handledEvent: StripeWebhookSyncResult) => {
   }
 };
 
+const upsertCustomer = async ({
+  event,
+  now,
+  paymentRecord,
+  tx,
+}: {
+  event: Stripe.Event;
+  now: Date;
+  paymentRecord: PaymentSheetRecord;
+  tx: DatabaseTransaction;
+}): Promise<{ customerId: string | null; normalizedEmail: string }> => {
+  const normalizedEmail = normalizeEmail(paymentRecord.customer_email);
+  const stripeCustomerId = getStripeCustomerId(event);
+  let customerId: string | null = null;
+
+  if (stripeCustomerId) {
+    const [existingCustomer] = await tx
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.stripeCustomerId, stripeCustomerId))
+      .limit(1);
+
+    customerId = existingCustomer?.id ?? null;
+  }
+
+  if (!customerId && normalizedEmail) {
+    const [existingCustomer] = await tx
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.normalizedEmail, normalizedEmail))
+      .limit(1);
+
+    customerId = existingCustomer?.id ?? null;
+  }
+
+  const customerValues = {
+    addressLine: nullIfEmpty(paymentRecord.customer_address),
+    city: nullIfEmpty(paymentRecord.customer_city),
+    country: nullIfEmpty(paymentRecord.customer_country),
+    email: normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
+    fullName: nullIfEmpty(paymentRecord.customer_full_name),
+    normalizedEmail: normalizedEmail || null,
+    postalCode: nullIfEmpty(paymentRecord.customer_postal_code),
+    stripeCustomerId,
+    telegramUsername: nullIfEmpty(paymentRecord.customer_nickname),
+    updatedAt: now,
+  };
+
+  if (customerId) {
+    await tx.update(customers).set(customerValues).where(eq(customers.id, customerId));
+  } else if (normalizedEmail || stripeCustomerId) {
+    const [savedCustomer] = await tx
+      .insert(customers)
+      .values(customerValues)
+      .returning({ id: customers.id });
+
+    customerId = savedCustomer.id;
+  }
+
+  return { customerId, normalizedEmail };
+};
+
+const resolvePurchaseCatalog = async ({
+  paymentRecord,
+  tx,
+}: {
+  paymentRecord: PaymentSheetRecord;
+  tx: DatabaseTransaction;
+}) => {
+  const offerExternalId = paymentRecord.offer_id.trim();
+  const productExternalId = paymentRecord.product_id.trim();
+  const [offer] = offerExternalId
+    ? await tx
+        .select({
+          id: productOffers.id,
+          productId: productOffers.productId,
+        })
+        .from(productOffers)
+        .where(eq(productOffers.externalOfferId, offerExternalId))
+        .limit(1)
+    : [];
+  const [product] = productExternalId
+    ? await tx
+        .select({ id: products.id })
+        .from(products)
+        .where(eq(products.externalProductId, productExternalId))
+        .limit(1)
+    : [];
+
+  return {
+    offer,
+    productId: product?.id ?? offer?.productId ?? null,
+  };
+};
+
+const upsertAccessEntitlement = async ({
+  customerId,
+  now,
+  offerId,
+  paymentRecord,
+  productId,
+  purchaseId,
+  tx,
+}: {
+  customerId: string | null;
+  now: Date;
+  offerId: string | null;
+  paymentRecord: PaymentSheetRecord;
+  productId: string | null;
+  purchaseId: string;
+  tx: DatabaseTransaction;
+}): Promise<void> => {
+  const entitlementValues = {
+    accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
+    currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
+    customerId,
+    deliveryChannel: nullIfEmpty(paymentRecord.delivery_channel),
+    expiresAt: parseDate(paymentRecord.telegram_access_expires_at),
+    externalTargetType: getExternalTargetType(paymentRecord),
+    offerId,
+    productId,
+    revokedAt: parseDate(paymentRecord.telegram_access_revoked_at),
+    startsAt: parseDate(paymentRecord.telegram_token_used_at),
+    status: normalizeAccessStatus(paymentRecord.telegram_access_status, paymentRecord),
+    telegramChatId: nullIfEmpty(paymentRecord.telegram_channel_chat_id),
+    telegramUserId: nullIfEmpty(paymentRecord.telegram_user_id),
+    telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
+    updatedAt: now,
+  };
+
+  await tx
+    .insert(accessEntitlements)
+    .values({
+      accessKey: "primary",
+      ...entitlementValues,
+      purchaseId,
+    })
+    .onConflictDoUpdate({
+      set: entitlementValues,
+      target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
+    });
+};
+
+const upsertInvoice = async ({
+  firstSeenAt,
+  normalizedEmail,
+  now,
+  paymentRecord,
+  purchaseId,
+  tx,
+}: {
+  firstSeenAt: Date;
+  normalizedEmail: string;
+  now: Date;
+  paymentRecord: PaymentSheetRecord;
+  purchaseId: string;
+  tx: DatabaseTransaction;
+}): Promise<void> => {
+  const parsedInvoice = parseInvoiceNumber(paymentRecord.invoice_number);
+
+  if (!parsedInvoice) {
+    return;
+  }
+
+  const issuedAt = parseRequiredDate(paymentRecord.invoice_issued_at, firstSeenAt);
+  const invoiceUpdateValues = {
+    amountMinor: parseInteger(paymentRecord.amount),
+    buyerEmailSnapshot: normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
+    buyerNameSnapshot: nullIfEmpty(paymentRecord.customer_full_name),
+    currency:
+      trim(paymentRecord.checkout_currency) || trim(paymentRecord.currency) || "pln",
+    issuedAt,
+    sequenceMonth: parsedInvoice.sequenceMonth,
+    sequenceNumber: parsedInvoice.sequenceNumber,
+    sequenceYear: parsedInvoice.sequenceYear,
+    updatedAt: now,
+  };
+
+  await tx
+    .insert(invoices)
+    .values({
+      ...invoiceUpdateValues,
+      buyerAddressSnapshot: [
+        paymentRecord.customer_address.trim(),
+        paymentRecord.customer_city.trim(),
+        paymentRecord.customer_postal_code.trim(),
+        paymentRecord.customer_country.trim(),
+      ]
+        .filter(Boolean)
+        .join(", "),
+      invoiceNumber: paymentRecord.invoice_number.trim(),
+      purchaseId,
+    })
+    .onConflictDoUpdate({
+      set: invoiceUpdateValues,
+      target: invoices.purchaseId,
+    });
+};
+
+const upsertPurchaseSideEffects = async ({
+  paymentRecord,
+  purchaseId,
+  tx,
+}: {
+  paymentRecord: PaymentSheetRecord;
+  purchaseId: string;
+  tx: DatabaseTransaction;
+}): Promise<void> => {
+  for (const sideEffect of getPaymentSideEffects(paymentRecord)) {
+    const sideEffectValues = {
+      failedAt: sideEffect.status === "failed" ? sideEffect.updatedAt : null,
+      provider: sideEffect.provider,
+      sentAt: sideEffect.status === "sent" ? sideEffect.updatedAt : null,
+      status: sideEffect.status,
+      updatedAt: sideEffect.updatedAt,
+    };
+
+    await tx
+      .insert(purchaseSideEffects)
+      .values({
+        ...sideEffectValues,
+        kind: sideEffect.kind,
+        purchaseId,
+      })
+      .onConflictDoUpdate({
+        set: sideEffectValues,
+        target: [purchaseSideEffects.purchaseId, purchaseSideEffects.kind],
+      });
+  }
+};
+
+const upsertStripeEvent = async ({
+  event,
+  handledEvent,
+  now,
+  paymentIntentId,
+  paymentRecord,
+  purchaseId,
+  tx,
+}: {
+  event: Stripe.Event;
+  handledEvent: StripeWebhookSyncResult;
+  now: Date;
+  paymentIntentId: string;
+  paymentRecord: PaymentSheetRecord;
+  purchaseId: string | null;
+  tx: DatabaseTransaction;
+}): Promise<void> => {
+  const eventUpdateValues = {
+    apiVersion: event.api_version ?? null,
+    eventType: event.type,
+    livemode: event.livemode,
+    outcomeSnapshot: nullIfEmpty(paymentRecord.outcome),
+    paymentIntentId,
+    paymentStatusSnapshot: nullIfEmpty(paymentRecord.status),
+    payload: event as unknown as Record<string, unknown>,
+    processedAt: now,
+    processingStatus: handledEvent.skipped
+      ? ("skipped" as const)
+      : ("processed" as const),
+    purchaseId,
+    stripeCreatedAt: new Date(event.created * 1000),
+    updatedAt: now,
+  };
+
+  await tx
+    .insert(stripeEvents)
+    .values({
+      ...eventUpdateValues,
+      stripeEventId: event.id,
+    })
+    .onConflictDoUpdate({
+      set: eventUpdateValues,
+      target: stripeEvents.stripeEventId,
+    });
+};
+
+const preferSettlementValue = <T>(
+  settlementValue: T | null,
+  existingValue: T | null | undefined,
+): T | null => settlementValue ?? existingValue ?? null;
+
+const getPurchaseSettlementSnapshot = async ({
+  paymentIntentId,
+  paymentRecord,
+  stripe,
+}: {
+  paymentIntentId: string;
+  paymentRecord: PaymentSheetRecord;
+  stripe: Stripe;
+}): Promise<StripeSettlementSnapshot> => {
+  if (paymentRecord.outcome.trim() === "succeeded") {
+    return getStripeSettlementSnapshot({
+      paymentIntentId,
+      stripe,
+    });
+  }
+
+  return {
+    settlementAmountMinor: null,
+    settlementCurrency: null,
+    stripeBalanceTransactionId: null,
+    stripeExchangeRate: null,
+    stripeFeeAmountMinor: null,
+    stripeNetAmountMinor: null,
+  };
+};
+
+const createSettlementAmountValues = ({
+  existingPurchase,
+  settlementSnapshot,
+}: {
+  existingPurchase: ExistingPurchaseSnapshot | undefined;
+  settlementSnapshot: StripeSettlementSnapshot;
+}) => ({
+  settlementAmountMinor: preferSettlementValue(
+    settlementSnapshot.settlementAmountMinor,
+    existingPurchase?.settlementAmountMinor,
+  ),
+  settlementCurrency: preferSettlementValue(
+    settlementSnapshot.settlementCurrency,
+    existingPurchase?.settlementCurrency,
+  ),
+  stripeFeeAmountMinor: preferSettlementValue(
+    settlementSnapshot.stripeFeeAmountMinor,
+    existingPurchase?.stripeFeeAmountMinor,
+  ),
+  stripeNetAmountMinor: preferSettlementValue(
+    settlementSnapshot.stripeNetAmountMinor,
+    existingPurchase?.stripeNetAmountMinor,
+  ),
+});
+
+const createSettlementReferenceValues = ({
+  existingPurchase,
+  settlementSnapshot,
+}: {
+  existingPurchase: ExistingPurchaseSnapshot | undefined;
+  settlementSnapshot: StripeSettlementSnapshot;
+}) => ({
+  stripeBalanceTransactionId: preferSettlementValue(
+    settlementSnapshot.stripeBalanceTransactionId,
+    existingPurchase?.stripeBalanceTransactionId,
+  ),
+  stripeExchangeRate: preferSettlementValue(
+    settlementSnapshot.stripeExchangeRate,
+    existingPurchase?.stripeExchangeRate,
+  ),
+});
+
+const createPurchaseValues = ({
+  customerId,
+  existingPurchase,
+  firstSeenAt,
+  normalizedEmail,
+  offerId,
+  paymentIntentId,
+  paymentRecord,
+  productId,
+  settlementSnapshot,
+  succeededAt,
+}: {
+  customerId: string | null;
+  existingPurchase: ExistingPurchaseSnapshot | undefined;
+  firstSeenAt: Date;
+  normalizedEmail: string;
+  offerId: string | null;
+  paymentIntentId: string;
+  paymentRecord: PaymentSheetRecord;
+  productId: string | null;
+  settlementSnapshot: StripeSettlementSnapshot;
+  succeededAt: Date | null;
+}) => ({
+  amountMinor: parseInteger(paymentRecord.amount),
+  checkoutCurrency: nullIfEmpty(paymentRecord.checkout_currency),
+  checkoutLocale: normalizeCheckoutLocale(paymentRecord.checkout_locale),
+  checkoutSessionId: nullIfEmpty(paymentRecord.checkout_session_id),
+  currency:
+    trim(paymentRecord.currency) || trim(paymentRecord.checkout_currency) || "pln",
+  customerAddressLineSnapshot: nullIfEmpty(paymentRecord.customer_address),
+  customerCitySnapshot: nullIfEmpty(paymentRecord.customer_city),
+  customerCountrySnapshot: nullIfEmpty(paymentRecord.customer_country),
+  customerEmailSnapshot: normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
+  customerFullNameSnapshot: nullIfEmpty(paymentRecord.customer_full_name),
+  customerId,
+  customerPostalCodeSnapshot: nullIfEmpty(paymentRecord.customer_postal_code),
+  customerTelegramUsernameSnapshot: nullIfEmpty(paymentRecord.customer_nickname),
+  inspirationAccessExpiresAtSnapshot: parseDate(
+    paymentRecord.telegram_inspiration_access_expires_at,
+  ),
+  inspirationChatIdSnapshot: nullIfEmpty(paymentRecord.telegram_inspiration_chat_id),
+  lastPaymentErrorCode: nullIfEmpty(paymentRecord.last_payment_error_code),
+  lastPaymentErrorMessage: nullIfEmpty(paymentRecord.last_payment_error_message),
+  latestEventId: nullIfEmpty(paymentRecord.latest_event_id),
+  latestEventType: nullIfEmpty(paymentRecord.latest_event_type),
+  lessonLanguage: normalizeLessonLanguage(paymentRecord.lesson_language),
+  offerExternalId: nullIfEmpty(paymentRecord.offer_id),
+  offerId,
+  offerLabelSnapshot: nullIfEmpty(paymentRecord.offer_label),
+  outcome: normalizeOutcome(paymentRecord.outcome),
+  productExternalId: nullIfEmpty(paymentRecord.product_id),
+  productId,
+  productTitleSnapshot: nullIfEmpty(paymentRecord.product_title),
+  purchaseItemSnapshot: nullIfEmpty(paymentRecord.purchase_item),
+  ...createSettlementAmountValues({
+    existingPurchase,
+    settlementSnapshot,
+  }),
+  source: getPurchaseSource(paymentIntentId),
+  ...createSettlementReferenceValues({
+    existingPurchase,
+    settlementSnapshot,
+  }),
+  stripeStatus: trim(paymentRecord.status) || "unknown",
+  succeededAt,
+  updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),
+});
+
+const syncPurchase = async ({
+  event,
+  now,
+  paymentIntentId,
+  paymentRecord,
+  stripe,
+  tx,
+}: {
+  event: Stripe.Event;
+  now: Date;
+  paymentIntentId: string;
+  paymentRecord: PaymentSheetRecord;
+  stripe: Stripe;
+  tx: DatabaseTransaction;
+}): Promise<string> => {
+  const settlementSnapshot = await getPurchaseSettlementSnapshot({
+    paymentIntentId,
+    paymentRecord,
+    stripe,
+  });
+  const { customerId, normalizedEmail } = await upsertCustomer({
+    event,
+    now,
+    paymentRecord,
+    tx,
+  });
+  const { offer, productId } = await resolvePurchaseCatalog({
+    paymentRecord,
+    tx,
+  });
+  const firstSeenAt = parseRequiredDate(
+    paymentRecord.first_seen_at || paymentRecord.updated_at,
+  );
+  const [existingPurchase] = await tx
+    .select({
+      settlementAmountMinor: purchases.settlementAmountMinor,
+      settlementCurrency: purchases.settlementCurrency,
+      stripeBalanceTransactionId: purchases.stripeBalanceTransactionId,
+      stripeExchangeRate: purchases.stripeExchangeRate,
+      stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
+      stripeNetAmountMinor: purchases.stripeNetAmountMinor,
+      succeededAt: purchases.succeededAt,
+    })
+    .from(purchases)
+    .where(eq(purchases.paymentIntentId, paymentIntentId))
+    .limit(1);
+  const succeededAt =
+    getSaleTimestamp({
+      event,
+      paymentRecord,
+    }) ??
+    existingPurchase?.succeededAt ??
+    null;
+  const offerId = offer?.id ?? null;
+  const purchaseValues = createPurchaseValues({
+    customerId,
+    existingPurchase,
+    firstSeenAt,
+    normalizedEmail,
+    offerId,
+    paymentIntentId,
+    paymentRecord,
+    productId,
+    settlementSnapshot,
+    succeededAt,
+  });
+  const [savedPurchase] = await tx
+    .insert(purchases)
+    .values({
+      ...purchaseValues,
+      firstSeenAt,
+      livemode: event.livemode,
+      paymentIntentId,
+    })
+    .onConflictDoUpdate({
+      set: purchaseValues,
+      target: purchases.paymentIntentId,
+    })
+    .returning({ id: purchases.id });
+  const purchaseId = savedPurchase.id;
+
+  await upsertAccessEntitlement({
+    customerId,
+    now,
+    offerId,
+    paymentRecord,
+    productId,
+    purchaseId,
+    tx,
+  });
+  await upsertInvoice({
+    firstSeenAt,
+    normalizedEmail,
+    now,
+    paymentRecord,
+    purchaseId,
+    tx,
+  });
+  await upsertPurchaseSideEffects({
+    paymentRecord,
+    purchaseId,
+    tx,
+  });
+
+  return purchaseId;
+};
+
 export const syncStripeWebhookEventToDatabase = async ({
   event,
   handledEvent,
@@ -447,366 +980,31 @@ export const syncStripeWebhookEventToDatabase = async ({
     throw new Error(`Stripe event ${event.id} has no payment_intent_id.`);
   }
 
+  // The purchase projections and Stripe event receipt must commit together so retries
+  // can never observe a partially synchronized webhook.
   await db.transaction(async (tx) => {
     let purchaseId: string | null = null;
 
     if (!handledEvent.skipped) {
-      const settlementSnapshot =
-        paymentRecord.outcome.trim() === "succeeded"
-          ? await getStripeSettlementSnapshot({
-              paymentIntentId,
-              stripe,
-            })
-          : {
-              settlementAmountMinor: null,
-              settlementCurrency: null,
-              stripeBalanceTransactionId: null,
-              stripeExchangeRate: null,
-              stripeFeeAmountMinor: null,
-              stripeNetAmountMinor: null,
-            };
-      const normalizedEmail = normalizeEmail(paymentRecord.customer_email);
-      const stripeCustomerId = getStripeCustomerId(event);
-      let customerId: string | null = null;
-
-      if (stripeCustomerId) {
-        const [existingCustomer] = await tx
-          .select({ id: customers.id })
-          .from(customers)
-          .where(eq(customers.stripeCustomerId, stripeCustomerId))
-          .limit(1);
-
-        customerId = existingCustomer?.id ?? null;
-      }
-
-      if (!customerId && normalizedEmail) {
-        const [existingCustomer] = await tx
-          .select({ id: customers.id })
-          .from(customers)
-          .where(eq(customers.normalizedEmail, normalizedEmail))
-          .limit(1);
-
-        customerId = existingCustomer?.id ?? null;
-      }
-
-      if (customerId) {
-        await tx
-          .update(customers)
-          .set({
-            addressLine: nullIfEmpty(paymentRecord.customer_address),
-            city: nullIfEmpty(paymentRecord.customer_city),
-            country: nullIfEmpty(paymentRecord.customer_country),
-            email: normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
-            fullName: nullIfEmpty(paymentRecord.customer_full_name),
-            normalizedEmail: normalizedEmail || null,
-            postalCode: nullIfEmpty(paymentRecord.customer_postal_code),
-            stripeCustomerId,
-            telegramUsername: nullIfEmpty(paymentRecord.customer_nickname),
-            updatedAt: now,
-          })
-          .where(eq(customers.id, customerId));
-      } else if (normalizedEmail || stripeCustomerId) {
-        const [savedCustomer] = await tx
-          .insert(customers)
-          .values({
-            addressLine: nullIfEmpty(paymentRecord.customer_address),
-            city: nullIfEmpty(paymentRecord.customer_city),
-            country: nullIfEmpty(paymentRecord.customer_country),
-            email: normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
-            fullName: nullIfEmpty(paymentRecord.customer_full_name),
-            normalizedEmail: normalizedEmail || null,
-            postalCode: nullIfEmpty(paymentRecord.customer_postal_code),
-            stripeCustomerId,
-            telegramUsername: nullIfEmpty(paymentRecord.customer_nickname),
-            updatedAt: now,
-          })
-          .returning({ id: customers.id });
-
-        customerId = savedCustomer.id;
-      }
-
-      const offerExternalId = paymentRecord.offer_id.trim();
-      const productExternalId = paymentRecord.product_id.trim();
-      const [offer] = offerExternalId
-        ? await tx
-            .select({
-              id: productOffers.id,
-              productId: productOffers.productId,
-            })
-            .from(productOffers)
-            .where(eq(productOffers.externalOfferId, offerExternalId))
-            .limit(1)
-        : [];
-      const [product] = productExternalId
-        ? await tx
-            .select({ id: products.id })
-            .from(products)
-            .where(eq(products.externalProductId, productExternalId))
-            .limit(1)
-        : [];
-      const productId = product?.id ?? offer?.productId ?? null;
-      const firstSeenAt = parseRequiredDate(
-        paymentRecord.first_seen_at || paymentRecord.updated_at,
-      );
-      const [existingPurchase] = await tx
-        .select({
-          settlementAmountMinor: purchases.settlementAmountMinor,
-          settlementCurrency: purchases.settlementCurrency,
-          stripeBalanceTransactionId: purchases.stripeBalanceTransactionId,
-          stripeExchangeRate: purchases.stripeExchangeRate,
-          stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
-          stripeNetAmountMinor: purchases.stripeNetAmountMinor,
-          succeededAt: purchases.succeededAt,
-        })
-        .from(purchases)
-        .where(eq(purchases.paymentIntentId, paymentIntentId))
-        .limit(1);
-      const succeededAt =
-        getSaleTimestamp({
-          event,
-          paymentRecord,
-        }) ??
-        existingPurchase?.succeededAt ??
-        null;
-      const purchaseValues = {
-        amountMinor: parseInteger(paymentRecord.amount),
-        checkoutCurrency: nullIfEmpty(paymentRecord.checkout_currency),
-        checkoutLocale: normalizeCheckoutLocale(paymentRecord.checkout_locale),
-        checkoutSessionId: nullIfEmpty(paymentRecord.checkout_session_id),
-        currency:
-          trim(paymentRecord.currency) || trim(paymentRecord.checkout_currency) || "pln",
-        customerAddressLineSnapshot: nullIfEmpty(paymentRecord.customer_address),
-        customerCitySnapshot: nullIfEmpty(paymentRecord.customer_city),
-        customerCountrySnapshot: nullIfEmpty(paymentRecord.customer_country),
-        customerEmailSnapshot:
-          normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
-        customerFullNameSnapshot: nullIfEmpty(paymentRecord.customer_full_name),
-        customerId,
-        customerPostalCodeSnapshot: nullIfEmpty(paymentRecord.customer_postal_code),
-        customerTelegramUsernameSnapshot: nullIfEmpty(paymentRecord.customer_nickname),
-        inspirationAccessExpiresAtSnapshot: parseDate(
-          paymentRecord.telegram_inspiration_access_expires_at,
-        ),
-        inspirationChatIdSnapshot: nullIfEmpty(
-          paymentRecord.telegram_inspiration_chat_id,
-        ),
-        lastPaymentErrorCode: nullIfEmpty(paymentRecord.last_payment_error_code),
-        lastPaymentErrorMessage: nullIfEmpty(paymentRecord.last_payment_error_message),
-        latestEventId: nullIfEmpty(paymentRecord.latest_event_id),
-        latestEventType: nullIfEmpty(paymentRecord.latest_event_type),
-        lessonLanguage: normalizeLessonLanguage(paymentRecord.lesson_language),
-        offerExternalId: nullIfEmpty(paymentRecord.offer_id),
-        offerId: offer?.id ?? null,
-        offerLabelSnapshot: nullIfEmpty(paymentRecord.offer_label),
-        outcome: normalizeOutcome(paymentRecord.outcome),
-        productExternalId: nullIfEmpty(paymentRecord.product_id),
-        productId,
-        productTitleSnapshot: nullIfEmpty(paymentRecord.product_title),
-        purchaseItemSnapshot: nullIfEmpty(paymentRecord.purchase_item),
-        settlementAmountMinor:
-          settlementSnapshot.settlementAmountMinor ??
-          existingPurchase?.settlementAmountMinor ??
-          null,
-        settlementCurrency:
-          settlementSnapshot.settlementCurrency ??
-          existingPurchase?.settlementCurrency ??
-          null,
-        stripeFeeAmountMinor:
-          settlementSnapshot.stripeFeeAmountMinor ??
-          existingPurchase?.stripeFeeAmountMinor ??
-          null,
-        stripeNetAmountMinor:
-          settlementSnapshot.stripeNetAmountMinor ??
-          existingPurchase?.stripeNetAmountMinor ??
-          null,
-        source: getPurchaseSource(paymentIntentId),
-        stripeBalanceTransactionId:
-          settlementSnapshot.stripeBalanceTransactionId ??
-          existingPurchase?.stripeBalanceTransactionId ??
-          null,
-        stripeExchangeRate:
-          settlementSnapshot.stripeExchangeRate ??
-          existingPurchase?.stripeExchangeRate ??
-          null,
-        stripeStatus: trim(paymentRecord.status) || "unknown",
-        succeededAt,
-        updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),
-      };
-      const [savedPurchase] = await tx
-        .insert(purchases)
-        .values({
-          ...purchaseValues,
-          firstSeenAt,
-          livemode: event.livemode,
-          paymentIntentId,
-        })
-        .onConflictDoUpdate({
-          set: purchaseValues,
-          target: purchases.paymentIntentId,
-        })
-        .returning({ id: purchases.id });
-
-      purchaseId = savedPurchase.id;
-
-      await tx
-        .insert(accessEntitlements)
-        .values({
-          accessKey: "primary",
-          accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
-          currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
-          customerId,
-          deliveryChannel: nullIfEmpty(paymentRecord.delivery_channel),
-          expiresAt: parseDate(paymentRecord.telegram_access_expires_at),
-          externalTargetType: getExternalTargetType(paymentRecord),
-          offerId: offer?.id ?? null,
-          productId,
-          purchaseId,
-          revokedAt: parseDate(paymentRecord.telegram_access_revoked_at),
-          startsAt: parseDate(paymentRecord.telegram_token_used_at),
-          status: normalizeAccessStatus(
-            paymentRecord.telegram_access_status,
-            paymentRecord,
-          ),
-          telegramChatId: nullIfEmpty(paymentRecord.telegram_channel_chat_id),
-          telegramUserId: nullIfEmpty(paymentRecord.telegram_user_id),
-          telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
-          updatedAt: now,
-        })
-        .onConflictDoUpdate({
-          set: {
-            accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
-            currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
-            customerId,
-            deliveryChannel: nullIfEmpty(paymentRecord.delivery_channel),
-            expiresAt: parseDate(paymentRecord.telegram_access_expires_at),
-            externalTargetType: getExternalTargetType(paymentRecord),
-            offerId: offer?.id ?? null,
-            productId,
-            revokedAt: parseDate(paymentRecord.telegram_access_revoked_at),
-            startsAt: parseDate(paymentRecord.telegram_token_used_at),
-            status: normalizeAccessStatus(
-              paymentRecord.telegram_access_status,
-              paymentRecord,
-            ),
-            telegramChatId: nullIfEmpty(paymentRecord.telegram_channel_chat_id),
-            telegramUserId: nullIfEmpty(paymentRecord.telegram_user_id),
-            telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
-            updatedAt: now,
-          },
-          target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
-        });
-
-      const parsedInvoice = parseInvoiceNumber(paymentRecord.invoice_number);
-
-      if (parsedInvoice) {
-        const issuedAt = parseRequiredDate(paymentRecord.invoice_issued_at, firstSeenAt);
-
-        await tx
-          .insert(invoices)
-          .values({
-            amountMinor: parseInteger(paymentRecord.amount),
-            buyerAddressSnapshot: [
-              paymentRecord.customer_address.trim(),
-              paymentRecord.customer_city.trim(),
-              paymentRecord.customer_postal_code.trim(),
-              paymentRecord.customer_country.trim(),
-            ]
-              .filter(Boolean)
-              .join(", "),
-            buyerEmailSnapshot:
-              normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
-            buyerNameSnapshot: nullIfEmpty(paymentRecord.customer_full_name),
-            currency:
-              trim(paymentRecord.checkout_currency) ||
-              trim(paymentRecord.currency) ||
-              "pln",
-            invoiceNumber: paymentRecord.invoice_number.trim(),
-            issuedAt,
-            purchaseId,
-            sequenceMonth: parsedInvoice.sequenceMonth,
-            sequenceNumber: parsedInvoice.sequenceNumber,
-            sequenceYear: parsedInvoice.sequenceYear,
-            updatedAt: now,
-          })
-          .onConflictDoUpdate({
-            set: {
-              amountMinor: parseInteger(paymentRecord.amount),
-              buyerEmailSnapshot:
-                normalizedEmail || nullIfEmpty(paymentRecord.customer_email),
-              buyerNameSnapshot: nullIfEmpty(paymentRecord.customer_full_name),
-              currency:
-                trim(paymentRecord.checkout_currency) ||
-                trim(paymentRecord.currency) ||
-                "pln",
-              issuedAt,
-              sequenceMonth: parsedInvoice.sequenceMonth,
-              sequenceNumber: parsedInvoice.sequenceNumber,
-              sequenceYear: parsedInvoice.sequenceYear,
-              updatedAt: now,
-            },
-            target: invoices.purchaseId,
-          });
-      }
-
-      for (const sideEffect of getPaymentSideEffects(paymentRecord)) {
-        await tx
-          .insert(purchaseSideEffects)
-          .values({
-            failedAt: sideEffect.status === "failed" ? sideEffect.updatedAt : null,
-            kind: sideEffect.kind,
-            provider: sideEffect.provider,
-            purchaseId,
-            sentAt: sideEffect.status === "sent" ? sideEffect.updatedAt : null,
-            status: sideEffect.status,
-            updatedAt: sideEffect.updatedAt,
-          })
-          .onConflictDoUpdate({
-            set: {
-              failedAt: sideEffect.status === "failed" ? sideEffect.updatedAt : null,
-              provider: sideEffect.provider,
-              sentAt: sideEffect.status === "sent" ? sideEffect.updatedAt : null,
-              status: sideEffect.status,
-              updatedAt: sideEffect.updatedAt,
-            },
-            target: [purchaseSideEffects.purchaseId, purchaseSideEffects.kind],
-          });
-      }
+      purchaseId = await syncPurchase({
+        event,
+        now,
+        paymentIntentId,
+        paymentRecord,
+        stripe,
+        tx,
+      });
     }
 
-    await tx
-      .insert(stripeEvents)
-      .values({
-        apiVersion: event.api_version ?? null,
-        eventType: event.type,
-        livemode: event.livemode,
-        outcomeSnapshot: nullIfEmpty(paymentRecord.outcome),
-        paymentIntentId,
-        paymentStatusSnapshot: nullIfEmpty(paymentRecord.status),
-        payload: event as unknown as Record<string, unknown>,
-        processedAt: now,
-        processingStatus: handledEvent.skipped ? "skipped" : "processed",
-        purchaseId,
-        stripeCreatedAt: new Date(event.created * 1000),
-        stripeEventId: event.id,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        set: {
-          apiVersion: event.api_version ?? null,
-          eventType: event.type,
-          livemode: event.livemode,
-          outcomeSnapshot: nullIfEmpty(paymentRecord.outcome),
-          paymentIntentId,
-          paymentStatusSnapshot: nullIfEmpty(paymentRecord.status),
-          payload: event as unknown as Record<string, unknown>,
-          processedAt: now,
-          processingStatus: handledEvent.skipped ? "skipped" : "processed",
-          purchaseId,
-          stripeCreatedAt: new Date(event.created * 1000),
-          updatedAt: now,
-        },
-        target: stripeEvents.stripeEventId,
-      });
+    await upsertStripeEvent({
+      event,
+      handledEvent,
+      now,
+      paymentIntentId,
+      paymentRecord,
+      purchaseId,
+      tx,
+    });
   });
 };
 

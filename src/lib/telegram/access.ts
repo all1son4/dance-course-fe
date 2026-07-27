@@ -84,6 +84,35 @@ type TelegramAccessLinkCacheEntry = {
   tokenId: string;
 };
 
+type TelegramAccessTokenRecord = NonNullable<
+  Awaited<ReturnType<typeof findLatestTelegramAccessTokenRecordByPaymentIntentId>>
+>;
+
+type TelegramUserBindingRecord = NonNullable<
+  Awaited<ReturnType<typeof findTelegramUserBindingByPaymentIntentId>>
+>;
+
+type TelegramAccessLinkContext = {
+  accessExpiresAt: string;
+  hasTimedAccess: boolean;
+  normalizedChatId: string;
+};
+
+type TelegramMembershipIdentity = {
+  normalizedChatId: string;
+  normalizedUserId: string;
+  normalizedUsername: string;
+  now: string;
+};
+
+type TelegramJoinAccessContext = {
+  accessExpiresAt: string;
+  existingBinding: TelegramUserBindingRecord | null;
+  hasTimedAccess: boolean;
+  paymentRecord: PaymentSheetRecord;
+  paymentRecordWithWindow: PaymentSheetRecord;
+};
+
 const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
 const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
 const TELEGRAM_START_TOKEN_BYTES = 24;
@@ -474,15 +503,29 @@ const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentSheetRecord) =
   return updatePaymentAccessWindow(paymentRecordWithJoinTimestamp);
 };
 
-const ensureTelegramAccessLinkForPaymentInternal = async (
+const prepareTelegramAccessLink = (
   paymentRecord: PaymentSheetRecord,
-): Promise<TelegramAccessLinkResult> => {
+):
+  | {
+      context: TelegramAccessLinkContext;
+      unavailableResult: null;
+    }
+  | {
+      context: null;
+      unavailableResult: TelegramAccessLinkResult;
+    } => {
   if (!isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)) {
-    return getUnavailableTelegramAccessLinkResult("offer_not_supported");
+    return {
+      context: null,
+      unavailableResult: getUnavailableTelegramAccessLinkResult("offer_not_supported"),
+    };
   }
 
   if (paymentRecord.outcome !== "succeeded") {
-    return getUnavailableTelegramAccessLinkResult("not_succeeded_payment");
+    return {
+      context: null,
+      unavailableResult: getUnavailableTelegramAccessLinkResult("not_succeeded_payment"),
+    };
   }
 
   const channelTarget = getTelegramChannelTargetByOfferId({
@@ -491,16 +534,33 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
   });
 
   if (!channelTarget) {
-    return getUnavailableTelegramAccessLinkResult("channel_not_configured");
+    return {
+      context: null,
+      unavailableResult: getUnavailableTelegramAccessLinkResult("channel_not_configured"),
+    };
   }
 
-  const normalizedChatId = channelTarget.chatId.trim();
   const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecord);
-  const accessExpiresAt = hasTimedAccess
-    ? getPaymentAccessExpiresAtIso(paymentRecord)
-    : "";
+
+  return {
+    context: {
+      accessExpiresAt: hasTimedAccess ? getPaymentAccessExpiresAtIso(paymentRecord) : "",
+      hasTimedAccess,
+      normalizedChatId: channelTarget.chatId.trim(),
+    },
+    unavailableResult: null,
+  };
+};
+
+const resolveCachedOrExpiredAccessLink = async ({
+  context,
+  paymentRecord,
+}: {
+  context: TelegramAccessLinkContext;
+  paymentRecord: PaymentSheetRecord;
+}): Promise<TelegramAccessLinkResult | null> => {
   const cachedAccessLink = getCachedAccessLink({
-    chatId: normalizedChatId,
+    chatId: context.normalizedChatId,
     paymentIntentId: paymentRecord.payment_intent_id,
   });
 
@@ -508,13 +568,17 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     return getReadyTelegramAccessLinkResult(cachedAccessLink);
   }
 
-  if (hasTimedAccess && accessExpiresAt && isIsoExpired(accessExpiresAt)) {
+  if (
+    context.hasTimedAccess &&
+    context.accessExpiresAt &&
+    isIsoExpired(context.accessExpiresAt)
+  ) {
     const now = toUtcIso();
 
     await upsertPaymentRecord({
       ...paymentRecord,
       telegram_access_status: "expired",
-      telegram_channel_chat_id: normalizedChatId,
+      telegram_channel_chat_id: context.normalizedChatId,
       telegram_access_revoked_at: now,
       updated_at: now,
     });
@@ -522,8 +586,56 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     return getUnavailableTelegramAccessLinkResult("access_window_expired");
   }
 
-  // Telegram channel invite links are one-use. Reuse a still-valid issued token,
-  // otherwise mark old issued tokens as expired/revoked before creating a new one.
+  return null;
+};
+
+const canReuseTelegramInvite = ({
+  isCurrentTokenForTargetChat,
+  isIssuedTokenExpired,
+  tokenRecord,
+}: {
+  isCurrentTokenForTargetChat: boolean;
+  isIssuedTokenExpired: boolean;
+  tokenRecord: TelegramAccessTokenRecord;
+}) =>
+  tokenRecord.status === "issued" &&
+  isCurrentTokenForTargetChat &&
+  Boolean(tokenRecord.token_value) &&
+  !isIssuedTokenExpired;
+
+const shouldRevokeTelegramInvite = ({
+  isCurrentTokenForTargetChat,
+  isIssuedTokenExpired,
+  tokenRecord,
+}: {
+  isCurrentTokenForTargetChat: boolean;
+  isIssuedTokenExpired: boolean;
+  tokenRecord: TelegramAccessTokenRecord;
+}) =>
+  tokenRecord.status === "issued" &&
+  !isIssuedTokenExpired &&
+  !isCurrentTokenForTargetChat;
+
+const isActivatedTelegramInvite = ({
+  isCurrentTokenForTargetChat,
+  tokenRecord,
+}: {
+  isCurrentTokenForTargetChat: boolean;
+  tokenRecord: TelegramAccessTokenRecord;
+}) => tokenRecord.status === "used" && isCurrentTokenForTargetChat;
+
+const resolveCurrentTelegramInvite = async ({
+  normalizedChatId,
+  paymentRecord,
+}: {
+  normalizedChatId: string;
+  paymentRecord: PaymentSheetRecord;
+}): Promise<{
+  currentTokenRecord: TelegramAccessTokenRecord | null;
+  resolvedResult: TelegramAccessLinkResult | null;
+}> => {
+  // Issued links are single-use: only an unexpired link for the same chat can
+  // be reused; all other states must be persisted before a replacement is made.
   const currentTokenRecord = await findLatestTelegramAccessTokenRecordByPaymentIntentId(
     paymentRecord.payment_intent_id,
   );
@@ -536,10 +648,11 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
   if (
     currentTokenRecord &&
-    currentTokenRecord.status === "issued" &&
-    isCurrentTokenForTargetChat &&
-    currentTokenRecord.token_value &&
-    !isIssuedTokenExpired
+    canReuseTelegramInvite({
+      isCurrentTokenForTargetChat,
+      isIssuedTokenExpired,
+      tokenRecord: currentTokenRecord,
+    })
   ) {
     setCachedAccessLink({
       accessUrl: currentTokenRecord.token_value,
@@ -549,12 +662,15 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
       tokenId: currentTokenRecord.token_id,
     });
 
-    return getReadyTelegramAccessLinkResult({
-      accessUrl: currentTokenRecord.token_value,
-      chatId: normalizedChatId,
-      tokenExpiresAt: currentTokenRecord.expires_at,
-      tokenId: currentTokenRecord.token_id,
-    });
+    return {
+      currentTokenRecord,
+      resolvedResult: getReadyTelegramAccessLinkResult({
+        accessUrl: currentTokenRecord.token_value,
+        chatId: normalizedChatId,
+        tokenExpiresAt: currentTokenRecord.expires_at,
+        tokenId: currentTokenRecord.token_id,
+      }),
+    };
   }
 
   if (currentTokenRecord && isIssuedTokenExpired) {
@@ -565,9 +681,11 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
   if (
     currentTokenRecord &&
-    currentTokenRecord.status === "issued" &&
-    !isIssuedTokenExpired &&
-    !isCurrentTokenForTargetChat
+    shouldRevokeTelegramInvite({
+      isCurrentTokenForTargetChat,
+      isIssuedTokenExpired,
+      tokenRecord: currentTokenRecord,
+    })
   ) {
     await upsertTelegramAccessTokenRecord({
       ...currentTokenRecord,
@@ -578,21 +696,113 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
   if (
     currentTokenRecord &&
-    currentTokenRecord.status === "used" &&
-    isCurrentTokenForTargetChat
+    isActivatedTelegramInvite({
+      isCurrentTokenForTargetChat,
+      tokenRecord: currentTokenRecord,
+    })
   ) {
     telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
 
-    return getUnavailableTelegramAccessLinkResult("already_activated");
+    return {
+      currentTokenRecord,
+      resolvedResult: getUnavailableTelegramAccessLinkResult("already_activated"),
+    };
   }
 
+  return {
+    currentTokenRecord,
+    resolvedResult: null,
+  };
+};
+
+const trySyncExistingTelegramBinding = async ({
+  accessExpiresAt,
+  normalizedChatId,
+  paymentRecord,
+}: {
+  accessExpiresAt: string;
+  normalizedChatId: string;
+  paymentRecord: PaymentSheetRecord;
+}): Promise<void> => {
+  try {
+    await trySyncPaymentByExistingActiveBinding({
+      accessExpiresAt,
+      chatId: normalizedChatId,
+      paymentRecord,
+    });
+  } catch (syncError) {
+    if (isGoogleSheetsRateLimitError(syncError)) {
+      console.warn(
+        "Skipped optional Telegram binding sync due to Google Sheets rate limit",
+        {
+          paymentIntentId: paymentRecord.payment_intent_id,
+        },
+      );
+    } else {
+      console.error("Failed to sync Telegram binding by existing active record", {
+        error: syncError,
+        paymentIntentId: paymentRecord.payment_intent_id,
+      });
+    }
+  }
+};
+
+const persistTelegramAccessLinkFailure = async ({
+  createdAt,
+  error,
+  normalizedChatId,
+  paymentRecord,
+}: {
+  createdAt: string;
+  error: unknown;
+  normalizedChatId: string;
+  paymentRecord: PaymentSheetRecord;
+}): Promise<TelegramAccessLinkResult> => {
+  telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
+
+  if (isGoogleSheetsRateLimitError(error)) {
+    throw error;
+  }
+
+  console.error("Failed to create Telegram invite link", {
+    chatId: normalizedChatId,
+    error,
+    paymentIntentId: paymentRecord.payment_intent_id,
+  });
+
+  try {
+    await upsertPaymentRecord({
+      ...paymentRecord,
+      telegram_access_status: "link_failed",
+      telegram_channel_chat_id: normalizedChatId,
+      updated_at: createdAt,
+    });
+  } catch (statusError) {
+    console.error("Failed to persist Telegram link failure status", {
+      error: statusError,
+      paymentIntentId: paymentRecord.payment_intent_id,
+    });
+  }
+
+  return getUnavailableTelegramAccessLinkResult("telegram_api_failed");
+};
+
+const createTelegramAccessLink = async ({
+  context,
+  currentTokenRecord,
+  paymentRecord,
+}: {
+  context: TelegramAccessLinkContext;
+  currentTokenRecord: TelegramAccessTokenRecord | null;
+  paymentRecord: PaymentSheetRecord;
+}): Promise<TelegramAccessLinkResult> => {
   const tokenId = createTelegramTokenId("tgi");
   const createdAt = toUtcIso();
   const linkExpiresAt = getTelegramAccessLinkExpiryIso(createdAt);
 
   try {
     const inviteLink = await createTelegramChatInviteLink({
-      chatId: normalizedChatId,
+      chatId: context.normalizedChatId,
       expireDateUnix: getUnixSeconds(linkExpiresAt),
       memberLimit: 1,
       name: tokenId,
@@ -606,8 +816,8 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
     }
 
     await upsertTelegramAccessTokenRecord({
-      access_expires_at: accessExpiresAt,
-      chat_id: normalizedChatId,
+      access_expires_at: context.accessExpiresAt,
+      chat_id: context.normalizedChatId,
       created_at: createdAt,
       customer_email: paymentRecord.customer_email,
       expires_at: linkExpiresAt,
@@ -627,43 +837,27 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
     const nextPaymentRecord = await upsertPaymentRecord({
       ...paymentRecord,
-      telegram_access_expires_at: accessExpiresAt,
+      telegram_access_expires_at: context.accessExpiresAt,
       telegram_access_revoked_at: "",
       telegram_access_status: "token_issued",
-      telegram_channel_chat_id: normalizedChatId,
+      telegram_channel_chat_id: context.normalizedChatId,
       telegram_token_expires_at: linkExpiresAt,
       telegram_token_id: tokenId,
       telegram_token_used_at: paymentRecord.telegram_token_used_at,
       updated_at: createdAt,
     });
 
-    if (hasTimedAccess && accessExpiresAt) {
-      try {
-        await trySyncPaymentByExistingActiveBinding({
-          accessExpiresAt,
-          chatId: normalizedChatId,
-          paymentRecord: nextPaymentRecord,
-        });
-      } catch (syncError) {
-        if (isGoogleSheetsRateLimitError(syncError)) {
-          console.warn(
-            "Skipped optional Telegram binding sync due to Google Sheets rate limit",
-            {
-              paymentIntentId: paymentRecord.payment_intent_id,
-            },
-          );
-        } else {
-          console.error("Failed to sync Telegram binding by existing active record", {
-            error: syncError,
-            paymentIntentId: paymentRecord.payment_intent_id,
-          });
-        }
-      }
+    if (context.hasTimedAccess && context.accessExpiresAt) {
+      await trySyncExistingTelegramBinding({
+        accessExpiresAt: context.accessExpiresAt,
+        normalizedChatId: context.normalizedChatId,
+        paymentRecord: nextPaymentRecord,
+      });
     }
 
     setCachedAccessLink({
       accessUrl: inviteLink.invite_link,
-      chatId: normalizedChatId,
+      chatId: context.normalizedChatId,
       paymentIntentId: paymentRecord.payment_intent_id,
       tokenExpiresAt: linkExpiresAt,
       tokenId,
@@ -671,39 +865,52 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 
     return getReadyTelegramAccessLinkResult({
       accessUrl: inviteLink.invite_link,
-      chatId: normalizedChatId,
+      chatId: context.normalizedChatId,
       tokenExpiresAt: linkExpiresAt,
       tokenId,
     });
   } catch (error) {
-    telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
-
-    if (isGoogleSheetsRateLimitError(error)) {
-      throw error;
-    }
-
-    console.error("Failed to create Telegram invite link", {
-      chatId: normalizedChatId,
+    return persistTelegramAccessLinkFailure({
+      createdAt,
       error,
-      paymentIntentId: paymentRecord.payment_intent_id,
+      normalizedChatId: context.normalizedChatId,
+      paymentRecord,
     });
-
-    try {
-      await upsertPaymentRecord({
-        ...paymentRecord,
-        telegram_access_status: "link_failed",
-        telegram_channel_chat_id: normalizedChatId,
-        updated_at: createdAt,
-      });
-    } catch (statusError) {
-      console.error("Failed to persist Telegram link failure status", {
-        error: statusError,
-        paymentIntentId: paymentRecord.payment_intent_id,
-      });
-    }
-
-    return getUnavailableTelegramAccessLinkResult("telegram_api_failed");
   }
+};
+
+const ensureTelegramAccessLinkForPaymentInternal = async (
+  paymentRecord: PaymentSheetRecord,
+): Promise<TelegramAccessLinkResult> => {
+  const preparation = prepareTelegramAccessLink(paymentRecord);
+
+  if (preparation.unavailableResult) {
+    return preparation.unavailableResult;
+  }
+
+  const earlyResult = await resolveCachedOrExpiredAccessLink({
+    context: preparation.context,
+    paymentRecord,
+  });
+
+  if (earlyResult) {
+    return earlyResult;
+  }
+
+  const { currentTokenRecord, resolvedResult } = await resolveCurrentTelegramInvite({
+    normalizedChatId: preparation.context.normalizedChatId,
+    paymentRecord,
+  });
+
+  if (resolvedResult) {
+    return resolvedResult;
+  }
+
+  return createTelegramAccessLink({
+    context: preparation.context,
+    currentTokenRecord,
+    paymentRecord,
+  });
 };
 
 export const ensureTelegramAccessLinkForPayment = async (
@@ -734,91 +941,82 @@ export const ensureTelegramAccessLinkForPayment = async (
   return ensurePromise;
 };
 
-export const syncTelegramChannelMembership = async ({
-  chatId,
-  inviteLink,
-  membershipStatus,
-  telegramUserId,
-  telegramUsername,
-}: {
-  chatId: string;
-  inviteLink?: string | null;
-  membershipStatus: "joined" | "left";
-  telegramUserId: string;
-  telegramUsername?: string | null;
-}): Promise<SyncTelegramChannelMembershipResult> => {
-  const normalizedChatId = chatId.trim();
-  const normalizedUserId = telegramUserId.trim();
-  const normalizedUsername = telegramUsername?.trim() ?? "";
-  const now = toUtcIso();
+const syncTelegramMemberLeft = async ({
+  normalizedChatId,
+  normalizedUserId,
+  now,
+}: Pick<
+  TelegramMembershipIdentity,
+  "normalizedChatId" | "normalizedUserId" | "now"
+>): Promise<SyncTelegramChannelMembershipResult> => {
+  const relatedBindings = await findTelegramUserBindingsByTelegramUserIdAndChatId({
+    chatId: normalizedChatId,
+    telegramUserId: normalizedUserId,
+  });
+  const activeBindings = relatedBindings.filter((binding) => binding.status === "active");
 
-  if (!normalizedChatId || !normalizedUserId) {
+  if (activeBindings.length === 0) {
     return {
       handled: false,
-      reason: "missing_chat_or_user",
+      reason: "no_active_bindings",
     };
   }
 
-  if (membershipStatus === "left") {
-    const relatedBindings = await findTelegramUserBindingsByTelegramUserIdAndChatId({
-      chatId: normalizedChatId,
-      telegramUserId: normalizedUserId,
+  for (const binding of activeBindings) {
+    await upsertTelegramUserBindingRecord({
+      ...binding,
+      last_seen_at: now,
+      revoked_at: now,
+      revoked_reason: "left_channel",
+      status: "left",
     });
-    const activeBindings = relatedBindings.filter(
-      (binding) => binding.status === "active",
-    );
 
-    if (activeBindings.length === 0) {
-      return {
-        handled: false,
-        reason: "no_active_bindings",
-      };
+    const paymentRecord = await findPaymentRecordByIntentId(binding.payment_intent_id);
+
+    if (!paymentRecord) {
+      continue;
     }
 
-    for (const binding of activeBindings) {
-      await upsertTelegramUserBindingRecord({
-        ...binding,
-        last_seen_at: now,
-        revoked_at: now,
-        revoked_reason: "left_channel",
-        status: "left",
-      });
+    await upsertPaymentRecord({
+      ...paymentRecord,
+      telegram_access_revoked_at: now,
+      telegram_access_status: "left_channel",
+      updated_at: now,
+    });
+  }
 
-      const paymentRecord = await findPaymentRecordByIntentId(binding.payment_intent_id);
+  return {
+    handled: true,
+  };
+};
 
-      if (!paymentRecord) {
-        continue;
-      }
-
-      await upsertPaymentRecord({
-        ...paymentRecord,
-        telegram_access_revoked_at: now,
-        telegram_access_status: "left_channel",
-        updated_at: now,
-      });
+const resolveTelegramJoinRecords = async ({
+  normalizedInviteLink,
+}: {
+  normalizedInviteLink: string;
+}): Promise<
+  | {
+      paymentRecord: null;
+      resolvedResult: SyncTelegramChannelMembershipResult;
+      tokenRecord: null;
     }
-
-    return {
-      handled: true,
-    };
-  }
-
-  const normalizedInviteLink = inviteLink?.trim() ?? "";
-
-  if (!normalizedInviteLink) {
-    return {
-      handled: false,
-      reason: "missing_invite_link",
-    };
-  }
-
+  | {
+      paymentRecord: PaymentSheetRecord;
+      resolvedResult: null;
+      tokenRecord: TelegramAccessTokenRecord;
+    }
+> => {
   const tokenRecord =
     await findTelegramAccessTokenRecordByTokenValue(normalizedInviteLink);
 
   if (!tokenRecord || tokenRecord.link_kind !== "channel_invite") {
     return {
-      handled: false,
-      reason: "invite_link_not_tracked",
+      paymentRecord: null,
+      resolvedResult: {
+        handled: false,
+        reason: "invite_link_not_tracked",
+      },
+      tokenRecord: null,
     };
   }
 
@@ -836,11 +1034,25 @@ export const syncTelegramChannelMembership = async ({
     });
 
     return {
-      handled: false,
-      reason: "payment_not_available",
+      paymentRecord: null,
+      resolvedResult: {
+        handled: false,
+        reason: "payment_not_available",
+      },
+      tokenRecord: null,
     };
   }
 
+  return {
+    paymentRecord,
+    resolvedResult: null,
+    tokenRecord,
+  };
+};
+
+const prepareTelegramJoinAccess = async (
+  paymentRecord: PaymentSheetRecord,
+): Promise<TelegramJoinAccessContext> => {
   const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecord);
   const paymentRecordWithWindow = hasTimedAccess
     ? (await startTimedAccessWindowOnJoin(paymentRecord)).paymentRecord
@@ -852,24 +1064,237 @@ export const syncTelegramChannelMembership = async ({
     paymentRecord.payment_intent_id,
   );
 
-  if (
-    tokenRecord.status === "used" &&
-    tokenRecord.telegram_user_id.trim() &&
-    tokenRecord.telegram_user_id !== normalizedUserId
-  ) {
-    try {
-      await tryKickTelegramMember({
-        chatId: normalizedChatId,
-        telegramUserId: normalizedUserId,
-      });
-    } catch (error) {
-      console.error("Failed to remove user with claimed Telegram invite", {
-        chatId: normalizedChatId,
-        error,
-        paymentIntentId: paymentRecord.payment_intent_id,
-        telegramUserId: normalizedUserId,
-      });
+  return {
+    accessExpiresAt,
+    existingBinding,
+    hasTimedAccess,
+    paymentRecord,
+    paymentRecordWithWindow,
+  };
+};
+
+const tryRemoveRejectedTelegramMember = async ({
+  errorMessage,
+  ignoreMissingMember,
+  normalizedChatId,
+  normalizedUserId,
+  paymentIntentId,
+}: Pick<TelegramMembershipIdentity, "normalizedChatId" | "normalizedUserId"> & {
+  errorMessage: string;
+  ignoreMissingMember?: boolean;
+  paymentIntentId: string;
+}): Promise<void> => {
+  try {
+    await tryKickTelegramMember({
+      chatId: normalizedChatId,
+      telegramUserId: normalizedUserId,
+    });
+  } catch (error) {
+    if (ignoreMissingMember && shouldIgnoreKickFailure(error)) {
+      return;
     }
+
+    console.error(errorMessage, {
+      chatId: normalizedChatId,
+      error,
+      paymentIntentId,
+      telegramUserId: normalizedUserId,
+    });
+  }
+};
+
+const isInviteClaimedByAnotherUser = ({
+  normalizedUserId,
+  tokenRecord,
+}: Pick<TelegramMembershipIdentity, "normalizedUserId"> & {
+  tokenRecord: TelegramAccessTokenRecord;
+}) =>
+  tokenRecord.status === "used" &&
+  Boolean(tokenRecord.telegram_user_id.trim()) &&
+  tokenRecord.telegram_user_id !== normalizedUserId;
+
+const hasClosedBindingForSameUser = ({
+  existingBinding,
+  normalizedUserId,
+  tokenRecord,
+}: Pick<TelegramMembershipIdentity, "normalizedUserId"> & {
+  existingBinding: TelegramUserBindingRecord | null;
+  tokenRecord: TelegramAccessTokenRecord;
+}) =>
+  tokenRecord.status === "used" &&
+  existingBinding?.telegram_user_id.trim() === normalizedUserId &&
+  (existingBinding.status === "left" || existingBinding.status === "revoked");
+
+const isBindingClaimedByAnotherUser = ({
+  existingBinding,
+  normalizedUserId,
+}: Pick<TelegramMembershipIdentity, "normalizedUserId"> & {
+  existingBinding: TelegramUserBindingRecord | null;
+}) =>
+  Boolean(existingBinding?.telegram_user_id.trim()) &&
+  existingBinding?.telegram_user_id !== normalizedUserId;
+
+const revokeExpiredTelegramMembership = async ({
+  accessContext,
+  identity,
+  normalizedInviteLink,
+  tokenRecord,
+}: {
+  accessContext: TelegramJoinAccessContext;
+  identity: TelegramMembershipIdentity;
+  normalizedInviteLink: string;
+  tokenRecord: TelegramAccessTokenRecord;
+}): Promise<SyncTelegramChannelMembershipResult> => {
+  await tryRemoveRejectedTelegramMember({
+    errorMessage: "Failed to remove expired Telegram member",
+    ignoreMissingMember: true,
+    normalizedChatId: identity.normalizedChatId,
+    normalizedUserId: identity.normalizedUserId,
+    paymentIntentId: accessContext.paymentRecord.payment_intent_id,
+  });
+
+  await upsertTelegramAccessTokenRecord({
+    ...tokenRecord,
+    last_error: "",
+    status: "expired",
+  });
+
+  await upsertTelegramUserBindingRecord({
+    access_expires_at: accessContext.accessExpiresAt,
+    bound_at: accessContext.existingBinding?.bound_at || identity.now,
+    chat_id: identity.normalizedChatId,
+    customer_email: accessContext.paymentRecord.customer_email,
+    invite_link: normalizedInviteLink,
+    last_seen_at: identity.now,
+    offer_id: accessContext.paymentRecord.offer_id,
+    payment_intent_id: accessContext.paymentRecord.payment_intent_id,
+    product_id: accessContext.paymentRecord.product_id,
+    revoked_at: identity.now,
+    revoked_reason: "expired",
+    status: "revoked",
+    telegram_user_id: identity.normalizedUserId,
+    telegram_username: identity.normalizedUsername,
+  });
+
+  await upsertPaymentRecord({
+    ...accessContext.paymentRecordWithWindow,
+    telegram_access_revoked_at: identity.now,
+    telegram_access_status: "revoked",
+    telegram_channel_chat_id: identity.normalizedChatId,
+    telegram_user_id: identity.normalizedUserId,
+    telegram_username: identity.normalizedUsername,
+    updated_at: identity.now,
+  });
+
+  return {
+    handled: true,
+  };
+};
+
+const activateTelegramMembership = async ({
+  accessContext,
+  identity,
+  normalizedInviteLink,
+  tokenRecord,
+}: {
+  accessContext: TelegramJoinAccessContext;
+  identity: TelegramMembershipIdentity;
+  normalizedInviteLink: string;
+  tokenRecord: TelegramAccessTokenRecord;
+}): Promise<SyncTelegramChannelMembershipResult> => {
+  const accessExpiresAt = accessContext.hasTimedAccess
+    ? accessContext.accessExpiresAt
+    : "";
+
+  await Promise.all([
+    upsertTelegramAccessTokenRecord({
+      ...tokenRecord,
+      access_expires_at: accessExpiresAt,
+      chat_id: identity.normalizedChatId,
+      last_error: "",
+      status: "used" satisfies TelegramAccessTokenStatus,
+      telegram_user_id: identity.normalizedUserId,
+      telegram_username: identity.normalizedUsername,
+      used_at: identity.now,
+    }),
+    upsertTelegramUserBindingRecord({
+      access_expires_at: accessExpiresAt,
+      bound_at: accessContext.existingBinding?.bound_at || identity.now,
+      chat_id: identity.normalizedChatId,
+      customer_email: accessContext.paymentRecord.customer_email,
+      invite_link: normalizedInviteLink,
+      last_seen_at: identity.now,
+      offer_id: accessContext.paymentRecord.offer_id,
+      payment_intent_id: accessContext.paymentRecord.payment_intent_id,
+      product_id: accessContext.paymentRecord.product_id,
+      revoked_at: "",
+      revoked_reason: "",
+      status: "active",
+      telegram_user_id: identity.normalizedUserId,
+      telegram_username: identity.normalizedUsername,
+    }),
+    upsertPaymentRecord({
+      ...accessContext.paymentRecordWithWindow,
+      telegram_access_expires_at: accessExpiresAt,
+      telegram_access_revoked_at: "",
+      telegram_access_status: "activated",
+      telegram_channel_chat_id: identity.normalizedChatId,
+      telegram_token_expires_at: tokenRecord.expires_at,
+      telegram_token_id: tokenRecord.token_id,
+      telegram_token_used_at: identity.now,
+      telegram_user_id: identity.normalizedUserId,
+      telegram_username: identity.normalizedUsername,
+      updated_at: identity.now,
+    }),
+  ]);
+
+  return {
+    handled: true,
+  };
+};
+
+const syncTelegramMemberJoined = async ({
+  identity,
+  inviteLink,
+}: {
+  identity: TelegramMembershipIdentity;
+  inviteLink?: string | null;
+}): Promise<SyncTelegramChannelMembershipResult> => {
+  const normalizedInviteLink = inviteLink?.trim() ?? "";
+
+  if (!normalizedInviteLink) {
+    return {
+      handled: false,
+      reason: "missing_invite_link",
+    };
+  }
+
+  const joinRecords = await resolveTelegramJoinRecords({
+    normalizedInviteLink,
+  });
+
+  if (joinRecords.resolvedResult) {
+    return joinRecords.resolvedResult;
+  }
+
+  const { paymentRecord, tokenRecord } = joinRecords;
+  const accessContext = await prepareTelegramJoinAccess(paymentRecord);
+  const rejectionContext = {
+    normalizedChatId: identity.normalizedChatId,
+    normalizedUserId: identity.normalizedUserId,
+    paymentIntentId: paymentRecord.payment_intent_id,
+  };
+
+  if (
+    isInviteClaimedByAnotherUser({
+      normalizedUserId: identity.normalizedUserId,
+      tokenRecord,
+    })
+  ) {
+    await tryRemoveRejectedTelegramMember({
+      ...rejectionContext,
+      errorMessage: "Failed to remove user with claimed Telegram invite",
+    });
 
     return {
       handled: false,
@@ -877,26 +1302,17 @@ export const syncTelegramChannelMembership = async ({
     };
   }
 
-  const hasClosedBindingForSameUser =
-    tokenRecord.status === "used" &&
-    existingBinding?.telegram_user_id.trim() === normalizedUserId &&
-    (existingBinding.status === "left" || existingBinding.status === "revoked");
-
-  if (hasClosedBindingForSameUser) {
-    try {
-      await tryKickTelegramMember({
-        chatId: normalizedChatId,
-        telegramUserId: normalizedUserId,
-      });
-    } catch (error) {
-      console.error("Failed to remove user with closed Telegram binding", {
-        chatId: normalizedChatId,
-        error,
-        paymentIntentId: paymentRecord.payment_intent_id,
-        telegramUserId: normalizedUserId,
-      });
-    }
-
+  if (
+    hasClosedBindingForSameUser({
+      existingBinding: accessContext.existingBinding,
+      normalizedUserId: identity.normalizedUserId,
+      tokenRecord,
+    })
+  ) {
+    await tryRemoveRejectedTelegramMember({
+      ...rejectionContext,
+      errorMessage: "Failed to remove user with closed Telegram binding",
+    });
     await upsertTelegramAccessTokenRecord({
       ...tokenRecord,
       last_error: "rejoin_not_allowed",
@@ -910,23 +1326,15 @@ export const syncTelegramChannelMembership = async ({
   }
 
   if (
-    existingBinding &&
-    existingBinding.telegram_user_id.trim() &&
-    existingBinding.telegram_user_id !== normalizedUserId
+    isBindingClaimedByAnotherUser({
+      existingBinding: accessContext.existingBinding,
+      normalizedUserId: identity.normalizedUserId,
+    })
   ) {
-    try {
-      await tryKickTelegramMember({
-        chatId: normalizedChatId,
-        telegramUserId: normalizedUserId,
-      });
-    } catch (error) {
-      console.error("Failed to remove user with conflicting Telegram binding", {
-        chatId: normalizedChatId,
-        error,
-        paymentIntentId: paymentRecord.payment_intent_id,
-        telegramUserId: normalizedUserId,
-      });
-    }
+    await tryRemoveRejectedTelegramMember({
+      ...rejectionContext,
+      errorMessage: "Failed to remove user with conflicting Telegram binding",
+    });
 
     return {
       handled: false,
@@ -934,106 +1342,66 @@ export const syncTelegramChannelMembership = async ({
     };
   }
 
-  if (hasTimedAccess && isIsoExpired(accessExpiresAt)) {
-    try {
-      await tryKickTelegramMember({
-        chatId: normalizedChatId,
-        telegramUserId: normalizedUserId,
-      });
-    } catch (error) {
-      if (!shouldIgnoreKickFailure(error)) {
-        console.error("Failed to remove expired Telegram member", {
-          chatId: normalizedChatId,
-          error,
-          paymentIntentId: paymentRecord.payment_intent_id,
-          telegramUserId: normalizedUserId,
-        });
-      }
-    }
-
-    await upsertTelegramAccessTokenRecord({
-      ...tokenRecord,
-      last_error: "",
-      status: "expired",
+  if (accessContext.hasTimedAccess && isIsoExpired(accessContext.accessExpiresAt)) {
+    return revokeExpiredTelegramMembership({
+      accessContext,
+      identity,
+      normalizedInviteLink,
+      tokenRecord,
     });
+  }
 
-    await upsertTelegramUserBindingRecord({
-      access_expires_at: accessExpiresAt,
-      bound_at: existingBinding?.bound_at || now,
-      chat_id: normalizedChatId,
-      customer_email: paymentRecord.customer_email,
-      invite_link: normalizedInviteLink,
-      last_seen_at: now,
-      offer_id: paymentRecord.offer_id,
-      payment_intent_id: paymentRecord.payment_intent_id,
-      product_id: paymentRecord.product_id,
-      revoked_at: now,
-      revoked_reason: "expired",
-      status: "revoked",
-      telegram_user_id: normalizedUserId,
-      telegram_username: normalizedUsername,
-    });
+  return activateTelegramMembership({
+    accessContext,
+    identity,
+    normalizedInviteLink,
+    tokenRecord,
+  });
+};
 
-    await upsertPaymentRecord({
-      ...paymentRecordWithWindow,
-      telegram_access_revoked_at: now,
-      telegram_access_status: "revoked",
-      telegram_channel_chat_id: normalizedChatId,
-      telegram_user_id: normalizedUserId,
-      telegram_username: normalizedUsername,
-      updated_at: now,
-    });
+export const syncTelegramChannelMembership = async ({
+  chatId,
+  inviteLink,
+  membershipStatus,
+  telegramUserId,
+  telegramUsername,
+}: {
+  chatId: string;
+  inviteLink?: string | null;
+  membershipStatus: "joined" | "left";
+  telegramUserId: string;
+  telegramUsername?: string | null;
+}): Promise<SyncTelegramChannelMembershipResult> => {
+  const normalizedChatId = chatId.trim();
+  const normalizedUserId = telegramUserId.trim();
+  const normalizedUsername = telegramUsername?.trim() ?? "";
+  const now = toUtcIso();
+  const identity: TelegramMembershipIdentity = {
+    normalizedChatId,
+    normalizedUserId,
+    normalizedUsername,
+    now,
+  };
 
+  if (!normalizedChatId || !normalizedUserId) {
     return {
-      handled: true,
+      handled: false,
+      reason: "missing_chat_or_user",
     };
   }
 
-  await Promise.all([
-    upsertTelegramAccessTokenRecord({
-      ...tokenRecord,
-      access_expires_at: hasTimedAccess ? accessExpiresAt : "",
-      chat_id: normalizedChatId,
-      last_error: "",
-      status: "used" satisfies TelegramAccessTokenStatus,
-      telegram_user_id: normalizedUserId,
-      telegram_username: normalizedUsername,
-      used_at: now,
-    }),
-    upsertTelegramUserBindingRecord({
-      access_expires_at: hasTimedAccess ? accessExpiresAt : "",
-      bound_at: existingBinding?.bound_at || now,
-      chat_id: normalizedChatId,
-      customer_email: paymentRecord.customer_email,
-      invite_link: normalizedInviteLink,
-      last_seen_at: now,
-      offer_id: paymentRecord.offer_id,
-      payment_intent_id: paymentRecord.payment_intent_id,
-      product_id: paymentRecord.product_id,
-      revoked_at: "",
-      revoked_reason: "",
-      status: "active",
-      telegram_user_id: normalizedUserId,
-      telegram_username: normalizedUsername,
-    }),
-    upsertPaymentRecord({
-      ...paymentRecordWithWindow,
-      telegram_access_expires_at: hasTimedAccess ? accessExpiresAt : "",
-      telegram_access_revoked_at: "",
-      telegram_access_status: "activated",
-      telegram_channel_chat_id: normalizedChatId,
-      telegram_token_expires_at: tokenRecord.expires_at,
-      telegram_token_id: tokenRecord.token_id,
-      telegram_token_used_at: now,
-      telegram_user_id: normalizedUserId,
-      telegram_username: normalizedUsername,
-      updated_at: now,
-    }),
-  ]);
+  if (membershipStatus === "left") {
+    return syncTelegramMemberLeft({
+      normalizedChatId,
+      normalizedUserId,
+      now,
+    });
+  }
 
-  return {
-    handled: true,
-  };
+  return syncTelegramMemberJoined({
+    identity,
+    inviteLink,
+  });
 };
 
 export const revokeExpiredTelegramChannelAccess =

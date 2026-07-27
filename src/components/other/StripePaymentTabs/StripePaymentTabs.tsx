@@ -7,11 +7,16 @@ import {
   useStripe,
 } from "@stripe/react-stripe-js";
 import type {
+  PaymentIntent,
+  PaymentMethodCreateParams,
+  Stripe,
+  StripeElements,
   StripeElementsOptions,
   StripePaymentElementOptions,
 } from "@stripe/stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { useLocale, useTranslations } from "next-intl";
+import type { CSSProperties, ReactElement } from "react";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/common/Button";
@@ -39,20 +44,153 @@ import {
 import type { StripePaymentTabsProps } from "./StripePaymentTabs.types";
 
 const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
-const PAYMENT_SUCCESS_PATH = "/payment/success";
-const PAYMENT_FAILED_PATH = "/payment/failed";
+
+const PAYMENT_API_ENDPOINTS = {
+  cancelIntent: "/api/stripe/payment-intent/cancel",
+  getIntentStatus: "/api/stripe/payment-intent/status",
+} as const;
+const PAYMENT_RESULT_PATHS = {
+  failed: "/payment/failed",
+  success: "/payment/success",
+} as const;
+const PAYMENT_STATUS_REQUEST_ERROR = "payment_intent_status_failed";
 const PAYMENT_STATUS_REQUEST_TIMEOUT_MS = 8_000;
 const PAYMENT_STATUS_MAX_ATTEMPTS = 3;
 const PAYMENT_STATUS_RETRY_BASE_DELAY_MS = 320;
 const PAYMENT_STATUS_RETRY_MAX_DELAY_MS = 1_400;
+const PAYMENT_STATUS_RETRY_JITTER_MS = 140;
 const PAYMENT_PREPARING_SLOW_THRESHOLD_MS = 8_000;
+const PAYMENT_PREPARING_RESET_DELAY_MS = 0;
+const MILLISECONDS_PER_SECOND = 1_000;
+const PAYMENT_BUTTON_WIDTH = "240px";
+const STRIPE_LOCALE_PREFIXES = ["ru", "pl", "en"] as const;
 
-const wait = (delayMs: number) =>
+const STRIPE_APPEARANCE = {
+  theme: "flat",
+  variables: {
+    colorPrimary: "rgba(0, 0, 0, 1)",
+    colorText: "rgba(0, 0, 0, 1)",
+    colorTextSecondary: "rgba(72, 72, 72, 1)",
+    colorDanger: "rgba(213, 0, 4, 1)",
+    colorBackground: "transparent",
+    iconColor: "rgba(0, 0, 0, 1)",
+    borderRadius: "18px",
+    fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSizeBase: "17px",
+    spacingUnit: "5px",
+    tabIconColor: "rgba(0, 0, 0, 1)",
+    tabIconHoverColor: "rgba(0, 0, 0, 1)",
+    tabIconSelectedColor: "rgba(0, 0, 0, 1)",
+  },
+  rules: {
+    ".Block": {
+      backgroundColor: "transparent",
+      border: "none",
+      boxShadow: "none",
+      padding: "0",
+    },
+    ".Tab": {
+      backgroundColor: "transparent",
+      border: "1px solid rgba(72, 72, 72, 0.18)",
+      borderRadius: "16px",
+      boxShadow: "none",
+      boxSizing: "border-box",
+      minHeight: "54px",
+      padding: "14px 20px",
+    },
+    ".Tab:focus": {
+      borderColor: "rgba(0, 0, 0, 1)",
+      boxShadow: "none",
+      outline: "none",
+    },
+    ".Tab:focus-visible": {
+      borderColor: "rgba(0, 0, 0, 1)",
+      boxShadow: "none",
+      outline: "none",
+    },
+    ".Tab:hover": {
+      borderColor: "rgba(0, 0, 0, 0.7)",
+      color: "rgba(0, 0, 0, 1)",
+    },
+    ".Tab--selected": {
+      backgroundColor: "transparent",
+      borderColor: "rgba(0, 0, 0, 1)",
+      boxShadow: "none",
+      color: "rgba(0, 0, 0, 1)",
+    },
+    ".Tab--selected:focus": {
+      borderColor: "rgba(0, 0, 0, 1)",
+      boxShadow: "none",
+      outline: "none",
+    },
+    ".Tab--selected:focus-visible": {
+      borderColor: "rgba(0, 0, 0, 1)",
+      boxShadow: "none",
+      outline: "none",
+    },
+    ".TabLabel": {
+      color: "rgba(0, 0, 0, 1)",
+      fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontSize: "17px",
+      fontWeight: "300",
+      lineHeight: "150%",
+    },
+    ".TabLabel--selected": {
+      color: "rgba(0, 0, 0, 1)",
+    },
+    ".Input": {
+      backgroundColor: "transparent",
+      border: "1px solid rgba(72, 72, 72, 0.6)",
+      borderRadius: "16px",
+      boxShadow: "none",
+      boxSizing: "border-box",
+      color: "rgba(0, 0, 0, 1)",
+      caretColor: "rgba(124, 0, 2, 1)",
+      minHeight: "54px",
+      padding: "14px 20px",
+      fontSize: "17px",
+      fontWeight: "300",
+      lineHeight: "150%",
+    },
+    ".Input:focus": {
+      borderColor: "rgba(0, 0, 0, 1)",
+      boxShadow: "none",
+      outline: "none",
+    },
+    ".Input:hover": {
+      borderColor: "rgba(0, 0, 0, 0.9)",
+    },
+    ".Input--invalid": {
+      borderColor: "rgba(213, 0, 4, 1)",
+      boxShadow: "none",
+    },
+    ".Label": {
+      color: "rgba(72, 72, 72, 1)",
+      fontSize: "17px",
+      fontWeight: "300",
+      lineHeight: "150%",
+    },
+    ".PickerItem": {
+      backgroundColor: "rgba(0, 0, 0, 1)",
+      border: "1px solid rgba(72, 72, 72, 0.2)",
+      boxShadow: "none",
+    },
+    ".PickerItem:hover": {
+      borderColor: "rgba(0, 0, 0, 0.7)",
+    },
+    ".Error": {
+      color: "rgba(213, 0, 4, 1)",
+      fontSize: "13px",
+    },
+  },
+} satisfies NonNullable<StripeElementsOptions["appearance"]>;
+
+const wait = (delayMs: number): Promise<void> =>
   new Promise<void>((resolve) => {
     window.setTimeout(resolve, delayMs);
   });
 
-const getStripePromise = (publishableKey: string) => {
+const getStripePromise = (publishableKey: string): ReturnType<typeof loadStripe> => {
   const cachedPromise = stripePromiseCache.get(publishableKey);
 
   if (cachedPromise) {
@@ -65,6 +203,17 @@ const getStripePromise = (publishableKey: string) => {
   return stripePromise;
 };
 
+const trimOptionalValue = (value?: string | null): string | undefined =>
+  value?.trim() || undefined;
+
+const normalizeOptionalCountry = (value?: string | null): string | undefined =>
+  value?.trim().toUpperCase() || undefined;
+
+const trimValue = (value?: string | null): string => value?.trim() ?? "";
+
+const normalizeCountry = (value?: string | null): string =>
+  value?.trim().toUpperCase() ?? "";
+
 const createPaymentElementOptions = (
   billingAddressLine1?: string | null,
   billingCity?: string | null,
@@ -73,13 +222,6 @@ const createPaymentElementOptions = (
   billingName?: string | null,
   billingPostalCode?: string | null,
 ): StripePaymentElementOptions => {
-  const trimmedAddressLine1 = billingAddressLine1?.trim();
-  const trimmedCity = billingCity?.trim();
-  const trimmedCountry = billingCountry?.trim().toUpperCase();
-  const trimmedEmail = billingEmail?.trim();
-  const trimmedName = billingName?.trim();
-  const trimmedPostalCode = billingPostalCode?.trim();
-
   return {
     layout: {
       type: "tabs",
@@ -88,13 +230,13 @@ const createPaymentElementOptions = (
     defaultValues: {
       billingDetails: {
         address: {
-          city: trimmedCity || undefined,
-          country: trimmedCountry || undefined,
-          line1: trimmedAddressLine1 || undefined,
-          postal_code: trimmedPostalCode || undefined,
+          city: trimOptionalValue(billingCity),
+          country: normalizeOptionalCountry(billingCountry),
+          line1: trimOptionalValue(billingAddressLine1),
+          postal_code: trimOptionalValue(billingPostalCode),
         },
-        email: trimmedEmail || undefined,
-        name: trimmedName || undefined,
+        email: trimOptionalValue(billingEmail),
+        name: trimOptionalValue(billingName),
       },
     },
     fields: {
@@ -119,144 +261,17 @@ const createElementsOptions = (
       cssSrc: GOOGLE_FONTS_MANROPE_CSS_URL,
     },
   ],
-  appearance: {
-    theme: "flat",
-    variables: {
-      colorPrimary: "rgba(0, 0, 0, 1)",
-      colorText: "rgba(0, 0, 0, 1)",
-      colorTextSecondary: "rgba(72, 72, 72, 1)",
-      colorDanger: "rgba(213, 0, 4, 1)",
-      colorBackground: "transparent",
-      iconColor: "rgba(0, 0, 0, 1)",
-      borderRadius: "18px",
-      fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      fontSizeBase: "17px",
-      spacingUnit: "5px",
-      tabIconColor: "rgba(0, 0, 0, 1)",
-      tabIconHoverColor: "rgba(0, 0, 0, 1)",
-      tabIconSelectedColor: "rgba(0, 0, 0, 1)",
-    },
-    rules: {
-      ".Block": {
-        backgroundColor: "transparent",
-        border: "none",
-        boxShadow: "none",
-        padding: "0",
-      },
-      ".Tab": {
-        backgroundColor: "transparent",
-        border: "1px solid rgba(72, 72, 72, 0.18)",
-        borderRadius: "16px",
-        boxShadow: "none",
-        boxSizing: "border-box",
-        minHeight: "54px",
-        padding: "14px 20px",
-      },
-      ".Tab:focus": {
-        borderColor: "rgba(0, 0, 0, 1)",
-        boxShadow: "none",
-        outline: "none",
-      },
-      ".Tab:focus-visible": {
-        borderColor: "rgba(0, 0, 0, 1)",
-        boxShadow: "none",
-        outline: "none",
-      },
-      ".Tab:hover": {
-        borderColor: "rgba(0, 0, 0, 0.7)",
-        color: "rgba(0, 0, 0, 1)",
-      },
-      ".Tab--selected": {
-        backgroundColor: "transparent",
-        borderColor: "rgba(0, 0, 0, 1)",
-        boxShadow: "none",
-        color: "rgba(0, 0, 0, 1)",
-      },
-      ".Tab--selected:focus": {
-        borderColor: "rgba(0, 0, 0, 1)",
-        boxShadow: "none",
-        outline: "none",
-      },
-      ".Tab--selected:focus-visible": {
-        borderColor: "rgba(0, 0, 0, 1)",
-        boxShadow: "none",
-        outline: "none",
-      },
-      ".TabLabel": {
-        color: "rgba(0, 0, 0, 1)",
-        fontFamily: "Manrope, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        fontSize: "17px",
-        fontWeight: "300",
-        lineHeight: "150%",
-      },
-      ".TabLabel--selected": {
-        color: "rgba(0, 0, 0, 1)",
-      },
-      ".Input": {
-        backgroundColor: "transparent",
-        border: "1px solid rgba(72, 72, 72, 0.6)",
-        borderRadius: "16px",
-        boxShadow: "none",
-        boxSizing: "border-box",
-        color: "rgba(0, 0, 0, 1)",
-        caretColor: "rgba(124, 0, 2, 1)",
-        minHeight: "54px",
-        padding: "14px 20px",
-        fontSize: "17px",
-        fontWeight: "300",
-        lineHeight: "150%",
-      },
-      ".Input:focus": {
-        borderColor: "rgba(0, 0, 0, 1)",
-        boxShadow: "none",
-        outline: "none",
-      },
-      ".Input:hover": {
-        borderColor: "rgba(0, 0, 0, 0.9)",
-      },
-      ".Input--invalid": {
-        borderColor: "rgba(213, 0, 4, 1)",
-        boxShadow: "none",
-      },
-      ".Label": {
-        color: "rgba(72, 72, 72, 1)",
-        fontSize: "17px",
-        fontWeight: "300",
-        lineHeight: "150%",
-      },
-      ".PickerItem": {
-        backgroundColor: "rgba(0, 0, 0, 1)",
-        border: "1px solid rgba(72, 72, 72, 0.2)",
-        boxShadow: "none",
-      },
-      ".PickerItem:hover": {
-        borderColor: "rgba(0, 0, 0, 0.7)",
-      },
-      ".Error": {
-        color: "rgba(213, 0, 4, 1)",
-        fontSize: "13px",
-      },
-    },
-  },
+  appearance: STRIPE_APPEARANCE,
   loader: "auto",
 });
 
 const getStripeLocale = (locale: string): StripeElementsOptions["locale"] => {
   const normalizedLocale = locale.toLowerCase();
+  const supportedLocale = STRIPE_LOCALE_PREFIXES.find((localePrefix) =>
+    normalizedLocale.startsWith(localePrefix),
+  );
 
-  if (normalizedLocale.startsWith("ru")) {
-    return "ru";
-  }
-
-  if (normalizedLocale.startsWith("pl")) {
-    return "pl";
-  }
-
-  if (normalizedLocale.startsWith("en")) {
-    return "en";
-  }
-
-  return "auto";
+  return supportedLocale ?? "auto";
 };
 
 type StripePaymentFormProps = {
@@ -286,30 +301,112 @@ type PaymentIntentStatusResponse = {
   status: string;
 };
 
+type ResolvedBillingDetails = {
+  addressLine1: string;
+  city: string;
+  country: string;
+  email: string;
+  name: string;
+  postalCode: string;
+};
+
+type ResultPageContext = Pick<
+  StripePaymentTabsProps,
+  "checkoutSessionId" | "resultCurrency" | "resultOfferId" | "resultProductId"
+>;
+
+type PaymentCompletion =
+  | {
+      kind: "confirmed";
+    }
+  | {
+      cancelUnusedIntents: boolean;
+      kind: "redirect";
+      pathname: string;
+      paymentIntentId?: string;
+    };
+
+type StripePaymentElementsProps = {
+  clientSecret: string;
+  isLoading: boolean;
+  paymentFormKey: string;
+  paymentFormProps: Omit<StripePaymentFormProps, "isContentVisible">;
+  publishableKey: string;
+  stripeLocale: StripeElementsOptions["locale"];
+};
+
+type PaymentLoadingStateProps = {
+  statusText: string;
+};
+
+type LoadingStatusTranslationKey =
+  | "placeholder.awaitingClientSecret"
+  | "placeholder.missingPublishableKey"
+  | "status.preparing"
+  | "status.preparingSlow";
+
+type PaymentActionsProps = {
+  isContentVisible: boolean;
+  isDisabled: boolean;
+  isSubmitting: boolean;
+  onPayment: () => Promise<void>;
+  payButtonText: string;
+  processingText: string;
+  submitError: string | null;
+  submitSuccess: string | null;
+};
+
+type PaymentSubmissionState = {
+  elements: StripeElements | null;
+  isPaymentElementReady: boolean;
+  isSubmitting: boolean;
+  stripe: Stripe | null;
+};
+
+type ReadyPaymentSubmissionState = PaymentSubmissionState & {
+  elements: StripeElements;
+  stripe: Stripe;
+};
+
+const hasRemainingStatusAttempt = (attempt: number): boolean =>
+  attempt < PAYMENT_STATUS_MAX_ATTEMPTS - 1;
+
 const getPaymentStatusRetryDelayMs = ({
   attempt,
   retryAfterSeconds,
 }: {
   attempt: number;
   retryAfterSeconds?: number;
-}) => {
+}): number => {
   if (Number.isFinite(retryAfterSeconds) && (retryAfterSeconds ?? 0) > 0) {
-    return Math.ceil((retryAfterSeconds ?? 0) * 1000);
+    return Math.ceil((retryAfterSeconds ?? 0) * MILLISECONDS_PER_SECOND);
   }
 
   const exponentialDelay = Math.min(
     PAYMENT_STATUS_RETRY_BASE_DELAY_MS * 2 ** attempt,
     PAYMENT_STATUS_RETRY_MAX_DELAY_MS,
   );
-  const jitter = Math.floor(Math.random() * 140);
+  const jitter = Math.floor(Math.random() * PAYMENT_STATUS_RETRY_JITTER_MS);
 
   return exponentialDelay + jitter;
 };
 
-const shouldRetryPaymentStatusRequest = (status: number) =>
+const shouldRetryPaymentStatusRequest = (status: number): boolean =>
   status === 429 || status >= 500;
 
-const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: string) => {
+const getRetryAfterSeconds = (response: Response): number | undefined => {
+  const retryAfterHeader = Number(response.headers.get("retry-after") ?? "");
+
+  return Number.isFinite(retryAfterHeader) ? retryAfterHeader : undefined;
+};
+
+const isRetryablePaymentStatusError = (error: unknown): boolean =>
+  (error instanceof Error && error.name === "AbortError") || error instanceof TypeError;
+
+const getConfirmedStatus = async (
+  paymentIntentId: string,
+  checkoutSessionId: string,
+): Promise<PaymentIntentStatusResponse> => {
   for (let attempt = 0; attempt < PAYMENT_STATUS_MAX_ATTEMPTS; attempt += 1) {
     const requestController = new AbortController();
     const timeoutId = window.setTimeout(() => {
@@ -317,7 +414,7 @@ const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: st
     }, PAYMENT_STATUS_REQUEST_TIMEOUT_MS);
 
     try {
-      const response = await fetch("/api/stripe/payment-intent/status", {
+      const response = await fetch(PAYMENT_API_ENDPOINTS.getIntentStatus, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -335,30 +432,21 @@ const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: st
       }
 
       if (
-        attempt < PAYMENT_STATUS_MAX_ATTEMPTS - 1 &&
+        hasRemainingStatusAttempt(attempt) &&
         shouldRetryPaymentStatusRequest(response.status)
       ) {
-        const retryAfterHeader = Number(response.headers.get("retry-after") ?? "");
-        const retryAfterSeconds = Number.isFinite(retryAfterHeader)
-          ? retryAfterHeader
-          : undefined;
-
         await wait(
           getPaymentStatusRetryDelayMs({
             attempt,
-            retryAfterSeconds,
+            retryAfterSeconds: getRetryAfterSeconds(response),
           }),
         );
         continue;
       }
 
-      throw new Error("payment_intent_status_failed");
+      throw new Error(PAYMENT_STATUS_REQUEST_ERROR);
     } catch (error) {
-      const isRetryableNetworkError =
-        (error instanceof Error && error.name === "AbortError") ||
-        error instanceof TypeError;
-
-      if (attempt < PAYMENT_STATUS_MAX_ATTEMPTS - 1 && isRetryableNetworkError) {
+      if (hasRemainingStatusAttempt(attempt) && isRetryablePaymentStatusError(error)) {
         await wait(
           getPaymentStatusRetryDelayMs({
             attempt,
@@ -367,35 +455,260 @@ const getConfirmedStatus = async (paymentIntentId: string, checkoutSessionId: st
         continue;
       }
 
-      throw new Error("payment_intent_status_failed");
+      throw new Error(PAYMENT_STATUS_REQUEST_ERROR);
     } finally {
       window.clearTimeout(timeoutId);
     }
   }
 
-  throw new Error("payment_intent_status_failed");
+  throw new Error(PAYMENT_STATUS_REQUEST_ERROR);
 };
 
-const StripePaymentForm = ({
-  allPaymentIntentIds,
+const resolveBillingDetails = ({
   billingAddressLine1,
   billingCity,
   billingCountry,
   billingEmail,
   billingName,
   billingPostalCode,
+}: StripePaymentFormProps): ResolvedBillingDetails => ({
+  addressLine1: trimValue(billingAddressLine1),
+  city: trimValue(billingCity),
+  country: normalizeCountry(billingCountry),
+  email: trimValue(billingEmail),
+  name: trimValue(billingName),
+  postalCode: trimValue(billingPostalCode),
+});
+
+const createStripeBillingDetails = ({
+  addressLine1,
+  city,
+  country,
+  email,
+  name,
+  postalCode,
+}: ResolvedBillingDetails): PaymentMethodCreateParams.BillingDetails => ({
+  email,
+  name: name || undefined,
+  address: {
+    city: city || undefined,
+    country: country || undefined,
+    line1: addressLine1 || undefined,
+    postal_code: postalCode || undefined,
+  },
+});
+
+const resolveStripeErrorMessage = (
+  message: string | undefined,
+  fallbackMessage: string,
+): string => message?.trim() || fallbackMessage;
+
+const setResultSearchParam = (url: URL, name: string, value?: string | null): void => {
+  if (value) {
+    url.searchParams.set(name, value);
+  }
+};
+
+const createResultPageUrl = (
+  pathname: string,
+  {
+    checkoutSessionId,
+    resultCurrency,
+    resultOfferId,
+    resultProductId,
+  }: ResultPageContext,
+  nextPaymentIntentId?: string,
+): string => {
+  const url = new URL(pathname, window.location.origin);
+
+  // Keep the parameter order stable because it is visible in browser history.
+  setResultSearchParam(url, "product", resultProductId);
+  setResultSearchParam(url, "offer", resultOfferId);
+  setResultSearchParam(url, "currency", resultCurrency);
+  setResultSearchParam(url, "checkout", checkoutSessionId);
+  setResultSearchParam(url, "payment_intent", nextPaymentIntentId);
+
+  return url.toString();
+};
+
+const redirectToResultPage = (
+  pathname: string,
+  resultPageContext: ResultPageContext,
+  nextPaymentIntentId?: string,
+): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+  } catch {
+    // Payment completion must not be blocked by strict browser storage policies.
+  }
+
+  window.location.assign(
+    createResultPageUrl(pathname, resultPageContext, nextPaymentIntentId),
+  );
+};
+
+const cancelUnusedPaymentIntents = ({
+  allPaymentIntentIds,
   checkoutSessionId,
-  confirmedText,
-  confirmPaymentFailedText,
+  usedPaymentIntentId,
+}: Pick<StripePaymentFormProps, "allPaymentIntentIds" | "checkoutSessionId"> & {
+  usedPaymentIntentId: string;
+}): void => {
+  if (!checkoutSessionId) {
+    return;
+  }
+
+  const unusedPaymentIntentIds = [
+    ...new Set((allPaymentIntentIds ?? []).map((id) => id.trim()).filter(Boolean)),
+  ].filter((id) => id !== usedPaymentIntentId);
+
+  // Cancellation is intentionally fire-and-forget so it cannot delay navigation.
+  unusedPaymentIntentIds.forEach((paymentIntentId) => {
+    void fetch(PAYMENT_API_ENDPOINTS.cancelIntent, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        checkoutSessionId,
+        paymentIntentId,
+      }),
+      keepalive: true,
+    }).catch(() => undefined);
+  });
+};
+
+const resolveServerPaymentCompletion = (
+  outcome: PaymentIntentStatusResponse["outcome"],
+  paymentIntentId: string,
+): PaymentCompletion => {
+  if (outcome === "succeeded") {
+    return {
+      cancelUnusedIntents: true,
+      kind: "redirect",
+      pathname: PAYMENT_RESULT_PATHS.success,
+      paymentIntentId,
+    };
+  }
+
+  if (outcome === "failed" || outcome === "canceled") {
+    return {
+      cancelUnusedIntents: false,
+      kind: "redirect",
+      pathname: PAYMENT_RESULT_PATHS.failed,
+      paymentIntentId,
+    };
+  }
+
+  return { kind: "confirmed" };
+};
+
+const resolvePaymentCompletion = async ({
+  checkoutSessionId,
+  fallbackPaymentIntentId,
+  paymentIntent,
+}: {
+  checkoutSessionId?: string | null;
+  fallbackPaymentIntentId?: string | null;
+  paymentIntent?: PaymentIntent;
+}): Promise<PaymentCompletion> => {
+  const resolvedPaymentIntentId = paymentIntent?.id ?? fallbackPaymentIntentId ?? "";
+
+  if (resolvedPaymentIntentId && checkoutSessionId) {
+    const { outcome } = await getConfirmedStatus(
+      resolvedPaymentIntentId,
+      checkoutSessionId,
+    );
+
+    return resolveServerPaymentCompletion(outcome, resolvedPaymentIntentId);
+  }
+
+  if (paymentIntent?.status === "succeeded") {
+    const usedPaymentIntentId = paymentIntent.id ?? resolvedPaymentIntentId;
+
+    return {
+      cancelUnusedIntents: Boolean(usedPaymentIntentId),
+      kind: "redirect",
+      pathname: PAYMENT_RESULT_PATHS.success,
+      paymentIntentId: usedPaymentIntentId || undefined,
+    };
+  }
+
+  return { kind: "confirmed" };
+};
+
+const PaymentActions = ({
   isContentVisible,
-  onPaymentElementReadyChange,
-  paymentIntentId,
+  isDisabled,
+  isSubmitting,
+  onPayment,
   payButtonText,
   processingText,
-  resultCurrency,
-  resultOfferId,
-  resultProductId,
-}: StripePaymentFormProps) => {
+  submitError,
+  submitSuccess,
+}: PaymentActionsProps): ReactElement => (
+  <Actions>
+    {submitSuccess && isContentVisible ? (
+      <StatusText role="status" aria-live="polite" aria-atomic="true">
+        {submitSuccess}
+      </StatusText>
+    ) : null}
+    {submitError && isContentVisible ? (
+      <ErrorText role="alert" aria-live="assertive" aria-atomic="true">
+        {submitError}
+      </ErrorText>
+    ) : null}
+    <Button
+      buttonText={isSubmitting ? processingText : payButtonText}
+      disabled={isDisabled}
+      isLoading={isSubmitting}
+      onClick={onPayment}
+      type="button"
+      width={PAYMENT_BUTTON_WIDTH}
+    />
+  </Actions>
+);
+
+const createPaymentContentStyle = (isContentVisible: boolean): CSSProperties => ({
+  visibility: isContentVisible ? "visible" : "hidden",
+  pointerEvents: isContentVisible ? "auto" : "none",
+});
+
+const isPaymentSubmissionReady = (
+  submission: PaymentSubmissionState,
+): submission is ReadyPaymentSubmissionState =>
+  Boolean(
+    submission.stripe &&
+    submission.elements &&
+    !submission.isSubmitting &&
+    submission.isPaymentElementReady,
+  );
+
+const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
+  const {
+    allPaymentIntentIds,
+    billingAddressLine1,
+    billingCity,
+    billingCountry,
+    billingEmail,
+    billingName,
+    billingPostalCode,
+    checkoutSessionId,
+    confirmedText,
+    confirmPaymentFailedText,
+    isContentVisible,
+    onPaymentElementReadyChange,
+    paymentIntentId,
+    payButtonText,
+    processingText,
+    resultCurrency,
+    resultOfferId,
+    resultProductId,
+  } = props;
   const stripe = useStripe();
   const elements = useElements();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -412,78 +725,33 @@ const StripePaymentForm = ({
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
-  const resolvedBillingAddressLine1 = billingAddressLine1?.trim() ?? "";
-  const resolvedBillingCity = billingCity?.trim() ?? "";
-  const resolvedBillingEmail = billingEmail?.trim() ?? "";
-  const resolvedBillingName = billingName?.trim() ?? "";
-  const resolvedBillingPostalCode = billingPostalCode?.trim() ?? "";
-  const resolvedBillingCountry = billingCountry?.trim().toUpperCase() ?? "";
-
-  const cancelUnusedPaymentIntents = (usedPaymentIntentId: string) => {
-    if (!checkoutSessionId) {
-      return;
-    }
-
-    const uniquePaymentIntentIds = [
-      ...new Set((allPaymentIntentIds ?? []).map((id) => id.trim()).filter(Boolean)),
-    ].filter((id) => id !== usedPaymentIntentId);
-
-    uniquePaymentIntentIds.forEach((paymentIntentId) => {
-      void fetch("/api/stripe/payment-intent/cancel", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          checkoutSessionId,
-          paymentIntentId,
-        }),
-        keepalive: true,
-      }).catch(() => undefined);
-    });
-  };
-  const createResultPageUrl = (pathname: string, nextPaymentIntentId?: string) => {
-    const url = new URL(pathname, window.location.origin);
-
-    if (resultProductId) {
-      url.searchParams.set("product", resultProductId);
-    }
-
-    if (resultOfferId) {
-      url.searchParams.set("offer", resultOfferId);
-    }
-
-    if (resultCurrency) {
-      url.searchParams.set("currency", resultCurrency);
-    }
-
-    if (checkoutSessionId) {
-      url.searchParams.set("checkout", checkoutSessionId);
-    }
-
-    if (nextPaymentIntentId) {
-      url.searchParams.set("payment_intent", nextPaymentIntentId);
-    }
-
-    return url.toString();
+  const billingDetails = resolveBillingDetails(props);
+  const resultPageContext: ResultPageContext = {
+    checkoutSessionId,
+    resultCurrency,
+    resultOfferId,
+    resultProductId,
   };
 
-  const redirectToResultPage = (pathname: string, nextPaymentIntentId?: string) => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    try {
-      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-    } catch {
-      // Ignore storage access failures (e.g. strict browser privacy mode).
-    }
-
-    window.location.assign(createResultPageUrl(pathname, nextPaymentIntentId));
+  const handlePaymentElementLoading = (): void => {
+    setIsPaymentElementReady(false);
+    onPaymentElementReadyChange?.(false);
   };
 
-  const handlePayment = async () => {
-    if (!stripe || !elements || isSubmitting || !isPaymentElementReady) {
+  const handlePaymentElementReady = (): void => {
+    setIsPaymentElementReady(true);
+    onPaymentElementReadyChange?.(true);
+  };
+
+  const handlePayment = async (): Promise<void> => {
+    const submission = {
+      elements,
+      isPaymentElementReady,
+      isSubmitting,
+      stripe,
+    };
+
+    if (!isPaymentSubmissionReady(submission)) {
       return;
     }
 
@@ -493,29 +761,16 @@ const StripePaymentForm = ({
 
     let shouldKeepSubmitting = false;
 
-    const redirectWithLockedButton = (pathname: string, nextPaymentIntentId?: string) => {
-      shouldKeepSubmitting = true;
-      redirectToResultPage(pathname, nextPaymentIntentId);
-    };
-
     try {
-      const { error, paymentIntent } = await stripe.confirmPayment({
-        elements,
+      const { error, paymentIntent } = await submission.stripe.confirmPayment({
+        elements: submission.elements,
         confirmParams: {
           payment_method_data: {
-            billing_details: {
-              email: resolvedBillingEmail,
-              name: resolvedBillingName || undefined,
-              address: {
-                city: resolvedBillingCity || undefined,
-                country: resolvedBillingCountry || undefined,
-                line1: resolvedBillingAddressLine1 || undefined,
-                postal_code: resolvedBillingPostalCode || undefined,
-              },
-            },
+            billing_details: createStripeBillingDetails(billingDetails),
           },
           return_url: createResultPageUrl(
-            PAYMENT_SUCCESS_PATH,
+            PAYMENT_RESULT_PATHS.success,
+            resultPageContext,
             paymentIntentId ?? undefined,
           ),
         },
@@ -523,45 +778,38 @@ const StripePaymentForm = ({
       });
 
       if (error) {
-        setSubmitError(error.message?.trim() || confirmPaymentFailedText);
+        setSubmitError(
+          resolveStripeErrorMessage(error.message, confirmPaymentFailedText),
+        );
         return;
       }
 
-      const resolvedPaymentIntentId = paymentIntent?.id ?? paymentIntentId ?? "";
+      const completion = await resolvePaymentCompletion({
+        checkoutSessionId,
+        fallbackPaymentIntentId: paymentIntentId,
+        paymentIntent,
+      });
 
-      if (resolvedPaymentIntentId && checkoutSessionId) {
-        const { outcome } = await getConfirmedStatus(
-          resolvedPaymentIntentId,
-          checkoutSessionId,
-        );
-
-        if (outcome === "succeeded") {
-          cancelUnusedPaymentIntents(resolvedPaymentIntentId);
-          redirectWithLockedButton(PAYMENT_SUCCESS_PATH, resolvedPaymentIntentId);
-          return;
-        }
-
-        if (outcome === "failed" || outcome === "canceled") {
-          redirectWithLockedButton(PAYMENT_FAILED_PATH, resolvedPaymentIntentId);
-          return;
-        }
-
+      if (completion.kind === "confirmed") {
         setSubmitSuccess(confirmedText);
         return;
       }
 
-      if (paymentIntent?.status === "succeeded") {
-        const usedPaymentIntentId = paymentIntent.id ?? resolvedPaymentIntentId;
-
-        if (usedPaymentIntentId) {
-          cancelUnusedPaymentIntents(usedPaymentIntentId);
-        }
-
-        redirectWithLockedButton(PAYMENT_SUCCESS_PATH, usedPaymentIntentId || undefined);
-        return;
+      if (completion.cancelUnusedIntents && completion.paymentIntentId) {
+        cancelUnusedPaymentIntents({
+          allPaymentIntentIds,
+          checkoutSessionId,
+          usedPaymentIntentId: completion.paymentIntentId,
+        });
       }
 
-      setSubmitSuccess(confirmedText);
+      // Keep the button locked once navigation starts to prevent duplicate intents.
+      shouldKeepSubmitting = true;
+      redirectToResultPage(
+        completion.pathname,
+        resultPageContext,
+        completion.paymentIntentId,
+      );
     } catch {
       setSubmitError(confirmPaymentFailedText);
     } finally {
@@ -572,47 +820,101 @@ const StripePaymentForm = ({
   };
 
   return (
-    <div
-      style={{
-        visibility: isContentVisible ? "visible" : "hidden",
-        pointerEvents: isContentVisible ? "auto" : "none",
-      }}
-    >
+    <div style={createPaymentContentStyle(isContentVisible)}>
       <PaymentElementShell>
         <PaymentElement
           options={paymentElementOptions}
-          onLoaderStart={() => {
-            setIsPaymentElementReady(false);
-            onPaymentElementReadyChange?.(false);
-          }}
-          onReady={() => {
-            setIsPaymentElementReady(true);
-            onPaymentElementReadyChange?.(true);
-          }}
+          onLoaderStart={handlePaymentElementLoading}
+          onReady={handlePaymentElementReady}
         />
       </PaymentElementShell>
-      <Actions>
-        {submitSuccess && isContentVisible ? (
-          <StatusText role="status" aria-live="polite" aria-atomic="true">
-            {submitSuccess}
-          </StatusText>
-        ) : null}
-        {submitError && isContentVisible ? (
-          <ErrorText role="alert" aria-live="assertive" aria-atomic="true">
-            {submitError}
-          </ErrorText>
-        ) : null}
-        <Button
-          buttonText={isSubmitting ? processingText : payButtonText}
-          disabled={!stripe || !elements || isSubmitting || !isPaymentElementReady}
-          isLoading={isSubmitting}
-          onClick={handlePayment}
-          type="button"
-          width="240px"
-        />
-      </Actions>
+      <PaymentActions
+        isContentVisible={isContentVisible}
+        isDisabled={
+          !isPaymentSubmissionReady({
+            elements,
+            isPaymentElementReady,
+            isSubmitting,
+            stripe,
+          })
+        }
+        isSubmitting={isSubmitting}
+        onPayment={handlePayment}
+        payButtonText={payButtonText}
+        processingText={processingText}
+        submitError={submitError}
+        submitSuccess={submitSuccess}
+      />
     </div>
   );
+};
+
+const createStripeElementsStyle = (isLoading: boolean): CSSProperties => ({
+  position: isLoading ? "absolute" : "relative",
+  inset: isLoading ? 0 : undefined,
+  opacity: isLoading ? 0 : 1,
+  pointerEvents: isLoading ? "none" : "auto",
+});
+
+const StripePaymentElements = ({
+  clientSecret,
+  isLoading,
+  paymentFormKey,
+  paymentFormProps,
+  publishableKey,
+  stripeLocale,
+}: StripePaymentElementsProps): ReactElement => (
+  <div style={createStripeElementsStyle(isLoading)}>
+    <Elements
+      options={createElementsOptions(clientSecret, stripeLocale)}
+      stripe={getStripePromise(publishableKey)}
+    >
+      <StripePaymentForm
+        key={paymentFormKey}
+        {...paymentFormProps}
+        isContentVisible={!isLoading}
+      />
+    </Elements>
+  </div>
+);
+
+const PaymentLoadingState = ({ statusText }: PaymentLoadingStateProps): ReactElement => (
+  <LoadingState role="status" aria-live="polite" aria-atomic="true">
+    <LoadingTabs>
+      <LoadingTab />
+      <LoadingTab />
+    </LoadingTabs>
+    <LoadingField />
+    <LoadingFieldRow>
+      <LoadingField $short />
+      <LoadingField $short />
+    </LoadingFieldRow>
+    <LoadingFooter>
+      <LoadingPulse />
+      <StatusText>{statusText}</StatusText>
+    </LoadingFooter>
+    <LoadingAction aria-hidden />
+  </LoadingState>
+);
+
+const getLoadingStatusTranslationKey = ({
+  hasClientSecret,
+  hasPublishableKey,
+  isPreparingSlow,
+}: {
+  hasClientSecret: boolean;
+  hasPublishableKey: boolean;
+  isPreparingSlow: boolean;
+}): LoadingStatusTranslationKey => {
+  if (!hasPublishableKey) {
+    return "placeholder.missingPublishableKey";
+  }
+
+  if (!hasClientSecret) {
+    return isPreparingSlow ? "status.preparingSlow" : "placeholder.awaitingClientSecret";
+  }
+
+  return isPreparingSlow ? "status.preparingSlow" : "status.preparing";
 };
 
 export const StripePaymentTabs = ({
@@ -639,14 +941,14 @@ export const StripePaymentTabs = ({
   const paymentFormReadyKey = `${resolvedClientSecret}:${publishableKey}:${stripeLocale}`;
   const [readyPaymentFormKey, setReadyPaymentFormKey] = useState<string | null>(null);
   const [isPreparingSlow, setIsPreparingSlow] = useState(false);
-  const isPaymentFormReady = readyPaymentFormKey === paymentFormReadyKey;
 
-  const shouldShowLoadingSkeleton = !isReady || !isPaymentFormReady;
+  const shouldShowLoadingSkeleton =
+    !isReady || readyPaymentFormKey !== paymentFormReadyKey;
 
   useEffect(() => {
     const resetId = window.setTimeout(() => {
       setIsPreparingSlow(false);
-    }, 0);
+    }, PAYMENT_PREPARING_RESET_DELAY_MS);
 
     if (!shouldShowLoadingSkeleton) {
       return () => {
@@ -664,19 +966,25 @@ export const StripePaymentTabs = ({
     };
   }, [paymentFormReadyKey, shouldShowLoadingSkeleton]);
 
-  const loadingStatusText = (() => {
-    if (!publishableKey) {
-      return t("placeholder.missingPublishableKey");
+  const loadingStatusText = t(
+    getLoadingStatusTranslationKey({
+      hasClientSecret: Boolean(resolvedClientSecret),
+      hasPublishableKey: Boolean(publishableKey),
+      isPreparingSlow,
+    }),
+  );
+
+  const handlePaymentElementReadyChange = (isFormReady: boolean): void => {
+    if (isFormReady) {
+      setReadyPaymentFormKey(paymentFormReadyKey);
+      return;
     }
 
-    if (!resolvedClientSecret) {
-      return isPreparingSlow
-        ? t("status.preparingSlow")
-        : t("placeholder.awaitingClientSecret");
-    }
-
-    return isPreparingSlow ? t("status.preparingSlow") : t("status.preparing");
-  })();
+    // Ignore stale readiness events from an Elements instance being replaced.
+    setReadyPaymentFormKey((currentReadyKey) =>
+      currentReadyKey === paymentFormReadyKey ? null : currentReadyKey,
+    );
+  };
 
   return (
     <Card aria-busy={!isReady}>
@@ -686,69 +994,36 @@ export const StripePaymentTabs = ({
       </Header>
       <div style={{ position: "relative" }}>
         {isReady ? (
-          <div
-            style={{
-              position: shouldShowLoadingSkeleton ? "absolute" : "relative",
-              inset: shouldShowLoadingSkeleton ? 0 : undefined,
-              opacity: shouldShowLoadingSkeleton ? 0 : 1,
-              pointerEvents: shouldShowLoadingSkeleton ? "none" : "auto",
+          <StripePaymentElements
+            clientSecret={resolvedClientSecret}
+            isLoading={shouldShowLoadingSkeleton}
+            paymentFormKey={paymentFormReadyKey}
+            paymentFormProps={{
+              allPaymentIntentIds,
+              billingAddressLine1,
+              billingCity,
+              billingCountry,
+              billingEmail,
+              billingName,
+              billingPostalCode,
+              checkoutSessionId,
+              confirmedText: t("status.confirmed"),
+              confirmPaymentFailedText: t("errors.confirmPaymentFailed"),
+              onPaymentElementReadyChange: handlePaymentElementReadyChange,
+              paymentIntentId,
+              payButtonText: t("button.pay"),
+              processingText: t("button.processing"),
+              resultCurrency,
+              resultOfferId,
+              resultProductId,
             }}
-          >
-            <Elements
-              options={createElementsOptions(resolvedClientSecret, stripeLocale)}
-              stripe={getStripePromise(publishableKey)}
-            >
-              <StripePaymentForm
-                key={paymentFormReadyKey}
-                allPaymentIntentIds={allPaymentIntentIds}
-                billingAddressLine1={billingAddressLine1}
-                billingCity={billingCity}
-                billingCountry={billingCountry}
-                billingEmail={billingEmail}
-                billingName={billingName}
-                billingPostalCode={billingPostalCode}
-                checkoutSessionId={checkoutSessionId}
-                confirmedText={t("status.confirmed")}
-                confirmPaymentFailedText={t("errors.confirmPaymentFailed")}
-                isContentVisible={!shouldShowLoadingSkeleton}
-                onPaymentElementReadyChange={(isFormReady) => {
-                  if (isFormReady) {
-                    setReadyPaymentFormKey(paymentFormReadyKey);
-                    return;
-                  }
-
-                  setReadyPaymentFormKey((currentReadyKey) =>
-                    currentReadyKey === paymentFormReadyKey ? null : currentReadyKey,
-                  );
-                }}
-                paymentIntentId={paymentIntentId}
-                payButtonText={t("button.pay")}
-                processingText={t("button.processing")}
-                resultCurrency={resultCurrency}
-                resultOfferId={resultOfferId}
-                resultProductId={resultProductId}
-              />
-            </Elements>
-          </div>
+            publishableKey={publishableKey}
+            stripeLocale={stripeLocale}
+          />
         ) : null}
 
         {shouldShowLoadingSkeleton ? (
-          <LoadingState role="status" aria-live="polite" aria-atomic="true">
-            <LoadingTabs>
-              <LoadingTab />
-              <LoadingTab />
-            </LoadingTabs>
-            <LoadingField />
-            <LoadingFieldRow>
-              <LoadingField $short />
-              <LoadingField $short />
-            </LoadingFieldRow>
-            <LoadingFooter>
-              <LoadingPulse />
-              <StatusText>{loadingStatusText}</StatusText>
-            </LoadingFooter>
-            <LoadingAction aria-hidden />
-          </LoadingState>
+          <PaymentLoadingState statusText={loadingStatusText} />
         ) : null}
       </div>
     </Card>

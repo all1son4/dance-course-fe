@@ -233,6 +233,20 @@ type FirstTouchBroadcastResponse = {
   stats?: BroadcastStats;
 };
 
+const ADMIN_API_ENDPOINTS = {
+  auth: "/admin/auth",
+  firstTouchBroadcast: "/admin/api/broadcasts/first-touch-sales-start",
+  inviteLinks: "/admin/api/invite-links",
+  inviteLinksHistory: "/admin/api/invite-links/history",
+  monthlySalesReport: "/admin/api/reports/monthly-sales",
+  onlineGroupSettings: "/admin/api/online-group-settings",
+  renewalCampaigns: "/admin/api/renewal-campaigns",
+  telegramChats: "/admin/api/telegram/chats",
+} as const;
+
+const ADMIN_SESSION_HEARTBEAT_MS = 5 * 60_000;
+const JOURNAL_SKELETON_COUNT = 3;
+
 const ADMIN_FEATURES: AdminFeature[] = [
   {
     id: "invite-links",
@@ -285,6 +299,39 @@ const OFFER_TYPE_LABELS: Record<string, string> = {
 const LESSON_LANGUAGE_LABELS: Record<LessonLanguage, string> = {
   en: "EN",
   ru: "RU",
+};
+
+const ADMIN_FEATURE_COPY: Record<
+  AdminFeatureId,
+  {
+    description: string;
+    meta: string;
+  }
+> = {
+  "access-control": {
+    description:
+      "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия.",
+    meta: "Для каждого invite добавляй идентификатор, чтобы журнал был понятным.",
+  },
+  broadcasts: {
+    description: "Разовые email-рассылки по заявкам из Neon с зеркалом в Google Sheets.",
+    meta: "Повторный запуск отправляет письма только тем, у кого еще нет успешной отправки.",
+  },
+  "invite-links": {
+    description:
+      "Генерация одноразовых Telegram invite-ссылок с той же бизнес-логикой, что и в боевом платежном потоке.",
+    meta: "Для каждого invite добавляй идентификатор, чтобы журнал был понятным.",
+  },
+  "online-group": {
+    description:
+      "Настройка текущего потока, постоянного Inspiration Hub и ссылок продления.",
+    meta: "Plus открывает основной чат на постоянной основе и Inspiration Hub до конца потока.",
+  },
+  reports: {
+    description:
+      "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц.",
+    meta: "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи.",
+  },
 };
 
 const RefreshIcon = () => (
@@ -417,6 +464,972 @@ const resolveGeneratorErrorMessage = (errorCode: string, reason: string) => {
 
   return "Не удалось сгенерировать ссылку. Проверь настройки и попробуй снова.";
 };
+
+type AdminLoginProps = {
+  authPassword: string;
+  authStatus: StatusMessage;
+  isChecking: boolean;
+  isUnlocking: boolean;
+  onPasswordChange: (value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+};
+
+// Presentation stays stateless so extraction cannot move or reset operational state.
+const AdminLogin = ({
+  authPassword,
+  authStatus,
+  isChecking,
+  isUnlocking,
+  onPasswordChange,
+  onSubmit,
+}: AdminLoginProps) => (
+  <AdminInvitePage>
+    <LockViewport>
+      <LockCard>
+        <LockTitle>Вход в админ-панель</LockTitle>
+        <LockDescription>Пароль открывает доступ ко всей админ-панели</LockDescription>
+        <Form onSubmit={onSubmit}>
+          <FormControl>
+            <Input
+              id="admin-password"
+              name="adminPassword"
+              type="password"
+              label="Пароль"
+              value={authPassword}
+              onChange={(event) => onPasswordChange(event.target.value)}
+              placeholder="Введите пароль"
+              disabled={isChecking || isUnlocking}
+              width="100%"
+            />
+          </FormControl>
+          <ButtonRow>
+            <Button
+              buttonText={
+                isChecking ? "Проверка..." : isUnlocking ? "Открываю..." : "Войти"
+              }
+              type="submit"
+              disabled={isChecking || isUnlocking || !authPassword.trim()}
+              isLoading={isUnlocking}
+              width="100%"
+            />
+          </ButtonRow>
+          {authStatus && (
+            <StatusText $tone={authStatus.tone}>{authStatus.text}</StatusText>
+          )}
+        </Form>
+      </LockCard>
+    </LockViewport>
+  </AdminInvitePage>
+);
+
+type AdminSidebarProps = {
+  activeFeatureId: AdminFeatureId;
+  isLoggingOut: boolean;
+  isRefreshingSession: boolean;
+  onFeatureSelect: (featureId: AdminFeatureId) => void;
+  onLogout: () => void | Promise<void>;
+  onRefreshSession: () => void | Promise<void>;
+};
+
+const AdminSidebar = ({
+  activeFeatureId,
+  isLoggingOut,
+  isRefreshingSession,
+  onFeatureSelect,
+  onLogout,
+  onRefreshSession,
+}: AdminSidebarProps) => (
+  <Sidebar>
+    <SidebarTop>
+      <SidebarTitle>Admin</SidebarTitle>
+      <SidebarHint>Выбери нужный раздел слева.</SidebarHint>
+      <SidebarNav>
+        {ADMIN_FEATURES.map((feature) => (
+          <SidebarItem
+            key={feature.id}
+            type="button"
+            $active={feature.id === activeFeatureId}
+            $available={feature.isAvailable}
+            onClick={() => feature.isAvailable && onFeatureSelect(feature.id)}
+            disabled={!feature.isAvailable}
+            aria-current={feature.id === activeFeatureId ? "page" : undefined}
+          >
+            <SidebarItemLabel>{feature.label}</SidebarItemLabel>
+            <SidebarItemMeta>{feature.description}</SidebarItemMeta>
+          </SidebarItem>
+        ))}
+      </SidebarNav>
+    </SidebarTop>
+
+    <SidebarFooter>
+      <SidebarFooterHint>Сессия администратора</SidebarFooterHint>
+      <SidebarActionRow>
+        <SidebarIconButton
+          type="button"
+          onClick={onRefreshSession}
+          disabled={isRefreshingSession}
+          $isLoading={isRefreshingSession}
+          aria-label="Проверить сессию"
+          title="Проверить сессию"
+        >
+          <RefreshIcon />
+        </SidebarIconButton>
+        <Button
+          buttonText={isLoggingOut ? "Выход..." : "Выйти"}
+          type="button"
+          onClick={onLogout}
+          disabled={isLoggingOut}
+          isLoading={isLoggingOut}
+          size="sm"
+          variant="secondary"
+          width="100%"
+        />
+      </SidebarActionRow>
+    </SidebarFooter>
+  </Sidebar>
+);
+
+const AdminFeatureHeader = ({ feature }: { feature: AdminFeature }) => {
+  const copy = ADMIN_FEATURE_COPY[feature.id];
+
+  return (
+    <HeaderRow>
+      <HeaderInfo>
+        <Title>{feature.label}</Title>
+        <Description>{copy.description}</Description>
+        <HeaderMeta>{copy.meta}</HeaderMeta>
+      </HeaderInfo>
+    </HeaderRow>
+  );
+};
+
+type CopyableLinkProps = {
+  ariaLabel?: string;
+  disabled?: boolean;
+  isCopying: boolean;
+  link: string;
+  onCopy: (link: string) => void | Promise<void>;
+  title?: string;
+};
+
+const CopyableLink = ({
+  ariaLabel = "Копировать ссылку",
+  disabled = false,
+  isCopying,
+  link,
+  onCopy,
+  title = "Копировать ссылку",
+}: CopyableLinkProps) => (
+  <ResultBox>
+    <ResultValue>{link}</ResultValue>
+    <CopyButton>
+      <IconActionButton
+        type="button"
+        onClick={() => onCopy(link)}
+        disabled={disabled || isCopying}
+        $isLoading={isCopying}
+        aria-label={ariaLabel}
+        title={title}
+      >
+        <CopyIcon />
+      </IconActionButton>
+    </CopyButton>
+  </ResultBox>
+);
+
+type ActiveOnlineGroupCardProps = {
+  activeCampaign: OnlineGroupCampaignEntry | undefined;
+  activeMainChatTitle: string;
+  inspirationChatTitle: string;
+  isFormOpen: boolean;
+  isLoading: boolean;
+  isSaveDisabled: boolean;
+  isSaving: boolean;
+  libraryChatId: string;
+  mainChatId: string;
+  onFormToggle: () => void;
+  onLibraryChatChange: (value: string) => void;
+  onMainChatChange: (value: string) => void;
+  onRefresh: () => void | Promise<void>;
+  onStartsAtChange: (value: string) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+  onTitleChange: (value: string) => void;
+  startsAt: string;
+  status: StatusMessage;
+  telegramChatOptions: SelectOption[];
+  title: string;
+};
+
+const ActiveOnlineGroupCard = ({
+  activeCampaign,
+  activeMainChatTitle,
+  inspirationChatTitle,
+  isFormOpen,
+  isLoading,
+  isSaveDisabled,
+  isSaving,
+  libraryChatId,
+  mainChatId,
+  onFormToggle,
+  onLibraryChatChange,
+  onMainChatChange,
+  onRefresh,
+  onStartsAtChange,
+  onSubmit,
+  onTitleChange,
+  startsAt,
+  status,
+  telegramChatOptions,
+  title,
+}: ActiveOnlineGroupCardProps) => (
+  <SurfaceCard>
+    <SurfaceHeaderRow>
+      <SurfaceTitle>1. Активный поток</SurfaceTitle>
+      <SurfaceHeaderActions>
+        {activeCampaign && (
+          <Button
+            buttonText={isFormOpen ? "Скрыть форму" : "Изменить"}
+            type="button"
+            onClick={onFormToggle}
+            size="sm"
+            variant="secondary"
+            width="auto"
+          />
+        )}
+        <IconActionButton
+          type="button"
+          onClick={onRefresh}
+          disabled={isLoading}
+          $isLoading={isLoading}
+          aria-label="Обновить Online Group"
+          title="Обновить Online Group"
+        >
+          <RefreshIcon />
+        </IconActionButton>
+      </SurfaceHeaderActions>
+    </SurfaceHeaderRow>
+    <SurfaceDescription>
+      Куда попадут участники после новой покупки или продления.
+    </SurfaceDescription>
+    {activeCampaign ? (
+      <SummaryGrid>
+        <SummaryItem>
+          <SummaryLabel>Поток</SummaryLabel>
+          <SummaryValue>{activeCampaign.title}</SummaryValue>
+        </SummaryItem>
+        <SummaryItem>
+          <SummaryLabel>Период Plus-доступа</SummaryLabel>
+          <SummaryValue>
+            {formatDateTime(activeCampaign.startsAt)} —{" "}
+            {formatDateTime(activeCampaign.endsAt)}
+          </SummaryValue>
+        </SummaryItem>
+        <SummaryItem>
+          <SummaryLabel>Основной чат</SummaryLabel>
+          <SummaryValue>{activeMainChatTitle}</SummaryValue>
+        </SummaryItem>
+        <SummaryItem>
+          <SummaryLabel>Inspiration Hub</SummaryLabel>
+          <SummaryValue>{inspirationChatTitle}</SummaryValue>
+        </SummaryItem>
+      </SummaryGrid>
+    ) : (
+      <StatusText $tone="info">Активный поток еще не настроен.</StatusText>
+    )}
+    {(isFormOpen || !activeCampaign) && (
+      <Form onSubmit={onSubmit}>
+        <FormGrid>
+          <FormControl>
+            <Input
+              id="online-group-regular-chat"
+              name="onlineGroupRegularChat"
+              label="Основной чат потока"
+              value={mainChatId}
+              placeholder="Выбери новый чат Online Group"
+              selectOptions={telegramChatOptions}
+              onChange={(event) => onMainChatChange(event.target.value)}
+              disabled={isLoading}
+              width="100%"
+            />
+          </FormControl>
+          <FormControl>
+            <Input
+              id="online-group-library-chat"
+              name="onlineGroupLibraryChat"
+              label="Постоянный Inspiration Hub"
+              value={libraryChatId}
+              placeholder="Выбери чат Inspiration Hub"
+              selectOptions={telegramChatOptions}
+              onChange={(event) => onLibraryChatChange(event.target.value)}
+              disabled={isLoading || Boolean(activeCampaign)}
+              width="100%"
+            />
+          </FormControl>
+          <FormControl>
+            <Input
+              id="online-group-starts-at"
+              name="onlineGroupStartsAt"
+              label="Дата и время старта"
+              value={startsAt}
+              type="datetime-local"
+              onChange={(event) => onStartsAtChange(event.target.value)}
+              width="100%"
+            />
+          </FormControl>
+          <FormControl>
+            <Input
+              id="online-group-title"
+              name="onlineGroupTitle"
+              label="Название потока"
+              value={title}
+              placeholder="Например: Online Group — август"
+              onChange={(event) => onTitleChange(event.target.value)}
+              width="100%"
+            />
+          </FormControl>
+        </FormGrid>
+        <ButtonRow>
+          <Button
+            buttonText={isSaving ? "Сохраняю..." : "Сохранить и активировать поток"}
+            type="submit"
+            disabled={isSaveDisabled}
+            isLoading={isSaving}
+            width="100%"
+          />
+        </ButtonRow>
+      </Form>
+    )}
+    {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
+  </SurfaceCard>
+);
+
+type RenewalGeneratorCardProps = {
+  chats: TelegramChatOption[];
+  copyingUrl: string;
+  generatedLink: string;
+  isDisabled: boolean;
+  isGenerating: boolean;
+  isLoading: boolean;
+  offerId: string;
+  offerOptions: SelectOption[];
+  onCopy: (link: string) => void | Promise<void>;
+  onOfferChange: (value: string) => void;
+  onRegenerate: () => void;
+  onSourceChatToggle: (chatId: string, checked: boolean) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+  onTitleChange: (value: string) => void;
+  sourceChatIds: string[];
+  status: StatusMessage;
+  title: string;
+};
+
+const RenewalGeneratorCard = ({
+  chats,
+  copyingUrl,
+  generatedLink,
+  isDisabled,
+  isGenerating,
+  isLoading,
+  offerId,
+  offerOptions,
+  onCopy,
+  onOfferChange,
+  onRegenerate,
+  onSourceChatToggle,
+  onSubmit,
+  onTitleChange,
+  sourceChatIds,
+  status,
+  title,
+}: RenewalGeneratorCardProps) => (
+  <SurfaceCard>
+    <SurfaceTitle>2. Создать ссылку продления</SurfaceTitle>
+    <SurfaceDescription>
+      Кто может купить следующий поток и по какому тарифу.
+    </SurfaceDescription>
+    <Form onSubmit={onSubmit}>
+      <FormControl>
+        <PolicyLabel>Участники из этих чатов смогут оплатить</PolicyLabel>
+        <CheckboxList>
+          {chats.map((chat) => (
+            <Checkbox
+              key={chat.chatId}
+              checked={sourceChatIds.includes(chat.chatId)}
+              disabled={isLoading}
+              name={`renewal-source-${chat.chatId}`}
+              onChange={(event) => onSourceChatToggle(chat.chatId, event.target.checked)}
+              placeholder={`${chat.title} (${chat.chatId})`}
+            />
+          ))}
+        </CheckboxList>
+      </FormControl>
+      <FormGrid>
+        <FormControl>
+          <Input
+            id="renewal-offer"
+            name="renewalOffer"
+            label="Тариф"
+            value={offerId}
+            placeholder="Выбери тариф"
+            selectOptions={offerOptions}
+            onChange={(event) => onOfferChange(event.target.value)}
+            disabled={isLoading}
+            width="100%"
+          />
+        </FormControl>
+        <FormControl>
+          <Input
+            id="renewal-title"
+            name="renewalTitle"
+            label="Название для админки"
+            value={title}
+            placeholder="Например: поток 1 → поток 2"
+            onChange={(event) => onTitleChange(event.target.value)}
+            width="100%"
+          />
+        </FormControl>
+      </FormGrid>
+      <FormGrid>
+        <ButtonRow>
+          <Button
+            buttonText={isGenerating ? "Готовлю..." : "Создать или показать"}
+            type="submit"
+            disabled={isDisabled}
+            isLoading={isGenerating}
+            width="100%"
+          />
+        </ButtonRow>
+        <ButtonRow>
+          <Button
+            buttonText={isGenerating ? "Заменяю..." : "Заменить ссылку новой"}
+            type="button"
+            onClick={onRegenerate}
+            disabled={isDisabled}
+            isLoading={isGenerating}
+            variant="secondary"
+            width="100%"
+          />
+        </ButtonRow>
+      </FormGrid>
+      {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
+      {generatedLink && (
+        <CopyableLink
+          ariaLabel="Копировать ссылку продления"
+          isCopying={copyingUrl === generatedLink}
+          link={generatedLink}
+          onCopy={onCopy}
+          title="Копировать ссылку продления"
+        />
+      )}
+    </Form>
+  </SurfaceCard>
+);
+
+type RenewalCampaignsCardProps = {
+  campaigns: RenewalCampaignEntry[];
+  copyingUrl: string;
+  onCopy: (link: string) => void | Promise<void>;
+  onToggleStatus: (slug: string, active: boolean) => void | Promise<void>;
+  updatingSlug: string;
+};
+
+const RenewalCampaignsCard = ({
+  campaigns,
+  copyingUrl,
+  onCopy,
+  onToggleStatus,
+  updatingSlug,
+}: RenewalCampaignsCardProps) => (
+  <SurfaceCard>
+    <SurfaceTitle>3. Ссылки продления</SurfaceTitle>
+    <SurfaceDescription>
+      Включай нужную ссылку свитчером и копируй ее для отправки в чат.
+    </SurfaceDescription>
+    {campaigns.length === 0 ? (
+      <JournalEmptyState>Ссылок пока нет.</JournalEmptyState>
+    ) : (
+      <RenewalLinksList>
+        {campaigns.map((campaign) => {
+          const isActive = campaign.status === "active";
+
+          return (
+            <RecentLinkCard key={campaign.slug}>
+              <RecentLinkHeader>
+                <RecentLinkMeta>{campaign.title}</RecentLinkMeta>
+                <RenewalLinkControls>
+                  <LinkStateBadge $state={isActive ? "active" : "used"}>
+                    {campaign.offerId === ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID
+                      ? "Plus"
+                      : "Standard"}
+                  </LinkStateBadge>
+                  <ToggleSwitch
+                    ariaLabel={`${isActive ? "Выключить" : "Включить"} ссылку ${campaign.title}`}
+                    checked={isActive}
+                    disabled={Boolean(updatingSlug)}
+                    onChange={(checked) => void onToggleStatus(campaign.slug, checked)}
+                  />
+                </RenewalLinkControls>
+              </RecentLinkHeader>
+              <RecentLinkMeta>
+                Проверяем: {campaign.sourceChatTitles.join(", ")}
+              </RecentLinkMeta>
+              <RecentLinkMeta>
+                Создано: {formatDateTime(campaign.createdAt)}
+              </RecentLinkMeta>
+              <CopyableLink
+                disabled={!isActive}
+                isCopying={copyingUrl === campaign.checkoutUrl}
+                link={campaign.checkoutUrl}
+                onCopy={onCopy}
+                title={isActive ? "Копировать ссылку" : "Сначала включи ссылку"}
+              />
+            </RecentLinkCard>
+          );
+        })}
+      </RenewalLinksList>
+    )}
+  </SurfaceCard>
+);
+
+type InviteLinkGeneratorCardProps = {
+  adminLabel: string;
+  choreoSelectOptions: SelectOption[];
+  copyingUrl: string;
+  generatedLink: string;
+  generatorStatus: StatusMessage;
+  isGenerateDisabled: boolean;
+  isGenerating: boolean;
+  kind: GeneratorKind;
+  kindSelectOptions: SelectOption[];
+  onAdminLabelChange: (value: string) => void;
+  onChoreoSelectionChange: (value: string) => void;
+  onCopy: (link: string) => void | Promise<void>;
+  onKindChange: (kind: GeneratorKind) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+  resolvedChoreoSelection: ChoreoSelection | null;
+  selectedChoreoKey: string;
+};
+
+const InviteLinkGeneratorCard = ({
+  adminLabel,
+  choreoSelectOptions,
+  copyingUrl,
+  generatedLink,
+  generatorStatus,
+  isGenerateDisabled,
+  isGenerating,
+  kind,
+  kindSelectOptions,
+  onAdminLabelChange,
+  onChoreoSelectionChange,
+  onCopy,
+  onKindChange,
+  onSubmit,
+  resolvedChoreoSelection,
+  selectedChoreoKey,
+}: InviteLinkGeneratorCardProps) => (
+  <SurfaceCard>
+    <SurfaceTitle>Генератор доступа</SurfaceTitle>
+    <SurfaceDescription>
+      Выбери тип продукта, добавь идентификатор и сгенерируй одноразовую ссылку доступа в
+      канал.
+    </SurfaceDescription>
+    <Form onSubmit={onSubmit}>
+      <FormControl>
+        <Input
+          id="generator-kind"
+          name="generatorKind"
+          label="Что генерируем"
+          value={kind}
+          onChange={(event) => onKindChange(event.target.value as GeneratorKind)}
+          selectOptions={kindSelectOptions}
+          width="100%"
+        />
+      </FormControl>
+
+      {kind === "choreo" && (
+        <FormControl>
+          <Input
+            id="choreo-selection"
+            name="choreoSelection"
+            label="Разбор / язык / тип"
+            value={selectedChoreoKey}
+            placeholder="Выбери нужный разбор"
+            selectOptions={choreoSelectOptions}
+            onChange={(event) => onChoreoSelectionChange(event.target.value)}
+            width="100%"
+          />
+        </FormControl>
+      )}
+
+      <FormControl>
+        <Input
+          id="admin-link-label"
+          name="adminLinkLabel"
+          label="Идентификатор"
+          value={adminLabel}
+          placeholder="Например: Аня / спец-оффер / блогер"
+          onChange={(event) => onAdminLabelChange(event.target.value)}
+          width="100%"
+        />
+      </FormControl>
+
+      {kind === "choreo" && !resolvedChoreoSelection && (
+        <StatusText $tone="info">
+          Для разбора обязательно выбери конкретный оффер в селекторе.
+        </StatusText>
+      )}
+
+      {!adminLabel.trim() && (
+        <StatusText $tone="info">
+          Добавь идентификатор, чтобы потом было понятно, кому или для чего выдавалась
+          ссылка.
+        </StatusText>
+      )}
+
+      <ButtonRow>
+        <Button
+          buttonText={isGenerating ? "Генерирую..." : "Сгенерировать ссылку"}
+          type="submit"
+          disabled={isGenerateDisabled}
+          isLoading={isGenerating}
+          width="100%"
+        />
+      </ButtonRow>
+
+      {generatorStatus && (
+        <StatusText $tone={generatorStatus.tone}>{generatorStatus.text}</StatusText>
+      )}
+
+      {generatedLink && (
+        <CopyableLink
+          isCopying={copyingUrl === generatedLink}
+          link={generatedLink}
+          onCopy={onCopy}
+        />
+      )}
+    </Form>
+  </SurfaceCard>
+);
+
+const InviteLinkPolicyCard = ({ accessPolicyLabel }: { accessPolicyLabel: string }) => (
+  <SurfaceCard>
+    <SurfaceTitle>Политика и контроль</SurfaceTitle>
+    <PolicyList>
+      <PolicyRow>
+        <PolicyLabel>Доступ по ссылке</PolicyLabel>
+        <PolicyValue>Одноразовый invite, 30 дней</PolicyValue>
+      </PolicyRow>
+      <PolicyRow>
+        <PolicyLabel>Срок доступа</PolicyLabel>
+        <PolicyValue>{accessPolicyLabel}</PolicyValue>
+      </PolicyRow>
+      <PolicyRow>
+        <PolicyLabel>Источник данных</PolicyLabel>
+        <PolicyValue>Neon primary + Google Sheets mirror</PolicyValue>
+      </PolicyRow>
+      <PolicyRow>
+        <PolicyLabel>Защита API</PolicyLabel>
+        <PolicyValue>Origin check + rate limiting</PolicyValue>
+      </PolicyRow>
+    </PolicyList>
+  </SurfaceCard>
+);
+
+type InviteLinkJournalCardProps = {
+  copyingUrl: string;
+  isInitialLoading: boolean;
+  isLoading: boolean;
+  links: GeneratedLinkEntry[];
+  onCopy: (link: string) => void | Promise<void>;
+  onRefresh: () => void | Promise<void>;
+};
+
+const InviteLinkJournalCard = ({
+  copyingUrl,
+  isInitialLoading,
+  isLoading,
+  links,
+  onCopy,
+  onRefresh,
+}: InviteLinkJournalCardProps) => (
+  <SurfaceCard>
+    <SurfaceHeaderRow>
+      <SurfaceTitle>Журнал последних ссылок</SurfaceTitle>
+      <IconActionButton
+        type="button"
+        onClick={onRefresh}
+        disabled={isLoading}
+        $isLoading={isLoading}
+        aria-label="Обновить журнал"
+        title="Обновить журнал"
+      >
+        <RefreshIcon />
+      </IconActionButton>
+    </SurfaceHeaderRow>
+    {isInitialLoading ? (
+      <JournalSkeletonList>
+        {Array.from({ length: JOURNAL_SKELETON_COUNT }, (_, index) => (
+          <JournalSkeletonCard key={`journal-skeleton-${index}`}>
+            <SkeletonLine $width="58%" />
+            <SkeletonLine $width="36%" />
+            <SkeletonLine $width="100%" $height="36px" />
+          </JournalSkeletonCard>
+        ))}
+      </JournalSkeletonList>
+    ) : links.length === 0 ? (
+      <JournalEmptyState>Созданных администратором ссылок нет.</JournalEmptyState>
+    ) : (
+      <RecentLinksList>
+        {links.map((entry) => (
+          <RecentLinkCard key={`${entry.accessUrl}-${entry.createdAtIso}`}>
+            <RecentLinkHeader>
+              <RecentLinkMeta>{entry.selectionLabel}</RecentLinkMeta>
+              <LinkStateBadge $state={entry.linkState}>
+                {resolveLinkStateLabel(entry.linkState)}
+              </LinkStateBadge>
+            </RecentLinkHeader>
+
+            <RecentLinkMeta>Идентификатор: {entry.adminLabel || "-"}</RecentLinkMeta>
+            <RecentLinkMeta>
+              Создано: {formatDateTime(entry.createdAtIso)} | Токен до:{" "}
+              {entry.tokenExpiresAt
+                ? formatDateTime(entry.tokenExpiresAt)
+                : "не определено"}
+            </RecentLinkMeta>
+
+            <CopyableLink
+              isCopying={copyingUrl === entry.accessUrl}
+              link={entry.accessUrl}
+              onCopy={onCopy}
+            />
+          </RecentLinkCard>
+        ))}
+      </RecentLinksList>
+    )}
+  </SurfaceCard>
+);
+
+type BroadcastWorkspaceProps = {
+  isDisabled: boolean;
+  isLoadingStats: boolean;
+  isSending: boolean;
+  onRefresh: () => void | Promise<void>;
+  onSend: () => void | Promise<void>;
+  pendingCount: number;
+  stats: BroadcastStats | null;
+  status: StatusMessage;
+};
+
+const BroadcastWorkspace = ({
+  isDisabled,
+  isLoadingStats,
+  isSending,
+  onRefresh,
+  onSend,
+  pendingCount,
+  stats,
+  status,
+}: BroadcastWorkspaceProps) => (
+  <WorkspaceGrid>
+    <WorkspacePrimary>
+      <SurfaceCard>
+        <SurfaceHeaderRow>
+          <SurfaceTitle>First Touch: старт продаж</SurfaceTitle>
+          <IconActionButton
+            type="button"
+            onClick={onRefresh}
+            disabled={isLoadingStats}
+            $isLoading={isLoadingStats}
+            aria-label="Обновить статистику рассылки"
+            title="Обновить статистику рассылки"
+          >
+            <RefreshIcon />
+          </IconActionButton>
+        </SurfaceHeaderRow>
+        <SurfaceDescription>
+          Отправляет разовое письмо со ссылкой на checkout курса First Touch. Уже успешно
+          отправленные адреса не затрагиваются.
+        </SurfaceDescription>
+        <PolicyList>
+          <PolicyRow>
+            <PolicyLabel>Всего заявок</PolicyLabel>
+            <PolicyValue>{stats?.total ?? 0}</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Ожидают отправки</PolicyLabel>
+            <PolicyValue>{stats?.pending ?? 0}</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Уже отправлено</PolicyLabel>
+            <PolicyValue>{stats?.sent ?? 0}</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>С ошибкой</PolicyLabel>
+            <PolicyValue>{stats?.failed ?? 0}</PolicyValue>
+          </PolicyRow>
+        </PolicyList>
+        <ButtonRow>
+          <Button
+            buttonText={
+              isSending
+                ? "Отправляю..."
+                : isLoadingStats
+                  ? "Загружаю статистику..."
+                  : pendingCount === 0
+                    ? "Нет адресов для отправки"
+                    : "Отправить рассылку"
+            }
+            type="button"
+            onClick={onSend}
+            disabled={isDisabled}
+            isLoading={isSending}
+            width="100%"
+          />
+        </ButtonRow>
+        {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
+      </SurfaceCard>
+    </WorkspacePrimary>
+
+    <WorkspaceSecondary>
+      <SurfaceCard>
+        <SurfaceTitle>Правила отправки</SurfaceTitle>
+        <PolicyList>
+          <PolicyRow>
+            <PolicyLabel>Источник</PolicyLabel>
+            <PolicyValue>Neon EmailCampaignLeads + Sheets mirror</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Кампания</PolicyLabel>
+            <PolicyValue>first_touch_sales_start</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Повторный запуск</PolicyLabel>
+            <PolicyValue>Только pending и failed</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Канал доставки</PolicyLabel>
+            <PolicyValue>Resend email</PolicyValue>
+          </PolicyRow>
+        </PolicyList>
+      </SurfaceCard>
+    </WorkspaceSecondary>
+  </WorkspaceGrid>
+);
+
+type ReportsWorkspaceProps = {
+  isDisabled: boolean;
+  isGenerating: boolean;
+  isLoadingMonths: boolean;
+  month: string;
+  monthOptions: SelectOption[];
+  onGenerate: () => void | Promise<void>;
+  onMonthChange: (value: string) => void;
+  status: StatusMessage;
+};
+
+const ReportsWorkspace = ({
+  isDisabled,
+  isGenerating,
+  isLoadingMonths,
+  month,
+  monthOptions,
+  onGenerate,
+  onMonthChange,
+  status,
+}: ReportsWorkspaceProps) => (
+  <WorkspaceGrid>
+    <WorkspacePrimary>
+      <SurfaceCard>
+        <SurfaceTitle>Ежемесячный отчет по продажам</SurfaceTitle>
+        <SurfaceDescription>
+          Генерирует CSV по успешным Stripe-платежам за выбранный месяц и отправляет его
+          на адрес из RESEND_REPLY_TO.
+        </SurfaceDescription>
+        <Form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void onGenerate();
+          }}
+        >
+          {monthOptions.length > 0 && (
+            <FormControl>
+              <Input
+                id="monthly-sales-report-month"
+                name="monthlySalesReportMonth"
+                label="Месяц отчета"
+                value={month}
+                placeholder="Выбери месяц"
+                selectOptions={monthOptions}
+                onChange={(event) => onMonthChange(event.target.value)}
+                disabled={isGenerating}
+                width="100%"
+              />
+            </FormControl>
+          )}
+          <ButtonRow>
+            <Button
+              buttonText={
+                isGenerating
+                  ? "Отправляю..."
+                  : isLoadingMonths
+                    ? "Загружаю месяцы..."
+                    : monthOptions.length === 0
+                      ? "Нет подтвержденных продаж"
+                      : "Сформировать и отправить отчет"
+              }
+              type="submit"
+              disabled={isDisabled}
+              isLoading={isGenerating}
+              width="100%"
+            />
+          </ButtonRow>
+          {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
+        </Form>
+      </SurfaceCard>
+    </WorkspacePrimary>
+
+    <WorkspaceSecondary>
+      <SurfaceCard>
+        <SurfaceTitle>Как это работает</SurfaceTitle>
+        <PolicyList>
+          <PolicyRow>
+            <PolicyLabel>Источник</PolicyLabel>
+            <PolicyValue>Neon purchases + Stripe success events</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Период</PolicyLabel>
+            <PolicyValue>По времени успешной оплаты Stripe</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Пустой отчет</PolicyLabel>
+            <PolicyValue>Если продаж нет, письмо не отправляется</PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Защита от дублей</PolicyLabel>
+            <PolicyValue>
+              Cron не дублирует отправку, кнопка отправляет каждый раз
+            </PolicyValue>
+          </PolicyRow>
+          <PolicyRow>
+            <PolicyLabel>Канал доставки</PolicyLabel>
+            <PolicyValue>Resend email</PolicyValue>
+          </PolicyRow>
+        </PolicyList>
+      </SurfaceCard>
+    </WorkspaceSecondary>
+  </WorkspaceGrid>
+);
+
+const UnavailableFeature = ({ feature }: { feature: AdminFeature }) => (
+  <>
+    <FeaturePlaceholder>
+      Раздел <strong>{feature.label}</strong> пока не реализован. Дальше можно добавить
+      здесь таблицы, фильтры и действия для ручного управления.
+    </FeaturePlaceholder>
+    <SectionHeading>Скоро здесь появятся инструменты управления</SectionHeading>
+  </>
+);
 
 export default function AdminPage() {
   const choreoSelections = useMemo(() => getChoreoSelections(), []);
@@ -575,8 +1588,8 @@ export default function AdminPage() {
       setIsJournalLoading(true);
 
       const endpoint = forceRefresh
-        ? "/admin/api/invite-links/history?refresh=1"
-        : "/admin/api/invite-links/history";
+        ? `${ADMIN_API_ENDPOINTS.inviteLinksHistory}?refresh=1`
+        : ADMIN_API_ENDPOINTS.inviteLinksHistory;
 
       try {
         const response = await fetch(endpoint, {
@@ -616,15 +1629,15 @@ export default function AdminPage() {
 
     try {
       const [chatsResponse, campaignsResponse, onlineGroupResponse] = await Promise.all([
-        fetch("/admin/api/telegram/chats", {
+        fetch(ADMIN_API_ENDPOINTS.telegramChats, {
           method: "GET",
           cache: "no-store",
         }),
-        fetch("/admin/api/renewal-campaigns", {
+        fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
           method: "GET",
           cache: "no-store",
         }),
-        fetch("/admin/api/online-group-settings", {
+        fetch(ADMIN_API_ENDPOINTS.onlineGroupSettings, {
           method: "GET",
           cache: "no-store",
         }),
@@ -726,7 +1739,7 @@ export default function AdminPage() {
     setIsLoadingFirstTouchBroadcastStats(true);
 
     try {
-      const response = await fetch("/admin/api/broadcasts/first-touch-sales-start", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.firstTouchBroadcast, {
         method: "GET",
         cache: "no-store",
       });
@@ -765,7 +1778,7 @@ export default function AdminPage() {
     setIsLoadingMonthlySalesReportMonths(true);
 
     try {
-      const response = await fetch("/admin/api/reports/monthly-sales", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.monthlySalesReport, {
         method: "GET",
         cache: "no-store",
       });
@@ -826,7 +1839,7 @@ export default function AdminPage() {
     });
 
     try {
-      const response = await fetch("/admin/api/reports/monthly-sales", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.monthlySalesReport, {
         method: "POST",
         cache: "no-store",
         headers: {
@@ -907,7 +1920,7 @@ export default function AdminPage() {
     });
 
     try {
-      const response = await fetch("/admin/api/broadcasts/first-touch-sales-start", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.firstTouchBroadcast, {
         method: "POST",
         cache: "no-store",
       });
@@ -1054,7 +2067,7 @@ export default function AdminPage() {
       }
 
       try {
-        const response = await fetch("/admin/auth", {
+        const response = await fetch(ADMIN_API_ENDPOINTS.auth, {
           method: "GET",
           cache: "no-store",
         });
@@ -1108,7 +2121,7 @@ export default function AdminPage() {
 
     const sessionHeartbeat = window.setInterval(() => {
       void checkAuthState({ silent: true });
-    }, 5 * 60_000);
+    }, ADMIN_SESSION_HEARTBEAT_MS);
 
     return () => {
       window.clearInterval(sessionHeartbeat);
@@ -1148,7 +2161,7 @@ export default function AdminPage() {
     setIsLoggingOut(true);
 
     try {
-      const response = await fetch("/admin/auth", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.auth, {
         method: "DELETE",
       });
 
@@ -1194,7 +2207,7 @@ export default function AdminPage() {
     });
 
     try {
-      const response = await fetch("/admin/auth", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.auth, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1284,7 +2297,7 @@ export default function AdminPage() {
           };
 
     try {
-      const response = await fetch("/admin/api/invite-links", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.inviteLinks, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1365,7 +2378,7 @@ export default function AdminPage() {
     });
 
     try {
-      const response = await fetch("/admin/api/renewal-campaigns", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1468,7 +2481,7 @@ export default function AdminPage() {
     });
 
     try {
-      const response = await fetch("/admin/api/online-group-settings", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.onlineGroupSettings, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1559,7 +2572,7 @@ export default function AdminPage() {
     setUpdatingRenewalSlug(slug);
 
     try {
-      const response = await fetch("/admin/api/renewal-campaigns", {
+      const response = await fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ active, slug }),
@@ -1638,129 +2651,32 @@ export default function AdminPage() {
 
   if (!isAuthorized) {
     return (
-      <AdminInvitePage>
-        <LockViewport>
-          <LockCard>
-            <LockTitle>Вход в админ-панель</LockTitle>
-            <LockDescription>
-              Пароль открывает доступ ко всей админ-панели
-            </LockDescription>
-            <Form onSubmit={handleUnlockSubmit}>
-              <FormControl>
-                <Input
-                  id="admin-password"
-                  name="adminPassword"
-                  type="password"
-                  label="Пароль"
-                  value={authPassword}
-                  onChange={(event) => setAuthPassword(event.target.value)}
-                  placeholder="Введите пароль"
-                  disabled={isChecking || isUnlocking}
-                  width="100%"
-                />
-              </FormControl>
-              <ButtonRow>
-                <Button
-                  buttonText={
-                    isChecking ? "Проверка..." : isUnlocking ? "Открываю..." : "Войти"
-                  }
-                  type="submit"
-                  disabled={isChecking || isUnlocking || !authPassword.trim()}
-                  isLoading={isUnlocking}
-                  width="100%"
-                />
-              </ButtonRow>
-              {authStatus && (
-                <StatusText $tone={authStatus.tone}>{authStatus.text}</StatusText>
-              )}
-            </Form>
-          </LockCard>
-        </LockViewport>
-      </AdminInvitePage>
+      <AdminLogin
+        authPassword={authPassword}
+        authStatus={authStatus}
+        isChecking={isChecking}
+        isUnlocking={isUnlocking}
+        onPasswordChange={setAuthPassword}
+        onSubmit={handleUnlockSubmit}
+      />
     );
   }
 
   return (
     <AdminInvitePage>
       <AdminShell>
-        <Sidebar>
-          <SidebarTop>
-            <SidebarTitle>Admin</SidebarTitle>
-            <SidebarHint>Выбери нужный раздел слева.</SidebarHint>
-            <SidebarNav>
-              {ADMIN_FEATURES.map((feature) => (
-                <SidebarItem
-                  key={feature.id}
-                  type="button"
-                  $active={feature.id === activeFeature.id}
-                  $available={feature.isAvailable}
-                  onClick={() => feature.isAvailable && setActiveFeatureId(feature.id)}
-                  disabled={!feature.isAvailable}
-                  aria-current={feature.id === activeFeature.id ? "page" : undefined}
-                >
-                  <SidebarItemLabel>{feature.label}</SidebarItemLabel>
-                  <SidebarItemMeta>{feature.description}</SidebarItemMeta>
-                </SidebarItem>
-              ))}
-            </SidebarNav>
-          </SidebarTop>
-
-          <SidebarFooter>
-            <SidebarFooterHint>Сессия администратора</SidebarFooterHint>
-            <SidebarActionRow>
-              <SidebarIconButton
-                type="button"
-                onClick={handleRefreshSession}
-                disabled={isRefreshingSession}
-                $isLoading={isRefreshingSession}
-                aria-label="Проверить сессию"
-                title="Проверить сессию"
-              >
-                <RefreshIcon />
-              </SidebarIconButton>
-              <Button
-                buttonText={isLoggingOut ? "Выход..." : "Выйти"}
-                type="button"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                isLoading={isLoggingOut}
-                size="sm"
-                variant="secondary"
-                width="100%"
-              />
-            </SidebarActionRow>
-          </SidebarFooter>
-        </Sidebar>
+        <AdminSidebar
+          activeFeatureId={activeFeature.id}
+          isLoggingOut={isLoggingOut}
+          isRefreshingSession={isRefreshingSession}
+          onFeatureSelect={setActiveFeatureId}
+          onLogout={handleLogout}
+          onRefreshSession={handleRefreshSession}
+        />
 
         <Card>
           <MainPanel>
-            <HeaderRow>
-              <HeaderInfo>
-                <Title>{activeFeature.label}</Title>
-                <Description>
-                  {isInviteLinksFeatureActive
-                    ? "Генерация одноразовых Telegram invite-ссылок с той же бизнес-логикой, что и в боевом платежном потоке."
-                    : isOnlineGroupFeatureActive
-                      ? "Настройка текущего потока, постоянного Inspiration Hub и ссылок продления."
-                      : isBroadcastsFeatureActive
-                        ? "Разовые email-рассылки по заявкам из Neon с зеркалом в Google Sheets."
-                        : isReportsFeatureActive
-                          ? "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц."
-                          : "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия."}
-                </Description>
-                <HeaderMeta>
-                  {isInviteLinksFeatureActive
-                    ? "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."
-                    : isOnlineGroupFeatureActive
-                      ? "Plus открывает основной чат на постоянной основе и Inspiration Hub до конца потока."
-                      : isBroadcastsFeatureActive
-                        ? "Повторный запуск отправляет письма только тем, у кого еще нет успешной отправки."
-                        : isReportsFeatureActive
-                          ? "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи."
-                          : "Для каждого invite добавляй идентификатор, чтобы журнал был понятным."}
-                </HeaderMeta>
-              </HeaderInfo>
-            </HeaderRow>
+            <AdminFeatureHeader feature={activeFeature} />
 
             {authStatus && (
               <StatusText $tone={authStatus.tone}>{authStatus.text}</StatusText>
@@ -1768,727 +2684,145 @@ export default function AdminPage() {
 
             {isOnlineGroupFeatureActive ? (
               <OnlineGroupWorkspace>
-                <SurfaceCard>
-                  <SurfaceHeaderRow>
-                    <SurfaceTitle>1. Активный поток</SurfaceTitle>
-                    <SurfaceHeaderActions>
-                      {activeOnlineGroupCampaign && (
-                        <Button
-                          buttonText={isOnlineGroupFormOpen ? "Скрыть форму" : "Изменить"}
-                          type="button"
-                          onClick={() =>
-                            setIsOnlineGroupFormOpen((currentValue) => !currentValue)
-                          }
-                          size="sm"
-                          variant="secondary"
-                          width="auto"
-                        />
-                      )}
-                      <IconActionButton
-                        type="button"
-                        onClick={loadOnlineGroupAdminData}
-                        disabled={isLoadingOnlineGroupData}
-                        $isLoading={isLoadingOnlineGroupData}
-                        aria-label="Обновить Online Group"
-                        title="Обновить Online Group"
-                      >
-                        <RefreshIcon />
-                      </IconActionButton>
-                    </SurfaceHeaderActions>
-                  </SurfaceHeaderRow>
-                  <SurfaceDescription>
-                    Куда попадут участники после новой покупки или продления.
-                  </SurfaceDescription>
-                  {activeOnlineGroupCampaign ? (
-                    <SummaryGrid>
-                      <SummaryItem>
-                        <SummaryLabel>Поток</SummaryLabel>
-                        <SummaryValue>{activeOnlineGroupCampaign.title}</SummaryValue>
-                      </SummaryItem>
-                      <SummaryItem>
-                        <SummaryLabel>Период Plus-доступа</SummaryLabel>
-                        <SummaryValue>
-                          {formatDateTime(activeOnlineGroupCampaign.startsAt)} —{" "}
-                          {formatDateTime(activeOnlineGroupCampaign.endsAt)}
-                        </SummaryValue>
-                      </SummaryItem>
-                      <SummaryItem>
-                        <SummaryLabel>Основной чат</SummaryLabel>
-                        <SummaryValue>{activeMainChatTitle}</SummaryValue>
-                      </SummaryItem>
-                      <SummaryItem>
-                        <SummaryLabel>Inspiration Hub</SummaryLabel>
-                        <SummaryValue>{inspirationChatTitle}</SummaryValue>
-                      </SummaryItem>
-                    </SummaryGrid>
-                  ) : (
-                    <StatusText $tone="info">Активный поток еще не настроен.</StatusText>
-                  )}
-                  {(isOnlineGroupFormOpen || !activeOnlineGroupCampaign) && (
-                    <Form onSubmit={handleSaveOnlineGroupSettings}>
-                      <FormGrid>
-                        <FormControl>
-                          <Input
-                            id="online-group-regular-chat"
-                            name="onlineGroupRegularChat"
-                            label="Основной чат потока"
-                            value={onlineGroupRegularChatId}
-                            placeholder="Выбери новый чат Online Group"
-                            selectOptions={telegramChatSelectOptions}
-                            onChange={(event) => {
-                              setOnlineGroupRegularChatId(event.target.value);
-                              setOnlineGroupStatus(null);
-                            }}
-                            disabled={isLoadingOnlineGroupData}
-                            width="100%"
-                          />
-                        </FormControl>
-                        <FormControl>
-                          <Input
-                            id="online-group-library-chat"
-                            name="onlineGroupLibraryChat"
-                            label="Постоянный Inspiration Hub"
-                            value={onlineGroupLibraryChatId}
-                            placeholder="Выбери чат Inspiration Hub"
-                            selectOptions={telegramChatSelectOptions}
-                            onChange={(event) => {
-                              setOnlineGroupLibraryChatId(event.target.value);
-                              setOnlineGroupStatus(null);
-                            }}
-                            disabled={
-                              isLoadingOnlineGroupData ||
-                              Boolean(activeOnlineGroupCampaign)
-                            }
-                            width="100%"
-                          />
-                        </FormControl>
-                        <FormControl>
-                          <Input
-                            id="online-group-starts-at"
-                            name="onlineGroupStartsAt"
-                            label="Дата и время старта"
-                            value={onlineGroupStartsAt}
-                            type="datetime-local"
-                            onChange={(event) => {
-                              setOnlineGroupStartsAt(event.target.value);
-                              setOnlineGroupStatus(null);
-                            }}
-                            width="100%"
-                          />
-                        </FormControl>
-                        <FormControl>
-                          <Input
-                            id="online-group-title"
-                            name="onlineGroupTitle"
-                            label="Название потока"
-                            value={onlineGroupTitle}
-                            placeholder="Например: Online Group — август"
-                            onChange={(event) => setOnlineGroupTitle(event.target.value)}
-                            width="100%"
-                          />
-                        </FormControl>
-                      </FormGrid>
-                      <ButtonRow>
-                        <Button
-                          buttonText={
-                            isSavingOnlineGroupSettings
-                              ? "Сохраняю..."
-                              : "Сохранить и активировать поток"
-                          }
-                          type="submit"
-                          disabled={isOnlineGroupGenerateDisabled}
-                          isLoading={isSavingOnlineGroupSettings}
-                          width="100%"
-                        />
-                      </ButtonRow>
-                    </Form>
-                  )}
-                  {onlineGroupStatus && (
-                    <StatusText $tone={onlineGroupStatus.tone}>
-                      {onlineGroupStatus.text}
-                    </StatusText>
-                  )}
-                </SurfaceCard>
-
-                <SurfaceCard>
-                  <SurfaceTitle>2. Создать ссылку продления</SurfaceTitle>
-                  <SurfaceDescription>
-                    Кто может купить следующий поток и по какому тарифу.
-                  </SurfaceDescription>
-                  <Form onSubmit={handleGenerateRenewal}>
-                    <FormControl>
-                      <PolicyLabel>Участники из этих чатов смогут оплатить</PolicyLabel>
-                      <CheckboxList>
-                        {telegramChats.map((chat) => (
-                          <Checkbox
-                            key={chat.chatId}
-                            checked={renewalSourceChatIds.includes(chat.chatId)}
-                            disabled={isLoadingOnlineGroupData}
-                            name={`renewal-source-${chat.chatId}`}
-                            onChange={(event) => {
-                              setRenewalSourceChatIds((currentIds) =>
-                                event.target.checked
-                                  ? [...new Set([...currentIds, chat.chatId])]
-                                  : currentIds.filter((id) => id !== chat.chatId),
-                              );
-                              setGeneratedRenewalLink("");
-                              setRenewalStatus(null);
-                            }}
-                            placeholder={`${chat.title} (${chat.chatId})`}
-                          />
-                        ))}
-                      </CheckboxList>
-                    </FormControl>
-                    <FormGrid>
-                      <FormControl>
-                        <Input
-                          id="renewal-offer"
-                          name="renewalOffer"
-                          label="Тариф"
-                          value={renewalOfferId}
-                          placeholder="Выбери тариф"
-                          selectOptions={renewalOfferSelectOptions}
-                          onChange={(event) => {
-                            setRenewalOfferId(event.target.value);
-                            setGeneratedRenewalLink("");
-                            setRenewalStatus(null);
-                          }}
-                          disabled={isLoadingOnlineGroupData}
-                          width="100%"
-                        />
-                      </FormControl>
-                      <FormControl>
-                        <Input
-                          id="renewal-title"
-                          name="renewalTitle"
-                          label="Название для админки"
-                          value={renewalTitle}
-                          placeholder="Например: поток 1 → поток 2"
-                          onChange={(event) => setRenewalTitle(event.target.value)}
-                          width="100%"
-                        />
-                      </FormControl>
-                    </FormGrid>
-                    <FormGrid>
-                      <ButtonRow>
-                        <Button
-                          buttonText={
-                            isGeneratingRenewal ? "Готовлю..." : "Создать или показать"
-                          }
-                          type="submit"
-                          disabled={isRenewalGenerateDisabled}
-                          isLoading={isGeneratingRenewal}
-                          width="100%"
-                        />
-                      </ButtonRow>
-                      <ButtonRow>
-                        <Button
-                          buttonText={
-                            isGeneratingRenewal ? "Заменяю..." : "Заменить ссылку новой"
-                          }
-                          type="button"
-                          onClick={() => void handleGenerateRenewal(undefined, true)}
-                          disabled={isRenewalGenerateDisabled}
-                          isLoading={isGeneratingRenewal}
-                          variant="secondary"
-                          width="100%"
-                        />
-                      </ButtonRow>
-                    </FormGrid>
-                    {renewalStatus && (
-                      <StatusText $tone={renewalStatus.tone}>
-                        {renewalStatus.text}
-                      </StatusText>
-                    )}
-                    {generatedRenewalLink && (
-                      <ResultBox>
-                        <ResultValue>{generatedRenewalLink}</ResultValue>
-                        <CopyButton>
-                          <IconActionButton
-                            type="button"
-                            onClick={() => handleCopyLink(generatedRenewalLink)}
-                            disabled={copyingUrl === generatedRenewalLink}
-                            $isLoading={copyingUrl === generatedRenewalLink}
-                            aria-label="Копировать ссылку продления"
-                            title="Копировать ссылку продления"
-                          >
-                            <CopyIcon />
-                          </IconActionButton>
-                        </CopyButton>
-                      </ResultBox>
-                    )}
-                  </Form>
-                </SurfaceCard>
-
-                <SurfaceCard>
-                  <SurfaceTitle>3. Ссылки продления</SurfaceTitle>
-                  <SurfaceDescription>
-                    Включай нужную ссылку свитчером и копируй ее для отправки в чат.
-                  </SurfaceDescription>
-                  {renewalCampaigns.length === 0 ? (
-                    <JournalEmptyState>Ссылок пока нет.</JournalEmptyState>
-                  ) : (
-                    <RenewalLinksList>
-                      {renewalCampaigns.map((campaign) => {
-                        const isActive = campaign.status === "active";
-
-                        return (
-                          <RecentLinkCard key={campaign.slug}>
-                            <RecentLinkHeader>
-                              <RecentLinkMeta>{campaign.title}</RecentLinkMeta>
-                              <RenewalLinkControls>
-                                <LinkStateBadge $state={isActive ? "active" : "used"}>
-                                  {campaign.offerId ===
-                                  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID
-                                    ? "Plus"
-                                    : "Standard"}
-                                </LinkStateBadge>
-                                <ToggleSwitch
-                                  ariaLabel={`${isActive ? "Выключить" : "Включить"} ссылку ${campaign.title}`}
-                                  checked={isActive}
-                                  disabled={Boolean(updatingRenewalSlug)}
-                                  onChange={(checked) =>
-                                    void handleToggleRenewalStatus(campaign.slug, checked)
-                                  }
-                                />
-                              </RenewalLinkControls>
-                            </RecentLinkHeader>
-                            <RecentLinkMeta>
-                              Проверяем: {campaign.sourceChatTitles.join(", ")}
-                            </RecentLinkMeta>
-                            <RecentLinkMeta>
-                              Создано: {formatDateTime(campaign.createdAt)}
-                            </RecentLinkMeta>
-                            <ResultBox>
-                              <ResultValue>{campaign.checkoutUrl}</ResultValue>
-                              <CopyButton>
-                                <IconActionButton
-                                  type="button"
-                                  onClick={() => handleCopyLink(campaign.checkoutUrl)}
-                                  disabled={
-                                    !isActive || copyingUrl === campaign.checkoutUrl
-                                  }
-                                  $isLoading={copyingUrl === campaign.checkoutUrl}
-                                  aria-label="Копировать ссылку"
-                                  title={
-                                    isActive
-                                      ? "Копировать ссылку"
-                                      : "Сначала включи ссылку"
-                                  }
-                                >
-                                  <CopyIcon />
-                                </IconActionButton>
-                              </CopyButton>
-                            </ResultBox>
-                          </RecentLinkCard>
-                        );
-                      })}
-                    </RenewalLinksList>
-                  )}
-                </SurfaceCard>
+                <ActiveOnlineGroupCard
+                  activeCampaign={activeOnlineGroupCampaign}
+                  activeMainChatTitle={activeMainChatTitle}
+                  inspirationChatTitle={inspirationChatTitle}
+                  isFormOpen={isOnlineGroupFormOpen}
+                  isLoading={isLoadingOnlineGroupData}
+                  isSaveDisabled={isOnlineGroupGenerateDisabled}
+                  isSaving={isSavingOnlineGroupSettings}
+                  libraryChatId={onlineGroupLibraryChatId}
+                  mainChatId={onlineGroupRegularChatId}
+                  onFormToggle={() =>
+                    setIsOnlineGroupFormOpen((currentValue) => !currentValue)
+                  }
+                  onLibraryChatChange={(value) => {
+                    setOnlineGroupLibraryChatId(value);
+                    setOnlineGroupStatus(null);
+                  }}
+                  onMainChatChange={(value) => {
+                    setOnlineGroupRegularChatId(value);
+                    setOnlineGroupStatus(null);
+                  }}
+                  onRefresh={loadOnlineGroupAdminData}
+                  onStartsAtChange={(value) => {
+                    setOnlineGroupStartsAt(value);
+                    setOnlineGroupStatus(null);
+                  }}
+                  onSubmit={handleSaveOnlineGroupSettings}
+                  onTitleChange={setOnlineGroupTitle}
+                  startsAt={onlineGroupStartsAt}
+                  status={onlineGroupStatus}
+                  telegramChatOptions={telegramChatSelectOptions}
+                  title={onlineGroupTitle}
+                />
+                <RenewalGeneratorCard
+                  chats={telegramChats}
+                  copyingUrl={copyingUrl}
+                  generatedLink={generatedRenewalLink}
+                  isDisabled={isRenewalGenerateDisabled}
+                  isGenerating={isGeneratingRenewal}
+                  isLoading={isLoadingOnlineGroupData}
+                  offerId={renewalOfferId}
+                  offerOptions={renewalOfferSelectOptions}
+                  onCopy={handleCopyLink}
+                  onOfferChange={(value) => {
+                    setRenewalOfferId(value);
+                    setGeneratedRenewalLink("");
+                    setRenewalStatus(null);
+                  }}
+                  onRegenerate={() => void handleGenerateRenewal(undefined, true)}
+                  onSourceChatToggle={(chatId, checked) => {
+                    setRenewalSourceChatIds((currentIds) =>
+                      checked
+                        ? [...new Set([...currentIds, chatId])]
+                        : currentIds.filter((id) => id !== chatId),
+                    );
+                    setGeneratedRenewalLink("");
+                    setRenewalStatus(null);
+                  }}
+                  onSubmit={handleGenerateRenewal}
+                  onTitleChange={setRenewalTitle}
+                  sourceChatIds={renewalSourceChatIds}
+                  status={renewalStatus}
+                  title={renewalTitle}
+                />
+                <RenewalCampaignsCard
+                  campaigns={renewalCampaigns}
+                  copyingUrl={copyingUrl}
+                  onCopy={handleCopyLink}
+                  onToggleStatus={handleToggleRenewalStatus}
+                  updatingSlug={updatingRenewalSlug}
+                />
               </OnlineGroupWorkspace>
             ) : isInviteLinksFeatureActive ? (
               <WorkspaceGrid>
                 <WorkspacePrimary>
-                  <SurfaceCard>
-                    <SurfaceTitle>Генератор доступа</SurfaceTitle>
-                    <SurfaceDescription>
-                      Выбери тип продукта, добавь идентификатор и сгенерируй одноразовую
-                      ссылку доступа в канал.
-                    </SurfaceDescription>
-                    <Form onSubmit={handleGenerate}>
-                      <FormControl>
-                        <Input
-                          id="generator-kind"
-                          name="generatorKind"
-                          label="Что генерируем"
-                          value={kind}
-                          onChange={(event) =>
-                            handleKindChange(event.target.value as GeneratorKind)
-                          }
-                          selectOptions={kindSelectOptions}
-                          width="100%"
-                        />
-                      </FormControl>
-
-                      {kind === "choreo" && (
-                        <FormControl>
-                          <Input
-                            id="choreo-selection"
-                            name="choreoSelection"
-                            label="Разбор / язык / тип"
-                            value={selectedChoreoKey}
-                            placeholder="Выбери нужный разбор"
-                            selectOptions={choreoSelectOptions}
-                            onChange={(event) => {
-                              setSelectedChoreoKey(event.target.value);
-                              setGeneratedLink("");
-                              setGeneratorStatus(null);
-                            }}
-                            width="100%"
-                          />
-                        </FormControl>
-                      )}
-
-                      <FormControl>
-                        <Input
-                          id="admin-link-label"
-                          name="adminLinkLabel"
-                          label="Идентификатор"
-                          value={adminLabel}
-                          placeholder="Например: Аня / спец-оффер / блогер"
-                          onChange={(event) => setAdminLabel(event.target.value)}
-                          width="100%"
-                        />
-                      </FormControl>
-
-                      {kind === "choreo" && !resolvedChoreoSelection && (
-                        <StatusText $tone="info">
-                          Для разбора обязательно выбери конкретный оффер в селекторе.
-                        </StatusText>
-                      )}
-
-                      {!adminLabel.trim() && (
-                        <StatusText $tone="info">
-                          Добавь идентификатор, чтобы потом было понятно, кому или для
-                          чего выдавалась ссылка.
-                        </StatusText>
-                      )}
-
-                      <ButtonRow>
-                        <Button
-                          buttonText={
-                            isGenerating ? "Генерирую..." : "Сгенерировать ссылку"
-                          }
-                          type="submit"
-                          disabled={isGenerateDisabled}
-                          isLoading={isGenerating}
-                          width="100%"
-                        />
-                      </ButtonRow>
-
-                      {generatorStatus && (
-                        <StatusText $tone={generatorStatus.tone}>
-                          {generatorStatus.text}
-                        </StatusText>
-                      )}
-
-                      {generatedLink && (
-                        <ResultBox>
-                          <ResultValue>{generatedLink}</ResultValue>
-                          <CopyButton>
-                            <IconActionButton
-                              type="button"
-                              onClick={() => handleCopyLink(generatedLink)}
-                              disabled={copyingUrl === generatedLink}
-                              $isLoading={copyingUrl === generatedLink}
-                              aria-label="Копировать ссылку"
-                              title="Копировать ссылку"
-                            >
-                              <CopyIcon />
-                            </IconActionButton>
-                          </CopyButton>
-                        </ResultBox>
-                      )}
-                    </Form>
-                  </SurfaceCard>
+                  <InviteLinkGeneratorCard
+                    adminLabel={adminLabel}
+                    choreoSelectOptions={choreoSelectOptions}
+                    copyingUrl={copyingUrl}
+                    generatedLink={generatedLink}
+                    generatorStatus={generatorStatus}
+                    isGenerateDisabled={isGenerateDisabled}
+                    isGenerating={isGenerating}
+                    kind={kind}
+                    kindSelectOptions={kindSelectOptions}
+                    onAdminLabelChange={setAdminLabel}
+                    onChoreoSelectionChange={(value) => {
+                      setSelectedChoreoKey(value);
+                      setGeneratedLink("");
+                      setGeneratorStatus(null);
+                    }}
+                    onCopy={handleCopyLink}
+                    onKindChange={handleKindChange}
+                    onSubmit={handleGenerate}
+                    resolvedChoreoSelection={resolvedChoreoSelection}
+                    selectedChoreoKey={selectedChoreoKey}
+                  />
                 </WorkspacePrimary>
 
                 <WorkspaceSecondary>
-                  <SurfaceCard>
-                    <SurfaceTitle>Политика и контроль</SurfaceTitle>
-                    <PolicyList>
-                      <PolicyRow>
-                        <PolicyLabel>Доступ по ссылке</PolicyLabel>
-                        <PolicyValue>Одноразовый invite, 30 дней</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Срок доступа</PolicyLabel>
-                        <PolicyValue>{accessPolicyLabel}</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Источник данных</PolicyLabel>
-                        <PolicyValue>Neon primary + Google Sheets mirror</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Защита API</PolicyLabel>
-                        <PolicyValue>Origin check + rate limiting</PolicyValue>
-                      </PolicyRow>
-                    </PolicyList>
-                  </SurfaceCard>
-
-                  <SurfaceCard>
-                    <SurfaceHeaderRow>
-                      <SurfaceTitle>Журнал последних ссылок</SurfaceTitle>
-                      <IconActionButton
-                        type="button"
-                        onClick={handleRefreshJournal}
-                        disabled={isJournalLoading}
-                        $isLoading={isJournalLoading}
-                        aria-label="Обновить журнал"
-                        title="Обновить журнал"
-                      >
-                        <RefreshIcon />
-                      </IconActionButton>
-                    </SurfaceHeaderRow>
-                    {isJournalInitialLoading ? (
-                      <JournalSkeletonList>
-                        {Array.from({ length: 3 }, (_, index) => (
-                          <JournalSkeletonCard key={`journal-skeleton-${index}`}>
-                            <SkeletonLine $width="58%" />
-                            <SkeletonLine $width="36%" />
-                            <SkeletonLine $width="100%" $height="36px" />
-                          </JournalSkeletonCard>
-                        ))}
-                      </JournalSkeletonList>
-                    ) : recentLinks.length === 0 ? (
-                      <JournalEmptyState>
-                        Созданных администратором ссылок нет.
-                      </JournalEmptyState>
-                    ) : (
-                      <RecentLinksList>
-                        {recentLinks.map((entry) => {
-                          const isEntryCopying = copyingUrl === entry.accessUrl;
-
-                          return (
-                            <RecentLinkCard
-                              key={`${entry.accessUrl}-${entry.createdAtIso}`}
-                            >
-                              <RecentLinkHeader>
-                                <RecentLinkMeta>{entry.selectionLabel}</RecentLinkMeta>
-                                <LinkStateBadge $state={entry.linkState}>
-                                  {resolveLinkStateLabel(entry.linkState)}
-                                </LinkStateBadge>
-                              </RecentLinkHeader>
-
-                              <RecentLinkMeta>
-                                Идентификатор: {entry.adminLabel || "-"}
-                              </RecentLinkMeta>
-                              <RecentLinkMeta>
-                                Создано: {formatDateTime(entry.createdAtIso)} | Токен до:{" "}
-                                {entry.tokenExpiresAt
-                                  ? formatDateTime(entry.tokenExpiresAt)
-                                  : "не определено"}
-                              </RecentLinkMeta>
-
-                              <ResultBox>
-                                <ResultValue>{entry.accessUrl}</ResultValue>
-                                <CopyButton>
-                                  <IconActionButton
-                                    type="button"
-                                    onClick={() => handleCopyLink(entry.accessUrl)}
-                                    disabled={isEntryCopying}
-                                    $isLoading={isEntryCopying}
-                                    aria-label="Копировать ссылку"
-                                    title="Копировать ссылку"
-                                  >
-                                    <CopyIcon />
-                                  </IconActionButton>
-                                </CopyButton>
-                              </ResultBox>
-                            </RecentLinkCard>
-                          );
-                        })}
-                      </RecentLinksList>
-                    )}
-                  </SurfaceCard>
+                  <InviteLinkPolicyCard accessPolicyLabel={accessPolicyLabel} />
+                  <InviteLinkJournalCard
+                    copyingUrl={copyingUrl}
+                    isInitialLoading={isJournalInitialLoading}
+                    isLoading={isJournalLoading}
+                    links={recentLinks}
+                    onCopy={handleCopyLink}
+                    onRefresh={handleRefreshJournal}
+                  />
                 </WorkspaceSecondary>
               </WorkspaceGrid>
             ) : isBroadcastsFeatureActive ? (
-              <WorkspaceGrid>
-                <WorkspacePrimary>
-                  <SurfaceCard>
-                    <SurfaceHeaderRow>
-                      <SurfaceTitle>First Touch: старт продаж</SurfaceTitle>
-                      <IconActionButton
-                        type="button"
-                        onClick={loadFirstTouchBroadcastStats}
-                        disabled={isLoadingFirstTouchBroadcastStats}
-                        $isLoading={isLoadingFirstTouchBroadcastStats}
-                        aria-label="Обновить статистику рассылки"
-                        title="Обновить статистику рассылки"
-                      >
-                        <RefreshIcon />
-                      </IconActionButton>
-                    </SurfaceHeaderRow>
-                    <SurfaceDescription>
-                      Отправляет разовое письмо со ссылкой на checkout курса First Touch.
-                      Уже успешно отправленные адреса не затрагиваются.
-                    </SurfaceDescription>
-                    <PolicyList>
-                      <PolicyRow>
-                        <PolicyLabel>Всего заявок</PolicyLabel>
-                        <PolicyValue>{firstTouchBroadcastStats?.total ?? 0}</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Ожидают отправки</PolicyLabel>
-                        <PolicyValue>
-                          {firstTouchBroadcastStats?.pending ?? 0}
-                        </PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Уже отправлено</PolicyLabel>
-                        <PolicyValue>{firstTouchBroadcastStats?.sent ?? 0}</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>С ошибкой</PolicyLabel>
-                        <PolicyValue>{firstTouchBroadcastStats?.failed ?? 0}</PolicyValue>
-                      </PolicyRow>
-                    </PolicyList>
-                    <ButtonRow>
-                      <Button
-                        buttonText={
-                          isSendingFirstTouchBroadcast
-                            ? "Отправляю..."
-                            : isLoadingFirstTouchBroadcastStats
-                              ? "Загружаю статистику..."
-                              : firstTouchBroadcastPendingCount === 0
-                                ? "Нет адресов для отправки"
-                                : "Отправить рассылку"
-                        }
-                        type="button"
-                        onClick={handleSendFirstTouchBroadcast}
-                        disabled={isFirstTouchBroadcastDisabled}
-                        isLoading={isSendingFirstTouchBroadcast}
-                        width="100%"
-                      />
-                    </ButtonRow>
-                    {firstTouchBroadcastStatus && (
-                      <StatusText $tone={firstTouchBroadcastStatus.tone}>
-                        {firstTouchBroadcastStatus.text}
-                      </StatusText>
-                    )}
-                  </SurfaceCard>
-                </WorkspacePrimary>
-
-                <WorkspaceSecondary>
-                  <SurfaceCard>
-                    <SurfaceTitle>Правила отправки</SurfaceTitle>
-                    <PolicyList>
-                      <PolicyRow>
-                        <PolicyLabel>Источник</PolicyLabel>
-                        <PolicyValue>Neon EmailCampaignLeads + Sheets mirror</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Кампания</PolicyLabel>
-                        <PolicyValue>first_touch_sales_start</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Повторный запуск</PolicyLabel>
-                        <PolicyValue>Только pending и failed</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Канал доставки</PolicyLabel>
-                        <PolicyValue>Resend email</PolicyValue>
-                      </PolicyRow>
-                    </PolicyList>
-                  </SurfaceCard>
-                </WorkspaceSecondary>
-              </WorkspaceGrid>
+              <BroadcastWorkspace
+                isDisabled={isFirstTouchBroadcastDisabled}
+                isLoadingStats={isLoadingFirstTouchBroadcastStats}
+                isSending={isSendingFirstTouchBroadcast}
+                onRefresh={loadFirstTouchBroadcastStats}
+                onSend={handleSendFirstTouchBroadcast}
+                pendingCount={firstTouchBroadcastPendingCount}
+                stats={firstTouchBroadcastStats}
+                status={firstTouchBroadcastStatus}
+              />
             ) : isReportsFeatureActive ? (
-              <WorkspaceGrid>
-                <WorkspacePrimary>
-                  <SurfaceCard>
-                    <SurfaceTitle>Ежемесячный отчет по продажам</SurfaceTitle>
-                    <SurfaceDescription>
-                      Генерирует CSV по успешным Stripe-платежам за выбранный месяц и
-                      отправляет его на адрес из RESEND_REPLY_TO.
-                    </SurfaceDescription>
-                    <Form
-                      onSubmit={(event) => {
-                        event.preventDefault();
-                        void handleGenerateMonthlySalesReport();
-                      }}
-                    >
-                      {monthlyReportMonthOptions.length > 0 && (
-                        <FormControl>
-                          <Input
-                            id="monthly-sales-report-month"
-                            name="monthlySalesReportMonth"
-                            label="Месяц отчета"
-                            value={monthlySalesReportMonth}
-                            placeholder="Выбери месяц"
-                            selectOptions={monthlyReportMonthOptions}
-                            onChange={(event) => {
-                              setMonthlySalesReportMonth(event.target.value);
-                              setMonthlySalesReportStatus(null);
-                            }}
-                            disabled={isGeneratingMonthlySalesReport}
-                            width="100%"
-                          />
-                        </FormControl>
-                      )}
-                      <ButtonRow>
-                        <Button
-                          buttonText={
-                            isGeneratingMonthlySalesReport
-                              ? "Отправляю..."
-                              : isLoadingMonthlySalesReportMonths
-                                ? "Загружаю месяцы..."
-                                : monthlyReportMonthOptions.length === 0
-                                  ? "Нет подтвержденных продаж"
-                                  : "Сформировать и отправить отчет"
-                          }
-                          type="submit"
-                          disabled={isMonthlySalesReportDisabled}
-                          isLoading={isGeneratingMonthlySalesReport}
-                          width="100%"
-                        />
-                      </ButtonRow>
-                      {monthlySalesReportStatus && (
-                        <StatusText $tone={monthlySalesReportStatus.tone}>
-                          {monthlySalesReportStatus.text}
-                        </StatusText>
-                      )}
-                    </Form>
-                  </SurfaceCard>
-                </WorkspacePrimary>
-
-                <WorkspaceSecondary>
-                  <SurfaceCard>
-                    <SurfaceTitle>Как это работает</SurfaceTitle>
-                    <PolicyList>
-                      <PolicyRow>
-                        <PolicyLabel>Источник</PolicyLabel>
-                        <PolicyValue>Neon purchases + Stripe success events</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Период</PolicyLabel>
-                        <PolicyValue>По времени успешной оплаты Stripe</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Пустой отчет</PolicyLabel>
-                        <PolicyValue>Если продаж нет, письмо не отправляется</PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Защита от дублей</PolicyLabel>
-                        <PolicyValue>
-                          Cron не дублирует отправку, кнопка отправляет каждый раз
-                        </PolicyValue>
-                      </PolicyRow>
-                      <PolicyRow>
-                        <PolicyLabel>Канал доставки</PolicyLabel>
-                        <PolicyValue>Resend email</PolicyValue>
-                      </PolicyRow>
-                    </PolicyList>
-                  </SurfaceCard>
-                </WorkspaceSecondary>
-              </WorkspaceGrid>
+              <ReportsWorkspace
+                isDisabled={isMonthlySalesReportDisabled}
+                isGenerating={isGeneratingMonthlySalesReport}
+                isLoadingMonths={isLoadingMonthlySalesReportMonths}
+                month={monthlySalesReportMonth}
+                monthOptions={monthlyReportMonthOptions}
+                onGenerate={handleGenerateMonthlySalesReport}
+                onMonthChange={(value) => {
+                  setMonthlySalesReportMonth(value);
+                  setMonthlySalesReportStatus(null);
+                }}
+                status={monthlySalesReportStatus}
+              />
             ) : (
-              <FeaturePlaceholder>
-                Раздел <strong>{activeFeature.label}</strong> пока не реализован. Дальше
-                можно добавить здесь таблицы, фильтры и действия для ручного управления.
-              </FeaturePlaceholder>
+              <UnavailableFeature feature={activeFeature} />
             )}
-
-            {!isInviteLinksFeatureActive &&
-              !isOnlineGroupFeatureActive &&
-              !isBroadcastsFeatureActive &&
-              !isReportsFeatureActive && (
-                <SectionHeading>
-                  Скоро здесь появятся инструменты управления
-                </SectionHeading>
-              )}
           </MainPanel>
         </Card>
       </AdminShell>
