@@ -1,16 +1,22 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { upsertRegisteredTelegramChat } from "@/db/renewal-campaigns";
 import { isPayloadTooLarge, jsonNoStore, parseJsonBody } from "@/lib/http-security";
 import {
   activateTelegramStartToken,
   getActivatedPaymentsByTelegramUserId,
   syncTelegramChannelMembership,
 } from "@/lib/telegram/access";
-import { copyTelegramMessage, sendTelegramMessage } from "@/lib/telegram/bot-api";
+import {
+  copyTelegramMessage,
+  getTelegramChatMember,
+  sendTelegramMessage,
+} from "@/lib/telegram/bot-api";
 import {
   getTelegramLessonSourceByOfferId,
   getTelegramWebhookSecret,
   isTelegramBotConfigured,
 } from "@/lib/telegram/config";
+import { syncOnlineGroupMembership } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
 
@@ -21,6 +27,7 @@ type BotLocale = "en" | "pl" | "ru";
 type TelegramIncomingMessage = {
   chat?: {
     id?: number;
+    title?: string;
     type?: string;
   };
   from?: {
@@ -57,6 +64,36 @@ type TelegramUpdate = {
   message?: TelegramIncomingMessage;
 };
 
+type TelegramWebhookFallback = {
+  chatId: number | null;
+  locale: BotLocale;
+};
+
+type TelegramMessageContext = {
+  chatId: number;
+  chatType: string;
+  commandPayload: string;
+  message: TelegramIncomingMessage;
+  normalizedCommand: string;
+  preferredLocale: BotLocale;
+  telegramUserId: string;
+  telegramUsername: string;
+};
+
+type TelegramMessageEnvelope = Pick<
+  TelegramMessageContext,
+  "chatId" | "chatType" | "message" | "telegramUserId"
+>;
+
+type TelegramMembershipStatus = "joined" | "left";
+
+const BOT_COMMANDS = {
+  help: "/help",
+  myLessons: "/my_lessons",
+  registerChat: "/register_chat",
+  start: "/start",
+} as const;
+
 const BOT_COPY = {
   en: {
     accessConfirmed: "Access confirmed. Sending your lesson.",
@@ -86,6 +123,9 @@ const BOT_COPY = {
     temporaryIssue:
       "Temporary technical issue while checking access. Please try /start again in a minute.",
     unknownCommand: "Command not recognized.",
+    groupRegistered: "Chat registered for renewal campaigns.",
+    groupRegistrationForbidden:
+      "Only a chat owner or administrator can register this chat.",
   },
   pl: {
     accessConfirmed: "Dostęp potwierdzony. Wysyłam Twoją lekcję.",
@@ -113,6 +153,9 @@ const BOT_COPY = {
     temporaryIssue:
       "Wystąpił chwilowy problem techniczny podczas weryfikacji dostępu. Spróbuj ponownie /start za minutę.",
     unknownCommand: "Nie rozpoznano polecenia.",
+    groupRegistered: "Czat zapisany dla kampanii kontynuacji.",
+    groupRegistrationForbidden:
+      "Tylko właściciel lub administrator może zarejestrować ten czat.",
   },
   ru: {
     accessConfirmed: "Доступ подтвержден. Отправляю ваш урок.",
@@ -140,6 +183,9 @@ const BOT_COPY = {
     temporaryIssue:
       "Временная техническая ошибка при проверке доступа. Попробуйте /start еще раз через минуту.",
     unknownCommand: "Команда не распознана.",
+    groupRegistered: "Чат зарегистрирован для продлений.",
+    groupRegistrationForbidden:
+      "Зарегистрировать чат может только его владелец или администратор.",
   },
 } as const;
 
@@ -381,7 +427,12 @@ const handleStartCommand = async ({
   }
 };
 
-export async function POST(request: Request) {
+const getOkWebhookResponse = () =>
+  jsonNoStore({
+    ok: true,
+  });
+
+const validateTelegramWebhookRequest = (request: Request): Response | null => {
   if (isPayloadTooLarge(request, MAX_TELEGRAM_WEBHOOK_BODY_BYTES)) {
     return jsonNoStore(
       {
@@ -413,143 +464,337 @@ export async function POST(request: Request) {
     );
   }
 
-  if (webhookSecret) {
-    const receivedSecret = request.headers.get("x-telegram-bot-api-secret-token") ?? "";
+  if (!webhookSecret) {
+    return null;
+  }
 
-    if (receivedSecret !== webhookSecret) {
-      return jsonNoStore(
-        {
-          errorCode: "invalid_webhook_secret",
-        },
-        { status: 401 },
-      );
+  const receivedSecret = request.headers.get("x-telegram-bot-api-secret-token") ?? "";
+
+  if (receivedSecret !== webhookSecret) {
+    return jsonNoStore(
+      {
+        errorCode: "invalid_webhook_secret",
+      },
+      { status: 401 },
+    );
+  }
+
+  return null;
+};
+
+const getTelegramMembershipStatus = ({
+  newMember,
+  oldMember,
+}: {
+  newMember: TelegramChatMember | undefined;
+  oldMember: TelegramChatMember | undefined;
+}): TelegramMembershipStatus | null => {
+  const wasActive = isActiveTelegramMember(oldMember);
+  const isActive = isActiveTelegramMember(newMember);
+
+  if (!wasActive && isActive) {
+    return "joined";
+  }
+
+  if (wasActive && !isActive) {
+    return "left";
+  }
+
+  return null;
+};
+
+const syncTelegramMembershipProviders = async ({
+  chatId,
+  chatMemberUpdate,
+  membershipStatus,
+  telegramUserId,
+  telegramUsername,
+}: {
+  chatId: string;
+  chatMemberUpdate: TelegramChatMemberUpdate;
+  membershipStatus: TelegramMembershipStatus;
+  telegramUserId: string;
+  telegramUsername: string;
+}): Promise<void> => {
+  if (membershipStatus === "joined") {
+    const inviteLink = chatMemberUpdate.invite_link?.invite_link ?? "";
+    const handledByOnlineGroup = await syncOnlineGroupMembership({
+      chatId,
+      inviteLink,
+      membershipStatus,
+      telegramUserId,
+      telegramUsername,
+    });
+
+    if (!handledByOnlineGroup) {
+      await syncTelegramChannelMembership({
+        chatId,
+        inviteLink,
+        membershipStatus,
+        telegramUserId,
+        telegramUsername,
+      });
+    }
+
+    return;
+  }
+
+  const handledByOnlineGroup = await syncOnlineGroupMembership({
+    chatId,
+    membershipStatus,
+    telegramUserId,
+    telegramUsername,
+  });
+
+  if (!handledByOnlineGroup) {
+    await syncTelegramChannelMembership({
+      chatId,
+      membershipStatus,
+      telegramUserId,
+      telegramUsername,
+    });
+  }
+};
+
+const handleTelegramChatMemberUpdate = async (
+  chatMemberUpdate: TelegramChatMemberUpdate,
+): Promise<Response> => {
+  const chatId = chatMemberUpdate.chat?.id;
+  const newMember = chatMemberUpdate.new_chat_member;
+  const telegramUserId = newMember?.user?.id ? String(newMember.user.id) : "";
+
+  if (chatId && telegramUserId) {
+    const membershipStatus = getTelegramMembershipStatus({
+      newMember,
+      oldMember: chatMemberUpdate.old_chat_member,
+    });
+
+    if (membershipStatus) {
+      await syncTelegramMembershipProviders({
+        chatId: String(chatId),
+        chatMemberUpdate,
+        membershipStatus,
+        telegramUserId,
+        telegramUsername: newMember?.user?.username ?? "",
+      });
     }
   }
 
-  let fallbackChatId: number | null = null;
-  let fallbackLocale: BotLocale = "ru";
+  return getOkWebhookResponse();
+};
+
+const handleTelegramGroupMessage = async ({
+  chatId,
+  chatType,
+  message,
+  normalizedCommand,
+  preferredLocale,
+  telegramUserId,
+  telegramUsername,
+}: TelegramMessageContext): Promise<Response> => {
+  if (normalizedCommand !== BOT_COMMANDS.registerChat) {
+    return getOkWebhookResponse();
+  }
+
+  const requestingMember = await getTelegramChatMember({
+    chatId: String(chatId),
+    userId: telegramUserId,
+  });
+
+  if (
+    requestingMember.status !== "administrator" &&
+    requestingMember.status !== "creator"
+  ) {
+    await sendTelegramMessage({
+      chatId,
+      text: getBotCopy(preferredLocale).groupRegistrationForbidden,
+    });
+
+    return getOkWebhookResponse();
+  }
+
+  const savedChat = await upsertRegisteredTelegramChat({
+    chatId: String(chatId),
+    registeredByTelegramUserId: telegramUserId,
+    registeredByTelegramUsername: telegramUsername,
+    title: message.chat?.title ?? String(chatId),
+    type: chatType,
+  });
+
+  await sendTelegramMessage({
+    chatId,
+    text: `${getBotCopy(preferredLocale).groupRegistered}\n${savedChat.title}\nID: ${savedChat.chatId}`,
+  });
+
+  return getOkWebhookResponse();
+};
+
+const handleTelegramPrivateMessage = async ({
+  chatId,
+  commandPayload,
+  normalizedCommand,
+  preferredLocale,
+  telegramUserId,
+  telegramUsername,
+}: TelegramMessageContext): Promise<Response> => {
+  if (normalizedCommand === BOT_COMMANDS.start) {
+    await handleStartCommand({
+      chatId,
+      commandPayload,
+      preferredLocale,
+      telegramUserId,
+      telegramUsername,
+    });
+
+    return getOkWebhookResponse();
+  }
+
+  if (normalizedCommand === BOT_COMMANDS.myLessons) {
+    await sendPurchasedLessons({
+      chatId,
+      preferredLocale,
+      telegramUserId,
+    });
+
+    return getOkWebhookResponse();
+  }
+
+  if (normalizedCommand === BOT_COMMANDS.help) {
+    await sendTelegramMessage({
+      chatId,
+      text: buildHelpText(preferredLocale),
+    });
+
+    return getOkWebhookResponse();
+  }
+
+  await sendTelegramMessage({
+    chatId,
+    text: `${getBotCopy(preferredLocale).unknownCommand}\n\n${buildHelpText(preferredLocale)}`,
+  });
+
+  return getOkWebhookResponse();
+};
+
+const getTelegramMessageEnvelope = (
+  update: TelegramUpdate | null,
+): TelegramMessageEnvelope | null => {
+  const message = update?.message;
+  const chatId = message?.chat?.id;
+  const chatType = message?.chat?.type ?? "";
+  const telegramUserId = message?.from?.id ? String(message.from.id) : "";
+
+  if (!message || !chatId || !telegramUserId) {
+    return null;
+  }
+
+  return {
+    chatId,
+    chatType,
+    message,
+    telegramUserId,
+  };
+};
+
+const handleTelegramMessage = async ({
+  fallback,
+  update,
+}: {
+  fallback: TelegramWebhookFallback;
+  update: TelegramUpdate | null;
+}): Promise<Response> => {
+  const envelope = getTelegramMessageEnvelope(update);
+
+  if (!envelope) {
+    return getOkWebhookResponse();
+  }
+
+  const { chatId, chatType, message, telegramUserId } = envelope;
+  const telegramUsername = message.from?.username?.trim() ?? "";
+  const preferredLocale = resolveBotLocale(message.from?.language_code);
+
+  // Set fallback routing before parsing commands so downstream failures notify
+  // the same private or group chat as the original update.
+  fallback.chatId = chatId;
+  fallback.locale = preferredLocale;
+
+  const text = message.text?.trim() ?? "";
+  const [command = "", commandPayload = ""] = text.split(/\s+/, 2);
+  const normalizedCommand = command.split("@")[0]?.trim() ?? "";
+  const context: TelegramMessageContext = {
+    chatId,
+    chatType,
+    commandPayload,
+    message,
+    normalizedCommand,
+    preferredLocale,
+    telegramUserId,
+    telegramUsername,
+  };
+
+  return chatType === "private"
+    ? handleTelegramPrivateMessage(context)
+    : handleTelegramGroupMessage(context);
+};
+
+const handleTelegramWebhookError = async ({
+  error,
+  fallback,
+}: {
+  error: unknown;
+  fallback: TelegramWebhookFallback;
+}): Promise<Response> => {
+  console.error("Failed to process Telegram webhook", error);
+
+  if (fallback.chatId) {
+    try {
+      await sendTelegramMessage({
+        chatId: fallback.chatId,
+        text: getBotCopy(fallback.locale).temporaryIssue,
+      });
+    } catch (telegramError) {
+      console.error("Failed to send Telegram fallback error message", telegramError);
+    }
+  }
+
+  return jsonNoStore(
+    {
+      errorCode: "telegram_webhook_failed",
+    },
+    {
+      status: 500,
+    },
+  );
+};
+
+export async function POST(request: Request) {
+  const validationError = validateTelegramWebhookRequest(request);
+
+  if (validationError) {
+    return validationError;
+  }
+
+  const fallback: TelegramWebhookFallback = {
+    chatId: null,
+    locale: "ru",
+  };
 
   try {
     const update = await parseJsonBody<TelegramUpdate>(request);
     const chatMemberUpdate = update?.chat_member;
 
     if (chatMemberUpdate) {
-      const chatId = chatMemberUpdate.chat?.id;
-      const newMember = chatMemberUpdate.new_chat_member;
-      const oldMember = chatMemberUpdate.old_chat_member;
-      const telegramUserId = newMember?.user?.id ? String(newMember.user.id) : "";
-
-      if (chatId && telegramUserId) {
-        const wasActive = isActiveTelegramMember(oldMember);
-        const isActive = isActiveTelegramMember(newMember);
-
-        if (!wasActive && isActive) {
-          await syncTelegramChannelMembership({
-            chatId: String(chatId),
-            inviteLink: chatMemberUpdate.invite_link?.invite_link ?? "",
-            membershipStatus: "joined",
-            telegramUserId,
-            telegramUsername: newMember?.user?.username ?? "",
-          });
-        } else if (wasActive && !isActive) {
-          await syncTelegramChannelMembership({
-            chatId: String(chatId),
-            membershipStatus: "left",
-            telegramUserId,
-            telegramUsername: newMember?.user?.username ?? "",
-          });
-        }
-      }
-
-      return jsonNoStore({
-        ok: true,
-      });
+      return await handleTelegramChatMemberUpdate(chatMemberUpdate);
     }
 
-    const message = update?.message;
-    const chatId = message?.chat?.id;
-    const chatType = message?.chat?.type ?? "";
-    const telegramUserId = message?.from?.id ? String(message.from.id) : "";
-
-    if (!message || !chatId || chatType !== "private" || !telegramUserId) {
-      return jsonNoStore({
-        ok: true,
-      });
-    }
-
-    const telegramUsername = message.from?.username?.trim() ?? "";
-    const preferredLocale = resolveBotLocale(message.from?.language_code);
-    fallbackChatId = chatId;
-    fallbackLocale = preferredLocale;
-    const text = message.text?.trim() ?? "";
-    const [command = "", payload = ""] = text.split(/\s+/, 2);
-
-    if (command === "/start") {
-      await handleStartCommand({
-        chatId,
-        commandPayload: payload,
-        preferredLocale,
-        telegramUserId,
-        telegramUsername,
-      });
-
-      return jsonNoStore({
-        ok: true,
-      });
-    }
-
-    if (command === "/my_lessons") {
-      await sendPurchasedLessons({
-        chatId,
-        preferredLocale,
-        telegramUserId,
-      });
-
-      return jsonNoStore({
-        ok: true,
-      });
-    }
-
-    if (command === "/help") {
-      await sendTelegramMessage({
-        chatId,
-        text: buildHelpText(preferredLocale),
-      });
-
-      return jsonNoStore({
-        ok: true,
-      });
-    }
-
-    await sendTelegramMessage({
-      chatId,
-      text: `${getBotCopy(preferredLocale).unknownCommand}\n\n${buildHelpText(preferredLocale)}`,
-    });
-
-    return jsonNoStore({
-      ok: true,
+    return await handleTelegramMessage({
+      fallback,
+      update,
     });
   } catch (error) {
-    console.error("Failed to process Telegram webhook", error);
-
-    if (fallbackChatId) {
-      try {
-        await sendTelegramMessage({
-          chatId: fallbackChatId,
-          text: getBotCopy(fallbackLocale).temporaryIssue,
-        });
-      } catch (telegramError) {
-        console.error("Failed to send Telegram fallback error message", telegramError);
-      }
-    }
-
-    return jsonNoStore(
-      {
-        errorCode: "telegram_webhook_failed",
-      },
-      {
-        status: 500,
-      },
-    );
+    return handleTelegramWebhookError({
+      error,
+      fallback,
+    });
   }
 }

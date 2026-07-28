@@ -11,6 +11,7 @@ const scriptSources = [
   "'unsafe-inline'",
   ...(isProduction ? [] : ["'unsafe-eval'"]),
   "https://js.stripe.com",
+  "https://telegram.org",
   vercelAnalyticsScriptSource,
   ...(isProduction ? [] : [vercelLiveSource]),
 ].join(" ");
@@ -54,6 +55,10 @@ const nextConfig = {
           {
             key: "X-Frame-Options",
             value: "SAMEORIGIN",
+          },
+          {
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin-allow-popups",
           },
           {
             key: "Permissions-Policy",

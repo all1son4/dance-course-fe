@@ -19,13 +19,11 @@ import {
   CategoryDescription,
   CategoryInfo,
   CategoryTitle,
+  CategoryToggle,
   InlineSettings,
   InlineSettingsContent,
   SettingsIconButton,
   StaticTag,
-  ToggleInput,
-  ToggleLabel,
-  ToggleTrack,
 } from "./CookieConsentBanner.styles";
 import { useCookieConsent } from "./CookieConsentProvider";
 
@@ -47,7 +45,9 @@ const GearIcon = ({ size = 24 }: { size?: number }) => (
   </svg>
 );
 
-type ConsentCategoryKey = "necessary" | "functional" | "analytics";
+const CONSENT_CATEGORY_KEYS = ["necessary", "functional", "analytics"] as const;
+
+type ConsentCategoryKey = (typeof CONSENT_CATEGORY_KEYS)[number];
 
 export default function CookieConsentBanner() {
   const t = useTranslations("CookieConsent");
@@ -74,11 +74,49 @@ export default function CookieConsentBanner() {
   const shouldRenderPanel = isBannerVisible || isSettingsOpen;
   const functionalEnabled = selection.functional;
   const analyticsEnabled = selection.analytics;
-  const categories: ConsentCategoryKey[] = ["necessary", "functional", "analytics"];
 
   if (!shouldRenderPanel) {
     return null;
   }
+
+  const renderConsentCategory = (categoryKey: ConsentCategoryKey) => {
+    const isNecessary = categoryKey === "necessary";
+    const isFunctional = categoryKey === "functional";
+    const checked = isFunctional ? functionalEnabled : analyticsEnabled;
+
+    return (
+      <CategoryCard key={categoryKey}>
+        <CategoryInfo>
+          <CategoryTitle>{t(`settings.categories.${categoryKey}.title`)}</CategoryTitle>
+          <CategoryDescription>
+            {t(`settings.categories.${categoryKey}.description`)}
+          </CategoryDescription>
+        </CategoryInfo>
+
+        {isNecessary ? (
+          <StaticTag>{t("settings.categories.necessary.alwaysOn")}</StaticTag>
+        ) : (
+          <CategoryToggle
+            ariaLabel={t(`settings.categories.${categoryKey}.title`)}
+            checked={checked}
+            onChange={(nextChecked) => {
+              saveCustom(
+                isFunctional
+                  ? {
+                      functional: nextChecked,
+                      analytics: analyticsEnabled,
+                    }
+                  : {
+                      functional: functionalEnabled,
+                      analytics: nextChecked,
+                    },
+              );
+            }}
+          />
+        )}
+      </CategoryCard>
+    );
+  };
 
   return (
     <BannerViewport>
@@ -91,53 +129,7 @@ export default function CookieConsentBanner() {
 
         <InlineSettings $isOpen={isSettingsOpen} aria-hidden={!isSettingsOpen}>
           <InlineSettingsContent $isOpen={isSettingsOpen}>
-            <Categories>
-              {categories.map((categoryKey) => {
-                const isNecessary = categoryKey === "necessary";
-                const isFunctional = categoryKey === "functional";
-                const checked = isFunctional ? functionalEnabled : analyticsEnabled;
-
-                return (
-                  <CategoryCard key={categoryKey}>
-                    <CategoryInfo>
-                      <CategoryTitle>
-                        {t(`settings.categories.${categoryKey}.title`)}
-                      </CategoryTitle>
-                      <CategoryDescription>
-                        {t(`settings.categories.${categoryKey}.description`)}
-                      </CategoryDescription>
-                    </CategoryInfo>
-
-                    {isNecessary ? (
-                      <StaticTag>{t("settings.categories.necessary.alwaysOn")}</StaticTag>
-                    ) : (
-                      <ToggleLabel>
-                        <ToggleInput
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(event) => {
-                            const nextChecked = event.target.checked;
-
-                            saveCustom(
-                              isFunctional
-                                ? {
-                                    functional: nextChecked,
-                                    analytics: analyticsEnabled,
-                                  }
-                                : {
-                                    functional: functionalEnabled,
-                                    analytics: nextChecked,
-                                  },
-                            );
-                          }}
-                        />
-                        <ToggleTrack aria-hidden />
-                      </ToggleLabel>
-                    )}
-                  </CategoryCard>
-                );
-              })}
-            </Categories>
+            <Categories>{CONSENT_CATEGORY_KEYS.map(renderConsentCategory)}</Categories>
           </InlineSettingsContent>
         </InlineSettings>
 

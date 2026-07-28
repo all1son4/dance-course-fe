@@ -21,7 +21,18 @@ import {
   Trigger,
   TriggerLabel,
 } from "./LanguageSelect.styles";
-import { LanguageOption } from "./LanguageSelect.types";
+import type { LanguageOption } from "./LanguageSelect.types";
+
+const getSelectedLanguageOption = (options: LanguageOption[], value: string) =>
+  options.find((option) => option.code === value) ?? options[0];
+
+const getSelectedLanguageOptionIndex = (
+  options: LanguageOption[],
+  selectedCode: string | undefined,
+) => options.findIndex((option) => option.code === selectedCode);
+
+const getWrappedLanguageOptionIndex = (index: number, optionsCount: number) =>
+  ((index % optionsCount) + optionsCount) % optionsCount;
 
 export default function LanguageSelect({
   value,
@@ -41,11 +52,11 @@ export default function LanguageSelect({
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const selected = useMemo(
-    () => options.find((o) => o.code === value) ?? options[0],
+    () => getSelectedLanguageOption(options, value),
     [options, value],
   );
   const selectedIndex = useMemo(
-    () => options.findIndex((option) => option.code === selected?.code),
+    () => getSelectedLanguageOptionIndex(options, selected?.code),
     [options, selected?.code],
   );
 
@@ -57,7 +68,8 @@ export default function LanguageSelect({
         return;
       }
 
-      const normalizedIndex = ((index % optionsCount) + optionsCount) % optionsCount;
+      // Keyboard navigation wraps at both ends of the menu.
+      const normalizedIndex = getWrappedLanguageOptionIndex(index, optionsCount);
       optionRefs.current[normalizedIndex]?.focus();
     },
     [optionsCount],
@@ -99,6 +111,18 @@ export default function LanguageSelect({
     };
   }, [focusOptionByIndex, open, optionsCount, selectedIndex]);
 
+  const openMenuAndFocusOption = (index: number) => {
+    setOpen(true);
+    window.requestAnimationFrame(() => {
+      focusOptionByIndex(index);
+    });
+  };
+
+  const closeMenuAndRestoreTriggerFocus = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
   const handleTriggerKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     if (disabled || optionsCount === 0) {
       return;
@@ -106,19 +130,13 @@ export default function LanguageSelect({
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      setOpen(true);
-      window.requestAnimationFrame(() => {
-        focusOptionByIndex(selectedIndex >= 0 ? selectedIndex : 0);
-      });
+      openMenuAndFocusOption(selectedIndex >= 0 ? selectedIndex : 0);
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      setOpen(true);
-      window.requestAnimationFrame(() => {
-        focusOptionByIndex(selectedIndex >= 0 ? selectedIndex : optionsCount - 1);
-      });
+      openMenuAndFocusOption(selectedIndex >= 0 ? selectedIndex : optionsCount - 1);
       return;
     }
 
@@ -139,8 +157,7 @@ export default function LanguageSelect({
 
     if (event.key === "Escape") {
       event.preventDefault();
-      setOpen(false);
-      triggerRef.current?.focus();
+      closeMenuAndRestoreTriggerFocus();
       return;
     }
 
@@ -171,8 +188,7 @@ export default function LanguageSelect({
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       onChange(code);
-      setOpen(false);
-      triggerRef.current?.focus();
+      closeMenuAndRestoreTriggerFocus();
     }
   };
 

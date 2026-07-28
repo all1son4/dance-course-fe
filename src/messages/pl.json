@@ -4,7 +4,7 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Kursy Frame Up Strip online i offline prowadzone przez Annę Strok w Warszawie: nauka od podstaw, tutoriale choreografii i zapisy na zajęcia.",
+    "description": "Ucz się Frame Up Strip z profesjonalną tancerką Anną Strok: kursy online, regularne treningi z feedbackiem i zajęcia offline w Warszawie.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Anna Strok podczas zajęć Frame Up Strip",
@@ -12,13 +12,13 @@
     "pages": {
       "home": {
         "title": "Kursy Frame Up Strip w Warszawie — online i offline",
-        "description": "Anna Strok prowadzi kursy Frame Up Strip online i offline: nauka od podstaw, tutoriale choreografii oraz zapisy na zajęcia w Warszawie.",
+        "description": "Ucz się Frame Up Strip z Anną Strok: kursy i regularne treningi online oraz zajęcia stacjonarne i praktyka improwizacji w Warszawie.",
         "ogImageAlt": "Anna Strok i uczestniczki podczas zajęć Frame Up Strip",
         "keywords": "Anna Strok taniec, Frame Up Strip Warszawa, kurs tańca online, zajęcia taneczne Warszawa, high heels dance"
       },
       "online": {
         "title": "Kursy online Frame Up Strip",
-        "description": "Ucz się Frame Up Strip online w Telegramie: program First Touch dla początkujących oraz tutoriale choreografii z szybkim dostępem do materiałów.",
+        "description": "Trenuj Frame Up Strip online z Anną Strok w Telegramie: dołącz do sześciotygodniowej Online Group z feedbackiem lub zacznij od kursu First Touch.",
         "ogImageAlt": "Kursy online Frame Up Strip prowadzone przez Annę Strok",
         "keywords": "kurs frame up online, first touch kurs, tutorial choreografii online, telegram kurs tańca, Anna Strok online"
       },
@@ -28,15 +28,21 @@
         "ogImageAlt": "Kurs First Touch dla początkujących",
         "keywords": "First Touch kurs, kurs tańca dla początkujących online, frame up strip podstawy, Anna Strok First Touch"
       },
+      "onlineGroup": {
+        "title": "Online Group by Anna Strok — regularne treningi",
+        "description": "Sześciotygodniowa Online Group Anny Strok: cotygodniowe lekcje Frame Up Strip, zadania z indywidualnym feedbackiem, prywatny czat Telegram i opcjonalny Inspiration Hub.",
+        "ogImageAlt": "Grupa regularnych treningów online Anny Strok",
+        "keywords": "online group anna strok, treningi tańca online, frame up online, taniec telegram"
+      },
       "choreo": {
         "title": "Tutoriale choreografii Frame Up Strip",
-        "description": "Szczegółowe tutoriale choreografii Still Alive i Her Lies oraz bundle z dwoma tutorialami: struktura ruchu, technika oraz wyraz sceniczny w wygodnym formacie online.",
+        "description": "Szczegółowe tutoriale choreografii Frame Up Strip Anny Strok: struktura ruchu, technika i wyraz sceniczny. Sprzedaż jest tymczasowo zamknięta.",
         "ogImageAlt": "Tutoriale choreografii Frame Up Strip od Anny Strok",
         "keywords": "tutorial choreografii online, still alive choreografia, her lies choreografia, bundle choreografii, frame up tutorial, Anna Strok choreografia"
       },
       "offline": {
         "title": "Zajęcia offline Frame Up Strip w Warszawie",
-        "description": "Dołącz do grup Frame Up Strip w Warszawie: poziom początkujący i średni, zajęcia impro oraz zapisy na lekcję próbną.",
+        "description": "Treningi stacjonarne Frame Up Strip z Anną Strok w Warszawie: praktyka improwizacji w Impro Room i zapisy na zajęcia indywidualne.",
         "ogImageAlt": "Zajęcia offline Frame Up Strip w Warszawie",
         "keywords": "frame up strip warszawa, zajęcia taneczne warszawa, high heels warszawa, lekcja próbna tańca"
       },
@@ -59,8 +65,8 @@
       "home": "Anna Strok — Strona główna"
     },
     "menu": {
-      "offline": "Kursy offline",
-      "online": "Kursy online",
+      "offline": "Offline",
+      "online": "Online",
       "contacts": "Kontakt",
       "ariaLabel": "Nawigacja główna"
     },
@@ -220,41 +226,46 @@
       "imageAlt": "Zdjęcie Anny Strok"
     },
     "courses": {
-      "title": "Kursy",
+      "title": "Zajęcia",
       "offline": {
-        "title": "Kursy offline",
+        "title": "Offline",
         "subtitle": "Warszawa, Polska",
         "items": {
           "1": {
-            "highlight": "Beginners",
-            "text": "dla początkujących"
+            "highlight": "Początkujący",
+            "text": "nauka od podstaw"
           },
           "2": {
-            "highlight": "Advanced group",
+            "highlight": "Grupa kontynuująca",
             "text": "dla poziomu średniego"
           },
           "3": {
-            "highlight": "Impro room",
+            "highlight": "Impro Room",
             "text": "praktyka improwizacji"
-          }
+          },
+          "4": "Zajęcia indywidualne"
         }
       },
       "online": {
-        "title": "Kursy online",
+        "title": "Online",
         "subtitle": "W Telegramie",
         "items": {
           "1": {
             "prefix": "Kurs dla początkujących",
             "highlight": "First Touch"
           },
-          "2": "Samouczki choreograficzne"
+          "2": {
+            "prefix": "Grupa online",
+            "highlight": "by Anna Strok"
+          },
+          "3": "Samouczki choreograficzne"
         }
       }
     }
   },
   "OnlinePage": {
     "hero": {
-      "title": "Kursy online",
+      "title": "Zajęcia online",
       "location": "W Telegramie",
       "description": {
         "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia - i to jest całkowicie normalne. Taniec ma dawać radość, a nie stres.",
@@ -263,7 +274,7 @@
     },
     "cards": {
       "firstTouch": {
-        "title": "Kurs dla początkujących \"First Touch\"",
+        "title": "Kurs dla początkujących\n\"First Touch\"",
         "description": {
           "1": "Twoje pierwsze spotkanie z Frame Up Strip.",
           "2": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się świadomości ciała, pewności siebie i ruchu.",
@@ -271,6 +282,16 @@
         },
         "startLabel": "Start kursu",
         "startValue": "Zima 2026-2027 albo po zebraniu pełnej grupy",
+        "button": "Więcej o kursie"
+      },
+      "onlineGroup": {
+        "title": "Online Group\nby Anna Strok",
+        "description": {
+          "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
+          "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
+        },
+        "startLabel": "Start kolejnego cyklu",
+        "startValue": "10 sierpnia",
         "button": "Więcej o kursie"
       },
       "choreo": {
@@ -281,8 +302,8 @@
         },
         "startLabel": "Start",
         "startValue": "W dowolnym momencie",
-        "salesLabel": "Sprzedaż do",
-        "salesValue": "5 maja 2026",
+        "salesLabel": "Dostępność",
+        "salesValue": "Sprzedaż jest tymczasowo zamknięta",
         "button": "Więcej o kursie"
       }
     },
@@ -299,7 +320,7 @@
   },
   "OfflinePage": {
     "hero": {
-      "title": "Kursy offline",
+      "title": "Zajęcia offline",
       "location": "Warszawa, Polska",
       "description": "Każdy przychodzi do Frame Up ze swoją historią - ktoś pierwszy raz zakłada obcasy, a ktoś już tańczy pewnie i chce iść dalej. Dlatego zajęcia są podzielone na poziomy, aby rozwijać się komfortowo i bez stresu."
     },
@@ -311,7 +332,7 @@
         "button": "Zapisz się"
       },
       "fromZero": {
-        "title": "Beginners",
+        "title": "Początkujący",
         "description": "Idealnie, jeśli dopiero zaczynasz. Pracujemy nad bazową techniką, plastyką, postawą, rytmem i pewnością ruchu.",
         "schedule": {
           "1": "Poniedziałek 20:30-22:00",
@@ -321,7 +342,7 @@
         "priceSuffix": "/ miesięcznie"
       },
       "advanced": {
-        "title": "Advanced",
+        "title": "Grupa kontynuująca",
         "description": "Dla osób, które dążą do detalu, dynamiki i głębszego rozumienia stylu, chcą rozwijać muzykalność oraz pracować nad techniką, ekspresją i zapamiętywaniem choreografii na bardziej zaawansowanym poziomie.",
         "schedule": {
           "1": "Poniedziałek 19:00-20:30",
@@ -331,7 +352,7 @@
         "priceSuffix": "/ miesięcznie"
       },
       "impro": {
-        "title": "Impro room",
+        "title": "Impro Room",
         "description": "Praktyka improwizacji.",
         "note": "W tej grupie nie ma stałego grafiku.",
         "details": "Co miesiąc ustalamy, kiedy i gdzie się spotykamy, ćwiczymy różne zadania, badamy niuanse i tworzymy własny język ruchu.",
@@ -346,14 +367,18 @@
         "2": "Jeśli nie jesteś jeszcze gotowa na offline, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
       },
       "card": {
-        "title": "Kursy online",
+        "title": "Online",
         "subtitle": "W Telegramie",
         "items": {
           "1": {
             "prefix": "Kurs dla początkujących",
             "highlight": "First Touch"
           },
-          "2": "Samouczki choreograficzne"
+          "2": {
+            "prefix": "Grupa online",
+            "highlight": "by Anna Strok"
+          },
+          "3": "Samouczki choreograficzne"
         }
       }
     }
@@ -453,6 +478,99 @@
       "imageAlt": "Zdjęcie programu kursu First Touch"
     }
   },
+  "OnlineGroupPage": {
+    "hero": {
+      "title": "Online Group\nby Anna Strok",
+      "description": {
+        "1": "W Online Group trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
+        "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
+      },
+      "startLabel": "Start kolejnej grupy",
+      "startDate": "10 sierpnia",
+      "priceLabel": "Cena dla nowych uczestników",
+      "price": "220 PLN / 50 €",
+      "renewalNote": "Uczestnicy obecnej grupy otrzymują specjalną cenę kontynuacji. Kontynuacja jest dostępna wyłącznie przez indywidualny link.",
+      "buyButton": "Kup swoje miejsce",
+      "offers": {
+        "regular": {
+          "title": "Standard",
+          "description": "Nowe lekcje, zadania i feedback w zamkniętej Online Group."
+        },
+        "library": {
+          "title": "Plus",
+          "description": "Online Group z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
+        }
+      },
+      "programButton": "Co na Ciebie czeka",
+      "playLabel": "Odtwórz wideo"
+    },
+    "tariffs": {
+      "title": "Pakiety",
+      "selectButton": "Wybierz pakiet",
+      "priceLabel": "Cena",
+      "buyButton": "Kup",
+      "registrationButton": "Zapisz się",
+      "standard": {
+        "title": "Standard",
+        "subtitle": "Online Group",
+        "features": {
+          "1": "5 nowych lekcji",
+          "2": "Zadania domowe z feedbackiem",
+          "3": "Czas trwania cyklu — 6 tygodni",
+          "4": "Dostęp do zamkniętego Telegram-czatu",
+          "5": "Kontakt i wsparcie w grupie",
+          "6": "Dodatkowe materiały dla inspiracji"
+        }
+      },
+      "plus": {
+        "title": "Plus",
+        "subtitle": "Online Group + Inspiration Hub",
+        "features": {
+          "1": "5 nowych lekcji",
+          "2": "Zadania domowe z feedbackiem",
+          "3": "Czas trwania cyklu — 6 tygodni",
+          "4": "Dostęp do zamkniętego Telegram-czatu",
+          "5": "Kontakt i wsparcie w grupie",
+          "6": "Dostęp do Inspiration Hub na czas trwania cyklu",
+          "7": "Lekcje ze wszystkich poprzednich cykli",
+          "8": "Dodatkowe ćwiczenia",
+          "9": "Playlisty, moodboardy i filmy dla inspiracji",
+          "10": "Przydatne rekomendacje"
+        }
+      }
+    },
+    "about": { "title": "Co czeka Cię w Online Group" },
+    "suggestions": {
+      "1": {
+        "title": "Regularne treningi ze mną",
+        "text": "Co tydzień na czacie pojawi się nowa wcześniej nagrana lekcja. Możesz pracować z nią przez cały tydzień w dogodnym czasie."
+      },
+      "2": {
+        "title": "Nowe lekcje w każdym cyklu",
+        "text": "Każdy cykl obejmuje nowe tematy: technikę, podstawy, rutyny, improwizację, akrobatykę i choreografię oraz 5 różnych lekcji."
+      },
+      "3": {
+        "title": "Zadania domowe z feedbackiem",
+        "text": "Ćwiczysz, wykonujesz zadania, wysyłasz filmy i otrzymujesz moje komentarze, korekty oraz wskazówki."
+      },
+      "4": {
+        "title": "6-tygodniowy program treningowy",
+        "text": "W ciągu sześciu tygodni realizujesz 5 nowych lekcji, wykonujesz zadania domowe i otrzymujesz feedback do swojej pracy."
+      },
+      "5": {
+        "title": "Pakiet Plus z Inspiration Hub",
+        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub pozostaje aktywny do startu kolejnego cyklu."
+      },
+      "6": {
+        "title": "Zamknięty czat Telegram",
+        "text": "Lekcje, zadania, terminy, feedback i komunikacja są w jednej wygodnej, zamkniętej przestrzeni."
+      },
+      "7": {
+        "title": "Kontynuacja bez przerwy",
+        "text": "Uczestnicy obecnej grupy otrzymują specjalną cenę przy kontynuacji w kolejnym cyklu."
+      }
+    }
+  },
   "ChoreoPage": {
     "hero": {
       "title": "Samouczki choreograficzne",
@@ -463,8 +581,8 @@
       "startLabel": "Start",
       "startValue": "W dowolnym momencie",
       "closedValue": "Sprzedaż jest tymczasowo zamknięta",
-      "salesLabel": "Sprzedaż do",
-      "salesValue": "5 maja 2026",
+      "salesLabel": "Dostępność",
+      "salesValue": "Sprzedaż jest tymczasowo zamknięta",
       "button": "Wybierz choreografię"
     },
     "about": {
@@ -507,12 +625,44 @@
     "personalDataTitle": "Dane kupującego",
     "summary": {
       "currencyLabel": "Waluta płatności",
-      "amountLabel": "Kwota płatności"
+      "amountLabel": "Kwota płatności",
+      "offerLabel": "Wariant: {offer}"
+    },
+    "renewal": {
+      "text": "Potwierdź Telegram, aby odblokować płatność za kontynuację.",
+      "textVerified": "Telegram potwierdzony. Możesz opłacić kontynuację.",
+      "title": "Potwierdź Telegram przed płatnością",
+      "description": "Aby przedłużyć ze zniżką, potwierdź konto Telegram: sprawdzimy udział w poprzednim czacie, a po płatności wyślemy osobisty link do nowej grupy.",
+      "summaryCard": {
+        "description": "Przedłużenie udziału w grupie online na kolejny cykl w specjalnej cenie.",
+        "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
+        "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
+      },
+      "sourceChat": "Sprawdzamy: {title}",
+      "targetChat": "Dostęp po płatności: {title}",
+      "buttons": {
+        "verify": "Potwierdź Telegram",
+        "verifying": "Sprawdzam...",
+        "verified": "Telegram potwierdzony"
+      },
+      "status": {
+        "loading": "Przygotowujemy sprawdzenie...",
+        "ready": "Kliknij niebieską ikonę, aby potwierdzić konto Telegram.",
+        "openingTelegram": "Potwierdź logowanie w Telegramie. Po potwierdzeniu spróbujemy automatycznie wrócić do płatności.",
+        "checkingMembership": "Sprawdzamy czat...",
+        "verified": "Gotowe.",
+        "verifiedAs": "Gotowe: {username}",
+        "verifiedAsWithProfile": "Gotowe: {username}. Dane zostały uzupełnione — sprawdź je.",
+        "notMember": "Tego konta Telegram nie znaleziono w starym czacie.",
+        "usernameMismatch": "Wpisana nazwa użytkownika nie pasuje do potwierdzonego konta Telegram.",
+        "loadFailed": "Nie udało się załadować sprawdzenia.",
+        "failed": "Nie udało się potwierdzić Telegrama."
+      }
     },
     "inputs": {
       "fullName": {
-        "label": "Imie i nazwisko",
-        "placeholder": "Imie i nazwisko"
+        "label": "Imię i nazwisko",
+        "placeholder": "Imię i nazwisko"
       },
       "email": {
         "label": "Email",
@@ -555,24 +705,42 @@
     }
   },
   "PaymentSuccessPage": {
-    "title": "Dziękujemy! Płatność zakończyła się sukcesem",
+    "title": "Płatność zakończona pomyślnie",
     "description": {
       "firstTouch": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link do kursu First Touch.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoją grupę w Telegramie."
+        "line1": "Przygotowujemy Twój osobisty dostęp do kursu First Touch.",
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       },
       "withoutMentor": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link z dostępem do lekcji.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoje materiały w Telegramie."
+        "line1": "Przygotowujemy Twój osobisty dostęp do lekcji.",
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       },
       "withMentor": {
-        "line1": "Płatność została potwierdzona. Przygotowujemy Twój osobisty link z dostępem do lekcji.",
-        "line2": "Gdy link będzie gotowy, przycisk na tej stronie otworzy Twoje materiały w Telegramie."
+        "line1": "Przygotowujemy Twój osobisty dostęp do lekcji.",
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
+      },
+      "onlineGroup": {
+        "line1": "Przygotowujemy Twój osobisty dostęp do Online Group.",
+        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
+      },
+      "renewal": {
+        "line1": "Przygotowujemy Twój dostęp do nowej Online Group.",
+        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
       }
     },
+    "accessNotice": {
+      "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 4 miesiące od dołączenia.",
+      "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 2 miesiące od dołączenia.",
+      "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu."
+    },
     "telegram": {
+      "active": "dostęp jest już aktywny",
       "firstTouchLabel": "Materiały kursu First Touch:",
+      "inspirationUntil": "Dostęp do Inspiration Hub do",
       "openLink": "Przejdź do Telegrama",
+      "openMainGroup": "Otwórz Online Group",
+      "openInspiration": "Otwórz Inspiration Hub",
       "pending": "Przygotowujemy Twój osobisty link do lekcji w Telegramie...",
       "unavailable": "Link nie jest jeszcze gotowy. Skontaktuj się ze wsparciem.",
       "contactSupport": "Wsparcie"
@@ -582,10 +750,10 @@
     }
   },
   "PaymentFailedPage": {
-    "title": "Płatność nie powiodła się!",
+    "title": "Płatność nie powiodła się",
     "description": {
-      "line1": "Nie udało się zrealizować płatności — karta mogła zostać odrzucona przez bank, wygasła lub wystąpił błąd techniczny.",
-      "line2": "Spróbuj ponownie albo wybierz inną metodę płatności. Jeśli problem się powtarza, skontaktuj się z nami — pomożemy dokończyć zakup."
+      "line1": "Nie udało się zrealizować płatności. Bank mógł odrzucić kartę lub wystąpił problem techniczny.",
+      "line2": "Spróbuj ponownie lub wybierz inną metodę płatności. Jeśli problem się powtórzy, skontaktuj się ze wsparciem."
     },
     "buttons": {
       "backToPayment": "Wróć do płatności",
@@ -614,6 +782,10 @@
       "missingSecretKey": "Brakuje STRIPE_SECRET_KEY. Dodaj go do .env i uruchom ponownie serwer.",
       "paymentIntentFailed": "Nie udało się przygotować płatności Stripe. Sprawdź ustawienia Stripe.",
       "paymentIntentRequestFailed": "Nie udało się przygotować płatności. Spróbuj ponownie.",
+      "onlineGroupCampaignNotConfigured": "Nowy cykl Online Group nie został jeszcze skonfigurowany. Skontaktuj się ze wsparciem.",
+      "telegramRenewalVerificationRequired": "Najpierw potwierdź Telegram dla tej kontynuacji.",
+      "renewalCampaignInactive": "Ten link kontynuacji nie jest już aktywny. Użyj aktualnego linku z grupy.",
+      "renewalPaymentContextMismatch": "Ten link kontynuacji nie pasuje do wybranego produktu.",
       "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie."
     }
   },
@@ -673,14 +845,18 @@
       }
     },
     "onlineGroupAnnaStrok": {
-      "title": "Online group by Anna Strok",
+      "title": "Online Group\nby Anna Strok",
       "description": {
-        "1": "Regularna grupa taneczna online z Anną Strok.",
-        "2": "Po płatności administrator skontaktuje się z uczestnikiem i ręcznie doda go do grupy."
+        "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
+        "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
       },
-      "accessNote": "Po płatności administrator ręcznie doda uczestnika do grupy online.",
+      "accessNote": "Po płatności wyślemy Ci osobisty jednorazowy link do grupy Telegram.",
+      "accessNotePlus": "Po płatności wyślemy Ci osobiste jednorazowe linki do grupy Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu.",
       "offers": {
-        "standard": "Grupa online"
+        "standard": "Standard",
+        "libraryAccess": "Plus",
+        "renewalDiscount": "Przedłużenie Standard",
+        "renewalLibraryAccess": "Przedłużenie Plus"
       }
     }
   },

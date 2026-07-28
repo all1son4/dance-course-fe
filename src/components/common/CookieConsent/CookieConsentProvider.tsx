@@ -26,6 +26,18 @@ import {
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 
 type CookieSelection = { functional: boolean; analytics: boolean };
+type CookieConsentStateSyncOptions = {
+  isBannerVisible?: boolean;
+  isSettingsOpen?: boolean;
+};
+type ApplyConsentOptions = {
+  closeSettingsAfterApply?: boolean;
+  dismissBannerAfterApply?: boolean;
+};
+type SyncConsentState = (
+  nextConsent: CookieConsentRecord | null,
+  options?: CookieConsentStateSyncOptions,
+) => void;
 
 const DEFAULT_SELECTION: CookieSelection = {
   functional: true,
@@ -56,6 +68,70 @@ type CookieConsentContextValue = {
 
 const CookieConsentContext = createContext<CookieConsentContextValue | null>(null);
 
+const subscribeToCookieConsentEvents = ({
+  openSettings,
+  syncConsentState,
+}: {
+  openSettings: () => void;
+  syncConsentState: SyncConsentState;
+}): (() => void) => {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== COOKIE_CONSENT_STORAGE_KEY) {
+      return;
+    }
+
+    const storedConsent = getStoredCookieConsent();
+    syncConsentState(storedConsent);
+  };
+
+  const handleConsentUpdated = (event: Event) => {
+    const detail = (event as CustomEvent<CookieConsentRecord>).detail;
+
+    if (detail) {
+      syncConsentState(detail, {
+        isBannerVisible: false,
+        isSettingsOpen: false,
+      });
+      return;
+    }
+
+    const storedConsent = getStoredCookieConsent();
+    syncConsentState(storedConsent);
+  };
+
+  const handleSettingsOpen = () => {
+    openSettings();
+  };
+
+  const handleLocationChange = () => {
+    const storedConsent = getStoredCookieConsent();
+
+    if (!storedConsent) {
+      return;
+    }
+
+    syncConsentState(storedConsent, {
+      isBannerVisible: false,
+      isSettingsOpen: false,
+    });
+  };
+
+  ensureLocationChangeEvents();
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdated);
+  window.addEventListener(COOKIE_CONSENT_OPEN_SETTINGS_EVENT, handleSettingsOpen);
+  window.addEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+
+  // Every global listener is removed with the exact callback registered above;
+  // this keeps remounts and Strict Mode effect replays from accumulating handlers.
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdated);
+    window.removeEventListener(COOKIE_CONSENT_OPEN_SETTINGS_EVENT, handleSettingsOpen);
+    window.removeEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
+  };
+};
+
 export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const [consent, setConsent] = useState<CookieConsentRecord | null>(null);
@@ -66,7 +142,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const syncConsentState = useCallback(
     (
       nextConsent: CookieConsentRecord | null,
-      options?: { isBannerVisible?: boolean; isSettingsOpen?: boolean },
+      options?: CookieConsentStateSyncOptions,
     ) => {
       setConsent(nextConsent);
       setSelection(getSelectionFromConsent(nextConsent));
@@ -104,67 +180,17 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
     }
   }, [consent, isReady]);
 
-  useEffect(() => {
-    const handleStorage = (event: StorageEvent) => {
-      if (event.key !== COOKIE_CONSENT_STORAGE_KEY) {
-        return;
-      }
-
-      const storedConsent = getStoredCookieConsent();
-      syncConsentState(storedConsent);
-    };
-
-    const handleConsentUpdated = (event: Event) => {
-      const detail = (event as CustomEvent<CookieConsentRecord>).detail;
-
-      if (detail) {
-        syncConsentState(detail, {
-          isBannerVisible: false,
-          isSettingsOpen: false,
-        });
-        return;
-      }
-
-      const storedConsent = getStoredCookieConsent();
-      syncConsentState(storedConsent);
-    };
-
-    const handleSettingsOpen = () => {
-      openSettings();
-    };
-
-    const handleLocationChange = () => {
-      const storedConsent = getStoredCookieConsent();
-
-      if (!storedConsent) {
-        return;
-      }
-
-      syncConsentState(storedConsent, {
-        isBannerVisible: false,
-        isSettingsOpen: false,
-      });
-    };
-
-    ensureLocationChangeEvents();
-    window.addEventListener("storage", handleStorage);
-    window.addEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdated);
-    window.addEventListener(COOKIE_CONSENT_OPEN_SETTINGS_EVENT, handleSettingsOpen);
-    window.addEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      window.removeEventListener(COOKIE_CONSENT_UPDATED_EVENT, handleConsentUpdated);
-      window.removeEventListener(COOKIE_CONSENT_OPEN_SETTINGS_EVENT, handleSettingsOpen);
-      window.removeEventListener(LOCATION_CHANGE_EVENT, handleLocationChange);
-    };
-  }, [openSettings, syncConsentState]);
+  useEffect(
+    () =>
+      subscribeToCookieConsentEvents({
+        openSettings,
+        syncConsentState,
+      }),
+    [openSettings, syncConsentState],
+  );
 
   const applyConsent = useCallback(
-    (
-      nextConsent: CookieConsentRecord,
-      options?: { closeSettingsAfterApply?: boolean; dismissBannerAfterApply?: boolean },
-    ) => {
+    (nextConsent: CookieConsentRecord, options?: ApplyConsentOptions) => {
       const { closeSettingsAfterApply = true, dismissBannerAfterApply = true } =
         options ?? {};
 

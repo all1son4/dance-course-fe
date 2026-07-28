@@ -9,11 +9,13 @@ import {
   isOfferEligibleForTelegramAccessLink,
 } from "@/lib/telegram/access";
 import {
+  getOfferAccessDurationDaysByOfferId,
   getOfferMetadataById,
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
   isWithMentorOfferId,
 } from "@/lib/telegram/offer-access";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
 import { getResolvedCheckoutLocale } from "../../../payment-intent/lib";
 import {
@@ -53,6 +55,14 @@ const getPurchaseSuccessEmailAccessKind = ({
     return "manual-admin";
   }
 
+  if (configuredAccessWorkflow === "telegram-renewal") {
+    return "telegram-renewal";
+  }
+
+  if (configuredAccessWorkflow === "telegram-online-group") {
+    return "telegram-online-group";
+  }
+
   if (isFirstTouchOfferId(offerId)) {
     return "telegram-chat";
   }
@@ -75,6 +85,263 @@ const isExpectedResendRestrictionError = (error: unknown) => {
   );
 };
 
+type PurchasePaymentRecord = StripeWebhookSyncResult["paymentRecord"];
+type PurchaseEmailAccess = {
+  onlineGroupAccess: Awaited<ReturnType<typeof ensureOnlineGroupAccessForPayment>>;
+  telegramAccessLink: Awaited<
+    ReturnType<typeof ensureTelegramAccessLinkForPayment>
+  > | null;
+};
+type PurchaseEmailReceipt = Awaited<ReturnType<typeof getReceiptData>>;
+type PurchaseEmailContent = ReturnType<typeof buildPurchaseSuccessEmail>;
+type CheckoutLocale = ReturnType<typeof getResolvedCheckoutLocale>;
+type LocalizedOfferMetadata = ReturnType<typeof getLocalizedOfferMetadataByOfferId>;
+
+const preparePurchaseEmailAccess = async (
+  paymentRecord: PurchasePaymentRecord,
+): Promise<PurchaseEmailAccess> => {
+  const onlineGroupAccess = await ensureOnlineGroupAccessForPayment(paymentRecord);
+  const telegramAccessLink =
+    !onlineGroupAccess &&
+    paymentRecord.access_workflow.trim() !== "manual-admin" &&
+    isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)
+      ? await ensureTelegramAccessLinkForPayment(paymentRecord)
+      : null;
+
+  return {
+    onlineGroupAccess,
+    telegramAccessLink,
+  };
+};
+
+const getPurchaseEmailAccessFailure = ({
+  onlineGroupAccess,
+  telegramAccessLink,
+}: PurchaseEmailAccess): string | null => {
+  if (onlineGroupAccess?.some((access) => access.status === "unavailable")) {
+    return "online_group_access_link_unavailable";
+  }
+
+  if (
+    telegramAccessLink?.status === "not_available" &&
+    telegramAccessLink.reason === "telegram_api_failed"
+  ) {
+    return "telegram_access_link_unavailable";
+  }
+
+  return null;
+};
+
+const resolvePurchaseEmailRecipient = ({
+  paymentRecord,
+  paymentIntent,
+  receipt,
+}: {
+  paymentRecord: PurchasePaymentRecord;
+  paymentIntent: Stripe.PaymentIntent;
+  receipt: PurchaseEmailReceipt;
+}): string =>
+  paymentRecord.customer_email || paymentIntent.receipt_email || receipt.recipientEmail;
+
+const buildPreparedPurchaseSuccessEmail = ({
+  checkoutLocale,
+  localizedOfferMetadata,
+  onlineGroupAccess,
+  paymentIntent,
+  paymentRecord,
+  receipt,
+  telegramAccessLink,
+}: {
+  checkoutLocale: CheckoutLocale;
+  localizedOfferMetadata: LocalizedOfferMetadata;
+  onlineGroupAccess: PurchaseEmailAccess["onlineGroupAccess"];
+  paymentIntent: Stripe.PaymentIntent;
+  paymentRecord: PurchasePaymentRecord;
+  receipt: PurchaseEmailReceipt;
+  telegramAccessLink: PurchaseEmailAccess["telegramAccessLink"];
+}): PurchaseEmailContent =>
+  buildPurchaseSuccessEmail({
+    accessDurationDays: getOfferAccessDurationDaysByOfferId(paymentRecord.offer_id) ?? 0,
+    accessKind: getPurchaseSuccessEmailAccessKind({
+      accessWorkflow: paymentRecord.access_workflow,
+      offerId: paymentRecord.offer_id,
+    }),
+    amountMinor: paymentRecord.amount,
+    checkoutCurrency: paymentRecord.checkout_currency || paymentRecord.currency,
+    checkoutLocale,
+    inspirationAccessExpiresAt: onlineGroupAccess?.find(
+      (access) => access.accessKey === "inspiration-hub",
+    )?.accessExpiresAt,
+    offerLabel:
+      paymentRecord.offer_label ||
+      paymentIntent.metadata.offer_label ||
+      localizedOfferMetadata?.offerLabel ||
+      "",
+    productTitle:
+      paymentRecord.product_title ||
+      paymentIntent.description ||
+      localizedOfferMetadata?.productTitle ||
+      DEFAULT_PRODUCT_TITLE_BY_LOCALE[checkoutLocale],
+    receiptKind: receipt.receiptKind,
+    receiptLink: receipt.receiptLink,
+    showMentorFollowupNote: isWithMentorOfferId(paymentRecord.offer_id),
+    telegramAccessUrl:
+      telegramAccessLink?.status === "ready" ? telegramAccessLink.accessUrl : null,
+    telegramAccessLinks: onlineGroupAccess ?? [],
+  });
+
+const deliverPurchaseSuccessEmail = async ({
+  content,
+  event,
+  handledEvent,
+  paymentRecord,
+  recipientEmail,
+}: {
+  content: PurchaseEmailContent;
+  event: Stripe.Event;
+  handledEvent: StripeWebhookSyncResult;
+  paymentRecord: PurchasePaymentRecord;
+  recipientEmail: string;
+}): Promise<void> => {
+  try {
+    const invoiceIssuedAt = new Date(event.created * 1000);
+    const invoicedPaymentRecord = await ensureInvoiceNumberForPayment({
+      issuedAt: invoiceIssuedAt,
+      paymentRecord,
+    });
+    const invoiceAttachment = await buildPurchaseInvoiceAttachment({
+      issuedAt: invoiceIssuedAt,
+      paymentRecord: invoicedPaymentRecord,
+    });
+    const { emailId } = await sendResendEmail({
+      attachments: [invoiceAttachment],
+      html: content.html,
+      idempotencyKey: `purchase-success/${paymentRecord.payment_intent_id}`,
+      subject: content.subject,
+      text: content.text,
+      to: recipientEmail,
+    });
+
+    console.warn("Purchase success email sent", {
+      emailId,
+      eventId: handledEvent.eventId,
+      paymentIntentId: paymentRecord.payment_intent_id,
+      recipientEmail,
+    });
+
+    await tryUpdatePaymentEmailDeliveryStatus({
+      paymentRecord,
+      status: "sent",
+    });
+  } catch (error) {
+    if (isExpectedResendRestrictionError(error)) {
+      console.warn("Purchase success email skipped (Resend test-domain restriction)", {
+        eventId: handledEvent.eventId,
+        paymentIntentId: paymentRecord.payment_intent_id,
+      });
+
+      await tryUpdatePaymentEmailDeliveryStatus({
+        paymentRecord,
+        status: "skipped",
+      });
+      return;
+    }
+
+    console.error("Failed to send purchase success email", {
+      error,
+      eventId: handledEvent.eventId,
+      paymentIntentId: paymentRecord.payment_intent_id,
+    });
+
+    await tryUpdatePaymentEmailDeliveryStatus({
+      paymentRecord,
+      status: "failed",
+    });
+    throw error;
+  }
+};
+
+const syncPurchaseSuccessEmail = async ({
+  event,
+  handledEvent,
+  paymentIntent,
+  stripe,
+}: {
+  event: Stripe.Event;
+  handledEvent: StripeWebhookSyncResult;
+  paymentIntent: Stripe.PaymentIntent;
+  stripe: Stripe;
+}): Promise<void> => {
+  const paymentIntentIdForLease = handledEvent.paymentRecord.payment_intent_id;
+  const emailLease = await tryAcquirePaymentProcessingLease({
+    completedStatuses: new Set(["sent", "skipped"]),
+    fallbackPaymentRecord: handledEvent.paymentRecord,
+    paymentIntentId: paymentIntentIdForLease,
+    statusField: "email_delivery_status",
+    updatedAtField: "email_delivery_updated_at",
+  });
+
+  if (!emailLease.acquired) {
+    return;
+  }
+
+  const paymentRecord = emailLease.paymentRecord;
+  const checkoutLocale = getResolvedCheckoutLocale(
+    paymentRecord.checkout_locale || paymentIntent.metadata.checkout_locale,
+  );
+  const localizedOfferMetadata = getLocalizedOfferMetadataByOfferId(
+    paymentRecord.offer_id,
+    checkoutLocale,
+  );
+  const access = await preparePurchaseEmailAccess(paymentRecord);
+  const accessFailure = getPurchaseEmailAccessFailure(access);
+
+  if (accessFailure) {
+    await tryUpdatePaymentEmailDeliveryStatus({
+      paymentRecord,
+      status: "failed",
+    });
+    throw new Error(accessFailure);
+  }
+
+  const receipt = await getReceiptData(stripe, paymentIntent);
+  const recipientEmail = resolvePurchaseEmailRecipient({
+    paymentIntent,
+    paymentRecord,
+    receipt,
+  });
+
+  if (!recipientEmail) {
+    console.warn("Missing customer email for purchase success notification", {
+      eventId: handledEvent.eventId,
+      paymentIntentId: paymentRecord.payment_intent_id,
+    });
+    await tryUpdatePaymentEmailDeliveryStatus({
+      paymentRecord,
+      status: "failed",
+    });
+    return;
+  }
+
+  const content = buildPreparedPurchaseSuccessEmail({
+    checkoutLocale,
+    localizedOfferMetadata,
+    onlineGroupAccess: access.onlineGroupAccess,
+    paymentIntent,
+    paymentRecord,
+    receipt,
+    telegramAccessLink: access.telegramAccessLink,
+  });
+
+  await deliverPurchaseSuccessEmail({
+    content,
+    event,
+    handledEvent,
+    paymentRecord,
+    recipientEmail,
+  });
+};
+
 export const sendPurchaseSuccessEmail = async ({
   event,
   handledEvent,
@@ -84,7 +351,7 @@ export const sendPurchaseSuccessEmail = async ({
   handledEvent: StripeWebhookSyncResult;
   stripe: Stripe;
 }) => {
-  if (handledEvent.skipped || handledEvent.paymentRecord.outcome !== "succeeded") {
+  if (handledEvent.paymentRecord.outcome !== "succeeded") {
     return;
   }
 
@@ -134,135 +401,12 @@ export const sendPurchaseSuccessEmail = async ({
     return;
   }
 
-  const emailSyncPromise = (async () => {
-    const paymentIntentIdForLease = handledEvent.paymentRecord.payment_intent_id;
-    const emailLease = await tryAcquirePaymentProcessingLease({
-      completedStatuses: new Set(["sent", "skipped"]),
-      fallbackPaymentRecord: handledEvent.paymentRecord,
-      paymentIntentId: paymentIntentIdForLease,
-      statusField: "email_delivery_status",
-      updatedAtField: "email_delivery_updated_at",
-    });
-
-    if (!emailLease.acquired) {
-      return;
-    }
-
-    const paymentRecord = emailLease.paymentRecord;
-
-    const checkoutLocale = getResolvedCheckoutLocale(
-      paymentRecord.checkout_locale || paymentIntent.metadata.checkout_locale,
-    );
-    const localizedOfferMetadata = getLocalizedOfferMetadataByOfferId(
-      paymentRecord.offer_id,
-      checkoutLocale,
-    );
-    const telegramAccessLink = isOfferEligibleForTelegramAccessLink(
-      paymentRecord.offer_id,
-    )
-      ? await ensureTelegramAccessLinkForPayment(paymentRecord)
-      : null;
-    const {
-      receiptKind,
-      receiptLink,
-      recipientEmail: stripeBillingEmail,
-    } = await getReceiptData(stripe, paymentIntent);
-    const recipientEmail =
-      paymentRecord.customer_email || paymentIntent.receipt_email || stripeBillingEmail;
-
-    if (!recipientEmail) {
-      console.warn("Missing customer email for purchase success notification", {
-        eventId: handledEvent.eventId,
-        paymentIntentId: paymentRecord.payment_intent_id,
-      });
-      await tryUpdatePaymentEmailDeliveryStatus({
-        paymentRecord,
-        status: "failed",
-      });
-      return;
-    }
-
-    const { html, subject, text } = buildPurchaseSuccessEmail({
-      accessKind: getPurchaseSuccessEmailAccessKind({
-        accessWorkflow: paymentRecord.access_workflow,
-        offerId: paymentRecord.offer_id,
-      }),
-      amountMinor: paymentRecord.amount,
-      checkoutCurrency: paymentRecord.checkout_currency || paymentRecord.currency,
-      checkoutLocale,
-      offerLabel:
-        paymentRecord.offer_label ||
-        paymentIntent.metadata.offer_label ||
-        localizedOfferMetadata?.offerLabel ||
-        "",
-      productTitle:
-        paymentRecord.product_title ||
-        paymentIntent.description ||
-        localizedOfferMetadata?.productTitle ||
-        DEFAULT_PRODUCT_TITLE_BY_LOCALE[checkoutLocale],
-      receiptKind,
-      receiptLink,
-      showMentorFollowupNote: isWithMentorOfferId(paymentRecord.offer_id),
-      telegramAccessUrl:
-        telegramAccessLink?.status === "ready" ? telegramAccessLink.accessUrl : null,
-    });
-
-    try {
-      const invoiceIssuedAt = new Date(event.created * 1000);
-      const invoicedPaymentRecord = await ensureInvoiceNumberForPayment({
-        issuedAt: invoiceIssuedAt,
-        paymentRecord,
-      });
-      const invoiceAttachment = await buildPurchaseInvoiceAttachment({
-        issuedAt: invoiceIssuedAt,
-        paymentRecord: invoicedPaymentRecord,
-      });
-      const { emailId } = await sendResendEmail({
-        attachments: [invoiceAttachment],
-        html,
-        subject,
-        text,
-        to: recipientEmail,
-      });
-
-      console.warn("Purchase success email sent", {
-        emailId,
-        eventId: handledEvent.eventId,
-        paymentIntentId: paymentRecord.payment_intent_id,
-        recipientEmail,
-      });
-
-      await tryUpdatePaymentEmailDeliveryStatus({
-        paymentRecord,
-        status: "sent",
-      });
-    } catch (error) {
-      if (isExpectedResendRestrictionError(error)) {
-        console.warn("Purchase success email skipped (Resend test-domain restriction)", {
-          eventId: handledEvent.eventId,
-          paymentIntentId: paymentRecord.payment_intent_id,
-        });
-
-        await tryUpdatePaymentEmailDeliveryStatus({
-          paymentRecord,
-          status: "skipped",
-        });
-        return;
-      }
-
-      console.error("Failed to send purchase success email", {
-        error,
-        eventId: handledEvent.eventId,
-        paymentIntentId: paymentRecord.payment_intent_id,
-      });
-
-      await tryUpdatePaymentEmailDeliveryStatus({
-        paymentRecord,
-        status: "failed",
-      });
-      throw error;
-    }
-  })().finally(() => {
+  const emailSyncPromise = syncPurchaseSuccessEmail({
+    event,
+    handledEvent,
+    paymentIntent,
+    stripe,
+  }).finally(() => {
     pendingPurchaseEmailSyncs.delete(paymentIntentId);
   });
 

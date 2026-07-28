@@ -218,12 +218,15 @@ export const MobileImagesBox = styled.div`
   }
 `;
 
-export const CoursesSection = styled.div`
-  display: flex;
+export const CoursesSection = styled.section`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
   gap: 40px;
   align-items: stretch;
   justify-content: center;
+  width: 100%;
   padding: 100px 0;
+  box-sizing: border-box;
 
   & > div {
     max-width: 480px;
@@ -238,8 +241,8 @@ export const CoursesSection = styled.div`
   }
 
   @media (max-width: 767px) {
-    flex-direction: column;
-    align-items: center;
+    grid-template-columns: 1fr;
+
     & > div {
       max-width: 100%;
     }
@@ -309,7 +312,7 @@ export const StudioDanceParagraphs = styled.div`
 
 export const StudioDanceParagraph = styled.p`
   font-weight: 300;
-  font-style: light;
+  font-style: normal;
   font-size: 17px;
   line-height: 150%;
   letter-spacing: 0;

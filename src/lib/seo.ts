@@ -2,6 +2,14 @@ import type { Metadata } from "next";
 
 import { INSTAGRAM_PROFILE_URL, PERSONAL_TELEGRAM_URL } from "@/constants/links";
 
+type StructuredDataJsonValue =
+  | boolean
+  | null
+  | number
+  | string
+  | StructuredDataJsonValue[]
+  | { [key: string]: StructuredDataJsonValue };
+
 export const siteUrl =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
@@ -10,10 +18,14 @@ export const siteUrl =
     : "http://localhost:3000");
 export const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
 export const seoImagePath = "/images/seo_photo.jpg";
+export const seoImageWidth = 1952;
+export const seoImageHeight = 2928;
 export const instagramUrl = INSTAGRAM_PROFILE_URL;
 export const telegramUrl = PERSONAL_TELEGRAM_URL;
 export const seoTargetLocale = "en" as const;
 export const seoTargetOpenGraphLocale = "en_US" as const;
+export const websiteStructuredDataId = `${normalizedSiteUrl}/#website`;
+export const annaStrokStructuredDataId = `${normalizedSiteUrl}/#anna-strok`;
 
 const getOpenGraphLocale = (locale: string) => {
   if (locale === "en") {
@@ -61,6 +73,9 @@ export const buildPageMetadata = ({
       {
         url: seoImagePath,
         alt: ogImageAlt,
+        width: seoImageWidth,
+        height: seoImageHeight,
+        type: "image/jpeg",
       },
     ],
   },
@@ -70,4 +85,45 @@ export const buildPageMetadata = ({
     description,
     images: [seoImagePath],
   },
+});
+
+export const buildBreadcrumbStructuredData = (
+  items: Array<{ name: string; path: string }>,
+) => ({
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: items.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.name,
+    item: `${normalizedSiteUrl}${item.path}`,
+  })),
+});
+
+export const buildWebsiteStructuredData = (
+  siteName: string,
+): { [key: string]: StructuredDataJsonValue } => ({
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": websiteStructuredDataId,
+      url: `${normalizedSiteUrl}/`,
+      name: "Anna Strok",
+      alternateName: siteName,
+      inLanguage: seoTargetLocale,
+      publisher: {
+        "@id": annaStrokStructuredDataId,
+      },
+    },
+    {
+      "@type": "Person",
+      "@id": annaStrokStructuredDataId,
+      name: "Anna Strok",
+      url: `${normalizedSiteUrl}/`,
+      image: `${normalizedSiteUrl}${seoImagePath}`,
+      jobTitle: "Professional dancer and Frame Up Strip instructor",
+      sameAs: [instagramUrl, telegramUrl],
+    },
+  ],
 });

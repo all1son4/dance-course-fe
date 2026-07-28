@@ -39,7 +39,7 @@ export const TextBox = styled.div`
   gap: 10px;
 `;
 
-export const Title = styled.p`
+export const Title = styled.h3`
   font-weight: 600;
   font-style: semibold;
   font-size: 17px;

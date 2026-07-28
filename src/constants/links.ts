@@ -32,3 +32,5 @@ export const CONTACT_PHONE_HREF = "tel:+48571571214";
 
 export const GOOGLE_FONTS_MANROPE_CSS_URL =
   "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&display=swap";
+
+export const ONLINE_GROUP_REGISTRATION_URL = "https://forms.gle/EBKbiouiGqeb8zmx8";

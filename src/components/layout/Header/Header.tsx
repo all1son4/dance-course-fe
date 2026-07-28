@@ -28,8 +28,37 @@ import {
 } from "./Header.styles";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 767px)";
+const MOBILE_MENU_ID = "header-mobile-menu";
+const LOCALE_COOKIE_MAX_AGE_SECONDS = 31_536_000;
+const SCROLL_POSITION_RESTORE_ATTEMPTS = 10;
+const HASH_SCROLL_MAX_ATTEMPTS = 16;
+const HASH_SCROLL_RETRY_DELAY_MS = 40;
+const PREFETCH_IDLE_TIMEOUT_MS = 1_200;
+const PREFETCH_FALLBACK_DELAY_MS = 280;
+const CONTACTS_HASH_TARGET_ID = "contacts";
+const PREFETCH_ROUTES = [
+  "/",
+  "/online",
+  "/offline",
+  "/online/first-touch",
+  "/online/group",
+  "/online/choreo",
+] as const;
 
-const subscribeToMobileViewport = (onStoreChange: () => void) => {
+type SupportedLocale = (typeof routing.locales)[number];
+type NavigationConnection = {
+  effectiveType?: string;
+  saveData?: boolean;
+};
+type IdleCallbackWindow = Window & {
+  requestIdleCallback?: (
+    callback: IdleRequestCallback,
+    options?: IdleRequestOptions,
+  ) => number;
+  cancelIdleCallback?: (handle: number) => void;
+};
+
+const subscribeToMobileViewport = (onStoreChange: () => void): (() => void) => {
   const mediaQuery = window.matchMedia(MOBILE_MEDIA_QUERY);
   const handleChange = () => {
     onStoreChange();
@@ -41,10 +70,11 @@ const subscribeToMobileViewport = (onStoreChange: () => void) => {
   };
 };
 
-const getMobileViewportSnapshot = () => window.matchMedia(MOBILE_MEDIA_QUERY).matches;
-const getMobileViewportServerSnapshot = () => false;
-const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
-const isPaymentResultPathname = (pathname: string) => {
+const getMobileViewportSnapshot = (): boolean =>
+  window.matchMedia(MOBILE_MEDIA_QUERY).matches;
+const getMobileViewportServerSnapshot = (): boolean => false;
+const trimTrailingSlash = (value: string): string => value.replace(/\/+$/u, "");
+const isPaymentResultPathname = (pathname: string): boolean => {
   const normalizedPathname = trimTrailingSlash(pathname);
 
   return (
@@ -52,6 +82,49 @@ const isPaymentResultPathname = (pathname: string) => {
     normalizedPathname.endsWith("/payment/failed")
   );
 };
+
+const syncLocaleCookie = (nextLocale: SupportedLocale): void => {
+  const cookieName = getLocaleCookieName();
+
+  if (!cookieName) {
+    return;
+  }
+
+  document.cookie = `${cookieName}=${nextLocale}; path=/; Max-Age=${LOCALE_COOKIE_MAX_AGE_SECONDS}; SameSite=Lax`;
+};
+
+const preserveScrollPosition = (): void => {
+  const left = window.scrollX;
+  const top = window.scrollY;
+  let attempts = 0;
+
+  // Re-applying the position across several frames prevents locale refresh
+  // rendering from overriding the user's current scroll position.
+  const restore = () => {
+    window.scrollTo({ left, top, behavior: "auto" });
+    attempts += 1;
+
+    if (attempts < SCROLL_POSITION_RESTORE_ATTEMPTS) {
+      window.requestAnimationFrame(restore);
+    }
+  };
+
+  window.requestAnimationFrame(restore);
+};
+
+const getNavigationConnection = (): NavigationConnection | undefined =>
+  (
+    navigator as Navigator & {
+      connection?: NavigationConnection;
+    }
+  ).connection;
+
+const shouldSkipRoutePrefetch = (connection: NavigationConnection | undefined): boolean =>
+  connection?.saveData === true ||
+  connection?.effectiveType === "slow-2g" ||
+  connection?.effectiveType === "2g";
+
+const getIdleCallbackWindow = (): IdleCallbackWindow => window as IdleCallbackWindow;
 
 export default function Header() {
   const [menuIsOpen, setMenuIsOpen] = useState(false);
@@ -66,34 +139,6 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const previousPathnameRef = useRef(pathname);
-  const mobileMenuId = "header-mobile-menu";
-
-  const syncLocaleCookie = (nextLocale: (typeof routing.locales)[number]) => {
-    const cookieName = getLocaleCookieName();
-
-    if (!cookieName) {
-      return;
-    }
-
-    document.cookie = `${cookieName}=${nextLocale}; path=/; Max-Age=31536000; SameSite=Lax`;
-  };
-
-  const preserveScrollPosition = () => {
-    const left = window.scrollX;
-    const top = window.scrollY;
-    let attempts = 0;
-
-    const restore = () => {
-      window.scrollTo({ left, top, behavior: "auto" });
-      attempts += 1;
-
-      if (attempts < 10) {
-        window.requestAnimationFrame(restore);
-      }
-    };
-
-    window.requestAnimationFrame(restore);
-  };
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -160,14 +205,14 @@ export default function Header() {
             return;
           }
 
-          if (attempt >= 16) {
+          if (attempt >= HASH_SCROLL_MAX_ATTEMPTS) {
             scrollToTopInstant();
             return;
           }
 
           hashScrollTimeoutId = window.setTimeout(() => {
             scrollToHash(attempt + 1);
-          }, 40);
+          }, HASH_SCROLL_RETRY_DELAY_MS);
         };
 
         scrollToHash();
@@ -186,42 +231,24 @@ export default function Header() {
   }, [pathname]);
 
   useEffect(() => {
-    const connection = (
-      navigator as Navigator & {
-        connection?: { effectiveType?: string; saveData?: boolean };
-      }
-    ).connection;
-    const shouldSkipPrefetch =
-      connection?.saveData === true ||
-      connection?.effectiveType === "slow-2g" ||
-      connection?.effectiveType === "2g";
-
-    if (shouldSkipPrefetch) {
+    if (shouldSkipRoutePrefetch(getNavigationConnection())) {
       return;
     }
 
     const prefetchRoutes = () => {
-      router.prefetch("/");
-      router.prefetch("/online");
-      router.prefetch("/offline");
-      router.prefetch("/online/first-touch");
-      router.prefetch("/online/choreo");
+      PREFETCH_ROUTES.forEach((route) => {
+        router.prefetch(route);
+      });
     };
 
-    const idleWindow = window as Window & {
-      requestIdleCallback?: (
-        callback: IdleRequestCallback,
-        options?: IdleRequestOptions,
-      ) => number;
-      cancelIdleCallback?: (handle: number) => void;
-    };
+    const idleWindow = getIdleCallbackWindow();
 
     if (
       typeof idleWindow.requestIdleCallback === "function" &&
       typeof idleWindow.cancelIdleCallback === "function"
     ) {
       const idleId = idleWindow.requestIdleCallback(prefetchRoutes, {
-        timeout: 1200,
+        timeout: PREFETCH_IDLE_TIMEOUT_MS,
       });
 
       return () => {
@@ -229,7 +256,7 @@ export default function Header() {
       };
     }
 
-    const timeoutId = window.setTimeout(prefetchRoutes, 280);
+    const timeoutId = window.setTimeout(prefetchRoutes, PREFETCH_FALLBACK_DELAY_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -243,13 +270,15 @@ export default function Header() {
   ];
 
   const onLanguageChange = (code: string) => {
-    if (!routing.locales.includes(code as (typeof routing.locales)[number])) return;
-    if (code === locale) return;
+    const nextLocale = code as SupportedLocale;
+
+    if (!routing.locales.includes(nextLocale)) return;
+    if (nextLocale === locale) return;
     if (isLocaleSwitching) return;
 
     setMenuIsOpen(false);
     setIsLocaleSwitching(true);
-    syncLocaleCookie(code as (typeof routing.locales)[number]);
+    syncLocaleCookie(nextLocale);
     preserveScrollPosition();
     router.refresh();
   };
@@ -271,11 +300,11 @@ export default function Header() {
   const onContactsMenuClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
 
-    if (scrollToHashTarget("contacts")) {
+    if (scrollToHashTarget(CONTACTS_HASH_TARGET_ID)) {
       return;
     }
 
-    router.push("/#contacts", {
+    router.push(`/#${CONTACTS_HASH_TARGET_ID}`, {
       scroll: false,
     });
   };
@@ -311,6 +340,10 @@ export default function Header() {
       ),
     },
   ];
+  const renderHeaderInteractiveContent = () =>
+    headerInteractiveContent.map((item) => (
+      <Fragment key={item.key}>{item.node}</Fragment>
+    ));
 
   if (pathname && isPaymentResultPathname(pathname)) {
     return null;
@@ -328,7 +361,7 @@ export default function Header() {
         </Brand>
         <IconBox
           type="button"
-          aria-controls={mobileMenuId}
+          aria-controls={MOBILE_MENU_ID}
           aria-expanded={menuIsOpen}
           aria-label={t("menu.ariaLabel")}
           onClick={() => setMenuIsOpen(!menuIsOpen)}
@@ -337,16 +370,10 @@ export default function Header() {
           <MenuButton />
         </IconBox>
         {!isMobileViewport ? (
-          <Right>
-            {headerInteractiveContent.map((item) => (
-              <Fragment key={item.key}>{item.node}</Fragment>
-            ))}
-          </Right>
+          <Right>{renderHeaderInteractiveContent()}</Right>
         ) : (
-          <Bottom id={mobileMenuId} $isOpen={menuIsOpen}>
-            {headerInteractiveContent.map((item) => (
-              <Fragment key={item.key}>{item.node}</Fragment>
-            ))}
+          <Bottom id={MOBILE_MENU_ID} $isOpen={menuIsOpen}>
+            {renderHeaderInteractiveContent()}
           </Bottom>
         )}
       </Pill>

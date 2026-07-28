@@ -14,6 +14,8 @@ import type { CourseCardProps } from "./CourseCard.types";
 export default function CourseCard({
   bgColor,
   buttonHref,
+  buttonRel,
+  buttonTarget,
   buttonText,
   cardContent,
   icon,
@@ -27,13 +29,15 @@ export default function CourseCard({
         <Title className="courseCardTitle">{title}</Title>
         <Subtitle className="courseCardSubtitle">{subtitle}</Subtitle>
       </TitleBox>
-      <ContentBox>
+      <ContentBox className="courseCardContentBox">
         <Content className="courseCardContent">{cardContent}</Content>
         <Button
           className="courseCardButton"
           buttonText={buttonText}
           width="200px"
           href={buttonHref}
+          rel={buttonRel}
+          target={buttonTarget}
         />
       </ContentBox>
     </CardContainer>

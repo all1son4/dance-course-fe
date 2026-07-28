@@ -4,9 +4,15 @@ import { getTranslations } from "next-intl/server";
 
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import Button from "@/components/common/Button";
+import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
+import {
+  buildBreadcrumbStructuredData,
+  buildPageMetadata,
+  normalizedSiteUrl,
+  seoTargetLocale,
+} from "@/lib/seo";
 
 import { getOnlineCoursesArray } from "./constants";
 import {
@@ -56,9 +62,29 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function Online() {
   const t = useTranslations("OnlinePage");
   const onlineCoursesArray = getOnlineCoursesArray((key) => t(key));
+  const onlineCoursesStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: t("hero.title"),
+    itemListElement: onlineCoursesArray.map((course, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: String(course.title).replace(/\s+/gu, " ").trim(),
+      url: `${normalizedSiteUrl}${course.buttonHref}`,
+    })),
+  };
 
   return (
     <>
+      <StructuredData
+        data={[
+          buildBreadcrumbStructuredData([
+            { name: "Home", path: "/" },
+            { name: t("hero.title"), path: "/online" },
+          ]),
+          onlineCoursesStructuredData,
+        ]}
+      />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>

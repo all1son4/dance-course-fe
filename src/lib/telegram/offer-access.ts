@@ -30,6 +30,23 @@ const FIRST_TOUCH_OFFER_IDS = new Set(
     product.code === "first-touch" ? product.offers.map((offer) => offer.id) : [],
   ),
 );
+const RENEWAL_DISCOUNT_OFFER_IDS = new Set(
+  SELLABLE_PRODUCTS_LIST.flatMap((product) =>
+    product.offers
+      .filter(
+        (offer) =>
+          offer.code === "renewal-discount" || offer.code === "renewal-library-access",
+      )
+      .map((offer) => offer.id),
+  ),
+);
+const ONLINE_GROUP_OFFER_IDS = new Set(
+  SELLABLE_PRODUCTS_LIST.flatMap((product) =>
+    product.code === "online-group-anna-strok"
+      ? product.offers.map((offer) => offer.id)
+      : [],
+  ),
+);
 const OFFER_ACCESS_DURATION_DAYS_BY_ID = new Map(
   SELLABLE_PRODUCTS_LIST.flatMap((product) =>
     product.offers.map((offer) => [offer.id, offer.telegramAccessDurationDays] as const),
@@ -65,6 +82,12 @@ export const isChoreoChannelOfferId = (offerId: string) =>
 
 export const isFirstTouchOfferId = (offerId: string) =>
   FIRST_TOUCH_OFFER_IDS.has(offerId);
+
+export const isRenewalDiscountOfferId = (offerId: string) =>
+  RENEWAL_DISCOUNT_OFFER_IDS.has(offerId);
+
+export const isOnlineGroupAccessOfferId = (offerId: string) =>
+  ONLINE_GROUP_OFFER_IDS.has(offerId);
 
 export const getOfferMetadataById = (offerId: string) =>
   OFFER_METADATA_BY_ID.get(offerId) ?? null;

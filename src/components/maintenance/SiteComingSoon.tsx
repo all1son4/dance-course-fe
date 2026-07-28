@@ -1,8 +1,51 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 
 import PageContainer from "@/components/layout/PageContainer";
 import { glass } from "@/styles/mixins/glass";
 import { Logo } from "@/svg";
+
+type MaintenanceLocale = "en" | "pl" | "ru";
+
+const MAINTENANCE_COPY: Record<
+  MaintenanceLocale,
+  { loader: string; status: string; subtitle: string; title: string }
+> = {
+  en: {
+    loader: "Final checks",
+    status: "Update in progress",
+    subtitle: "Final touches now. The updated website goes live very soon.",
+    title: "Be right back.",
+  },
+  pl: {
+    loader: "Ostatnie sprawdzenie",
+    status: "Aktualizacja strony",
+    subtitle:
+      "Trwają ostatnie przygotowania. Zaktualizowana strona będzie dostępna już wkrótce.",
+    title: "Zaraz wracamy.",
+  },
+  ru: {
+    loader: "Финальная проверка",
+    status: "Обновление сайта",
+    subtitle:
+      "Завершаем последние приготовления. Обновленный сайт будет доступен совсем скоро.",
+    title: "Скоро вернемся.",
+  },
+};
+
+const getClientLocale = (): MaintenanceLocale => {
+  const cookieLocale = document.cookie
+    .split(";")
+    .map((item) => item.trim())
+    .find((item) => item.startsWith("NEXT_LOCALE="))
+    ?.split("=")[1]
+    ?.toLowerCase();
+  const locale = cookieLocale || navigator.language.toLowerCase().split("-")[0];
+
+  return locale === "ru" || locale === "pl" ? locale : "en";
+};
 
 const Screen = styled.main`
   position: relative;
@@ -152,6 +195,14 @@ const LoaderText = styled.span`
 `;
 
 export default function SiteComingSoon() {
+  const [locale, setLocale] = useState<MaintenanceLocale>("en");
+
+  useEffect(() => {
+    setLocale(getClientLocale());
+  }, []);
+
+  const copy = MAINTENANCE_COPY[locale];
+
   return (
     <Screen>
       <Inner>
@@ -159,12 +210,12 @@ export default function SiteComingSoon() {
           <LogoWrap>
             <Logo width={320} height={62} />
           </LogoWrap>
-          <StatusChip>Update in progress</StatusChip>
-          <Title>Be right back.</Title>
-          <Subtitle>Final touches now. The updated website goes live very soon.</Subtitle>
+          <StatusChip>{copy.status}</StatusChip>
+          <Title>{copy.title}</Title>
+          <Subtitle>{copy.subtitle}</Subtitle>
           <LoaderRow>
             <Ring aria-hidden />
-            <LoaderText>Final checks</LoaderText>
+            <LoaderText>{copy.loader}</LoaderText>
           </LoaderRow>
         </Panel>
       </Inner>

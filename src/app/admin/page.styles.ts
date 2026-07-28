@@ -39,11 +39,19 @@ const skeletonPulse = keyframes`
 `;
 
 export const AdminInvitePage = styled.section`
-  min-height: 100vh;
+  height: 100dvh;
+  min-height: 0;
   width: 100%;
   padding: 0;
   display: block;
+  overflow: hidden;
   background: rgba(239, 242, 245, 0.85);
+
+  @media (max-width: 980px) {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
 `;
 
 export const LockViewport = styled.div`
@@ -86,13 +94,16 @@ export const LockDescription = styled.p`
 
 export const AdminShell = styled.div`
   width: 100%;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   display: grid;
   grid-template-columns: 286px minmax(0, 1fr);
   gap: 0;
   align-items: stretch;
 
   @media (max-width: 980px) {
+    height: auto;
+    min-height: 100vh;
     grid-template-columns: 1fr;
   }
 `;
@@ -109,11 +120,15 @@ export const Sidebar = styled.aside`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   box-sizing: border-box;
 
   @media (max-width: 980px) {
+    height: auto;
     min-height: unset;
+    overflow: visible;
     border-right: none;
     border-bottom: 1px solid rgba(20, 20, 20, 0.1);
     padding: 16px;
@@ -276,15 +291,19 @@ export const SidebarItemMeta = styled.p`
 
 export const Card = styled.div`
   padding: 20px;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   box-sizing: border-box;
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  overflow: hidden;
 
   @media (max-width: 980px) {
+    height: auto;
     min-height: calc(100vh - 170px);
     padding: 16px;
+    overflow: visible;
   }
 `;
 
@@ -299,16 +318,41 @@ export const MainPanel = styled.div`
   border: 1px solid rgba(20, 20, 20, 0.1);
   padding: 24px;
   box-sizing: border-box;
-  min-height: calc(100vh - 40px);
+  height: 100%;
+  min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(70, 70, 70, 0.32) transparent;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgba(70, 70, 70, 0.28);
+    background-clip: padding-box;
+  }
 
   @media (max-width: 767px) {
     padding: 18px;
   }
 
   @media (max-width: 980px) {
+    height: auto;
     min-height: auto;
+    overflow: visible;
+    scrollbar-gutter: auto;
   }
 `;
 
@@ -357,8 +401,20 @@ export const WorkspaceGrid = styled.div`
   }
 `;
 
+export const OnlineGroupWorkspace = styled.div`
+  width: 100%;
+  max-width: 1080px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`;
+
 export const WorkspacePrimary = styled.div`
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 `;
 
 export const WorkspaceSecondary = styled.div`
@@ -390,11 +446,62 @@ export const SurfaceHeaderRow = styled.div`
   gap: 8px;
 `;
 
+export const SurfaceHeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
 export const SurfaceDescription = styled.p`
   margin: 8px 0 0;
   color: rgba(58, 58, 58, 0.86);
   font-size: 14px;
   line-height: 1.5;
+`;
+
+export const SummaryGrid = styled.div`
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid rgba(20, 20, 20, 0.08);
+  border-left: 1px solid rgba(20, 20, 20, 0.08);
+
+  @media (max-width: 767px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const SummaryItem = styled.div`
+  min-width: 0;
+  padding: 10px 12px;
+  border-right: 1px solid rgba(20, 20, 20, 0.08);
+  border-bottom: 1px solid rgba(20, 20, 20, 0.08);
+`;
+
+export const SummaryLabel = styled.p`
+  margin: 0 0 3px;
+  color: rgba(72, 72, 72, 0.82);
+  font-size: 11px;
+  line-height: 1.35;
+`;
+
+export const SummaryValue = styled.p`
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: rgba(22, 22, 22, 0.96);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+`;
+
+export const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+
+  @media (max-width: 767px) {
+    grid-template-columns: 1fr;
+  }
 `;
 
 export const PolicyList = styled.div`
@@ -441,6 +548,13 @@ export const FormControl = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
+`;
+
+export const CheckboxList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
 `;
 
 export const ButtonRow = styled.div`
@@ -510,6 +624,13 @@ export const RecentLinksList = styled.div`
   padding-right: 16px;
 `;
 
+export const RenewalLinksList = styled.div`
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
 export const JournalSkeletonList = styled.div`
   margin-top: 10px;
   display: flex;
@@ -563,6 +684,13 @@ export const RecentLinkHeader = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+`;
+
+export const RenewalLinkControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 `;
 
 export const LinkStateBadge = styled.span<LinkStateStyleProps>`

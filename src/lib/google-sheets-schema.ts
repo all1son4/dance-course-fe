@@ -55,6 +55,8 @@ export const PAYMENT_SHEET_HEADERS = [
   "invoice_number",
   "invoice_issued_at",
   "successful_customer_log_status",
+  "telegram_inspiration_chat_id",
+  "telegram_inspiration_access_expires_at",
 ] as const;
 
 export const PAYMENT_SHEET_HEADER_LABELS: Record<
@@ -107,6 +109,8 @@ export const PAYMENT_SHEET_HEADER_LABELS: Record<
   invoice_number: "Номер инвойса",
   invoice_issued_at: "Когда выдан инвойс",
   successful_customer_log_status: "Статус записи в SuccessfulCustomers",
+  telegram_inspiration_chat_id: "ID Inspiration Hub",
+  telegram_inspiration_access_expires_at: "Доступ в Inspiration Hub до",
 };
 
 export const STRIPE_EVENT_SHEET_HEADERS = [

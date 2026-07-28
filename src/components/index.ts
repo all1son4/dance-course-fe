@@ -7,6 +7,7 @@ import Button from "./common/Button";
 import Checkbox from "./common/Checkbox";
 import Dialog from "./common/Dialog";
 import Input from "./common/Input";
+import ToggleSwitch from "./common/ToggleSwitch";
 import Footer from "./layout/Footer";
 import Header from "./layout/Header";
 import PageContainer from "./layout/PageContainer";
@@ -36,6 +37,7 @@ export {
   RoadmapContainer,
   StripePaymentTabs,
   TextContentCard,
+  ToggleSwitch,
   TopMenu,
   VideoPlayer,
 };

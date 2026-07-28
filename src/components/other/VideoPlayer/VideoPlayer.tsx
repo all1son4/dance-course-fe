@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type Plyr from "plyr";
+import type { Options as PlyrOptions } from "plyr";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { INSTAGRAM_BASE_URL } from "@/constants/links";
@@ -15,20 +15,50 @@ type PlayerApi = {
   pause: () => void;
 };
 
-const getYoutubeId = (value: string) => {
+type PlayerInstance = PlayerApi & {
+  destroy: () => void;
+  elements: {
+    container: HTMLElement | null;
+  };
+};
+
+type PlayerConstructor = new (
+  target: HTMLElement,
+  options: PlyrOptions,
+) => PlayerInstance;
+
+type CreatePlayerOptionsInput = {
+  isYoutube: boolean;
+  loop: boolean;
+  muted: boolean;
+};
+
+const YOUTUBE_ID_PATTERN = /^[a-zA-Z0-9_-]{11}$/;
+const YOUTUBE_SHORT_HOST = "youtu.be";
+const YOUTUBE_HOST_SUFFIX = "youtube.com";
+const YOUTUBE_NO_COOKIE_HOST_SUFFIX = "youtube-nocookie.com";
+const INSTAGRAM_HOST = "instagram.com";
+const INSTAGRAM_SHORT_HOST = "instagr.am";
+const INSTAGRAM_WINDOW_TARGET = "_blank";
+const INSTAGRAM_WINDOW_FEATURES = "noopener,noreferrer";
+
+const getYoutubeId = (value: string): string | null => {
   if (!value) return null;
   const trimmed = value.trim();
-  if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+  if (YOUTUBE_ID_PATTERN.test(trimmed)) return trimmed;
 
   try {
     const url = new URL(trimmed);
     const host = url.hostname.replace("www.", "");
 
-    if (host === "youtu.be") {
+    if (host === YOUTUBE_SHORT_HOST) {
       return url.pathname.replace("/", "");
     }
 
-    if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+    if (
+      host.endsWith(YOUTUBE_HOST_SUFFIX) ||
+      host.endsWith(YOUTUBE_NO_COOKIE_HOST_SUFFIX)
+    ) {
       const idFromQuery = url.searchParams.get("v");
       if (idFromQuery) return idFromQuery;
 
@@ -39,19 +69,19 @@ const getYoutubeId = (value: string) => {
       }
     }
   } catch {
-    // ignore
+    // Malformed values fall through to the native-video branch.
   }
 
   return null;
 };
 
-const getInstagramPostUrl = (value: string) => {
+const getInstagramPostUrl = (value: string): string | null => {
   if (!value) return null;
 
   try {
     const url = new URL(value.trim());
     const host = url.hostname.replace("www.", "");
-    if (host !== "instagram.com" && host !== "instagr.am") return null;
+    if (host !== INSTAGRAM_HOST && host !== INSTAGRAM_SHORT_HOST) return null;
 
     const parts = url.pathname.split("/").filter(Boolean);
     const type = parts[0];
@@ -62,10 +92,64 @@ const getInstagramPostUrl = (value: string) => {
       return `${INSTAGRAM_BASE_URL}/${type}/${id}/`;
     }
   } catch {
-    // ignore
+    // Malformed values fall through to the native-video branch.
   }
 
   return null;
+};
+
+const createPlayerOptions = ({
+  isYoutube,
+  loop,
+  muted,
+}: CreatePlayerOptionsInput): PlyrOptions => ({
+  controls: [],
+  clickToPlay: false,
+  loadSprite: false,
+  muted,
+  ...(loop ? { loop: { active: true } } : {}),
+  ...(isYoutube
+    ? {
+        youtube: {
+          noCookie: true,
+          rel: 0,
+          modestbranding: 1,
+          controls: 0,
+          disablekb: 1,
+          playsinline: 1,
+        },
+      }
+    : {}),
+});
+
+const destroyPlayer = (player: PlayerInstance): void => {
+  try {
+    player.destroy();
+  } catch {
+    // Plyr can throw if its managed DOM was already removed.
+  }
+};
+
+const getPlayerApi = (
+  player: PlayerInstance | null,
+  video: HTMLVideoElement | null,
+): PlayerApi | null => (player ?? video) as PlayerApi | null;
+
+const isSpaceShortcut = (event: KeyboardEvent): boolean =>
+  event.code === "Space" || event.key === " " || event.key === "Spacebar";
+
+const shouldIgnorePauseShortcut = (
+  element: Element | null,
+  playButton: HTMLButtonElement | null,
+): boolean => {
+  if (!element) return false;
+  if (playButton && playButton.contains(element)) return false;
+
+  const tag = element.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (tag === "BUTTON" || tag === "A") return true;
+
+  return (element as HTMLElement).isContentEditable;
 };
 
 export default function VideoPlayer({
@@ -88,7 +172,7 @@ export default function VideoPlayer({
   const t = useTranslations("Common");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const embedRef = useRef<HTMLDivElement | null>(null);
-  const plyrRef = useRef<Plyr | null>(null);
+  const plyrRef = useRef<PlayerInstance | null>(null);
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -100,26 +184,8 @@ export default function VideoPlayer({
   const isInstagram = Boolean(instagramPostUrl);
   const resolvedPlayLabel = playLabel ?? t("playVideo");
 
-  const options = useMemo<Plyr.Options>(
-    () => ({
-      controls: [],
-      clickToPlay: false,
-      loadSprite: false,
-      muted,
-      ...(loop ? { loop: { active: true } } : {}),
-      ...(isYoutube
-        ? {
-            youtube: {
-              noCookie: true,
-              rel: 0,
-              modestbranding: 1,
-              controls: 0,
-              disablekb: 1,
-              playsinline: 1,
-            },
-          }
-        : {}),
-    }),
+  const options = useMemo<PlyrOptions>(
+    () => createPlayerOptions({ isYoutube, loop, muted }),
     [isYoutube, loop, muted],
   );
 
@@ -191,14 +257,16 @@ export default function VideoPlayer({
         const mod = await import("plyr");
         if (!mounted) return;
 
-        const PlyrCtor = mod.default;
+        // The browser bundle exposes Plyr through `default`, while its
+        // declaration file uses `export =`.
+        const PlyrCtor = (
+          mod as unknown as {
+            default: PlayerConstructor;
+          }
+        ).default;
 
         if (plyrRef.current) {
-          try {
-            plyrRef.current.destroy();
-          } catch {
-            // ignore
-          }
+          destroyPlayer(plyrRef.current);
           plyrRef.current = null;
         }
 
@@ -235,11 +303,7 @@ export default function VideoPlayer({
       }
 
       if (plyrRef.current) {
-        try {
-          plyrRef.current.destroy();
-        } catch {
-          // ignore
-        }
+        destroyPlayer(plyrRef.current);
         plyrRef.current = null;
       }
     };
@@ -248,13 +312,13 @@ export default function VideoPlayer({
   const handlePlay = () => {
     if (isInstagram) {
       if (instagramPostUrl) {
-        window.open(instagramPostUrl, "_blank", "noopener,noreferrer");
+        window.open(instagramPostUrl, INSTAGRAM_WINDOW_TARGET, INSTAGRAM_WINDOW_FEATURES);
       }
       playButtonRef.current?.blur();
       return;
     }
 
-    const api = (plyrRef.current ?? videoRef.current) as PlayerApi | null;
+    const api = getPlayerApi(plyrRef.current, videoRef.current);
     if (!api) return;
 
     const result = api.play();
@@ -270,7 +334,7 @@ export default function VideoPlayer({
     if (playButtonRef.current && target && playButtonRef.current.contains(target)) {
       return;
     }
-    const api = (plyrRef.current ?? videoRef.current) as PlayerApi | null;
+    const api = getPlayerApi(plyrRef.current, videoRef.current);
     if (!api) return;
     api.pause();
   };
@@ -278,20 +342,13 @@ export default function VideoPlayer({
   useEffect(() => {
     if (!isPlaying) return undefined;
 
-    const shouldIgnore = (el: Element | null) => {
-      if (!el) return false;
-      if (playButtonRef.current && playButtonRef.current.contains(el)) return false;
-      const tag = el.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
-      if (tag === "BUTTON" || tag === "A") return true;
-      return (el as HTMLElement).isContentEditable;
-    };
-
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code !== "Space" && event.key !== " " && event.key !== "Spacebar") return;
-      if (shouldIgnore(document.activeElement)) return;
+      if (!isSpaceShortcut(event)) return;
+      if (shouldIgnorePauseShortcut(document.activeElement, playButtonRef.current)) {
+        return;
+      }
       event.preventDefault();
-      const api = (plyrRef.current ?? videoRef.current) as PlayerApi | null;
+      const api = getPlayerApi(plyrRef.current, videoRef.current);
       api?.pause();
     };
 
@@ -302,6 +359,36 @@ export default function VideoPlayer({
       window.removeEventListener("keydown", handleKeyDown, options);
     };
   }, [isPlaying]);
+
+  const renderMedia = () => {
+    if (isYoutube) {
+      return (
+        <div
+          ref={embedRef}
+          data-plyr-provider="youtube"
+          data-plyr-embed-id={youtubeId ?? undefined}
+        />
+      );
+    }
+
+    if (isInstagram) {
+      return <div className="instagram-fallback" aria-hidden />;
+    }
+
+    return (
+      <video
+        ref={videoRef}
+        playsInline={playsInline}
+        preload={preload}
+        poster={poster}
+        loop={loop}
+        muted={muted}
+        controls={false}
+      >
+        <source src={src} type={type} />
+      </video>
+    );
+  };
 
   return (
     <VideoWrap
@@ -332,27 +419,7 @@ export default function VideoPlayer({
         <Play />
       </CenterButton>
 
-      {isYoutube ? (
-        <div
-          ref={embedRef}
-          data-plyr-provider="youtube"
-          data-plyr-embed-id={youtubeId ?? undefined}
-        />
-      ) : isInstagram ? (
-        <div className="instagram-fallback" aria-hidden />
-      ) : (
-        <video
-          ref={videoRef}
-          playsInline={playsInline}
-          preload={preload}
-          poster={poster}
-          loop={loop}
-          muted={muted}
-          controls={false}
-        >
-          <source src={src} type={type} />
-        </video>
-      )}
+      {renderMedia()}
     </VideoWrap>
   );
 }

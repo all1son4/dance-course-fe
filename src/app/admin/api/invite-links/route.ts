@@ -200,6 +200,8 @@ const createAdminOfferPaymentRecord = ({
     telegram_access_revoked_at: "",
     telegram_access_status: "pending",
     telegram_channel_chat_id: "",
+    telegram_inspiration_access_expires_at: "",
+    telegram_inspiration_chat_id: "",
     telegram_token_expires_at: "",
     telegram_token_id: "",
     telegram_token_used_at: "",

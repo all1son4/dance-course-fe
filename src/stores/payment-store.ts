@@ -37,8 +37,12 @@ type StripeIntentErrors = Partial<
 type StripeIntentErrorCode =
   | "missing_client_secret"
   | "missing_secret_key"
+  | "online_group_campaign_not_configured"
   | "payment_intent_failed"
-  | "payment_intent_request_failed";
+  | "payment_intent_request_failed"
+  | "renewal_campaign_inactive"
+  | "renewal_payment_context_mismatch"
+  | "telegram_renewal_verification_required";
 type StripeIntentResponse = {
   clientSecret?: string;
   errorCode?: StripeIntentErrorCode;
@@ -67,6 +71,7 @@ const createCheckoutSessionId = () => {
 const PAYMENT_INTENT_REQUEST_TIMEOUT_MS = 10_000;
 const PAYMENT_INTENT_MAX_RETRY_ATTEMPTS = 2;
 const PAYMENT_INTENT_RETRY_BASE_DELAY_MS = 300;
+const PAYMENT_INTENT_MAX_RETRY_DELAY_MS = 1_500;
 const PAYMENT_CUSTOMER_FIELD_NAMES = PAYMENT_INPUTS.map(({ name }) => name);
 const PAYMENT_AGREEMENT_FIELD_NAMES = Object.keys(
   INITIAL_AGREEMENTS,
@@ -132,12 +137,27 @@ export class PaymentStore {
   pendingStripeCurrencies = new Set<SupportedCheckoutCurrency>();
   stripeIntentStateRevision = 0;
   sellableProducts: SellableProduct[] = SELLABLE_PRODUCTS_LIST;
+  renewalCampaignSlug = "";
 
   constructor() {
-    makeAutoObservable(
+    // Request helpers remain outside MobX instrumentation so decomposition does
+    // not introduce action boundaries around the existing async control flow.
+    makeAutoObservable<
+      PaymentStore,
+      | "getStripePaymentIntentRequestOptions"
+      | "isStripePaymentIntentRequestBlocked"
+      | "shouldRetryStripePaymentIntent"
+      | "storeFailedStripePaymentIntent"
+      | "storeSuccessfulStripePaymentIntent"
+    >(
       this,
       {
+        getStripePaymentIntentRequestOptions: false,
+        isStripePaymentIntentRequestBlocked: false,
         pendingStripeCurrencies: false,
+        shouldRetryStripePaymentIntent: false,
+        storeFailedStripePaymentIntent: false,
+        storeSuccessfulStripePaymentIntent: false,
       },
       { autoBind: true },
     );
@@ -343,6 +363,17 @@ export class PaymentStore {
     this.revalidateTouchedFields();
   }
 
+  setRenewalCampaignSlug(slug: string | null | undefined) {
+    const nextSlug = (slug ?? "").trim();
+
+    if (nextSlug === this.renewalCampaignSlug) {
+      return;
+    }
+
+    this.renewalCampaignSlug = nextSlug;
+    this.clearStripeIntentState(true);
+  }
+
   touchCustomerField(fieldName: PaymentCustomerFieldName) {
     this.touchedFields[fieldName] = true;
     this.validateCustomerField(fieldName);
@@ -376,22 +407,20 @@ export class PaymentStore {
     const resolvedCurrency = getResolvedCheckoutCurrency(currency);
     const requestRevision = this.stripeIntentStateRevision;
 
-    if (
-      !this.canShowStripe ||
-      this.getStripeClientSecret(resolvedCurrency) ||
-      this.pendingStripeCurrencies.has(resolvedCurrency)
-    ) {
+    if (this.isStripePaymentIntentRequestBlocked(resolvedCurrency)) {
       return;
     }
 
     this.pendingStripeCurrencies.add(resolvedCurrency);
     this.setStripeIntentError(resolvedCurrency, null);
+
     try {
       let data: StripeIntentResponse | null = null;
       let lastErrorCode: StripeIntentErrorCode = "payment_intent_request_failed";
 
       // Stripe intent creation is a network boundary in the checkout flow, so retry
-      // only transport-like failures and keep API validation failures visible.
+      // only transport-like failures and keep API validation failures visible. The
+      // awaits stay in this method so no extra microtask can precede the stale check.
       for (let attempt = 0; attempt <= PAYMENT_INTENT_MAX_RETRY_ATTEMPTS; attempt += 1) {
         const requestController = new AbortController();
         const timeoutId = window.setTimeout(() => {
@@ -399,32 +428,20 @@ export class PaymentStore {
         }, PAYMENT_INTENT_REQUEST_TIMEOUT_MS);
 
         try {
-          const response = await fetch("/api/stripe/payment-intent", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              checkoutLocale: this.validationLocale,
-              checkoutSessionId: this.checkoutSessionId,
-              customerData: this.customerData,
-              currency: resolvedCurrency,
-              offerId: this.selectedOffer.id,
-              productId: this.selectedProduct.id,
-            }),
-            signal: requestController.signal,
-          });
-
+          const response = await fetch(
+            "/api/stripe/payment-intent",
+            this.getStripePaymentIntentRequestOptions(
+              resolvedCurrency,
+              requestController.signal,
+            ),
+          );
           const responseData = (await response.json()) as StripeIntentResponse;
 
           if (!response.ok) {
             const errorCode = responseData.errorCode ?? "payment_intent_request_failed";
             lastErrorCode = errorCode;
 
-            if (
-              this.isRetryableStripeIntentError(errorCode) &&
-              attempt < PAYMENT_INTENT_MAX_RETRY_ATTEMPTS
-            ) {
+            if (this.shouldRetryStripePaymentIntent(errorCode, attempt)) {
               await this.waitForNextStripeIntentRetry(attempt);
               continue;
             }
@@ -444,10 +461,7 @@ export class PaymentStore {
 
           lastErrorCode = errorCode;
 
-          if (
-            this.isRetryableStripeIntentError(errorCode) &&
-            attempt < PAYMENT_INTENT_MAX_RETRY_ATTEMPTS
-          ) {
+          if (this.shouldRetryStripePaymentIntent(errorCode, attempt)) {
             await this.waitForNextStripeIntentRetry(attempt);
             continue;
           }
@@ -471,38 +485,92 @@ export class PaymentStore {
         return;
       }
 
-      runInAction(() => {
-        this.stripeClientSecrets = {
-          ...this.stripeClientSecrets,
-          [resolvedCurrency]: data.clientSecret ?? "",
-        };
-        this.stripePaymentIntentIds = {
-          ...this.stripePaymentIntentIds,
-          [resolvedCurrency]: data.paymentIntentId ?? "",
-        };
-        this.setStripeIntentError(resolvedCurrency, null);
-      });
+      this.storeSuccessfulStripePaymentIntent(resolvedCurrency, data);
     } catch (error) {
       if (this.isStripeIntentRequestStale(requestRevision)) {
         return;
       }
 
-      runInAction(() => {
-        const errorCode = getStripeIntentErrorCode(error);
-
-        this.stripeClientSecrets = {
-          ...this.stripeClientSecrets,
-          [resolvedCurrency]: "",
-        };
-        this.stripePaymentIntentIds = {
-          ...this.stripePaymentIntentIds,
-          [resolvedCurrency]: "",
-        };
-        this.setStripeIntentError(resolvedCurrency, errorCode);
-      });
+      this.storeFailedStripePaymentIntent(resolvedCurrency, error);
     } finally {
       this.pendingStripeCurrencies.delete(resolvedCurrency);
     }
+  }
+
+  private isStripePaymentIntentRequestBlocked(currency: SupportedCheckoutCurrency) {
+    return (
+      !this.canShowStripe ||
+      Boolean(this.getStripeClientSecret(currency)) ||
+      this.pendingStripeCurrencies.has(currency)
+    );
+  }
+
+  private getStripePaymentIntentRequestOptions(
+    currency: SupportedCheckoutCurrency,
+    signal: AbortSignal,
+  ): RequestInit {
+    return {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        checkoutLocale: this.validationLocale,
+        checkoutSessionId: this.checkoutSessionId,
+        customerData: this.customerData,
+        currency,
+        offerId: this.selectedOffer.id,
+        productId: this.selectedProduct.id,
+        renewalCampaignSlug: this.renewalCampaignSlug,
+      }),
+      signal,
+    };
+  }
+
+  private shouldRetryStripePaymentIntent(
+    errorCode: StripeIntentErrorCode,
+    attempt: number,
+  ) {
+    return (
+      this.isRetryableStripeIntentError(errorCode) &&
+      attempt < PAYMENT_INTENT_MAX_RETRY_ATTEMPTS
+    );
+  }
+
+  private storeSuccessfulStripePaymentIntent(
+    currency: SupportedCheckoutCurrency,
+    data: StripeIntentResponse,
+  ) {
+    runInAction(() => {
+      this.stripeClientSecrets = {
+        ...this.stripeClientSecrets,
+        [currency]: data.clientSecret ?? "",
+      };
+      this.stripePaymentIntentIds = {
+        ...this.stripePaymentIntentIds,
+        [currency]: data.paymentIntentId ?? "",
+      };
+      this.setStripeIntentError(currency, null);
+    });
+  }
+
+  private storeFailedStripePaymentIntent(
+    currency: SupportedCheckoutCurrency,
+    error: unknown,
+  ) {
+    runInAction(() => {
+      const errorCode = getStripeIntentErrorCode(error);
+
+      this.stripeClientSecrets = {
+        ...this.stripeClientSecrets,
+        [currency]: "",
+      };
+      this.stripePaymentIntentIds = {
+        ...this.stripePaymentIntentIds,
+        [currency]: "",
+      };
+      this.setStripeIntentError(currency, errorCode);
+    });
   }
 
   private isRetryableStripeIntentError(errorCode: StripeIntentErrorCode) {
@@ -510,7 +578,10 @@ export class PaymentStore {
   }
 
   private async waitForNextStripeIntentRetry(attempt: number) {
-    const delay = Math.min(PAYMENT_INTENT_RETRY_BASE_DELAY_MS * 2 ** attempt, 1500);
+    const delay = Math.min(
+      PAYMENT_INTENT_RETRY_BASE_DELAY_MS * 2 ** attempt,
+      PAYMENT_INTENT_MAX_RETRY_DELAY_MS,
+    );
 
     await new Promise<void>((resolve) => {
       window.setTimeout(resolve, delay);
@@ -577,6 +648,7 @@ export class PaymentStore {
     this.selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
     this.selectedProductId = DEFAULT_CHECKOUT_PRODUCT.id;
     this.checkoutCurrencyInitialized = false;
+    this.renewalCampaignSlug = "";
   }
 
   private getSellableProductById(productId: string | null | undefined) {

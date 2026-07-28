@@ -218,6 +218,17 @@ type TelegramInviteLink = {
   name?: string;
 };
 
+export type TelegramChatMember = {
+  is_member?: boolean;
+  status?: string;
+  user?: {
+    first_name?: string;
+    id?: number;
+    last_name?: string;
+    username?: string;
+  };
+};
+
 export const createTelegramChatInviteLink = async ({
   botToken,
   chatId,
@@ -246,6 +257,26 @@ export const createTelegramChatInviteLink = async ({
     },
   );
 
+export const revokeTelegramChatInviteLink = async ({
+  botToken,
+  chatId,
+  inviteLink,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  inviteLink: string;
+}) =>
+  callTelegramApi<TelegramInviteLink>(
+    "revokeChatInviteLink",
+    {
+      chat_id: chatId,
+      invite_link: inviteLink,
+    },
+    {
+      botToken,
+    },
+  );
+
 export const banTelegramChatMember = async ({
   botToken,
   chatId,
@@ -265,6 +296,49 @@ export const banTelegramChatMember = async ({
       chat_id: chatId,
       revoke_messages: revokeMessages,
       ...(untilDateUnix ? { until_date: untilDateUnix } : {}),
+      user_id: userId,
+    },
+    {
+      botToken,
+    },
+  );
+
+export const unbanTelegramChatMember = async ({
+  botToken,
+  chatId,
+  onlyIfBanned = true,
+  userId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  onlyIfBanned?: boolean;
+  userId: number | string;
+}) =>
+  callTelegramApi<boolean>(
+    "unbanChatMember",
+    {
+      chat_id: chatId,
+      only_if_banned: onlyIfBanned,
+      user_id: userId,
+    },
+    {
+      botToken,
+    },
+  );
+
+export const getTelegramChatMember = async ({
+  botToken,
+  chatId,
+  userId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  userId: number | string;
+}) =>
+  callTelegramApi<TelegramChatMember>(
+    "getChatMember",
+    {
+      chat_id: chatId,
       user_id: userId,
     },
     {

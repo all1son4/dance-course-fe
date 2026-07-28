@@ -302,6 +302,9 @@ export const AboutChoreoTitle = styled.h2`
   letter-spacing: 0;
   margin: 0;
   max-width: 420px;
+  position: sticky;
+  top: calc(116px + var(--safe-area-top));
+  align-self: start;
 
   @media (max-width: 1240px) {
     max-width: 360px;
@@ -310,6 +313,10 @@ export const AboutChoreoTitle = styled.h2`
   @media (max-width: 880px) {
     max-width: 100%;
     font-size: 40px;
+  }
+
+  @media (max-width: 767px) {
+    top: calc(84px + var(--safe-area-top));
   }
 `;
 

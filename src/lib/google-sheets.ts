@@ -78,6 +78,16 @@ export type {
 const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE_URL = "https://sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+const GOOGLE_SERVICE_ACCOUNT_JWT_TTL_SECONDS = 3_600;
+const GOOGLE_ACCESS_TOKEN_DEFAULT_TTL_SECONDS = 3_600;
+const GOOGLE_ACCESS_TOKEN_REFRESH_BUFFER_SECONDS = 60;
+const GOOGLE_ACCESS_TOKEN_MIN_CACHE_TTL_SECONDS = 60;
+const GOOGLE_SHEETS_RETRY_JITTER_MS = 200;
+const HTTP_STATUS_NO_CONTENT = 204;
+const HTTP_STATUS_RATE_LIMITED = 429;
+const HTTP_STATUS_UNAUTHORIZED = 401;
+const JSON_CONTENT_TYPE = "application/json";
+const FORM_URLENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded";
 
 type GoogleSheetsTokenResponse = {
   access_token?: string;
@@ -101,6 +111,26 @@ type GoogleSheetsMetadataResponse = {
 type GoogleSheetsValueRangeBody = {
   majorDimension?: "ROWS";
   values: string[][];
+};
+
+type ParsedGoogleAccessTokenResponse = {
+  data: GoogleSheetsTokenResponse | null;
+  responseText: string;
+};
+
+type GoogleSheetsResponseResolution<T> =
+  | {
+      kind: "complete";
+      value: T;
+    }
+  | {
+      delayMs: number;
+      kind: "retry";
+    };
+
+type ParsedGoogleSheetsResponse<T> = {
+  data: T | null;
+  responseText: string;
 };
 
 type GoogleSheetsConfig = {
@@ -148,6 +178,15 @@ type PaymentRecordByIntentCacheEntry = {
 
 type RecordSource = "auto" | "database" | "sheets";
 
+type DatabaseReadResolution<T> =
+  | {
+      kind: "fallback";
+    }
+  | {
+      kind: "resolved";
+      value: T;
+    };
+
 export class GoogleSheetsError extends Error {
   code: string;
   details: string;
@@ -162,7 +201,7 @@ export class GoogleSheetsError extends Error {
 }
 
 export const isGoogleSheetsRateLimitError = (error: unknown) =>
-  error instanceof GoogleSheetsError && error.status === 429;
+  error instanceof GoogleSheetsError && error.status === HTTP_STATUS_RATE_LIMITED;
 
 let accessTokenCache: AccessTokenCache | null = null;
 let sheetTitleCache: SheetTitleCache | null = null;
@@ -181,6 +220,26 @@ const GOOGLE_SHEETS_RETRY_BASE_DELAY_MS = 250;
 const GOOGLE_SHEETS_RETRY_MAX_DELAY_MS = 4_000;
 const GOOGLE_SHEETS_RATE_LIMIT_BACKOFF_MS = 20_000;
 let googleSheetsRateLimitedUntil = 0;
+
+/**
+ * Google owns these JSON schemas. Keep the unchecked conversion in one explicit
+ * trust boundary so transport code never spreads `JSON.parse(...) as T` casts.
+ * Runtime validation is intentionally not added here because changing how
+ * malformed upstream payloads fail would alter established error behavior.
+ */
+const parseGoogleJson = <T>(responseText: string): T | null => {
+  if (!responseText) {
+    return null;
+  }
+
+  try {
+    const parsedValue: unknown = JSON.parse(responseText);
+
+    return parsedValue as T;
+  } catch {
+    return null;
+  }
+};
 
 const encodeBase64Url = (value: string) =>
   Buffer.from(value)
@@ -300,7 +359,7 @@ const getJwtAssertion = (config: GoogleSheetsConfig) => {
   const payload = encodeBase64Url(
     JSON.stringify({
       aud: GOOGLE_OAUTH_TOKEN_URL,
-      exp: nowInSeconds + 3600,
+      exp: nowInSeconds + GOOGLE_SERVICE_ACCOUNT_JWT_TTL_SECONDS,
       iat: nowInSeconds,
       iss: config.serviceAccountEmail,
       scope: GOOGLE_SHEETS_SCOPE,
@@ -322,7 +381,93 @@ const getJwtAssertion = (config: GoogleSheetsConfig) => {
   return `${unsignedToken}.${signature}`;
 };
 
-const getGoogleAccessToken = async (config: GoogleSheetsConfig) => {
+const createGoogleAccessTokenRequest = (config: GoogleSheetsConfig): RequestInit => ({
+  method: "POST",
+  headers: {
+    "Content-Type": FORM_URLENCODED_CONTENT_TYPE,
+  },
+  body: new URLSearchParams({
+    assertion: getJwtAssertion(config),
+    grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+  }),
+  cache: "no-store",
+});
+
+const parseGoogleAccessTokenResponse = async (
+  response: Response,
+): Promise<ParsedGoogleAccessTokenResponse> => {
+  const responseText = await response.text();
+
+  return {
+    data: parseGoogleJson<GoogleSheetsTokenResponse>(responseText),
+    responseText,
+  };
+};
+
+const cacheGoogleAccessToken = (data: GoogleSheetsTokenResponse): string => {
+  const token = data.access_token ?? "";
+  const expiresInMs =
+    Math.max(
+      (data.expires_in ?? GOOGLE_ACCESS_TOKEN_DEFAULT_TTL_SECONDS) -
+        GOOGLE_ACCESS_TOKEN_REFRESH_BUFFER_SECONDS,
+      GOOGLE_ACCESS_TOKEN_MIN_CACHE_TTL_SECONDS,
+    ) * 1000;
+
+  accessTokenCache = {
+    expiresAt: Date.now() + expiresInMs,
+    token,
+  };
+
+  return token;
+};
+
+const createGoogleAccessTokenError = (
+  response: Response,
+  { data, responseText }: ParsedGoogleAccessTokenResponse,
+) =>
+  new GoogleSheetsError(
+    data?.error ?? "google_access_token_failed",
+    data?.error_description || responseText || "Failed to obtain Google access token.",
+    response.status,
+  );
+
+const resolveGoogleAccessTokenResponse = ({
+  attempt,
+  parsedResponse,
+  response,
+}: {
+  attempt: number;
+  parsedResponse: ParsedGoogleAccessTokenResponse;
+  response: Response;
+}): GoogleSheetsResponseResolution<string> => {
+  if (response.ok && parsedResponse.data?.access_token) {
+    return {
+      kind: "complete",
+      value: cacheGoogleAccessToken(parsedResponse.data),
+    };
+  }
+
+  if (response.status === HTTP_STATUS_RATE_LIMITED) {
+    const retryAfterMs = parseRetryAfterMs(response.headers.get("retry-after"));
+
+    setGoogleSheetsRateLimitBackoff(retryAfterMs);
+    throw createGoogleAccessTokenError(response, parsedResponse);
+  }
+
+  if (attempt < GOOGLE_SHEETS_REQUEST_MAX_RETRIES && response.status >= 500) {
+    return {
+      delayMs: getRetryDelayMs(
+        attempt,
+        parseRetryAfterMs(response.headers.get("retry-after")),
+      ),
+      kind: "retry",
+    };
+  }
+
+  throw createGoogleAccessTokenError(response, parsedResponse);
+};
+
+const getGoogleAccessToken = async (config: GoogleSheetsConfig): Promise<string> => {
   assertGoogleSheetsRateLimitWindow();
 
   if (accessTokenCache && accessTokenCache.expiresAt > Date.now()) {
@@ -333,17 +478,10 @@ const getGoogleAccessToken = async (config: GoogleSheetsConfig) => {
     let response: Response;
 
     try {
-      response = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          assertion: getJwtAssertion(config),
-          grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        }),
-        cache: "no-store",
-      });
+      response = await fetch(
+        GOOGLE_OAUTH_TOKEN_URL,
+        createGoogleAccessTokenRequest(config),
+      );
     } catch (error) {
       if (attempt === GOOGLE_SHEETS_REQUEST_MAX_RETRIES) {
         throw new GoogleSheetsError(
@@ -359,54 +497,17 @@ const getGoogleAccessToken = async (config: GoogleSheetsConfig) => {
       continue;
     }
 
-    const responseText = await response.text();
-    let data: GoogleSheetsTokenResponse | null = null;
+    const resolution = resolveGoogleAccessTokenResponse({
+      attempt,
+      parsedResponse: await parseGoogleAccessTokenResponse(response),
+      response,
+    });
 
-    if (responseText) {
-      try {
-        data = JSON.parse(responseText) as GoogleSheetsTokenResponse;
-      } catch {
-        data = null;
-      }
+    if (resolution.kind === "complete") {
+      return resolution.value;
     }
 
-    if (response.ok && data?.access_token) {
-      const expiresInMs = Math.max((data.expires_in ?? 3600) - 60, 60) * 1000;
-
-      accessTokenCache = {
-        expiresAt: Date.now() + expiresInMs,
-        token: data.access_token,
-      };
-
-      return data.access_token;
-    }
-
-    if (response.status === 429) {
-      setGoogleSheetsRateLimitBackoff(
-        parseRetryAfterMs(response.headers.get("retry-after")),
-      );
-
-      throw new GoogleSheetsError(
-        data?.error ?? "google_access_token_failed",
-        data?.error_description ||
-          responseText ||
-          "Failed to obtain Google access token.",
-        response.status,
-      );
-    }
-
-    if (attempt < GOOGLE_SHEETS_REQUEST_MAX_RETRIES && response.status >= 500) {
-      await sleep(
-        getRetryDelayMs(attempt, parseRetryAfterMs(response.headers.get("retry-after"))),
-      );
-      continue;
-    }
-
-    throw new GoogleSheetsError(
-      data?.error ?? "google_access_token_failed",
-      data?.error_description || responseText || "Failed to obtain Google access token.",
-      response.status,
-    );
+    await sleep(resolution.delayMs);
   }
 
   throw new GoogleSheetsError(
@@ -478,18 +579,100 @@ const getRetryDelayMs = (attempt: number, retryAfterMs: number | null) => {
     GOOGLE_SHEETS_RETRY_BASE_DELAY_MS * 2 ** attempt,
     GOOGLE_SHEETS_RETRY_MAX_DELAY_MS,
   );
-  const jitter = Math.floor(Math.random() * 200);
+  const jitter = Math.floor(Math.random() * GOOGLE_SHEETS_RETRY_JITTER_MS);
 
   return exponential + jitter;
 };
 
-const isRetriableGoogleSheetsStatus = (status: number) => status === 401 || status >= 500;
+const isRetriableGoogleSheetsStatus = (status: number) =>
+  status === HTTP_STATUS_UNAUTHORIZED || status >= 500;
+
+const createGoogleSheetsRequestInit = (
+  accessToken: string,
+  init?: RequestInit,
+): RequestInit => ({
+  ...init,
+  headers: {
+    Authorization: `Bearer ${accessToken}`,
+    ...(init?.headers ?? {}),
+  },
+  cache: "no-store",
+});
+
+const parseGoogleSheetsResponse = async <T>(
+  response: Response,
+): Promise<ParsedGoogleSheetsResponse<T>> => {
+  const responseText = await response.text();
+
+  return {
+    data: parseGoogleJson<T>(responseText),
+    responseText,
+  };
+};
+
+const createGoogleSheetsRequestError = (response: Response, responseText: string) =>
+  new GoogleSheetsError(
+    "google_sheets_request_failed",
+    responseText || "Google Sheets request failed.",
+    response.status,
+  );
+
+const resolveGoogleSheetsResponse = async <T>({
+  attempt,
+  response,
+}: {
+  attempt: number;
+  response: Response;
+}): Promise<GoogleSheetsResponseResolution<T>> => {
+  if (response.status === HTTP_STATUS_NO_CONTENT) {
+    return {
+      kind: "complete",
+      value: null as T,
+    };
+  }
+
+  const { data, responseText } = await parseGoogleSheetsResponse<T>(response);
+
+  if (response.ok) {
+    return {
+      kind: "complete",
+      value: data as T,
+    };
+  }
+
+  if (response.status === HTTP_STATUS_RATE_LIMITED) {
+    setGoogleSheetsRateLimitBackoff(
+      parseRetryAfterMs(response.headers.get("retry-after")),
+    );
+
+    throw createGoogleSheetsRequestError(response, responseText);
+  }
+
+  if (response.status === HTTP_STATUS_UNAUTHORIZED) {
+    accessTokenCache = null;
+  }
+
+  if (
+    attempt < GOOGLE_SHEETS_REQUEST_MAX_RETRIES &&
+    isRetriableGoogleSheetsStatus(response.status)
+  ) {
+    return {
+      delayMs: getRetryDelayMs(
+        attempt,
+        parseRetryAfterMs(response.headers.get("retry-after")),
+      ),
+      kind: "retry",
+    };
+  }
+
+  throw createGoogleSheetsRequestError(response, responseText);
+};
 
 const googleSheetsRequest = async <T>(
   config: GoogleSheetsConfig,
   path: string,
   init?: RequestInit,
-) => {
+): Promise<T> => {
   assertGoogleSheetsRateLimitWindow();
 
   for (let attempt = 0; attempt <= GOOGLE_SHEETS_REQUEST_MAX_RETRIES; attempt += 1) {
@@ -509,14 +692,10 @@ const googleSheetsRequest = async <T>(
     let response: Response;
 
     try {
-      response = await fetch(getGoogleSheetsUrl(config, path), {
-        ...init,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          ...(init?.headers ?? {}),
-        },
-        cache: "no-store",
-      });
+      response = await fetch(
+        getGoogleSheetsUrl(config, path),
+        createGoogleSheetsRequestInit(accessToken, init),
+      );
     } catch (error) {
       if (attempt === GOOGLE_SHEETS_REQUEST_MAX_RETRIES) {
         throw new GoogleSheetsError(
@@ -532,56 +711,16 @@ const googleSheetsRequest = async <T>(
       continue;
     }
 
-    if (response.status === 204) {
-      return null as T;
+    const resolution = await resolveGoogleSheetsResponse<T>({
+      attempt,
+      response,
+    });
+
+    if (resolution.kind === "complete") {
+      return resolution.value;
     }
 
-    const responseText = await response.text();
-    let data: T | null = null;
-
-    if (responseText) {
-      try {
-        data = JSON.parse(responseText) as T;
-      } catch {
-        data = null;
-      }
-    }
-
-    if (response.ok) {
-      return data as T;
-    }
-
-    if (response.status === 429) {
-      setGoogleSheetsRateLimitBackoff(
-        parseRetryAfterMs(response.headers.get("retry-after")),
-      );
-
-      throw new GoogleSheetsError(
-        "google_sheets_request_failed",
-        responseText || "Google Sheets request failed.",
-        response.status,
-      );
-    }
-
-    if (response.status === 401) {
-      accessTokenCache = null;
-    }
-
-    if (
-      attempt < GOOGLE_SHEETS_REQUEST_MAX_RETRIES &&
-      isRetriableGoogleSheetsStatus(response.status)
-    ) {
-      await sleep(
-        getRetryDelayMs(attempt, parseRetryAfterMs(response.headers.get("retry-after"))),
-      );
-      continue;
-    }
-
-    throw new GoogleSheetsError(
-      "google_sheets_request_failed",
-      responseText || "Google Sheets request failed.",
-      response.status,
-    );
+    await sleep(resolution.delayMs);
   }
 
   throw new GoogleSheetsError(
@@ -628,7 +767,7 @@ const ensureSheetExists = async (config: GoogleSheetsConfig, sheetTitle: string)
     await googleSheetsRequest(config, ":batchUpdate", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": JSON_CONTENT_TYPE,
       },
       body: JSON.stringify({
         requests: [
@@ -690,7 +829,7 @@ const updateSheetValues = async (
   await googleSheetsRequest(config, `/values/${encodedRange}?valueInputOption=RAW`, {
     method: "PUT",
     headers: {
-      "Content-Type": "application/json",
+      "Content-Type": JSON_CONTENT_TYPE,
     },
     body: JSON.stringify({
       majorDimension: "ROWS",
@@ -715,7 +854,7 @@ const appendSheetValues = async (
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": JSON_CONTENT_TYPE,
       },
       body: JSON.stringify({
         majorDimension: "ROWS",
@@ -965,6 +1104,99 @@ const parseTimestamp = (value: string) => {
   return Number.isFinite(timestamp) ? timestamp : 0;
 };
 
+const cachePaymentRecord = ({
+  cacheTtlMs,
+  paymentIntentId,
+  record,
+  source,
+}: {
+  cacheTtlMs: number;
+  paymentIntentId: string;
+  record: PaymentSheetRecord | null;
+  source: RecordSource;
+}): void => {
+  paymentRecordByIntentCache.set(`${source}:${paymentIntentId}`, {
+    expiresAt: Date.now() + cacheTtlMs,
+    record,
+  });
+};
+
+const cacheMirroredPaymentRecord = (record: PaymentSheetRecord): void => {
+  cachePaymentRecord({
+    cacheTtlMs: PAYMENT_RECORD_CACHE_TTL_MS,
+    paymentIntentId: record.payment_intent_id,
+    record,
+    source: "auto",
+  });
+  cachePaymentRecord({
+    cacheTtlMs: PAYMENT_RECORD_CACHE_TTL_MS,
+    paymentIntentId: record.payment_intent_id,
+    record,
+    source: "sheets",
+  });
+};
+
+const readDatabaseRecord = async <T>({
+  read,
+  source,
+  warn,
+}: {
+  read: () => Promise<T | null>;
+  source: RecordSource;
+  warn: (error: unknown) => void;
+}): Promise<DatabaseReadResolution<T | null>> => {
+  if (source === "sheets") {
+    return { kind: "fallback" };
+  }
+
+  try {
+    const record = await read();
+
+    if (record || source === "database") {
+      return {
+        kind: "resolved",
+        value: record,
+      };
+    }
+  } catch (error) {
+    if (source === "database") {
+      throw error;
+    }
+
+    warn(error);
+  }
+
+  return { kind: "fallback" };
+};
+
+const readDatabaseCollection = async <T>({
+  read,
+  source,
+  warn,
+}: {
+  read: () => Promise<T>;
+  source: RecordSource;
+  warn: (error: unknown) => void;
+}): Promise<DatabaseReadResolution<T>> => {
+  if (source === "sheets") {
+    return { kind: "fallback" };
+  }
+
+  try {
+    return {
+      kind: "resolved",
+      value: await read(),
+    };
+  } catch (error) {
+    if (source === "database") {
+      throw error;
+    }
+
+    warn(error);
+    return { kind: "fallback" };
+  }
+};
+
 export const isGoogleSheetsConfigured = () => Boolean(getGoogleSheetsConfig());
 
 export const ensureGoogleSheetsSchema = async () => {
@@ -1051,27 +1283,10 @@ export const findPaymentRecordByIntentId = async (
     return cachedEntry.record;
   }
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord = await findPaymentRecordByIntentIdFromDatabase(
-        normalizedPaymentIntentId,
-      );
-
-      if (databaseRecord || source === "database") {
-        if (cacheTtlMs > 0) {
-          paymentRecordByIntentCache.set(cacheKey, {
-            expiresAt: Date.now() + cacheTtlMs,
-            record: databaseRecord,
-          });
-        }
-
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findPaymentRecordByIntentIdFromDatabase(normalizedPaymentIntentId),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load payment record from database, falling back to Sheets",
         {
@@ -1079,7 +1294,20 @@ export const findPaymentRecordByIntentId = async (
           paymentIntentId: normalizedPaymentIntentId,
         },
       );
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    if (cacheTtlMs > 0) {
+      cachePaymentRecord({
+        cacheTtlMs,
+        paymentIntentId: normalizedPaymentIntentId,
+        record: databaseResolution.value,
+        source,
+      });
     }
+
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1095,9 +1323,11 @@ export const findPaymentRecordByIntentId = async (
   });
 
   if (cacheTtlMs > 0) {
-    paymentRecordByIntentCache.set(cacheKey, {
-      expiresAt: Date.now() + cacheTtlMs,
+    cachePaymentRecord({
+      cacheTtlMs,
+      paymentIntentId: normalizedPaymentIntentId,
       record: record ?? null,
+      source,
     });
   }
 
@@ -1129,21 +1359,21 @@ export const listPaymentRecords = async (options?: {
 }): Promise<PaymentSheetRecord[]> => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await listPaymentRecordsFromDatabase();
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => listPaymentRecordsFromDatabase(),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to list payment records from database, falling back to Sheets",
         {
           error,
         },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1156,7 +1386,7 @@ export const listPaymentRecords = async (options?: {
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
     },
-  ) as Promise<PaymentSheetRecord[]>;
+  );
 };
 
 export const findLatestPaymentRecordByCheckoutSessionId = async (
@@ -1167,24 +1397,19 @@ export const findLatestPaymentRecordByCheckoutSessionId = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord =
-        await findLatestPaymentRecordByCheckoutSessionIdFromDatabase(checkoutSessionId);
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findLatestPaymentRecordByCheckoutSessionIdFromDatabase(checkoutSessionId),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load latest checkout payment record from database, falling back to Sheets",
         { checkoutSessionId, error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1237,23 +1462,19 @@ export const findStripeEventRecordByEventId = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord = await findStripeEventRecordByEventIdFromDatabase(eventId);
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findStripeEventRecordByEventIdFromDatabase(eventId),
+    source,
+    warn: (error) => {
       console.warn("Failed to load Stripe event from database, falling back to Sheets", {
         error,
         eventId,
       });
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1277,18 +1498,18 @@ export const listStripeEventRecords = async (options?: {
 }): Promise<StripeEventSheetRecord[]> => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await listStripeEventRecordsFromDatabase();
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => listStripeEventRecordsFromDatabase(),
+    source,
+    warn: (error) => {
       console.warn("Failed to list Stripe events from database, falling back to Sheets", {
         error,
       });
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1301,7 +1522,7 @@ export const listStripeEventRecords = async (options?: {
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
     },
-  ) as Promise<StripeEventSheetRecord[]>;
+  );
 };
 
 export const appendStripeEventRecord = async (record: StripeEventSheetRecord) => {
@@ -1346,9 +1567,11 @@ export const upsertPaymentRecord = async (
   const shouldMirrorToSheets = options?.mirrorToSheets ?? true;
 
   if (!shouldMirrorToSheets) {
-    paymentRecordByIntentCache.set(`auto:${databaseRecord.payment_intent_id}`, {
-      expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
+    cachePaymentRecord({
+      cacheTtlMs: PAYMENT_RECORD_CACHE_TTL_MS,
+      paymentIntentId: databaseRecord.payment_intent_id,
       record: databaseRecord,
+      source: "auto",
     });
 
     return databaseRecord;
@@ -1379,14 +1602,7 @@ export const upsertPaymentRecord = async (
       [toOrderedRow(PAYMENT_SHEET_HEADERS, nextRecord)],
     );
 
-    paymentRecordByIntentCache.set(`auto:${nextRecord.payment_intent_id}`, {
-      expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
-      record: nextRecord,
-    });
-    paymentRecordByIntentCache.set(`sheets:${nextRecord.payment_intent_id}`, {
-      expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
-      record: nextRecord,
-    });
+    cacheMirroredPaymentRecord(nextRecord);
 
     return nextRecord;
   }
@@ -1395,14 +1611,7 @@ export const upsertPaymentRecord = async (
     toOrderedRow(PAYMENT_SHEET_HEADERS, nextRecord),
   ]);
 
-  paymentRecordByIntentCache.set(`auto:${nextRecord.payment_intent_id}`, {
-    expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
-    record: nextRecord,
-  });
-  paymentRecordByIntentCache.set(`sheets:${nextRecord.payment_intent_id}`, {
-    expiresAt: Date.now() + PAYMENT_RECORD_CACHE_TTL_MS,
-    record: nextRecord,
-  });
+  cacheMirroredPaymentRecord(nextRecord);
 
   return nextRecord;
 };
@@ -1415,24 +1624,19 @@ export const findTelegramAccessTokenRecordByTokenId = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord =
-        await findTelegramAccessTokenRecordByTokenIdFromDatabase(tokenId);
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findTelegramAccessTokenRecordByTokenIdFromDatabase(tokenId),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load Telegram access token by id from database, falling back to Sheets",
         { error, tokenId },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1457,24 +1661,19 @@ export const findTelegramAccessTokenRecordByTokenHash = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord =
-        await findTelegramAccessTokenRecordByTokenHashFromDatabase(tokenHash);
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findTelegramAccessTokenRecordByTokenHashFromDatabase(tokenHash),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load Telegram access token by hash from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1499,24 +1698,19 @@ export const findTelegramAccessTokenRecordByTokenValue = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord =
-        await findTelegramAccessTokenRecordByTokenValueFromDatabase(tokenValue);
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findTelegramAccessTokenRecordByTokenValueFromDatabase(tokenValue),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load Telegram access token by value from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1539,19 +1733,19 @@ export const listTelegramAccessTokenRecords = async (options?: {
 }): Promise<TelegramAccessTokenSheetRecord[]> => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await listTelegramAccessTokenRecordsFromDatabase();
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => listTelegramAccessTokenRecordsFromDatabase(),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to list Telegram access tokens from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1564,7 +1758,7 @@ export const listTelegramAccessTokenRecords = async (options?: {
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
     },
-  ) as Promise<TelegramAccessTokenSheetRecord[]>;
+  );
 };
 
 export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
@@ -1575,26 +1769,20 @@ export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord =
-        await findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase(
-          paymentIntentId,
-        );
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () =>
+      findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase(paymentIntentId),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load latest Telegram access token from database, falling back to Sheets",
         { error, paymentIntentId },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1617,6 +1805,43 @@ export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
 
     return rightTs - leftTs;
   })[0];
+};
+
+const createAdminInviteLinkHistorySourceRecord = ({
+  paymentRecord,
+  tokenById,
+}: {
+  paymentRecord: PaymentSheetRecord;
+  tokenById: Map<string, TelegramAccessTokenSheetRecord>;
+}): AdminInviteLinkHistorySourceRecord | null => {
+  const tokenRecord = tokenById.get(paymentRecord.telegram_token_id.trim());
+  const accessUrl = tokenRecord?.token_value.trim() ?? "";
+  const createdAt =
+    paymentRecord.successful_customer_logged_at.trim() ||
+    paymentRecord.first_seen_at.trim() ||
+    paymentRecord.updated_at.trim() ||
+    tokenRecord?.created_at.trim() ||
+    "";
+
+  if (!accessUrl) {
+    return null;
+  }
+
+  return {
+    accessUrl,
+    adminLabel: paymentRecord.customer_nickname.trim(),
+    createdAt,
+    lessonLanguage: paymentRecord.lesson_language.trim(),
+    offerLabel: paymentRecord.offer_label.trim(),
+    productTitle: paymentRecord.product_title.trim(),
+    purchaseItem: paymentRecord.purchase_item.trim(),
+    tokenExpiresAt:
+      paymentRecord.telegram_token_expires_at.trim() ||
+      tokenRecord?.expires_at.trim() ||
+      "",
+    tokenUsedAt:
+      paymentRecord.telegram_token_used_at.trim() || tokenRecord?.used_at.trim() || "",
+  };
 };
 
 export const findAdminInviteLinkHistorySourceRecords = async ({
@@ -1651,36 +1876,12 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
   );
 
   const historyRows = adminPaymentRows
-    .map((paymentRow) => {
-      const tokenRecord = tokenById.get(paymentRow.telegram_token_id.trim());
-      const accessUrl = tokenRecord?.token_value.trim() ?? "";
-      const createdAt =
-        paymentRow.successful_customer_logged_at.trim() ||
-        paymentRow.first_seen_at.trim() ||
-        paymentRow.updated_at.trim() ||
-        tokenRecord?.created_at.trim() ||
-        "";
-
-      if (!accessUrl) {
-        return null;
-      }
-
-      return {
-        accessUrl,
-        adminLabel: paymentRow.customer_nickname.trim(),
-        createdAt,
-        lessonLanguage: paymentRow.lesson_language.trim(),
-        offerLabel: paymentRow.offer_label.trim(),
-        productTitle: paymentRow.product_title.trim(),
-        purchaseItem: paymentRow.purchase_item.trim(),
-        tokenExpiresAt:
-          paymentRow.telegram_token_expires_at.trim() ||
-          tokenRecord?.expires_at.trim() ||
-          "",
-        tokenUsedAt:
-          paymentRow.telegram_token_used_at.trim() || tokenRecord?.used_at.trim() || "",
-      } satisfies AdminInviteLinkHistorySourceRecord;
-    })
+    .map((paymentRecord) =>
+      createAdminInviteLinkHistorySourceRecord({
+        paymentRecord,
+        tokenById,
+      }),
+    )
     .filter((row): row is AdminInviteLinkHistorySourceRecord => Boolean(row))
     .sort(
       (left, right) => parseTimestamp(right.createdAt) - parseTimestamp(left.createdAt),
@@ -1718,24 +1919,19 @@ export const findTelegramUserBindingByPaymentIntentId = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord =
-        await findTelegramUserBindingByPaymentIntentIdFromDatabase(paymentIntentId);
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findTelegramUserBindingByPaymentIntentIdFromDatabase(paymentIntentId),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load Telegram user binding by payment from database, falling back to Sheets",
         { error, paymentIntentId },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1760,23 +1956,19 @@ export const findMonthlySalesReportRunByKey = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord = await findMonthlySalesReportRunByKeyFromDatabase(reportKey);
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseRecord({
+    read: () => findMonthlySalesReportRunByKeyFromDatabase(reportKey),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load monthly sales report run from database, falling back to Sheets",
         { error, reportKey },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1799,19 +1991,19 @@ export const listMonthlySalesReportRunRecords = async (options?: {
 }): Promise<MonthlySalesReportRunSheetRecord[]> => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await listMonthlySalesReportRunRecordsFromDatabase();
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => listMonthlySalesReportRunRecordsFromDatabase(),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to list monthly sales report runs from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1824,7 +2016,7 @@ export const listMonthlySalesReportRunRecords = async (options?: {
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
     },
-  ) as Promise<MonthlySalesReportRunSheetRecord[]>;
+  );
 };
 
 export const upsertMonthlySalesReportRun = async (
@@ -1850,19 +2042,19 @@ export const listEmailCampaignLeadRecords = async (options?: {
 }): Promise<EmailCampaignLeadSheetRecord[]> => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await listEmailCampaignLeadRecordsFromDatabase();
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => listEmailCampaignLeadRecordsFromDatabase(),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to list email campaign leads from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1875,7 +2067,7 @@ export const listEmailCampaignLeadRecords = async (options?: {
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
     },
-  ) as Promise<EmailCampaignLeadSheetRecord[]>;
+  );
 };
 
 export const findEmailCampaignLeadByCampaignAndEmail = async ({
@@ -1894,26 +2086,23 @@ export const findEmailCampaignLeadByCampaignAndEmail = async ({
     return null;
   }
 
-  if (source !== "sheets") {
-    try {
-      const databaseRecord = await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+  const databaseResolution = await readDatabaseRecord({
+    read: () =>
+      findEmailCampaignLeadByCampaignAndEmailFromDatabase({
         campaignKey: normalizedCampaignKey,
         email: normalizedEmail,
-      });
-
-      if (databaseRecord || source === "database") {
-        return databaseRecord;
-      }
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+      }),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load email campaign lead from database, falling back to Sheets",
         { campaignKey: normalizedCampaignKey, error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const rows = await listEmailCampaignLeadRecords({
@@ -1955,19 +2144,19 @@ export const findTelegramUserBindingsByTelegramUserId = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await findTelegramUserBindingsByTelegramUserIdFromDatabase(telegramUserId);
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => findTelegramUserBindingsByTelegramUserIdFromDatabase(telegramUserId),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load Telegram user bindings by user id from database, falling back to Sheets",
         { error, telegramUserId },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -1990,19 +2179,19 @@ export const findTelegramUserBindingsByCustomerEmail = async (
 ) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await findTelegramUserBindingsByCustomerEmailFromDatabase(customerEmail);
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => findTelegramUserBindingsByCustomerEmailFromDatabase(customerEmail),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load Telegram user bindings by customer email from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -2029,22 +2218,23 @@ export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
   source?: RecordSource;
   telegramUserId: string;
 }) => {
-  if (source !== "sheets") {
-    try {
-      return await findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase({
+  const databaseResolution = await readDatabaseCollection({
+    read: () =>
+      findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase({
         chatId,
         telegramUserId,
-      });
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+      }),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load Telegram user bindings by user/chat from database, falling back to Sheets",
         { error, telegramUserId },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -2068,19 +2258,19 @@ export const findActiveTelegramUserBindings = async (options?: {
 }) => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await findActiveTelegramUserBindingsFromDatabase();
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => findActiveTelegramUserBindingsFromDatabase(),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to load active Telegram user bindings from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -2101,19 +2291,19 @@ export const listTelegramUserBindingRecords = async (options?: {
 }): Promise<TelegramUserBindingSheetRecord[]> => {
   const source = options?.source ?? "auto";
 
-  if (source !== "sheets") {
-    try {
-      return await listTelegramUserBindingRecordsFromDatabase();
-    } catch (error) {
-      if (source === "database") {
-        throw error;
-      }
-
+  const databaseResolution = await readDatabaseCollection({
+    read: () => listTelegramUserBindingRecordsFromDatabase(),
+    source,
+    warn: (error) => {
       console.warn(
         "Failed to list Telegram user bindings from database, falling back to Sheets",
         { error },
       );
-    }
+    },
+  });
+
+  if (databaseResolution.kind === "resolved") {
+    return databaseResolution.value;
   }
 
   const config = getRequiredGoogleSheetsConfig();
@@ -2126,7 +2316,7 @@ export const listTelegramUserBindingRecords = async (options?: {
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
     },
-  ) as Promise<TelegramUserBindingSheetRecord[]>;
+  );
 };
 
 export const upsertTelegramUserBindingRecord = async (

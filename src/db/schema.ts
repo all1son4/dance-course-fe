@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -50,7 +51,16 @@ export const productOffers = pgTable(
     productId: uuid("product_id")
       .notNull()
       .references(() => products.id, { onDelete: "cascade" }),
-    code: text("code").notNull().$type<"standard" | "without-mentor" | "with-mentor">(),
+    code: text("code")
+      .notNull()
+      .$type<
+        | "standard"
+        | "library-access"
+        | "without-mentor"
+        | "with-mentor"
+        | "renewal-discount"
+        | "renewal-library-access"
+      >(),
     label: text("label").notNull(),
     labelKey: text("label_key"),
     deliveryChannel: text("delivery_channel"),
@@ -65,6 +75,135 @@ export const productOffers = pgTable(
     uniqueIndex("product_offers_external_offer_id_idx").on(table.externalOfferId),
     index("product_offers_product_id_idx").on(table.productId),
     index("product_offers_product_code_idx").on(table.productId, table.code),
+  ],
+);
+
+export const telegramChats = pgTable(
+  "telegram_chats",
+  {
+    chatId: text("chat_id").primaryKey(),
+    title: text("title").notNull(),
+    type: text("type").notNull(),
+    registeredByTelegramUserId: text("registered_by_telegram_user_id"),
+    registeredByTelegramUsername: text("registered_by_telegram_username"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    index("telegram_chats_is_active_idx").on(table.isActive),
+    index("telegram_chats_title_idx").on(table.title),
+  ],
+);
+
+export const renewalCampaigns = pgTable(
+  "renewal_campaigns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    slug: text("slug").notNull(),
+    sourceChatId: text("source_chat_id")
+      .notNull()
+      .references(() => telegramChats.chatId, { onDelete: "restrict" }),
+    targetChatId: text("target_chat_id")
+      .notNull()
+      .references(() => telegramChats.chatId, { onDelete: "restrict" }),
+    productId: uuid("product_id").references(() => products.id, {
+      onDelete: "set null",
+    }),
+    offerId: uuid("offer_id").references(() => productOffers.id, {
+      onDelete: "set null",
+    }),
+    productExternalId: text("product_external_id").notNull(),
+    offerExternalId: text("offer_external_id").notNull(),
+    title: text("title").notNull(),
+    status: text("status").notNull().default("active").$type<"active" | "archived">(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("renewal_campaigns_slug_idx").on(table.slug),
+    uniqueIndex("renewal_campaigns_active_target_offer_idx")
+      .on(table.targetChatId, table.offerExternalId)
+      .where(sql`${table.status} = 'active'`),
+    index("renewal_campaigns_status_idx").on(table.status),
+    index("renewal_campaigns_source_chat_idx").on(table.sourceChatId),
+    index("renewal_campaigns_target_chat_idx").on(table.targetChatId),
+  ],
+);
+
+export const renewalCampaignSourceChats = pgTable(
+  "renewal_campaign_source_chats",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => renewalCampaigns.id, { onDelete: "cascade" }),
+    chatId: text("chat_id")
+      .notNull()
+      .references(() => telegramChats.chatId, { onDelete: "restrict" }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("renewal_campaign_source_chats_campaign_chat_idx").on(
+      table.campaignId,
+      table.chatId,
+    ),
+    index("renewal_campaign_source_chats_chat_idx").on(table.chatId),
+  ],
+);
+
+export const onlineGroupCampaigns = pgTable(
+  "online_group_campaigns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    regularChatId: text("regular_chat_id")
+      .notNull()
+      .references(() => telegramChats.chatId, { onDelete: "restrict" }),
+    libraryChatId: text("library_chat_id")
+      .notNull()
+      .references(() => telegramChats.chatId, { onDelete: "restrict" }),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    status: text("status").notNull().default("active").$type<"active" | "archived">(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("online_group_campaigns_single_active_idx")
+      .on(table.status)
+      .where(sql`${table.status} = 'active'`),
+    index("online_group_campaigns_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export const telegramRenewalVerifications = pgTable(
+  "telegram_renewal_verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => renewalCampaigns.id, { onDelete: "cascade" }),
+    checkoutSessionId: text("checkout_session_id").notNull(),
+    telegramUserId: text("telegram_user_id").notNull(),
+    telegramUsername: text("telegram_username"),
+    telegramName: text("telegram_name"),
+    sourceChatId: text("source_chat_id").notNull(),
+    targetChatId: text("target_chat_id").notNull(),
+    status: text("status").notNull().$type<"verified" | "not_member" | "failed">(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    uniqueIndex("telegram_renewal_verifications_checkout_campaign_idx").on(
+      table.checkoutSessionId,
+      table.campaignId,
+    ),
+    index("telegram_renewal_verifications_user_idx").on(table.telegramUserId),
+    index("telegram_renewal_verifications_expires_idx").on(table.expiresAt),
   ],
 );
 
@@ -121,6 +260,11 @@ export const purchases = pgTable(
     customerEmailSnapshot: text("customer_email_snapshot"),
     customerFullNameSnapshot: text("customer_full_name_snapshot"),
     customerTelegramUsernameSnapshot: text("customer_telegram_username_snapshot"),
+    inspirationChatIdSnapshot: text("inspiration_chat_id_snapshot"),
+    inspirationAccessExpiresAtSnapshot: timestamp(
+      "inspiration_access_expires_at_snapshot",
+      { withTimezone: true },
+    ),
     customerCountrySnapshot: text("customer_country_snapshot"),
     customerAddressLineSnapshot: text("customer_address_line_snapshot"),
     customerCitySnapshot: text("customer_city_snapshot"),
@@ -299,6 +443,7 @@ export const accessEntitlements = pgTable(
     offerId: uuid("offer_id").references(() => productOffers.id, {
       onDelete: "set null",
     }),
+    accessKey: text("access_key").notNull().default("primary"),
     deliveryChannel: text("delivery_channel"),
     accessWorkflow: text("access_workflow"),
     status: text("status")
@@ -331,7 +476,10 @@ export const accessEntitlements = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
-    uniqueIndex("access_entitlements_purchase_id_idx").on(table.purchaseId),
+    uniqueIndex("access_entitlements_purchase_key_idx").on(
+      table.purchaseId,
+      table.accessKey,
+    ),
     index("access_entitlements_status_idx").on(table.status),
     index("access_entitlements_telegram_user_idx").on(table.telegramUserId),
     index("access_entitlements_expires_at_idx").on(table.expiresAt),

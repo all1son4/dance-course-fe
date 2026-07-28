@@ -4,15 +4,15 @@ import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { Failed } from "@/svg";
 
-import FailedPageGuard from "./failed-page-guard";
 import {
-  ButtonBox,
-  Container,
-  Paragraph,
-  Paragraphs,
+  ResultButtonBox,
   ResultCard,
-  Title,
-} from "./page.styles";
+  ResultContainer,
+  ResultParagraph,
+  ResultParagraphs,
+  ResultTitle,
+} from "../result-page.styles";
+import FailedPageGuard from "./failed-page-guard";
 
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
 type FailedPageSearchParams = Record<string, string | string[] | undefined>;
@@ -52,15 +52,15 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
     : "/payment";
 
   return (
-    <Container>
+    <ResultContainer>
       <ResultCard>
         <FailedPageGuard />
         <Failed />
-        <Title>{t("title")}</Title>
-        <Paragraphs>
-          <Paragraph>{t("description.line1")}</Paragraph>
-          <Paragraph>{t("description.line2")}</Paragraph>
-          <ButtonBox>
+        <ResultTitle>{t("title")}</ResultTitle>
+        <ResultParagraphs>
+          <ResultParagraph>{t("description.line1")}</ResultParagraph>
+          <ResultParagraph>{t("description.line2")}</ResultParagraph>
+          <ResultButtonBox>
             <Button buttonText={t("buttons.backToPayment")} href={paymentPath} />
             <Button
               buttonText={t("buttons.contactSupport")}
@@ -68,9 +68,9 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
               target="_blank"
               variant="secondary"
             />
-          </ButtonBox>
-        </Paragraphs>
+          </ResultButtonBox>
+        </ResultParagraphs>
       </ResultCard>
-    </Container>
+    </ResultContainer>
   );
 }

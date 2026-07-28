@@ -17,6 +17,96 @@ type SettlementSnapshot = {
   stripeNetAmountMinor: number | null;
 };
 
+const DEFAULT_BACKFILL_LIMIT = 10_000;
+
+const createEmptySettlementSnapshot = (
+  stripeBalanceTransactionId: string | null = null,
+): SettlementSnapshot => ({
+  settlementAmountMinor: null,
+  settlementCurrency: null,
+  succeededAt: null,
+  stripeBalanceTransactionId,
+  stripeExchangeRate: null,
+  stripeFeeAmountMinor: null,
+  stripeNetAmountMinor: null,
+});
+
+const hasSucceededLatestCharge = (
+  paymentIntent: Stripe.PaymentIntent,
+  latestCharge: Stripe.Charge | string | null,
+): latestCharge is Stripe.Charge => {
+  if (
+    paymentIntent.status !== "succeeded" ||
+    !latestCharge ||
+    typeof latestCharge === "string"
+  ) {
+    return false;
+  }
+
+  return latestCharge.status === "succeeded" && latestCharge.paid;
+};
+
+const hasCompleteSettlement = (
+  snapshot: SettlementSnapshot,
+): snapshot is SettlementSnapshot & {
+  settlementAmountMinor: number;
+  settlementCurrency: string;
+} => snapshot.settlementAmountMinor !== null && Boolean(snapshot.settlementCurrency);
+
+const buildPurchaseSettlementUpdateValues = (snapshot: SettlementSnapshot) => ({
+  settlementAmountMinor: snapshot.settlementAmountMinor,
+  settlementCurrency: snapshot.settlementCurrency,
+  succeededAt: snapshot.succeededAt,
+  stripeBalanceTransactionId: snapshot.stripeBalanceTransactionId,
+  stripeExchangeRate: snapshot.stripeExchangeRate,
+  stripeFeeAmountMinor: snapshot.stripeFeeAmountMinor,
+  stripeNetAmountMinor: snapshot.stripeNetAmountMinor,
+  updatedAt: new Date(),
+});
+
+const buildStripeEventInsertValues = ({
+  paymentIntentId,
+  purchaseId,
+  succeededAt,
+}: {
+  paymentIntentId: string;
+  purchaseId: string;
+  succeededAt: Date;
+}) => ({
+  eventType: "payment_intent.succeeded" as const,
+  outcomeSnapshot: "succeeded",
+  paymentIntentId,
+  paymentStatusSnapshot: "succeeded",
+  payload: {
+    source: "stripe_settlement_backfill",
+  },
+  processedAt: new Date(),
+  processingStatus: "processed" as const,
+  purchaseId,
+  stripeCreatedAt: succeededAt,
+  stripeEventId: `backfill:payment_intent.succeeded:${paymentIntentId}`,
+  updatedAt: new Date(),
+});
+
+const buildStripeEventUpdateValues = ({
+  paymentIntentId,
+  purchaseId,
+  succeededAt,
+}: {
+  paymentIntentId: string;
+  purchaseId: string;
+  succeededAt: Date;
+}) => ({
+  outcomeSnapshot: "succeeded",
+  paymentIntentId,
+  paymentStatusSnapshot: "succeeded",
+  processedAt: new Date(),
+  processingStatus: "processed" as const,
+  purchaseId,
+  stripeCreatedAt: succeededAt,
+  updatedAt: new Date(),
+});
+
 const getStripe = () => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim() ?? "";
 
@@ -50,37 +140,16 @@ const getSettlementSnapshot = async ({
   });
   const latestCharge = paymentIntent.latest_charge;
 
-  if (
-    paymentIntent.status !== "succeeded" ||
-    !latestCharge ||
-    typeof latestCharge === "string" ||
-    latestCharge.status !== "succeeded" ||
-    !latestCharge.paid
-  ) {
-    return {
-      settlementAmountMinor: null,
-      settlementCurrency: null,
-      succeededAt: null,
-      stripeBalanceTransactionId: null,
-      stripeExchangeRate: null,
-      stripeFeeAmountMinor: null,
-      stripeNetAmountMinor: null,
-    };
+  if (!hasSucceededLatestCharge(paymentIntent, latestCharge)) {
+    return createEmptySettlementSnapshot();
   }
 
   const balanceTransaction = latestCharge.balance_transaction;
 
   if (!balanceTransaction || typeof balanceTransaction === "string") {
-    return {
-      settlementAmountMinor: null,
-      settlementCurrency: null,
-      succeededAt: null,
-      stripeBalanceTransactionId:
-        typeof balanceTransaction === "string" ? balanceTransaction : null,
-      stripeExchangeRate: null,
-      stripeFeeAmountMinor: null,
-      stripeNetAmountMinor: null,
-    };
+    return createEmptySettlementSnapshot(
+      typeof balanceTransaction === "string" ? balanceTransaction : null,
+    );
   }
 
   return {
@@ -132,7 +201,7 @@ const main = async () => {
         ),
       ),
     )
-    .limit(limit ?? 10_000);
+    .limit(limit ?? DEFAULT_BACKFILL_LIMIT);
   const stripeRows = rows.filter((row) => isStripePaymentIntentId(row.paymentIntentId));
   const stats = {
     dryRun,
@@ -150,10 +219,7 @@ const main = async () => {
         stripe,
       });
 
-      if (
-        settlementSnapshot.settlementAmountMinor === null ||
-        !settlementSnapshot.settlementCurrency
-      ) {
+      if (!hasCompleteSettlement(settlementSnapshot)) {
         stats.skipped += 1;
         continue;
       }
@@ -162,47 +228,25 @@ const main = async () => {
         await db.transaction(async (tx) => {
           await tx
             .update(purchases)
-            .set({
-              settlementAmountMinor: settlementSnapshot.settlementAmountMinor,
-              settlementCurrency: settlementSnapshot.settlementCurrency,
-              succeededAt: settlementSnapshot.succeededAt,
-              stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
-              stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
-              stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
-              stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
-              updatedAt: new Date(),
-            })
+            .set(buildPurchaseSettlementUpdateValues(settlementSnapshot))
             .where(eq(purchases.id, row.id));
 
           if (settlementSnapshot.succeededAt) {
             await tx
               .insert(stripeEvents)
-              .values({
-                eventType: "payment_intent.succeeded",
-                outcomeSnapshot: "succeeded",
-                paymentIntentId: row.paymentIntentId,
-                paymentStatusSnapshot: "succeeded",
-                payload: {
-                  source: "stripe_settlement_backfill",
-                },
-                processedAt: new Date(),
-                processingStatus: "processed",
-                purchaseId: row.id,
-                stripeCreatedAt: settlementSnapshot.succeededAt,
-                stripeEventId: `backfill:payment_intent.succeeded:${row.paymentIntentId}`,
-                updatedAt: new Date(),
-              })
-              .onConflictDoUpdate({
-                set: {
-                  outcomeSnapshot: "succeeded",
+              .values(
+                buildStripeEventInsertValues({
                   paymentIntentId: row.paymentIntentId,
-                  paymentStatusSnapshot: "succeeded",
-                  processedAt: new Date(),
-                  processingStatus: "processed",
                   purchaseId: row.id,
-                  stripeCreatedAt: settlementSnapshot.succeededAt,
-                  updatedAt: new Date(),
-                },
+                  succeededAt: settlementSnapshot.succeededAt,
+                }),
+              )
+              .onConflictDoUpdate({
+                set: buildStripeEventUpdateValues({
+                  paymentIntentId: row.paymentIntentId,
+                  purchaseId: row.id,
+                  succeededAt: settlementSnapshot.succeededAt,
+                }),
                 target: stripeEvents.stripeEventId,
               });
           }

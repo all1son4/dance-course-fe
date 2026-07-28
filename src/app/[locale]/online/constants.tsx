@@ -31,28 +31,40 @@ export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => 
     buttonText: t("cards.firstTouch.button"),
     buttonHref: "/online/first-touch",
   },
-  // {
-  //   id: "choreo",
-  //   title: t("cards.choreo.title"),
-  //   topRowContent: (
-  //     <ContentStack $gap="16px">
-  //       <DetailText>{t("cards.choreo.description.1")}</DetailText>
-  //       <DetailText>{t("cards.choreo.description.2")}</DetailText>
-  //     </ContentStack>
-  //   ),
-  //   bottomRowContent: (
-  //     <ContentStack $gap="20px">
-  //       <ContentStack>
-  //         <DetailText>{t("cards.choreo.startLabel")}</DetailText>
-  //         <DetailValueText>{t("cards.choreo.startValue")}</DetailValueText>
-  //       </ContentStack>
-  //       <ContentStack>
-  //         <DetailText>{t("cards.choreo.salesLabel")}</DetailText>
-  //         <DetailValueText>{t("cards.choreo.salesValue")}</DetailValueText>
-  //       </ContentStack>
-  //     </ContentStack>
-  //   ),
-  //   buttonText: t("cards.choreo.button"),
-  //   buttonHref: "/online/choreo",
-  // },
+  {
+    id: "online-group",
+    title: t("cards.onlineGroup.title"),
+    topRowContent: (
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.onlineGroup.description.1")}</DetailText>
+        <DetailText>{t("cards.onlineGroup.description.2")}</DetailText>
+      </ContentStack>
+    ),
+    bottomRowContent: (
+      <ContentStack>
+        <DetailText>{t("cards.onlineGroup.startLabel")}</DetailText>
+        <DetailValueText>{t("cards.onlineGroup.startValue")}</DetailValueText>
+      </ContentStack>
+    ),
+    buttonText: t("cards.onlineGroup.button"),
+    buttonHref: "/online/group",
+  },
+  {
+    id: "choreo",
+    title: t("cards.choreo.title"),
+    topRowContent: (
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.choreo.description.1")}</DetailText>
+        <DetailText>{t("cards.choreo.description.2")}</DetailText>
+      </ContentStack>
+    ),
+    bottomRowContent: (
+      <ContentStack>
+        <DetailText>{t("cards.choreo.salesLabel")}</DetailText>
+        <DetailValueText>{t("cards.choreo.salesValue")}</DetailValueText>
+      </ContentStack>
+    ),
+    buttonText: t("cards.choreo.button"),
+    buttonHref: "/online/choreo",
+  },
 ];

@@ -52,6 +52,73 @@ const FIRST_TOUCH_OFFER_IDS = new Set(
     product.code === "first-touch" ? product.offers.map((offer) => offer.id) : [],
   ),
 );
+const PAYMENT_METADATA_KEYS = {
+  accessWorkflow: ["access_workflow", "accessWorkflow"],
+  checkoutCurrency: ["checkout_currency", "checkoutCurrency"],
+  checkoutLocale: [
+    "checkout_locale",
+    "checkoutLocale",
+    "checkout_language",
+    "checkoutLanguage",
+    "locale",
+  ],
+  checkoutSessionId: ["checkout_session_id", "checkoutSessionId"],
+  customerAddress: ["customer_address", "customerAddress", "address"],
+  customerCity: ["customer_city", "customerCity", "city"],
+  customerCountry: ["customer_country", "customerCountry", "country"],
+  customerFullName: ["customer_full_name", "customerFullName", "full_name", "fullName"],
+  customerNickname: [
+    "customer_nickname",
+    "customerNickname",
+    "telegram_username",
+    "telegramUsername",
+    "telegram",
+  ],
+  customerPostalCode: [
+    "customer_postal_code",
+    "customerPostalCode",
+    "postal_code",
+    "postalCode",
+  ],
+  deliveryChannel: ["delivery_channel", "deliveryChannel"],
+  lessonLanguage: [
+    "lesson_language",
+    "lessonLanguage",
+    "materials_language",
+    "materialsLanguage",
+    "material_language",
+    "materialLanguage",
+  ],
+  offerId: ["offer_id", "offerId", "offer"],
+  offerLabel: ["offer_label", "offerLabel"],
+  productId: ["product_id", "productId", "product"],
+  productTitle: ["product_title", "productTitle"],
+  telegramChannelChatId: ["telegram_channel_chat_id", "telegramChannelChatId"],
+  telegramInspirationChatId: [
+    "telegram_inspiration_chat_id",
+    "telegramInspirationChatId",
+  ],
+  telegramUserId: ["telegram_user_id", "telegramUserId"],
+  telegramUsername: ["telegram_username", "telegramUsername"],
+} as const;
+const CHECKOUT_CUSTOM_FIELD_KEYS = {
+  customerNickname: [
+    "telegram",
+    "telegramusername",
+    "telegram_username",
+    "customernickname",
+    "customer_nickname",
+  ],
+  lessonLanguage: [
+    "lessonlanguage",
+    "lesson_language",
+    "materiallanguage",
+    "material_language",
+    "materialslanguage",
+    "materials_language",
+    "materials",
+  ],
+} as const;
 
 type StripePaymentWebhookResult = {
   duplicate: boolean;
@@ -69,6 +136,60 @@ type StripePaymentSourceContext = {
 };
 
 type StripeMetadata = Record<string, string>;
+
+type PaymentRecordMappingContext = {
+  checkoutSession: Stripe.Checkout.Session | null;
+  existingRecord: PaymentSheetRecord | null;
+  paymentIntent: Stripe.PaymentIntent;
+  paymentIntentMetadata: StripeMetadata;
+  sourceContext: StripePaymentSourceContext | null;
+  sourceMetadata: StripeMetadata;
+};
+
+type ResolvedCheckoutDetails = {
+  checkoutCurrency: string;
+  checkoutLocale: string;
+  checkoutSessionId: string;
+  offerId: string;
+  offerLabel: string;
+  productId: string;
+  productTitle: string;
+};
+
+type ResolvedCustomerDetails = {
+  address: string;
+  city: string;
+  country: string;
+  email: string;
+  fullName: string;
+  lessonLanguage: string;
+  nickname: string;
+  postalCode: string;
+};
+
+type ResolvedAccessDetails = {
+  accessWorkflow: string;
+  deliveryChannel: string;
+  telegramAccessStatus: string;
+  telegramChannelChatId: string;
+  telegramInspirationChatId: string;
+};
+
+type PreservedAccessDetails = {
+  accessWorkflow: string;
+  deliveryChannel: string;
+  telegramAccessStatus: string;
+};
+
+type CreatePaymentSheetRecordInput = {
+  access: ResolvedAccessDetails;
+  checkout: ResolvedCheckoutDetails;
+  context: PaymentRecordMappingContext;
+  customer: ResolvedCustomerDetails;
+  event: Stripe.Event;
+  snapshot: ReturnType<typeof getManagedPaymentIntentSnapshot>;
+  timestamp: string;
+};
 
 const getPurchaseItemLabel = (paymentRecord: PaymentSheetRecord) => {
   const productTitle = paymentRecord.product_title.trim();
@@ -107,6 +228,8 @@ const buildPurchaseItemLabel = (productTitle: string, offerLabel: string) => {
 
 const trimString = (value: string | null | undefined) => value?.trim() ?? "";
 
+const emptyIfNull = (value: string | null | undefined): string => value ?? "";
+
 const sleep = (delayMs: number) =>
   new Promise((resolve) => {
     setTimeout(resolve, delayMs);
@@ -123,7 +246,7 @@ const getStripeMetadata = (metadata: Stripe.Metadata | null | undefined) =>
 const getMetadataValue = (
   paymentIntentMetadata: StripeMetadata,
   sourceMetadata: StripeMetadata,
-  keys: string[],
+  keys: readonly string[],
 ) => {
   // PaymentIntent metadata is written by our checkout API and is the most reliable
   // source. PaymentLink/Checkout metadata is kept as a compatibility fallback.
@@ -170,7 +293,7 @@ const getEventPaymentIntentId = (event: Stripe.Event) => {
 
 const getCustomFieldValue = (
   checkoutSession: Stripe.Checkout.Session | null,
-  keys: string[],
+  keys: readonly string[],
 ) => {
   const normalizedKeys = new Set(keys.map((key) => normalizeStripeLookupKey(key)));
 
@@ -383,247 +506,367 @@ const getDeliveryChannelByOfferId = (offerId: string) =>
     .find((offer) => offer.id === offerId)
     ?.deliveryChannel?.trim() || "telegram";
 
+const createPaymentRecordMappingContext = (
+  paymentIntent: Stripe.PaymentIntent,
+  existingRecord: PaymentSheetRecord | null,
+  sourceContext: StripePaymentSourceContext | null,
+): PaymentRecordMappingContext => ({
+  checkoutSession: sourceContext?.checkoutSession ?? null,
+  existingRecord,
+  paymentIntent,
+  paymentIntentMetadata: getStripeMetadata(paymentIntent.metadata),
+  sourceContext,
+  sourceMetadata: getSourceMetadata(sourceContext),
+});
+
+const getContextMetadataValue = (
+  context: PaymentRecordMappingContext,
+  keys: readonly string[],
+): string =>
+  getMetadataValue(context.paymentIntentMetadata, context.sourceMetadata, keys);
+
+const resolveRecordCheckoutCurrency = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.checkoutCurrency) ||
+  context.checkoutSession?.currency ||
+  context.existingRecord?.checkout_currency ||
+  "";
+
+const resolveRecordCheckoutLocale = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.checkoutLocale) ||
+  trimString(context.checkoutSession?.locale) ||
+  context.existingRecord?.checkout_locale ||
+  "";
+
+const resolveRecordOfferId = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.offerId) ||
+  context.existingRecord?.offer_id ||
+  "";
+
+const resolveRecordOfferLabel = (
+  context: PaymentRecordMappingContext,
+  localizedMetadata: ReturnType<typeof getLocalizedOfferMetadataByOfferId>,
+): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.offerLabel) ||
+  localizedMetadata?.offerLabel ||
+  context.existingRecord?.offer_label ||
+  "";
+
+const resolveRecordProductId = (
+  context: PaymentRecordMappingContext,
+  localizedMetadata: ReturnType<typeof getLocalizedOfferMetadataByOfferId>,
+): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.productId) ||
+  localizedMetadata?.productId ||
+  context.existingRecord?.product_id ||
+  "";
+
+const resolveRecordProductTitle = (
+  context: PaymentRecordMappingContext,
+  localizedMetadata: ReturnType<typeof getLocalizedOfferMetadataByOfferId>,
+): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.productTitle) ||
+  localizedMetadata?.productTitle ||
+  context.sourceContext?.lineItemLabel ||
+  context.paymentIntent.description ||
+  context.existingRecord?.product_title ||
+  "";
+
+const resolveCheckoutDetails = (
+  context: PaymentRecordMappingContext,
+): ResolvedCheckoutDetails => {
+  const checkoutCurrency = resolveRecordCheckoutCurrency(context);
+  const checkoutLocale = resolveRecordCheckoutLocale(context);
+  const offerId = resolveRecordOfferId(context);
+  const localizedMetadata = getLocalizedOfferMetadataByOfferId(offerId, checkoutLocale);
+
+  return {
+    checkoutCurrency,
+    checkoutLocale,
+    checkoutSessionId:
+      getContextMetadataValue(context, PAYMENT_METADATA_KEYS.checkoutSessionId) ||
+      context.checkoutSession?.id ||
+      "",
+    offerId,
+    offerLabel: resolveRecordOfferLabel(context, localizedMetadata),
+    productId: resolveRecordProductId(context, localizedMetadata),
+    productTitle: resolveRecordProductTitle(context, localizedMetadata),
+  };
+};
+
+const resolveRecordCustomerAddress = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerAddress) ||
+  getCheckoutSessionAddressLine(context.checkoutSession) ||
+  context.existingRecord?.customer_address ||
+  "";
+
+const resolveRecordCustomerCity = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerCity) ||
+  trimString(context.checkoutSession?.customer_details?.address?.city) ||
+  context.existingRecord?.customer_city ||
+  "";
+
+const resolveRecordCustomerCountry = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerCountry) ||
+  context.checkoutSession?.customer_details?.address?.country ||
+  context.existingRecord?.customer_country ||
+  "";
+
+const resolveRecordCustomerEmail = (context: PaymentRecordMappingContext): string =>
+  context.paymentIntent.receipt_email ||
+  trimString(context.checkoutSession?.customer_details?.email) ||
+  context.existingRecord?.customer_email ||
+  "";
+
+const resolveRecordCustomerFullName = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerFullName) ||
+  trimString(context.checkoutSession?.customer_details?.name) ||
+  context.existingRecord?.customer_full_name ||
+  "";
+
+const resolveRecordCustomerNickname = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerNickname) ||
+  getCustomFieldValue(
+    context.checkoutSession,
+    CHECKOUT_CUSTOM_FIELD_KEYS.customerNickname,
+  ) ||
+  context.existingRecord?.customer_nickname ||
+  "";
+
+const resolveRecordCustomerPostalCode = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerPostalCode) ||
+  trimString(context.checkoutSession?.customer_details?.address?.postal_code) ||
+  context.existingRecord?.customer_postal_code ||
+  "";
+
+const resolveRecordLessonLanguage = (context: PaymentRecordMappingContext): string =>
+  getContextMetadataValue(context, PAYMENT_METADATA_KEYS.lessonLanguage) ||
+  getCustomFieldValue(
+    context.checkoutSession,
+    CHECKOUT_CUSTOM_FIELD_KEYS.lessonLanguage,
+  ) ||
+  context.existingRecord?.lesson_language ||
+  "";
+
+const resolveCustomerDetails = (
+  context: PaymentRecordMappingContext,
+): ResolvedCustomerDetails => ({
+  address: resolveRecordCustomerAddress(context),
+  city: resolveRecordCustomerCity(context),
+  country: resolveRecordCustomerCountry(context),
+  email: resolveRecordCustomerEmail(context),
+  fullName: resolveRecordCustomerFullName(context),
+  lessonLanguage: resolveRecordLessonLanguage(context),
+  nickname: resolveRecordCustomerNickname(context),
+  postalCode: resolveRecordCustomerPostalCode(context),
+});
+
+const isTelegramAccessOffer = ({
+  accessWorkflow,
+  deliveryChannel,
+  offerId,
+}: {
+  accessWorkflow: string;
+  deliveryChannel: string;
+  offerId: string;
+}): boolean =>
+  FIRST_TOUCH_OFFER_IDS.has(offerId) ||
+  WITHOUT_MENTOR_OFFER_IDS.has(offerId) ||
+  WITH_MENTOR_OFFER_IDS.has(offerId) ||
+  accessWorkflow === "telegram-renewal" ||
+  deliveryChannel === "telegram";
+
+const resolveAccessDetails = (
+  context: PaymentRecordMappingContext,
+  offerId: string,
+): ResolvedAccessDetails => {
+  const accessWorkflow =
+    getContextMetadataValue(context, PAYMENT_METADATA_KEYS.accessWorkflow) ||
+    getAccessWorkflowByOfferId(offerId);
+  const deliveryChannel =
+    getContextMetadataValue(context, PAYMENT_METADATA_KEYS.deliveryChannel) ||
+    getDeliveryChannelByOfferId(offerId);
+
+  return {
+    accessWorkflow,
+    deliveryChannel,
+    telegramAccessStatus: isTelegramAccessOffer({
+      accessWorkflow,
+      deliveryChannel,
+      offerId,
+    })
+      ? "pending"
+      : "not_required",
+    telegramChannelChatId: getContextMetadataValue(
+      context,
+      PAYMENT_METADATA_KEYS.telegramChannelChatId,
+    ),
+    telegramInspirationChatId: getContextMetadataValue(
+      context,
+      PAYMENT_METADATA_KEYS.telegramInspirationChatId,
+    ),
+  };
+};
+
+const getExistingRecordValue = (
+  context: PaymentRecordMappingContext,
+  field: keyof PaymentSheetRecord,
+): string => context.existingRecord?.[field] ?? "";
+
+const resolvePreservedAccessDetails = (
+  context: PaymentRecordMappingContext,
+  checkout: ResolvedCheckoutDetails,
+  access: ResolvedAccessDetails,
+): PreservedAccessDetails => {
+  const existingAccessWorkflow = getExistingRecordValue(context, "access_workflow");
+  const existingDeliveryChannel = getExistingRecordValue(context, "delivery_channel");
+  const existingTelegramAccessStatus = getExistingRecordValue(
+    context,
+    "telegram_access_status",
+  );
+  const isSameOffer = context.existingRecord?.offer_id === checkout.offerId;
+
+  // Stripe status events may arrive out of order; keep delivery progress only
+  // when the persisted row still belongs to the same offer.
+  return {
+    accessWorkflow:
+      existingAccessWorkflow && isSameOffer
+        ? existingAccessWorkflow
+        : access.accessWorkflow,
+    deliveryChannel:
+      existingDeliveryChannel && isSameOffer
+        ? existingDeliveryChannel
+        : access.deliveryChannel,
+    telegramAccessStatus:
+      existingTelegramAccessStatus && isSameOffer
+        ? existingTelegramAccessStatus
+        : access.telegramAccessStatus,
+  };
+};
+
+const createPaymentSheetRecord = ({
+  access,
+  checkout,
+  context,
+  customer,
+  event,
+  snapshot,
+  timestamp,
+}: CreatePaymentSheetRecordInput): PaymentSheetRecord => {
+  const preservedAccess = resolvePreservedAccessDetails(context, checkout, access);
+
+  return {
+    amount: String(snapshot.amount),
+    checkout_currency: checkout.checkoutCurrency,
+    currency: snapshot.currency,
+    customer_address: customer.address,
+    customer_city: customer.city,
+    customer_country: customer.country,
+    customer_email: customer.email,
+    customer_full_name: customer.fullName,
+    customer_nickname: customer.nickname,
+    customer_postal_code: customer.postalCode,
+    checkout_session_id: checkout.checkoutSessionId,
+    delivery_channel: preservedAccess.deliveryChannel,
+    access_workflow: preservedAccess.accessWorkflow,
+    email_delivery_status: getExistingRecordValue(context, "email_delivery_status"),
+    email_delivery_updated_at: getExistingRecordValue(
+      context,
+      "email_delivery_updated_at",
+    ),
+    first_seen_at: getExistingRecordValue(context, "first_seen_at") || timestamp,
+    invoice_issued_at: getExistingRecordValue(context, "invoice_issued_at"),
+    invoice_number: getExistingRecordValue(context, "invoice_number"),
+    successful_customer_log_status: getExistingRecordValue(
+      context,
+      "successful_customer_log_status",
+    ),
+    last_payment_error_code: emptyIfNull(snapshot.lastPaymentErrorCode),
+    last_payment_error_message: emptyIfNull(snapshot.lastPaymentErrorMessage),
+    latest_event_id: event.id,
+    latest_event_type: event.type,
+    offer_id: checkout.offerId,
+    offer_label: checkout.offerLabel,
+    outcome: snapshot.outcome,
+    payment_intent_id: snapshot.paymentIntentId,
+    product_id: checkout.productId,
+    product_title: checkout.productTitle,
+    lesson_language: customer.lessonLanguage,
+    checkout_locale: checkout.checkoutLocale,
+    purchase_item:
+      buildPurchaseItemLabel(checkout.productTitle, checkout.offerLabel) ||
+      getExistingRecordValue(context, "purchase_item") ||
+      "",
+    successful_customer_logged_at: getExistingRecordValue(
+      context,
+      "successful_customer_logged_at",
+    ),
+    telegram_access_status: preservedAccess.telegramAccessStatus,
+    telegram_token_expires_at: getExistingRecordValue(
+      context,
+      "telegram_token_expires_at",
+    ),
+    telegram_token_id: getExistingRecordValue(context, "telegram_token_id"),
+    telegram_token_used_at: getExistingRecordValue(context, "telegram_token_used_at"),
+    telegram_user_id:
+      getExistingRecordValue(context, "telegram_user_id") ||
+      getContextMetadataValue(context, PAYMENT_METADATA_KEYS.telegramUserId),
+    telegram_username:
+      getExistingRecordValue(context, "telegram_username") ||
+      getContextMetadataValue(context, PAYMENT_METADATA_KEYS.telegramUsername),
+    telegram_channel_chat_id:
+      getExistingRecordValue(context, "telegram_channel_chat_id") ||
+      access.telegramChannelChatId,
+    telegram_access_expires_at: getExistingRecordValue(
+      context,
+      "telegram_access_expires_at",
+    ),
+    telegram_access_revoked_at: getExistingRecordValue(
+      context,
+      "telegram_access_revoked_at",
+    ),
+    telegram_inspiration_chat_id:
+      getExistingRecordValue(context, "telegram_inspiration_chat_id") ||
+      access.telegramInspirationChatId,
+    telegram_inspiration_access_expires_at: getExistingRecordValue(
+      context,
+      "telegram_inspiration_access_expires_at",
+    ),
+    status: snapshot.status,
+    updated_at: timestamp,
+    with_mentor_alert_status: getExistingRecordValue(context, "with_mentor_alert_status"),
+    with_mentor_alert_updated_at: getExistingRecordValue(
+      context,
+      "with_mentor_alert_updated_at",
+    ),
+  };
+};
+
 const mapPaymentIntentToPaymentRecord = (
   event: Stripe.Event,
   paymentIntent: Stripe.PaymentIntent,
   existingRecord: PaymentSheetRecord | null,
   sourceContext: StripePaymentSourceContext | null,
-) => {
+): PaymentSheetRecord => {
   const snapshot = getManagedPaymentIntentSnapshot(paymentIntent);
   const timestamp = toUtcIso();
-  const paymentIntentMetadata = getStripeMetadata(paymentIntent.metadata);
-  const sourceMetadata = getSourceMetadata(sourceContext);
-  const checkoutSession = sourceContext?.checkoutSession ?? null;
-  const checkoutCurrency =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "checkout_currency",
-      "checkoutCurrency",
-    ]) ||
-    checkoutSession?.currency ||
-    existingRecord?.checkout_currency ||
-    "";
-  const checkoutLocale =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "checkout_locale",
-      "checkoutLocale",
-      "checkout_language",
-      "checkoutLanguage",
-      "locale",
-    ]) ||
-    existingRecord?.checkout_locale ||
-    "";
-  const offerId =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "offer_id",
-      "offerId",
-      "offer",
-    ]) ||
-    existingRecord?.offer_id ||
-    "";
-  const localizedOfferMetadata = getLocalizedOfferMetadataByOfferId(
-    offerId,
-    checkoutLocale,
+  const context = createPaymentRecordMappingContext(
+    paymentIntent,
+    existingRecord,
+    sourceContext,
   );
-  const offerLabel =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "offer_label",
-      "offerLabel",
-    ]) ||
-    localizedOfferMetadata?.offerLabel ||
-    existingRecord?.offer_label ||
-    "";
-  const productId =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "product_id",
-      "productId",
-      "product",
-    ]) ||
-    localizedOfferMetadata?.productId ||
-    existingRecord?.product_id ||
-    "";
-  const productTitle =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "product_title",
-      "productTitle",
-    ]) ||
-    localizedOfferMetadata?.productTitle ||
-    sourceContext?.lineItemLabel ||
-    paymentIntent.description ||
-    existingRecord?.product_title ||
-    "";
-  const customerFullName =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "customer_full_name",
-      "customerFullName",
-      "full_name",
-      "fullName",
-    ]) ||
-    trimString(checkoutSession?.customer_details?.name) ||
-    existingRecord?.customer_full_name ||
-    "";
-  const checkoutSessionId =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "checkout_session_id",
-      "checkoutSessionId",
-    ]) ||
-    checkoutSession?.id ||
-    "";
-  const customerNickname =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "customer_nickname",
-      "customerNickname",
-      "telegram_username",
-      "telegramUsername",
-      "telegram",
-    ]) ||
-    getCustomFieldValue(checkoutSession, [
-      "telegram",
-      "telegramusername",
-      "telegram_username",
-      "customernickname",
-      "customer_nickname",
-    ]) ||
-    existingRecord?.customer_nickname ||
-    "";
-  const customerCountry =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "customer_country",
-      "customerCountry",
-      "country",
-    ]) ||
-    checkoutSession?.customer_details?.address?.country ||
-    existingRecord?.customer_country ||
-    "";
-  const customerEmail =
-    paymentIntent.receipt_email ||
-    trimString(checkoutSession?.customer_details?.email) ||
-    existingRecord?.customer_email ||
-    "";
-  const lessonLanguage =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "lesson_language",
-      "lessonLanguage",
-      "materials_language",
-      "materialsLanguage",
-      "material_language",
-      "materialLanguage",
-    ]) ||
-    getCustomFieldValue(checkoutSession, [
-      "lessonlanguage",
-      "lesson_language",
-      "materiallanguage",
-      "material_language",
-      "materialslanguage",
-      "materials_language",
-      "materials",
-    ]) ||
-    existingRecord?.lesson_language ||
-    "";
-  const accessWorkflow =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "access_workflow",
-      "accessWorkflow",
-    ]) || getAccessWorkflowByOfferId(offerId);
-  const isTelegramAccessOffer =
-    FIRST_TOUCH_OFFER_IDS.has(offerId) ||
-    WITHOUT_MENTOR_OFFER_IDS.has(offerId) ||
-    WITH_MENTOR_OFFER_IDS.has(offerId);
-  const deliveryChannel =
-    getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-      "delivery_channel",
-      "deliveryChannel",
-    ]) || getDeliveryChannelByOfferId(offerId);
-  const telegramAccessStatus = isTelegramAccessOffer ? "pending" : "not_required";
-  const shouldKeepExistingAccessWorkflow =
-    Boolean(existingRecord?.access_workflow) && existingRecord?.offer_id === offerId;
-  const shouldKeepExistingDeliveryChannel =
-    Boolean(existingRecord?.delivery_channel) && existingRecord?.offer_id === offerId;
-  const shouldKeepExistingTelegramAccessStatus =
-    Boolean(existingRecord?.telegram_access_status) &&
-    existingRecord?.offer_id === offerId;
+  const checkout = resolveCheckoutDetails(context);
+  const customer = resolveCustomerDetails(context);
+  const access = resolveAccessDetails(context, checkout.offerId);
 
-  return {
-    amount: String(snapshot.amount),
-    checkout_currency: checkoutCurrency,
-    currency: snapshot.currency,
-    customer_address:
-      getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-        "customer_address",
-        "customerAddress",
-        "address",
-      ]) ||
-      getCheckoutSessionAddressLine(checkoutSession) ||
-      existingRecord?.customer_address ||
-      "",
-    customer_city:
-      getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-        "customer_city",
-        "customerCity",
-        "city",
-      ]) ||
-      trimString(checkoutSession?.customer_details?.address?.city) ||
-      existingRecord?.customer_city ||
-      "",
-    customer_country: customerCountry,
-    customer_email: customerEmail,
-    customer_full_name: customerFullName,
-    customer_nickname: customerNickname,
-    customer_postal_code:
-      getMetadataValue(paymentIntentMetadata, sourceMetadata, [
-        "customer_postal_code",
-        "customerPostalCode",
-        "postal_code",
-        "postalCode",
-      ]) ||
-      trimString(checkoutSession?.customer_details?.address?.postal_code) ||
-      existingRecord?.customer_postal_code ||
-      "",
-    checkout_session_id: checkoutSessionId,
-    delivery_channel: shouldKeepExistingDeliveryChannel
-      ? existingRecord?.delivery_channel
-      : deliveryChannel,
-    access_workflow: shouldKeepExistingAccessWorkflow
-      ? existingRecord?.access_workflow
-      : accessWorkflow,
-    email_delivery_status: existingRecord?.email_delivery_status ?? "",
-    email_delivery_updated_at: existingRecord?.email_delivery_updated_at ?? "",
-    first_seen_at: existingRecord?.first_seen_at || timestamp,
-    invoice_issued_at: existingRecord?.invoice_issued_at ?? "",
-    invoice_number: existingRecord?.invoice_number ?? "",
-    successful_customer_log_status: existingRecord?.successful_customer_log_status ?? "",
-    last_payment_error_code: snapshot.lastPaymentErrorCode ?? "",
-    last_payment_error_message: snapshot.lastPaymentErrorMessage ?? "",
-    latest_event_id: event.id,
-    latest_event_type: event.type,
-    offer_id: offerId,
-    offer_label: offerLabel,
-    outcome: snapshot.outcome,
-    payment_intent_id: snapshot.paymentIntentId,
-    product_id: productId,
-    product_title: productTitle,
-    lesson_language: lessonLanguage,
-    checkout_locale: checkoutLocale,
-    purchase_item:
-      buildPurchaseItemLabel(productTitle, offerLabel) ||
-      existingRecord?.purchase_item ||
-      "",
-    successful_customer_logged_at: existingRecord?.successful_customer_logged_at ?? "",
-    telegram_access_status: shouldKeepExistingTelegramAccessStatus
-      ? existingRecord?.telegram_access_status
-      : telegramAccessStatus,
-    telegram_token_expires_at: existingRecord?.telegram_token_expires_at ?? "",
-    telegram_token_id: existingRecord?.telegram_token_id ?? "",
-    telegram_token_used_at: existingRecord?.telegram_token_used_at ?? "",
-    telegram_user_id: existingRecord?.telegram_user_id ?? "",
-    telegram_username: existingRecord?.telegram_username ?? "",
-    telegram_channel_chat_id: existingRecord?.telegram_channel_chat_id ?? "",
-    telegram_access_expires_at: existingRecord?.telegram_access_expires_at ?? "",
-    telegram_access_revoked_at: existingRecord?.telegram_access_revoked_at ?? "",
-    status: snapshot.status,
-    updated_at: timestamp,
-    with_mentor_alert_status: existingRecord?.with_mentor_alert_status ?? "",
-    with_mentor_alert_updated_at: existingRecord?.with_mentor_alert_updated_at ?? "",
-  } satisfies PaymentSheetRecord;
+  return createPaymentSheetRecord({
+    access,
+    checkout,
+    context,
+    customer,
+    event,
+    snapshot,
+    timestamp,
+  });
 };
 
 export const isSupportedStripePaymentIntentEvent = (eventType: string) =>
