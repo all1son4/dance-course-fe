@@ -56,8 +56,8 @@ Optional Telegram env variables:
 
 Important production notes:
 
-- Runtime Node.js must be `>=24.13.0 <25`.
-- `.nvmrc` is set to `24.13.0` for local/dev parity.
+- Runtime Node.js must be `>=24.18.0 <25`.
+- `.nvmrc` is set to `24.18.0` for local/dev parity.
 - Next.js image optimization is enabled by default. Set `NEXT_IMAGE_UNOPTIMIZED=1` only as a temporary rollback.
 - Browser-facing POST APIs validate `Origin/Referer` in production; missing headers are rejected.
 - After changing `TELEGRAM_LESSON_SOURCES_JSON` or `TELEGRAM_CHANNEL_TARGETS_JSON`, restart the app process (maps are cached in-memory).
