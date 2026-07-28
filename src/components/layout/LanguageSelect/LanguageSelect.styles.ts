@@ -1,6 +1,16 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
+
+const menuShow = keyframes`
+  from {
+    transform: translateY(-12px);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+`;
 
 export const MenuWrap = styled.div`
   position: relative;
@@ -108,6 +118,8 @@ export const Menu = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  animation: ${menuShow} var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+  will-change: opacity, transform;
 
   @media (max-width: 767px) {
     left: 0;

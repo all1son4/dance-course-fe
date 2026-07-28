@@ -23,12 +23,29 @@ import {
 } from "./Button.styles";
 import type { ButtonProps } from "./Button.types";
 
+type LinkClickHandler = NonNullable<AnchorHTMLAttributes<HTMLAnchorElement>["onClick"]>;
+
+type CreateHashLinkClickHandlerOptions = {
+  href: string;
+  isDisabled: boolean | undefined;
+  onLinkClick: AnchorHTMLAttributes<HTMLAnchorElement>["onClick"];
+};
+
 const NAVIGATION_SPINNER_DELAY_MS = 135;
 const NAVIGATION_SPINNER_FAILSAFE_MS = 10_000;
-const getRouteKey = (pathname: string, search: string) => `${pathname}${search}`;
+const SELF_TARGET = "_self";
+const BLANK_TARGET = "_blank";
+const HASH_PREFIX = "#";
+const DEFAULT_EXTERNAL_REL = "noopener noreferrer";
+const DEFAULT_BUTTON_TYPE = "button";
+const PAGE_HIDE_EVENT = "pagehide";
 
-const isInternalNavigationHref = (value: string) => {
-  if (!value || value.startsWith("#") || value.startsWith("//")) {
+// Hash is intentionally omitted because in-document navigation does not wait
+// for a route transition to settle.
+const getRouteKey = (pathname: string, search: string): string => `${pathname}${search}`;
+
+const isInternalNavigationHref = (value: string): boolean => {
+  if (!value || value.startsWith(HASH_PREFIX) || value.startsWith("//")) {
     return false;
   }
 
@@ -44,7 +61,7 @@ const isInternalNavigationHref = (value: string) => {
   );
 };
 
-const isModifiedClickEvent = (event: ReactMouseEvent<HTMLAnchorElement>) =>
+const isModifiedClickEvent = (event: ReactMouseEvent<HTMLAnchorElement>): boolean =>
   event.defaultPrevented ||
   event.button !== 0 ||
   event.metaKey ||
@@ -52,13 +69,75 @@ const isModifiedClickEvent = (event: ReactMouseEvent<HTMLAnchorElement>) =>
   event.shiftKey ||
   event.altKey;
 
+const getLinkRel = (
+  target: string,
+  relFromProps: string | undefined,
+): string | undefined =>
+  target === BLANK_TARGET ? (relFromProps ?? DEFAULT_EXTERNAL_REL) : relFromProps;
+
+const shouldSkipRouteLoadingForHref = (href: string): boolean => {
+  try {
+    const targetUrl = new URL(href, window.location.href);
+    const targetRouteKey = getRouteKey(targetUrl.pathname, targetUrl.search);
+    const currentRouteKey = getRouteKey(window.location.pathname, window.location.search);
+
+    return targetRouteKey === currentRouteKey;
+  } catch {
+    return true;
+  }
+};
+
+const createHashLinkClickHandler = ({
+  href,
+  isDisabled,
+  onLinkClick,
+}: CreateHashLinkClickHandlerOptions): LinkClickHandler => {
+  return (event) => {
+    if (isDisabled) {
+      event.preventDefault();
+      return;
+    }
+
+    onLinkClick?.(event);
+
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const hashTargetId = getHashTargetFromHref(href);
+
+    if (!hashTargetId) {
+      return;
+    }
+
+    if (!scrollToHashTarget(hashTargetId)) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const nextHash = `${HASH_PREFIX}${hashTargetId}`;
+    const nextUrl = `${window.location.pathname}${window.location.search}${nextHash}`;
+    window.history.replaceState(window.history.state, "", nextUrl);
+  };
+};
+
+const renderButtonContent = (buttonText: string, isButtonLoading: boolean) => (
+  <ButtonContent>
+    <ButtonLabel>{buttonText}</ButtonLabel>
+    <ButtonSpinnerSlot $isLoading={isButtonLoading}>
+      <ButtonSpinner aria-hidden $isLoading={isButtonLoading} />
+    </ButtonSpinnerSlot>
+  </ButtonContent>
+);
+
 export default function Button<T extends ElementType = "button">({
   variant = "primary",
   width = "100%",
   buttonText = "",
   size = "lg",
   href = "",
-  target = "_self",
+  target = SELF_TARGET,
   isLoading = false,
   ...rest
 }: ButtonProps<T>) {
@@ -75,11 +154,10 @@ export default function Button<T extends ElementType = "button">({
     disabled?: boolean;
     type?: string;
   };
-  const linkRel =
-    target === "_blank" ? (relFromProps ?? "noopener noreferrer") : relFromProps;
-  const shouldDisableAutoScroll = href.includes("#") && target === "_self";
+  const linkRel = getLinkRel(target, relFromProps);
+  const shouldDisableAutoScroll = href.includes(HASH_PREFIX) && target === SELF_TARGET;
   const shouldTrackRouteLoading = useMemo(
-    () => target === "_self" && isInternalNavigationHref(href),
+    () => target === SELF_TARGET && isInternalNavigationHref(href),
     [href, target],
   );
   const isButtonLoading = isLoading || isRouteLoading;
@@ -107,7 +185,7 @@ export default function Button<T extends ElementType = "button">({
 
   const clearNavigationCompleteListeners = useCallback(() => {
     window.removeEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled);
-    window.removeEventListener("pagehide", onNavigationSettled);
+    window.removeEventListener(PAGE_HIDE_EVENT, onNavigationSettled);
   }, [onNavigationSettled]);
 
   const stopRouteLoadingState = useCallback(() => {
@@ -132,7 +210,9 @@ export default function Button<T extends ElementType = "button">({
     window.addEventListener(LOCATION_CHANGE_EVENT, onNavigationSettled, {
       once: true,
     });
-    window.addEventListener("pagehide", onNavigationSettled, { once: true });
+    window.addEventListener(PAGE_HIDE_EVENT, onNavigationSettled, {
+      once: true,
+    });
   }, [clearRouteLoadingTimers, onNavigationSettled, stopRouteLoadingState]);
 
   useEffect(
@@ -142,46 +222,14 @@ export default function Button<T extends ElementType = "button">({
     [stopRouteLoadingState],
   );
 
-  const buttonContent = (
-    <ButtonContent>
-      <ButtonLabel>{buttonText}</ButtonLabel>
-      <ButtonSpinnerSlot $isLoading={isButtonLoading}>
-        <ButtonSpinner aria-hidden $isLoading={isButtonLoading} />
-      </ButtonSpinnerSlot>
-    </ButtonContent>
-  );
+  const buttonContent = renderButtonContent(buttonText, isButtonLoading);
 
-  if (href && href.startsWith("#") && target === "_self") {
-    const onHashLinkClick: AnchorHTMLAttributes<HTMLAnchorElement>["onClick"] = (
-      event,
-    ) => {
-      if (isDisabled) {
-        event.preventDefault();
-        return;
-      }
-
-      onLinkClick?.(event);
-
-      if (event.defaultPrevented) {
-        return;
-      }
-
-      const hashTargetId = getHashTargetFromHref(href);
-
-      if (!hashTargetId) {
-        return;
-      }
-
-      if (!scrollToHashTarget(hashTargetId)) {
-        return;
-      }
-
-      event.preventDefault();
-
-      const nextHash = `#${hashTargetId}`;
-      const nextUrl = `${window.location.pathname}${window.location.search}${nextHash}`;
-      window.history.replaceState(window.history.state, "", nextUrl);
-    };
+  if (href && href.startsWith(HASH_PREFIX) && target === SELF_TARGET) {
+    const onHashLinkClick = createHashLinkClickHandler({
+      href,
+      isDisabled,
+      onLinkClick,
+    });
 
     return (
       <ButtonAnchorWrapper
@@ -201,9 +249,7 @@ export default function Button<T extends ElementType = "button">({
   }
 
   if (href) {
-    const onRouteLinkClick: AnchorHTMLAttributes<HTMLAnchorElement>["onClick"] = (
-      event,
-    ) => {
+    const onRouteLinkClick: LinkClickHandler = (event) => {
       if (isDisabled) {
         event.preventDefault();
         return;
@@ -215,25 +261,11 @@ export default function Button<T extends ElementType = "button">({
         return;
       }
 
-      if (
-        !shouldTrackRouteLoading ||
-        isModifiedClickEvent(event as ReactMouseEvent<HTMLAnchorElement>)
-      ) {
+      if (!shouldTrackRouteLoading || isModifiedClickEvent(event)) {
         return;
       }
 
-      try {
-        const targetUrl = new URL(href, window.location.href);
-        const targetRouteKey = getRouteKey(targetUrl.pathname, targetUrl.search);
-        const currentRouteKey = getRouteKey(
-          window.location.pathname,
-          window.location.search,
-        );
-
-        if (targetRouteKey === currentRouteKey) {
-          return;
-        }
-      } catch {
+      if (shouldSkipRouteLoadingForHref(href)) {
         return;
       }
 
@@ -269,7 +301,7 @@ export default function Button<T extends ElementType = "button">({
       {...buttonProps}
       disabled={buttonProps.disabled || isButtonLoading}
       aria-busy={isButtonLoading || undefined}
-      type={buttonProps.type ?? "button"}
+      type={buttonProps.type ?? DEFAULT_BUTTON_TYPE}
     >
       {buttonContent}
     </StyledButton>

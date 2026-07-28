@@ -15,6 +15,7 @@ export default function CourseCard({
   bgColor,
   buttonHref,
   buttonRel,
+  buttonTarget,
   buttonText,
   cardContent,
   icon,
@@ -36,6 +37,7 @@ export default function CourseCard({
           width="200px"
           href={buttonHref}
           rel={buttonRel}
+          target={buttonTarget}
         />
       </ContentBox>
     </CardContainer>

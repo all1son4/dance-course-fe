@@ -23,14 +23,16 @@ type TelegramAccessButtonProps = {
   unavailableText: string;
 };
 
+type TelegramAccess = {
+  accessExpiresAt: string;
+  accessKey: "inspiration-hub" | "main-group";
+  accessUrl: string;
+  status: "active" | "expired" | "ready" | "unavailable";
+  tokenExpiresAt: string;
+};
+
 type AccessLinkResponse = {
-  accesses?: Array<{
-    accessExpiresAt: string;
-    accessKey: "inspiration-hub" | "main-group";
-    accessUrl: string;
-    status: "active" | "expired" | "ready" | "unavailable";
-    tokenExpiresAt: string;
-  }>;
+  accesses?: TelegramAccess[];
   accessUrl?: string;
   status: "not_available" | "pending" | "ready";
   tokenExpiresAt?: string;
@@ -39,6 +41,21 @@ type AccessLinkResponse = {
 type AccessLinkErrorResponse = {
   errorCode?: string;
 };
+
+type AccessStatusKind = "pending" | "unavailable";
+
+const ACCESS_LINK_ENDPOINT = "/api/telegram/access-link";
+const ACCESS_LINK_METHOD = "POST";
+const JSON_CONTENT_TYPE = "application/json";
+const NO_STORE_CACHE_MODE = "no-store";
+const RETRY_AFTER_HEADER = "Retry-After";
+const MAX_RETRY_ATTEMPTS = 15;
+const RETRY_BASE_DELAY_MS = 1_500;
+const RETRY_DELAY_INCREMENT_MS = 180;
+const RETRY_MAX_DELAY_MS = 5_000;
+const ACCESS_LINK_REQUEST_TIMEOUT_MS = 8_000;
+const SERVER_RETRY_AFTER_MAX_MS = 30_000;
+const MILLISECONDS_PER_SECOND = 1_000;
 
 const pulse = keyframes`
   0% {
@@ -57,7 +74,7 @@ const pulse = keyframes`
   }
 `;
 
-const StatusBox = styled.div<{ $kind: "pending" | "unavailable" }>`
+const StatusBox = styled.div<{ $kind: AccessStatusKind }>`
   display: flex;
   align-items: center;
   gap: 11px;
@@ -140,16 +157,10 @@ const SupportAction = styled.div`
   width: 100%;
 `;
 
-const MAX_RETRY_ATTEMPTS = 15;
-const RETRY_BASE_DELAY_MS = 1_500;
-const RETRY_MAX_DELAY_MS = 5_000;
-const ACCESS_LINK_REQUEST_TIMEOUT_MS = 8_000;
-const SERVER_RETRY_AFTER_MAX_MS = 30_000;
+const getRetryDelayMs = (attempt: number): number =>
+  Math.min(RETRY_BASE_DELAY_MS + attempt * RETRY_DELAY_INCREMENT_MS, RETRY_MAX_DELAY_MS);
 
-const getRetryDelayMs = (attempt: number) =>
-  Math.min(RETRY_BASE_DELAY_MS + attempt * 180, RETRY_MAX_DELAY_MS);
-
-const parseRetryAfterMs = (retryAfterHeader: string | null) => {
+const parseRetryAfterMs = (retryAfterHeader: string | null): number | null => {
   if (!retryAfterHeader) {
     return null;
   }
@@ -157,7 +168,10 @@ const parseRetryAfterMs = (retryAfterHeader: string | null) => {
   const retryAfterSeconds = Number(retryAfterHeader);
 
   if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0) {
-    return Math.min(Math.round(retryAfterSeconds * 1000), SERVER_RETRY_AFTER_MAX_MS);
+    return Math.min(
+      Math.round(retryAfterSeconds * MILLISECONDS_PER_SECOND),
+      SERVER_RETRY_AFTER_MAX_MS,
+    );
   }
 
   const retryAtUnixMs = Date.parse(retryAfterHeader);
@@ -168,6 +182,27 @@ const parseRetryAfterMs = (retryAfterHeader: string | null) => {
 
   return Math.min(Math.max(retryAtUnixMs - Date.now(), 0), SERVER_RETRY_AFTER_MAX_MS);
 };
+
+const isHardAccessLinkFailure = (responseStatus: number, errorCode: string): boolean =>
+  responseStatus === 403 ||
+  errorCode === "missing_checkout_session_id" ||
+  errorCode === "payment_access_denied" ||
+  errorCode === "payment_context_mismatch";
+
+const getReportedAccessCount = (accessCount: number, accessUrl: string): number =>
+  accessCount || (accessUrl ? 1 : 0);
+
+const getInspirationAccessExpiry = (accesses: TelegramAccess[]): string =>
+  accesses.find((access) => access.accessKey === "inspiration-hub")?.accessExpiresAt ??
+  "";
+
+const containsUnavailableAccess = (accesses: TelegramAccess[]): boolean =>
+  accesses.some(
+    (access) => access.status === "expired" || access.status === "unavailable",
+  );
+
+const containsUsableAccess = (accesses: TelegramAccess[]): boolean =>
+  accesses.some((access) => access.status === "ready" || access.status === "active");
 
 export default function TelegramAccessButton({
   activeText,
@@ -187,41 +222,26 @@ export default function TelegramAccessButton({
   unavailableText,
 }: TelegramAccessButtonProps) {
   const [accessUrl, setAccessUrl] = useState("");
-  const [accesses, setAccesses] = useState<
-    Array<{
-      accessExpiresAt: string;
-      accessKey: "inspiration-hub" | "main-group";
-      accessUrl: string;
-      status: "active" | "expired" | "ready" | "unavailable";
-      tokenExpiresAt: string;
-    }>
-  >([]);
+  const [accesses, setAccesses] = useState<TelegramAccess[]>([]);
   const [attemptCount, setAttemptCount] = useState(0);
-  const [statusKind, setStatusKind] = useState<"pending" | "unavailable">("pending");
+  const [statusKind, setStatusKind] = useState<AccessStatusKind>("pending");
   const [statusText, setStatusText] = useState(pendingText);
   const isContextValid = Boolean(checkoutSessionId && offerId && productId);
-  const hasUnavailableAccess = accesses.some(
-    (access) => access.status === "expired" || access.status === "unavailable",
-  );
+  const hasUnavailableAccess = containsUnavailableAccess(accesses);
 
   useEffect(() => {
-    onAccessCountChange?.(accesses.length || (accessUrl ? 1 : 0));
+    onAccessCountChange?.(getReportedAccessCount(accesses.length, accessUrl));
   }, [accessUrl, accesses.length, onAccessCountChange]);
 
   useEffect(() => {
-    onInspirationExpiryChange?.(
-      accesses.find((access) => access.accessKey === "inspiration-hub")
-        ?.accessExpiresAt ?? "",
-    );
+    onInspirationExpiryChange?.(getInspirationAccessExpiry(accesses));
   }, [accesses, onInspirationExpiryChange]);
 
   useEffect(() => {
     onUnavailableChange?.(
       hasUnavailableAccess ||
         (!accessUrl &&
-          !accesses.some(
-            (access) => access.status === "ready" || access.status === "active",
-          ) &&
+          !containsUsableAccess(accesses) &&
           (!isContextValid || statusKind === "unavailable")),
     );
   }, [
@@ -250,25 +270,35 @@ export default function TelegramAccessButton({
       pendingTimeouts.add(timeoutId);
     };
 
-    const requestAccessLink = async (attempt: number) => {
+    const markAttemptAsPending = (attempt: number): void => {
       if (!isDisposed) {
         setStatusKind("pending");
         setStatusText(pendingText);
         setAttemptCount(Math.min(attempt + 1, MAX_RETRY_ATTEMPTS));
       }
+    };
+
+    const markAccessAsUnavailable = (): void => {
+      setStatusKind("unavailable");
+      setStatusText(unavailableText);
+    };
+
+    const requestAccessLink = async (attempt: number): Promise<void> => {
+      markAttemptAsPending(attempt);
 
       const requestController = new AbortController();
       activeAbortController = requestController;
+      // A single stalled poll must not prevent the bounded retry sequence.
       const requestTimeoutId = window.setTimeout(() => {
         requestController.abort();
       }, ACCESS_LINK_REQUEST_TIMEOUT_MS);
       pendingTimeouts.add(requestTimeoutId);
 
       try {
-        const response = await fetch("/api/telegram/access-link", {
-          method: "POST",
+        const response = await fetch(ACCESS_LINK_ENDPOINT, {
+          method: ACCESS_LINK_METHOD,
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": JSON_CONTENT_TYPE,
           },
           body: JSON.stringify({
             checkoutSessionId,
@@ -276,7 +306,7 @@ export default function TelegramAccessButton({
             paymentIntentId,
             productId,
           }),
-          cache: "no-store",
+          cache: NO_STORE_CACHE_MODE,
           signal: requestController.signal,
         });
 
@@ -284,31 +314,28 @@ export default function TelegramAccessButton({
           return;
         }
 
-        const retryAfterMs = parseRetryAfterMs(response.headers.get("Retry-After"));
+        const retryAfterMs = parseRetryAfterMs(response.headers.get(RETRY_AFTER_HEADER));
+        const scheduleRetry = (delayMs: number): void => {
+          scheduleNextAttempt(() => {
+            void requestAccessLink(attempt + 1);
+          }, delayMs);
+        };
 
         if (!response.ok) {
           const errorPayload = (await response
             .json()
             .catch(() => ({}))) as AccessLinkErrorResponse;
           const errorCode = errorPayload.errorCode ?? "";
-          const isHardFailure =
-            response.status === 403 ||
-            errorCode === "missing_checkout_session_id" ||
-            errorCode === "payment_access_denied" ||
-            errorCode === "payment_context_mismatch";
 
-          if (!isHardFailure && attempt < MAX_RETRY_ATTEMPTS) {
-            scheduleNextAttempt(
-              () => {
-                void requestAccessLink(attempt + 1);
-              },
-              retryAfterMs ?? getRetryDelayMs(attempt),
-            );
+          if (
+            !isHardAccessLinkFailure(response.status, errorCode) &&
+            attempt < MAX_RETRY_ATTEMPTS
+          ) {
+            scheduleRetry(retryAfterMs ?? getRetryDelayMs(attempt));
             return;
           }
 
-          setStatusKind("unavailable");
-          setStatusText(unavailableText);
+          markAccessAsUnavailable();
           return;
         }
 
@@ -333,17 +360,11 @@ export default function TelegramAccessButton({
         if (data.status === "pending" && attempt < MAX_RETRY_ATTEMPTS) {
           setStatusKind("pending");
           setStatusText(pendingText);
-          scheduleNextAttempt(
-            () => {
-              void requestAccessLink(attempt + 1);
-            },
-            retryAfterMs ?? getRetryDelayMs(attempt),
-          );
+          scheduleRetry(retryAfterMs ?? getRetryDelayMs(attempt));
           return;
         }
 
-        setStatusKind("unavailable");
-        setStatusText(unavailableText);
+        markAccessAsUnavailable();
       } catch {
         if (attempt < MAX_RETRY_ATTEMPTS) {
           scheduleNextAttempt(() => {
@@ -352,8 +373,7 @@ export default function TelegramAccessButton({
           return;
         }
 
-        setStatusKind("unavailable");
-        setStatusText(unavailableText);
+        markAccessAsUnavailable();
       } finally {
         window.clearTimeout(requestTimeoutId);
         pendingTimeouts.delete(requestTimeoutId);
@@ -380,6 +400,31 @@ export default function TelegramAccessButton({
     unavailableText,
   ]);
 
+  const renderSupportButton = () => (
+    <Button buttonText={supportButtonText} href={supportHref} target="_blank" />
+  );
+
+  const renderAccessItem = (access: TelegramAccess) => {
+    const label =
+      access.accessKey === "inspiration-hub" ? inspirationButtonText : mainButtonText;
+
+    if (access.status === "ready" && access.accessUrl) {
+      return (
+        <AccessItem key={access.accessKey}>
+          <Button buttonText={label} href={access.accessUrl} target="_blank" />
+        </AccessItem>
+      );
+    }
+
+    return (
+      <StatusBox key={access.accessKey} $kind="unavailable" role="status">
+        <StatusText>
+          {label}: {access.status === "active" ? activeText : unavailableText}
+        </StatusText>
+      </StatusBox>
+    );
+  };
+
   if (accessUrl) {
     return <Button buttonText={buttonText} href={accessUrl} target="_blank" />;
   }
@@ -387,28 +432,7 @@ export default function TelegramAccessButton({
   if (accesses.length) {
     return (
       <AccessList $multiple={accesses.length > 1}>
-        {accesses.map((access) => {
-          const label =
-            access.accessKey === "inspiration-hub"
-              ? inspirationButtonText
-              : mainButtonText;
-
-          if (access.status === "ready" && access.accessUrl) {
-            return (
-              <AccessItem key={access.accessKey}>
-                <Button buttonText={label} href={access.accessUrl} target="_blank" />
-              </AccessItem>
-            );
-          }
-
-          return (
-            <StatusBox key={access.accessKey} $kind="unavailable" role="status">
-              <StatusText>
-                {label}: {access.status === "active" ? activeText : unavailableText}
-              </StatusText>
-            </StatusBox>
-          );
-        })}
+        {accesses.map(renderAccessItem)}
         {hasUnavailableAccess ? (
           <SupportAction>
             <Button
@@ -424,11 +448,11 @@ export default function TelegramAccessButton({
   }
 
   if (!isContextValid) {
-    return <Button buttonText={supportButtonText} href={supportHref} target="_blank" />;
+    return renderSupportButton();
   }
 
   if (statusKind === "unavailable") {
-    return <Button buttonText={supportButtonText} href={supportHref} target="_blank" />;
+    return renderSupportButton();
   }
 
   return (

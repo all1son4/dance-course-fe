@@ -9,7 +9,8 @@ import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import VideoPlayer from "@/components/other/VideoPlayer";
-import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import { ONLINE_GROUP_REGISTRATION_URL } from "@/constants/links";
+import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -108,6 +109,142 @@ export default function OnlineGroupPage() {
     ),
   };
 
+  const renderIntroductionSection = () => (
+    <IntroductionSection>
+      <TextBox>
+        <Title>{t("hero.title")}</Title>
+        <Description>
+          <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+          <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
+        </Description>
+
+        <InfoBoxGroup>
+          <DateBox>
+            <From>{t("hero.startLabel")}</From>
+            <Date>{t("hero.startDate")}</Date>
+          </DateBox>
+        </InfoBoxGroup>
+
+        <ButtonBox>
+          <Button buttonText={t("tariffs.selectButton")} href="#tariffs" />
+        </ButtonBox>
+      </TextBox>
+
+      <MobileImagesBox>
+        <ImageBox id="mobile-only-image-box">
+          <SvgAsset
+            src="/svg/OnlinePageBackgroundPhoto.webp"
+            width={598}
+            height={846}
+            sizes="(max-width: 767px) 100vw, 0px"
+            priority
+            unoptimized
+          />
+        </ImageBox>
+        <IconBox id="mobile-only-icon-box">
+          <SvgAsset
+            src="/svg/OnlineTelegramBig.webp"
+            width={453}
+            height={474}
+            sizes="(max-width: 767px) 65vw, 0px"
+          />
+        </IconBox>
+      </MobileImagesBox>
+      <ImageBox id="desktop-only-image-box">
+        <SvgAsset
+          src="/svg/OnlinePageBackgroundPhoto.webp"
+          width={598}
+          height={846}
+          sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
+          priority
+          unoptimized
+        />
+      </ImageBox>
+      <IconBox id="desktop-only-icon-box">
+        <SvgAsset
+          src="/svg/OnlineTelegramBig.webp"
+          width={453}
+          height={474}
+          sizes="(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px"
+        />
+      </IconBox>
+    </IntroductionSection>
+  );
+
+  const renderTariffSection = () => (
+    <TariffSection id="tariffs">
+      <TariffTitle>{t("tariffs.title")}</TariffTitle>
+      <TariffOptionsBox>
+        {standardOffer ? (
+          <CourseCard
+            title={t("tariffs.standard.title")}
+            subtitle={t("tariffs.standard.subtitle")}
+            cardContent={
+              <TarifContentBox>
+                <TariffContentList>
+                  <li>{t("tariffs.standard.features.1")}</li>
+                  <li>{t("tariffs.standard.features.2")}</li>
+                  <li>{t("tariffs.standard.features.3")}</li>
+                  <li>{t("tariffs.standard.features.4")}</li>
+                  <li>{t("tariffs.standard.features.5")}</li>
+                  <li>{t("tariffs.standard.features.6")}</li>
+                </TariffContentList>
+                <DateBox>
+                  <From>{t("tariffs.priceLabel")}</From>
+                  <Date>{formatOfferPrice(standardOffer)}</Date>
+                </DateBox>
+              </TarifContentBox>
+            }
+            // buttonText={t("tariffs.buyButton")}
+            buttonText={"Записаться"}
+            buttonRel="nofollow"
+            buttonTarget="_blank"
+            // buttonHref={buildCheckoutHref({
+            //   offerId: standardOffer.id,
+            //   productId: product.id,
+            // })}
+            buttonHref={ONLINE_GROUP_REGISTRATION_URL}
+          />
+        ) : null}
+        {plusOffer ? (
+          <CourseCard
+            title={t("tariffs.plus.title")}
+            subtitle={t("tariffs.plus.subtitle")}
+            cardContent={
+              <TarifContentBox>
+                <TariffContentList>
+                  <li>{t("tariffs.plus.features.1")}</li>
+                  <li>{t("tariffs.plus.features.2")}</li>
+                  <li>{t("tariffs.plus.features.3")}</li>
+                  <li>{t("tariffs.plus.features.4")}</li>
+                  <li>{t("tariffs.plus.features.5")}</li>
+                  <li>{t("tariffs.plus.features.6")}</li>
+                  <li>{t("tariffs.plus.features.7")}</li>
+                  <li>{t("tariffs.plus.features.8")}</li>
+                  <li>{t("tariffs.plus.features.9")}</li>
+                  <li>{t("tariffs.plus.features.10")}</li>
+                </TariffContentList>
+                <DateBox>
+                  <From>{t("tariffs.priceLabel")}</From>
+                  <Date>{formatOfferPrice(plusOffer)}</Date>
+                </DateBox>
+              </TarifContentBox>
+            }
+            // buttonText={t("tariffs.buyButton")}
+            buttonText={"Записаться"}
+            buttonRel="nofollow"
+            buttonTarget="_blank"
+            // buttonHref={buildCheckoutHref({
+            //   offerId: plusOffer.id,
+            //   productId: product.id,
+            // })}
+            buttonHref={ONLINE_GROUP_REGISTRATION_URL}
+          />
+        ) : null}
+      </TariffOptionsBox>
+    </TariffSection>
+  );
+
   return (
     <>
       <StructuredData
@@ -123,65 +260,7 @@ export default function OnlineGroupPage() {
           courseStructuredData,
         ]}
       />
-      <IntroductionSection>
-        <TextBox>
-          <Title>{t("hero.title")}</Title>
-          <Description>
-            <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
-            <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
-          </Description>
-
-          <InfoBoxGroup>
-            <DateBox>
-              <From>{t("hero.startLabel")}</From>
-              <Date>{t("hero.startDate")}</Date>
-            </DateBox>
-          </InfoBoxGroup>
-
-          <ButtonBox>
-            <Button buttonText={t("tariffs.selectButton")} href="#tariffs" />
-          </ButtonBox>
-        </TextBox>
-
-        <MobileImagesBox>
-          <ImageBox id="mobile-only-image-box">
-            <SvgAsset
-              src="/svg/OnlinePageBackgroundPhoto.webp"
-              width={598}
-              height={846}
-              sizes="(max-width: 767px) 100vw, 0px"
-              priority
-              unoptimized
-            />
-          </ImageBox>
-          <IconBox id="mobile-only-icon-box">
-            <SvgAsset
-              src="/svg/OnlineTelegramBig.webp"
-              width={453}
-              height={474}
-              sizes="(max-width: 767px) 65vw, 0px"
-            />
-          </IconBox>
-        </MobileImagesBox>
-        <ImageBox id="desktop-only-image-box">
-          <SvgAsset
-            src="/svg/OnlinePageBackgroundPhoto.webp"
-            width={598}
-            height={846}
-            sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
-            priority
-            unoptimized
-          />
-        </ImageBox>
-        <IconBox id="desktop-only-icon-box">
-          <SvgAsset
-            src="/svg/OnlineTelegramBig.webp"
-            width={453}
-            height={474}
-            sizes="(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px"
-          />
-        </IconBox>
-      </IntroductionSection>
+      {renderIntroductionSection()}
 
       <SpecialWrapper>
         <VideoSection>
@@ -192,71 +271,7 @@ export default function OnlineGroupPage() {
             radius="0px"
           />
         </VideoSection>
-        <TariffSection id="tariffs">
-          <TariffTitle>{t("tariffs.title")}</TariffTitle>
-          <TariffOptionsBox>
-            {standardOffer ? (
-              <CourseCard
-                title={t("tariffs.standard.title")}
-                subtitle={t("tariffs.standard.subtitle")}
-                cardContent={
-                  <TarifContentBox>
-                    <TariffContentList>
-                      <li>{t("tariffs.standard.features.1")}</li>
-                      <li>{t("tariffs.standard.features.2")}</li>
-                      <li>{t("tariffs.standard.features.3")}</li>
-                      <li>{t("tariffs.standard.features.4")}</li>
-                      <li>{t("tariffs.standard.features.5")}</li>
-                      <li>{t("tariffs.standard.features.6")}</li>
-                    </TariffContentList>
-                    <DateBox>
-                      <From>{t("tariffs.priceLabel")}</From>
-                      <Date>{formatOfferPrice(standardOffer)}</Date>
-                    </DateBox>
-                  </TarifContentBox>
-                }
-                buttonText={t("tariffs.buyButton")}
-                buttonRel="nofollow"
-                buttonHref={buildCheckoutHref({
-                  offerId: standardOffer.id,
-                  productId: product.id,
-                })}
-              />
-            ) : null}
-            {plusOffer ? (
-              <CourseCard
-                title={t("tariffs.plus.title")}
-                subtitle={t("tariffs.plus.subtitle")}
-                cardContent={
-                  <TarifContentBox>
-                    <TariffContentList>
-                      <li>{t("tariffs.plus.features.1")}</li>
-                      <li>{t("tariffs.plus.features.2")}</li>
-                      <li>{t("tariffs.plus.features.3")}</li>
-                      <li>{t("tariffs.plus.features.4")}</li>
-                      <li>{t("tariffs.plus.features.5")}</li>
-                      <li>{t("tariffs.plus.features.6")}</li>
-                      <li>{t("tariffs.plus.features.7")}</li>
-                      <li>{t("tariffs.plus.features.8")}</li>
-                      <li>{t("tariffs.plus.features.9")}</li>
-                      <li>{t("tariffs.plus.features.10")}</li>
-                    </TariffContentList>
-                    <DateBox>
-                      <From>{t("tariffs.priceLabel")}</From>
-                      <Date>{formatOfferPrice(plusOffer)}</Date>
-                    </DateBox>
-                  </TarifContentBox>
-                }
-                buttonText={t("tariffs.buyButton")}
-                buttonRel="nofollow"
-                buttonHref={buildCheckoutHref({
-                  offerId: plusOffer.id,
-                  productId: product.id,
-                })}
-              />
-            ) : null}
-          </TariffOptionsBox>
-        </TariffSection>
+        {renderTariffSection()}
         <AboutCourseSection id="course-program">
           <AboutCourseTitle>{t("about.title")}</AboutCourseTitle>
           <AboutCourseCards>

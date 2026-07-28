@@ -21,6 +21,19 @@ const MIN_NAVIGATION_PROGRESS_MS = 420;
 const IDLE_PHASE_ONE_MS = 600;
 const IDLE_PHASE_TWO_MS = 2_400;
 const IDLE_PHASE_THREE_MS = 7_000;
+const IDLE_PHASE_ONE_PROGRESS_GAIN = 0.08;
+const IDLE_PHASE_TWO_PROGRESS_START = 0.14;
+const IDLE_PHASE_TWO_PROGRESS_GAIN = 0.32;
+const IDLE_PHASE_THREE_PROGRESS_START = 0.46;
+const IDLE_PHASE_THREE_PROGRESS_GAIN = 0.3;
+const IDLE_LONG_TAIL_TIME_CONSTANT_MS = 10_000;
+const IDLE_LONG_TAIL_PROGRESS_START = 0.76;
+const IDLE_LONG_TAIL_PROGRESS_GAIN = 0.1;
+const NETWORK_PROGRESS_START = 0.2;
+const NETWORK_PROGRESS_GAIN = 0.68;
+const SETTLED_PROGRESS_WITH_ACTIVE_REQUESTS = 0.96;
+const PROGRESS_CATCH_UP_FACTOR = 0.24;
+const PROGRESS_MIN_TICK_ADVANCE = 0.006;
 
 const progressSheen = keyframes`
   from {
@@ -86,7 +99,7 @@ const ProgressBar = styled.span<{
   }
 `;
 
-const isTrackableAnchorClick = (event: MouseEvent) => {
+const isTrackableAnchorClick = (event: MouseEvent): boolean => {
   if (
     event.defaultPrevented ||
     event.button !== 0 ||
@@ -141,7 +154,7 @@ const isTrackableAnchorClick = (event: MouseEvent) => {
   }
 };
 
-const shouldTrackNetworkRequest = (rawUrl: string) => {
+const shouldTrackNetworkRequest = (rawUrl: string): boolean => {
   if (!rawUrl) {
     return false;
   }
@@ -177,31 +190,63 @@ type XHROpen = (
   password?: string | null,
 ) => void;
 
-const getIdleProgressTarget = (elapsedMs: number) => {
+const getIdleProgressTarget = (elapsedMs: number): number => {
   if (elapsedMs <= IDLE_PHASE_ONE_MS) {
     const phaseProgress = elapsedMs / IDLE_PHASE_ONE_MS;
 
-    return PROGRESS_START + phaseProgress * 0.08;
+    return PROGRESS_START + phaseProgress * IDLE_PHASE_ONE_PROGRESS_GAIN;
   }
 
   if (elapsedMs <= IDLE_PHASE_TWO_MS) {
     const phaseProgress =
       (elapsedMs - IDLE_PHASE_ONE_MS) / (IDLE_PHASE_TWO_MS - IDLE_PHASE_ONE_MS);
 
-    return 0.14 + phaseProgress * 0.32;
+    return IDLE_PHASE_TWO_PROGRESS_START + phaseProgress * IDLE_PHASE_TWO_PROGRESS_GAIN;
   }
 
   if (elapsedMs <= IDLE_PHASE_THREE_MS) {
     const phaseProgress =
       (elapsedMs - IDLE_PHASE_TWO_MS) / (IDLE_PHASE_THREE_MS - IDLE_PHASE_TWO_MS);
 
-    return 0.46 + phaseProgress * 0.3;
+    return (
+      IDLE_PHASE_THREE_PROGRESS_START + phaseProgress * IDLE_PHASE_THREE_PROGRESS_GAIN
+    );
   }
 
-  const longTailProgress = 1 - Math.exp(-(elapsedMs - IDLE_PHASE_THREE_MS) / 10_000);
+  const longTailProgress =
+    1 - Math.exp(-(elapsedMs - IDLE_PHASE_THREE_MS) / IDLE_LONG_TAIL_TIME_CONSTANT_MS);
 
-  return Math.min(PROGRESS_IDLE_CAP, 0.76 + longTailProgress * 0.1);
+  return Math.min(
+    PROGRESS_IDLE_CAP,
+    IDLE_LONG_TAIL_PROGRESS_START + longTailProgress * IDLE_LONG_TAIL_PROGRESS_GAIN,
+  );
 };
+
+const getNetworkProgressTarget = (
+  completedRequestCount: number,
+  observedRequestCount: number,
+): number => {
+  const completionRatio = Math.min(1, completedRequestCount / observedRequestCount);
+
+  return Math.min(
+    PROGRESS_MAX_BEFORE_SETTLE,
+    NETWORK_PROGRESS_START + completionRatio * NETWORK_PROGRESS_GAIN,
+  );
+};
+
+const advanceProgressTowardsTarget = (
+  currentProgress: number,
+  targetProgress: number,
+): number =>
+  Math.min(
+    targetProgress,
+    currentProgress +
+      (targetProgress - currentProgress) * PROGRESS_CATCH_UP_FACTOR +
+      PROGRESS_MIN_TICK_ADVANCE,
+  );
+
+const getFetchRequestUrl = (input: Parameters<Window["fetch"]>[0]): string =>
+  typeof input === "string" || input instanceof URL ? input.toString() : input.url;
 
 export default function NavigationProgress() {
   const pathname = usePathname();
@@ -322,23 +367,20 @@ export default function NavigationProgress() {
         let target = idleTarget;
 
         if (hasNetworkData) {
-          const completionRatio = Math.min(1, completed / observed);
-          const networkTarget = Math.min(
-            PROGRESS_MAX_BEFORE_SETTLE,
-            0.2 + completionRatio * 0.68,
-          );
+          const networkTarget = getNetworkProgressTarget(completed, observed);
           target = Math.max(idleTarget, networkTarget);
         }
 
         if (hasSettledRouteRef.current) {
-          target = inFlightRequestsRef.current > 0 ? 0.96 : 1;
+          target =
+            inFlightRequestsRef.current > 0 ? SETTLED_PROGRESS_WITH_ACTIVE_REQUESTS : 1;
         }
 
         if (current >= target) {
           return current;
         }
 
-        return Math.min(target, current + (target - current) * 0.24 + 0.006);
+        return advanceProgressTowardsTarget(current, target);
       });
 
       maybeCompleteWhenQuiet();
@@ -409,7 +451,7 @@ export default function NavigationProgress() {
     const originalOpen = xhrPrototype.open as XHROpen;
     const originalSend = xhrPrototype.send;
 
-    const registerRequestStart = () => {
+    const registerRequestStart = (): void => {
       if (!isNavigatingRef.current) {
         return;
       }
@@ -419,7 +461,7 @@ export default function NavigationProgress() {
       inFlightRequestsRef.current += 1;
     };
 
-    const registerRequestEnd = () => {
+    const registerRequestEnd = (): void => {
       if (!hasTrackedNetworkRef.current) {
         return;
       }
@@ -430,8 +472,7 @@ export default function NavigationProgress() {
     };
 
     window.fetch = (async (input, init) => {
-      const rawUrl =
-        typeof input === "string" || input instanceof URL ? input.toString() : input.url;
+      const rawUrl = getFetchRequestUrl(input);
       const shouldTrack = isNavigatingRef.current && shouldTrackNetworkRequest(rawUrl);
 
       if (shouldTrack) {
@@ -494,6 +535,8 @@ export default function NavigationProgress() {
     };
 
     return () => {
+      // Restoring every captured API together prevents a remount from stacking
+      // multiple network trackers on the global implementations.
       window.fetch = originalFetch;
       xhrPrototype.open = originalOpen;
       xhrPrototype.send = originalSend;

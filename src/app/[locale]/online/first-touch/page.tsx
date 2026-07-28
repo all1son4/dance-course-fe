@@ -101,6 +101,112 @@ export default function FirstTouch() {
     }),
   };
 
+  const renderIntroductionSection = () => (
+    <IntroductionSection>
+      <TextBox>
+        <Title>{t("hero.title")}</Title>
+        <Subtitle>{t("hero.subtitle")}</Subtitle>
+
+        <Description>
+          <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+          <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
+        </Description>
+
+        <InfoBoxGroup>
+          <DateBox>
+            <From>{t("hero.startLabel")}</From>
+            <Date>{t("hero.startDate")}</Date>
+            <StartNote>{t("hero.startNote")}</StartNote>
+          </DateBox>
+
+          <DateBox>
+            <From>{t("hero.priceLabel")}</From>
+            <Date>{coursePrice}</Date>
+          </DateBox>
+        </InfoBoxGroup>
+
+        <ButtonBox>
+          <CourseSignupDialog triggerText={t("hero.enrollButton")} />
+          {/* <Button
+              buttonText={t("hero.enrollButton")}
+              href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
+              target="_blank"
+            /> */}
+          <Button
+            buttonText={t("hero.programButton")}
+            variant="secondary"
+            href="#course-program"
+          />
+        </ButtonBox>
+      </TextBox>
+
+      <MobileImagesBox>
+        <ImageBox id="mobile-only-image-box">
+          <SvgAsset
+            src="/svg/FirstTouchPageBackgroundPhoto.webp"
+            width={660}
+            height={826}
+            sizes="(max-width: 450px) 100vw, (max-width: 767px) 90vw, 0px"
+            priority
+            unoptimized
+          />
+        </ImageBox>
+
+        <IconBox id="mobile-only-icon-box">
+          <SvgAsset
+            src="/svg/FirstTouchTelegram.webp"
+            width={356}
+            height={534}
+            sizes="(max-width: 767px) 50vw, 0px"
+          />
+        </IconBox>
+      </MobileImagesBox>
+
+      <ImageBox id="desktop-only-image-box">
+        <SvgAsset
+          src="/svg/FirstTouchPageBackgroundPhoto.webp"
+          width={660}
+          height={826}
+          sizes="(max-width: 767px) 0px, (max-width: 920px) 380px, (max-width: 1100px) 470px, (max-width: 1240px) 500px, 660px"
+          priority
+          unoptimized
+        />
+      </ImageBox>
+
+      <IconBox id="desktop-only-icon-box">
+        <SvgAsset
+          src="/svg/FirstTouchTelegram.webp"
+          width={356}
+          height={534}
+          sizes="(max-width: 767px) 0px, (max-width: 920px) 210px, (max-width: 1100px) 250px, (max-width: 1240px) 280px, 356px"
+        />
+      </IconBox>
+    </IntroductionSection>
+  );
+
+  const renderCourseProgramSection = () => (
+    <CourseProgramSection id="course-program">
+      <CourseProgramTextBox>
+        <CourseProgramTitle>{t("program.title")}</CourseProgramTitle>
+        <RoadmapContainer />
+        {/* <CourseProgramButtonBox>
+              <Button
+                buttonText={t("hero.enrollButton")}
+                href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
+                target="_blank"
+              />
+            </CourseProgramButtonBox> */}
+      </CourseProgramTextBox>
+      <CourseProgramImage
+        src={"/images/first_touch_program_photo.webp"}
+        alt={t("program.imageAlt")}
+        width={473}
+        height={709}
+        sizes="(max-width: 920px) 100vw, 473px"
+      />
+    </CourseProgramSection>
+  );
+
   return (
     <>
       <StructuredData
@@ -113,86 +219,7 @@ export default function FirstTouch() {
           courseStructuredData,
         ]}
       />
-      <IntroductionSection>
-        <TextBox>
-          <Title>{t("hero.title")}</Title>
-          <Subtitle>{t("hero.subtitle")}</Subtitle>
-
-          <Description>
-            <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
-            <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
-          </Description>
-
-          <InfoBoxGroup>
-            <DateBox>
-              <From>{t("hero.startLabel")}</From>
-              <Date>{t("hero.startDate")}</Date>
-              <StartNote>{t("hero.startNote")}</StartNote>
-            </DateBox>
-
-            <DateBox>
-              <From>{t("hero.priceLabel")}</From>
-              <Date>{coursePrice}</Date>
-            </DateBox>
-          </InfoBoxGroup>
-
-          <ButtonBox>
-            <CourseSignupDialog triggerText={t("hero.enrollButton")} />
-            {/* <Button
-              buttonText={t("hero.enrollButton")}
-              href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
-              target="_blank"
-            /> */}
-            <Button
-              buttonText={t("hero.programButton")}
-              variant="secondary"
-              href="#course-program"
-            />
-          </ButtonBox>
-        </TextBox>
-
-        <MobileImagesBox>
-          <ImageBox id="mobile-only-image-box">
-            <SvgAsset
-              src="/svg/FirstTouchPageBackgroundPhoto.webp"
-              width={660}
-              height={826}
-              sizes="(max-width: 450px) 100vw, (max-width: 767px) 90vw, 0px"
-              priority
-              unoptimized
-            />
-          </ImageBox>
-
-          <IconBox id="mobile-only-icon-box">
-            <SvgAsset
-              src="/svg/FirstTouchTelegram.webp"
-              width={356}
-              height={534}
-              sizes="(max-width: 767px) 50vw, 0px"
-            />
-          </IconBox>
-        </MobileImagesBox>
-
-        <ImageBox id="desktop-only-image-box">
-          <SvgAsset
-            src="/svg/FirstTouchPageBackgroundPhoto.webp"
-            width={660}
-            height={826}
-            sizes="(max-width: 767px) 0px, (max-width: 920px) 380px, (max-width: 1100px) 470px, (max-width: 1240px) 500px, 660px"
-            priority
-            unoptimized
-          />
-        </ImageBox>
-
-        <IconBox id="desktop-only-icon-box">
-          <SvgAsset
-            src="/svg/FirstTouchTelegram.webp"
-            width={356}
-            height={534}
-            sizes="(max-width: 767px) 0px, (max-width: 920px) 210px, (max-width: 1100px) 250px, (max-width: 1240px) 280px, 356px"
-          />
-        </IconBox>
-      </IntroductionSection>
+      {renderIntroductionSection()}
 
       <SpecialWrapper>
         <VideoSection>
@@ -211,26 +238,7 @@ export default function FirstTouch() {
             ))}
           </AboutCourseCards>
         </AboutCourseSection>
-        <CourseProgramSection id="course-program">
-          <CourseProgramTextBox>
-            <CourseProgramTitle>{t("program.title")}</CourseProgramTitle>
-            <RoadmapContainer />
-            {/* <CourseProgramButtonBox>
-              <Button
-                buttonText={t("hero.enrollButton")}
-                href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
-                target="_blank"
-              />
-            </CourseProgramButtonBox> */}
-          </CourseProgramTextBox>
-          <CourseProgramImage
-            src={"/images/first_touch_program_photo.webp"}
-            alt={t("program.imageAlt")}
-            width={473}
-            height={709}
-            sizes="(max-width: 920px) 100vw, 473px"
-          />
-        </CourseProgramSection>
+        {renderCourseProgramSection()}
         <ContactSection>
           <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
         </ContactSection>

@@ -92,6 +92,15 @@ export default function SuccessContent({
   const [showUnavailableNote, setShowUnavailableNote] = useState(false);
   const [telegramAccessCount, setTelegramAccessCount] = useState(0);
   const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");
+  const hasValidTelegramAccessContext = Boolean(
+    checkoutSessionId && offerId && productId,
+  );
+  const isTelegramAccessPending =
+    isTelegramAccessPurchase &&
+    hasValidTelegramAccessContext &&
+    telegramAccessCount === 0 &&
+    !showUnavailableNote;
+  const homeButtonUsesFullRow = isTelegramAccessPending || telegramAccessCount > 1;
   const inspirationAccessExpiryText = inspirationAccessExpiresAt
     ? `${telegramInspirationUntilLabel} ${new Intl.DateTimeFormat(dateLocale, {
         dateStyle: "long",
@@ -137,12 +146,12 @@ export default function SuccessContent({
           />
         ) : null}
 
-        <HomeButtonSlot $fullRow={telegramAccessCount > 1}>
+        <HomeButtonSlot $fullRow={homeButtonUsesFullRow}>
           <Button
             buttonText={homeButtonText}
             href="/"
             variant="secondary"
-            width={telegramAccessCount > 1 ? "100%" : "280px"}
+            width={homeButtonUsesFullRow ? "100%" : "280px"}
           />
         </HomeButtonSlot>
       </ResultButtonBox>

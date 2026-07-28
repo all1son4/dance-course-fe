@@ -39,7 +39,9 @@ type CourseSignupErrorResponse = {
   errorCode?: string;
 };
 
-const initialValues: CourseSignupFormValues = {
+const COURSE_SIGNUP_ENDPOINT = "/api/course-signup";
+const JSON_CONTENT_TYPE = "application/json";
+const INITIAL_SIGNUP_VALUES: CourseSignupFormValues = {
   consentAccepted: false,
   email: "",
   fullName: "",
@@ -94,12 +96,52 @@ const getSubmitFailureReason = (
   return "unknown";
 };
 
+const validatePaymentSignupField = ({
+  fieldName,
+  locale,
+  values,
+}: {
+  fieldName: "email" | "fullName";
+  locale: string;
+  values: CourseSignupFormValues;
+}): string => {
+  try {
+    getPaymentCustomerSchema(locale).validateSyncAt(fieldName, {
+      ...INITIAL_CUSTOMER_DATA,
+      email: values.email,
+      fullName: values.fullName,
+    });
+
+    return "";
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return error.message;
+    }
+
+    throw error;
+  }
+};
+
+const buildCourseSignupRequestBody = ({
+  locale,
+  values,
+}: {
+  locale: string;
+  values: CourseSignupFormValues;
+}) => ({
+  consentAccepted: values.consentAccepted,
+  email: values.email.trim(),
+  fullName: values.fullName.trim(),
+  locale,
+  socialContact: values.socialContact.trim(),
+});
+
 export default function CourseSignupDialog({ triggerText }: CourseSignupDialogProps) {
   const locale = useLocale();
   const t = useTranslations("FirstTouchPage.signupDialog");
   const formId = useId();
   const [isOpen, setIsOpen] = useState(false);
-  const [values, setValues] = useState<CourseSignupFormValues>(initialValues);
+  const [values, setValues] = useState<CourseSignupFormValues>(INITIAL_SIGNUP_VALUES);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [submitFailureReason, setSubmitFailureReason] =
     useState<SubmitFailureReason>("unknown");
@@ -111,21 +153,11 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
     nextValues: CourseSignupFormValues = values,
   ) => {
     if (fieldName === "fullName" || fieldName === "email") {
-      try {
-        getPaymentCustomerSchema(locale).validateSyncAt(fieldName, {
-          ...INITIAL_CUSTOMER_DATA,
-          email: nextValues.email,
-          fullName: nextValues.fullName,
-        });
-
-        return "";
-      } catch (error) {
-        if (error instanceof ValidationError) {
-          return error.message;
-        }
-
-        throw error;
-      }
+      return validatePaymentSignupField({
+        fieldName,
+        locale,
+        values: nextValues,
+      });
     }
 
     if (fieldName === "socialContact" && !nextValues.socialContact.trim()) {
@@ -183,23 +215,45 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
     return nextErrors;
   };
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open);
-
-    if (!open) {
-      setSubmitState("idle");
-      setSubmitFailureReason("unknown");
-      setErrors({});
-      setTouchedFields({});
-    }
-  };
-
-  const openDialog = () => {
+  const resetDialogFeedback = () => {
     setSubmitState("idle");
     setSubmitFailureReason("unknown");
     setErrors({});
     setTouchedFields({});
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+
+    if (!open) {
+      resetDialogFeedback();
+    }
+  };
+
+  const openDialog = () => {
+    resetDialogFeedback();
     setIsOpen(true);
+  };
+
+  const handleConsentChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const checked = event.target.checked;
+
+    setValues((currentValues) => ({
+      ...currentValues,
+      consentAccepted: checked,
+    }));
+    setErrors((currentErrors) => ({
+      ...currentErrors,
+      consentAccepted: validateField("consentAccepted", {
+        ...values,
+        consentAccepted: checked,
+      }),
+    }));
+    setTouchedFields((currentTouchedFields) => ({
+      ...currentTouchedFields,
+      consentAccepted: true,
+    }));
+    setSubmitState("idle");
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -218,18 +272,17 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
     setSubmitFailureReason("unknown");
 
     try {
-      const response = await fetch("/api/course-signup", {
+      const response = await fetch(COURSE_SIGNUP_ENDPOINT, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": JSON_CONTENT_TYPE,
         },
-        body: JSON.stringify({
-          consentAccepted: values.consentAccepted,
-          email: values.email.trim(),
-          fullName: values.fullName.trim(),
-          locale,
-          socialContact: values.socialContact.trim(),
-        }),
+        body: JSON.stringify(
+          buildCourseSignupRequestBody({
+            locale,
+            values,
+          }),
+        ),
       });
 
       if (!response.ok) {
@@ -251,7 +304,7 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
         return;
       }
 
-      setValues(initialValues);
+      setValues(INITIAL_SIGNUP_VALUES);
       setSubmitState("success");
     } catch {
       setSubmitFailureReason("network");
@@ -264,6 +317,116 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
   const isError = submitState === "error";
   const isResult = isSuccess || isError;
 
+  const renderDialogDescription = () =>
+    isResult ? undefined : (
+      <DescriptionSteps>
+        <span>{t("description.intro")}</span>
+        <span>{t("description.step1")}</span>
+      </DescriptionSteps>
+    );
+
+  const renderDialogFooter = () => {
+    if (isSuccess) {
+      return (
+        <Button
+          type="button"
+          buttonText={t("closeButton")}
+          onClick={() => {
+            handleOpenChange(false);
+          }}
+        />
+      );
+    }
+
+    if (isError) {
+      return (
+        <Button
+          type="button"
+          buttonText={t("retryButton")}
+          onClick={() => {
+            setSubmitState("idle");
+          }}
+        />
+      );
+    }
+
+    return (
+      <Button
+        type="submit"
+        form={formId}
+        buttonText={t("submitButton")}
+        isLoading={isSubmitting}
+        disabled={isSubmitting}
+      />
+    );
+  };
+
+  const renderDialogContent = () => {
+    if (isSuccess) {
+      return (
+        <ResultState>
+          <ResultIconBox>
+            <Success width={128} height={128} />
+          </ResultIconBox>
+          <ResultText $tone="success">{t("successMessage")}</ResultText>
+        </ResultState>
+      );
+    }
+
+    if (isError) {
+      return (
+        <ResultState>
+          <ResultText $tone="error">{t("failure.title")}</ResultText>
+          <ResultReason>{t(`failure.reasons.${submitFailureReason}`)}</ResultReason>
+        </ResultState>
+      );
+    }
+
+    return (
+      <SignupForm id={formId} onSubmit={handleSubmit}>
+        <Input
+          name="fullName"
+          label={t("fields.fullName.label")}
+          placeholder={t("fields.fullName.placeholder")}
+          value={values.fullName}
+          onBlur={touchAndValidateField("fullName")}
+          onChange={updateValue("fullName")}
+          disabled={isSubmitting}
+          errorMessage={errors.fullName}
+        />
+        <Input
+          name="socialContact"
+          label={t("fields.socialContact.label")}
+          placeholder={t("fields.socialContact.placeholder")}
+          value={values.socialContact}
+          onBlur={touchAndValidateField("socialContact")}
+          onChange={updateValue("socialContact")}
+          disabled={isSubmitting}
+          errorMessage={errors.socialContact}
+        />
+        <Input
+          name="email"
+          type="email"
+          label={t("fields.email.label")}
+          placeholder={t("fields.email.placeholder")}
+          value={values.email}
+          onBlur={touchAndValidateField("email")}
+          onChange={updateValue("email")}
+          disabled={isSubmitting}
+          errorMessage={errors.email}
+        />
+        <Checkbox
+          name="first-touch-email-consent"
+          checked={values.consentAccepted}
+          disabled={isSubmitting}
+          errorMessage={errors.consentAccepted}
+          onChange={handleConsentChange}
+          placeholder={t("fields.consent.label")}
+        />
+      </SignupForm>
+    );
+  };
+
   return (
     <>
       <Button type="button" buttonText={triggerText} onClick={openDialog} />
@@ -272,117 +435,11 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
         open={isOpen}
         onOpenChange={handleOpenChange}
         title={isResult ? undefined : t("title")}
-        description={
-          isResult ? undefined : (
-            <DescriptionSteps>
-              <span>{t("description.intro")}</span>
-              <span>{t("description.step1")}</span>
-            </DescriptionSteps>
-          )
-        }
+        description={renderDialogDescription()}
         closeLabel={t("closeLabel")}
-        footer={
-          isSuccess ? (
-            <Button
-              type="button"
-              buttonText={t("closeButton")}
-              onClick={() => {
-                handleOpenChange(false);
-              }}
-            />
-          ) : isError ? (
-            <Button
-              type="button"
-              buttonText={t("retryButton")}
-              onClick={() => {
-                setSubmitState("idle");
-              }}
-            />
-          ) : (
-            <Button
-              type="submit"
-              form={formId}
-              buttonText={t("submitButton")}
-              isLoading={isSubmitting}
-              disabled={isSubmitting}
-            />
-          )
-        }
+        footer={renderDialogFooter()}
       >
-        {isSuccess ? (
-          <ResultState>
-            <ResultIconBox>
-              <Success width={128} height={128} />
-            </ResultIconBox>
-            <ResultText $tone="success">{t("successMessage")}</ResultText>
-          </ResultState>
-        ) : isError ? (
-          <ResultState>
-            <ResultText $tone="error">{t("failure.title")}</ResultText>
-            <ResultReason>{t(`failure.reasons.${submitFailureReason}`)}</ResultReason>
-          </ResultState>
-        ) : (
-          <SignupForm id={formId} onSubmit={handleSubmit}>
-            <Input
-              name="fullName"
-              label={t("fields.fullName.label")}
-              placeholder={t("fields.fullName.placeholder")}
-              value={values.fullName}
-              onBlur={touchAndValidateField("fullName")}
-              onChange={updateValue("fullName")}
-              disabled={isSubmitting}
-              errorMessage={errors.fullName}
-            />
-            <Input
-              name="socialContact"
-              label={t("fields.socialContact.label")}
-              placeholder={t("fields.socialContact.placeholder")}
-              value={values.socialContact}
-              onBlur={touchAndValidateField("socialContact")}
-              onChange={updateValue("socialContact")}
-              disabled={isSubmitting}
-              errorMessage={errors.socialContact}
-            />
-            <Input
-              name="email"
-              type="email"
-              label={t("fields.email.label")}
-              placeholder={t("fields.email.placeholder")}
-              value={values.email}
-              onBlur={touchAndValidateField("email")}
-              onChange={updateValue("email")}
-              disabled={isSubmitting}
-              errorMessage={errors.email}
-            />
-            <Checkbox
-              name="first-touch-email-consent"
-              checked={values.consentAccepted}
-              disabled={isSubmitting}
-              errorMessage={errors.consentAccepted}
-              onChange={(event) => {
-                const checked = event.target.checked;
-
-                setValues((currentValues) => ({
-                  ...currentValues,
-                  consentAccepted: checked,
-                }));
-                setErrors((currentErrors) => ({
-                  ...currentErrors,
-                  consentAccepted: validateField("consentAccepted", {
-                    ...values,
-                    consentAccepted: checked,
-                  }),
-                }));
-                setTouchedFields((currentTouchedFields) => ({
-                  ...currentTouchedFields,
-                  consentAccepted: true,
-                }));
-                setSubmitState("idle");
-              }}
-              placeholder={t("fields.consent.label")}
-            />
-          </SignupForm>
-        )}
+        {renderDialogContent()}
       </Dialog>
     </>
   );

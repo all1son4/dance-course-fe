@@ -8,6 +8,7 @@ export type CourseCardProps = {
   buttonText?: string;
   buttonHref?: string;
   buttonRel?: string;
+  buttonTarget?: string;
   iconSize?: {
     width: number;
     height: number;
