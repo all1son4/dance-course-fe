@@ -10,6 +10,7 @@ import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import FAQ from "@/components/other/FAQ";
 import { getQuestionsArray } from "@/components/other/FAQ/FAQ.constants";
+import Reviews from "@/components/other/Reviews";
 import {
   INSTAGRAM_DIB_GALA_URL,
   INSTAGRAM_PROFILE_HANDLE,
@@ -54,6 +55,7 @@ import {
   IntroduceSection,
   MainTextBox,
   MainTitle,
+  ReviewsSection,
   StyledImage,
 } from "./page.styles";
 
@@ -279,6 +281,9 @@ export default function Home() {
       <FAQSection>
         <FAQ />
       </FAQSection>
+      <ReviewsSection>
+        <Reviews />
+      </ReviewsSection>
       <ContactSection>
         <Contacts />
       </ContactSection>

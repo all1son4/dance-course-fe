@@ -160,6 +160,32 @@
       }
     }
   },
+  "Reviews": {
+    "title": "Reviews",
+    "navigation": {
+      "label": "Review navigation",
+      "previous": "Previous review",
+      "next": "Next review"
+    },
+    "a11y": {
+      "container": "Student reviews",
+      "carousel": "Carousel",
+      "item": "Review",
+      "slide": "{index} of {slidesLength}"
+    },
+    "authors": {
+      "otter": "Anonymous Otter",
+      "fox": "Anonymous Fox",
+      "badger": "Anonymous Badger",
+      "panda": "Anonymous Panda",
+      "penguin": "Anonymous Penguin",
+      "koala": "Anonymous Koala",
+      "rabbit": "Anonymous Rabbit",
+      "hedgehog": "Anonymous Hedgehog",
+      "owl": "Anonymous Owl",
+      "capybara": "Anonymous Capybara"
+    }
+  },
   "Roadmap": {
     "items": {
       "1": {

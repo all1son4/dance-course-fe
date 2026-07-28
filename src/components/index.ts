@@ -16,6 +16,7 @@ import Contacts from "./other/Contacts";
 import CurrencySwitch from "./other/CurrencySwitch";
 import FAQ from "./other/FAQ";
 import RoadmapContainer from "./other/ProgramRoadmap";
+import Reviews from "./other/Reviews";
 import StripePaymentTabs from "./other/StripePaymentTabs";
 import VideoPlayer from "./other/VideoPlayer";
 
@@ -34,6 +35,7 @@ export {
   Input,
   InteractiveCard,
   PageContainer,
+  Reviews,
   RoadmapContainer,
   StripePaymentTabs,
   TextContentCard,

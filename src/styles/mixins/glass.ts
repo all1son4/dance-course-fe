@@ -12,6 +12,8 @@ type GlassOptions = {
   borderOpacity?: number;
   sparkleAngleDeg?: number;
   sparkleBoost?: number;
+  shadowStrength?: number;
+  hoverEffect?: boolean;
   bgParamFallback?: string;
   bgParamReducedTransparency?: string;
   bgParamHighContrast?: string;
@@ -125,6 +127,8 @@ export const glass = ({
   borderOpacity,
   sparkleAngleDeg,
   sparkleBoost,
+  shadowStrength,
+  hoverEffect = true,
   bgParamFallback,
   bgParamReducedTransparency,
   bgParamHighContrast,
@@ -138,6 +142,7 @@ export const glass = ({
   const resolvedBorderOpacity = clamp(borderOpacity ?? preset.borderOpacity, 0, 1);
   const resolvedSparkleAngleDeg = sparkleAngleDeg ?? preset.sparkleAngleDeg;
   const resolvedSparkleBoost = clamp(sparkleBoost ?? preset.sparkleBoost, 0.4, 1.6);
+  const resolvedShadowStrength = clamp(shadowStrength ?? 1, 0, 1.5);
 
   const parsedBg = parseRgba(resolvedBgParam);
   const hasSolidTint = (parsedBg?.alpha ?? 0) >= 0.9;
@@ -167,10 +172,13 @@ export const glass = ({
     bgParamHighContrast ??
     `color-mix(in srgb, ${resolvedBgParam} ${highContrastMixPercent}%, rgba(255, 255, 255, 0.98))`;
 
-  const dropShadowOpacity =
+  const baseDropShadowOpacity =
     (hasSolidTint ? 0.06 : 0.08) + k * (hasSolidTint ? 0.04 : 0.05);
-  const dropShadowY = (hasSolidTint ? 4 : 6) + k * (hasSolidTint ? 6 : 8);
-  const dropShadowBlur = (hasSolidTint ? 12 : 16) + k * (hasSolidTint ? 20 : 22);
+  const baseDropShadowY = (hasSolidTint ? 4 : 6) + k * (hasSolidTint ? 6 : 8);
+  const baseDropShadowBlur = (hasSolidTint ? 12 : 16) + k * (hasSolidTint ? 20 : 22);
+  const dropShadowOpacity = baseDropShadowOpacity * resolvedShadowStrength;
+  const dropShadowY = baseDropShadowY * resolvedShadowStrength;
+  const dropShadowBlur = baseDropShadowBlur * resolvedShadowStrength;
 
   const topGlow = (hasSolidTint ? 0.044 : 0.09) + k * 0.05;
   const bottomShade = (hasSolidTint ? 0.014 : 0.022) + k * 0.03;
@@ -215,8 +223,40 @@ export const glass = ({
   const rimDark = clamp((0.04 + k * 0.06) * resolvedBorderOpacity, 0, 0.2);
 
   const safariFrostPx = Math.max(0, Math.round(resolvedFrostPx * 0.74));
-  const safariShadowY = Math.max(3, Math.round(dropShadowY * 0.82));
-  const safariShadowBlur = Math.max(10, Math.round(dropShadowBlur * 0.76));
+  const safariShadowY = Math.max(
+    Math.round(3 * resolvedShadowStrength),
+    Math.round(dropShadowY * 0.82),
+  );
+  const safariShadowBlur = Math.max(
+    Math.round(10 * resolvedShadowStrength),
+    Math.round(dropShadowBlur * 0.76),
+  );
+  const hoverStyles = hoverEffect
+    ? css`
+        @media (hover: hover) and (pointer: fine) {
+          &:hover {
+            box-shadow:
+              0 ${Math.round(dropShadowY * 1.03)}px ${Math.round(dropShadowBlur * 1.05)}px
+                rgba(
+                  7,
+                  10,
+                  16,
+                  ${Math.min(0.16, dropShadowOpacity + 0.015 * resolvedShadowStrength)}
+                ),
+              inset 0 1px 0 rgba(255, 255, 255, ${Math.min(0.22, 0.14 + k * 0.08)}),
+              inset 0 0 0 0.5px rgba(255, 255, 255, ${Math.min(0.32, innerRing + 0.03)});
+          }
+
+          &:hover::before {
+            opacity: 1;
+          }
+
+          &:hover::after {
+            opacity: ${hasSolidTint ? 0.76 : 0.9};
+          }
+        }
+      `
+    : "";
 
   return css`
     position: relative;
@@ -311,23 +351,7 @@ export const glass = ({
         );
     }
 
-    @media (hover: hover) and (pointer: fine) {
-      &:hover {
-        box-shadow:
-          0 ${Math.round(dropShadowY * 1.03)}px ${Math.round(dropShadowBlur * 1.05)}px
-            rgba(7, 10, 16, ${Math.min(0.16, dropShadowOpacity + 0.015)}),
-          inset 0 1px 0 rgba(255, 255, 255, ${Math.min(0.22, 0.14 + k * 0.08)}),
-          inset 0 0 0 0.5px rgba(255, 255, 255, ${Math.min(0.32, innerRing + 0.03)});
-      }
-
-      &:hover::before {
-        opacity: 1;
-      }
-
-      &:hover::after {
-        opacity: ${hasSolidTint ? 0.76 : 0.9};
-      }
-    }
+    ${hoverStyles}
 
     @supports (-webkit-touch-callout: none) {
       backdrop-filter: saturate(165%) contrast(102%) blur(${safariFrostPx}px);
@@ -347,9 +371,21 @@ export const glass = ({
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
       background: ${fallbackBg};
       box-shadow:
-        0 ${Math.max(8, Math.round(dropShadowY * 0.9))}px
-          ${Math.max(14, Math.round(dropShadowBlur * 0.8))}px
-          rgba(7, 10, 16, ${Math.max(0.1, dropShadowOpacity * 0.9)}),
+        0
+          ${Math.max(
+            Math.round(8 * resolvedShadowStrength),
+            Math.round(dropShadowY * 0.9),
+          )}px
+          ${Math.max(
+            Math.round(14 * resolvedShadowStrength),
+            Math.round(dropShadowBlur * 0.8),
+          )}px
+          rgba(
+            7,
+            10,
+            16,
+            ${Math.max(0.1 * resolvedShadowStrength, dropShadowOpacity * 0.9)}
+          ),
         inset 0 0 0 1px rgba(255, 255, 255, 0.24);
 
       &::after {
@@ -362,9 +398,21 @@ export const glass = ({
       -webkit-backdrop-filter: none;
       background: ${reducedBg};
       box-shadow:
-        0 ${Math.max(6, Math.round(dropShadowY * 0.82))}px
-          ${Math.max(12, Math.round(dropShadowBlur * 0.72))}px
-          rgba(7, 10, 16, ${Math.max(0.1, dropShadowOpacity * 0.86)}),
+        0
+          ${Math.max(
+            Math.round(6 * resolvedShadowStrength),
+            Math.round(dropShadowY * 0.82),
+          )}px
+          ${Math.max(
+            Math.round(12 * resolvedShadowStrength),
+            Math.round(dropShadowBlur * 0.72),
+          )}px
+          rgba(
+            7,
+            10,
+            16,
+            ${Math.max(0.1 * resolvedShadowStrength, dropShadowOpacity * 0.86)}
+          ),
         inset 0 0 0 1px rgba(255, 255, 255, 0.28);
 
       &::before {
@@ -379,9 +427,21 @@ export const glass = ({
     @media (prefers-contrast: more) {
       background: ${highContrastBg};
       box-shadow:
-        0 ${Math.max(8, Math.round(dropShadowY * 0.88))}px
-          ${Math.max(14, Math.round(dropShadowBlur * 0.78))}px
-          rgba(7, 10, 16, ${Math.max(0.14, dropShadowOpacity * 0.95)}),
+        0
+          ${Math.max(
+            Math.round(8 * resolvedShadowStrength),
+            Math.round(dropShadowY * 0.88),
+          )}px
+          ${Math.max(
+            Math.round(14 * resolvedShadowStrength),
+            Math.round(dropShadowBlur * 0.78),
+          )}px
+          rgba(
+            7,
+            10,
+            16,
+            ${Math.max(0.14 * resolvedShadowStrength, dropShadowOpacity * 0.95)}
+          ),
         inset 0 0 0 1px rgba(255, 255, 255, 0.48);
 
       &::before {
