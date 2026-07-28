@@ -47,6 +47,8 @@ type RenewalCustomerProfile = {
 
 const RENEWAL_VERIFICATION_TTL_MS = 60 * 60 * 1000;
 const RENEWAL_SLUG_BYTES = 8;
+const MAX_RENEWAL_SOURCE_CHATS = 8;
+const RENEWAL_SLUG_GENERATION_ATTEMPTS = 4;
 const RENEWAL_PRODUCT = SELLABLE_PRODUCTS["online-group-anna-strok"];
 
 const createRenewalSlug = () => `rnw_${randomBytes(RENEWAL_SLUG_BYTES).toString("hex")}`;
@@ -152,6 +154,322 @@ const getOnlineGroupRenewalCheckoutSelection = async (
   };
 };
 
+type DatabaseClient = ReturnType<typeof getDatabase>;
+type DatabaseTransaction = Parameters<Parameters<DatabaseClient["transaction"]>[0]>[0];
+type RegisteredTelegramChat = typeof telegramChats.$inferSelect;
+type RenewalCampaign = typeof renewalCampaigns.$inferSelect;
+type RenewalCheckoutSelection = NonNullable<
+  Awaited<ReturnType<typeof getOnlineGroupRenewalCheckoutSelection>>
+>;
+
+type RenewalCampaignResult = {
+  campaign: RenewalCampaign;
+  isReused: boolean;
+};
+
+const normalizeRenewalCampaignChatIds = ({
+  sourceChatIds,
+  targetChatId,
+}: {
+  sourceChatIds: string[];
+  targetChatId: string;
+}) => {
+  const normalizedSourceChatIds = [...new Set(sourceChatIds.map((id) => id.trim()))]
+    .filter(Boolean)
+    .slice(0, MAX_RENEWAL_SOURCE_CHATS);
+  const normalizedTargetChatId = targetChatId.trim();
+
+  if (!normalizedSourceChatIds.length || !normalizedTargetChatId) {
+    throw new Error("missing_chat_selection");
+  }
+
+  if (normalizedSourceChatIds.includes(normalizedTargetChatId)) {
+    throw new Error("same_source_and_target_chat");
+  }
+
+  return {
+    normalizedSourceChatIds,
+    normalizedTargetChatId,
+  };
+};
+
+const getRegisteredRenewalCampaignChats = async ({
+  db,
+  normalizedSourceChatIds,
+  normalizedTargetChatId,
+}: {
+  db: DatabaseClient;
+  normalizedSourceChatIds: string[];
+  normalizedTargetChatId: string;
+}): Promise<{
+  sourceChats: RegisteredTelegramChat[];
+  targetChat: RegisteredTelegramChat;
+}> => {
+  const chats = await db
+    .select()
+    .from(telegramChats)
+    .where(
+      inArray(telegramChats.chatId, [...normalizedSourceChatIds, normalizedTargetChatId]),
+    );
+  const sourceChats = normalizedSourceChatIds
+    .map((chatId) => chats.find((chat) => chat.chatId === chatId))
+    .filter((chat): chat is RegisteredTelegramChat => Boolean(chat?.isActive));
+  const targetChat = chats.find((chat) => chat.chatId === normalizedTargetChatId);
+
+  if (sourceChats.length !== normalizedSourceChatIds.length || !targetChat?.isActive) {
+    throw new Error("telegram_chat_not_registered");
+  }
+
+  return {
+    sourceChats,
+    targetChat,
+  };
+};
+
+const getRenewalCampaignTitle = ({
+  sourceChats,
+  targetChat,
+  title,
+}: {
+  sourceChats: RegisteredTelegramChat[];
+  targetChat: RegisteredTelegramChat;
+  title?: string | null;
+}) =>
+  normalizeTitle(title) ||
+  `${sourceChats.map((chat) => chat.title.trim()).join(" + ")} -> ${targetChat.title.trim()}`;
+
+const findExistingActiveRenewalCampaign = async ({
+  db,
+  offerExternalId,
+  targetChatId,
+}: {
+  db: DatabaseClient;
+  offerExternalId: string;
+  targetChatId: string;
+}) => {
+  const [campaign] = await db
+    .select()
+    .from(renewalCampaigns)
+    .where(
+      and(
+        eq(renewalCampaigns.targetChatId, targetChatId),
+        eq(renewalCampaigns.offerExternalId, offerExternalId),
+        eq(renewalCampaigns.status, "active"),
+      ),
+    )
+    .orderBy(desc(renewalCampaigns.createdAt))
+    .limit(1);
+
+  return campaign;
+};
+
+const getExistingRenewalCampaignUpdateState = async ({
+  existingCampaign,
+  normalizedSourceChatIds,
+  regenerate,
+  selection,
+  sourceChatId,
+  title,
+  tx,
+}: {
+  existingCampaign: RenewalCampaign;
+  normalizedSourceChatIds: string[];
+  regenerate: boolean;
+  selection: RenewalCheckoutSelection;
+  sourceChatId: string;
+  title: string;
+  tx: DatabaseTransaction;
+}) => {
+  const existingSourceRows = await tx
+    .select({ chatId: renewalCampaignSourceChats.chatId })
+    .from(renewalCampaignSourceChats)
+    .where(eq(renewalCampaignSourceChats.campaignId, existingCampaign.id));
+
+  // Campaigns created before the source-chat relation existed still keep the
+  // canonical source on the campaign row, so that value remains the fallback.
+  const existingSourceChatIds = existingSourceRows.length
+    ? existingSourceRows.map((row) => row.chatId)
+    : [existingCampaign.sourceChatId];
+  const sourceChatsChanged =
+    existingSourceChatIds.length !== normalizedSourceChatIds.length ||
+    normalizedSourceChatIds.some((chatId) => !existingSourceChatIds.includes(chatId));
+
+  // A source-set change invalidates the audience represented by a distributed
+  // link, therefore it follows the same slug rotation path as an explicit reset.
+  const shouldRegenerateSlug = regenerate || sourceChatsChanged;
+  const campaignChanged =
+    shouldRegenerateSlug ||
+    existingCampaign.sourceChatId !== sourceChatId ||
+    existingCampaign.title !== title ||
+    existingCampaign.offerId !== selection.offerRow.id ||
+    existingCampaign.productId !== selection.productRow.id;
+
+  return {
+    campaignChanged,
+    shouldRegenerateSlug,
+    sourceChatsChanged,
+  };
+};
+
+const reuseOrUpdateRenewalCampaign = async ({
+  db,
+  existingCampaign,
+  normalizedSourceChatIds,
+  normalizedTitle,
+  regenerate,
+  selection,
+  sourceChats,
+}: {
+  db: DatabaseClient;
+  existingCampaign: RenewalCampaign;
+  normalizedSourceChatIds: string[];
+  normalizedTitle: string;
+  regenerate: boolean;
+  selection: RenewalCheckoutSelection;
+  sourceChats: RegisteredTelegramChat[];
+}): Promise<RenewalCampaignResult | null> =>
+  db.transaction(async (tx) => {
+    const { campaignChanged, shouldRegenerateSlug, sourceChatsChanged } =
+      await getExistingRenewalCampaignUpdateState({
+        existingCampaign,
+        normalizedSourceChatIds,
+        regenerate,
+        selection,
+        sourceChatId: sourceChats[0].chatId,
+        title: normalizedTitle,
+        tx,
+      });
+
+    if (!campaignChanged) {
+      return {
+        campaign: existingCampaign,
+        isReused: true,
+      };
+    }
+
+    const [campaign] = await tx
+      .update(renewalCampaigns)
+      .set({
+        offerExternalId: selection.offerRow.externalOfferId,
+        offerId: selection.offerRow.id,
+        productExternalId: selection.productRow.externalProductId,
+        productId: selection.productRow.id,
+        slug: shouldRegenerateSlug ? createRenewalSlug() : existingCampaign.slug,
+        sourceChatId: sourceChats[0].chatId,
+        title: normalizedTitle,
+        updatedAt: new Date(),
+      })
+      .where(eq(renewalCampaigns.id, existingCampaign.id))
+      .returning();
+
+    if (!campaign) {
+      return null;
+    }
+
+    if (sourceChatsChanged) {
+      await tx
+        .delete(renewalCampaignSourceChats)
+        .where(eq(renewalCampaignSourceChats.campaignId, campaign.id));
+      await tx.insert(renewalCampaignSourceChats).values(
+        sourceChats.map((chat) => ({
+          campaignId: campaign.id,
+          chatId: chat.chatId,
+        })),
+      );
+    }
+
+    // Verification invalidation belongs to the same transaction as slug
+    // rotation so an old link cannot survive a partially committed update.
+    if (shouldRegenerateSlug) {
+      await tx
+        .delete(telegramRenewalVerifications)
+        .where(eq(telegramRenewalVerifications.campaignId, campaign.id));
+    }
+
+    return {
+      campaign,
+      isReused: !shouldRegenerateSlug,
+    };
+  });
+
+const insertRenewalCampaign = async ({
+  db,
+  normalizedTitle,
+  selection,
+  slug,
+  sourceChats,
+  targetChat,
+}: {
+  db: DatabaseClient;
+  normalizedTitle: string;
+  selection: RenewalCheckoutSelection;
+  slug: string;
+  sourceChats: RegisteredTelegramChat[];
+  targetChat: RegisteredTelegramChat;
+}): Promise<RenewalCampaign | null> =>
+  db.transaction(async (tx) => {
+    const [createdCampaign] = await tx
+      .insert(renewalCampaigns)
+      .values({
+        offerExternalId: selection.offerRow.externalOfferId,
+        offerId: selection.offerRow.id,
+        productExternalId: selection.productRow.externalProductId,
+        productId: selection.productRow.id,
+        slug,
+        sourceChatId: sourceChats[0].chatId,
+        targetChatId: targetChat.chatId,
+        title: normalizedTitle,
+      })
+      .onConflictDoNothing({
+        target: renewalCampaigns.slug,
+      })
+      .returning();
+
+    if (!createdCampaign) {
+      return null;
+    }
+
+    await tx.insert(renewalCampaignSourceChats).values(
+      sourceChats.map((chat) => ({
+        campaignId: createdCampaign.id,
+        chatId: chat.chatId,
+      })),
+    );
+
+    return createdCampaign;
+  });
+
+const createNewRenewalCampaign = async ({
+  db,
+  normalizedTitle,
+  selection,
+  sourceChats,
+  targetChat,
+}: {
+  db: DatabaseClient;
+  normalizedTitle: string;
+  selection: RenewalCheckoutSelection;
+  sourceChats: RegisteredTelegramChat[];
+  targetChat: RegisteredTelegramChat;
+}): Promise<RenewalCampaign> => {
+  for (let attempt = 0; attempt < RENEWAL_SLUG_GENERATION_ATTEMPTS; attempt += 1) {
+    const campaign = await insertRenewalCampaign({
+      db,
+      normalizedTitle,
+      selection,
+      slug: createRenewalSlug(),
+      sourceChats,
+      targetChat,
+    });
+
+    if (campaign) {
+      return campaign;
+    }
+  }
+
+  throw new Error("renewal_slug_generation_failed");
+};
+
 export const listActiveTelegramChats = async () => {
   const db = getDatabase();
 
@@ -232,175 +550,61 @@ export const createRenewalCampaign = async ({
     throw new Error("renewal_offer_not_seeded");
   }
 
-  const normalizedSourceChatIds = [...new Set(sourceChatIds.map((id) => id.trim()))]
-    .filter(Boolean)
-    .slice(0, 8);
-  const normalizedTargetChatId = targetChatId.trim();
-
-  if (!normalizedSourceChatIds.length || !normalizedTargetChatId) {
-    throw new Error("missing_chat_selection");
-  }
-
-  if (normalizedSourceChatIds.includes(normalizedTargetChatId)) {
-    throw new Error("same_source_and_target_chat");
-  }
-
-  const chats = await db
-    .select()
-    .from(telegramChats)
-    .where(
-      inArray(telegramChats.chatId, [...normalizedSourceChatIds, normalizedTargetChatId]),
-    );
-  const sourceChats = normalizedSourceChatIds
-    .map((chatId) => chats.find((chat) => chat.chatId === chatId))
-    .filter((chat): chat is NonNullable<typeof chat> => Boolean(chat?.isActive));
-  const target = chats.find((chat) => chat.chatId === normalizedTargetChatId);
-
-  if (sourceChats.length !== normalizedSourceChatIds.length || !target?.isActive) {
-    throw new Error("telegram_chat_not_registered");
-  }
-
-  const normalizedTitle =
-    normalizeTitle(title) ||
-    `${sourceChats.map((chat) => chat.title.trim()).join(" + ")} -> ${target.title.trim()}`;
-
-  const [existingActiveCampaign] = await db
-    .select()
-    .from(renewalCampaigns)
-    .where(
-      and(
-        eq(renewalCampaigns.targetChatId, target.chatId),
-        eq(renewalCampaigns.offerExternalId, selection.offerRow.externalOfferId),
-        eq(renewalCampaigns.status, "active"),
-      ),
-    )
-    .orderBy(desc(renewalCampaigns.createdAt))
-    .limit(1);
+  const { normalizedSourceChatIds, normalizedTargetChatId } =
+    normalizeRenewalCampaignChatIds({
+      sourceChatIds,
+      targetChatId,
+    });
+  const { sourceChats, targetChat } = await getRegisteredRenewalCampaignChats({
+    db,
+    normalizedSourceChatIds,
+    normalizedTargetChatId,
+  });
+  const normalizedTitle = getRenewalCampaignTitle({
+    sourceChats,
+    targetChat,
+    title,
+  });
+  const existingActiveCampaign = await findExistingActiveRenewalCampaign({
+    db,
+    offerExternalId: selection.offerRow.externalOfferId,
+    targetChatId: targetChat.chatId,
+  });
 
   if (existingActiveCampaign) {
-    const result = await db.transaction(async (tx) => {
-      const existingSourceRows = await tx
-        .select({ chatId: renewalCampaignSourceChats.chatId })
-        .from(renewalCampaignSourceChats)
-        .where(eq(renewalCampaignSourceChats.campaignId, existingActiveCampaign.id));
-      const existingSourceChatIds = existingSourceRows.length
-        ? existingSourceRows.map((row) => row.chatId)
-        : [existingActiveCampaign.sourceChatId];
-      const sourceChatsChanged =
-        existingSourceChatIds.length !== normalizedSourceChatIds.length ||
-        normalizedSourceChatIds.some((chatId) => !existingSourceChatIds.includes(chatId));
-      const shouldRegenerateSlug = regenerate || sourceChatsChanged;
-      const campaignChanged =
-        shouldRegenerateSlug ||
-        existingActiveCampaign.sourceChatId !== sourceChats[0].chatId ||
-        existingActiveCampaign.title !== normalizedTitle ||
-        existingActiveCampaign.offerId !== selection.offerRow.id ||
-        existingActiveCampaign.productId !== selection.productRow.id;
-
-      if (!campaignChanged) {
-        return {
-          campaign: existingActiveCampaign,
-          isReused: true,
-        };
-      }
-
-      const [campaign] = await tx
-        .update(renewalCampaigns)
-        .set({
-          offerExternalId: selection.offerRow.externalOfferId,
-          offerId: selection.offerRow.id,
-          productExternalId: selection.productRow.externalProductId,
-          productId: selection.productRow.id,
-          slug: shouldRegenerateSlug ? createRenewalSlug() : existingActiveCampaign.slug,
-          sourceChatId: sourceChats[0].chatId,
-          title: normalizedTitle,
-          updatedAt: new Date(),
-        })
-        .where(eq(renewalCampaigns.id, existingActiveCampaign.id))
-        .returning();
-
-      if (!campaign) {
-        return null;
-      }
-
-      if (sourceChatsChanged) {
-        await tx
-          .delete(renewalCampaignSourceChats)
-          .where(eq(renewalCampaignSourceChats.campaignId, campaign.id));
-        await tx.insert(renewalCampaignSourceChats).values(
-          sourceChats.map((chat) => ({
-            campaignId: campaign.id,
-            chatId: chat.chatId,
-          })),
-        );
-      }
-
-      if (shouldRegenerateSlug) {
-        await tx
-          .delete(telegramRenewalVerifications)
-          .where(eq(telegramRenewalVerifications.campaignId, campaign.id));
-      }
-
-      return {
-        campaign,
-        isReused: !shouldRegenerateSlug,
-      };
+    const result = await reuseOrUpdateRenewalCampaign({
+      db,
+      existingCampaign: existingActiveCampaign,
+      normalizedSourceChatIds,
+      normalizedTitle,
+      regenerate,
+      selection,
+      sourceChats,
     });
 
     if (result) {
       return {
         ...result,
         sourceChats,
-        targetChat: target,
+        targetChat,
       };
     }
   }
 
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const slug = createRenewalSlug();
-    const campaign = await db.transaction(async (tx) => {
-      const [createdCampaign] = await tx
-        .insert(renewalCampaigns)
-        .values({
-          offerExternalId: selection.offerRow.externalOfferId,
-          offerId: selection.offerRow.id,
-          productExternalId: selection.productRow.externalProductId,
-          productId: selection.productRow.id,
-          slug,
-          sourceChatId: sourceChats[0].chatId,
-          targetChatId: target.chatId,
-          title: normalizedTitle,
-        })
-        .onConflictDoNothing({
-          target: renewalCampaigns.slug,
-        })
-        .returning();
+  const campaign = await createNewRenewalCampaign({
+    db,
+    normalizedTitle,
+    selection,
+    sourceChats,
+    targetChat,
+  });
 
-      if (!createdCampaign) {
-        return null;
-      }
-
-      await tx.insert(renewalCampaignSourceChats).values(
-        sourceChats.map((chat) => ({
-          campaignId: createdCampaign.id,
-          chatId: chat.chatId,
-        })),
-      );
-
-      return createdCampaign;
-    });
-
-    if (campaign) {
-      return {
-        campaign,
-        isReused: false,
-        sourceChats,
-        targetChat: target,
-      };
-    }
-  }
-
-  throw new Error("renewal_slug_generation_failed");
+  return {
+    campaign,
+    isReused: false,
+    sourceChats,
+    targetChat,
+  };
 };
 
 export const listRecentRenewalCampaigns = async (limit = 12) => {

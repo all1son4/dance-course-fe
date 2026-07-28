@@ -13,6 +13,7 @@ import {
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
 const MONTHLY_SALES_REPORT_RECIPIENT = process.env.RESEND_REPLY_TO?.trim() ?? "";
+const EARLIEST_MONTHLY_SALES_REPORT_START_UTC_ISO = "1970-01-01T00:00:00.000Z";
 const pendingMonthlySalesReportRuns = new Map<
   string,
   Promise<MonthlySalesReportRunResult>
@@ -60,6 +61,10 @@ type MonthlySalesReportSaleRecord = {
   stripeFeeAmountMinor: string;
   stripeNetAmountMinor: string;
 };
+
+type ExistingMonthlySalesReportRun = NonNullable<
+  Awaited<ReturnType<typeof findMonthlySalesReportRunByKey>>
+>;
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
 
@@ -236,6 +241,35 @@ const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) =>
     formatNullableAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
   ]);
 
+const shouldPreferSaleRecord = ({
+  existingSaleRecord,
+  nextSaleRecord,
+}: {
+  existingSaleRecord: MonthlySalesReportSaleRecord;
+  nextSaleRecord: MonthlySalesReportSaleRecord;
+}) => {
+  const existingTimestamp = Date.parse(existingSaleRecord.saleTimestampIso);
+  const nextTimestamp = Date.parse(nextSaleRecord.saleTimestampIso);
+
+  return (
+    Number.isFinite(nextTimestamp) &&
+    (!Number.isFinite(existingTimestamp) || nextTimestamp < existingTimestamp)
+  );
+};
+
+const compareSaleRecords = (
+  left: MonthlySalesReportSaleRecord,
+  right: MonthlySalesReportSaleRecord,
+) => {
+  const leftTimestamp = Date.parse(left.saleTimestampIso);
+  const rightTimestamp = Date.parse(right.saleTimestampIso);
+  const timestampDiff =
+    (Number.isFinite(leftTimestamp) ? leftTimestamp : 0) -
+    (Number.isFinite(rightTimestamp) ? rightTimestamp : 0);
+
+  return timestampDiff || left.paymentIntentId.localeCompare(right.paymentIntentId);
+};
+
 const dedupeSaleRecordsByPaymentIntent = (
   saleRecords: MonthlySalesReportSaleRecord[],
 ) => {
@@ -255,26 +289,19 @@ const dedupeSaleRecordsByPaymentIntent = (
       continue;
     }
 
-    const existingTimestamp = Date.parse(existingSaleRecord.saleTimestampIso);
-    const nextTimestamp = Date.parse(saleRecord.saleTimestampIso);
-
+    // Multiple processed Stripe events can join to one purchase; the earliest
+    // valid event remains the canonical sale timestamp for a stable report.
     if (
-      Number.isFinite(nextTimestamp) &&
-      (!Number.isFinite(existingTimestamp) || nextTimestamp < existingTimestamp)
+      shouldPreferSaleRecord({
+        existingSaleRecord,
+        nextSaleRecord: saleRecord,
+      })
     ) {
       saleRecordByPaymentIntentId.set(saleRecord.paymentIntentId, saleRecord);
     }
   }
 
-  return Array.from(saleRecordByPaymentIntentId.values()).sort((left, right) => {
-    const leftTimestamp = Date.parse(left.saleTimestampIso);
-    const rightTimestamp = Date.parse(right.saleTimestampIso);
-    const timestampDiff =
-      (Number.isFinite(leftTimestamp) ? leftTimestamp : 0) -
-      (Number.isFinite(rightTimestamp) ? rightTimestamp : 0);
-
-    return timestampDiff || left.paymentIntentId.localeCompare(right.paymentIntentId);
-  });
+  return Array.from(saleRecordByPaymentIntentId.values()).sort(compareSaleRecords);
 };
 
 const formatReportMonthForSubject = (monthValue: string) =>
@@ -417,6 +444,104 @@ const buildMonthlySalesReportRunRecord = ({
   row_count: String(rowCount),
 });
 
+const generateMonthlySalesReportContent = (
+  saleRecords: MonthlySalesReportSaleRecord[],
+) => {
+  const csvRows = buildCsvRows(saleRecords);
+  const csv = buildCsv(csvRows);
+  const sha256 = createHash("sha256").update(csv).digest("hex");
+  const rowCount = saleRecords.length;
+
+  return {
+    csv,
+    rowCount,
+    sha256,
+  };
+};
+
+const buildAlreadyDeliveredMonthlySalesReportResult = ({
+  existingRun,
+  generatedAtUtc,
+  period,
+}: {
+  existingRun: ExistingMonthlySalesReportRun;
+  generatedAtUtc: string;
+  period: MonthlySalesReportPeriod;
+}) => ({
+  csv: "",
+  deliveredAtUtc: existingRun.delivered_at_utc || null,
+  deliveredTo: existingRun.delivered_to,
+  endUtcIso: period.endUtcIso,
+  generatedAtUtc,
+  isAlreadyDelivered: true,
+  month: period.month,
+  rowCount: Number.parseInt(existingRun.row_count, 10) || 0,
+  sha256: existingRun.csv_sha256,
+  skippedReason: "already_delivered" as const,
+  startUtcIso: period.startUtcIso,
+  status: "skipped" as const,
+});
+
+const buildEmptyMonthlySalesReportResult = ({
+  csv,
+  generatedAtUtc,
+  period,
+  reportRecipient,
+  rowCount,
+  sha256,
+}: {
+  csv: string;
+  generatedAtUtc: string;
+  period: MonthlySalesReportPeriod;
+  reportRecipient: string;
+  rowCount: number;
+  sha256: string;
+}) => ({
+  csv,
+  deliveredAtUtc: null,
+  deliveredTo: reportRecipient,
+  endUtcIso: period.endUtcIso,
+  generatedAtUtc,
+  isAlreadyDelivered: false,
+  month: period.month,
+  rowCount,
+  sha256,
+  skippedReason: "empty" as const,
+  startUtcIso: period.startUtcIso,
+  status: "skipped" as const,
+});
+
+const buildSentMonthlySalesReportResult = ({
+  csv,
+  generatedAtUtc,
+  period,
+  referenceDate,
+  reportRecipient,
+  rowCount,
+  sha256,
+}: {
+  csv: string;
+  generatedAtUtc: string;
+  period: MonthlySalesReportPeriod;
+  referenceDate: Date;
+  reportRecipient: string;
+  rowCount: number;
+  sha256: string;
+}) => ({
+  csv,
+  deliveredAtUtc: referenceDate.toISOString(),
+  deliveredTo: reportRecipient,
+  endUtcIso: period.endUtcIso,
+  generatedAtUtc,
+  isAlreadyDelivered: false,
+  month: period.month,
+  rowCount,
+  sha256,
+  skippedReason: null,
+  startUtcIso: period.startUtcIso,
+  status: "sent" as const,
+});
+
 export const isLastDayOfMonthUtc = (date: Date) =>
   date.getUTCDate() ===
   new Date(
@@ -526,7 +651,7 @@ const listSucceededSaleRecordsInUtcRange = async ({
 export const listAvailableMonthlySalesReportMonths = async (
   referenceDate: Date = new Date(),
 ): Promise<MonthlySalesReportMonthOption[]> => {
-  const startUtcIso = "1970-01-01T00:00:00.000Z";
+  const startUtcIso = EARLIEST_MONTHLY_SALES_REPORT_START_UTC_ISO;
   const endUtcIsoExclusive = referenceDate.toISOString();
   const saleRecords = await listSucceededSaleRecordsInUtcRange({
     endUtcIsoExclusive,
@@ -586,46 +711,28 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
   const existingRun = await findMonthlySalesReportRunByKey(period.key);
 
   if (!force && existingRun?.delivery_status === "sent") {
-    return {
-      csv: "",
-      deliveredAtUtc: existingRun.delivered_at_utc || null,
-      deliveredTo: existingRun.delivered_to,
-      endUtcIso: period.endUtcIso,
+    return buildAlreadyDeliveredMonthlySalesReportResult({
+      existingRun,
       generatedAtUtc,
-      isAlreadyDelivered: true,
-      month: period.month,
-      rowCount: Number.parseInt(existingRun.row_count, 10) || 0,
-      sha256: existingRun.csv_sha256,
-      skippedReason: "already_delivered" as const,
-      startUtcIso: period.startUtcIso,
-      status: "skipped" as const,
-    };
+      period,
+    });
   }
 
   const saleRecords = await listSucceededSaleRecordsInUtcRange({
     endUtcIsoExclusive: period.endUtcIso,
     startUtcIso: period.startUtcIso,
   });
-  const csvRows = buildCsvRows(saleRecords);
-  const csv = buildCsv(csvRows);
-  const sha256 = createHash("sha256").update(csv).digest("hex");
-  const rowCount = saleRecords.length;
+  const { csv, rowCount, sha256 } = generateMonthlySalesReportContent(saleRecords);
 
   if (rowCount === 0) {
-    return {
+    return buildEmptyMonthlySalesReportResult({
       csv,
-      deliveredAtUtc: null,
-      deliveredTo: reportRecipient,
-      endUtcIso: period.endUtcIso,
       generatedAtUtc,
-      isAlreadyDelivered: false,
-      month: period.month,
+      period,
+      reportRecipient,
       rowCount,
       sha256,
-      skippedReason: "empty" as const,
-      startUtcIso: period.startUtcIso,
-      status: "skipped" as const,
-    };
+    });
   }
 
   try {
@@ -658,20 +765,15 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
       }),
     );
 
-    return {
+    return buildSentMonthlySalesReportResult({
       csv,
-      deliveredAtUtc: referenceDate.toISOString(),
-      deliveredTo: reportRecipient,
-      endUtcIso: period.endUtcIso,
       generatedAtUtc,
-      isAlreadyDelivered: false,
-      month: period.month,
+      period,
+      referenceDate,
+      reportRecipient,
       rowCount,
       sha256,
-      skippedReason: null,
-      startUtcIso: period.startUtcIso,
-      status: "sent" as const,
-    };
+    });
   } catch (error) {
     await upsertMonthlySalesReportRun(
       buildMonthlySalesReportRunRecord({

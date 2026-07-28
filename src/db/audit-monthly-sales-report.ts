@@ -44,21 +44,10 @@ const client = postgres(
   },
 );
 
-const main = async () => {
-  const [
-    totalPurchaseRows,
-    succeededPurchaseRows,
-    succeededStripePurchaseRows,
-    succeededNonStripePurchaseRows,
-    reportEligiblePurchaseRows,
-    reportJoinCountRows,
-    reportUniqueCountRows,
-    duplicateSaleEventRows,
-    succeededStripeEventRows,
-    sourceCounts,
-    reportMonths,
-    reportSamples,
-  ] = await Promise.all([
+// A single Promise.all keeps every metric on the same best-effort database
+// snapshot while the tuple order preserves its mapping to the audit payload.
+const loadMonthlySalesReportAuditRows = () =>
+  Promise.all([
     client<CountRow[]>`select count(*)::int as count from purchases`,
     client<CountRow[]>`
       select count(*)::int as count
@@ -180,37 +169,88 @@ const main = async () => {
       limit 20
     `,
   ]);
-  const totalPurchases = totalPurchaseRows[0]?.count ?? 0;
-  const succeededPurchases = succeededPurchaseRows[0]?.count ?? 0;
-  const succeededStripePurchases = succeededStripePurchaseRows[0]?.count ?? 0;
-  const succeededNonStripePurchases = succeededNonStripePurchaseRows[0]?.count ?? 0;
-  const reportEligiblePurchases = reportEligiblePurchaseRows[0]?.count ?? 0;
-  const reportJoinRows = reportJoinCountRows[0]?.count ?? 0;
-  const reportUniqueRows = reportUniqueCountRows[0]?.count ?? 0;
-  const succeededStripeEvents = succeededStripeEventRows[0]?.count ?? 0;
+
+const getCount = (rows: CountRow[]) => rows[0]?.count ?? 0;
+
+const buildMonthlySalesReportAudit = ({
+  duplicateSaleEventRows,
+  reportEligiblePurchases,
+  reportJoinRows,
+  reportMonths,
+  reportSamples,
+  reportUniqueRows,
+  sourceCounts,
+  succeededNonStripePurchases,
+  succeededPurchases,
+  succeededStripeEvents,
+  succeededStripePurchases,
+  totalPurchases,
+}: {
+  duplicateSaleEventRows: DuplicateSaleEventRow[];
+  reportEligiblePurchases: number;
+  reportJoinRows: number;
+  reportMonths: MonthCountRow[];
+  reportSamples: SampleRow[];
+  reportUniqueRows: number;
+  sourceCounts: SourceCountRow[];
+  succeededNonStripePurchases: number;
+  succeededPurchases: number;
+  succeededStripeEvents: number;
+  succeededStripePurchases: number;
+  totalPurchases: number;
+}) => ({
+  report: {
+    duplicateSaleEvents: duplicateSaleEventRows,
+    months: reportMonths,
+    rawJoinRowCount: reportJoinRows,
+    uniqueSaleCount: reportUniqueRows,
+  },
+  samples: reportSamples,
+  stripeEvents: {
+    processedSucceededPaymentIntentEvents: succeededStripeEvents,
+  },
+  summary: {
+    reportEligiblePurchases,
+    succeededNonStripePurchases,
+    succeededPurchases,
+    succeededStripePurchases,
+    totalPurchases,
+  },
+  succeededPurchaseSources: sourceCounts,
+});
+
+const main = async () => {
+  const [
+    totalPurchaseRows,
+    succeededPurchaseRows,
+    succeededStripePurchaseRows,
+    succeededNonStripePurchaseRows,
+    reportEligiblePurchaseRows,
+    reportJoinCountRows,
+    reportUniqueCountRows,
+    duplicateSaleEventRows,
+    succeededStripeEventRows,
+    sourceCounts,
+    reportMonths,
+    reportSamples,
+  ] = await loadMonthlySalesReportAuditRows();
 
   console.warn(
     JSON.stringify(
-      {
-        report: {
-          duplicateSaleEvents: duplicateSaleEventRows,
-          months: reportMonths,
-          rawJoinRowCount: reportJoinRows,
-          uniqueSaleCount: reportUniqueRows,
-        },
-        samples: reportSamples,
-        stripeEvents: {
-          processedSucceededPaymentIntentEvents: succeededStripeEvents,
-        },
-        summary: {
-          reportEligiblePurchases,
-          succeededNonStripePurchases,
-          succeededPurchases,
-          succeededStripePurchases,
-          totalPurchases,
-        },
-        succeededPurchaseSources: sourceCounts,
-      },
+      buildMonthlySalesReportAudit({
+        duplicateSaleEventRows,
+        reportEligiblePurchases: getCount(reportEligiblePurchaseRows),
+        reportJoinRows: getCount(reportJoinCountRows),
+        reportMonths,
+        reportSamples,
+        reportUniqueRows: getCount(reportUniqueCountRows),
+        sourceCounts,
+        succeededNonStripePurchases: getCount(succeededNonStripePurchaseRows),
+        succeededPurchases: getCount(succeededPurchaseRows),
+        succeededStripeEvents: getCount(succeededStripeEventRows),
+        succeededStripePurchases: getCount(succeededStripePurchaseRows),
+        totalPurchases: getCount(totalPurchaseRows),
+      }),
       null,
       2,
     ),

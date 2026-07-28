@@ -5,6 +5,8 @@ const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
   DEFAULT_SITE_HOME_URL;
+const ACCESS_EXPIRY_TIME_ZONE = "Europe/Warsaw";
+const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
 
 const EMAIL_COPY = {
   en: {
@@ -298,116 +300,143 @@ export type BuildPurchaseSuccessEmailInput = {
   }>;
 };
 
-export const buildPurchaseSuccessEmail = ({
-  accessDurationDays = 0,
-  accessKind,
-  amountMinor,
-  checkoutCurrency,
-  checkoutLocale,
-  inspirationAccessExpiresAt,
-  offerLabel,
-  productTitle,
-  receiptKind,
-  receiptLink,
-  showMentorFollowupNote = false,
-  telegramAccessUrl,
-  telegramAccessLinks = [],
-}: BuildPurchaseSuccessEmailInput) => {
-  const locale = getResolvedCheckoutLocale(checkoutLocale);
-  const copy = EMAIL_COPY[locale];
-  const telegramLink = telegramAccessUrl ?? null;
-  const hasOnlineGroupAccess =
-    telegramAccessLinks.length > 0 &&
-    telegramAccessLinks.every(
-      (access) => access.status === "ready" || access.status === "active",
-    );
-  const amountLabel = formatCheckoutAmount({
-    amountMinor,
-    currency: checkoutCurrency,
-    locale,
-  });
-  const safeProductTitle = escapeHtml(productTitle);
-  const safeOfferLabel = escapeHtml(offerLabel || copy.defaultOfferLabel);
-  const safeAmountLabel = escapeHtml(amountLabel);
-  const safeReceiptLink = receiptLink ? escapeHtml(receiptLink) : "";
-  const safeSupportTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
-  const safeTelegramLink = telegramLink ? escapeHtml(telegramLink) : "";
-  const safeSiteHomeUrl = escapeHtml(SITE_HOME_URL);
-  const formatAccessExpiry = (value: string) => {
-    const date = new Date(value);
+type EmailLocale = keyof typeof EMAIL_COPY;
+type EmailCopy = (typeof EMAIL_COPY)[EmailLocale];
+type TelegramAccessLink = NonNullable<
+  BuildPurchaseSuccessEmailInput["telegramAccessLinks"]
+>[number];
+type ResolvedReceiptKind = NonNullable<BuildPurchaseSuccessEmailInput["receiptKind"]>;
+type AccessContent = {
+  cta: string;
+  description: string;
+  mentorFollowupNote: string;
+  title: string;
+};
 
-    if (!Number.isFinite(date.getTime())) {
-      return "";
-    }
+const isTelegramAccessKind = (accessKind: PurchaseSuccessEmailAccessKind): boolean =>
+  accessKind === "telegram-channel" ||
+  accessKind === "telegram-chat" ||
+  accessKind === "telegram-online-group" ||
+  accessKind === "telegram-renewal";
 
-    return new Intl.DateTimeFormat(
-      locale === "pl" ? "pl-PL" : locale === "en" ? "en-GB" : "ru-RU",
-      {
-        dateStyle: "long",
-        timeZone: "Europe/Warsaw",
-      },
-    ).format(date);
-  };
-  const formattedInspirationExpiry = inspirationAccessExpiresAt
-    ? formatAccessExpiry(inspirationAccessExpiresAt)
-    : "";
+const hasCompleteOnlineGroupAccess = (
+  telegramAccessLinks: TelegramAccessLink[],
+): boolean =>
+  telegramAccessLinks.length > 0 &&
+  telegramAccessLinks.every(
+    (access) => access.status === "ready" || access.status === "active",
+  );
 
-  let accessTitle = "";
-  let accessDescription = "";
-  let accessCta = "";
-  let mentorFollowupNote = "";
+const formatAccessExpiry = (value: string, locale: EmailLocale): string => {
+  const date = new Date(value);
 
-  switch (accessKind) {
-    case "telegram-channel":
-      accessTitle = copy.access.telegramChannel.title;
-      accessDescription = telegramLink
-        ? copy.access.telegramChannel.ready
-        : copy.access.telegramChannel.pending;
-      accessCta = copy.access.telegramChannel.cta;
-      mentorFollowupNote = showMentorFollowupNote
-        ? copy.access.telegramChannel.mentorNote
-        : "";
-      break;
-    case "telegram-chat":
-      accessTitle = copy.access.telegramChat.title;
-      accessDescription = telegramLink
-        ? copy.access.telegramChat.ready
-        : copy.access.telegramChat.pending;
-      accessCta = copy.access.telegramChat.cta;
-      break;
-    case "telegram-renewal":
-      accessTitle = copy.access.telegramRenewal.title;
-      accessDescription =
-        telegramLink || hasOnlineGroupAccess
-          ? copy.access.telegramRenewal.ready
-          : copy.access.telegramRenewal.pending;
-      accessCta = copy.access.telegramRenewal.cta;
-      break;
-    case "telegram-online-group":
-      accessTitle = copy.access.telegramOnlineGroup.title;
-      accessDescription =
-        telegramLink || hasOnlineGroupAccess
-          ? copy.access.telegramOnlineGroup.ready
-          : copy.access.telegramOnlineGroup.pending;
-      accessCta = copy.access.telegramOnlineGroup.cta;
-      break;
-    case "manual-admin":
-      accessTitle = copy.access.manualAdmin.title;
-      accessDescription = copy.access.manualAdmin.body;
-      break;
-    case "support":
-      accessTitle = copy.access.support.title;
-      accessDescription = copy.access.support.body;
-      break;
+  if (!Number.isFinite(date.getTime())) {
+    return "";
   }
 
-  const resolvedReceiptKind =
-    receiptKind ??
-    (receiptLink && /\.pdf(?:[?#].*)?$/i.test(receiptLink) ? "pdf" : "receipt");
-  const receiptButtonLabel =
-    resolvedReceiptKind === "pdf" ? copy.receiptPdfCta : copy.receiptLinkCta;
-  const subject = `${copy.subjectPrefix}: ${productTitle}`;
-  const receiptButton = receiptLink
+  const intlLocale = locale === "pl" ? "pl-PL" : locale === "en" ? "en-GB" : "ru-RU";
+
+  return new Intl.DateTimeFormat(intlLocale, {
+    dateStyle: "long",
+    timeZone: ACCESS_EXPIRY_TIME_ZONE,
+  }).format(date);
+};
+
+const resolveAccessContent = ({
+  accessKind,
+  copy,
+  hasOnlineGroupAccess,
+  showMentorFollowupNote,
+  telegramLink,
+}: {
+  accessKind: PurchaseSuccessEmailAccessKind;
+  copy: EmailCopy;
+  hasOnlineGroupAccess: boolean;
+  showMentorFollowupNote: boolean;
+  telegramLink: string | null;
+}): AccessContent => {
+  switch (accessKind) {
+    case "telegram-channel":
+      return {
+        cta: copy.access.telegramChannel.cta,
+        description: telegramLink
+          ? copy.access.telegramChannel.ready
+          : copy.access.telegramChannel.pending,
+        mentorFollowupNote: showMentorFollowupNote
+          ? copy.access.telegramChannel.mentorNote
+          : "",
+        title: copy.access.telegramChannel.title,
+      };
+    case "telegram-chat":
+      return {
+        cta: copy.access.telegramChat.cta,
+        description: telegramLink
+          ? copy.access.telegramChat.ready
+          : copy.access.telegramChat.pending,
+        mentorFollowupNote: "",
+        title: copy.access.telegramChat.title,
+      };
+    case "telegram-renewal":
+      return {
+        cta: copy.access.telegramRenewal.cta,
+        description:
+          telegramLink || hasOnlineGroupAccess
+            ? copy.access.telegramRenewal.ready
+            : copy.access.telegramRenewal.pending,
+        mentorFollowupNote: "",
+        title: copy.access.telegramRenewal.title,
+      };
+    case "telegram-online-group":
+      return {
+        cta: copy.access.telegramOnlineGroup.cta,
+        description:
+          telegramLink || hasOnlineGroupAccess
+            ? copy.access.telegramOnlineGroup.ready
+            : copy.access.telegramOnlineGroup.pending,
+        mentorFollowupNote: "",
+        title: copy.access.telegramOnlineGroup.title,
+      };
+    case "manual-admin":
+      return {
+        cta: "",
+        description: copy.access.manualAdmin.body,
+        mentorFollowupNote: "",
+        title: copy.access.manualAdmin.title,
+      };
+    case "support":
+      return {
+        cta: "",
+        description: copy.access.support.body,
+        mentorFollowupNote: "",
+        title: copy.access.support.title,
+      };
+  }
+};
+
+const resolveReceiptKind = ({
+  receiptKind,
+  receiptLink,
+}: Pick<
+  BuildPurchaseSuccessEmailInput,
+  "receiptKind" | "receiptLink"
+>): ResolvedReceiptKind =>
+  receiptKind ??
+  (receiptLink && PDF_RECEIPT_LINK_PATTERN.test(receiptLink) ? "pdf" : "receipt");
+
+const renderReceiptButton = ({
+  copy,
+  receiptLink,
+  receiptButtonLabel,
+  resolvedReceiptKind,
+  safeReceiptLink,
+}: {
+  copy: EmailCopy;
+  receiptLink: string | null;
+  receiptButtonLabel: string;
+  resolvedReceiptKind: ResolvedReceiptKind;
+  safeReceiptLink: string;
+}): string =>
+  receiptLink
     ? `
       <a href="${safeReceiptLink}" style="display:inline-block;padding:10px 16px;border-radius:999px;background:#ffffff;color:#121212;text-decoration:none;font-weight:600;font-size:14px;line-height:20px;border:1px solid rgba(18,18,18,0.16);">
         ${receiptButtonLabel}
@@ -423,22 +452,53 @@ export const buildPurchaseSuccessEmail = ({
         ${copy.receiptPending}
       </p>
     `;
-  const accessButton =
-    (accessKind === "telegram-channel" ||
-      accessKind === "telegram-chat" ||
-      accessKind === "telegram-online-group" ||
-      accessKind === "telegram-renewal") &&
-    telegramLink
-      ? `
+
+const renderAccessButton = ({
+  accessContent,
+  accessKind,
+  safeTelegramLink,
+  telegramLink,
+}: {
+  accessContent: AccessContent;
+  accessKind: PurchaseSuccessEmailAccessKind;
+  safeTelegramLink: string;
+  telegramLink: string | null;
+}): string =>
+  isTelegramAccessKind(accessKind) && telegramLink
+    ? `
         <a href="${safeTelegramLink}" style="display:inline-block;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">
-          ${accessCta}
+          ${accessContent.cta}
         </a>
       `
-      : "";
-  const onlineGroupAccessButtons = telegramAccessLinks
+    : "";
+
+const getTelegramAccessLabel = ({
+  access,
+  accessCta,
+  copy,
+}: {
+  access: TelegramAccessLink;
+  accessCta: string;
+  copy: EmailCopy;
+}): string =>
+  access.accessKey === "inspiration-hub" ? copy.inspirationHubCta : accessCta;
+
+const renderOnlineGroupAccessButtons = ({
+  accessCta,
+  copy,
+  telegramAccessLinks,
+}: {
+  accessCta: string;
+  copy: EmailCopy;
+  telegramAccessLinks: TelegramAccessLink[];
+}): string =>
+  telegramAccessLinks
     .map((access) => {
-      const label =
-        access.accessKey === "inspiration-hub" ? copy.inspirationHubCta : accessCta;
+      const label = getTelegramAccessLabel({
+        access,
+        accessCta,
+        copy,
+      });
 
       if (access.status === "ready" && access.accessUrl) {
         return `
@@ -458,42 +518,101 @@ export const buildPurchaseSuccessEmail = ({
       return `<p style="margin:8px 0;color:#7c0002;font-size:14px;line-height:22px;">${label}: ${statusText}</p>`;
     })
     .join("");
-  const hasInspirationHubAccess = telegramAccessLinks.some(
-    (access) => access.accessKey === "inspiration-hub",
-  );
-  const inspirationAccessText = formattedInspirationExpiry
-    ? `${copy.inspirationHubCta}: ${copy.accessUntil.toLowerCase()} ${formattedInspirationExpiry}.`
-    : hasInspirationHubAccess
-      ? copy.inspirationHubAccessDuration
-      : "";
-  const inspirationAccessParagraph = inspirationAccessText
+
+const getInspirationAccessText = ({
+  copy,
+  formattedInspirationExpiry,
+  hasInspirationHubAccess,
+}: {
+  copy: EmailCopy;
+  formattedInspirationExpiry: string;
+  hasInspirationHubAccess: boolean;
+}): string => {
+  if (formattedInspirationExpiry) {
+    return `${copy.inspirationHubCta}: ${copy.accessUntil.toLowerCase()} ${formattedInspirationExpiry}.`;
+  }
+
+  return hasInspirationHubAccess ? copy.inspirationHubAccessDuration : "";
+};
+
+const renderInspirationAccessParagraph = (inspirationAccessText: string): string =>
+  inspirationAccessText
     ? `
       <p style="margin:0 0 12px;color:#5f5f5f;font-size:14px;line-height:22px;">
         ${escapeHtml(inspirationAccessText)}
       </p>
     `
     : "";
-  const mentorFollowupParagraph = mentorFollowupNote
+
+const renderMentorFollowupParagraph = (mentorFollowupNote: string): string =>
+  mentorFollowupNote
     ? `
       <p style="margin:10px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">
         ${mentorFollowupNote}
       </p>
     `
     : "";
-  const limitedAccessValidityParagraph =
-    accessKind === "manual-admin" && accessDurationDays > 0
-      ? `
-      <p style="margin:10px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">
-        ${copy.limitedAccessValidity.replace("{days}", String(accessDurationDays))}
-      </p>
-    `
-      : "";
-  const limitedAccessValidityText =
-    accessKind === "manual-admin" && accessDurationDays > 0
-      ? copy.limitedAccessValidity.replace("{days}", String(accessDurationDays))
-      : "";
 
-  const html = `
+const getLimitedAccessValidity = ({
+  accessDurationDays,
+  accessKind,
+  copy,
+}: {
+  accessDurationDays: number;
+  accessKind: PurchaseSuccessEmailAccessKind;
+  copy: EmailCopy;
+}): {
+  paragraph: string;
+  text: string;
+} => {
+  if (accessKind !== "manual-admin" || accessDurationDays <= 0) {
+    return {
+      paragraph: "",
+      text: "",
+    };
+  }
+
+  const text = copy.limitedAccessValidity.replace("{days}", String(accessDurationDays));
+
+  return {
+    paragraph: `
+      <p style="margin:10px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">
+        ${text}
+      </p>
+    `,
+    text,
+  };
+};
+
+const renderPurchaseSuccessEmailHtml = ({
+  accessButton,
+  accessContent,
+  copy,
+  inspirationAccessParagraph,
+  limitedAccessValidityParagraph,
+  mentorFollowupParagraph,
+  onlineGroupAccessButtons,
+  receiptButton,
+  safeAmountLabel,
+  safeOfferLabel,
+  safeProductTitle,
+  safeSiteHomeUrl,
+  safeSupportTelegramUrl,
+}: {
+  accessButton: string;
+  accessContent: AccessContent;
+  copy: EmailCopy;
+  inspirationAccessParagraph: string;
+  limitedAccessValidityParagraph: string;
+  mentorFollowupParagraph: string;
+  onlineGroupAccessButtons: string;
+  receiptButton: string;
+  safeAmountLabel: string;
+  safeOfferLabel: string;
+  safeProductTitle: string;
+  safeSiteHomeUrl: string;
+  safeSupportTelegramUrl: string;
+}): string => `
     <div style="margin:0;padding:32px 12px;background:#f3f2ef;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#121212;">
       <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid rgba(18,18,18,0.08);border-radius:28px;padding:32px;">
         <p style="margin:0 0 10px 0;font-size:12px;line-height:18px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7064;font-weight:700;">Frame Up Strip</p>
@@ -523,9 +642,9 @@ export const buildPurchaseSuccessEmail = ({
         </div>
 
         <div style="border-top:1px solid rgba(18,18,18,0.08);padding-top:22px;margin:0 0 22px 0;">
-          <p style="margin:0 0 10px 0;font-size:16px;line-height:24px;color:#121212;font-weight:700;">${accessTitle}</p>
+          <p style="margin:0 0 10px 0;font-size:16px;line-height:24px;color:#121212;font-weight:700;">${accessContent.title}</p>
           <p style="margin:0 0 12px 0;color:#5f5f5f;font-size:14px;line-height:22px;">
-            ${accessDescription}
+            ${accessContent.description}
           </p>
           ${inspirationAccessParagraph}
           ${onlineGroupAccessButtons || accessButton}
@@ -552,39 +671,82 @@ export const buildPurchaseSuccessEmail = ({
     </div>
   `;
 
+const renderTelegramAccessTextLines = ({
+  accessCta,
+  copy,
+  telegramAccessLinks,
+}: {
+  accessCta: string;
+  copy: EmailCopy;
+  telegramAccessLinks: TelegramAccessLink[];
+}): string[] =>
+  telegramAccessLinks.map((access) => {
+    const label = getTelegramAccessLabel({
+      access,
+      accessCta,
+      copy,
+    });
+
+    if (access.status === "ready" && access.accessUrl) {
+      return `${label}: ${access.accessUrl}`;
+    }
+
+    if (access.status === "active") {
+      return `${label}: ${copy.accessAlreadyActive}`;
+    }
+
+    return `${label}: ${
+      access.status === "expired" ? copy.accessExpired : copy.accessNeedsSupport
+    }`;
+  });
+
+const renderPurchaseSuccessEmailText = ({
+  accessContent,
+  accessKind,
+  amountLabel,
+  copy,
+  inspirationAccessText,
+  limitedAccessValidityText,
+  offerLabel,
+  productTitle,
+  receiptButtonLabel,
+  receiptLink,
+  resolvedReceiptKind,
+  telegramAccessLinks,
+  telegramLink,
+}: {
+  accessContent: AccessContent;
+  accessKind: PurchaseSuccessEmailAccessKind;
+  amountLabel: string;
+  copy: EmailCopy;
+  inspirationAccessText: string;
+  limitedAccessValidityText: string;
+  offerLabel: string;
+  productTitle: string;
+  receiptButtonLabel: string;
+  receiptLink: string | null;
+  resolvedReceiptKind: ResolvedReceiptKind;
+  telegramAccessLinks: TelegramAccessLink[];
+  telegramLink: string | null;
+}): string => {
   const textParts = [
     copy.paymentSucceededText,
     `${copy.productLabel}: ${productTitle}`,
     `${copy.offerLabel}: ${offerLabel || copy.defaultOfferLabel}`,
     `${copy.amountLabel}: ${amountLabel}`,
-    accessTitle,
-    accessDescription,
-    telegramLink &&
-    (accessKind === "telegram-channel" ||
-      accessKind === "telegram-chat" ||
-      accessKind === "telegram-online-group" ||
-      accessKind === "telegram-renewal")
-      ? `${accessCta}: ${telegramLink}`
+    accessContent.title,
+    accessContent.description,
+    telegramLink && isTelegramAccessKind(accessKind)
+      ? `${accessContent.cta}: ${telegramLink}`
       : "",
-    ...telegramAccessLinks.map((access) => {
-      const label =
-        access.accessKey === "inspiration-hub" ? copy.inspirationHubCta : accessCta;
-
-      if (access.status === "ready" && access.accessUrl) {
-        return `${label}: ${access.accessUrl}`;
-      }
-
-      if (access.status === "active") {
-        return `${label}: ${copy.accessAlreadyActive}`;
-      }
-
-      return `${label}: ${
-        access.status === "expired" ? copy.accessExpired : copy.accessNeedsSupport
-      }`;
+    ...renderTelegramAccessTextLines({
+      accessCta: accessContent.cta,
+      copy,
+      telegramAccessLinks,
     }),
     inspirationAccessText,
     limitedAccessValidityText,
-    mentorFollowupNote,
+    accessContent.mentorFollowupNote,
     copy.invoiceAttached,
     receiptLink
       ? `${receiptButtonLabel}: ${receiptLink}${
@@ -594,9 +756,127 @@ export const buildPurchaseSuccessEmail = ({
     `${copy.siteLabel}: ${SITE_HOME_URL}`,
   ];
 
+  return textParts.filter(Boolean).join("\n");
+};
+
+export const buildPurchaseSuccessEmail = ({
+  accessDurationDays = 0,
+  accessKind,
+  amountMinor,
+  checkoutCurrency,
+  checkoutLocale,
+  inspirationAccessExpiresAt,
+  offerLabel,
+  productTitle,
+  receiptKind,
+  receiptLink,
+  showMentorFollowupNote = false,
+  telegramAccessUrl,
+  telegramAccessLinks = [],
+}: BuildPurchaseSuccessEmailInput) => {
+  const locale = getResolvedCheckoutLocale(checkoutLocale);
+  const copy = EMAIL_COPY[locale];
+  const telegramLink = telegramAccessUrl ?? null;
+  const hasOnlineGroupAccess = hasCompleteOnlineGroupAccess(telegramAccessLinks);
+  const amountLabel = formatCheckoutAmount({
+    amountMinor,
+    currency: checkoutCurrency,
+    locale,
+  });
+  const safeProductTitle = escapeHtml(productTitle);
+  const safeOfferLabel = escapeHtml(offerLabel || copy.defaultOfferLabel);
+  const safeAmountLabel = escapeHtml(amountLabel);
+  const safeReceiptLink = receiptLink ? escapeHtml(receiptLink) : "";
+  const safeSupportTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
+  const safeTelegramLink = telegramLink ? escapeHtml(telegramLink) : "";
+  const safeSiteHomeUrl = escapeHtml(SITE_HOME_URL);
+  const formattedInspirationExpiry = inspirationAccessExpiresAt
+    ? formatAccessExpiry(inspirationAccessExpiresAt, locale)
+    : "";
+  const accessContent = resolveAccessContent({
+    accessKind,
+    copy,
+    hasOnlineGroupAccess,
+    showMentorFollowupNote,
+    telegramLink,
+  });
+  const resolvedReceiptKind = resolveReceiptKind({
+    receiptKind,
+    receiptLink,
+  });
+  const receiptButtonLabel =
+    resolvedReceiptKind === "pdf" ? copy.receiptPdfCta : copy.receiptLinkCta;
+  const subject = `${copy.subjectPrefix}: ${productTitle}`;
+  const receiptButton = renderReceiptButton({
+    copy,
+    receiptButtonLabel,
+    receiptLink,
+    resolvedReceiptKind,
+    safeReceiptLink,
+  });
+  const accessButton = renderAccessButton({
+    accessContent,
+    accessKind,
+    safeTelegramLink,
+    telegramLink,
+  });
+  const onlineGroupAccessButtons = renderOnlineGroupAccessButtons({
+    accessCta: accessContent.cta,
+    copy,
+    telegramAccessLinks,
+  });
+  const hasInspirationHubAccess = telegramAccessLinks.some(
+    (access) => access.accessKey === "inspiration-hub",
+  );
+  const inspirationAccessText = getInspirationAccessText({
+    copy,
+    formattedInspirationExpiry,
+    hasInspirationHubAccess,
+  });
+  const inspirationAccessParagraph =
+    renderInspirationAccessParagraph(inspirationAccessText);
+  const mentorFollowupParagraph = renderMentorFollowupParagraph(
+    accessContent.mentorFollowupNote,
+  );
+  const limitedAccessValidity = getLimitedAccessValidity({
+    accessDurationDays,
+    accessKind,
+    copy,
+  });
+  const html = renderPurchaseSuccessEmailHtml({
+    accessButton,
+    accessContent,
+    copy,
+    inspirationAccessParagraph,
+    limitedAccessValidityParagraph: limitedAccessValidity.paragraph,
+    mentorFollowupParagraph,
+    onlineGroupAccessButtons,
+    receiptButton,
+    safeAmountLabel,
+    safeOfferLabel,
+    safeProductTitle,
+    safeSiteHomeUrl,
+    safeSupportTelegramUrl,
+  });
+  const text = renderPurchaseSuccessEmailText({
+    accessContent,
+    accessKind,
+    amountLabel,
+    copy,
+    inspirationAccessText,
+    limitedAccessValidityText: limitedAccessValidity.text,
+    offerLabel,
+    productTitle,
+    receiptButtonLabel,
+    receiptLink,
+    resolvedReceiptKind,
+    telegramAccessLinks,
+    telegramLink,
+  });
+
   return {
     html,
     subject,
-    text: textParts.filter(Boolean).join("\n"),
+    text,
   };
 };

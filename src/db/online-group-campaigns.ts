@@ -29,6 +29,226 @@ const parseStartDate = (value: string | Date) => {
   return date;
 };
 
+type DatabaseClient = ReturnType<typeof getDatabase>;
+type DatabaseTransaction = Parameters<Parameters<DatabaseClient["transaction"]>[0]>[0];
+type OnlineGroupCampaign = typeof onlineGroupCampaigns.$inferSelect;
+type TelegramChat = typeof telegramChats.$inferSelect;
+
+const normalizeOnlineGroupSettings = ({
+  inspirationChatId,
+  mainChatId,
+  startsAt,
+}: {
+  inspirationChatId: string;
+  mainChatId: string;
+  startsAt: string | Date;
+}) => {
+  const normalizedInspirationChatId = inspirationChatId.trim();
+  const normalizedMainChatId = mainChatId.trim();
+  const normalizedStartsAt = parseStartDate(startsAt);
+
+  if (!normalizedMainChatId || !normalizedInspirationChatId) {
+    throw new Error("missing_chat_selection");
+  }
+
+  if (normalizedMainChatId === normalizedInspirationChatId) {
+    throw new Error("same_main_and_inspiration_chat");
+  }
+
+  return {
+    normalizedInspirationChatId,
+    normalizedMainChatId,
+    normalizedStartsAt,
+  };
+};
+
+const resolveOnlineGroupChats = ({
+  chats,
+  inspirationChatId,
+  mainChatId,
+}: {
+  chats: TelegramChat[];
+  inspirationChatId: string;
+  mainChatId: string;
+}) => {
+  const mainChat = chats.find((chat) => chat.chatId === mainChatId);
+  const inspirationChat = chats.find((chat) => chat.chatId === inspirationChatId);
+
+  if (!mainChat?.isActive || !inspirationChat?.isActive) {
+    throw new Error("telegram_chat_not_registered");
+  }
+
+  return {
+    inspirationChat,
+    mainChat,
+  };
+};
+
+const isOnlineGroupCampaignUnchanged = ({
+  campaign,
+  inspirationChatId,
+  mainChatId,
+  startsAt,
+  title,
+}: {
+  campaign: OnlineGroupCampaign;
+  inspirationChatId: string;
+  mainChatId: string;
+  startsAt: Date;
+  title: string;
+}) =>
+  campaign.regularChatId === mainChatId &&
+  campaign.libraryChatId === inspirationChatId &&
+  campaign.title === title &&
+  campaign.startsAt.getTime() === startsAt.getTime();
+
+const getExistingCampaignDeadlineConditions = ({
+  existingCampaign,
+  mainChatId,
+}: {
+  existingCampaign: OnlineGroupCampaign;
+  mainChatId: string;
+}) => {
+  const isEditingActiveCampaign = existingCampaign.regularChatId === mainChatId;
+
+  // Editing the active group only moves rows tied to its previous deadline.
+  // Switching the main group assigns the deadline solely to uninitialized rows.
+  const purchaseDeadlineCondition = isEditingActiveCampaign
+    ? eq(purchases.inspirationAccessExpiresAtSnapshot, existingCampaign.startsAt)
+    : isNull(purchases.inspirationAccessExpiresAtSnapshot);
+  const entitlementDeadlineCondition = isEditingActiveCampaign
+    ? eq(accessEntitlements.expiresAt, existingCampaign.startsAt)
+    : isNull(accessEntitlements.expiresAt);
+  const tokenDeadlineCondition = isEditingActiveCampaign
+    ? eq(telegramAccessTokens.accessExpiresAt, existingCampaign.startsAt)
+    : isNull(telegramAccessTokens.accessExpiresAt);
+  const bindingDeadlineCondition = isEditingActiveCampaign
+    ? eq(telegramUserBindings.accessExpiresAt, existingCampaign.startsAt)
+    : isNull(telegramUserBindings.accessExpiresAt);
+
+  return {
+    bindingDeadlineCondition,
+    entitlementDeadlineCondition,
+    purchaseDeadlineCondition,
+    tokenDeadlineCondition,
+  };
+};
+
+const saveOnlineGroupCampaignInTransaction = async ({
+  existingCampaign,
+  inspirationChatId,
+  mainChatId,
+  startsAt,
+  title,
+  tx,
+}: {
+  existingCampaign: OnlineGroupCampaign | undefined;
+  inspirationChatId: string;
+  mainChatId: string;
+  startsAt: Date;
+  title: string;
+  tx: DatabaseTransaction;
+}) => {
+  if (existingCampaign) {
+    const {
+      bindingDeadlineCondition,
+      entitlementDeadlineCondition,
+      purchaseDeadlineCondition,
+      tokenDeadlineCondition,
+    } = getExistingCampaignDeadlineConditions({
+      existingCampaign,
+      mainChatId,
+    });
+
+    // One timestamp keeps all four access projections consistent within the
+    // transaction even if the individual updates cross a clock boundary.
+    const deadlineUpdatedAt = new Date();
+
+    await tx
+      .update(purchases)
+      .set({
+        inspirationAccessExpiresAtSnapshot: startsAt,
+        updatedAt: deadlineUpdatedAt,
+      })
+      .where(
+        and(
+          eq(purchases.inspirationChatIdSnapshot, existingCampaign.libraryChatId),
+          purchaseDeadlineCondition,
+        ),
+      );
+    await tx
+      .update(accessEntitlements)
+      .set({
+        expiresAt: startsAt,
+        updatedAt: deadlineUpdatedAt,
+      })
+      .where(
+        and(
+          eq(accessEntitlements.accessKey, "inspiration-hub"),
+          eq(accessEntitlements.telegramChatId, existingCampaign.libraryChatId),
+          entitlementDeadlineCondition,
+        ),
+      );
+    await tx
+      .update(telegramAccessTokens)
+      .set({
+        accessExpiresAt: startsAt,
+        updatedAt: deadlineUpdatedAt,
+      })
+      .where(
+        and(
+          eq(telegramAccessTokens.chatId, existingCampaign.libraryChatId),
+          tokenDeadlineCondition,
+        ),
+      );
+    await tx
+      .update(telegramUserBindings)
+      .set({
+        accessExpiresAt: startsAt,
+        updatedAt: deadlineUpdatedAt,
+      })
+      .where(
+        and(
+          eq(telegramUserBindings.chatId, existingCampaign.libraryChatId),
+          bindingDeadlineCondition,
+        ),
+      );
+  }
+
+  await tx
+    .update(onlineGroupCampaigns)
+    .set({
+      status: "archived",
+      updatedAt: new Date(),
+    })
+    .where(eq(onlineGroupCampaigns.status, "active"));
+
+  await tx
+    .update(renewalCampaigns)
+    .set({
+      status: "archived",
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(renewalCampaigns.status, "active"),
+        ne(renewalCampaigns.targetChatId, mainChatId),
+      ),
+    );
+
+  const [created] = await tx
+    .insert(onlineGroupCampaigns)
+    .values({
+      libraryChatId: inspirationChatId,
+      regularChatId: mainChatId,
+      startsAt,
+      title,
+    })
+    .returning();
+
+  return created;
+};
+
 export const saveOnlineGroupSettings = async ({
   inspirationChatId,
   mainChatId,
@@ -41,16 +261,12 @@ export const saveOnlineGroupSettings = async ({
   title?: string | null;
 }) => {
   const db = getDatabase();
-  const normalizedInspirationChatId = inspirationChatId.trim();
-  const normalizedMainChatId = mainChatId.trim();
-  const normalizedStartsAt = parseStartDate(startsAt);
-  if (!normalizedMainChatId || !normalizedInspirationChatId) {
-    throw new Error("missing_chat_selection");
-  }
-
-  if (normalizedMainChatId === normalizedInspirationChatId) {
-    throw new Error("same_main_and_inspiration_chat");
-  }
+  const { normalizedInspirationChatId, normalizedMainChatId, normalizedStartsAt } =
+    normalizeOnlineGroupSettings({
+      inspirationChatId,
+      mainChatId,
+      startsAt,
+    });
 
   const chats = await db
     .select()
@@ -58,14 +274,11 @@ export const saveOnlineGroupSettings = async ({
     .where(
       inArray(telegramChats.chatId, [normalizedMainChatId, normalizedInspirationChatId]),
     );
-  const mainChat = chats.find((chat) => chat.chatId === normalizedMainChatId);
-  const inspirationChat = chats.find(
-    (chat) => chat.chatId === normalizedInspirationChatId,
-  );
-
-  if (!mainChat?.isActive || !inspirationChat?.isActive) {
-    throw new Error("telegram_chat_not_registered");
-  }
+  const { inspirationChat, mainChat } = resolveOnlineGroupChats({
+    chats,
+    inspirationChatId: normalizedInspirationChatId,
+    mainChatId: normalizedMainChatId,
+  });
 
   const normalizedTitle =
     normalizeTitle(title) || `${mainChat.title} · ${normalizedStartsAt.toISOString()}`;
@@ -81,10 +294,13 @@ export const saveOnlineGroupSettings = async ({
 
   if (
     existing &&
-    existing.regularChatId === normalizedMainChatId &&
-    existing.libraryChatId === normalizedInspirationChatId &&
-    existing.title === normalizedTitle &&
-    existing.startsAt.getTime() === normalizedStartsAt.getTime()
+    isOnlineGroupCampaignUnchanged({
+      campaign: existing,
+      inspirationChatId: normalizedInspirationChatId,
+      mainChatId: normalizedMainChatId,
+      startsAt: normalizedStartsAt,
+      title: normalizedTitle,
+    })
   ) {
     return {
       campaign: existing,
@@ -94,107 +310,16 @@ export const saveOnlineGroupSettings = async ({
     };
   }
 
-  const campaign = await db.transaction(async (tx) => {
-    if (existing) {
-      const isEditingActiveCampaign = existing.regularChatId === normalizedMainChatId;
-      const purchaseDeadlineCondition = isEditingActiveCampaign
-        ? eq(purchases.inspirationAccessExpiresAtSnapshot, existing.startsAt)
-        : isNull(purchases.inspirationAccessExpiresAtSnapshot);
-      const entitlementDeadlineCondition = isEditingActiveCampaign
-        ? eq(accessEntitlements.expiresAt, existing.startsAt)
-        : isNull(accessEntitlements.expiresAt);
-      const tokenDeadlineCondition = isEditingActiveCampaign
-        ? eq(telegramAccessTokens.accessExpiresAt, existing.startsAt)
-        : isNull(telegramAccessTokens.accessExpiresAt);
-      const bindingDeadlineCondition = isEditingActiveCampaign
-        ? eq(telegramUserBindings.accessExpiresAt, existing.startsAt)
-        : isNull(telegramUserBindings.accessExpiresAt);
-      const deadlineUpdatedAt = new Date();
-
-      await tx
-        .update(purchases)
-        .set({
-          inspirationAccessExpiresAtSnapshot: normalizedStartsAt,
-          updatedAt: deadlineUpdatedAt,
-        })
-        .where(
-          and(
-            eq(purchases.inspirationChatIdSnapshot, existing.libraryChatId),
-            purchaseDeadlineCondition,
-          ),
-        );
-      await tx
-        .update(accessEntitlements)
-        .set({
-          expiresAt: normalizedStartsAt,
-          updatedAt: deadlineUpdatedAt,
-        })
-        .where(
-          and(
-            eq(accessEntitlements.accessKey, "inspiration-hub"),
-            eq(accessEntitlements.telegramChatId, existing.libraryChatId),
-            entitlementDeadlineCondition,
-          ),
-        );
-      await tx
-        .update(telegramAccessTokens)
-        .set({
-          accessExpiresAt: normalizedStartsAt,
-          updatedAt: deadlineUpdatedAt,
-        })
-        .where(
-          and(
-            eq(telegramAccessTokens.chatId, existing.libraryChatId),
-            tokenDeadlineCondition,
-          ),
-        );
-      await tx
-        .update(telegramUserBindings)
-        .set({
-          accessExpiresAt: normalizedStartsAt,
-          updatedAt: deadlineUpdatedAt,
-        })
-        .where(
-          and(
-            eq(telegramUserBindings.chatId, existing.libraryChatId),
-            bindingDeadlineCondition,
-          ),
-        );
-    }
-
-    await tx
-      .update(onlineGroupCampaigns)
-      .set({
-        status: "archived",
-        updatedAt: new Date(),
-      })
-      .where(eq(onlineGroupCampaigns.status, "active"));
-
-    await tx
-      .update(renewalCampaigns)
-      .set({
-        status: "archived",
-        updatedAt: new Date(),
-      })
-      .where(
-        and(
-          eq(renewalCampaigns.status, "active"),
-          ne(renewalCampaigns.targetChatId, normalizedMainChatId),
-        ),
-      );
-
-    const [created] = await tx
-      .insert(onlineGroupCampaigns)
-      .values({
-        libraryChatId: normalizedInspirationChatId,
-        regularChatId: normalizedMainChatId,
-        startsAt: normalizedStartsAt,
-        title: normalizedTitle,
-      })
-      .returning();
-
-    return created;
-  });
+  const campaign = await db.transaction((tx) =>
+    saveOnlineGroupCampaignInTransaction({
+      existingCampaign: existing,
+      inspirationChatId: normalizedInspirationChatId,
+      mainChatId: normalizedMainChatId,
+      startsAt: normalizedStartsAt,
+      title: normalizedTitle,
+      tx,
+    }),
+  );
 
   if (!campaign) {
     throw new Error("online_group_settings_save_failed");

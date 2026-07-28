@@ -34,6 +34,32 @@ type RenewalVerifyBody = {
   slug?: string;
 };
 
+type RenewalCampaign = NonNullable<
+  Awaited<ReturnType<typeof getActiveRenewalCampaignBySlug>>
+>;
+type RenewalResponse = ReturnType<typeof jsonNoStore>;
+type ActiveRenewalCampaignResult =
+  | {
+      campaign: RenewalCampaign;
+      errorResponse: null;
+    }
+  | {
+      campaign: null;
+      errorResponse: RenewalResponse;
+    };
+type NormalizedRenewalVerifyBody = {
+  checkoutSessionId: string;
+  claimedUsername: string;
+  idToken: string;
+  nonce: string;
+  slug: string;
+};
+type RenewalMembership = {
+  chatId: string;
+  checkFailed: boolean;
+  isMember: boolean;
+};
+
 const normalizeCheckoutSessionId = (value: string | null | undefined) =>
   (value ?? "").trim().slice(0, 160);
 
@@ -57,17 +83,18 @@ const isActiveTelegramMember = (member: TelegramChatMember | undefined) => {
   return false;
 };
 
-const getRenewalCampaignResponse = async ({
-  checkoutSessionId,
-  slug,
-}: {
-  checkoutSessionId: string;
-  slug: string;
-}) => {
+const resolveActiveRenewalCampaign = async (
+  slug: string,
+): Promise<ActiveRenewalCampaignResult> => {
   const campaign = await getActiveRenewalCampaignBySlug(slug);
 
   if (!campaign) {
-    return jsonErrorNoStore("renewal_campaign_not_found", { status: 404 });
+    return {
+      campaign: null,
+      errorResponse: jsonErrorNoStore("renewal_campaign_not_found", {
+        status: 404,
+      }),
+    };
   }
 
   const onlineGroupCampaign = await getActiveOnlineGroupCampaign();
@@ -76,9 +103,34 @@ const getRenewalCampaignResponse = async ({
     !onlineGroupCampaign ||
     onlineGroupCampaign.regularChatId !== campaign.targetChatId
   ) {
-    return jsonErrorNoStore("renewal_campaign_inactive", { status: 409 });
+    return {
+      campaign: null,
+      errorResponse: jsonErrorNoStore("renewal_campaign_inactive", {
+        status: 409,
+      }),
+    };
   }
 
+  return {
+    campaign,
+    errorResponse: null,
+  };
+};
+
+const getRenewalCampaignResponse = async ({
+  checkoutSessionId,
+  slug,
+}: {
+  checkoutSessionId: string;
+  slug: string;
+}) => {
+  const campaignResult = await resolveActiveRenewalCampaign(slug);
+
+  if (campaignResult.errorResponse) {
+    return campaignResult.errorResponse;
+  }
+
+  const { campaign } = campaignResult;
   const verification = checkoutSessionId
     ? await findValidRenewalVerification({
         checkoutSessionId,
@@ -110,6 +162,203 @@ const getRenewalCampaignResponse = async ({
         }
       : null,
     verified: Boolean(verification),
+  });
+};
+
+const normalizeRenewalVerifyBody = (
+  body: RenewalVerifyBody,
+): NormalizedRenewalVerifyBody => ({
+  checkoutSessionId: normalizeCheckoutSessionId(body.checkoutSessionId),
+  claimedUsername: normalizeUsername(body.claimedUsername),
+  idToken: body.idToken?.trim() ?? "",
+  nonce: body.nonce?.trim().slice(0, 160) ?? "",
+  slug: normalizeSlug(body.slug),
+});
+
+const getRenewalVerifyBodyErrorResponse = ({
+  checkoutSessionId,
+  claimedUsername,
+  idToken,
+  nonce,
+  slug,
+}: NormalizedRenewalVerifyBody): RenewalResponse | null => {
+  if (!slug) {
+    return jsonErrorNoStore("missing_renewal_slug", { status: 400 });
+  }
+
+  if (!checkoutSessionId) {
+    return jsonErrorNoStore("missing_checkout_session_id", { status: 400 });
+  }
+
+  if (!idToken) {
+    return jsonErrorNoStore("missing_telegram_id_token", { status: 400 });
+  }
+
+  if (
+    !nonce ||
+    !verifyTelegramLoginNonce({
+      checkoutSessionId,
+      nonce,
+      slug,
+    })
+  ) {
+    return jsonErrorNoStore("invalid_telegram_login_nonce", { status: 403 });
+  }
+
+  if (!claimedUsername) {
+    return jsonErrorNoStore("missing_telegram_username", { status: 400 });
+  }
+
+  return null;
+};
+
+const checkRenewalSourceChatMembership = async ({
+  chatId,
+  telegramUserId,
+}: {
+  chatId: string;
+  telegramUserId: string;
+}): Promise<RenewalMembership> => {
+  try {
+    const member = await getTelegramChatMember({
+      chatId,
+      userId: telegramUserId,
+    });
+
+    return {
+      chatId,
+      checkFailed: false,
+      isMember: isActiveTelegramMember(member),
+    };
+  } catch (error) {
+    console.error("Failed to check renewal source chat membership", {
+      chatId,
+      error,
+      telegramUserId,
+    });
+
+    return {
+      chatId,
+      checkFailed: true,
+      isMember: false,
+    };
+  }
+};
+
+const checkRenewalSourceChatMemberships = (
+  campaign: RenewalCampaign,
+  telegramUserId: string,
+): Promise<RenewalMembership[]> =>
+  Promise.all(
+    campaign.sourceChatIds.map((chatId) =>
+      checkRenewalSourceChatMembership({
+        chatId,
+        telegramUserId,
+      }),
+    ),
+  );
+
+const findRenewalCustomerProfileSafely = async ({
+  campaign,
+  matchedMembership,
+  telegramUserId,
+}: {
+  campaign: RenewalCampaign;
+  matchedMembership: RenewalMembership;
+  telegramUserId: string;
+}) => {
+  try {
+    return await findRenewalCustomerProfile({
+      sourceChatId: matchedMembership.chatId ?? campaign.sourceChatId,
+      telegramUserId,
+    });
+  } catch (error) {
+    console.error("Failed to load renewal customer profile", error);
+    return null;
+  }
+};
+
+const verifyRenewalAccess = async (body: RenewalVerifyBody): Promise<RenewalResponse> => {
+  const normalizedBody = normalizeRenewalVerifyBody(body);
+  const bodyErrorResponse = getRenewalVerifyBodyErrorResponse(normalizedBody);
+
+  if (bodyErrorResponse) {
+    return bodyErrorResponse;
+  }
+
+  const { checkoutSessionId, claimedUsername, idToken, nonce, slug } = normalizedBody;
+  const campaignResult = await resolveActiveRenewalCampaign(slug);
+
+  if (campaignResult.errorResponse) {
+    return campaignResult.errorResponse;
+  }
+
+  const { campaign } = campaignResult;
+  const claims = await verifyTelegramLoginIdToken(idToken, nonce);
+  const telegramUserId = getTelegramUserIdFromClaims(claims);
+  const telegramUsername = claims.preferred_username ?? "";
+
+  if (normalizeUsername(telegramUsername) !== claimedUsername) {
+    return jsonErrorNoStore("telegram_username_mismatch", { status: 403 });
+  }
+
+  const memberships = await checkRenewalSourceChatMemberships(campaign, telegramUserId);
+  const matchedMembership = memberships.find((membership) => membership.isMember);
+  const isMember = Boolean(matchedMembership);
+  const membershipCheckFailed = memberships.some((membership) => membership.checkFailed);
+
+  // A confirmed source membership wins over failures from the campaign's other chats.
+  if (!isMember && membershipCheckFailed) {
+    await upsertRenewalVerification({
+      campaign,
+      checkoutSessionId,
+      lastError: "telegram_membership_check_failed",
+      status: "failed",
+      telegramName: claims.name,
+      telegramUserId,
+      telegramUsername,
+    });
+
+    return jsonErrorNoStore("telegram_membership_check_failed", {
+      status: 502,
+    });
+  }
+
+  await upsertRenewalVerification({
+    campaign,
+    checkoutSessionId,
+    lastError: isMember ? null : "telegram_user_not_in_source_chat",
+    sourceChatId: matchedMembership?.chatId,
+    status: isMember ? "verified" : "not_member",
+    telegramName: claims.name,
+    telegramUserId,
+    telegramUsername,
+  });
+
+  if (!matchedMembership) {
+    return jsonNoStore(
+      {
+        errorCode: "telegram_user_not_in_source_chat",
+        status: "not_member",
+      },
+      { status: 403 },
+    );
+  }
+
+  const customerProfile = await findRenewalCustomerProfileSafely({
+    campaign,
+    matchedMembership,
+    telegramUserId,
+  });
+
+  return jsonNoStore({
+    customerProfile,
+    status: "verified",
+    telegramUser: {
+      id: telegramUserId,
+      name: claims.name ?? "",
+      username: telegramUsername,
+    },
   });
 };
 
@@ -191,148 +440,7 @@ export async function POST(request: Request) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
-    const slug = normalizeSlug(body.slug);
-    const checkoutSessionId = normalizeCheckoutSessionId(body.checkoutSessionId);
-    const claimedUsername = normalizeUsername(body.claimedUsername);
-    const idToken = body.idToken?.trim() ?? "";
-    const nonce = body.nonce?.trim().slice(0, 160) ?? "";
-
-    if (!slug) {
-      return jsonErrorNoStore("missing_renewal_slug", { status: 400 });
-    }
-
-    if (!checkoutSessionId) {
-      return jsonErrorNoStore("missing_checkout_session_id", { status: 400 });
-    }
-
-    if (!idToken) {
-      return jsonErrorNoStore("missing_telegram_id_token", { status: 400 });
-    }
-
-    if (
-      !nonce ||
-      !verifyTelegramLoginNonce({
-        checkoutSessionId,
-        nonce,
-        slug,
-      })
-    ) {
-      return jsonErrorNoStore("invalid_telegram_login_nonce", { status: 403 });
-    }
-
-    if (!claimedUsername) {
-      return jsonErrorNoStore("missing_telegram_username", { status: 400 });
-    }
-
-    const campaign = await getActiveRenewalCampaignBySlug(slug);
-
-    if (!campaign) {
-      return jsonErrorNoStore("renewal_campaign_not_found", { status: 404 });
-    }
-
-    const onlineGroupCampaign = await getActiveOnlineGroupCampaign();
-
-    if (
-      !onlineGroupCampaign ||
-      onlineGroupCampaign.regularChatId !== campaign.targetChatId
-    ) {
-      return jsonErrorNoStore("renewal_campaign_inactive", { status: 409 });
-    }
-
-    const claims = await verifyTelegramLoginIdToken(idToken, nonce);
-    const telegramUserId = getTelegramUserIdFromClaims(claims);
-    const telegramUsername = claims.preferred_username ?? "";
-
-    if (normalizeUsername(telegramUsername) !== claimedUsername) {
-      return jsonErrorNoStore("telegram_username_mismatch", { status: 403 });
-    }
-    const memberships = await Promise.all(
-      campaign.sourceChatIds.map(async (chatId) => {
-        try {
-          const member = await getTelegramChatMember({
-            chatId,
-            userId: telegramUserId,
-          });
-
-          return {
-            chatId,
-            checkFailed: false,
-            isMember: isActiveTelegramMember(member),
-          };
-        } catch (error) {
-          console.error("Failed to check renewal source chat membership", {
-            chatId,
-            error,
-            telegramUserId,
-          });
-
-          return { chatId, checkFailed: true, isMember: false };
-        }
-      }),
-    );
-    const matchedMembership = memberships.find((membership) => membership.isMember);
-    const isMember = Boolean(matchedMembership);
-    const membershipCheckFailed = memberships.some(
-      (membership) => membership.checkFailed,
-    );
-
-    if (!isMember && membershipCheckFailed) {
-      await upsertRenewalVerification({
-        campaign,
-        checkoutSessionId,
-        lastError: "telegram_membership_check_failed",
-        status: "failed",
-        telegramName: claims.name,
-        telegramUserId,
-        telegramUsername,
-      });
-
-      return jsonErrorNoStore("telegram_membership_check_failed", {
-        status: 502,
-      });
-    }
-
-    await upsertRenewalVerification({
-      campaign,
-      checkoutSessionId,
-      lastError: isMember ? null : "telegram_user_not_in_source_chat",
-      sourceChatId: matchedMembership?.chatId,
-      status: isMember ? "verified" : "not_member",
-      telegramName: claims.name,
-      telegramUserId,
-      telegramUsername,
-    });
-
-    if (!isMember) {
-      return jsonNoStore(
-        {
-          errorCode: "telegram_user_not_in_source_chat",
-          status: "not_member",
-        },
-        { status: 403 },
-      );
-    }
-
-    let customerProfile = null;
-
-    try {
-      customerProfile = await findRenewalCustomerProfile({
-        sourceChatId: matchedMembership?.chatId ?? campaign.sourceChatId,
-        telegramUserId,
-      });
-    } catch (error) {
-      console.error("Failed to load renewal customer profile", error);
-    }
-
-    return jsonNoStore({
-      customerProfile,
-      status: "verified",
-      telegramUser: {
-        id: telegramUserId,
-        name: claims.name ?? "",
-        username: telegramUsername,
-      },
-    });
+    return await verifyRenewalAccess(body);
   } catch (error) {
     console.error("Failed to verify Telegram renewal access", error);
 

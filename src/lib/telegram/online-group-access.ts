@@ -35,12 +35,45 @@ type DatabaseExecutor = Pick<
   ReturnType<typeof getDatabase>,
   "insert" | "select" | "update"
 >;
+type DatabaseTransaction = Parameters<
+  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
+>[0];
+type OnlineGroupMembershipResult = {
+  handled: boolean;
+  shouldKick: boolean;
+  shouldRevokeInvite: boolean;
+};
+type OnlineGroupMembershipIdentity = {
+  chatId: string;
+  telegramUserId: string;
+  telegramUsername: string;
+};
 const pendingOnlineGroupAccessEnsures = new Map<
   string,
   Promise<OnlineGroupAccessItem[] | null>
 >();
 
 const hashInvite = (value: string) => createHash("sha256").update(value).digest("hex");
+
+const createAccessItem = ({
+  accessExpiresAt,
+  accessKey,
+  accessUrl = "",
+  status,
+  tokenExpiresAt = "",
+}: {
+  accessExpiresAt: string;
+  accessKey: OnlineGroupAccessKey;
+  accessUrl?: string;
+  status: OnlineGroupAccessItem["status"];
+  tokenExpiresAt?: string;
+}): OnlineGroupAccessItem => ({
+  accessExpiresAt,
+  accessKey,
+  accessUrl,
+  status,
+  tokenExpiresAt,
+});
 
 const getAccessTargets = (
   paymentRecord: PaymentSheetRecord,
@@ -90,6 +123,8 @@ const getPurchase = async (paymentIntentId: string) => {
   return purchase ?? null;
 };
 
+type OnlineGroupPurchase = NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
+
 const upsertEntitlement = async ({
   accessExpiresAt,
   accessKey,
@@ -105,7 +140,7 @@ const upsertEntitlement = async ({
   accessKey: OnlineGroupAccessKey;
   chatId: string;
   database?: DatabaseExecutor;
-  purchase: NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
+  purchase: OnlineGroupPurchase;
   status: typeof accessEntitlements.$inferInsert.status;
   telegramUserId?: string | null;
   telegramUsername?: string | null;
@@ -159,7 +194,7 @@ const upsertBinding = async ({
   chatId: string;
   database?: DatabaseExecutor;
   inviteLink: string;
-  purchase: NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
+  purchase: OnlineGroupPurchase;
   telegramUserId: string;
   telegramUsername: string;
 }) => {
@@ -264,7 +299,7 @@ const findKnownTelegramIdentity = async ({
   telegramUsername,
 }: {
   chatId: string;
-  purchase: NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
+  purchase: OnlineGroupPurchase;
   telegramUserId: string;
   telegramUsername: string;
 }) => {
@@ -307,6 +342,270 @@ const findKnownTelegramIdentity = async ({
   };
 };
 
+type EnsureTargetAccessContext = {
+  accessExpiresAt: string;
+  accessKey: OnlineGroupAccessKey;
+  chatId: string;
+  purchase: OnlineGroupPurchase;
+  telegramUserId: string;
+  telegramUsername: string;
+};
+
+type CreatedTargetInvite = {
+  expiresAt: Date;
+  invite: Awaited<ReturnType<typeof createTelegramChatInviteLink>>;
+  tokenId: string;
+};
+
+const unbanKnownTelegramMember = async ({
+  chatId,
+  telegramUserId,
+}: Pick<EnsureTargetAccessContext, "chatId" | "telegramUserId">): Promise<void> => {
+  if (!telegramUserId) {
+    return;
+  }
+
+  await unbanTelegramChatMember({
+    chatId,
+    onlyIfBanned: true,
+    userId: telegramUserId,
+  });
+};
+
+const resolveCurrentTargetToken = async ({
+  context,
+  currentToken,
+  now,
+  transaction,
+}: {
+  context: EnsureTargetAccessContext;
+  currentToken: NonNullable<Awaited<ReturnType<typeof findCurrentToken>>>;
+  now: Date;
+  transaction: DatabaseTransaction;
+}): Promise<OnlineGroupAccessItem> => {
+  if (currentToken.status === "used") {
+    return createAccessItem({
+      accessExpiresAt: context.accessExpiresAt,
+      accessKey: context.accessKey,
+      status: "active",
+      tokenExpiresAt: currentToken.expiresAt.toISOString(),
+    });
+  }
+
+  const isExpired =
+    currentToken.status === "expired" || currentToken.expiresAt.getTime() <= Date.now();
+
+  if (isExpired) {
+    if (currentToken.status !== "expired") {
+      await transaction
+        .update(telegramAccessTokens)
+        .set({ status: "expired", updatedAt: now })
+        .where(eq(telegramAccessTokens.id, currentToken.id));
+    }
+
+    return createAccessItem({
+      accessExpiresAt: context.accessExpiresAt,
+      accessKey: context.accessKey,
+      status: "expired",
+      tokenExpiresAt: currentToken.expiresAt.toISOString(),
+    });
+  }
+
+  if (currentToken.status === "issued" && currentToken.tokenValue) {
+    await unbanKnownTelegramMember({
+      chatId: context.chatId,
+      telegramUserId: context.telegramUserId,
+    });
+
+    return createAccessItem({
+      accessExpiresAt: context.accessExpiresAt,
+      accessKey: context.accessKey,
+      accessUrl: currentToken.tokenValue,
+      status: "ready",
+      tokenExpiresAt: currentToken.expiresAt.toISOString(),
+    });
+  }
+
+  return createAccessItem({
+    accessExpiresAt: context.accessExpiresAt,
+    accessKey: context.accessKey,
+    status: "unavailable",
+    tokenExpiresAt: currentToken.expiresAt.toISOString(),
+  });
+};
+
+const createTargetInvite = async ({
+  context,
+  transaction,
+}: {
+  context: EnsureTargetAccessContext;
+  transaction: DatabaseTransaction;
+}): Promise<
+  | {
+      accessItem: OnlineGroupAccessItem;
+      invite: null;
+    }
+  | {
+      accessItem: null;
+      invite: CreatedTargetInvite;
+    }
+> => {
+  const tokenId = `tgi_${randomBytes(8).toString("hex")}`;
+  const inviteExpiresAt = Date.now() + INVITE_TTL_MS;
+  const accessExpiryTime = context.accessExpiresAt
+    ? Date.parse(context.accessExpiresAt)
+    : Number.POSITIVE_INFINITY;
+  const expiresAt = new Date(Math.min(inviteExpiresAt, accessExpiryTime));
+
+  try {
+    return {
+      accessItem: null,
+      invite: {
+        expiresAt,
+        invite: await createTelegramChatInviteLink({
+          chatId: context.chatId,
+          expireDateUnix: Math.floor(expiresAt.getTime() / 1000),
+          memberLimit: 1,
+          name: tokenId,
+        }),
+        tokenId,
+      },
+    };
+  } catch (error) {
+    console.error("Failed to create Online Group Telegram invite", {
+      accessKey: context.accessKey,
+      chatId: context.chatId,
+      error,
+      paymentIntentId: context.purchase.paymentIntentId,
+    });
+    await upsertEntitlement({
+      accessExpiresAt: context.accessExpiresAt,
+      accessKey: context.accessKey,
+      chatId: context.chatId,
+      database: transaction,
+      purchase: context.purchase,
+      status: "link_failed",
+      telegramUserId: context.telegramUserId,
+      telegramUsername: context.telegramUsername,
+    });
+
+    return {
+      accessItem: createAccessItem({
+        accessExpiresAt: context.accessExpiresAt,
+        accessKey: context.accessKey,
+        status: "unavailable",
+      }),
+      invite: null,
+    };
+  }
+};
+
+const persistTargetInvite = async ({
+  context,
+  createdInvite,
+  transaction,
+}: {
+  context: EnsureTargetAccessContext;
+  createdInvite: CreatedTargetInvite;
+  transaction: DatabaseTransaction;
+}): Promise<OnlineGroupAccessItem> => {
+  const { expiresAt, invite, tokenId } = createdInvite;
+  const entitlement = await upsertEntitlement({
+    accessExpiresAt: context.accessExpiresAt,
+    accessKey: context.accessKey,
+    chatId: context.chatId,
+    database: transaction,
+    purchase: context.purchase,
+    status: "token_issued",
+    telegramUserId: context.telegramUserId,
+    telegramUsername: context.telegramUsername,
+    tokenId,
+  });
+
+  await transaction.insert(telegramAccessTokens).values({
+    accessExpiresAt: context.accessExpiresAt ? new Date(context.accessExpiresAt) : null,
+    chatId: context.chatId,
+    customerEmailSnapshot: context.purchase.customerEmailSnapshot,
+    entitlementId: entitlement?.id ?? null,
+    expiresAt,
+    lastError: null,
+    linkKind: "channel_invite",
+    offerId: context.purchase.offerId,
+    productId: context.purchase.productId,
+    purchaseId: context.purchase.id,
+    status: "issued",
+    telegramUserId: context.telegramUserId || null,
+    telegramUsername: context.telegramUsername || null,
+    tokenHash: hashInvite(invite.invite_link),
+    tokenId,
+    tokenValue: invite.invite_link,
+  });
+
+  return createAccessItem({
+    accessExpiresAt: context.accessExpiresAt,
+    accessKey: context.accessKey,
+    accessUrl: invite.invite_link,
+    status: "ready",
+    tokenExpiresAt: expiresAt.toISOString(),
+  });
+};
+
+const ensureTargetAccessInTransaction = async ({
+  context,
+  inviteLockKey,
+  now,
+  onInviteCreated,
+  transaction,
+}: {
+  context: EnsureTargetAccessContext;
+  inviteLockKey: string;
+  now: Date;
+  onInviteCreated: (inviteLink: string) => void;
+  transaction: DatabaseTransaction;
+}): Promise<OnlineGroupAccessItem> => {
+  // Email delivery and the success page can request the same invite concurrently.
+  await transaction.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${inviteLockKey}, 0))`,
+  );
+
+  const currentToken = await findCurrentToken({
+    chatId: context.chatId,
+    database: transaction,
+    purchaseId: context.purchase.id,
+  });
+
+  if (currentToken) {
+    return resolveCurrentTargetToken({
+      context,
+      currentToken,
+      now,
+      transaction,
+    });
+  }
+
+  await unbanKnownTelegramMember({
+    chatId: context.chatId,
+    telegramUserId: context.telegramUserId,
+  });
+
+  const inviteResult = await createTargetInvite({
+    context,
+    transaction,
+  });
+
+  if (inviteResult.accessItem) {
+    return inviteResult.accessItem;
+  }
+
+  onInviteCreated(inviteResult.invite.invite.invite_link);
+
+  return persistTargetInvite({
+    context,
+    createdInvite: inviteResult.invite,
+    transaction,
+  });
+};
+
 const ensureTargetAccess = async ({
   accessExpiresAt,
   accessKey,
@@ -318,7 +617,7 @@ const ensureTargetAccess = async ({
   accessKey: OnlineGroupAccessKey;
   chatId: string;
   paymentRecord: PaymentSheetRecord;
-  purchase: NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
+  purchase: OnlineGroupPurchase;
 }): Promise<OnlineGroupAccessItem> => {
   const now = new Date();
   const expectedTelegramUserId = paymentRecord.telegram_user_id.trim();
@@ -331,6 +630,14 @@ const ensureTargetAccess = async ({
   });
   const accessTelegramUserId = knownTelegramIdentity?.telegramUserId ?? "";
   const accessTelegramUsername = knownTelegramIdentity?.telegramUsername ?? "";
+  const context: EnsureTargetAccessContext = {
+    accessExpiresAt,
+    accessKey,
+    chatId,
+    purchase,
+    telegramUserId: accessTelegramUserId,
+    telegramUsername: accessTelegramUsername,
+  };
 
   if (accessExpiresAt && Date.parse(accessExpiresAt) <= now.getTime()) {
     await upsertEntitlement({
@@ -343,13 +650,11 @@ const ensureTargetAccess = async ({
       telegramUsername: accessTelegramUsername,
     });
 
-    return {
+    return createAccessItem({
       accessExpiresAt,
       accessKey,
-      accessUrl: "",
       status: "expired",
-      tokenExpiresAt: "",
-    };
+    });
   }
 
   if (accessKey === "inspiration-hub" && accessTelegramUserId) {
@@ -377,13 +682,11 @@ const ensureTargetAccess = async ({
         telegramUsername: accessTelegramUsername,
       });
 
-      return {
+      return createAccessItem({
         accessExpiresAt,
         accessKey,
-        accessUrl: "",
         status: "active",
-        tokenExpiresAt: "",
-      };
+      });
     }
   }
 
@@ -391,168 +694,17 @@ const ensureTargetAccess = async ({
   let generatedInviteLink = "";
 
   try {
-    return await getDatabase().transaction(async (tx) => {
-      // Email delivery and the success page can request the same invite concurrently.
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(hashtextextended(${inviteLockKey}, 0))`,
-      );
-
-      const currentToken = await findCurrentToken({
-        chatId,
-        database: tx,
-        purchaseId: purchase.id,
-      });
-
-      if (currentToken) {
-        if (currentToken.status === "used") {
-          return {
-            accessExpiresAt,
-            accessKey,
-            accessUrl: "",
-            status: "active",
-            tokenExpiresAt: currentToken.expiresAt.toISOString(),
-          };
-        }
-
-        const isExpired =
-          currentToken.status === "expired" ||
-          currentToken.expiresAt.getTime() <= Date.now();
-
-        if (isExpired) {
-          if (currentToken.status !== "expired") {
-            await tx
-              .update(telegramAccessTokens)
-              .set({ status: "expired", updatedAt: now })
-              .where(eq(telegramAccessTokens.id, currentToken.id));
-          }
-
-          return {
-            accessExpiresAt,
-            accessKey,
-            accessUrl: "",
-            status: "expired",
-            tokenExpiresAt: currentToken.expiresAt.toISOString(),
-          };
-        }
-
-        if (currentToken.status === "issued" && currentToken.tokenValue) {
-          if (accessTelegramUserId) {
-            await unbanTelegramChatMember({
-              chatId,
-              onlyIfBanned: true,
-              userId: accessTelegramUserId,
-            });
-          }
-
-          return {
-            accessExpiresAt,
-            accessKey,
-            accessUrl: currentToken.tokenValue,
-            status: "ready",
-            tokenExpiresAt: currentToken.expiresAt.toISOString(),
-          };
-        }
-
-        return {
-          accessExpiresAt,
-          accessKey,
-          accessUrl: "",
-          status: "unavailable",
-          tokenExpiresAt: currentToken.expiresAt.toISOString(),
-        };
-      }
-
-      if (accessTelegramUserId) {
-        await unbanTelegramChatMember({
-          chatId,
-          onlyIfBanned: true,
-          userId: accessTelegramUserId,
-        });
-      }
-
-      const tokenId = `tgi_${randomBytes(8).toString("hex")}`;
-      const inviteExpiresAt = Date.now() + INVITE_TTL_MS;
-      const accessExpiryTime = accessExpiresAt
-        ? Date.parse(accessExpiresAt)
-        : Number.POSITIVE_INFINITY;
-      const expiresAt = new Date(Math.min(inviteExpiresAt, accessExpiryTime));
-
-      let invite: Awaited<ReturnType<typeof createTelegramChatInviteLink>>;
-
-      try {
-        invite = await createTelegramChatInviteLink({
-          chatId,
-          expireDateUnix: Math.floor(expiresAt.getTime() / 1000),
-          memberLimit: 1,
-          name: tokenId,
-        });
-        generatedInviteLink = invite.invite_link;
-      } catch (error) {
-        console.error("Failed to create Online Group Telegram invite", {
-          accessKey,
-          chatId,
-          error,
-          paymentIntentId: purchase.paymentIntentId,
-        });
-        await upsertEntitlement({
-          accessExpiresAt,
-          accessKey,
-          chatId,
-          database: tx,
-          purchase,
-          status: "link_failed",
-          telegramUserId: accessTelegramUserId,
-          telegramUsername: accessTelegramUsername,
-        });
-
-        return {
-          accessExpiresAt,
-          accessKey,
-          accessUrl: "",
-          status: "unavailable",
-          tokenExpiresAt: "",
-        };
-      }
-
-      const entitlement = await upsertEntitlement({
-        accessExpiresAt,
-        accessKey,
-        chatId,
-        database: tx,
-        purchase,
-        status: "token_issued",
-        telegramUserId: accessTelegramUserId,
-        telegramUsername: accessTelegramUsername,
-        tokenId,
-      });
-
-      await tx.insert(telegramAccessTokens).values({
-        accessExpiresAt: accessExpiresAt ? new Date(accessExpiresAt) : null,
-        chatId,
-        customerEmailSnapshot: purchase.customerEmailSnapshot,
-        entitlementId: entitlement?.id ?? null,
-        expiresAt,
-        lastError: null,
-        linkKind: "channel_invite",
-        offerId: purchase.offerId,
-        productId: purchase.productId,
-        purchaseId: purchase.id,
-        status: "issued",
-        telegramUserId: accessTelegramUserId || null,
-        telegramUsername: accessTelegramUsername || null,
-        tokenHash: hashInvite(invite.invite_link),
-        tokenId,
-        tokenValue: invite.invite_link,
-      });
-
-      return {
-        accessExpiresAt,
-        accessKey,
-        accessUrl: invite.invite_link,
-        status: "ready",
-        tokenExpiresAt: expiresAt.toISOString(),
-      };
-    });
+    return await getDatabase().transaction((transaction) =>
+      ensureTargetAccessInTransaction({
+        context,
+        inviteLockKey,
+        now,
+        onInviteCreated: (inviteLink) => {
+          generatedInviteLink = inviteLink;
+        },
+        transaction,
+      }),
+    );
   } catch (error) {
     if (generatedInviteLink) {
       try {
@@ -637,12 +789,300 @@ export const ensureOnlineGroupAccessForPayment = (
   return ensurePromise;
 };
 
-const kickUnexpectedMember = async (chatId: string, telegramUserId: string) => {
+const kickUnexpectedMember = async (
+  chatId: string,
+  telegramUserId: string,
+): Promise<void> => {
   await banTelegramChatMember({
     chatId,
     untilDateUnix: Math.floor(Date.now() / 1000) + TEMP_KICK_SECONDS,
     userId: telegramUserId,
   });
+};
+
+const markOnlineGroupBindingLeft = async ({
+  binding,
+  database,
+  now,
+}: {
+  binding: typeof telegramUserBindings.$inferSelect;
+  database: ReturnType<typeof getDatabase>;
+  now: Date;
+}): Promise<void> => {
+  await database
+    .update(telegramUserBindings)
+    .set({
+      lastSeenAt: now,
+      revokedAt: now,
+      revokedReason: "left_channel",
+      status: "left",
+      updatedAt: now,
+    })
+    .where(eq(telegramUserBindings.id, binding.id));
+
+  if (binding.entitlementId) {
+    await database
+      .update(accessEntitlements)
+      .set({ status: "left_channel", updatedAt: now })
+      .where(eq(accessEntitlements.id, binding.entitlementId));
+  }
+};
+
+const syncOnlineGroupMemberLeft = async ({
+  database,
+  identity,
+  now,
+}: {
+  database: ReturnType<typeof getDatabase>;
+  identity: OnlineGroupMembershipIdentity;
+  now: Date;
+}): Promise<boolean> => {
+  const bindings = await database
+    .select({ binding: telegramUserBindings, purchase: purchases })
+    .from(telegramUserBindings)
+    .innerJoin(purchases, eq(telegramUserBindings.purchaseId, purchases.id))
+    .where(
+      and(
+        eq(telegramUserBindings.chatId, identity.chatId),
+        eq(telegramUserBindings.telegramUserId, identity.telegramUserId),
+        eq(telegramUserBindings.status, "active"),
+      ),
+    );
+  const onlineGroupBindings = bindings.filter((row) =>
+    isOnlineGroupAccessOfferId(row.purchase.offerExternalId ?? ""),
+  );
+
+  if (!onlineGroupBindings.length) {
+    return false;
+  }
+
+  await Promise.all(
+    onlineGroupBindings.map(({ binding }) =>
+      markOnlineGroupBindingLeft({
+        binding,
+        database,
+        now,
+      }),
+    ),
+  );
+
+  return true;
+};
+
+const getExpectedTelegramUserId = ({
+  siblingBindings,
+  token,
+}: {
+  siblingBindings: Array<typeof telegramUserBindings.$inferSelect>;
+  token: typeof telegramAccessTokens.$inferSelect;
+}): string =>
+  token.telegramUserId?.trim() ||
+  siblingBindings.find((binding) => binding.telegramUserId.trim())?.telegramUserId ||
+  "";
+
+const isRejectedOnlineGroupMembership = ({
+  expectedUserId,
+  identity,
+  isFirstUse,
+  isRepeatForBoundUser,
+  now,
+  purchase,
+  token,
+}: {
+  expectedUserId: string;
+  identity: OnlineGroupMembershipIdentity;
+  isFirstUse: boolean;
+  isRepeatForBoundUser: boolean;
+  now: Date;
+  purchase: OnlineGroupPurchase;
+  token: typeof telegramAccessTokens.$inferSelect;
+}): boolean => {
+  const accessExpired =
+    token.accessExpiresAt && token.accessExpiresAt.getTime() <= now.getTime();
+
+  return (
+    purchase.outcome !== "succeeded" ||
+    token.chatId !== identity.chatId ||
+    token.expiresAt.getTime() <= now.getTime() ||
+    Boolean(accessExpired) ||
+    (!isFirstUse && !isRepeatForBoundUser) ||
+    Boolean(expectedUserId && expectedUserId !== identity.telegramUserId)
+  );
+};
+
+const bindFirstUseTokens = async ({
+  identity,
+  now,
+  purchaseId,
+  tokenId,
+  transaction,
+}: {
+  identity: OnlineGroupMembershipIdentity;
+  now: Date;
+  purchaseId: string;
+  tokenId: string;
+  transaction: DatabaseTransaction;
+}): Promise<void> => {
+  // Binding sibling invites prevents one purchase from being claimed by another account.
+  await transaction
+    .update(telegramAccessTokens)
+    .set({
+      status: "used",
+      telegramUserId: identity.telegramUserId,
+      telegramUsername: identity.telegramUsername || null,
+      updatedAt: now,
+      usedAt: now,
+    })
+    .where(
+      and(
+        eq(telegramAccessTokens.id, tokenId),
+        eq(telegramAccessTokens.status, "issued"),
+      ),
+    );
+  await transaction
+    .update(telegramAccessTokens)
+    .set({
+      telegramUserId: identity.telegramUserId,
+      telegramUsername: identity.telegramUsername || null,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(telegramAccessTokens.purchaseId, purchaseId),
+        eq(telegramAccessTokens.status, "issued"),
+      ),
+    );
+};
+
+const resolveMembershipAccessKey = async ({
+  entitlementId,
+  transaction,
+}: {
+  entitlementId: string | null;
+  transaction: DatabaseTransaction;
+}): Promise<OnlineGroupAccessKey> => {
+  if (!entitlementId) {
+    return "main-group";
+  }
+
+  const [entitlement] = await transaction
+    .select()
+    .from(accessEntitlements)
+    .where(eq(accessEntitlements.id, entitlementId))
+    .limit(1);
+
+  return entitlement?.accessKey === "inspiration-hub" ? "inspiration-hub" : "main-group";
+};
+
+const syncOnlineGroupMemberJoinedInTransaction = async ({
+  identity,
+  inviteHash,
+  inviteLink,
+  now,
+  transaction,
+}: {
+  identity: OnlineGroupMembershipIdentity;
+  inviteHash: string;
+  inviteLink: string;
+  now: Date;
+  transaction: DatabaseTransaction;
+}): Promise<OnlineGroupMembershipResult> => {
+  const membershipLockKey = `online-group-membership:${inviteHash}`;
+
+  // Telegram can report the same single-use invite concurrently.
+  await transaction.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${membershipLockKey}, 0))`,
+  );
+
+  const [row] = await transaction
+    .select({ purchase: purchases, token: telegramAccessTokens })
+    .from(telegramAccessTokens)
+    .innerJoin(purchases, eq(telegramAccessTokens.purchaseId, purchases.id))
+    .where(eq(telegramAccessTokens.tokenHash, inviteHash))
+    .limit(1);
+
+  if (!row || !isOnlineGroupAccessOfferId(row.purchase.offerExternalId ?? "")) {
+    return {
+      handled: false,
+      shouldKick: false,
+      shouldRevokeInvite: false,
+    };
+  }
+
+  const { purchase, token } = row;
+  const siblingBindings = await transaction
+    .select()
+    .from(telegramUserBindings)
+    .where(eq(telegramUserBindings.purchaseId, purchase.id));
+  const expectedUserId = getExpectedTelegramUserId({
+    siblingBindings,
+    token,
+  });
+  const isFirstUse = token.status === "issued";
+  const isRepeatForBoundUser =
+    token.status === "used" &&
+    Boolean(expectedUserId) &&
+    expectedUserId === identity.telegramUserId;
+
+  if (
+    isRejectedOnlineGroupMembership({
+      expectedUserId,
+      identity,
+      isFirstUse,
+      isRepeatForBoundUser,
+      now,
+      purchase,
+      token,
+    })
+  ) {
+    return {
+      handled: true,
+      shouldKick: true,
+      shouldRevokeInvite: false,
+    };
+  }
+
+  if (isFirstUse) {
+    await bindFirstUseTokens({
+      identity,
+      now,
+      purchaseId: purchase.id,
+      tokenId: token.id,
+      transaction,
+    });
+  }
+
+  const accessKey = await resolveMembershipAccessKey({
+    entitlementId: token.entitlementId,
+    transaction,
+  });
+
+  await upsertEntitlement({
+    accessExpiresAt: token.accessExpiresAt?.toISOString() ?? "",
+    accessKey,
+    chatId: identity.chatId,
+    database: transaction,
+    purchase,
+    status: "activated",
+    telegramUserId: identity.telegramUserId,
+    telegramUsername: identity.telegramUsername,
+    tokenId: token.tokenId,
+  });
+  await upsertBinding({
+    accessExpiresAt: token.accessExpiresAt?.toISOString() ?? "",
+    chatId: identity.chatId,
+    database: transaction,
+    inviteLink,
+    purchase,
+    telegramUserId: identity.telegramUserId,
+    telegramUsername: identity.telegramUsername,
+  });
+
+  return {
+    handled: true,
+    shouldKick: false,
+    shouldRevokeInvite: isFirstUse,
+  };
 };
 
 export const syncOnlineGroupMembership = async ({
@@ -657,56 +1097,24 @@ export const syncOnlineGroupMembership = async ({
   membershipStatus: "joined" | "left";
   telegramUserId: string;
   telegramUsername?: string | null;
-}) => {
+}): Promise<boolean> => {
   const db = getDatabase();
   const normalizedChatId = chatId.trim();
   const normalizedUserId = telegramUserId.trim();
   const normalizedUsername = telegramUsername?.trim() ?? "";
   const now = new Date();
+  const identity: OnlineGroupMembershipIdentity = {
+    chatId: normalizedChatId,
+    telegramUserId: normalizedUserId,
+    telegramUsername: normalizedUsername,
+  };
 
   if (membershipStatus === "left") {
-    const bindings = await db
-      .select({ binding: telegramUserBindings, purchase: purchases })
-      .from(telegramUserBindings)
-      .innerJoin(purchases, eq(telegramUserBindings.purchaseId, purchases.id))
-      .where(
-        and(
-          eq(telegramUserBindings.chatId, normalizedChatId),
-          eq(telegramUserBindings.telegramUserId, normalizedUserId),
-          eq(telegramUserBindings.status, "active"),
-        ),
-      );
-    const onlineGroupBindings = bindings.filter((row) =>
-      isOnlineGroupAccessOfferId(row.purchase.offerExternalId ?? ""),
-    );
-
-    if (!onlineGroupBindings.length) {
-      return false;
-    }
-
-    await Promise.all(
-      onlineGroupBindings.map(async ({ binding }) => {
-        await db
-          .update(telegramUserBindings)
-          .set({
-            lastSeenAt: now,
-            revokedAt: now,
-            revokedReason: "left_channel",
-            status: "left",
-            updatedAt: now,
-          })
-          .where(eq(telegramUserBindings.id, binding.id));
-
-        if (binding.entitlementId) {
-          await db
-            .update(accessEntitlements)
-            .set({ status: "left_channel", updatedAt: now })
-            .where(eq(accessEntitlements.id, binding.entitlementId));
-        }
-      }),
-    );
-
-    return true;
+    return syncOnlineGroupMemberLeft({
+      database: db,
+      identity,
+      now,
+    });
   }
 
   const normalizedInviteLink = inviteLink?.trim() ?? "";
@@ -716,128 +1124,15 @@ export const syncOnlineGroupMembership = async ({
   }
 
   const inviteHash = hashInvite(normalizedInviteLink);
-  const membershipLockKey = `online-group-membership:${inviteHash}`;
-  const membershipResult = await db.transaction(async (tx) => {
-    await tx.execute(
-      sql`select pg_advisory_xact_lock(hashtextextended(${membershipLockKey}, 0))`,
-    );
-
-    const [row] = await tx
-      .select({ purchase: purchases, token: telegramAccessTokens })
-      .from(telegramAccessTokens)
-      .innerJoin(purchases, eq(telegramAccessTokens.purchaseId, purchases.id))
-      .where(eq(telegramAccessTokens.tokenHash, inviteHash))
-      .limit(1);
-
-    if (!row || !isOnlineGroupAccessOfferId(row.purchase.offerExternalId ?? "")) {
-      return {
-        handled: false,
-        shouldKick: false,
-        shouldRevokeInvite: false,
-      };
-    }
-
-    const { purchase, token } = row;
-    const siblingBindings = await tx
-      .select()
-      .from(telegramUserBindings)
-      .where(eq(telegramUserBindings.purchaseId, purchase.id));
-    const expectedUserId =
-      token.telegramUserId?.trim() ||
-      siblingBindings.find((binding) => binding.telegramUserId.trim())?.telegramUserId ||
-      "";
-    const accessExpired =
-      token.accessExpiresAt && token.accessExpiresAt.getTime() <= now.getTime();
-    const isFirstUse = token.status === "issued";
-    const isRepeatForBoundUser =
-      token.status === "used" &&
-      Boolean(expectedUserId) &&
-      expectedUserId === normalizedUserId;
-
-    if (
-      purchase.outcome !== "succeeded" ||
-      token.chatId !== normalizedChatId ||
-      token.expiresAt.getTime() <= now.getTime() ||
-      accessExpired ||
-      (!isFirstUse && !isRepeatForBoundUser) ||
-      (expectedUserId && expectedUserId !== normalizedUserId)
-    ) {
-      return {
-        handled: true,
-        shouldKick: true,
-        shouldRevokeInvite: false,
-      };
-    }
-
-    if (isFirstUse) {
-      await tx
-        .update(telegramAccessTokens)
-        .set({
-          status: "used",
-          telegramUserId: normalizedUserId,
-          telegramUsername: normalizedUsername || null,
-          updatedAt: now,
-          usedAt: now,
-        })
-        .where(
-          and(
-            eq(telegramAccessTokens.id, token.id),
-            eq(telegramAccessTokens.status, "issued"),
-          ),
-        );
-      await tx
-        .update(telegramAccessTokens)
-        .set({
-          telegramUserId: normalizedUserId,
-          telegramUsername: normalizedUsername || null,
-          updatedAt: now,
-        })
-        .where(
-          and(
-            eq(telegramAccessTokens.purchaseId, purchase.id),
-            eq(telegramAccessTokens.status, "issued"),
-          ),
-        );
-    }
-
-    const accessKey =
-      token.entitlementId &&
-      (
-        await tx
-          .select()
-          .from(accessEntitlements)
-          .where(eq(accessEntitlements.id, token.entitlementId))
-          .limit(1)
-      )[0]?.accessKey === "inspiration-hub"
-        ? "inspiration-hub"
-        : "main-group";
-    await upsertEntitlement({
-      accessExpiresAt: token.accessExpiresAt?.toISOString() ?? "",
-      accessKey,
-      chatId: normalizedChatId,
-      database: tx,
-      purchase,
-      status: "activated",
-      telegramUserId: normalizedUserId,
-      telegramUsername: normalizedUsername,
-      tokenId: token.tokenId,
-    });
-    await upsertBinding({
-      accessExpiresAt: token.accessExpiresAt?.toISOString() ?? "",
-      chatId: normalizedChatId,
-      database: tx,
+  const membershipResult = await db.transaction((transaction) =>
+    syncOnlineGroupMemberJoinedInTransaction({
+      identity,
+      inviteHash,
       inviteLink: normalizedInviteLink,
-      purchase,
-      telegramUserId: normalizedUserId,
-      telegramUsername: normalizedUsername,
-    });
-
-    return {
-      handled: true,
-      shouldKick: false,
-      shouldRevokeInvite: isFirstUse,
-    };
-  });
+      now,
+      transaction,
+    }),
+  );
 
   if (!membershipResult.handled) {
     return false;
@@ -867,7 +1162,10 @@ export const syncOnlineGroupMembership = async ({
   return true;
 };
 
-export const revokeExpiredOnlineGroupHubAccess = async () => {
+export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
+  revokedBindings: number;
+  revokedGroups: number;
+}> => {
   const db = getDatabase();
   const now = new Date();
   const expiredRows = await db
