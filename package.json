@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=24.13.0 <25"
+    "node": ">=24.18.0 <25"
   },
   "scripts": {
     "dev": "next dev",
@@ -31,48 +31,60 @@
     "format:check": "prettier --check .",
     "check": "npm run format:check && npm run lint",
     "prepare": "husky",
-    "fix": "npm run lint:fix && npm run format"
+    "fix": "npm run lint:fix && npm run format",
+    "verify": "npm run check && npm run build"
   },
   "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.16",
+    "@radix-ui/react-dialog": "^1.1.23",
     "@react-input/mask": "^2.0.4",
     "@react-pdf/renderer": "^4.5.1",
-    "@stripe/react-stripe-js": "^6.6.0",
-    "@stripe/stripe-js": "^9.8.0",
+    "@stripe/react-stripe-js": "^6.8.0",
+    "@stripe/stripe-js": "^9.12.1",
     "@vercel/analytics": "^2.0.1",
     "drizzle-orm": "^0.45.2",
     "mobx": "^6.16.1",
     "mobx-react-lite": "^4.1.1",
-    "next": "^16.2.9",
-    "next-intl": "^4.13.0",
+    "next": "^16.2.12",
+    "next-intl": "^4.13.4",
     "plyr": "^3.8.4",
     "postgres": "^3.4.9",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
-    "stripe": "^22.2.0",
-    "styled-components": "^6.4.2",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "stripe": "^22.3.2",
+    "styled-components": "^6.4.4",
     "yup": "^1.7.1"
   },
   "devDependencies": {
-    "@types/node": "^25.9.3",
+    "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.2.9",
+    "eslint-config-next": "^16.2.12",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
-    "eslint-plugin-simple-import-sort": "^13.0.0",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.1.7",
-    "lint-staged": "^17.0.7",
+    "lint-staged": "^17.2.0",
     "prettier": "^3.8.4",
-    "tsx": "^4.22.4",
+    "tsx": "^4.23.1",
     "typescript": "^6.0.3"
   },
   "overrides": {
     "next": {
-      "postcss": "8.5.15"
+      "postcss": "8.5.23"
     }
+  },
+  "allowScripts": {
+    "esbuild@0.18.20": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.1": true,
+    "@parcel/watcher@2.5.6": true,
+    "@swc/core@1.15.40": true,
+    "core-js@3.49.0": true,
+    "fsevents@2.3.3": true,
+    "sharp@0.34.5": true,
+    "unrs-resolver@1.12.2": true
   }
 }
