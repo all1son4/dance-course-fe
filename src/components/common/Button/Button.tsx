@@ -5,6 +5,7 @@ import type {
   ButtonHTMLAttributes,
   ElementType,
   MouseEvent as ReactMouseEvent,
+  ReactNode,
 } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -122,9 +123,9 @@ const createHashLinkClickHandler = ({
   };
 };
 
-const renderButtonContent = (buttonText: string, isButtonLoading: boolean) => (
+const renderButtonContent = (content: ReactNode, isButtonLoading: boolean) => (
   <ButtonContent>
-    <ButtonLabel>{buttonText}</ButtonLabel>
+    <ButtonLabel>{content}</ButtonLabel>
     <ButtonSpinnerSlot $isLoading={isButtonLoading}>
       <ButtonSpinner aria-hidden $isLoading={isButtonLoading} />
     </ButtonSpinnerSlot>
@@ -139,6 +140,7 @@ export default function Button<T extends ElementType = "button">({
   href = "",
   target = SELF_TARGET,
   isLoading = false,
+  children,
   ...rest
 }: ButtonProps<T>) {
   const [isRouteLoading, setIsRouteLoading] = useState(false);
@@ -222,7 +224,7 @@ export default function Button<T extends ElementType = "button">({
     [stopRouteLoadingState],
   );
 
-  const buttonContent = renderButtonContent(buttonText, isButtonLoading);
+  const buttonContent = renderButtonContent(children ?? buttonText, isButtonLoading);
 
   if (href && href.startsWith(HASH_PREFIX) && target === SELF_TARGET) {
     const onHashLinkClick = createHashLinkClickHandler({

@@ -571,6 +571,30 @@ export const FAQSection = styled.section`
   }
 `;
 
+export const ReviewsSection = styled.section`
+  box-sizing: border-box;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  padding: 0 50px 100px;
+
+  @media (max-width: 1240px) {
+    padding: 0 0 100px;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 0 20px 100px;
+  }
+
+  @media (max-width: 880px) {
+    padding: 0 20px 60px;
+  }
+
+  @media (max-width: 680px) {
+    padding-bottom: 40px;
+  }
+`;
+
 export const ContactSection = styled.section`
   padding: 0 50px 100px;
 

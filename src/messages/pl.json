@@ -160,6 +160,32 @@
       }
     }
   },
+  "Reviews": {
+    "title": "Opinie",
+    "navigation": {
+      "label": "Nawigacja po opiniach",
+      "previous": "Poprzednia opinia",
+      "next": "Następna opinia"
+    },
+    "a11y": {
+      "container": "Opinie kursantek",
+      "carousel": "Karuzela",
+      "item": "Opinia",
+      "slide": "{index} z {slidesLength}"
+    },
+    "authors": {
+      "otter": "Anonimowa Wydra",
+      "fox": "Anonimowy Lis",
+      "badger": "Anonimowy Borsuk",
+      "panda": "Anonimowa Panda",
+      "penguin": "Anonimowy Pingwin",
+      "koala": "Anonimowy Koala",
+      "rabbit": "Anonimowy Królik",
+      "hedgehog": "Anonimowy Jeż",
+      "owl": "Anonimowa Sowa",
+      "capybara": "Anonimowa Kapibara"
+    }
+  },
   "Roadmap": {
     "items": {
       "1": {
