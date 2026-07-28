@@ -195,8 +195,7 @@ export default function OnlineGroupPage() {
                 </DateBox>
               </TarifContentBox>
             }
-            // buttonText={t("tariffs.buyButton")}
-            buttonText={"Записаться"}
+            buttonText={t("tariffs.registrationButton")}
             buttonRel="nofollow"
             buttonTarget="_blank"
             // buttonHref={buildCheckoutHref({
@@ -230,8 +229,7 @@ export default function OnlineGroupPage() {
                 </DateBox>
               </TarifContentBox>
             }
-            // buttonText={t("tariffs.buyButton")}
-            buttonText={"Записаться"}
+            buttonText={t("tariffs.registrationButton")}
             buttonRel="nofollow"
             buttonTarget="_blank"
             // buttonHref={buildCheckoutHref({

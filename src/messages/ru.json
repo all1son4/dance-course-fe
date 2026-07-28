@@ -509,6 +509,7 @@
       "selectButton": "Выбрать тариф",
       "priceLabel": "Стоимость",
       "buyButton": "Купить",
+      "registrationButton": "Записаться",
       "standard": {
         "title": "Standard",
         "subtitle": "Online Group",

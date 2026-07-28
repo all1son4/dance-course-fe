@@ -509,6 +509,7 @@
       "selectButton": "Wybierz pakiet",
       "priceLabel": "Cena",
       "buyButton": "Kup",
+      "registrationButton": "Zapisz się",
       "standard": {
         "title": "Standard",
         "subtitle": "Online Group",
