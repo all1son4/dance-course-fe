@@ -34,7 +34,7 @@ export const TitleBlock = styled.div`
   }
 `;
 
-export const Title = styled.p`
+export const Title = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 36px;

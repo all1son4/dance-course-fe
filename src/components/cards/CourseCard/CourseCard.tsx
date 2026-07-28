@@ -14,6 +14,7 @@ import type { CourseCardProps } from "./CourseCard.types";
 export default function CourseCard({
   bgColor,
   buttonHref,
+  buttonRel,
   buttonText,
   cardContent,
   icon,
@@ -34,6 +35,7 @@ export default function CourseCard({
           buttonText={buttonText}
           width="200px"
           href={buttonHref}
+          rel={buttonRel}
         />
       </ContentBox>
     </CardContainer>

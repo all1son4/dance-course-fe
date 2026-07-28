@@ -4,9 +4,14 @@ import { getTranslations } from "next-intl/server";
 
 import CourseCard from "@/components/cards/CourseCard";
 import InteractiveCard from "@/components/cards/InteractiveCard";
+import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
+import {
+  buildBreadcrumbStructuredData,
+  buildPageMetadata,
+  seoTargetLocale,
+} from "@/lib/seo";
 
 import { getOfflineCoursesArray } from "./constants";
 import {
@@ -61,6 +66,12 @@ export default function Offline() {
 
   return (
     <>
+      <StructuredData
+        data={buildBreadcrumbStructuredData([
+          { name: "Home", path: "/" },
+          { name: t("hero.title"), path: "/offline" },
+        ])}
+      />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>

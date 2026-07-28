@@ -14,9 +14,15 @@ import {
   getDefaultProductOffer,
 } from "@/constants/sellable-products";
 import CourseSignupDialog from "@/features/course-signup";
-import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
+import {
+  annaStrokStructuredDataId,
+  buildBreadcrumbStructuredData,
+  buildPageMetadata,
+  normalizedSiteUrl,
+  seoTargetLocale,
+} from "@/lib/seo";
 
-import { buildCheckoutOffersStructuredData } from "../_shared/structured-data";
+import { buildCourseOffersStructuredData } from "../_shared/structured-data";
 import { getOnlineSuggestions } from "./constants";
 import {
   AboutCourseCards,
@@ -84,19 +90,29 @@ export default function FirstTouch() {
     inLanguage: locale,
     provider: {
       "@type": "Person",
+      "@id": annaStrokStructuredDataId,
       name: "Anna Strok",
       url: normalizedSiteUrl,
     },
     url: `${normalizedSiteUrl}/online/first-touch`,
-    offers: buildCheckoutOffersStructuredData({
+    offers: buildCourseOffersStructuredData({
+      landingPath: "/online/first-touch",
       offer: defaultOffer,
-      productId: DEFAULT_CHECKOUT_PRODUCT.id,
     }),
   };
 
   return (
     <>
-      <StructuredData data={courseStructuredData} />
+      <StructuredData
+        data={[
+          buildBreadcrumbStructuredData([
+            { name: "Home", path: "/" },
+            { name: "Online classes", path: "/online" },
+            { name: t("hero.title"), path: "/online/first-touch" },
+          ]),
+          courseStructuredData,
+        ]}
+      />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>

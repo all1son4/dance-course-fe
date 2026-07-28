@@ -5,9 +5,11 @@ import { getTranslations } from "next-intl/server";
 import ContactCard from "@/components/cards/ContactCard";
 import CourseCard from "@/components/cards/CourseCard";
 import Button from "@/components/common/Button";
+import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import FAQ from "@/components/other/FAQ";
+import { getQuestionsArray } from "@/components/other/FAQ/FAQ.constants";
 import {
   INSTAGRAM_DIB_GALA_URL,
   INSTAGRAM_PROFILE_HANDLE,
@@ -15,7 +17,11 @@ import {
   INSTAGRAM_STAGE18_URL,
   INSTAGRAM_WORLD_OF_DANCE_POLAND_URL,
 } from "@/constants/links";
-import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
+import {
+  buildPageMetadata,
+  buildWebsiteStructuredData,
+  seoTargetLocale,
+} from "@/lib/seo";
 import { Insta, Logo, Quote } from "@/svg";
 
 import {
@@ -78,9 +84,27 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function Home() {
   const t = useTranslations("HomePage");
   const commonT = useTranslations("Common");
+  const faqT = useTranslations("FAQ");
+  const metadataT = useTranslations("Metadata");
+  const questions = getQuestionsArray((key) => faqT(key));
+  const faqStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: questions.map((question) => ({
+      "@type": "Question",
+      name: question.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: question.answer,
+      },
+    })),
+  };
 
   return (
     <>
+      <StructuredData
+        data={[buildWebsiteStructuredData(metadataT("siteName")), faqStructuredData]}
+      />
       <IntroduceSection>
         <AbsolutePageImage>
           <SvgAsset

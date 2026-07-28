@@ -10,9 +10,15 @@ import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
-import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
+import {
+  annaStrokStructuredDataId,
+  buildBreadcrumbStructuredData,
+  buildPageMetadata,
+  normalizedSiteUrl,
+  seoTargetLocale,
+} from "@/lib/seo";
 
-import { buildCheckoutOffersStructuredData } from "../_shared/structured-data";
+import { buildCourseOffersStructuredData } from "../_shared/structured-data";
 import { getOnlineSuggestions } from "./constants";
 import {
   AboutCourseCards,
@@ -80,23 +86,43 @@ export default function OnlineGroupPage() {
   const courseStructuredData = {
     "@context": "https://schema.org",
     "@type": "Course",
-    name: t("hero.title"),
+    name: t("hero.title").replace(/\s+/gu, " ").trim(),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
     inLanguage: locale,
     provider: {
       "@type": "Person",
+      "@id": annaStrokStructuredDataId,
       name: "Anna Strok",
       url: normalizedSiteUrl,
     },
     url: `${normalizedSiteUrl}/online/group`,
-    offers: purchaseOffers.map((offer) =>
-      buildCheckoutOffersStructuredData({ offer, productId: product.id }),
+    offers: purchaseOffers.flatMap((offer) =>
+      buildCourseOffersStructuredData({
+        landingPath: "/online/group#tariffs",
+        offer,
+        offerName:
+          offer.code === "standard"
+            ? t("tariffs.standard.title")
+            : t("tariffs.plus.title"),
+      }),
     ),
   };
 
   return (
     <>
-      <StructuredData data={courseStructuredData} />
+      <StructuredData
+        data={[
+          buildBreadcrumbStructuredData([
+            { name: "Home", path: "/" },
+            { name: "Online classes", path: "/online" },
+            {
+              name: t("hero.title").replace(/\s+/gu, " ").trim(),
+              path: "/online/group",
+            },
+          ]),
+          courseStructuredData,
+        ]}
+      />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>
@@ -190,6 +216,7 @@ export default function OnlineGroupPage() {
                   </TarifContentBox>
                 }
                 buttonText={t("tariffs.buyButton")}
+                buttonRel="nofollow"
                 buttonHref={buildCheckoutHref({
                   offerId: standardOffer.id,
                   productId: product.id,
@@ -221,6 +248,7 @@ export default function OnlineGroupPage() {
                   </TarifContentBox>
                 }
                 buttonText={t("tariffs.buyButton")}
+                buttonRel="nofollow"
                 buttonHref={buildCheckoutHref({
                   offerId: plusOffer.id,
                   productId: product.id,

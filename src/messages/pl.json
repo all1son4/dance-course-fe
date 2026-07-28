@@ -4,7 +4,7 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Kursy Frame Up Strip online i offline prowadzone przez Annę Strok w Warszawie: nauka od podstaw, tutoriale choreografii i zapisy na zajęcia.",
+    "description": "Ucz się Frame Up Strip z profesjonalną tancerką Anną Strok: kursy online, regularne treningi z feedbackiem i zajęcia offline w Warszawie.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Anna Strok podczas zajęć Frame Up Strip",
@@ -12,13 +12,13 @@
     "pages": {
       "home": {
         "title": "Kursy Frame Up Strip w Warszawie — online i offline",
-        "description": "Anna Strok prowadzi kursy Frame Up Strip online i offline: nauka od podstaw, tutoriale choreografii oraz zapisy na zajęcia w Warszawie.",
+        "description": "Ucz się Frame Up Strip z Anną Strok: kursy i regularne treningi online oraz zajęcia stacjonarne i praktyka improwizacji w Warszawie.",
         "ogImageAlt": "Anna Strok i uczestniczki podczas zajęć Frame Up Strip",
         "keywords": "Anna Strok taniec, Frame Up Strip Warszawa, kurs tańca online, zajęcia taneczne Warszawa, high heels dance"
       },
       "online": {
         "title": "Kursy online Frame Up Strip",
-        "description": "Ucz się Frame Up Strip online w Telegramie: program First Touch dla początkujących oraz tutoriale choreografii z szybkim dostępem do materiałów.",
+        "description": "Trenuj Frame Up Strip online z Anną Strok w Telegramie: dołącz do sześciotygodniowej Online Group z feedbackiem lub zacznij od kursu First Touch.",
         "ogImageAlt": "Kursy online Frame Up Strip prowadzone przez Annę Strok",
         "keywords": "kurs frame up online, first touch kurs, tutorial choreografii online, telegram kurs tańca, Anna Strok online"
       },
@@ -30,19 +30,19 @@
       },
       "onlineGroup": {
         "title": "Online Group by Anna Strok — regularne treningi",
-        "description": "Regularne treningi online z Anną Strok: nowe lekcje, zadania z feedbackiem i zamknięty czat Telegram.",
+        "description": "Sześciotygodniowa Online Group Anny Strok: cotygodniowe lekcje Frame Up Strip, zadania z indywidualnym feedbackiem, prywatny czat Telegram i opcjonalny Inspiration Hub.",
         "ogImageAlt": "Grupa regularnych treningów online Anny Strok",
         "keywords": "online group anna strok, treningi tańca online, frame up online, taniec telegram"
       },
       "choreo": {
         "title": "Tutoriale choreografii Frame Up Strip",
-        "description": "Szczegółowe tutoriale choreografii Still Alive i Her Lies oraz bundle z dwoma tutorialami: struktura ruchu, technika oraz wyraz sceniczny w wygodnym formacie online.",
+        "description": "Szczegółowe tutoriale choreografii Frame Up Strip Anny Strok: struktura ruchu, technika i wyraz sceniczny. Sprzedaż jest tymczasowo zamknięta.",
         "ogImageAlt": "Tutoriale choreografii Frame Up Strip od Anny Strok",
         "keywords": "tutorial choreografii online, still alive choreografia, her lies choreografia, bundle choreografii, frame up tutorial, Anna Strok choreografia"
       },
       "offline": {
         "title": "Zajęcia offline Frame Up Strip w Warszawie",
-        "description": "Dołącz do grup Frame Up Strip w Warszawie: poziom początkujący i średni, zajęcia impro oraz zapisy na lekcję próbną.",
+        "description": "Treningi stacjonarne Frame Up Strip z Anną Strok w Warszawie: praktyka improwizacji w Impro Room i zapisy na zajęcia indywidualne.",
         "ogImageAlt": "Zajęcia offline Frame Up Strip w Warszawie",
         "keywords": "frame up strip warszawa, zajęcia taneczne warszawa, high heels warszawa, lekcja próbna tańca"
       },
@@ -302,8 +302,8 @@
         },
         "startLabel": "Start",
         "startValue": "W dowolnym momencie",
-        "salesLabel": "Sprzedaż do",
-        "salesValue": "5 maja 2026",
+        "salesLabel": "Dostępność",
+        "salesValue": "Sprzedaż jest tymczasowo zamknięta",
         "button": "Więcej o kursie"
       }
     },
@@ -580,8 +580,8 @@
       "startLabel": "Start",
       "startValue": "W dowolnym momencie",
       "closedValue": "Sprzedaż jest tymczasowo zamknięta",
-      "salesLabel": "Sprzedaż do",
-      "salesValue": "5 maja 2026",
+      "salesLabel": "Dostępność",
+      "salesValue": "Sprzedaż jest tymczasowo zamknięta",
       "button": "Wybierz choreografię"
     },
     "about": {

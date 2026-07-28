@@ -3,7 +3,12 @@ import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { Fragment } from "react";
 
-import { buildPageMetadata, seoTargetLocale } from "@/lib/seo";
+import StructuredData from "@/components/common/StructuredData";
+import {
+  buildBreadcrumbStructuredData,
+  buildPageMetadata,
+  seoTargetLocale,
+} from "@/lib/seo";
 
 import {
   PrivacyPolicyContactLine,
@@ -66,22 +71,30 @@ export default function CookiePolicy() {
     ));
 
   return (
-    <PrivacyPolicySection>
-      <PrivacyPolicyContent>
-        <PrivacyPolicyTitle>{t("title")}</PrivacyPolicyTitle>
-        <PrivacyPolicyDescription>{t("description")}</PrivacyPolicyDescription>
-        <PrivacyPolicyItems>
-          {cookiePolicyItems.map((item) => (
-            <PrivacyPolicyItem key={item.id}>
-              <PrivacyPolicyItemTitle>{item.title}</PrivacyPolicyItemTitle>
-              <PrivacyPolicyItemText>{item.text}</PrivacyPolicyItemText>
-            </PrivacyPolicyItem>
-          ))}
-        </PrivacyPolicyItems>
-        <PrivacyPolicyContactLine>
-          {renderTextWithEmail(t("contactLine"))}
-        </PrivacyPolicyContactLine>
-      </PrivacyPolicyContent>
-    </PrivacyPolicySection>
+    <>
+      <StructuredData
+        data={buildBreadcrumbStructuredData([
+          { name: "Home", path: "/" },
+          { name: t("title"), path: "/cookie-policy" },
+        ])}
+      />
+      <PrivacyPolicySection>
+        <PrivacyPolicyContent>
+          <PrivacyPolicyTitle>{t("title")}</PrivacyPolicyTitle>
+          <PrivacyPolicyDescription>{t("description")}</PrivacyPolicyDescription>
+          <PrivacyPolicyItems>
+            {cookiePolicyItems.map((item) => (
+              <PrivacyPolicyItem key={item.id}>
+                <PrivacyPolicyItemTitle>{item.title}</PrivacyPolicyItemTitle>
+                <PrivacyPolicyItemText>{item.text}</PrivacyPolicyItemText>
+              </PrivacyPolicyItem>
+            ))}
+          </PrivacyPolicyItems>
+          <PrivacyPolicyContactLine>
+            {renderTextWithEmail(t("contactLine"))}
+          </PrivacyPolicyContactLine>
+        </PrivacyPolicyContent>
+      </PrivacyPolicySection>
+    </>
   );
 }

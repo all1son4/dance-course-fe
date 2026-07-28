@@ -11,7 +11,9 @@ import PageContainer from "@/components/layout/PageContainer";
 import { routing } from "@/i18n/routing";
 import {
   normalizedSiteUrl,
+  seoImageHeight,
   seoImagePath,
+  seoImageWidth,
   seoTargetLocale,
   seoTargetOpenGraphLocale,
 } from "@/lib/seo";
@@ -64,6 +66,9 @@ export async function generateMetadata({
         {
           url: seoImagePath,
           alt: t("ogImageAlt"),
+          width: seoImageWidth,
+          height: seoImageHeight,
+          type: "image/jpeg",
         },
       ],
     },

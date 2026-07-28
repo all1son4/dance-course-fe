@@ -205,6 +205,7 @@ export default function Header() {
       router.prefetch("/online");
       router.prefetch("/offline");
       router.prefetch("/online/first-touch");
+      router.prefetch("/online/group");
       router.prefetch("/online/choreo");
     };
 

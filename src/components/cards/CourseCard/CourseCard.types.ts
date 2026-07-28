@@ -7,6 +7,7 @@ export type CourseCardProps = {
   cardContent?: ReactNode | string;
   buttonText?: string;
   buttonHref?: string;
+  buttonRel?: string;
   iconSize?: {
     width: number;
     height: number;

@@ -4,21 +4,21 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Online and offline Frame Up Strip classes by Anna Strok in Warsaw: beginner training, choreography tutorials, and class booking.",
+    "description": "Learn Frame Up Strip with professional dancer Anna Strok through online courses, regular training with feedback, and offline classes in Warsaw.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Anna Strok teaching Frame Up Strip",
     "keywords": "Anna Strok, Frame Up Strip, dance classes Warsaw, online dance course, offline dance classes, choreography tutorial, high heels dance",
     "pages": {
       "home": {
-        "title": "Frame Up Strip Classes in Warsaw — Online and Offline",
-        "description": "Anna Strok teaches Frame Up Strip online and offline: beginner-friendly courses, choreography tutorials, and class booking in Warsaw.",
+        "title": "Anna Strok — Frame Up Strip Classes in Warsaw & Online",
+        "description": "Learn Frame Up Strip with professional dancer Anna Strok: online courses and regular training, plus offline classes and improvisation practice in Warsaw.",
         "ogImageAlt": "Anna Strok with students during a Frame Up Strip class",
         "keywords": "Anna Strok dance, Frame Up Strip Warsaw, online dance classes, offline dance classes Warsaw, high heels dance lessons"
       },
       "online": {
         "title": "Online Frame Up Strip Courses",
-        "description": "Learn Frame Up Strip online in Telegram: First Touch beginner program and choreography tutorial lessons with instant material access.",
+        "description": "Train Frame Up Strip online with Anna Strok in Telegram: a six-week Online Group with feedback, the First Touch beginner course and choreography tutorials.",
         "ogImageAlt": "Online Frame Up Strip courses by Anna Strok",
         "keywords": "online frame up course, first touch dance program, choreography tutorial online, telegram dance classes, Anna Strok online"
       },
@@ -29,20 +29,20 @@
         "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
       },
       "onlineGroup": {
-        "title": "Online Group by Anna Strok — regular training",
-        "description": "Regular online dance training with Anna Strok: new lessons, assignments with feedback and a private Telegram chat.",
+        "title": "Online Group — 6-Week Frame Up Strip Training",
+        "description": "Join Anna Strok's six-week Online Group: weekly Frame Up Strip lessons, personal feedback, a private Telegram chat and optional Inspiration Hub access.",
         "ogImageAlt": "Anna Strok regular online dance training group",
         "keywords": "online group anna strok, online dance training, frame up online, telegram dance course"
       },
       "choreo": {
         "title": "Frame Up Strip Choreography Tutorials",
-        "description": "Detailed choreography tutorials for Still Alive and Her Lies, plus a bundle with both tutorials, structure, technique, and performance guidance in a flexible online format.",
+        "description": "Explore Anna Strok's Frame Up Strip choreography tutorials with movement breakdowns, technique and performance guidance. Sales are temporarily closed.",
         "ogImageAlt": "Frame Up Strip choreography tutorials by Anna Strok",
         "keywords": "choreography tutorial, still alive choreography, her lies choreography, choreography bundle, frame up dance tutorial, Anna Strok choreography"
       },
       "offline": {
         "title": "Offline Frame Up Strip Classes in Warsaw",
-        "description": "Join offline Frame Up Strip groups in Warsaw: beginner and intermediate levels, impro sessions, and trial class registration.",
+        "description": "Explore in-person Frame Up Strip training with Anna Strok in Warsaw, including Impro Room improvisation practice and private class enquiries.",
         "ogImageAlt": "Offline Frame Up Strip classes in Warsaw",
         "keywords": "frame up strip warsaw, offline dance classes warsaw, high heels dance warsaw, trial dance class, women dance classes"
       },
@@ -302,8 +302,8 @@
         },
         "startLabel": "Start",
         "startValue": "Anytime",
-        "salesLabel": "Sales until",
-        "salesValue": "May 5, 2026",
+        "salesLabel": "Availability",
+        "salesValue": "Sales are temporarily closed",
         "button": "Learn more"
       }
     },
@@ -580,8 +580,8 @@
       "startLabel": "Start",
       "startValue": "Anytime",
       "closedValue": "Sales are temporarily closed",
-      "salesLabel": "Sales until",
-      "salesValue": "May 5, 2026",
+      "salesLabel": "Availability",
+      "salesValue": "Sales are temporarily closed",
       "button": "Choose choreography"
     },
     "about": {

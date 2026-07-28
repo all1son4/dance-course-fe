@@ -4,7 +4,7 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Онлайн и офлайн курсы Frame Up Strip от Анны Строк в Варшаве: обучение с нуля, разборы хореографий и запись на занятия.",
+    "description": "Изучайте Frame Up Strip с профессиональной танцовщицей Анной Строк: онлайн-курсы, регулярные тренировки с обратной связью и офлайн-занятия в Варшаве.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Анна Строк на занятии Frame Up Strip",
@@ -12,13 +12,13 @@
     "pages": {
       "home": {
         "title": "Онлайн и офлайн курсы Frame Up Strip в Варшаве",
-        "description": "Анна Строк обучает Frame Up Strip в онлайн и офлайн формате: курсы для начинающих, разборы хореографий и запись на занятия в Варшаве.",
+        "description": "Изучайте Frame Up Strip с Анной Строк: онлайн-курсы и регулярные тренировки, а также офлайн-занятия и практика импровизации в Варшаве.",
         "ogImageAlt": "Анна Строк и ученицы на тренировке Frame Up Strip",
         "keywords": "frame up strip варшава, anna strok, курсы танцев онлайн, занятия танцами варшава, high heels варшава"
       },
       "online": {
         "title": "Online курсы Frame Up Strip",
-        "description": "Онлайн обучение Frame Up Strip в Telegram: курс First Touch для начинающих и видео-разборы хореографий с доступом к материалам.",
+        "description": "Занимайтесь Frame Up Strip онлайн с Анной Строк в Telegram: шестинедельная Online Group с обратной связью или курс First Touch для начинающих.",
         "ogImageAlt": "Онлайн курсы Frame Up Strip от Анны Строк",
         "keywords": "онлайн курс frame up, first touch курс, видео разбор хореографии, танцы в telegram, anna strok online"
       },
@@ -30,19 +30,19 @@
       },
       "onlineGroup": {
         "title": "Online Group by Anna Strok — регулярные тренировки",
-        "description": "Регулярные онлайн-тренировки с Анной Строк: новые уроки, задания с обратной связью и закрытый Telegram-чат.",
+        "description": "Шестинедельная Online Group Анны Строк: еженедельные уроки Frame Up Strip, задания с личной обратной связью, закрытый Telegram-чат и опциональный Inspiration Hub.",
         "ogImageAlt": "Онлайн-группа танцевальных тренировок Анны Строк",
         "keywords": "online group anna strok, онлайн тренировки танцы, frame up онлайн, танцы telegram"
       },
       "choreo": {
         "title": "Видео-разборы хореографий Frame Up Strip",
-        "description": "Разборы хореографий Still Alive и Her Lies, а также комплект из двух разборов: детальная структура движений, подача и отработка материала в удобном онлайн-формате.",
+        "description": "Подробные разборы хореографий Frame Up Strip от Анны Строк: структура движений, техника и подача. Продажи временно закрыты.",
         "ogImageAlt": "Видео-разборы хореографий от Анны Строк",
         "keywords": "разбор хореографии онлайн, still alive dance, her lies dance, bundle хореографий, frame up choreography, anna strok choreography"
       },
       "offline": {
         "title": "Offline занятия Frame Up Strip в Варшаве",
-        "description": "Офлайн группы Frame Up Strip в Варшаве: уровни для начинающих и продолжающих, импровизация и запись на пробное занятие.",
+        "description": "Офлайн-тренировки Frame Up Strip с Анной Строк в Варшаве: практика импровизации в Impro Room и запись на индивидуальные занятия.",
         "ogImageAlt": "Офлайн тренировки Frame Up Strip в Варшаве",
         "keywords": "frame up strip варшава офлайн, танцы варшава для девушек, high heels classes warsaw, пробное занятие танцы"
       },
@@ -302,8 +302,8 @@
         },
         "startLabel": "Старт",
         "startValue": "В любое время",
-        "salesLabel": "Продажи до",
-        "salesValue": "5 мая 2026 г.",
+        "salesLabel": "Доступность",
+        "salesValue": "Продажи временно закрыты",
         "button": "Подробнее о курсе"
       }
     },
@@ -580,8 +580,8 @@
       "startLabel": "Старт",
       "startValue": "В любое время",
       "closedValue": "Продажи временно закрыты",
-      "salesLabel": "Продажи до",
-      "salesValue": "5 мая 2026 г.",
+      "salesLabel": "Доступность",
+      "salesValue": "Продажи временно закрыты",
       "button": "Выбрать хореографию"
     },
     "about": {

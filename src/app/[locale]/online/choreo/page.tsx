@@ -1,21 +1,32 @@
 import type { Metadata } from "next";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
+import TextContentCard from "@/components/cards/TextContentCard";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
-import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
-import { buildPageMetadata, normalizedSiteUrl, seoTargetLocale } from "@/lib/seo";
-
-import { buildCheckoutOffersStructuredData } from "../_shared/structured-data";
+import Contacts from "@/components/other/Contacts";
 import {
+  buildBreadcrumbStructuredData,
+  buildPageMetadata,
+  seoTargetLocale,
+} from "@/lib/seo";
+
+import { getOnlineSuggestions } from "./constants";
+import {
+  AboutChoreoCards,
+  AboutChoreoSection,
+  AboutChoreoTitle,
   Date,
   DateBox,
+  Description,
+  DescriptionParagraph,
   IconBox,
   ImageBox,
   InfoBoxGroup,
   IntroductionSection,
   MobileImagesBox,
+  SpecialWrapper,
   TextBox,
   Title,
 } from "./page.styles";
@@ -45,40 +56,32 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function ChoreoPage() {
-  const locale = useLocale();
   const t = useTranslations("ChoreoPage");
-  const productT = useTranslations("SellableProducts");
-  const sellableChoreoProducts = SELLABLE_PRODUCTS_LIST.filter(
-    (product) => product.type === "choreo",
-  );
-  const choreographyProductsStructuredData = sellableChoreoProducts.map((product) => ({
-    "@context": "https://schema.org",
-    "@type": "Product",
-    name: productT(product.titleKey),
-    description: product.descriptionKeys.map((key) => productT(key)).join(" "),
-    category: "Dance choreography tutorial",
-    inLanguage: locale,
-    brand: {
-      "@type": "Brand",
-      name: "Anna Strok",
-    },
-    offers: product.offers.flatMap((offer) =>
-      buildCheckoutOffersStructuredData({
-        offer,
-        offerName: productT(offer.labelKey),
-        productId: product.id,
+  const onlineSuggestions = getOnlineSuggestions(
+    (key) => t(key),
+    (key) =>
+      t.rich(key, {
+        p: (chunks) => <p>{chunks}</p>,
+        strong: (chunks) => <strong>{chunks}</strong>,
       }),
-    ),
-    url: `${normalizedSiteUrl}/online/choreo`,
-  }));
+  ).slice(0, 5);
 
   return (
     <>
-      <StructuredData data={choreographyProductsStructuredData} />
+      <StructuredData
+        data={buildBreadcrumbStructuredData([
+          { name: "Home", path: "/" },
+          { name: "Online classes", path: "/online" },
+          { name: t("hero.title"), path: "/online/choreo" },
+        ])}
+      />
       <IntroductionSection>
         <TextBox>
           <Title>{t("hero.title")}</Title>
-
+          <Description>
+            <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+            <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
+          </Description>
           <InfoBoxGroup>
             <DateBox>
               <Date>{t("hero.closedValue")} &#128546;</Date>
@@ -97,7 +100,6 @@ export default function ChoreoPage() {
               unoptimized
             />
           </ImageBox>
-
           <IconBox id="mobile-only-icon-box">
             <SvgAsset
               src="/svg/TelegramChoreo.webp"
@@ -118,7 +120,6 @@ export default function ChoreoPage() {
             unoptimized
           />
         </ImageBox>
-
         <IconBox id="desktop-only-icon-box">
           <SvgAsset
             src="/svg/TelegramChoreo.webp"
@@ -128,7 +129,20 @@ export default function ChoreoPage() {
           />
         </IconBox>
       </IntroductionSection>
+
+      <SpecialWrapper>
+        <AboutChoreoSection>
+          <AboutChoreoTitle>{t("about.title")}</AboutChoreoTitle>
+          <AboutChoreoCards>
+            {onlineSuggestions.map(({ id, ...suggestion }) => (
+              <TextContentCard key={id} {...suggestion} />
+            ))}
+          </AboutChoreoCards>
+        </AboutChoreoSection>
+        <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
+      </SpecialWrapper>
     </>
+    // Temporarily preserved sales layout. Uncomment it when choreography sales reopen.
     // <>
     //   <StructuredData data={choreographyProductsStructuredData} />
     //   <IntroductionSection>

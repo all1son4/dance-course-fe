@@ -1,7 +1,5 @@
 import type { MetadataRoute } from "next";
 
-import { toUtcIso } from "@/lib/time";
-
 const siteUrl =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
@@ -22,11 +20,8 @@ const indexableRoutes = [
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const lastModified = toUtcIso();
-
   return indexableRoutes.map((route) => ({
     url: `${normalizedSiteUrl}${route}`,
-    lastModified,
     changeFrequency: route === "/" ? "weekly" : "monthly",
     priority: route === "/" ? 1 : 0.7,
   }));
