@@ -502,14 +502,12 @@ export const AboutCourseTitle = styled.h2`
 
   @media (max-width: 920px) {
     max-width: 100%;
+    position: static;
+    top: auto;
   }
 
   @media (max-width: 880px) {
     font-size: 40px;
-  }
-
-  @media (max-width: 767px) {
-    top: calc(84px + var(--safe-area-top));
   }
 `;
 
