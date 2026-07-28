@@ -511,7 +511,7 @@ export const CourseOptionsBox = styled.div`
       gap: 30px;
     }
 
-    .courseCardTitle {
+    & .courseCardTitle {
       font-size: 28px;
     }
     & .courseCardButton {
