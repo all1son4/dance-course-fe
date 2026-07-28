@@ -329,7 +329,7 @@ export const PromoteOnlineSection = styled.section`
       gap: 30px;
     }
 
-    .courseCardTitle {
+    & .courseCardTitle {
       font-size: 28px;
     }
     & .courseCardButton {

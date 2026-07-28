@@ -331,11 +331,11 @@ export const TariffSection = styled.section`
   gap: 80px;
 
   @media (max-width: 1024px) {
-    padding: 100px 20px 0px;
+    padding: 100px 0px 0px;
   }
 
   @media (max-width: 880px) {
-    padding: 40px 20px 0px;
+    padding: 40px 0px 0px;
     gap: 30px;
   }
 `;
@@ -355,11 +355,14 @@ export const TariffTitle = styled.h2`
 `;
 
 export const TariffOptionsBox = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 40px;
   align-items: stretch;
+  width: 100%;
 
   & .courseCardContainer {
+    min-width: 0;
     gap: 20px;
     justify-content: flex-start;
   }
@@ -377,30 +380,24 @@ export const TariffOptionsBox = styled.div`
     height: 100%;
   }
 
-  @media (max-width: 1100px) {
+  & .courseCardTitle,
+  & .courseCardSubtitle {
+    text-wrap: balance;
+  }
+
+  @media (max-width: 920px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+
     & .courseCardContainer {
-      padding: 40px;
-      min-width: unset;
-      max-width: 100%;
-    }
-    gap: 20px;
-
-    & > .courseCardContainer:first-of-type .courseCardIconBox {
-      top: -30px;
-      right: 30px;
-      & :is(svg, img) {
-        width: 76px;
-        height: 122px;
-      }
+      width: 100%;
+      max-width: 720px;
+      justify-self: center;
     }
 
-    & > .courseCardContainer:last-of-type .courseCardIconBox {
-      top: -24px;
-      right: 3px;
-      & :is(svg, img) {
-        width: 94px;
-        height: 104px;
-      }
+    & .courseCardContent,
+    & .courseCardContentBox {
+      height: auto;
     }
   }
 
@@ -416,17 +413,17 @@ export const TariffOptionsBox = styled.div`
       gap: 30px;
     }
 
-    .courseCardTitle {
+    & .courseCardTitle {
       font-size: 28px;
     }
+
     & .courseCardButton {
       max-width: 100%;
     }
   }
 
-  @media (max-width: 680px) {
-    flex-direction: column;
-    gap: 40px;
+  @media (max-width: 550px) {
+    gap: 24px;
   }
 `;
 
@@ -438,8 +435,8 @@ export const TarifContentBox = styled.div`
 `;
 
 export const TariffContentList = styled.ul`
-  list-style: inside;
-  padding: 0 0 0 16px;
+  list-style-position: outside;
+  padding: 0 0 0 22px;
   margin: 0;
 
   display: flex;
@@ -455,6 +452,19 @@ export const TariffContentList = styled.ul`
 
   & li {
     margin: 0;
+    padding-left: 3px;
+    text-wrap: pretty;
+  }
+
+  & li::marker {
+    color: rgba(124, 0, 2, 0.78);
+  }
+
+  @media (max-width: 550px) {
+    gap: 8px;
+    padding-left: 20px;
+    font-size: 16px;
+    line-height: 145%;
   }
 `;
 
