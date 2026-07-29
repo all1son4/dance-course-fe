@@ -4,17 +4,17 @@ import { getTranslations } from "next-intl/server";
 import Button from "@/components/common/Button";
 import { Logo } from "@/svg";
 
-import { AbsoluteLogo, Content, ErrorText, NotFoundContainer } from "./not-found.styles";
+import styles from "./not-found.module.css";
 
 export default async function NotFound() {
   const t = await getTranslations("NotFoundPage");
 
   return (
-    <NotFoundContainer>
-      <AbsoluteLogo>
+    <div className={styles.container}>
+      <div className={styles.logo}>
         <Logo width={264} height={49} />
-      </AbsoluteLogo>
-      <Content>
+      </div>
+      <div className={styles.content}>
         <Image
           src="/images/error404.png"
           alt={t("imageAlt")}
@@ -23,9 +23,9 @@ export default async function NotFound() {
           style={{ width: "100%", maxWidth: "100%", height: "auto" }}
           priority
         />
-        <ErrorText>{t("title")}</ErrorText>
+        <p className={styles.errorText}>{t("title")}</p>
         <Button buttonText={t("backHome")} width="300px" href="/" />
-      </Content>
-    </NotFoundContainer>
+      </div>
+    </div>
   );
 }

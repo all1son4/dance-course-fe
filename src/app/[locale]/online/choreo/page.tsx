@@ -17,7 +17,8 @@ import {
   AboutChoreoCards,
   AboutChoreoSection,
   AboutChoreoTitle,
-  Date,
+  ClosedIconBox,
+  ClosedSalesCard,
   DateBox,
   Description,
   DescriptionParagraph,
@@ -84,7 +85,18 @@ export default function ChoreoPage() {
           </Description>
           <InfoBoxGroup>
             <DateBox>
-              <Date>{t("hero.closedValue")} &#128546;</Date>
+              <ClosedSalesCard>
+                <ClosedIconBox>
+                  <SvgAsset
+                    src="/svg/Exclamation.webp"
+                    width={57}
+                    height={60}
+                    sizes="(max-width: 767px) 34px, 57px"
+                    unoptimized
+                  />
+                </ClosedIconBox>
+                <p>{t("hero.closedValue")}</p>
+              </ClosedSalesCard>
             </DateBox>
           </InfoBoxGroup>
         </TextBox>
