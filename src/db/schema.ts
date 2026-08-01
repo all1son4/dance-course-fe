@@ -607,7 +607,7 @@ export const emailCampaignLeads = pgTable(
     emailSendStatus: text("email_send_status")
       .notNull()
       .default("pending")
-      .$type<"pending" | "sent" | "failed">(),
+      .$type<"blocked" | "excluded" | "failed" | "pending" | "sent">(),
     fullName: text("full_name").notNull().default(""),
     socialContact: text("social_contact").notNull().default(""),
     email: text("email").notNull(),

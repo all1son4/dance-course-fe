@@ -40,11 +40,45 @@ export type CreateEmailCampaignLeadResult =
     };
 
 export type EmailCampaignStats = {
+  excluded: number;
   failed: number;
   pending: number;
   sent: number;
   total: number;
 };
+
+export type EmailCampaignAudienceLead = {
+  createdAt: string;
+  email: string;
+  fullName: string;
+  leadId: string;
+  locale: string;
+  socialContact: string;
+  status: "failed" | "pending";
+};
+
+export type EmailCampaignAdminSnapshot = {
+  audience: EmailCampaignAudienceLead[];
+  stats: EmailCampaignStats;
+};
+
+export type EmailCampaignExclusionScope = "campaign" | "global";
+
+export type ExcludeEmailCampaignLeadResult =
+  | {
+      scope: EmailCampaignExclusionScope;
+      snapshot: EmailCampaignAdminSnapshot;
+      status: "excluded";
+    }
+  | {
+      status: "delivery_in_progress";
+    }
+  | {
+      status: "not_actionable";
+    }
+  | {
+      status: "not_found";
+    };
 
 export type EmailCampaignDeliveryResult = EmailCampaignStats & {
   attempted: number;
@@ -82,6 +116,78 @@ const createLeadId = ({ campaignKey, email }: { campaignKey: string; email: stri
     .update(getEmailCampaignLeadDedupeKey({ campaignKey, email }))
     .digest("hex")
     .slice(0, 24)}`;
+
+const getGloballyBlockedEmails = (rows: EmailCampaignLeadSheetRecord[]) =>
+  new Set(
+    rows
+      .filter((row) => row.email_send_status.trim() === "blocked")
+      .map((row) => normalizeEmailCampaignEmail(row.email))
+      .filter(Boolean),
+  );
+
+const buildEmailCampaignAdminSnapshot = ({
+  campaignKey,
+  rows,
+}: {
+  campaignKey: string;
+  rows: EmailCampaignLeadSheetRecord[];
+}): EmailCampaignAdminSnapshot => {
+  const normalizedCampaignKey = campaignKey.trim();
+  const globallyBlockedEmails = getGloballyBlockedEmails(rows);
+  const campaignRows = rows.filter(
+    (row) => row.campaign_key.trim() === normalizedCampaignKey,
+  );
+  const stats = campaignRows.reduce<EmailCampaignStats>(
+    (result, row) => {
+      const status = row.email_send_status.trim();
+      const isGloballyBlocked = globallyBlockedEmails.has(
+        normalizeEmailCampaignEmail(row.email),
+      );
+
+      result.total += 1;
+
+      if (status === "sent") {
+        result.sent += 1;
+      } else if (status === "excluded" || status === "blocked" || isGloballyBlocked) {
+        result.excluded += 1;
+      } else if (status === "failed") {
+        result.failed += 1;
+      } else {
+        result.pending += 1;
+      }
+
+      return result;
+    },
+    {
+      excluded: 0,
+      failed: 0,
+      pending: 0,
+      sent: 0,
+      total: 0,
+    },
+  );
+  const audience = campaignRows
+    .filter((row) => {
+      const status = row.email_send_status.trim();
+
+      return (
+        (status === "pending" || status === "failed") &&
+        !globallyBlockedEmails.has(normalizeEmailCampaignEmail(row.email))
+      );
+    })
+    .map<EmailCampaignAudienceLead>((row) => ({
+      createdAt: row.created_at,
+      email: row.email,
+      fullName: row.full_name,
+      leadId: row.lead_id,
+      locale: row.locale,
+      socialContact: row.social_contact,
+      status: row.email_send_status.trim() === "failed" ? "failed" : "pending",
+    }))
+    .sort((left, right) => left.createdAt.localeCompare(right.createdAt));
+
+  return { audience, stats };
+};
 
 const escapeHtml = (value: string) =>
   value
@@ -267,12 +373,14 @@ const createEmailCampaignLeadInternal = async ({
   }
 
   const now = toUtcIso();
+  const rows = await listEmailCampaignLeadRecords({ cacheTtlMs: 0 });
+  const isGloballyBlocked = getGloballyBlockedEmails(rows).has(normalizedEmail);
   const lead: EmailCampaignLeadSheetRecord = {
     campaign_key: campaignKey.trim(),
     created_at: now,
     email: normalizedEmail,
     email_send_attempts: "0",
-    email_send_status: "pending",
+    email_send_status: isGloballyBlocked ? "blocked" : "pending",
     email_sent_at: "",
     full_name: fullName.trim().slice(0, 120),
     last_email_error: "",
@@ -319,33 +427,62 @@ export const createEmailCampaignLead = async (
   return createPromise;
 };
 
-export const getEmailCampaignStats = async (campaignKey: string) => {
+export const getEmailCampaignAdminSnapshot = async (
+  campaignKey: string,
+): Promise<EmailCampaignAdminSnapshot> => {
   const rows = await listEmailCampaignLeadRecords({
     cacheTtlMs: 0,
   });
-  const campaignRows = rows.filter((row) => row.campaign_key.trim() === campaignKey);
 
-  return campaignRows.reduce<EmailCampaignStats>(
-    (stats, row) => {
-      stats.total += 1;
+  return buildEmailCampaignAdminSnapshot({ campaignKey, rows });
+};
 
-      if (row.email_send_status === "sent") {
-        stats.sent += 1;
-      } else if (row.email_send_status === "failed") {
-        stats.failed += 1;
-      } else {
-        stats.pending += 1;
-      }
+export const getEmailCampaignStats = async (campaignKey: string) =>
+  (await getEmailCampaignAdminSnapshot(campaignKey)).stats;
 
-      return stats;
-    },
-    {
-      failed: 0,
-      pending: 0,
-      sent: 0,
-      total: 0,
-    },
+export const excludeEmailCampaignLead = async ({
+  campaignKey,
+  leadId,
+  scope,
+}: {
+  campaignKey: string;
+  leadId: string;
+  scope: EmailCampaignExclusionScope;
+}): Promise<ExcludeEmailCampaignLeadResult> => {
+  if (pendingFirstTouchSalesStartCampaignDelivery) {
+    return { status: "delivery_in_progress" };
+  }
+
+  const normalizedCampaignKey = campaignKey.trim();
+  const normalizedLeadId = leadId.trim();
+  const rows = await listEmailCampaignLeadRecords({ cacheTtlMs: 0 });
+  const lead = rows.find(
+    (row) =>
+      row.lead_id.trim() === normalizedLeadId &&
+      row.campaign_key.trim() === normalizedCampaignKey,
   );
+
+  if (!lead) {
+    return { status: "not_found" };
+  }
+
+  const currentStatus = lead.email_send_status.trim();
+
+  if (currentStatus !== "pending" && currentStatus !== "failed") {
+    return { status: "not_actionable" };
+  }
+
+  await upsertEmailCampaignLeadRecord({
+    ...lead,
+    email_send_status: scope === "global" ? "blocked" : "excluded",
+    last_email_error: "",
+  });
+
+  return {
+    scope,
+    snapshot: await getEmailCampaignAdminSnapshot(normalizedCampaignKey),
+    status: "excluded",
+  };
 };
 
 const deliverFirstTouchSalesStartCampaignInternal =
@@ -353,10 +490,13 @@ const deliverFirstTouchSalesStartCampaignInternal =
     const rows = await listEmailCampaignLeadRecords({
       cacheTtlMs: 0,
     });
+    const globallyBlockedEmails = getGloballyBlockedEmails(rows);
     const deliverableRows = rows.filter(
       (row) =>
         row.campaign_key.trim() === FIRST_TOUCH_SALES_START_CAMPAIGN_KEY &&
-        row.email_send_status.trim() !== "sent",
+        (row.email_send_status.trim() === "pending" ||
+          row.email_send_status.trim() === "failed") &&
+        !globallyBlockedEmails.has(normalizeEmailCampaignEmail(row.email)),
     );
     let attempted = 0;
 
