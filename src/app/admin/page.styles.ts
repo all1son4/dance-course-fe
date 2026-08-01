@@ -236,7 +236,7 @@ export const Sidebar = styled.aside`
     top: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
+    align-items: center;
     gap: 12px;
     height: auto;
     min-height: unset;
@@ -265,7 +265,7 @@ export const SidebarTop = styled.div`
   min-height: 0;
 
   @media (max-width: 980px) {
-    gap: 8px;
+    display: contents;
   }
 `;
 
@@ -276,8 +276,10 @@ export const SidebarFooter = styled.div`
   gap: 10px;
 
   @media (max-width: 980px) {
+    grid-column: 2;
+    grid-row: 1;
     margin: 0;
-    align-self: end;
+    align-self: center;
   }
 `;
 
@@ -288,19 +290,30 @@ export const SidebarActionRow = styled.div`
   align-items: center;
 
   > button:last-child {
-    padding-inline: 18px;
+    min-height: 44px;
+    height: 44px;
+    padding: 8px 18px;
+    font-size: 14px;
+    line-height: 1.2;
   }
 
   @media (max-width: 980px) {
     grid-template-columns: 42px 104px;
+
+    > button:last-child {
+      min-height: 42px;
+      height: 42px;
+    }
   }
 
   @media (max-width: 560px) {
-    grid-template-columns: 38px 76px;
+    grid-template-columns: 40px 76px;
     gap: 6px;
 
     > button:last-child {
-      padding-inline: 10px;
+      min-height: 40px;
+      height: 40px;
+      padding: 7px 10px;
     }
   }
 `;
@@ -361,9 +374,9 @@ export const SidebarIconButton = styled.button<IconButtonStyleProps>`
   }
 
   @media (max-width: 560px) {
-    width: 38px;
-    min-width: 38px;
-    height: 38px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
   }
 `;
 
@@ -398,6 +411,8 @@ export const SidebarTitle = styled.h2`
   }
 
   @media (max-width: 980px) {
+    grid-column: 1;
+    grid-row: 1;
     font-size: 16px;
 
     &::before {
@@ -419,6 +434,8 @@ export const SidebarNav = styled.nav`
   padding: 2px;
 
   @media (max-width: 980px) {
+    grid-column: 1 / -1;
+    grid-row: 2;
     flex-direction: row;
     gap: 7px;
     width: 100%;
@@ -432,6 +449,10 @@ export const SidebarNav = styled.nav`
     &::-webkit-scrollbar {
       display: none;
     }
+  }
+
+  @media (max-width: 560px) {
+    gap: 5px;
   }
 `;
 
@@ -502,7 +523,7 @@ export const SidebarItem = styled.button<SidebarItemStyleProps>`
   @media (max-width: 560px) {
     min-width: max-content;
     min-height: 40px;
-    padding-inline: 14px;
+    padding-inline: 12px;
   }
 `;
 
@@ -993,6 +1014,7 @@ export const SurfaceTitle = styled.h3`
 `;
 
 export const SurfaceHeaderRow = styled.div`
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1000,14 +1022,28 @@ export const SurfaceHeaderRow = styled.div`
 `;
 
 export const SurfaceHeaderActions = styled.div`
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 
-  button {
-    padding-inline: 18px;
+  > button:not([aria-label]) {
+    min-height: 40px;
+    height: 40px;
+    padding: 8px 18px;
+    font-size: 14px;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 420px) {
+    gap: 6px;
+
+    > button:not([aria-label]) {
+      padding-inline: 14px;
+    }
   }
 `;
 
@@ -1374,22 +1410,29 @@ export const IconActionButton = styled.button<IconButtonStyleProps>`
   ${focusRing}
   width: 40px;
   min-width: 40px;
-  height: 36px;
+  height: 40px;
+  padding: 0;
+  box-sizing: border-box;
   border: 1px solid rgba(24, 24, 24, 0.1);
+  flex: 0 0 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: rgba(22, 22, 22, 0.8);
   cursor: pointer;
+  line-height: 0;
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease,
     opacity 0.2s ease;
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+    display: block;
+    flex: 0 0 auto;
     stroke: currentColor;
+    stroke-width: 2;
   }
 
   ${({ $isLoading }) =>
@@ -1409,7 +1452,7 @@ export const IconActionButton = styled.button<IconButtonStyleProps>`
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.56;
+    opacity: 0.68;
   }
 `;
 

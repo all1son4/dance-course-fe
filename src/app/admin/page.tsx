@@ -1,6 +1,15 @@
 "use client";
 
-import { Ban, Check, CircleHelp, Copy, MailX, RefreshCw, X } from "lucide-react";
+import {
+  Ban,
+  Check,
+  CircleHelp,
+  Copy,
+  LoaderCircle,
+  MailX,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
@@ -569,7 +578,7 @@ const AdminSidebar = ({
           aria-label="Проверить сессию"
           title="Проверить сессию"
         >
-          <RefreshCw aria-hidden />
+          {isRefreshingSession ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
         </SidebarIconButton>
         <Button
           buttonText={isLoggingOut ? "Выход..." : "Выйти"}
@@ -640,7 +649,7 @@ const CopyableLink = ({
         aria-label={ariaLabel}
         title={title}
       >
-        <Copy aria-hidden />
+        {isCopying ? <LoaderCircle aria-hidden /> : <Copy aria-hidden />}
       </IconActionButton>
     </CopyButton>
   </ResultBox>
@@ -713,7 +722,7 @@ const ActiveOnlineGroupCard = ({
           aria-label="Обновить Online Group"
           title="Обновить Online Group"
         >
-          <RefreshCw aria-hidden />
+          {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
         </IconActionButton>
       </SurfaceHeaderActions>
     </SurfaceHeaderRow>
@@ -848,7 +857,7 @@ const OnlineGroupInviteLinksCard = ({
         aria-label="Обновить журнал ручных доступов"
         title="Обновить журнал ручных доступов"
       >
-        <RefreshCw aria-hidden />
+        {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
       </IconActionButton>
     </SurfaceHeaderRow>
     <SurfaceDescription>
@@ -1292,7 +1301,7 @@ const InviteLinkJournalCard = ({
         aria-label="Обновить журнал"
         title="Обновить журнал"
       >
-        <RefreshCw aria-hidden />
+        {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
       </IconActionButton>
     </SurfaceHeaderRow>
     {isInitialLoading ? (
@@ -1386,7 +1395,7 @@ const BroadcastWorkspace = ({
           aria-label="Обновить данные рассылки"
           title="Обновить данные рассылки"
         >
-          <RefreshCw aria-hidden />
+          {isLoadingStats ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
         </IconActionButton>
       </SurfaceHeaderRow>
       <SurfaceDescription>Уже отправленные адреса не затрагиваются.</SurfaceDescription>
