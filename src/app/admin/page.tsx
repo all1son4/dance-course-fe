@@ -1,5 +1,6 @@
 "use client";
 
+import { Ban, Check, CircleHelp, Copy, MailX, RefreshCw, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
@@ -11,23 +12,31 @@ import {
   ONLINE_GROUP_RENEWAL_OFFER_ID,
   SELLABLE_PRODUCTS_LIST,
 } from "@/constants/sellable-products";
-import { getOfferAccessDurationDaysByOfferId } from "@/lib/telegram/offer-access";
 
 import {
   AdminInvitePage,
   AdminShell,
+  BroadcastActionButton,
+  BroadcastActionGroup,
+  BroadcastAudienceEmail,
+  BroadcastAudienceName,
+  BroadcastAudienceTable,
+  BroadcastAudienceTableWrap,
+  BroadcastAudienceWorkspace,
+  BroadcastStatusBadge,
   ButtonRow,
   Card,
   CheckboxList,
   CopyButton,
-  Description,
-  FeaturePlaceholder,
+  FeatureHelp,
+  FeatureHelpButton,
+  FeatureHelpTooltip,
   Form,
   FormControl,
   FormGrid,
   HeaderInfo,
-  HeaderMeta,
   HeaderRow,
+  HeaderTitleRow,
   IconActionButton,
   JournalEmptyState,
   JournalSkeletonCard,
@@ -40,9 +49,6 @@ import {
   MainPanel,
   OnlineGroupWorkspace,
   PolicyLabel,
-  PolicyList,
-  PolicyRow,
-  PolicyValue,
   RecentLinkCard,
   RecentLinkHeader,
   RecentLinkMeta,
@@ -55,12 +61,9 @@ import {
   Sidebar,
   SidebarActionRow,
   SidebarFooter,
-  SidebarFooterHint,
-  SidebarHint,
   SidebarIconButton,
   SidebarItem,
   SidebarItemLabel,
-  SidebarItemMeta,
   SidebarNav,
   SidebarTitle,
   SidebarTop,
@@ -81,21 +84,14 @@ import {
   WorkspaceSecondary,
 } from "./page.styles";
 
-type AdminFeatureId =
-  | "invite-links"
-  | "online-group"
-  | "access-control"
-  | "broadcasts"
-  | "reports";
+type AdminFeatureId = "invite-links" | "online-group" | "broadcasts" | "reports";
 type GeneratorKind = "choreo" | "first-touch";
 type LessonLanguage = "en" | "ru";
 type LinkState = "active" | "used";
 type StatusTone = "error" | "info" | "success";
 type AuthState = "authorized" | "checking" | "locked";
 type AdminFeature = {
-  description: string;
   id: AdminFeatureId;
-  isAvailable: boolean;
   label: string;
 };
 type ChoreoSelection = {
@@ -150,6 +146,32 @@ type OnlineGroupCampaignEntry = {
   status: string;
   title: string;
 };
+type OnlineGroupAdminAccessMode = "plus" | "standard";
+type OnlineGroupAdminAccessState =
+  | "expired"
+  | "failed"
+  | "issued"
+  | "left"
+  | "pending"
+  | "revoked"
+  | "used";
+type OnlineGroupAdminAccess = {
+  accessExpiresAt: string;
+  accessKey: "inspiration-hub" | "main-group";
+  accessUrl: string;
+  chatId: string;
+  chatTitle: string;
+  state: OnlineGroupAdminAccessState;
+  tokenExpiresAt: string;
+};
+type OnlineGroupAdminGrant = {
+  accessMode: OnlineGroupAdminAccessMode;
+  accesses: OnlineGroupAdminAccess[];
+  adminLabel: string;
+  createdAtIso: string;
+  offerLabel: string;
+  paymentIntentId: string;
+};
 type AuthResponse = {
   authorized?: boolean;
   errorCode?: string;
@@ -200,6 +222,12 @@ type OnlineGroupCampaignsResponse = {
   reused?: boolean;
   status?: string;
 };
+type OnlineGroupAdminLinksResponse = {
+  errorCode?: string;
+  grant?: OnlineGroupAdminGrant;
+  grants?: OnlineGroupAdminGrant[];
+  status?: "not_available" | "partial" | "ready";
+};
 type MonthlySalesReportMonthsResponse = {
   errorCode?: string;
   months?: SelectOption[];
@@ -219,13 +247,29 @@ type MonthlySalesReportResponse = {
   status?: "failed" | "sent" | "skipped";
 };
 type BroadcastStats = {
+  excluded: number;
   failed: number;
   pending: number;
   sent: number;
   total: number;
 };
+type BroadcastAudienceLead = {
+  createdAt: string;
+  email: string;
+  fullName: string;
+  leadId: string;
+  locale: string;
+  socialContact: string;
+  status: "failed" | "pending";
+};
+type BroadcastExclusionScope = "campaign" | "global";
 type FirstTouchBroadcastResponse = {
+  audience?: BroadcastAudienceLead[];
   errorCode?: string;
+  exclusion?: {
+    leadId: string;
+    scope: BroadcastExclusionScope;
+  };
   result?: BroadcastStats & {
     attempted: number;
   };
@@ -238,6 +282,7 @@ const ADMIN_API_ENDPOINTS = {
   inviteLinks: "/admin/api/invite-links",
   inviteLinksHistory: "/admin/api/invite-links/history",
   monthlySalesReport: "/admin/api/reports/monthly-sales",
+  onlineGroupInviteLinks: "/admin/api/online-group-invite-links",
   onlineGroupSettings: "/admin/api/online-group-settings",
   renewalCampaigns: "/admin/api/renewal-campaigns",
   telegramChats: "/admin/api/telegram/chats",
@@ -249,33 +294,19 @@ const JOURNAL_SKELETON_COUNT = 3;
 const ADMIN_FEATURES: AdminFeature[] = [
   {
     id: "invite-links",
-    isAvailable: true,
     label: "Invite-ссылки",
-    description: "Ручная выдача доступов без покупки",
   },
   {
     id: "online-group",
-    isAvailable: true,
-    label: "Настройки Online Group",
-    description: "Текущий поток, Inspiration Hub и продления",
-  },
-  {
-    id: "access-control",
-    isAvailable: false,
-    label: "Управление доступом",
-    description: "История, отзыв, продление (скоро)",
+    label: "Online Group",
   },
   {
     id: "broadcasts",
-    isAvailable: true,
     label: "Рассылки",
-    description: "Разовые email-кампании",
   },
   {
     id: "reports",
-    isAvailable: true,
     label: "Отчеты",
-    description: "Ежемесячный отчет по продажам Stripe",
   },
 ];
 
@@ -304,72 +335,25 @@ const ADMIN_FEATURE_COPY: Record<
   AdminFeatureId,
   {
     description: string;
-    meta: string;
   }
 > = {
-  "access-control": {
-    description:
-      "Раздел в подготовке. Ниже можно размещать таблицы, фильтры и операционные действия.",
-    meta: "Для каждого invite добавляй идентификатор, чтобы журнал был понятным.",
-  },
   broadcasts: {
-    description: "Разовые email-рассылки по заявкам из Neon с зеркалом в Google Sheets.",
-    meta: "Повторный запуск отправляет письма только тем, у кого еще нет успешной отправки.",
+    description:
+      "Проверь количество получателей и запусти разовую рассылку. Повторный запуск не затронет адреса, на которые письмо уже ушло.",
   },
   "invite-links": {
     description:
-      "Генерация одноразовых Telegram invite-ссылок с той же бизнес-логикой, что и в боевом платежном потоке.",
-    meta: "Для каждого invite добавляй идентификатор, чтобы журнал был понятным.",
+      "Создай персональную одноразовую ссылку на курс и скопируй её из журнала для отправки участнику.",
   },
   "online-group": {
     description:
-      "Настройка текущего потока, постоянного Inspiration Hub и ссылок продления.",
-    meta: "Plus открывает основной чат без автоматического срока, а Inspiration Hub — до старта следующего потока.",
+      "Настрой активный поток. После запуска здесь появятся ручная выдача доступа и управление продлениями.",
   },
   reports: {
     description:
-      "Генерация и отправка CSV-отчета по успешным продажам за выбранный месяц.",
-    meta: "Ручной запуск отправляет письмо каждый раз, если за выбранный период есть продажи.",
+      "Выбери месяц, сформируй отчет по подтвержденным продажам и отправь его на рабочую почту.",
   },
 };
-
-const RefreshIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-    <path d="M3 3v5h5" />
-    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-    <path d="M16 16h5v5" />
-  </svg>
-);
-
-const CopyIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-  </svg>
-);
 
 const formatDateTime = (value: string) => {
   const date = new Date(value);
@@ -402,20 +386,39 @@ const formatDateTimeInput = (value: string) => {
     .slice(0, 16);
 };
 
-const formatAccessDurationLabel = (days: number | null | undefined) => {
-  if (!days || days <= 0) {
-    return "Без ограничения после вступления";
-  }
-
-  if (days === 60) {
-    return "60 дней с момента вступления";
-  }
-
-  return `${days} дней с момента вступления`;
-};
-
 const resolveLinkStateLabel = (state: LinkState) =>
   state === "used" ? "Использована" : "Активна";
+
+const resolveOnlineGroupAccessStateLabel = (state: OnlineGroupAdminAccessState) => {
+  if (state === "issued") {
+    return "Ссылка активна";
+  }
+
+  if (state === "used") {
+    return "Использована";
+  }
+
+  if (state === "expired") {
+    return "Истекла";
+  }
+
+  if (state === "revoked") {
+    return "Отозвана";
+  }
+
+  if (state === "left") {
+    return "Покинул(а) чат";
+  }
+
+  if (state === "failed") {
+    return "Ошибка создания";
+  }
+
+  return "Подготавливается";
+};
+
+const resolveOnlineGroupAccessTitle = (accessKey: OnlineGroupAdminAccess["accessKey"]) =>
+  accessKey === "inspiration-hub" ? "Inspiration Hub" : "Основной чат";
 
 const getChoreoSelections = () =>
   SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo")
@@ -486,7 +489,7 @@ const AdminLogin = ({
     <LockViewport>
       <LockCard>
         <LockTitle>Вход в админ-панель</LockTitle>
-        <LockDescription>Пароль открывает доступ ко всей админ-панели</LockDescription>
+        <LockDescription>Управление курсами, потоками и приглашениями.</LockDescription>
         <Form onSubmit={onSubmit}>
           <FormControl>
             <Input
@@ -540,28 +543,23 @@ const AdminSidebar = ({
 }: AdminSidebarProps) => (
   <Sidebar>
     <SidebarTop>
-      <SidebarTitle>Admin</SidebarTitle>
-      <SidebarHint>Выбери нужный раздел слева.</SidebarHint>
+      <SidebarTitle>Anna Strok</SidebarTitle>
       <SidebarNav>
         {ADMIN_FEATURES.map((feature) => (
           <SidebarItem
             key={feature.id}
             type="button"
             $active={feature.id === activeFeatureId}
-            $available={feature.isAvailable}
-            onClick={() => feature.isAvailable && onFeatureSelect(feature.id)}
-            disabled={!feature.isAvailable}
+            onClick={() => onFeatureSelect(feature.id)}
             aria-current={feature.id === activeFeatureId ? "page" : undefined}
           >
             <SidebarItemLabel>{feature.label}</SidebarItemLabel>
-            <SidebarItemMeta>{feature.description}</SidebarItemMeta>
           </SidebarItem>
         ))}
       </SidebarNav>
     </SidebarTop>
 
     <SidebarFooter>
-      <SidebarFooterHint>Сессия администратора</SidebarFooterHint>
       <SidebarActionRow>
         <SidebarIconButton
           type="button"
@@ -571,7 +569,7 @@ const AdminSidebar = ({
           aria-label="Проверить сессию"
           title="Проверить сессию"
         >
-          <RefreshIcon />
+          <RefreshCw aria-hidden />
         </SidebarIconButton>
         <Button
           buttonText={isLoggingOut ? "Выход..." : "Выйти"}
@@ -594,9 +592,21 @@ const AdminFeatureHeader = ({ feature }: { feature: AdminFeature }) => {
   return (
     <HeaderRow>
       <HeaderInfo>
-        <Title>{feature.label}</Title>
-        <Description>{copy.description}</Description>
-        <HeaderMeta>{copy.meta}</HeaderMeta>
+        <HeaderTitleRow>
+          <Title>{feature.label}</Title>
+          <FeatureHelp>
+            <FeatureHelpButton
+              type="button"
+              aria-label={`Что можно сделать в разделе «${feature.label}»`}
+              aria-describedby={`admin-feature-help-${feature.id}`}
+            >
+              <CircleHelp aria-hidden />
+            </FeatureHelpButton>
+            <FeatureHelpTooltip id={`admin-feature-help-${feature.id}`} role="tooltip">
+              {copy.description}
+            </FeatureHelpTooltip>
+          </FeatureHelp>
+        </HeaderTitleRow>
       </HeaderInfo>
     </HeaderRow>
   );
@@ -630,7 +640,7 @@ const CopyableLink = ({
         aria-label={ariaLabel}
         title={title}
       >
-        <CopyIcon />
+        <Copy aria-hidden />
       </IconActionButton>
     </CopyButton>
   </ResultBox>
@@ -681,9 +691,9 @@ const ActiveOnlineGroupCard = ({
   telegramChatOptions,
   title,
 }: ActiveOnlineGroupCardProps) => (
-  <SurfaceCard>
+  <SurfaceCard $wide>
     <SurfaceHeaderRow>
-      <SurfaceTitle>1. Активный поток</SurfaceTitle>
+      <SurfaceTitle>Активный поток</SurfaceTitle>
       <SurfaceHeaderActions>
         {activeCampaign && (
           <Button
@@ -703,13 +713,10 @@ const ActiveOnlineGroupCard = ({
           aria-label="Обновить Online Group"
           title="Обновить Online Group"
         >
-          <RefreshIcon />
+          <RefreshCw aria-hidden />
         </IconActionButton>
       </SurfaceHeaderActions>
     </SurfaceHeaderRow>
-    <SurfaceDescription>
-      Куда попадут участники после новой покупки или продления.
-    </SurfaceDescription>
     {activeCampaign ? (
       <SummaryGrid>
         <SummaryItem>
@@ -799,6 +806,174 @@ const ActiveOnlineGroupCard = ({
   </SurfaceCard>
 );
 
+type OnlineGroupInviteLinksCardProps = {
+  accessMode: OnlineGroupAdminAccessMode;
+  adminLabel: string;
+  copyingUrl: string;
+  grants: OnlineGroupAdminGrant[];
+  isDisabled: boolean;
+  isGenerating: boolean;
+  isLoading: boolean;
+  onAccessModeChange: (value: OnlineGroupAdminAccessMode) => void;
+  onAdminLabelChange: (value: string) => void;
+  onCopy: (link: string) => void | Promise<void>;
+  onRefresh: () => void | Promise<void>;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
+  status: StatusMessage;
+};
+
+const OnlineGroupInviteLinksCard = ({
+  accessMode,
+  adminLabel,
+  copyingUrl,
+  grants,
+  isDisabled,
+  isGenerating,
+  isLoading,
+  onAccessModeChange,
+  onAdminLabelChange,
+  onCopy,
+  onRefresh,
+  onSubmit,
+  status,
+}: OnlineGroupInviteLinksCardProps) => (
+  <SurfaceCard $wide>
+    <SurfaceHeaderRow>
+      <SurfaceTitle>Выдать доступ вручную</SurfaceTitle>
+      <IconActionButton
+        type="button"
+        onClick={onRefresh}
+        disabled={isLoading}
+        $isLoading={isLoading}
+        aria-label="Обновить журнал ручных доступов"
+        title="Обновить журнал ручных доступов"
+      >
+        <RefreshCw aria-hidden />
+      </IconActionButton>
+    </SurfaceHeaderRow>
+    <SurfaceDescription>
+      Standard — основной чат. Plus — основной чат и Inspiration Hub.
+    </SurfaceDescription>
+
+    <Form onSubmit={onSubmit}>
+      <FormGrid>
+        <FormControl>
+          <Input
+            id="online-group-admin-access-mode"
+            name="onlineGroupAdminAccessMode"
+            label="Тариф доступа"
+            value={accessMode}
+            selectOptions={[
+              { label: "Standard — только основной чат", value: "standard" },
+              { label: "Plus — основной чат + Hub", value: "plus" },
+            ]}
+            onChange={(event) =>
+              onAccessModeChange(event.target.value as OnlineGroupAdminAccessMode)
+            }
+            disabled={isLoading}
+            width="100%"
+          />
+        </FormControl>
+        <FormControl>
+          <Input
+            id="online-group-admin-label"
+            name="onlineGroupAdminLabel"
+            label="Идентификатор"
+            value={adminLabel}
+            placeholder="Например: Аня / подарок / спец-доступ"
+            onChange={(event) => onAdminLabelChange(event.target.value)}
+            disabled={isLoading}
+            width="100%"
+          />
+        </FormControl>
+      </FormGrid>
+      <ButtonRow>
+        <Button
+          buttonText={isGenerating ? "Генерирую..." : "Создать ссылки доступа"}
+          type="submit"
+          disabled={isDisabled}
+          isLoading={isGenerating}
+          width="100%"
+        />
+      </ButtonRow>
+      {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
+    </Form>
+
+    <SectionHeading>Журнал выдач</SectionHeading>
+    {isLoading && grants.length === 0 ? (
+      <JournalSkeletonList>
+        {Array.from({ length: 2 }, (_, index) => (
+          <JournalSkeletonCard key={`online-group-grant-skeleton-${index}`}>
+            <SkeletonLine $width="58%" />
+            <SkeletonLine $width="36%" />
+            <SkeletonLine $width="100%" $height="36px" />
+          </JournalSkeletonCard>
+        ))}
+      </JournalSkeletonList>
+    ) : grants.length === 0 ? (
+      <JournalEmptyState>Ручных выдач для Online Group пока нет.</JournalEmptyState>
+    ) : (
+      <RecentLinksList>
+        {grants.map((grant) => (
+          <RecentLinkCard key={grant.paymentIntentId}>
+            <RecentLinkHeader>
+              <RecentLinkMeta>{grant.adminLabel}</RecentLinkMeta>
+              <LinkStateBadge $state="active">
+                {grant.accessMode === "plus" ? "Plus" : "Standard"}
+              </LinkStateBadge>
+            </RecentLinkHeader>
+            <RecentLinkMeta>Создано: {formatDateTime(grant.createdAtIso)}</RecentLinkMeta>
+
+            {grant.accesses.length === 0 ? (
+              <StatusText $tone="error">Ссылки для этой выдачи не созданы.</StatusText>
+            ) : (
+              grant.accesses.map((access) => (
+                <RecentLinkCard
+                  key={`${grant.paymentIntentId}-${access.accessKey}-${access.chatId}`}
+                >
+                  <RecentLinkHeader>
+                    <RecentLinkMeta>
+                      {resolveOnlineGroupAccessTitle(access.accessKey)}
+                    </RecentLinkMeta>
+                    <LinkStateBadge
+                      $state={access.state === "issued" ? "active" : "used"}
+                    >
+                      {resolveOnlineGroupAccessStateLabel(access.state)}
+                    </LinkStateBadge>
+                  </RecentLinkHeader>
+                  <RecentLinkMeta>
+                    Чат: {access.chatTitle || access.chatId || "не определён"}
+                  </RecentLinkMeta>
+                  <RecentLinkMeta>
+                    Токен до:{" "}
+                    {access.tokenExpiresAt
+                      ? formatDateTime(access.tokenExpiresAt)
+                      : "не определено"}
+                    {access.accessExpiresAt
+                      ? ` | Доступ до: ${formatDateTime(access.accessExpiresAt)}`
+                      : ""}
+                  </RecentLinkMeta>
+                  {access.accessUrl ? (
+                    <CopyableLink
+                      isCopying={copyingUrl === access.accessUrl}
+                      link={access.accessUrl}
+                      onCopy={onCopy}
+                    />
+                  ) : (
+                    <StatusText $tone={access.state === "failed" ? "error" : "info"}>
+                      Активной ссылки для копирования нет.
+                    </StatusText>
+                  )}
+                </RecentLinkCard>
+              ))
+            )}
+          </RecentLinkCard>
+        ))}
+      </RecentLinksList>
+    )}
+  </SurfaceCard>
+);
+
 type RenewalGeneratorCardProps = {
   chats: TelegramChatOption[];
   copyingUrl: string;
@@ -839,25 +1014,28 @@ const RenewalGeneratorCard = ({
   title,
 }: RenewalGeneratorCardProps) => (
   <SurfaceCard>
-    <SurfaceTitle>2. Создать ссылку продления</SurfaceTitle>
-    <SurfaceDescription>
-      Кто может купить следующий поток и по какому тарифу.
-    </SurfaceDescription>
+    <SurfaceTitle>Создать ссылку продления</SurfaceTitle>
     <Form onSubmit={onSubmit}>
       <FormControl>
         <PolicyLabel>Участники из этих чатов смогут оплатить</PolicyLabel>
-        <CheckboxList>
-          {chats.map((chat) => (
-            <Checkbox
-              key={chat.chatId}
-              checked={sourceChatIds.includes(chat.chatId)}
-              disabled={isLoading}
-              name={`renewal-source-${chat.chatId}`}
-              onChange={(event) => onSourceChatToggle(chat.chatId, event.target.checked)}
-              placeholder={`${chat.title} (${chat.chatId})`}
-            />
-          ))}
-        </CheckboxList>
+        {chats.length === 0 ? (
+          <StatusText $tone="info">Доступных чатов пока нет.</StatusText>
+        ) : (
+          <CheckboxList>
+            {chats.map((chat) => (
+              <Checkbox
+                key={chat.chatId}
+                checked={sourceChatIds.includes(chat.chatId)}
+                disabled={isLoading}
+                name={`renewal-source-${chat.chatId}`}
+                onChange={(event) =>
+                  onSourceChatToggle(chat.chatId, event.target.checked)
+                }
+                placeholder={`${chat.title} (${chat.chatId})`}
+              />
+            ))}
+          </CheckboxList>
+        )}
       </FormControl>
       <FormGrid>
         <FormControl>
@@ -937,10 +1115,7 @@ const RenewalCampaignsCard = ({
   updatingSlug,
 }: RenewalCampaignsCardProps) => (
   <SurfaceCard>
-    <SurfaceTitle>3. Ссылки продления</SurfaceTitle>
-    <SurfaceDescription>
-      Включай нужную ссылку свитчером и копируй ее для отправки в чат.
-    </SurfaceDescription>
+    <SurfaceTitle>Ссылки продления</SurfaceTitle>
     {campaigns.length === 0 ? (
       <JournalEmptyState>Ссылок пока нет.</JournalEmptyState>
     ) : (
@@ -1002,7 +1177,6 @@ type InviteLinkGeneratorCardProps = {
   onCopy: (link: string) => void | Promise<void>;
   onKindChange: (kind: GeneratorKind) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
-  resolvedChoreoSelection: ChoreoSelection | null;
   selectedChoreoKey: string;
 };
 
@@ -1021,15 +1195,10 @@ const InviteLinkGeneratorCard = ({
   onCopy,
   onKindChange,
   onSubmit,
-  resolvedChoreoSelection,
   selectedChoreoKey,
 }: InviteLinkGeneratorCardProps) => (
   <SurfaceCard>
     <SurfaceTitle>Генератор доступа</SurfaceTitle>
-    <SurfaceDescription>
-      Выбери тип продукта, добавь идентификатор и сгенерируй одноразовую ссылку доступа в
-      канал.
-    </SurfaceDescription>
     <Form onSubmit={onSubmit}>
       <FormControl>
         <Input
@@ -1070,19 +1239,6 @@ const InviteLinkGeneratorCard = ({
         />
       </FormControl>
 
-      {kind === "choreo" && !resolvedChoreoSelection && (
-        <StatusText $tone="info">
-          Для разбора обязательно выбери конкретный оффер в селекторе.
-        </StatusText>
-      )}
-
-      {!adminLabel.trim() && (
-        <StatusText $tone="info">
-          Добавь идентификатор, чтобы потом было понятно, кому или для чего выдавалась
-          ссылка.
-        </StatusText>
-      )}
-
       <ButtonRow>
         <Button
           buttonText={isGenerating ? "Генерирую..." : "Сгенерировать ссылку"}
@@ -1105,30 +1261,6 @@ const InviteLinkGeneratorCard = ({
         />
       )}
     </Form>
-  </SurfaceCard>
-);
-
-const InviteLinkPolicyCard = ({ accessPolicyLabel }: { accessPolicyLabel: string }) => (
-  <SurfaceCard>
-    <SurfaceTitle>Политика и контроль</SurfaceTitle>
-    <PolicyList>
-      <PolicyRow>
-        <PolicyLabel>Доступ по ссылке</PolicyLabel>
-        <PolicyValue>Одноразовый invite, 30 дней</PolicyValue>
-      </PolicyRow>
-      <PolicyRow>
-        <PolicyLabel>Срок доступа</PolicyLabel>
-        <PolicyValue>{accessPolicyLabel}</PolicyValue>
-      </PolicyRow>
-      <PolicyRow>
-        <PolicyLabel>Источник данных</PolicyLabel>
-        <PolicyValue>Neon primary + Google Sheets mirror</PolicyValue>
-      </PolicyRow>
-      <PolicyRow>
-        <PolicyLabel>Защита API</PolicyLabel>
-        <PolicyValue>Origin check + rate limiting</PolicyValue>
-      </PolicyRow>
-    </PolicyList>
   </SurfaceCard>
 );
 
@@ -1160,7 +1292,7 @@ const InviteLinkJournalCard = ({
         aria-label="Обновить журнал"
         title="Обновить журнал"
       >
-        <RefreshIcon />
+        <RefreshCw aria-hidden />
       </IconActionButton>
     </SurfaceHeaderRow>
     {isInitialLoading ? (
@@ -1207,9 +1339,18 @@ const InviteLinkJournalCard = ({
 );
 
 type BroadcastWorkspaceProps = {
+  audience: BroadcastAudienceLead[];
+  confirmingGlobalLeadId: string;
   isDisabled: boolean;
   isLoadingStats: boolean;
   isSending: boolean;
+  isUpdatingLeadId: string;
+  onExclude: (
+    lead: BroadcastAudienceLead,
+    scope: BroadcastExclusionScope,
+  ) => void | Promise<void>;
+  onGlobalExcludeCancel: () => void;
+  onGlobalExcludeRequest: (leadId: string) => void;
   onRefresh: () => void | Promise<void>;
   onSend: () => void | Promise<void>;
   pendingCount: number;
@@ -1218,60 +1359,67 @@ type BroadcastWorkspaceProps = {
 };
 
 const BroadcastWorkspace = ({
+  audience,
+  confirmingGlobalLeadId,
   isDisabled,
   isLoadingStats,
   isSending,
+  isUpdatingLeadId,
+  onExclude,
+  onGlobalExcludeCancel,
+  onGlobalExcludeRequest,
   onRefresh,
   onSend,
   pendingCount,
   stats,
   status,
 }: BroadcastWorkspaceProps) => (
-  <WorkspaceGrid>
-    <WorkspacePrimary>
-      <SurfaceCard>
-        <SurfaceHeaderRow>
-          <SurfaceTitle>First Touch: старт продаж</SurfaceTitle>
-          <IconActionButton
-            type="button"
-            onClick={onRefresh}
-            disabled={isLoadingStats}
-            $isLoading={isLoadingStats}
-            aria-label="Обновить статистику рассылки"
-            title="Обновить статистику рассылки"
-          >
-            <RefreshIcon />
-          </IconActionButton>
-        </SurfaceHeaderRow>
-        <SurfaceDescription>
-          Отправляет разовое письмо со ссылкой на checkout курса First Touch. Уже успешно
-          отправленные адреса не затрагиваются.
-        </SurfaceDescription>
-        <PolicyList>
-          <PolicyRow>
-            <PolicyLabel>Всего заявок</PolicyLabel>
-            <PolicyValue>{stats?.total ?? 0}</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Ожидают отправки</PolicyLabel>
-            <PolicyValue>{stats?.pending ?? 0}</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Уже отправлено</PolicyLabel>
-            <PolicyValue>{stats?.sent ?? 0}</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>С ошибкой</PolicyLabel>
-            <PolicyValue>{stats?.failed ?? 0}</PolicyValue>
-          </PolicyRow>
-        </PolicyList>
+  <BroadcastAudienceWorkspace>
+    <SurfaceCard>
+      <SurfaceHeaderRow>
+        <SurfaceTitle>First Touch: старт продаж</SurfaceTitle>
+        <IconActionButton
+          type="button"
+          onClick={onRefresh}
+          disabled={isLoadingStats}
+          $isLoading={isLoadingStats}
+          aria-label="Обновить данные рассылки"
+          title="Обновить данные рассылки"
+        >
+          <RefreshCw aria-hidden />
+        </IconActionButton>
+      </SurfaceHeaderRow>
+      <SurfaceDescription>Уже отправленные адреса не затрагиваются.</SurfaceDescription>
+      <Form as="div">
+        <SummaryGrid>
+          <SummaryItem>
+            <SummaryLabel>Всего заявок</SummaryLabel>
+            <SummaryValue>{stats?.total ?? 0}</SummaryValue>
+          </SummaryItem>
+          <SummaryItem>
+            <SummaryLabel>Ожидают</SummaryLabel>
+            <SummaryValue>{stats?.pending ?? 0}</SummaryValue>
+          </SummaryItem>
+          <SummaryItem>
+            <SummaryLabel>С ошибкой</SummaryLabel>
+            <SummaryValue>{stats?.failed ?? 0}</SummaryValue>
+          </SummaryItem>
+          <SummaryItem>
+            <SummaryLabel>Отправлено</SummaryLabel>
+            <SummaryValue>{stats?.sent ?? 0}</SummaryValue>
+          </SummaryItem>
+          <SummaryItem>
+            <SummaryLabel>Исключено</SummaryLabel>
+            <SummaryValue>{stats?.excluded ?? 0}</SummaryValue>
+          </SummaryItem>
+        </SummaryGrid>
         <ButtonRow>
           <Button
             buttonText={
               isSending
                 ? "Отправляю..."
                 : isLoadingStats
-                  ? "Загружаю статистику..."
+                  ? "Загружаю данные..."
                   : pendingCount === 0
                     ? "Нет адресов для отправки"
                     : "Отправить рассылку"
@@ -1284,33 +1432,120 @@ const BroadcastWorkspace = ({
           />
         </ButtonRow>
         {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-      </SurfaceCard>
-    </WorkspacePrimary>
+      </Form>
+    </SurfaceCard>
 
-    <WorkspaceSecondary>
-      <SurfaceCard>
-        <SurfaceTitle>Правила отправки</SurfaceTitle>
-        <PolicyList>
-          <PolicyRow>
-            <PolicyLabel>Источник</PolicyLabel>
-            <PolicyValue>Neon EmailCampaignLeads + Sheets mirror</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Кампания</PolicyLabel>
-            <PolicyValue>first_touch_sales_start</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Повторный запуск</PolicyLabel>
-            <PolicyValue>Только pending и failed</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Канал доставки</PolicyLabel>
-            <PolicyValue>Resend email</PolicyValue>
-          </PolicyRow>
-        </PolicyList>
-      </SurfaceCard>
-    </WorkspaceSecondary>
-  </WorkspaceGrid>
+    <SurfaceCard>
+      <SurfaceTitle>Ожидают отправки</SurfaceTitle>
+      <SurfaceDescription>
+        Здесь только те, кому письмо еще не отправлено.
+      </SurfaceDescription>
+
+      {isLoadingStats && audience.length === 0 ? (
+        <JournalSkeletonList>
+          {Array.from({ length: 3 }, (_, index) => (
+            <JournalSkeletonCard key={`broadcast-audience-skeleton-${index}`}>
+              <SkeletonLine $width="42%" />
+              <SkeletonLine $width="68%" />
+              <SkeletonLine $height="32px" $width="100%" />
+            </JournalSkeletonCard>
+          ))}
+        </JournalSkeletonList>
+      ) : audience.length === 0 ? (
+        <JournalEmptyState>Все готово — ожидающих отправки нет.</JournalEmptyState>
+      ) : (
+        <BroadcastAudienceTableWrap>
+          <BroadcastAudienceTable aria-label="Пользователи, ожидающие рассылки">
+            <thead>
+              <tr>
+                <th>Участник</th>
+                <th>Контакт</th>
+                <th>Язык</th>
+                <th>Заявка</th>
+                <th>Статус</th>
+                <th>Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              {audience.map((lead) => {
+                const isUpdating = isUpdatingLeadId === lead.leadId;
+                const isConfirmingGlobal = confirmingGlobalLeadId === lead.leadId;
+
+                return (
+                  <tr key={lead.leadId}>
+                    <td data-label="Участник">
+                      <span>
+                        <BroadcastAudienceName>
+                          {lead.fullName || "Без имени"}
+                        </BroadcastAudienceName>
+                        <BroadcastAudienceEmail>{lead.email}</BroadcastAudienceEmail>
+                      </span>
+                    </td>
+                    <td data-label="Контакт">{lead.socialContact || "—"}</td>
+                    <td data-label="Язык">{lead.locale.toUpperCase() || "—"}</td>
+                    <td data-label="Заявка">{formatDateTime(lead.createdAt)}</td>
+                    <td data-label="Статус">
+                      <BroadcastStatusBadge $status={lead.status}>
+                        {lead.status === "failed" ? "Ошибка — повторим" : "Ожидает"}
+                      </BroadcastStatusBadge>
+                    </td>
+                    <td data-label="Действия">
+                      <BroadcastActionGroup>
+                        {isConfirmingGlobal ? (
+                          <>
+                            <BroadcastActionButton
+                              type="button"
+                              $danger
+                              onClick={() => onExclude(lead, "global")}
+                              disabled={isSending || Boolean(isUpdatingLeadId)}
+                              title="Подтвердить исключение из будущих рассылок"
+                            >
+                              <Check aria-hidden />
+                              {isUpdating ? "Сохраняю..." : "Подтвердить"}
+                            </BroadcastActionButton>
+                            <BroadcastActionButton
+                              type="button"
+                              onClick={onGlobalExcludeCancel}
+                              disabled={Boolean(isUpdatingLeadId)}
+                            >
+                              <X aria-hidden />
+                              Отмена
+                            </BroadcastActionButton>
+                          </>
+                        ) : (
+                          <>
+                            <BroadcastActionButton
+                              type="button"
+                              onClick={() => onExclude(lead, "campaign")}
+                              disabled={isSending || Boolean(isUpdatingLeadId)}
+                              title="Не отправлять письмо в этой рассылке"
+                            >
+                              <MailX aria-hidden />
+                              {isUpdating ? "Сохраняю..." : "Не отправлять"}
+                            </BroadcastActionButton>
+                            <BroadcastActionButton
+                              type="button"
+                              $danger
+                              onClick={() => onGlobalExcludeRequest(lead.leadId)}
+                              disabled={isSending || Boolean(isUpdatingLeadId)}
+                              title="Не включать этот email в будущие рассылки"
+                            >
+                              <Ban aria-hidden />
+                              Исключить везде
+                            </BroadcastActionButton>
+                          </>
+                        )}
+                      </BroadcastActionGroup>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </BroadcastAudienceTable>
+        </BroadcastAudienceTableWrap>
+      )}
+    </SurfaceCard>
+  </BroadcastAudienceWorkspace>
 );
 
 type ReportsWorkspaceProps = {
@@ -1338,10 +1573,7 @@ const ReportsWorkspace = ({
     <WorkspacePrimary>
       <SurfaceCard>
         <SurfaceTitle>Ежемесячный отчет по продажам</SurfaceTitle>
-        <SurfaceDescription>
-          Генерирует CSV по успешным Stripe-платежам за выбранный месяц и отправляет его
-          на адрес из RESEND_REPLY_TO.
-        </SurfaceDescription>
+        <SurfaceDescription>Готовый отчет придет на рабочую почту.</SurfaceDescription>
         <Form
           onSubmit={(event) => {
             event.preventDefault();
@@ -1384,47 +1616,7 @@ const ReportsWorkspace = ({
         </Form>
       </SurfaceCard>
     </WorkspacePrimary>
-
-    <WorkspaceSecondary>
-      <SurfaceCard>
-        <SurfaceTitle>Как это работает</SurfaceTitle>
-        <PolicyList>
-          <PolicyRow>
-            <PolicyLabel>Источник</PolicyLabel>
-            <PolicyValue>Neon purchases + Stripe success events</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Период</PolicyLabel>
-            <PolicyValue>По времени успешной оплаты Stripe</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Пустой отчет</PolicyLabel>
-            <PolicyValue>Если продаж нет, письмо не отправляется</PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Защита от дублей</PolicyLabel>
-            <PolicyValue>
-              Cron не дублирует отправку, кнопка отправляет каждый раз
-            </PolicyValue>
-          </PolicyRow>
-          <PolicyRow>
-            <PolicyLabel>Канал доставки</PolicyLabel>
-            <PolicyValue>Resend email</PolicyValue>
-          </PolicyRow>
-        </PolicyList>
-      </SurfaceCard>
-    </WorkspaceSecondary>
   </WorkspaceGrid>
-);
-
-const UnavailableFeature = ({ feature }: { feature: AdminFeature }) => (
-  <>
-    <FeaturePlaceholder>
-      Раздел <strong>{feature.label}</strong> пока не реализован. Дальше можно добавить
-      здесь таблицы, фильтры и действия для ручного управления.
-    </FeaturePlaceholder>
-    <SectionHeading>Скоро здесь появятся инструменты управления</SectionHeading>
-  </>
 );
 
 export default function AdminPage() {
@@ -1462,6 +1654,16 @@ export default function AdminPage() {
   const [onlineGroupStatus, setOnlineGroupStatus] = useState<StatusMessage>(null);
   const [isOnlineGroupFormOpen, setIsOnlineGroupFormOpen] = useState(false);
   const [isSavingOnlineGroupSettings, setIsSavingOnlineGroupSettings] = useState(false);
+  const [onlineGroupAdminAccessMode, setOnlineGroupAdminAccessMode] =
+    useState<OnlineGroupAdminAccessMode>("standard");
+  const [onlineGroupAdminLabel, setOnlineGroupAdminLabel] = useState("");
+  const [onlineGroupAdminGrants, setOnlineGroupAdminGrants] = useState<
+    OnlineGroupAdminGrant[]
+  >([]);
+  const [onlineGroupAdminStatus, setOnlineGroupAdminStatus] =
+    useState<StatusMessage>(null);
+  const [isGeneratingOnlineGroupAdminAccess, setIsGeneratingOnlineGroupAdminAccess] =
+    useState(false);
   const [renewalCampaigns, setRenewalCampaigns] = useState<RenewalCampaignEntry[]>([]);
   const [renewalSourceChatIds, setRenewalSourceChatIds] = useState<string[]>([]);
   const [renewalOfferId, setRenewalOfferId] = useState(ONLINE_GROUP_RENEWAL_OFFER_ID);
@@ -1489,11 +1691,18 @@ export default function AdminPage() {
   const [monthlySalesReportMonth, setMonthlySalesReportMonth] = useState("");
   const [firstTouchBroadcastStats, setFirstTouchBroadcastStats] =
     useState<BroadcastStats | null>(null);
+  const [firstTouchBroadcastAudience, setFirstTouchBroadcastAudience] = useState<
+    BroadcastAudienceLead[]
+  >([]);
   const [firstTouchBroadcastStatus, setFirstTouchBroadcastStatus] =
     useState<StatusMessage>(null);
   const [isLoadingFirstTouchBroadcastStats, setIsLoadingFirstTouchBroadcastStats] =
     useState(false);
   const [isSendingFirstTouchBroadcast, setIsSendingFirstTouchBroadcast] = useState(false);
+  const [updatingFirstTouchBroadcastLeadId, setUpdatingFirstTouchBroadcastLeadId] =
+    useState("");
+  const [confirmingGlobalBroadcastLeadId, setConfirmingGlobalBroadcastLeadId] =
+    useState("");
   const [hasLoadedFirstTouchBroadcastStats, setHasLoadedFirstTouchBroadcastStats] =
     useState(false);
   const [recentLinks, setRecentLinks] = useState<GeneratedLinkEntry[]>([]);
@@ -1534,6 +1743,20 @@ export default function AdminPage() {
         (chat) => chat.chatId === activeOnlineGroupCampaign.inspirationChatId,
       )?.title ?? activeOnlineGroupCampaign.inspirationChatId)
     : "";
+  const hasConfiguredOnlineGroup = Boolean(
+    activeOnlineGroupCampaign?.mainChatId &&
+    activeOnlineGroupCampaign.inspirationChatId &&
+    activeOnlineGroupCampaign.startsAt &&
+    telegramChats.some((chat) => chat.chatId === activeOnlineGroupCampaign.mainChatId) &&
+    telegramChats.some(
+      (chat) => chat.chatId === activeOnlineGroupCampaign.inspirationChatId,
+    ),
+  );
+  const isOnlineGroupAdminGenerateDisabled =
+    isGeneratingOnlineGroupAdminAccess ||
+    isLoadingOnlineGroupData ||
+    !hasConfiguredOnlineGroup ||
+    !onlineGroupAdminLabel.trim();
   const isRenewalGenerateDisabled =
     isGeneratingRenewal ||
     renewalSourceChatIds.length === 0 ||
@@ -1555,22 +1778,6 @@ export default function AdminPage() {
       value: ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
     },
   ];
-  const accessPolicyLabel = useMemo(() => {
-    if (kind === "choreo" && resolvedChoreoSelection) {
-      return formatAccessDurationLabel(
-        getOfferAccessDurationDaysByOfferId(resolvedChoreoSelection.offerId),
-      );
-    }
-
-    const firstTouchOfferId =
-      SELLABLE_PRODUCTS_LIST.find((product) => product.code === "first-touch")?.offers[0]
-        ?.id ?? "";
-
-    return formatAccessDurationLabel(
-      getOfferAccessDurationDaysByOfferId(firstTouchOfferId),
-    );
-  }, [kind, resolvedChoreoSelection]);
-
   const isChecking = authState === "checking";
   const isAuthorized = authState === "authorized";
 
@@ -1624,24 +1831,40 @@ export default function AdminPage() {
     setIsLoadingOnlineGroupData(true);
 
     try {
-      const [chatsResponse, campaignsResponse, onlineGroupResponse] = await Promise.all([
-        fetch(ADMIN_API_ENDPOINTS.telegramChats, {
-          method: "GET",
-          cache: "no-store",
-        }),
-        fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
-          method: "GET",
-          cache: "no-store",
-        }),
-        fetch(ADMIN_API_ENDPOINTS.onlineGroupSettings, {
-          method: "GET",
-          cache: "no-store",
-        }),
-      ]);
+      const [chatsResponse, campaignsResponse, onlineGroupResponse, adminLinksResponse] =
+        await Promise.all([
+          fetch(ADMIN_API_ENDPOINTS.telegramChats, {
+            method: "GET",
+            cache: "no-store",
+          }),
+          fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
+            method: "GET",
+            cache: "no-store",
+          }),
+          fetch(ADMIN_API_ENDPOINTS.onlineGroupSettings, {
+            method: "GET",
+            cache: "no-store",
+          }),
+          fetch(ADMIN_API_ENDPOINTS.onlineGroupInviteLinks, {
+            method: "GET",
+            cache: "no-store",
+          }),
+        ]);
       const chatsData = (await chatsResponse.json()) as TelegramChatsResponse;
       const campaignsData = (await campaignsResponse.json()) as RenewalCampaignsResponse;
       const onlineGroupData =
         (await onlineGroupResponse.json()) as OnlineGroupCampaignsResponse;
+      const adminLinksData =
+        (await adminLinksResponse.json()) as OnlineGroupAdminLinksResponse;
+
+      if (adminLinksData.errorCode === "unauthorized") {
+        setAuthState("locked");
+        setAuthStatus({
+          text: "Сессия истекла. Введи пароль снова.",
+          tone: "error",
+        });
+        return;
+      }
 
       if (!chatsResponse.ok || !campaignsResponse.ok || !onlineGroupResponse.ok) {
         if (
@@ -1678,6 +1901,16 @@ export default function AdminPage() {
       setOnlineGroupCampaigns(
         Array.isArray(onlineGroupData.campaigns) ? onlineGroupData.campaigns : [],
       );
+      if (adminLinksResponse.ok) {
+        setOnlineGroupAdminGrants(
+          Array.isArray(adminLinksData.grants) ? adminLinksData.grants : [],
+        );
+      } else {
+        setOnlineGroupAdminStatus({
+          text: "Не удалось загрузить журнал ручных доступов.",
+          tone: "error",
+        });
+      }
       const activeOnlineGroupCampaign = onlineGroupData.campaigns?.find(
         (campaign) => campaign.status === "active",
       );
@@ -1711,6 +1944,10 @@ export default function AdminPage() {
       });
       setRenewalStatus({
         text: "Ошибка сети при загрузке продлений.",
+        tone: "error",
+      });
+      setOnlineGroupAdminStatus({
+        text: "Ошибка сети при загрузке ручных доступов.",
         tone: "error",
       });
     } finally {
@@ -1759,6 +1996,7 @@ export default function AdminPage() {
       }
 
       setFirstTouchBroadcastStats(data.stats ?? null);
+      setFirstTouchBroadcastAudience(data.audience ?? []);
     } catch {
       setFirstTouchBroadcastStatus({
         text: "Не удалось загрузить статистику рассылки.",
@@ -1942,12 +2180,8 @@ export default function AdminPage() {
       const result = data.result;
 
       if (result) {
-        setFirstTouchBroadcastStats({
-          failed: result.failed,
-          pending: result.pending,
-          sent: result.sent,
-          total: result.total,
-        });
+        setFirstTouchBroadcastStats(data.stats ?? result);
+        setFirstTouchBroadcastAudience(data.audience ?? []);
         setFirstTouchBroadcastStatus({
           text: `Рассылка обработана. Попыток: ${result.attempted}. Отправлено: ${result.sent}. Ошибок: ${result.failed}.`,
           tone: result.failed > 0 ? "info" : "success",
@@ -1963,6 +2197,74 @@ export default function AdminPage() {
     }
   }, [isFirstTouchBroadcastDisabled]);
 
+  const handleExcludeFirstTouchBroadcastLead = useCallback(
+    async (lead: BroadcastAudienceLead, scope: BroadcastExclusionScope) => {
+      if (isSendingFirstTouchBroadcast || updatingFirstTouchBroadcastLeadId) {
+        return;
+      }
+
+      setUpdatingFirstTouchBroadcastLeadId(lead.leadId);
+      setFirstTouchBroadcastStatus({
+        text:
+          scope === "global"
+            ? `Исключаю ${lead.email} из будущих рассылок...`
+            : `Убираю ${lead.email} из текущей рассылки...`,
+        tone: "info",
+      });
+
+      try {
+        const response = await fetch(ADMIN_API_ENDPOINTS.firstTouchBroadcast, {
+          method: "PATCH",
+          cache: "no-store",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId: lead.leadId, scope }),
+        });
+        const data = (await response.json()) as FirstTouchBroadcastResponse;
+
+        if (!response.ok) {
+          if (data.errorCode === "unauthorized") {
+            setAuthState("locked");
+            setAuthStatus({
+              text: "Сессия истекла. Введи пароль снова.",
+              tone: "error",
+            });
+            return;
+          }
+
+          setFirstTouchBroadcastStatus({
+            text:
+              data.errorCode === "broadcast_in_progress"
+                ? "Сейчас идет отправка. Дождись завершения и попробуй снова."
+                : data.errorCode === "lead_not_actionable"
+                  ? "Статус пользователя уже изменился. Обнови список."
+                  : "Не удалось изменить участие в рассылке.",
+            tone: "error",
+          });
+          return;
+        }
+
+        setFirstTouchBroadcastStats(data.stats ?? null);
+        setFirstTouchBroadcastAudience(data.audience ?? []);
+        setConfirmingGlobalBroadcastLeadId("");
+        setFirstTouchBroadcastStatus({
+          text:
+            scope === "global"
+              ? `${lead.email} больше не будет включаться в будущие рассылки.`
+              : `${lead.email} исключен из этой рассылки.`,
+          tone: "success",
+        });
+      } catch {
+        setFirstTouchBroadcastStatus({
+          text: "Ошибка сети при изменении участия в рассылке.",
+          tone: "error",
+        });
+      } finally {
+        setUpdatingFirstTouchBroadcastLeadId("");
+      }
+    },
+    [isSendingFirstTouchBroadcast, updatingFirstTouchBroadcastLeadId],
+  );
+
   useEffect(() => {
     if (!isAuthorized) {
       setHasLoadedJournalOnce(false);
@@ -1971,6 +2273,8 @@ export default function AdminPage() {
       setHasLoadedOnlineGroupData(false);
       setTelegramChats([]);
       setOnlineGroupCampaigns([]);
+      setOnlineGroupAdminGrants([]);
+      setOnlineGroupAdminStatus(null);
       setRenewalCampaigns([]);
       return;
     }
@@ -2032,7 +2336,10 @@ export default function AdminPage() {
       setHasLoadedFirstTouchBroadcastStats(false);
       setIsLoadingFirstTouchBroadcastStats(false);
       setFirstTouchBroadcastStats(null);
+      setFirstTouchBroadcastAudience([]);
       setFirstTouchBroadcastStatus(null);
+      setUpdatingFirstTouchBroadcastLeadId("");
+      setConfirmingGlobalBroadcastLeadId("");
       return;
     }
 
@@ -2175,6 +2482,8 @@ export default function AdminPage() {
       setGeneratorStatus(null);
       setRecentLinks([]);
       setHasLoadedJournalOnce(false);
+      setOnlineGroupAdminGrants([]);
+      setOnlineGroupAdminStatus(null);
       setAuthStatus({
         text: "Сессия завершена.",
         tone: "info",
@@ -2351,6 +2660,105 @@ export default function AdminPage() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateOnlineGroupAdminAccess = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+
+    if (isOnlineGroupAdminGenerateDisabled) {
+      return;
+    }
+
+    setIsGeneratingOnlineGroupAdminAccess(true);
+    setOnlineGroupAdminStatus({
+      text: "Генерирую персональные invite-ссылки...",
+      tone: "info",
+    });
+
+    const normalizedAdminLabel = onlineGroupAdminLabel.trim();
+
+    try {
+      const response = await fetch(ADMIN_API_ENDPOINTS.onlineGroupInviteLinks, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accessMode: onlineGroupAdminAccessMode,
+          adminLabel: normalizedAdminLabel,
+        }),
+      });
+      const data = (await response.json()) as OnlineGroupAdminLinksResponse;
+
+      if (data.errorCode === "unauthorized") {
+        setAuthState("locked");
+        setAuthStatus({
+          text: "Сессия истекла. Введи пароль снова.",
+          tone: "error",
+        });
+        setOnlineGroupAdminStatus(null);
+        return;
+      }
+
+      if (!response.ok || !data.grant) {
+        const errorText =
+          data.errorCode === "online_group_settings_not_configured"
+            ? "Сначала настрой и активируй поток с основным чатом и Inspiration Hub."
+            : data.errorCode === "rate_limited"
+              ? "Слишком много запросов. Подожди немного и попробуй снова."
+              : data.errorCode === "missing_admin_label"
+                ? "Добавь идентификатор получателя."
+                : "Не удалось создать ссылки доступа.";
+
+        setOnlineGroupAdminStatus({ text: errorText, tone: "error" });
+        return;
+      }
+
+      const grant = {
+        ...data.grant,
+        accesses: data.grant.accesses.map((access) => ({
+          ...access,
+          chatTitle:
+            access.chatTitle ||
+            telegramChats.find((chat) => chat.chatId === access.chatId)?.title ||
+            access.chatId,
+        })),
+      } satisfies OnlineGroupAdminGrant;
+
+      setOnlineGroupAdminGrants((grants) => [
+        grant,
+        ...grants.filter(
+          (existingGrant) => existingGrant.paymentIntentId !== grant.paymentIntentId,
+        ),
+      ]);
+      setOnlineGroupAdminLabel("");
+      setOnlineGroupAdminStatus(
+        data.status === "ready"
+          ? {
+              text:
+                grant.accessMode === "plus"
+                  ? "Ссылки в основной чат и Inspiration Hub готовы."
+                  : "Ссылка в основной чат готова.",
+              tone: "success",
+            }
+          : data.status === "partial"
+            ? {
+                text: "Создана только часть ссылок. Проверь статусы ниже.",
+                tone: "info",
+              }
+            : {
+                text: "Telegram не смог создать ссылки. Проверь статусы ниже.",
+                tone: "error",
+              },
+      );
+    } catch {
+      setOnlineGroupAdminStatus({
+        text: "Ошибка сети при генерации ссылок доступа.",
+        tone: "error",
+      });
+    } finally {
+      setIsGeneratingOnlineGroupAdminAccess(false);
     }
   };
 
@@ -2713,44 +3121,71 @@ export default function AdminPage() {
                   telegramChatOptions={telegramChatSelectOptions}
                   title={onlineGroupTitle}
                 />
-                <RenewalGeneratorCard
-                  chats={telegramChats}
-                  copyingUrl={copyingUrl}
-                  generatedLink={generatedRenewalLink}
-                  isDisabled={isRenewalGenerateDisabled}
-                  isGenerating={isGeneratingRenewal}
-                  isLoading={isLoadingOnlineGroupData}
-                  offerId={renewalOfferId}
-                  offerOptions={renewalOfferSelectOptions}
-                  onCopy={handleCopyLink}
-                  onOfferChange={(value) => {
-                    setRenewalOfferId(value);
-                    setGeneratedRenewalLink("");
-                    setRenewalStatus(null);
-                  }}
-                  onRegenerate={() => void handleGenerateRenewal(undefined, true)}
-                  onSourceChatToggle={(chatId, checked) => {
-                    setRenewalSourceChatIds((currentIds) =>
-                      checked
-                        ? [...new Set([...currentIds, chatId])]
-                        : currentIds.filter((id) => id !== chatId),
-                    );
-                    setGeneratedRenewalLink("");
-                    setRenewalStatus(null);
-                  }}
-                  onSubmit={handleGenerateRenewal}
-                  onTitleChange={setRenewalTitle}
-                  sourceChatIds={renewalSourceChatIds}
-                  status={renewalStatus}
-                  title={renewalTitle}
-                />
-                <RenewalCampaignsCard
-                  campaigns={renewalCampaigns}
-                  copyingUrl={copyingUrl}
-                  onCopy={handleCopyLink}
-                  onToggleStatus={handleToggleRenewalStatus}
-                  updatingSlug={updatingRenewalSlug}
-                />
+                {hasConfiguredOnlineGroup && (
+                  <OnlineGroupInviteLinksCard
+                    accessMode={onlineGroupAdminAccessMode}
+                    adminLabel={onlineGroupAdminLabel}
+                    copyingUrl={copyingUrl}
+                    grants={onlineGroupAdminGrants}
+                    isDisabled={isOnlineGroupAdminGenerateDisabled}
+                    isGenerating={isGeneratingOnlineGroupAdminAccess}
+                    isLoading={isLoadingOnlineGroupData}
+                    onAccessModeChange={(value) => {
+                      setOnlineGroupAdminAccessMode(value);
+                      setOnlineGroupAdminStatus(null);
+                    }}
+                    onAdminLabelChange={(value) => {
+                      setOnlineGroupAdminLabel(value);
+                      setOnlineGroupAdminStatus(null);
+                    }}
+                    onCopy={handleCopyLink}
+                    onRefresh={loadOnlineGroupAdminData}
+                    onSubmit={handleGenerateOnlineGroupAdminAccess}
+                    status={onlineGroupAdminStatus}
+                  />
+                )}
+                {activeOnlineGroupCampaign && (
+                  <RenewalGeneratorCard
+                    chats={telegramChats}
+                    copyingUrl={copyingUrl}
+                    generatedLink={generatedRenewalLink}
+                    isDisabled={isRenewalGenerateDisabled}
+                    isGenerating={isGeneratingRenewal}
+                    isLoading={isLoadingOnlineGroupData}
+                    offerId={renewalOfferId}
+                    offerOptions={renewalOfferSelectOptions}
+                    onCopy={handleCopyLink}
+                    onOfferChange={(value) => {
+                      setRenewalOfferId(value);
+                      setGeneratedRenewalLink("");
+                      setRenewalStatus(null);
+                    }}
+                    onRegenerate={() => void handleGenerateRenewal(undefined, true)}
+                    onSourceChatToggle={(chatId, checked) => {
+                      setRenewalSourceChatIds((currentIds) =>
+                        checked
+                          ? [...new Set([...currentIds, chatId])]
+                          : currentIds.filter((id) => id !== chatId),
+                      );
+                      setGeneratedRenewalLink("");
+                      setRenewalStatus(null);
+                    }}
+                    onSubmit={handleGenerateRenewal}
+                    onTitleChange={setRenewalTitle}
+                    sourceChatIds={renewalSourceChatIds}
+                    status={renewalStatus}
+                    title={renewalTitle}
+                  />
+                )}
+                {(activeOnlineGroupCampaign || renewalCampaigns.length > 0) && (
+                  <RenewalCampaignsCard
+                    campaigns={renewalCampaigns}
+                    copyingUrl={copyingUrl}
+                    onCopy={handleCopyLink}
+                    onToggleStatus={handleToggleRenewalStatus}
+                    updatingSlug={updatingRenewalSlug}
+                  />
+                )}
               </OnlineGroupWorkspace>
             ) : isInviteLinksFeatureActive ? (
               <WorkspaceGrid>
@@ -2774,13 +3209,11 @@ export default function AdminPage() {
                     onCopy={handleCopyLink}
                     onKindChange={handleKindChange}
                     onSubmit={handleGenerate}
-                    resolvedChoreoSelection={resolvedChoreoSelection}
                     selectedChoreoKey={selectedChoreoKey}
                   />
                 </WorkspacePrimary>
 
                 <WorkspaceSecondary>
-                  <InviteLinkPolicyCard accessPolicyLabel={accessPolicyLabel} />
                   <InviteLinkJournalCard
                     copyingUrl={copyingUrl}
                     isInitialLoading={isJournalInitialLoading}
@@ -2793,9 +3226,15 @@ export default function AdminPage() {
               </WorkspaceGrid>
             ) : isBroadcastsFeatureActive ? (
               <BroadcastWorkspace
+                audience={firstTouchBroadcastAudience}
+                confirmingGlobalLeadId={confirmingGlobalBroadcastLeadId}
                 isDisabled={isFirstTouchBroadcastDisabled}
                 isLoadingStats={isLoadingFirstTouchBroadcastStats}
                 isSending={isSendingFirstTouchBroadcast}
+                isUpdatingLeadId={updatingFirstTouchBroadcastLeadId}
+                onExclude={handleExcludeFirstTouchBroadcastLead}
+                onGlobalExcludeCancel={() => setConfirmingGlobalBroadcastLeadId("")}
+                onGlobalExcludeRequest={setConfirmingGlobalBroadcastLeadId}
                 onRefresh={loadFirstTouchBroadcastStats}
                 onSend={handleSendFirstTouchBroadcast}
                 pendingCount={firstTouchBroadcastPendingCount}
@@ -2816,9 +3255,7 @@ export default function AdminPage() {
                 }}
                 status={monthlySalesReportStatus}
               />
-            ) : (
-              <UnavailableFeature feature={activeFeature} />
-            )}
+            ) : null}
           </MainPanel>
         </Card>
       </AdminShell>

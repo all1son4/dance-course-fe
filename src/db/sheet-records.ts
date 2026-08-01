@@ -115,10 +115,14 @@ const normalizeDeliveryStatus = (value: string): "sent" | "skipped" | "failed" =
   return "failed";
 };
 
-const normalizeEmailSendStatus = (value: string): "pending" | "sent" | "failed" => {
+const normalizeEmailSendStatus = (
+  value: string,
+): "blocked" | "excluded" | "failed" | "pending" | "sent" => {
   const normalizedValue = trim(value);
 
   if (
+    normalizedValue === "blocked" ||
+    normalizedValue === "excluded" ||
     normalizedValue === "pending" ||
     normalizedValue === "sent" ||
     normalizedValue === "failed"
