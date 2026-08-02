@@ -2,6 +2,7 @@ import styled, { css } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
+import type { StatusTone } from "../lib/admin.types";
 import {
   focusRing,
   type IconButtonStyleProps,
@@ -10,7 +11,6 @@ import {
   refinedScrollbar,
   type SkeletonLineStyleProps,
   skeletonPulse,
-  type StatusTone,
 } from "./shared.styles";
 
 export const WorkspaceGrid = styled.div`
