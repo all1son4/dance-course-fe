@@ -1,6 +1,5 @@
 import { css, keyframes } from "styled-components";
 
-export type StatusTone = "error" | "info" | "success";
 export type SidebarItemStyleProps = {
   $active: boolean;
 };
