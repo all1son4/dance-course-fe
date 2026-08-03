@@ -21,6 +21,88 @@ const trim = (value: string | null | undefined) => value?.trim() ?? "";
 const nullIfEmpty = (value: string | null | undefined) => trim(value) || null;
 const normalizeEmail = (value: string | null | undefined) => trim(value).toLowerCase();
 
+type PaymentSideEffectStatus = "pending" | "sending" | "sent" | "skipped" | "failed";
+
+const PAYMENT_SIDE_EFFECT_LEASE_TTL_MS = 2 * 60 * 1000;
+const LEASED_PAYMENT_SIDE_EFFECT_STATUSES = new Set<PaymentSideEffectStatus>([
+  "pending",
+  "sending",
+]);
+
+// Sheets encode lease ownership as "<status>:<token>"; Neon stores both parts.
+const parsePaymentSideEffectStatus = ({
+  status,
+  updatedAt,
+}: {
+  status: string | null | undefined;
+  updatedAt: Date;
+}): {
+  leaseExpiresAt: Date | null;
+  leaseToken: string | null;
+  status: PaymentSideEffectStatus;
+} | null => {
+  const normalizedStatus = trim(status);
+
+  if (!normalizedStatus) {
+    return null;
+  }
+
+  const separatorIndex = normalizedStatus.indexOf(":");
+  const statusPrefix = (
+    separatorIndex === -1 ? normalizedStatus : normalizedStatus.slice(0, separatorIndex)
+  ) as PaymentSideEffectStatus;
+  const leaseToken =
+    separatorIndex === -1 ? "" : normalizedStatus.slice(separatorIndex + 1).trim();
+
+  if (LEASED_PAYMENT_SIDE_EFFECT_STATUSES.has(statusPrefix)) {
+    return {
+      leaseExpiresAt: leaseToken
+        ? new Date(updatedAt.getTime() + PAYMENT_SIDE_EFFECT_LEASE_TTL_MS)
+        : null,
+      leaseToken: leaseToken || null,
+      status: statusPrefix,
+    };
+  }
+
+  if (
+    normalizedStatus === "sent" ||
+    normalizedStatus === "skipped" ||
+    normalizedStatus === "failed"
+  ) {
+    return {
+      leaseExpiresAt: null,
+      leaseToken: null,
+      status: normalizedStatus,
+    };
+  }
+
+  return {
+    leaseExpiresAt: null,
+    leaseToken: null,
+    status: "pending",
+  };
+};
+
+const serializePaymentSideEffectStatus = (
+  sideEffect:
+    | {
+        leaseToken: string | null;
+        status: PaymentSideEffectStatus;
+      }
+    | null
+    | undefined,
+) => {
+  if (!sideEffect) {
+    return "";
+  }
+
+  const leaseToken = trim(sideEffect.leaseToken);
+
+  return leaseToken && LEASED_PAYMENT_SIDE_EFFECT_STATUSES.has(sideEffect.status)
+    ? `${sideEffect.status}:${leaseToken}`
+    : sideEffect.status;
+};
+
 const emptyPaymentRecord = (): PaymentSheetRecord =>
   Object.fromEntries(
     PAYMENT_SHEET_HEADERS.map((header) => [header, ""]),
@@ -131,31 +213,6 @@ const normalizeAccessStatus = (
   return "pending";
 };
 
-const normalizeSideEffectStatus = (
-  value: string,
-): "pending" | "sending" | "sent" | "skipped" | "failed" | null => {
-  const normalizedValue = trim(value);
-
-  if (!normalizedValue) {
-    return null;
-  }
-
-  if (normalizedValue.startsWith("sending:")) {
-    return "sending";
-  }
-
-  if (
-    normalizedValue === "pending" ||
-    normalizedValue === "sent" ||
-    normalizedValue === "skipped" ||
-    normalizedValue === "failed"
-  ) {
-    return normalizedValue;
-  }
-
-  return "pending";
-};
-
 const getSaleTimestamp = () => null;
 
 const getPurchaseSource = (paymentIntentId: string) =>
@@ -198,38 +255,55 @@ const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
   const fallbackUpdatedAt = parseRequiredDate(
     paymentRecord.updated_at || paymentRecord.first_seen_at,
   );
-  const emailStatus = normalizeSideEffectStatus(paymentRecord.email_delivery_status);
-  const alertStatus = normalizeSideEffectStatus(paymentRecord.with_mentor_alert_status);
+  const emailUpdatedAt =
+    parseDate(paymentRecord.email_delivery_updated_at) ?? fallbackUpdatedAt;
+  const alertUpdatedAt =
+    parseDate(paymentRecord.with_mentor_alert_updated_at) ?? fallbackUpdatedAt;
+  const successfulCustomerUpdatedAt =
+    parseDate(paymentRecord.successful_customer_logged_at) ?? fallbackUpdatedAt;
+  const emailStatus = parsePaymentSideEffectStatus({
+    status: paymentRecord.email_delivery_status,
+    updatedAt: emailUpdatedAt,
+  });
+  const alertStatus = parsePaymentSideEffectStatus({
+    status: paymentRecord.with_mentor_alert_status,
+    updatedAt: alertUpdatedAt,
+  });
   const successfulCustomerStatus =
-    normalizeSideEffectStatus(paymentRecord.successful_customer_log_status) ??
-    (paymentRecord.successful_customer_logged_at.trim() ? "sent" : null);
+    parsePaymentSideEffectStatus({
+      status: paymentRecord.successful_customer_log_status,
+      updatedAt: successfulCustomerUpdatedAt,
+    }) ??
+    (paymentRecord.successful_customer_logged_at.trim()
+      ? parsePaymentSideEffectStatus({
+          status: "sent",
+          updatedAt: successfulCustomerUpdatedAt,
+        })
+      : null);
 
   return [
     emailStatus
       ? {
           kind: "purchase_success_email" as const,
           provider: "resend" as const,
-          status: emailStatus,
-          updatedAt:
-            parseDate(paymentRecord.email_delivery_updated_at) ?? fallbackUpdatedAt,
+          ...emailStatus,
+          updatedAt: emailUpdatedAt,
         }
       : null,
     alertStatus
       ? {
           kind: "admin_telegram_alert" as const,
           provider: "telegram" as const,
-          status: alertStatus,
-          updatedAt:
-            parseDate(paymentRecord.with_mentor_alert_updated_at) ?? fallbackUpdatedAt,
+          ...alertStatus,
+          updatedAt: alertUpdatedAt,
         }
       : null,
     successfulCustomerStatus
       ? {
           kind: "successful_customer_export" as const,
           provider: null,
-          status: successfulCustomerStatus,
-          updatedAt:
-            parseDate(paymentRecord.successful_customer_logged_at) ?? fallbackUpdatedAt,
+          ...successfulCustomerStatus,
+          updatedAt: successfulCustomerUpdatedAt,
         }
       : null,
   ].filter((sideEffect) => sideEffect !== null);
@@ -378,16 +452,18 @@ const populateDeliveryFields = ({
   record: PaymentSheetRecord;
   successfulCustomerSideEffect: SideEffectRow | undefined;
 }): void => {
-  record.email_delivery_status = emailSideEffect?.status ?? "";
+  record.email_delivery_status = serializePaymentSideEffectStatus(emailSideEffect);
   record.email_delivery_updated_at = toIso(emailSideEffect?.updatedAt);
-  record.with_mentor_alert_status = alertSideEffect?.status ?? "";
+  record.with_mentor_alert_status = serializePaymentSideEffectStatus(alertSideEffect);
   record.with_mentor_alert_updated_at = toIso(alertSideEffect?.updatedAt);
   record.customer_address = purchase.customerAddressLineSnapshot ?? "";
   record.customer_city = purchase.customerCitySnapshot ?? "";
   record.customer_postal_code = purchase.customerPostalCodeSnapshot ?? "";
   record.invoice_number = invoice?.invoiceNumber ?? "";
   record.invoice_issued_at = toIso(invoice?.issuedAt);
-  record.successful_customer_log_status = successfulCustomerSideEffect?.status ?? "";
+  record.successful_customer_log_status = serializePaymentSideEffectStatus(
+    successfulCustomerSideEffect,
+  );
 };
 
 const hydratePaymentRecord = (
@@ -827,6 +903,8 @@ const upsertPaymentSideEffects = async ({
       .values({
         failedAt: sideEffect.status === "failed" ? sideEffect.updatedAt : null,
         kind: sideEffect.kind,
+        leaseExpiresAt: sideEffect.leaseExpiresAt,
+        leaseToken: sideEffect.leaseToken,
         provider: sideEffect.provider,
         purchaseId,
         sentAt: sideEffect.status === "sent" ? sideEffect.updatedAt : null,
@@ -836,6 +914,8 @@ const upsertPaymentSideEffects = async ({
       .onConflictDoUpdate({
         set: {
           failedAt: sideEffect.status === "failed" ? sideEffect.updatedAt : null,
+          leaseExpiresAt: sideEffect.leaseExpiresAt,
+          leaseToken: sideEffect.leaseToken,
           provider: sideEffect.provider,
           sentAt: sideEffect.status === "sent" ? sideEffect.updatedAt : null,
           status: sideEffect.status,
