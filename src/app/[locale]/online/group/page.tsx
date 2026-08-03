@@ -9,8 +9,7 @@ import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import VideoPlayer from "@/components/other/VideoPlayer";
-import { ONLINE_GROUP_REGISTRATION_URL } from "@/constants/links";
-import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -198,11 +197,10 @@ export default function OnlineGroupPage() {
             buttonText={t("tariffs.registrationButton")}
             buttonRel="nofollow"
             buttonTarget="_blank"
-            // buttonHref={buildCheckoutHref({
-            //   offerId: standardOffer.id,
-            //   productId: product.id,
-            // })}
-            buttonHref={ONLINE_GROUP_REGISTRATION_URL}
+            buttonHref={buildCheckoutHref({
+              offerId: standardOffer.id,
+              productId: product.id,
+            })}
           />
         ) : null}
         {plusOffer ? (
@@ -232,11 +230,10 @@ export default function OnlineGroupPage() {
             buttonText={t("tariffs.registrationButton")}
             buttonRel="nofollow"
             buttonTarget="_blank"
-            // buttonHref={buildCheckoutHref({
-            //   offerId: plusOffer.id,
-            //   productId: product.id,
-            // })}
-            buttonHref={ONLINE_GROUP_REGISTRATION_URL}
+            buttonHref={buildCheckoutHref({
+              offerId: plusOffer.id,
+              productId: product.id,
+            })}
           />
         ) : null}
       </TariffOptionsBox>
