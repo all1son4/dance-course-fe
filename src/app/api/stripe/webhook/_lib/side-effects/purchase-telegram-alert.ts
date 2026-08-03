@@ -7,6 +7,11 @@ import {
   getTelegramAlertsChatId,
   isTelegramAlertsConfigured,
 } from "@/lib/telegram/config";
+import { isOnlineGroupAccessOfferId } from "@/lib/telegram/offer-access";
+import {
+  listOnlineGroupAccessStatesForPayment,
+  type OnlineGroupAccessState,
+} from "@/lib/telegram/online-group-access";
 import { toUtcIso } from "@/lib/time";
 
 import { buildPurchaseAlertText } from "../purchase-alert";
@@ -21,6 +26,32 @@ import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
 import type { StripeWebhookSyncResult } from "./types";
 
 const pendingPurchaseAlertSyncs = new Map<string, Promise<void>>();
+
+const getOnlineGroupAccessStatesForAlert = async ({
+  eventId,
+  offerId,
+  paymentIntentId,
+}: {
+  eventId: string;
+  offerId: string;
+  paymentIntentId: string;
+}): Promise<OnlineGroupAccessState[] | null | undefined> => {
+  if (!isOnlineGroupAccessOfferId(offerId)) {
+    return undefined;
+  }
+
+  try {
+    return await listOnlineGroupAccessStatesForPayment(paymentIntentId);
+  } catch (error) {
+    console.error("Failed to load Online Group access states for purchase alert", {
+      error,
+      eventId,
+      paymentIntentId,
+    });
+
+    return null;
+  }
+};
 
 export const sendPurchaseAlert = async ({
   event,
@@ -112,10 +143,16 @@ export const sendPurchaseAlert = async ({
       );
     }
 
+    const onlineGroupAccessStates = await getOnlineGroupAccessStatesForAlert({
+      eventId: handledEvent.eventId,
+      offerId: latestPaymentRecord.offer_id,
+      paymentIntentId,
+    });
     const alertText = buildPurchaseAlertText({
       eventCreatedAtIso: toUtcIso(event.created * 1000),
       eventId: handledEvent.eventId,
       eventType: handledEvent.eventType,
+      onlineGroupAccessStates,
       paymentRecord: latestPaymentRecord,
       processedAtIso: toUtcIso(),
     });

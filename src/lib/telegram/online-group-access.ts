@@ -23,7 +23,11 @@ import { isOnlineGroupAccessOfferId } from "./offer-access";
 const INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const TEMP_KICK_SECONDS = 35;
 
-type OnlineGroupAccessKey = "inspiration-hub" | "main-group";
+export type OnlineGroupAccessKey = "inspiration-hub" | "main-group";
+export type OnlineGroupAccessState = {
+  accessKey: OnlineGroupAccessKey;
+  status: typeof accessEntitlements.$inferSelect.status;
+};
 type OnlineGroupAccessItem = {
   accessExpiresAt: string;
   accessKey: OnlineGroupAccessKey;
@@ -121,6 +125,42 @@ const getPurchase = async (paymentIntentId: string) => {
     .limit(1);
 
   return purchase ?? null;
+};
+
+export const listOnlineGroupAccessStatesForPayment = async (
+  paymentIntentId: string,
+): Promise<OnlineGroupAccessState[]> => {
+  const purchase = await getPurchase(paymentIntentId);
+
+  if (!purchase) {
+    return [];
+  }
+
+  const rows = await getDatabase()
+    .select({
+      accessKey: accessEntitlements.accessKey,
+      status: accessEntitlements.status,
+    })
+    .from(accessEntitlements)
+    .where(eq(accessEntitlements.purchaseId, purchase.id));
+
+  return rows
+    .flatMap((row): OnlineGroupAccessState[] => {
+      if (row.accessKey === "inspiration-hub") {
+        return [{ accessKey: "inspiration-hub", status: row.status }];
+      }
+
+      if (row.accessKey === "primary") {
+        return [{ accessKey: "main-group", status: row.status }];
+      }
+
+      return [];
+    })
+    .sort(
+      (left, right) =>
+        Number(right.accessKey === "main-group") -
+        Number(left.accessKey === "main-group"),
+    );
 };
 
 type OnlineGroupPurchase = NonNullable<Awaited<ReturnType<typeof getPurchase>>>;

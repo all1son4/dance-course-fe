@@ -1,6 +1,11 @@
 import { normalizeCountryCode } from "@/constants/countries";
+import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
 import type { PaymentSheetRecord } from "@/lib/google-sheets";
-import { isOfferEligibleForTelegramAccessLink } from "@/lib/telegram/access";
+import {
+  isOnlineGroupAccessOfferId,
+  isWithMentorOfferId,
+} from "@/lib/telegram/offer-access";
+import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access";
 import { UTC_TIME_ZONE_LABEL } from "@/lib/time";
 
 import {
@@ -125,7 +130,7 @@ const getFormattedCountryLabel = ({
 
 const getAccessWorkflowLabel = (workflow: string) => {
   if (workflow === "with-mentor") {
-    return "С куратором";
+    return "Telegram-канал + куратор";
   }
 
   if (workflow === "telegram-channel") {
@@ -138,6 +143,14 @@ const getAccessWorkflowLabel = (workflow: string) => {
 
   if (workflow === "telegram-bot") {
     return "Telegram-бот";
+  }
+
+  if (workflow === "telegram-online-group") {
+    return "Новая Online Group";
+  }
+
+  if (workflow === "telegram-renewal") {
+    return "Продление Online Group";
   }
 
   if (workflow === "online-group") {
@@ -155,16 +168,29 @@ const getAccessWorkflowLabel = (workflow: string) => {
   return workflow || "—";
 };
 
-const buildServiceStatusLine = ({
-  detail,
-  icon,
-  label,
-}: {
+type PurchaseProcessingState =
+  | "attention"
+  | "error"
+  | "not-applicable"
+  | "pending"
+  | "success";
+
+type PurchaseProcessingStatus = {
   detail?: string;
-  icon: "✅" | "⚠️" | "❌";
   label: string;
-}) =>
-  `${icon} ${escapeTelegramHtml(label)}${
+  state: PurchaseProcessingState;
+};
+
+const PROCESSING_STATE_ICON: Record<PurchaseProcessingState, string> = {
+  attention: "⚠️",
+  error: "❌",
+  "not-applicable": "➖",
+  pending: "⏳",
+  success: "✅",
+};
+
+const buildProcessingStatusLine = ({ detail, label, state }: PurchaseProcessingStatus) =>
+  `${PROCESSING_STATE_ICON[state]} ${escapeTelegramHtml(label)}${
     detail ? `: ${escapeTelegramHtml(detail)}` : ""
   }`;
 
@@ -232,177 +258,451 @@ const buildTelegramUsernameValueHtml = (nickname: string) => {
   )}</a>`;
 };
 
-const getEmailServiceStatusLine = (paymentRecord: PaymentSheetRecord) => {
-  const status = paymentRecord.email_delivery_status.trim();
-
-  if (status === "sent") {
-    return buildServiceStatusLine({
-      icon: "✅",
-      label: "Email",
-    });
+const getPaymentProcessingStatus = (
+  paymentRecord: PaymentSheetRecord,
+): PurchaseProcessingStatus => {
+  if (paymentRecord.outcome.trim() === "succeeded") {
+    return {
+      detail: "подтверждён Stripe",
+      label: "Платёж",
+      state: "success",
+    };
   }
 
-  if (status === "skipped") {
-    return buildServiceStatusLine({
-      detail: "отправка пропущена",
-      icon: "⚠️",
-      label: "Email",
-    });
+  return {
+    detail: paymentRecord.outcome.trim() || "статус не подтверждён",
+    label: "Платёж",
+    state: "error",
+  };
+};
+
+const getSaleRecordingProcessingStatus = (
+  paymentRecord: PaymentSheetRecord,
+): PurchaseProcessingStatus => {
+  const status = paymentRecord.successful_customer_log_status.trim();
+
+  if (status === "sent" || paymentRecord.successful_customer_logged_at.trim()) {
+    return {
+      detail: "завершён",
+      label: "Учёт продажи",
+      state: "success",
+    };
   }
 
   if (status === "failed") {
-    return buildServiceStatusLine({
-      detail: "отправка не удалась",
-      icon: "❌",
-      label: "Email",
-    });
+    return {
+      detail: "не завершён — проверьте Vercel Logs",
+      label: "Учёт продажи",
+      state: "error",
+    };
   }
 
-  if (status.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)) {
-    return buildServiceStatusLine({
-      detail: "отправка еще выполняется",
-      icon: "⚠️",
-      label: "Email",
-    });
+  if (status === "pending" || status.startsWith("pending:")) {
+    return {
+      detail: "ещё выполняется",
+      label: "Учёт продажи",
+      state: "pending",
+    };
   }
 
-  return buildServiceStatusLine({
-    detail: "статус еще не записан",
-    icon: "⚠️",
-    label: "Email",
-  });
+  return {
+    detail: status ? `неизвестный статус ${status}` : "статус не подтверждён",
+    label: "Учёт продажи",
+    state: "attention",
+  };
 };
 
-const getInvoiceServiceStatusLine = (paymentRecord: PaymentSheetRecord) => {
+const getEmailProcessingStatus = (
+  paymentRecord: PaymentSheetRecord,
+): PurchaseProcessingStatus => {
+  const status = paymentRecord.email_delivery_status.trim();
+
+  if (status === "sent") {
+    return {
+      detail: "отправлен",
+      label: "Email",
+      state: "success",
+    };
+  }
+
+  if (status === "skipped") {
+    return {
+      detail: "пропущен — проверьте настройки Resend",
+      label: "Email",
+      state: "attention",
+    };
+  }
+
+  if (status === "failed") {
+    return {
+      detail: "не отправлен — проверьте Resend и Vercel Logs",
+      label: "Email",
+      state: "error",
+    };
+  }
+
+  if (
+    status === "pending" ||
+    status === "sending" ||
+    status.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
+  ) {
+    return {
+      detail: "отправка ещё выполняется",
+      label: "Email",
+      state: "pending",
+    };
+  }
+
+  return {
+    detail: status ? `неизвестный статус ${status}` : "статус не подтверждён",
+    label: "Email",
+    state: "attention",
+  };
+};
+
+const getInvoiceProcessingStatus = (
+  paymentRecord: PaymentSheetRecord,
+): PurchaseProcessingStatus => {
+  const emailStatus = paymentRecord.email_delivery_status.trim();
   const hasInvoice =
     Boolean(paymentRecord.invoice_number.trim()) &&
     Boolean(paymentRecord.invoice_issued_at.trim());
-  const emailStatus = paymentRecord.email_delivery_status.trim();
 
   if (hasInvoice) {
-    return buildServiceStatusLine({
-      icon: "✅",
+    const invoiceNumber = paymentRecord.invoice_number.trim();
+
+    if (emailStatus === "sent") {
+      return {
+        detail: `создан и отправлен — ${invoiceNumber}`,
+        label: "Инвойс",
+        state: "success",
+      };
+    }
+
+    if (
+      emailStatus === "pending" ||
+      emailStatus === "sending" ||
+      emailStatus.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
+    ) {
+      return {
+        detail: `создан, ожидает отправки — ${invoiceNumber}`,
+        label: "Инвойс",
+        state: "pending",
+      };
+    }
+
+    return {
+      detail: `создан, но не отправлен — ${invoiceNumber}`,
       label: "Инвойс",
-    });
+      state: "attention",
+    };
   }
 
-  if (emailStatus === "failed") {
-    return buildServiceStatusLine({
-      detail: "не создан или не прикреплен из-за ошибки email",
-      icon: "❌",
+  if (paymentRecord.invoice_number.trim()) {
+    return {
+      detail: `${paymentRecord.invoice_number.trim()} — дата выпуска не записана`,
       label: "Инвойс",
-    });
+      state: "attention",
+    };
   }
 
-  if (emailStatus === "sent") {
-    return buildServiceStatusLine({
-      detail: "номер не записан после отправки email",
-      icon: "❌",
+  if (
+    emailStatus === "pending" ||
+    emailStatus === "sending" ||
+    emailStatus.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
+  ) {
+    return {
+      detail: "ожидает завершения email-цепочки",
       label: "Инвойс",
-    });
+      state: "pending",
+    };
   }
 
-  if (emailStatus === "skipped") {
-    return buildServiceStatusLine({
-      detail: "email пропущен, инвойс не отправлялся",
-      icon: "⚠️",
-      label: "Инвойс",
-    });
-  }
-
-  return buildServiceStatusLine({
-    detail: "ожидает завершения email-цепочки",
-    icon: "⚠️",
+  return {
+    detail: "не создан — проверьте email-цепочку и Vercel Logs",
     label: "Инвойс",
-  });
+    state: "error",
+  };
 };
 
-const getTelegramAccessServiceStatusLine = (paymentRecord: PaymentSheetRecord) => {
-  const status = paymentRecord.telegram_access_status.trim();
-  const accessLinkRequired = isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id);
-
-  if (!accessLinkRequired) {
-    return buildServiceStatusLine({
-      icon: "✅",
-      label: "Telegram-доступ не требуется",
-    });
+const getAccessProcessingStatus = ({
+  expected,
+  label,
+  missingDetail = "статус не подтверждён",
+  missingState = "attention",
+  status,
+}: {
+  expected: boolean;
+  label: string;
+  missingDetail?: string;
+  missingState?: "attention" | "error";
+  status: string;
+}): PurchaseProcessingStatus => {
+  if (!expected && (!status || status === "not_required")) {
+    return { detail: "не требуется", label, state: "not-applicable" };
   }
 
-  if (status === "token_issued" || status === "activated") {
-    return buildServiceStatusLine({
-      icon: "✅",
-      label: "Telegram-доступ",
-    });
+  if (status === "token_issued") {
+    return { detail: "ссылка подготовлена", label, state: "success" };
+  }
+
+  if (status === "activated") {
+    return { detail: "активирован", label, state: "success" };
+  }
+
+  if (status === "manual_done") {
+    return { detail: "выдан вручную", label, state: "success" };
+  }
+
+  if (status === "manual_pending") {
+    return { detail: "нужно выдать вручную", label, state: "attention" };
   }
 
   if (status === "pending") {
-    return buildServiceStatusLine({
-      detail: "ссылка еще не создана",
-      icon: "⚠️",
-      label: "Telegram-доступ",
-    });
+    return { detail: "ещё не подготовлен", label, state: "pending" };
   }
 
   if (status === "link_failed") {
-    return buildServiceStatusLine({
-      detail: "не удалось создать invite link",
-      icon: "❌",
-      label: "Telegram-доступ",
-    });
+    return { detail: "не удалось создать invite link", label, state: "error" };
   }
 
   if (status === "expired") {
-    return buildServiceStatusLine({
-      detail: "окно доступа истекло",
-      icon: "❌",
-      label: "Telegram-доступ",
-    });
+    return { detail: "истёк до завершения выдачи", label, state: "error" };
   }
 
-  if (status === "revoked" || status === "left_channel") {
-    return buildServiceStatusLine({
-      detail:
-        status === "left_channel" ? "пользователь вышел из канала" : "доступ отозван",
-      icon: "❌",
-      label: "Telegram-доступ",
-    });
+  if (status === "revoked") {
+    return { detail: "отозван", label, state: "error" };
+  }
+
+  if (status === "left_channel") {
+    return { detail: "пользователь вышел", label, state: "error" };
   }
 
   if (status === "not_required") {
-    return buildServiceStatusLine({
-      detail: "для этого offer ожидается ссылка, но статус not_required",
-      icon: "❌",
-      label: "Telegram-доступ",
+    return {
+      detail: "ожидался, но отмечен как not_required",
+      label,
+      state: "error",
+    };
+  }
+
+  return {
+    detail: status ? `неизвестный статус ${status}` : missingDetail,
+    label,
+    state: expected ? missingState : "attention",
+  };
+};
+
+const getStandardAccessLabel = (paymentRecord: PaymentSheetRecord) => {
+  const workflow = paymentRecord.access_workflow.trim();
+
+  if (workflow === "telegram-channel" || workflow === "with-mentor") {
+    return "Telegram-канал";
+  }
+
+  if (workflow === "telegram-chat") {
+    return "Telegram-чат";
+  }
+
+  if (workflow === "telegram-bot") {
+    return "Telegram-бот";
+  }
+
+  if (workflow === "online-group" || workflow === "telegram-online-group") {
+    return "Online Group";
+  }
+
+  if (workflow === "online-live") {
+    return "Онлайн-доступ";
+  }
+
+  return paymentRecord.delivery_channel.trim() === "telegram"
+    ? "Telegram-доступ"
+    : "Доступ";
+};
+
+const getOnlineGroupAccessProcessingStatuses = ({
+  onlineGroupAccessStates,
+  paymentRecord,
+}: {
+  onlineGroupAccessStates: OnlineGroupAccessState[] | null | undefined;
+  paymentRecord: PaymentSheetRecord;
+}): PurchaseProcessingStatus[] => {
+  const expectsInspirationHub = isOnlineGroupLibraryOfferId(paymentRecord.offer_id);
+
+  if (onlineGroupAccessStates === null || onlineGroupAccessStates === undefined) {
+    const fallbackStatuses = [
+      getAccessProcessingStatus({
+        expected: true,
+        label: "Online Group",
+        status: paymentRecord.telegram_access_status.trim(),
+      }),
+    ];
+
+    if (expectsInspirationHub) {
+      fallbackStatuses.push({
+        detail: "статус не удалось проверить",
+        label: "Inspiration Hub",
+        state: "attention",
+      });
+    }
+
+    return fallbackStatuses;
+  }
+
+  const accessStatusByKey = new Map(
+    onlineGroupAccessStates.map((access) => [access.accessKey, access.status]),
+  );
+  const statuses = [
+    getAccessProcessingStatus({
+      expected: true,
+      label: "Online Group",
+      missingDetail: "запись доступа не создана",
+      missingState: "error",
+      status: accessStatusByKey.get("main-group") ?? "",
+    }),
+  ];
+
+  if (expectsInspirationHub || accessStatusByKey.has("inspiration-hub")) {
+    statuses.push(
+      getAccessProcessingStatus({
+        expected: true,
+        label: "Inspiration Hub",
+        missingDetail: "запись доступа не создана",
+        missingState: "error",
+        status: accessStatusByKey.get("inspiration-hub") ?? "",
+      }),
+    );
+  }
+
+  return statuses;
+};
+
+const getAccessProcessingStatuses = ({
+  onlineGroupAccessStates,
+  paymentRecord,
+}: {
+  onlineGroupAccessStates: OnlineGroupAccessState[] | null | undefined;
+  paymentRecord: PaymentSheetRecord;
+}): PurchaseProcessingStatus[] => {
+  if (isOnlineGroupAccessOfferId(paymentRecord.offer_id)) {
+    return getOnlineGroupAccessProcessingStatuses({
+      onlineGroupAccessStates,
+      paymentRecord,
     });
   }
 
-  return buildServiceStatusLine({
-    detail: status ? `неизвестный статус ${status}` : "статус еще не записан",
-    icon: "⚠️",
-    label: "Telegram-доступ",
-  });
+  const workflow = paymentRecord.access_workflow.trim();
+
+  if (workflow === "manual-admin") {
+    return [
+      {
+        detail:
+          paymentRecord.telegram_access_status.trim() === "manual_done"
+            ? "выдан вручную"
+            : "нужно выдать вручную",
+        label: "Доступ",
+        state:
+          paymentRecord.telegram_access_status.trim() === "manual_done"
+            ? "success"
+            : "attention",
+      },
+    ];
+  }
+
+  const expectsAccess =
+    paymentRecord.delivery_channel.trim() === "telegram" ||
+    workflow.startsWith("telegram") ||
+    workflow === "with-mentor" ||
+    workflow === "online-group" ||
+    workflow === "online-live";
+  const statuses = [
+    getAccessProcessingStatus({
+      expected: expectsAccess,
+      label: getStandardAccessLabel(paymentRecord),
+      status: paymentRecord.telegram_access_status.trim(),
+    }),
+  ];
+
+  if (isWithMentorOfferId(paymentRecord.offer_id)) {
+    statuses.push({
+      detail: "нужно связаться с клиентом",
+      label: "Куратор",
+      state: "attention",
+    });
+  }
+
+  return statuses;
 };
 
-const getPurchaseServiceStatusLines = (paymentRecord: PaymentSheetRecord) => [
-  buildServiceStatusLine({
-    icon: "✅",
-    label: "Таблица",
-  }),
-  getEmailServiceStatusLine(paymentRecord),
-  getInvoiceServiceStatusLine(paymentRecord),
-  getTelegramAccessServiceStatusLine(paymentRecord),
-];
+const getProcessingSummaryStatus = (
+  statuses: PurchaseProcessingStatus[],
+): PurchaseProcessingStatus => {
+  if (statuses.some((status) => status.state === "error")) {
+    return {
+      detail: "требуется проверка",
+      label: "Обработка с ошибками",
+      state: "error",
+    };
+  }
+
+  if (statuses.some((status) => status.state === "attention")) {
+    return {
+      detail: "требуется действие или проверка",
+      label: "Требуется внимание",
+      state: "attention",
+    };
+  }
+
+  if (statuses.some((status) => status.state === "pending")) {
+    return {
+      detail: "не все этапы завершены",
+      label: "Обработка продолжается",
+      state: "pending",
+    };
+  }
+
+  return {
+    label: "Все этапы выполнены",
+    state: "success",
+  };
+};
+
+const getPurchaseProcessingStatusLines = ({
+  onlineGroupAccessStates,
+  paymentRecord,
+}: {
+  onlineGroupAccessStates: OnlineGroupAccessState[] | null | undefined;
+  paymentRecord: PaymentSheetRecord;
+}) => {
+  const statuses = [
+    getPaymentProcessingStatus(paymentRecord),
+    getSaleRecordingProcessingStatus(paymentRecord),
+    getInvoiceProcessingStatus(paymentRecord),
+    getEmailProcessingStatus(paymentRecord),
+    ...getAccessProcessingStatuses({
+      onlineGroupAccessStates,
+      paymentRecord,
+    }),
+  ];
+
+  return [getProcessingSummaryStatus(statuses), ...statuses].map(
+    buildProcessingStatusLine,
+  );
+};
 
 export const buildPurchaseAlertText = ({
   eventCreatedAtIso,
   eventId,
   eventType,
+  onlineGroupAccessStates,
   processedAtIso,
   paymentRecord,
 }: {
   eventCreatedAtIso: string;
   eventId: string;
   eventType: string;
+  onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
   processedAtIso: string;
   paymentRecord: PaymentSheetRecord;
 }) => {
@@ -475,8 +775,11 @@ export const buildPurchaseAlertText = ({
       },
     ]),
     "",
-    "🧩 <b>Сервисы</b>",
-    ...getPurchaseServiceStatusLines(paymentRecord),
+    "⚙️ <b>Обработка покупки</b>",
+    ...getPurchaseProcessingStatusLines({
+      onlineGroupAccessStates,
+      paymentRecord,
+    }),
     "",
     "🧾 <b>Техника</b>",
     ...buildAlertFieldLines([
