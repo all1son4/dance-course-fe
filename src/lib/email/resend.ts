@@ -3,6 +3,8 @@ const resendFromEmail = process.env.RESEND_FROM_EMAIL?.trim() ?? "onboarding@res
 const resendReplyTo = process.env.RESEND_REPLY_TO?.trim() ?? "";
 const RESEND_REQUEST_TIMEOUT_MS = 4_000;
 
+const normalizeEmailSubject = (subject: string) => subject.replace(/\s+/g, " ").trim();
+
 export type SendResendEmailInput = {
   attachments?: Array<{
     content: string;
@@ -32,7 +34,7 @@ export const sendResendEmail = async ({
   const payload: Record<string, unknown> = {
     from: resendFromEmail,
     html,
-    subject,
+    subject: normalizeEmailSubject(subject),
     text,
     to: [to],
   };
