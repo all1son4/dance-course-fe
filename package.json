@@ -10,7 +10,9 @@
     "build": "next build",
     "build:with-migrations": "npm run db:migrate && npm run build",
     "start": "next start",
+    "test": "npm run test:baseline",
     "test:baseline": "tsx --test src/db/reconciliation-baseline.test.ts",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:audit:monthly-sales-report": "tsx src/db/audit-monthly-sales-report.ts",
     "db:backfill:sheets": "tsx src/db/backfill-google-sheets.ts",
@@ -34,7 +36,7 @@
     "check": "npm run format:check && npm run lint",
     "prepare": "husky",
     "fix": "npm run lint:fix && npm run format",
-    "verify": "npm run check && npm run build"
+    "verify": "npm run check && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.23",
