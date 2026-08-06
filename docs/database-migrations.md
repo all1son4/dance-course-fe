@@ -14,6 +14,8 @@ URL for migrations.
 
 The workflow maps `development` to `Preview` and `production` to `Production`, builds
 the requested revision before touching a database, and serializes runs per target.
+Development runs are accepted only from `dev`; production runs are accepted only from
+the protected `main` branch.
 The database runner also takes a PostgreSQL advisory lock, validates that the applied
 history is an exact prefix of the committed history, and requires the typed
 confirmation `migrate-<target>-<phase>`. Hashes must match except for the single

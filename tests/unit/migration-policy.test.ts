@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   type CommittedMigration,
   getExpectedMigrationApproval,
+  getExpectedMigrationRef,
   getPendingMigrationPlan,
 } from "@/db/migration-policy";
 
@@ -165,4 +166,6 @@ test("builds an unambiguous target and phase confirmation", () => {
     getExpectedMigrationApproval("production", "contract"),
     "migrate-production-contract",
   );
+  assert.equal(getExpectedMigrationRef("development"), "dev");
+  assert.equal(getExpectedMigrationRef("production"), "main");
 });

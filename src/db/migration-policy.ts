@@ -27,6 +27,9 @@ export const getExpectedMigrationApproval = (
   phase: MigrationPhase,
 ) => `migrate-${target}-${phase}`;
 
+export const getExpectedMigrationRef = (target: MigrationTarget) =>
+  target === "production" ? "main" : "dev";
+
 export const getDeclaredMigrationPhase = (source: string): MigrationPhase | null => {
   const firstMeaningfulLine = source
     .split(/\r?\n/u)

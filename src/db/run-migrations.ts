@@ -11,6 +11,7 @@ import {
   type AppliedMigration,
   type CommittedMigration,
   getExpectedMigrationApproval,
+  getExpectedMigrationRef,
   getPendingMigrationPlan,
   type MigrationPhase,
   type MigrationTarget,
@@ -125,9 +126,14 @@ const main = async () => {
   try {
     if (!dryRun) {
       const expectedApproval = getExpectedMigrationApproval(target, phase);
+      const expectedRef = getExpectedMigrationRef(target);
 
       if (process.env.MIGRATION_APPROVAL !== expectedApproval) {
         throw new Error(`migration_approval_mismatch:expected:${expectedApproval}`);
+      }
+
+      if (process.env.MIGRATION_RELEASE_REF !== expectedRef) {
+        throw new Error(`migration_release_ref_mismatch:expected:${expectedRef}`);
       }
 
       const [lock] = await client<{ acquired: boolean }[]>`

@@ -31,8 +31,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Validate release request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Require the target release branch
+        env:
+          REQUESTED_PHASE: ${{ inputs.phase }}
+          REQUESTED_TARGET: ${{ inputs.target }}
+          TYPED_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          expected_ref="dev"
+          if [ "${REQUESTED_TARGET}" = "production" ]; then
+            expected_ref="main"
+          fi
+
+          if [ "${GITHUB_REF_NAME}" != "${expected_ref}" ]; then
+            echo "::error::${REQUESTED_TARGET} migrations must run from ${expected_ref}."
+            exit 1
+          fi
+
+          expected_confirmation="migrate-${REQUESTED_TARGET}-${REQUESTED_PHASE}"
+          if [ "${TYPED_CONFIRMATION}" != "${expected_confirmation}" ]; then
+            echo "::error::Type ${expected_confirmation} exactly."
+            exit 1
+          fi
+
   build:
     name: Build artifact first
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -73,6 +102,7 @@ jobs:
       MIGRATION_APPROVAL: ${{ inputs.confirmation }}
       MIGRATION_DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
       MIGRATION_PHASE: ${{ inputs.phase }}
+      MIGRATION_RELEASE_REF: ${{ github.ref_name }}
       MIGRATION_TARGET: ${{ inputs.target }}
 
     steps:
