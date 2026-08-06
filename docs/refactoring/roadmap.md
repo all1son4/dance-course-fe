@@ -249,6 +249,15 @@ Use focused unit tests for domain rules, PostgreSQL integration tests for transa
 and concurrency, provider fakes or fixtures for Stripe, Telegram, and Resend, and a
 small Playwright suite for critical journeys.
 
+Status: `DONE`. Fourteen focused unit and characterization tests cover the accepted
+catalog, consent, payment-outcome, provider-request, and purchase-side-effect rules.
+Two integration tests run committed migrations against disposable PostgreSQL and
+verify rollback plus concurrent duplicate-event behavior. Three Playwright journeys
+passed against the exact Vercel Preview revision. Provider fixtures make no live
+Stripe, Telegram, or Resend calls. The deterministic `Quality` job remains the merge
+gate; a separate post-deployment smoke workflow targets successful Vercel deployment
+URLs. See [`docs/testing.md`](../testing.md).
+
 ### SAFE-03 — Separate migrations from the application build
 
 Build the artifact first. Apply migrations through a separately controlled,
@@ -576,3 +585,4 @@ Status: `TODO`
 | 2026-08-06 | Gate G0                 | `PASSED`      | Behavior, dependency, data, and decision baselines accepted |
 | 2026-08-06 | Gate G0 formal audit    | `DONE`        | All 26 Sheets components classified; documents reconciled   |
 | 2026-08-06 | SAFE-01                 | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality` |
+| 2026-08-06 | SAFE-02                 | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed  |
