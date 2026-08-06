@@ -198,6 +198,9 @@ and `933043ea6ef18e64bd379ab54ea2a81cbaf8ecf6d1fd03d9d317d00adadffe72` for produ
 (captures at `2026-08-06T13:07:24.190Z` / `13:07:40.334Z` and
 `2026-08-06T13:07:20.833Z` / `13:07:40.172Z`, respectively).
 
+Terminal status: `DONE`. The earlier `SUPERSEDED` execution-log row records the first
+blocked capture attempt, not the current task state.
+
 ### BASE-05 — Record product and policy decisions
 
 Status: `DONE`
@@ -217,7 +220,7 @@ policy, and lightweight production observation windows in the
 
 ### Gate G0
 
-Status: `PASSED`
+Status: `PASSED` (terminal; the gate equivalent of `DONE`)
 
 Evidence: the accepted [`behavior contract`](behavior-contract.md),
 [`decision register`](decision-register.md), exhaustive
@@ -569,20 +572,20 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                    | Status        | Evidence                                                    |
-| ---------- | ----------------------- | ------------- | ----------------------------------------------------------- |
-| 2026-07-30 | Repository-wide audit   | `DONE`        | Audit discussion and local checks                           |
-| 2026-07-30 | Roadmap v1.3            | `DONE`        | This document                                               |
-| 2026-07-30 | BASE-01                 | `DONE`        | ADR-001 accepted                                            |
-| 2026-07-30 | BASE-02                 | `DONE`        | Current behavior contract recorded                          |
-| 2026-07-30 | BASE-03                 | `DONE`        | Seven Sheets and all dependency classes inventoried         |
-| 2026-07-30 | BASE-05 Telegram scope  | `DONE`        | ADR-002 accepted                                            |
-| 2026-07-30 | BASE-04 tooling         | `DONE`        | Read-only command and privacy fixture tests                 |
-| 2026-07-30 | BASE-04 capture         | `IN_PROGRESS` | Neon connectivity unavailable; no data read                 |
-| 2026-07-30 | BASE-05 decision draft  | `DONE`        | Defaults prepared before owner confirmation                 |
-| 2026-07-30 | BASE-05 owner decisions | `DONE`        | Owner accepted all four migration decisions                 |
-| 2026-08-06 | BASE-04 capture         | `DONE`        | Stable dev/prod fingerprints; differences classified        |
-| 2026-08-06 | Gate G0                 | `PASSED`      | Behavior, dependency, data, and decision baselines accepted |
-| 2026-08-06 | Gate G0 formal audit    | `DONE`        | All 26 Sheets components classified; documents reconciled   |
-| 2026-08-06 | SAFE-01                 | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality` |
-| 2026-08-06 | SAFE-02                 | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed  |
+| Date       | Item                    | Status       | Evidence                                                    |
+| ---------- | ----------------------- | ------------ | ----------------------------------------------------------- |
+| 2026-07-30 | Repository-wide audit   | `DONE`       | Audit discussion and local checks                           |
+| 2026-07-30 | Roadmap v1.3            | `DONE`       | This document                                               |
+| 2026-07-30 | BASE-01                 | `DONE`       | ADR-001 accepted                                            |
+| 2026-07-30 | BASE-02                 | `DONE`       | Current behavior contract recorded                          |
+| 2026-07-30 | BASE-03                 | `DONE`       | Seven Sheets and all dependency classes inventoried         |
+| 2026-07-30 | BASE-05 Telegram scope  | `DONE`       | ADR-002 accepted                                            |
+| 2026-07-30 | BASE-04 tooling         | `DONE`       | Read-only command and privacy fixture tests                 |
+| 2026-07-30 | BASE-04 capture         | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture  |
+| 2026-07-30 | BASE-05 decision draft  | `DONE`       | Defaults prepared before owner confirmation                 |
+| 2026-07-30 | BASE-05 owner decisions | `DONE`       | Owner accepted all four migration decisions                 |
+| 2026-08-06 | BASE-04 capture         | `DONE`       | Stable dev/prod fingerprints; differences classified        |
+| 2026-08-06 | Gate G0                 | `PASSED`     | Behavior, dependency, data, and decision baselines accepted |
+| 2026-08-06 | Gate G0 formal audit    | `DONE`       | All 26 Sheets components classified; documents reconciled   |
+| 2026-08-06 | SAFE-01                 | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality` |
+| 2026-08-06 | SAFE-02                 | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed  |
