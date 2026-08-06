@@ -1,0 +1,101 @@
+name: Database migration
+run-name: Database ${{ inputs.target }} ${{ inputs.phase }} @ ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Database environment to migrate
+        required: true
+        type: choice
+        options:
+          - development
+          - production
+      phase:
+        description: Migration phase declared in every pending SQL file
+        required: true
+        type: choice
+        options:
+          - expand
+          - contract
+      confirmation:
+        description: Type migrate-<target>-<phase> exactly
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-migration-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build artifact first
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      CI: true
+      HUSKY: "0"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out requested revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build without migrations
+        run: npm run build
+
+  migrate:
+    name: Apply ${{ inputs.phase }} migration to ${{ inputs.target }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: ${{ inputs.target == 'production' && 'Production' || 'Preview' }}
+
+    env:
+      CI: true
+      HUSKY: "0"
+      MIGRATION_APPROVAL: ${{ inputs.confirmation }}
+      MIGRATION_DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      MIGRATION_PHASE: ${{ inputs.phase }}
+      MIGRATION_TARGET: ${{ inputs.target }}
+
+    steps:
+      - name: Check out built revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require the environment database secret
+        run: |
+          if [ -z "${MIGRATION_DATABASE_URL}" ]; then
+            echo "::error::Add DATABASE_URL_UNPOOLED to the selected GitHub Environment."
+            exit 1
+          fi
+
+      - name: Apply controlled migration
+        run: npm run db:migrate
