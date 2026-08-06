@@ -232,12 +232,16 @@ and the reproducible [`data baseline`](data-baseline.md).
 
 ## Phase SAFE: safety net and behavior-preserving fixes
 
-Status: `TODO`
+Status: `IN_PROGRESS`
 
 ### SAFE-01 — Add remote CI
 
 Run `npm ci`, formatting, lint, TypeScript, tests, and a migration-free production
 build. Make the checks required for merging.
+
+Status: `DONE`. The workflow passed locally from a clean temporary checkout without
+environment files and remotely on GitHub. The protected `main` branch strictly
+requires the app-bound `Quality` check, including for repository administrators.
 
 ### SAFE-02 — Add the test foundation
 
@@ -571,3 +575,4 @@ Status: `TODO`
 | 2026-08-06 | BASE-04 capture         | `DONE`        | Stable dev/prod fingerprints; differences classified        |
 | 2026-08-06 | Gate G0                 | `PASSED`      | Behavior, dependency, data, and decision baselines accepted |
 | 2026-08-06 | Gate G0 formal audit    | `DONE`        | All 26 Sheets components classified; documents reconciled   |
+| 2026-08-06 | SAFE-01                 | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality` |
