@@ -59,8 +59,8 @@ The public landing pages do not all enter checkout in the same way:
   offer;
 - the First Touch landing CTA opens the existing lead form for name, email, social
   contact, and consent; it submits a campaign lead rather than opening checkout;
-- the Online Group landing CTA currently opens the configured external registration
-  URL; its internal Standard and Plus checkout links are not active on that page;
+- the Online Group landing tariff cards open the internal checkout for the current
+  Standard and Plus offers;
 - direct First Touch and new Online Group checkout URLs are technically supported.
   New Online Group PaymentIntent creation additionally requires an active Online Group
   campaign.

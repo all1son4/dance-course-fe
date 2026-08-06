@@ -10,8 +10,12 @@
     "build": "next build",
     "build:with-migrations": "npm run db:migrate && npm run build",
     "start": "next start",
-    "test": "npm run test:baseline",
+    "test": "npm run test:unit",
     "test:baseline": "tsx --test src/db/reconciliation-baseline.test.ts",
+    "test:e2e": "playwright test",
+    "test:integration": "tsx --test tests/integration/*.test.ts",
+    "test:integration:setup": "tsx tests/integration/setup-test-database.ts",
+    "test:unit": "tsx --test src/**/*.test.ts tests/unit/*.test.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:audit:monthly-sales-report": "tsx src/db/audit-monthly-sales-report.ts",
@@ -61,6 +65,7 @@
     "yup": "^1.7.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

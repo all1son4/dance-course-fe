@@ -532,22 +532,22 @@ Status: `TODO`
 
 ## Permanent regression matrix
 
-| ID            | Scenario                                       | Required result                                  |
-| ------------- | ---------------------------------------------- | ------------------------------------------------ |
-| TEST-BEH-01   | Every documented healthy user journey          | Same visible steps and result                    |
-| TEST-STR-01   | Successful payment followed by an older event  | Payment remains successful                       |
-| TEST-STR-02   | Duplicate provider event                       | No duplicate side effect                         |
-| TEST-STR-03   | Inbox database unavailable                     | Provider receives a retryable error              |
-| TEST-TG-01    | Concurrent claims of one token                 | Exactly one winner                               |
-| TEST-TG-02    | Existing required identity-reuse journeys      | Same user-visible behavior                       |
-| TEST-TG-03    | Online Group renewal verification              | Existing verification and membership flow        |
-| TEST-CAT-01   | Healthy catalog matrix                         | Same product, offer, price, and currency         |
-| TEST-CAT-02   | Inactive commercial record                     | Not unintentionally sellable                     |
-| TEST-CONS-01  | Existing checkout agreements                   | Same UI plus server evidence                     |
-| TEST-ENTRY-01 | First Touch and Online Group public entry CTAs | Existing lead and external-registration journeys |
-| TEST-CSV-01   | Formula-like customer data                     | Safe non-executable CSV cell                     |
-| TEST-OUT-01   | Retried outbox job                             | One externally visible delivery                  |
-| TEST-DATA-01  | Backfill run twice                             | Second run is a no-op                            |
+| ID            | Scenario                                       | Required result                              |
+| ------------- | ---------------------------------------------- | -------------------------------------------- |
+| TEST-BEH-01   | Every documented healthy user journey          | Same visible steps and result                |
+| TEST-STR-01   | Successful payment followed by an older event  | Payment remains successful                   |
+| TEST-STR-02   | Duplicate provider event                       | No duplicate side effect                     |
+| TEST-STR-03   | Inbox database unavailable                     | Provider receives a retryable error          |
+| TEST-TG-01    | Concurrent claims of one token                 | Exactly one winner                           |
+| TEST-TG-02    | Existing required identity-reuse journeys      | Same user-visible behavior                   |
+| TEST-TG-03    | Online Group renewal verification              | Existing verification and membership flow    |
+| TEST-CAT-01   | Healthy catalog matrix                         | Same product, offer, price, and currency     |
+| TEST-CAT-02   | Inactive commercial record                     | Not unintentionally sellable                 |
+| TEST-CONS-01  | Existing checkout agreements                   | Same UI plus server evidence                 |
+| TEST-ENTRY-01 | First Touch and Online Group public entry CTAs | Existing lead and internal-checkout journeys |
+| TEST-CSV-01   | Formula-like customer data                     | Safe non-executable CSV cell                 |
+| TEST-OUT-01   | Retried outbox job                             | One externally visible delivery              |
+| TEST-DATA-01  | Backfill run twice                             | Second run is a no-op                        |
 
 ## Rollback policy
 
