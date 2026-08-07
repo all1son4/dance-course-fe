@@ -946,6 +946,7 @@ const getRows = async <T extends string>(
   labelsMap?: Partial<Record<T, string>>,
   options?: {
     cacheTtlMs?: number;
+    readOnly?: boolean;
   },
 ) => {
   const cacheTtlMs = options?.cacheTtlMs ?? SHEET_ROWS_CACHE_TTL_MS;
@@ -956,7 +957,9 @@ const getRows = async <T extends string>(
     return cachedRows.rows as Array<Record<T, string>>;
   }
 
-  await ensureSheetHeaders(config, sheetTitle, headers, labelsMap);
+  if (!options?.readOnly) {
+    await ensureSheetHeaders(config, sheetTitle, headers, labelsMap);
+  }
 
   const lastColumnLetter = columnIndexToLetter(headers.length);
   const values = await getSheetValues(config, sheetTitle, `A1:${lastColumnLetter}`);
@@ -1355,6 +1358,7 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
 
 export const listPaymentRecords = async (options?: {
   cacheTtlMs?: number;
+  readOnly?: boolean;
   source?: RecordSource;
 }): Promise<PaymentSheetRecord[]> => {
   const source = options?.source ?? "auto";
@@ -1385,6 +1389,7 @@ export const listPaymentRecords = async (options?: {
     PAYMENT_SHEET_HEADER_LABELS,
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
+      readOnly: options?.readOnly,
     },
   );
 };
@@ -1494,6 +1499,7 @@ export const findStripeEventRecordByEventId = async (
 
 export const listStripeEventRecords = async (options?: {
   cacheTtlMs?: number;
+  readOnly?: boolean;
   source?: RecordSource;
 }): Promise<StripeEventSheetRecord[]> => {
   const source = options?.source ?? "auto";
@@ -1521,6 +1527,25 @@ export const listStripeEventRecords = async (options?: {
     STRIPE_EVENT_SHEET_HEADER_LABELS,
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
+      readOnly: options?.readOnly,
+    },
+  );
+};
+
+export const listSuccessfulCustomerRecordsFromSheets = async (options?: {
+  cacheTtlMs?: number;
+  readOnly?: boolean;
+}): Promise<SuccessfulCustomersSheetRecord[]> => {
+  const config = getRequiredGoogleSheetsConfig();
+
+  return getRows(
+    config,
+    config.successfulCustomersSheetName,
+    SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
+    SUCCESSFUL_CUSTOMERS_SHEET_HEADER_LABELS,
+    {
+      cacheTtlMs: options?.cacheTtlMs ?? 0,
+      readOnly: options?.readOnly,
     },
   );
 };
@@ -1729,6 +1754,7 @@ export const findTelegramAccessTokenRecordByTokenValue = async (
 
 export const listTelegramAccessTokenRecords = async (options?: {
   cacheTtlMs?: number;
+  readOnly?: boolean;
   source?: RecordSource;
 }): Promise<TelegramAccessTokenSheetRecord[]> => {
   const source = options?.source ?? "auto";
@@ -1757,6 +1783,7 @@ export const listTelegramAccessTokenRecords = async (options?: {
     TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
+      readOnly: options?.readOnly,
     },
   );
 };
@@ -1987,6 +2014,7 @@ export const findMonthlySalesReportRunByKey = async (
 
 export const listMonthlySalesReportRunRecords = async (options?: {
   cacheTtlMs?: number;
+  readOnly?: boolean;
   source?: RecordSource;
 }): Promise<MonthlySalesReportRunSheetRecord[]> => {
   const source = options?.source ?? "auto";
@@ -2015,6 +2043,7 @@ export const listMonthlySalesReportRunRecords = async (options?: {
     MONTHLY_SALES_REPORT_RUNS_SHEET_HEADER_LABELS,
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
+      readOnly: options?.readOnly,
     },
   );
 };
@@ -2038,6 +2067,7 @@ export const upsertMonthlySalesReportRun = async (
 
 export const listEmailCampaignLeadRecords = async (options?: {
   cacheTtlMs?: number;
+  readOnly?: boolean;
   source?: RecordSource;
 }): Promise<EmailCampaignLeadSheetRecord[]> => {
   const source = options?.source ?? "auto";
@@ -2066,6 +2096,7 @@ export const listEmailCampaignLeadRecords = async (options?: {
     EMAIL_CAMPAIGN_LEADS_SHEET_HEADER_LABELS,
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
+      readOnly: options?.readOnly,
     },
   );
 };
@@ -2287,6 +2318,7 @@ export const findActiveTelegramUserBindings = async (options?: {
 
 export const listTelegramUserBindingRecords = async (options?: {
   cacheTtlMs?: number;
+  readOnly?: boolean;
   source?: RecordSource;
 }): Promise<TelegramUserBindingSheetRecord[]> => {
   const source = options?.source ?? "auto";
@@ -2315,6 +2347,7 @@ export const listTelegramUserBindingRecords = async (options?: {
     TELEGRAM_USER_BINDINGS_SHEET_HEADER_LABELS,
     {
       cacheTtlMs: options?.cacheTtlMs ?? 0,
+      readOnly: options?.readOnly,
     },
   );
 };
