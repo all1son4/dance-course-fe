@@ -266,6 +266,20 @@ URLs. See [`docs/testing.md`](../testing.md).
 Build the artifact first. Apply migrations through a separately controlled,
 single-runner release step using backward-compatible expand/contract migrations.
 
+Status: `DONE`. Vercel builds now run `npm run build` without migrations. Shared
+database migrations require a manual, branch-bound GitHub Actions release with an
+exact typed confirmation, a migration phase, an environment-scoped direct database
+URL, a PostgreSQL advisory lock, and strict committed-history validation. The
+[production CI](https://github.com/all1son4/dance-course-fe/actions/runs/31157722651)
+and
+[production smoke](https://github.com/all1son4/dance-course-fe/actions/runs/31157786483)
+passed after the protected merge. Controlled
+[development](https://github.com/all1son4/dance-course-fe/actions/runs/31157883957)
+and
+[production](https://github.com/all1son4/dance-course-fe/actions/runs/31158032092)
+runs both reported nine applied migrations and no pending tags, so no SQL migration
+was applied. See [`docs/database-migrations.md`](../database-migrations.md).
+
 ### SAFE-04 — Make Stripe state projection monotonic
 
 Prevent stale or out-of-order events from regressing a payment while preserving the
@@ -589,3 +603,4 @@ Status: `TODO`
 | 2026-08-06 | Gate G0 formal audit    | `DONE`       | All 26 Sheets components classified; documents reconciled   |
 | 2026-08-06 | SAFE-01                 | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality` |
 | 2026-08-06 | SAFE-02                 | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed  |
+| 2026-08-07 | SAFE-03                 | `DONE`       | Migration-free release; dev/prod no-op controls passed      |
