@@ -196,7 +196,6 @@ export default function OnlineGroupPage() {
             }
             buttonText={t("tariffs.buyButton")}
             buttonRel="nofollow"
-            buttonTarget="_blank"
             buttonHref={buildCheckoutHref({
               offerId: standardOffer.id,
               productId: product.id,
@@ -229,7 +228,6 @@ export default function OnlineGroupPage() {
             }
             buttonText={t("tariffs.buyButton")}
             buttonRel="nofollow"
-            buttonTarget="_blank"
             buttonHref={buildCheckoutHref({
               offerId: plusOffer.id,
               productId: product.id,
