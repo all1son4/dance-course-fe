@@ -1,6 +1,6 @@
 # Reliability and PostgreSQL-only roadmap
 
-Version: 1.6
+Version: 1.7
 Status: active
 Started: 2026-07-30
 
@@ -391,11 +391,19 @@ runtime; the previous runtime safely ignores the additive table.
 Preserve CSV columns and contents while making customer-controlled cells safe to open
 in spreadsheet software.
 
-Status: `IN_PROGRESS`. The monthly sales report is the only runtime CSV producer.
-Its shared cell encoder now preserves existing whitespace, quoting, columns, and
-ordinary values while forcing formula-like cells to spreadsheet text. Focused tests
-cover all supported formula prefixes and existing CSV quoting; full local and remote
-acceptance checks remain.
+Status: `DONE`. The monthly sales report is the only runtime CSV producer. Its shared
+cell encoder preserves existing whitespace normalization, quoting, columns, and
+ordinary values while forcing cells beginning with `=`, `+`, `-`, or `@` to
+spreadsheet text. Leading whitespace and line breaks cannot bypass the check, quoted
+CSV remains syntactically valid, and the original formula-like content is retained.
+The admin report workflow, recipients, attachment name, and successful-report rows do
+not change.
+
+Thirty-four unit tests pass, including ordinary quoted values and every supported
+formula prefix. The exact final revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31278465482)
+and all five deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31278503198).
 
 ### SAFE-10 — Correct payment-result and hidden-control behavior
 
@@ -692,3 +700,4 @@ Status: `TODO`
 | 2026-08-08 | SAFE-06                 | `DONE`       | Reuse characterized at accepted decision boundary            |
 | 2026-08-08 | SAFE-07                 | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass |
 | 2026-08-08 | SAFE-08                 | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
+| 2026-08-08 | SAFE-09                 | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass    |
