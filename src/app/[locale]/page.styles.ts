@@ -412,6 +412,9 @@ export const ImageDescriptionCard = styled.div`
   ${glass({
     radius: "100px",
     bgParam: "rgba(228, 228, 228, 0.4)",
+    frostPx: 14,
+    depth: 36,
+    hoverEffect: false,
   })}
 
   @media (max-width: 1240px) {

@@ -14,6 +14,7 @@ export const Container = styled.div<{ $bgColor?: string }>`
       variant: "surface",
       radius: "100px",
       bgParam: $bgColor ?? "rgba(255, 255, 255, 0.5)",
+      hoverEffect: false,
     })}
 
   @media (max-width: 1340px) {

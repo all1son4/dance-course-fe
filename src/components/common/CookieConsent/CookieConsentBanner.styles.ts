@@ -22,8 +22,11 @@ export const BannerViewport = styled.div`
 
 export const BannerCard = styled.div`
   ${glass({
+    variant: "dialog",
     radius: "60px",
     bgParam: "rgba(255, 255, 255, 0.8)",
+    frostPx: 14,
+    hoverEffect: false,
   })}
   padding: 40px;
   box-sizing: border-box;
@@ -140,6 +143,7 @@ export const ActionButtonWrap = styled.div`
 
 export const SettingsIconButton = styled.button`
   ${glass({
+    variant: "control",
     radius: "999px",
     bgParam: "rgba(255, 255, 255, 0.2)",
   })}

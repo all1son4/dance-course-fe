@@ -266,10 +266,37 @@ URLs. See [`docs/testing.md`](../testing.md).
 Build the artifact first. Apply migrations through a separately controlled,
 single-runner release step using backward-compatible expand/contract migrations.
 
+Status: `DONE`. Vercel builds now run `npm run build` without migrations. Shared
+database migrations require a manual, branch-bound GitHub Actions release with an
+exact typed confirmation, a migration phase, an environment-scoped direct database
+URL, a PostgreSQL advisory lock, and strict committed-history validation. The
+[production CI](https://github.com/all1son4/dance-course-fe/actions/runs/31157722651)
+and
+[production smoke](https://github.com/all1son4/dance-course-fe/actions/runs/31157786483)
+passed after the protected merge. Controlled
+[development](https://github.com/all1son4/dance-course-fe/actions/runs/31157883957)
+and
+[production](https://github.com/all1son4/dance-course-fe/actions/runs/31158032092)
+runs both reported nine applied migrations and no pending tags, so no SQL migration
+was applied. See [`docs/database-migrations.md`](../database-migrations.md).
+
 ### SAFE-04 — Make Stripe state projection monotonic
 
 Prevent stale or out-of-order events from regressing a payment while preserving the
 current successful, pending, and failed user journeys.
+
+Status: `DONE`. PostgreSQL purchase upserts now accept payment-state transitions
+atomically: retryable states remain free to move between failed, action-required, and
+processing outcomes; cancellation remains terminal unless success wins; and success
+cannot regress. A rejected stale write returns the preserved database projection to
+the Sheets mirror and does not overwrite its dependent purchase projections. Policy
+tests cover the complete transition matrix, while PostgreSQL integration tests cover
+both the normal retry sequence and concurrent success/failure writes. The exact
+revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31273762382)
+and the deployed
+[critical-journey smoke suite](https://github.com/all1son4/dance-course-fe/actions/runs/31273804615)
+without changing checkout UI or provider calls.
 
 ### SAFE-05 — Make Telegram token claims atomic
 
@@ -572,20 +599,22 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                    | Status       | Evidence                                                    |
-| ---------- | ----------------------- | ------------ | ----------------------------------------------------------- |
-| 2026-07-30 | Repository-wide audit   | `DONE`       | Audit discussion and local checks                           |
-| 2026-07-30 | Roadmap v1.3            | `DONE`       | This document                                               |
-| 2026-07-30 | BASE-01                 | `DONE`       | ADR-001 accepted                                            |
-| 2026-07-30 | BASE-02                 | `DONE`       | Current behavior contract recorded                          |
-| 2026-07-30 | BASE-03                 | `DONE`       | Seven Sheets and all dependency classes inventoried         |
-| 2026-07-30 | BASE-05 Telegram scope  | `DONE`       | ADR-002 accepted                                            |
-| 2026-07-30 | BASE-04 tooling         | `DONE`       | Read-only command and privacy fixture tests                 |
-| 2026-07-30 | BASE-04 capture         | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture  |
-| 2026-07-30 | BASE-05 decision draft  | `DONE`       | Defaults prepared before owner confirmation                 |
-| 2026-07-30 | BASE-05 owner decisions | `DONE`       | Owner accepted all four migration decisions                 |
-| 2026-08-06 | BASE-04 capture         | `DONE`       | Stable dev/prod fingerprints; differences classified        |
-| 2026-08-06 | Gate G0                 | `PASSED`     | Behavior, dependency, data, and decision baselines accepted |
-| 2026-08-06 | Gate G0 formal audit    | `DONE`       | All 26 Sheets components classified; documents reconciled   |
-| 2026-08-06 | SAFE-01                 | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality` |
-| 2026-08-06 | SAFE-02                 | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed  |
+| Date       | Item                    | Status       | Evidence                                                     |
+| ---------- | ----------------------- | ------------ | ------------------------------------------------------------ |
+| 2026-07-30 | Repository-wide audit   | `DONE`       | Audit discussion and local checks                            |
+| 2026-07-30 | Roadmap v1.3            | `DONE`       | This document                                                |
+| 2026-07-30 | BASE-01                 | `DONE`       | ADR-001 accepted                                             |
+| 2026-07-30 | BASE-02                 | `DONE`       | Current behavior contract recorded                           |
+| 2026-07-30 | BASE-03                 | `DONE`       | Seven Sheets and all dependency classes inventoried          |
+| 2026-07-30 | BASE-05 Telegram scope  | `DONE`       | ADR-002 accepted                                             |
+| 2026-07-30 | BASE-04 tooling         | `DONE`       | Read-only command and privacy fixture tests                  |
+| 2026-07-30 | BASE-04 capture         | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture   |
+| 2026-07-30 | BASE-05 decision draft  | `DONE`       | Defaults prepared before owner confirmation                  |
+| 2026-07-30 | BASE-05 owner decisions | `DONE`       | Owner accepted all four migration decisions                  |
+| 2026-08-06 | BASE-04 capture         | `DONE`       | Stable dev/prod fingerprints; differences classified         |
+| 2026-08-06 | Gate G0                 | `PASSED`     | Behavior, dependency, data, and decision baselines accepted  |
+| 2026-08-06 | Gate G0 formal audit    | `DONE`       | All 26 Sheets components classified; documents reconciled    |
+| 2026-08-06 | SAFE-01                 | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality`  |
+| 2026-08-06 | SAFE-02                 | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed   |
+| 2026-08-07 | SAFE-03                 | `DONE`       | Migration-free release; dev/prod no-op controls passed       |
+| 2026-08-08 | SAFE-04                 | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass |

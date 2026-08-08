@@ -7,6 +7,10 @@ import {
 
 import { getDatabase } from "./client";
 import {
+  getPaymentOutcomeTransitionCondition,
+  type PaymentOutcome,
+} from "./payment-outcome-policy";
+import {
   accessEntitlements,
   customers,
   invoices,
@@ -133,9 +137,7 @@ const parseRequiredDate = (
 
 const toIso = (date: Date | null | undefined) => date?.toISOString() ?? "";
 
-const normalizeOutcome = (
-  value: string,
-): "succeeded" | "processing" | "requires_action" | "failed" | "canceled" => {
+const normalizeOutcome = (value: string): PaymentOutcome => {
   const normalizedValue = trim(value);
 
   if (
@@ -687,6 +689,7 @@ const upsertPaymentPurchase = async ({
   transaction: PaymentRecordTransaction;
 }): Promise<{
   firstSeenAt: Date;
+  paymentStateAccepted: boolean;
   purchaseId: string;
 }> => {
   const firstSeenAt = parseRequiredDate(
@@ -706,6 +709,7 @@ const upsertPaymentPurchase = async ({
     .where(eq(purchases.paymentIntentId, paymentIntentId))
     .limit(1);
   // Sheet-compatible records do not carry settlement data, so mirrors must retain it.
+  const incomingOutcome = normalizeOutcome(paymentRecord.outcome);
   const purchaseValues = {
     amountMinor: parseInteger(paymentRecord.amount),
     checkoutCurrency: nullIfEmpty(paymentRecord.checkout_currency),
@@ -730,7 +734,7 @@ const upsertPaymentPurchase = async ({
     offerExternalId: nullIfEmpty(paymentRecord.offer_id),
     offerId: offer?.id ?? null,
     offerLabelSnapshot: nullIfEmpty(paymentRecord.offer_label),
-    outcome: normalizeOutcome(paymentRecord.outcome),
+    outcome: incomingOutcome,
     productExternalId: nullIfEmpty(paymentRecord.product_id),
     productId,
     productTitleSnapshot: nullIfEmpty(paymentRecord.product_title),
@@ -755,12 +759,38 @@ const upsertPaymentPurchase = async ({
     })
     .onConflictDoUpdate({
       set: purchaseValues,
+      setWhere: getPaymentOutcomeTransitionCondition(purchases.outcome, incomingOutcome),
       target: purchases.paymentIntentId,
     })
-    .returning({ id: purchases.id });
+    .returning({
+      firstSeenAt: purchases.firstSeenAt,
+      id: purchases.id,
+    });
+
+  if (!savedPurchase) {
+    const [preservedPurchase] = await transaction
+      .select({
+        firstSeenAt: purchases.firstSeenAt,
+        id: purchases.id,
+      })
+      .from(purchases)
+      .where(eq(purchases.paymentIntentId, paymentIntentId))
+      .limit(1);
+
+    if (!preservedPurchase) {
+      throw new Error(`Purchase ${paymentIntentId} disappeared during state projection.`);
+    }
+
+    return {
+      firstSeenAt: preservedPurchase.firstSeenAt,
+      paymentStateAccepted: false,
+      purchaseId: preservedPurchase.id,
+    };
+  }
 
   return {
-    firstSeenAt,
+    firstSeenAt: savedPurchase.firstSeenAt,
+    paymentStateAccepted: true,
     purchaseId: savedPurchase.id,
   };
 };
@@ -955,15 +985,21 @@ export const upsertPaymentRecordToDatabase = async (
       ? await findPaymentProduct(paymentRecord.product_id.trim(), tx)
       : [];
     const productId = product?.id ?? offer?.productId ?? null;
-    const { firstSeenAt, purchaseId } = await upsertPaymentPurchase({
-      customerId,
-      normalizedEmail,
-      offer,
-      paymentIntentId,
-      paymentRecord,
-      productId,
-      transaction: tx,
-    });
+    const { firstSeenAt, paymentStateAccepted, purchaseId } = await upsertPaymentPurchase(
+      {
+        customerId,
+        normalizedEmail,
+        offer,
+        paymentIntentId,
+        paymentRecord,
+        productId,
+        transaction: tx,
+      },
+    );
+
+    if (!paymentStateAccepted) {
+      return;
+    }
 
     await upsertPaymentEntitlement({
       customerId,

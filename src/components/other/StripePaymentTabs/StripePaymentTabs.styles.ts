@@ -14,6 +14,7 @@ export const Card = styled.div`
 
   ${glass({
     radius: "60px",
+    hoverEffect: false,
   })}
 
   @media (max-width: 767px) {

@@ -356,6 +356,8 @@ export const ClosedSalesCard = styled.div`
   ${glass({
     variant: "surface",
     radius: "20px",
+    frostPx: 10,
+    depth: 28,
     hoverEffect: false,
   })}
 

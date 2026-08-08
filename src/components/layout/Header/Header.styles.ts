@@ -52,7 +52,11 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
   padding: 26px 50px;
 
   ${glass({
+    variant: "chrome",
     radius: "100px",
+    bgParam: "rgba(255, 255, 255, 0.4)",
+    frostPx: 12,
+    hoverEffect: false,
   })}
 
   @media (max-width: 1024px) {
@@ -67,7 +71,11 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
     height: auto;
 
     ${glass({
+      variant: "chrome",
       radius: "40px",
+      bgParam: "rgba(255, 255, 255, 0.4)",
+      frostPx: 12,
+      hoverEffect: false,
     })}
 
     max-height: ${({ $isOpen }) => ($isOpen ? "420px" : "59px")};
