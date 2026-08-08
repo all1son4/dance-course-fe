@@ -1,6 +1,6 @@
 # Reliability and PostgreSQL-only roadmap
 
-Version: 1.7
+Version: 1.8
 Status: active
 Started: 2026-07-30
 
@@ -410,12 +410,21 @@ and all five deployed
 Keep the same visible success, pending, and failure journeys while preventing a false
 success state and keyboard access to controls that are visually unavailable.
 
-Status: `IN_PROGRESS`. Success content is now gated on the authoritative Stripe
-outcome: only `succeeded` can reveal it, `failed` and `canceled` keep the failure
-journey, and non-terminal outcomes remain visibly pending without encouraging a
-second payment. The concealed Stripe subtree retains its visual transition and state
-but is marked `inert` and hidden from the accessibility tree. Focused unit and browser
-acceptance checks are added; full local and remote verification remains.
+Status: `DONE`. Success content and access-link effects are now gated on the
+authoritative Stripe outcome: only `succeeded` can reveal them, while `failed` and
+`canceled` keep the failure journey. `processing` and `requires_action` are polled and
+then remain in an explicit localized pending state that warns against paying again;
+an unavailable verification result also cannot expose success. Invalid or mismatched
+checkout ownership returns to checkout in accordance with the behavior contract.
+
+The concealed Stripe subtree retains its visual transition and mounted state, but is
+marked `inert` and hidden from the accessibility tree until the existing form and
+agreement conditions are satisfied. Thirty-six unit tests pass, including the
+complete result-outcome policy. The exact final revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31278886380)
+and all six deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31278925817),
+including a repeated `processing` response that never renders the success title.
 
 ### SAFE-11 — Resolve production dependency advisories
 
@@ -708,3 +717,4 @@ Status: `TODO`
 | 2026-08-08 | SAFE-07                 | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass |
 | 2026-08-08 | SAFE-08                 | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
 | 2026-08-08 | SAFE-09                 | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass    |
+| 2026-08-08 | SAFE-10                 | `DONE`       | Verified result gate; CI and six browser tests pass          |
