@@ -1,6 +1,6 @@
 # Reliability and PostgreSQL-only roadmap
 
-Version: 1.5
+Version: 1.6
 Status: active
 Started: 2026-07-30
 
@@ -364,15 +364,27 @@ and all four deployed
 Reuse the existing visible fields and agreements. Add server-side enforcement and an
 immutable evidence snapshot without adding user steps unless separately approved.
 
-Status: `IN_PROGRESS`. Expand migration `0010_checkout_consent_evidence` is applied in
+Status: `DONE`. Expand migration `0010_checkout_consent_evidence` is applied in
 development and remains backward-compatible with the currently deployed application.
-The runtime implementation reuses the client validation contract on the server,
-requires all four existing booleans, carries versioned evidence through PaymentIntent
-metadata, uses Stripe's server-side creation time for the stable acceptance timestamp,
-and records it idempotently before returning the Stripe client secret. Local
-unit, disposable-PostgreSQL, formatting, lint, TypeScript, and production-build checks
-pass. Remote runtime CI and the five deployed browser journeys remain before terminal
-acceptance.
+The runtime reuses the client validation contract on the server, requires all four
+existing booleans on every new purchase, carries versioned evidence through
+PaymentIntent metadata, uses Stripe's stable server-side creation time as the
+acceptance timestamp, and records the snapshot idempotently before returning the
+client secret. A retry can recover from a temporary evidence-store failure without
+creating a second PaymentIntent or changing the immutable snapshot; a conflicting
+snapshot for the same PaymentIntent is rejected.
+
+No visible checkout fields, agreements, ordering, or Telegram steps changed. Invalid
+customer data or missing consent is rejected by the server, while an unavailable
+evidence store fails closed with an explicit localized retry message. Thirty-one unit
+tests and nine disposable-PostgreSQL integration tests pass. The development expand
+[migration](https://github.com/all1son4/dance-course-fe/actions/runs/31277053339),
+the exact final revision's
+[Quality run](https://github.com/all1son4/dance-course-fe/actions/runs/31278196379),
+and all five deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31278235316)
+passed. Production rollout remains schema-first: apply `0010` before deploying this
+runtime; the previous runtime safely ignores the additive table.
 
 ### SAFE-09 — Neutralize spreadsheet formulas in CSV exports
 
@@ -673,3 +685,4 @@ Status: `TODO`
 | 2026-08-08 | SAFE-05                 | `DONE`       | Atomic claims, DB invariant, and eight-way race test passed  |
 | 2026-08-08 | SAFE-06                 | `DONE`       | Reuse characterized at accepted decision boundary            |
 | 2026-08-08 | SAFE-07                 | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass |
+| 2026-08-08 | SAFE-08                 | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
