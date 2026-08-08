@@ -32,36 +32,36 @@ type GlassPreset = {
 const GLASS_VARIANTS: Record<GlassVariant, GlassPreset> = {
   surface: {
     bgParam: "rgba(255, 255, 255, 0.4)",
-    frostPx: 14,
+    frostPx: 12,
     depth: 30,
-    borderWidthPx: 1.2,
+    borderWidthPx: 0.9,
     borderOpacity: 0.94,
     sparkleAngleDeg: -40,
     sparkleBoost: 1.12,
   },
   chrome: {
     bgParam: "rgba(255, 255, 255, 0.36)",
-    frostPx: 16,
+    frostPx: 14,
     depth: 36,
-    borderWidthPx: 1.25,
+    borderWidthPx: 1,
     borderOpacity: 0.96,
     sparkleAngleDeg: -36,
     sparkleBoost: 1.18,
   },
   control: {
     bgParam: "rgba(255, 255, 255, 0.34)",
-    frostPx: 14,
+    frostPx: 11,
     depth: 32,
-    borderWidthPx: 1.1,
+    borderWidthPx: 0.85,
     borderOpacity: 0.94,
     sparkleAngleDeg: -36,
     sparkleBoost: 1.12,
   },
   dialog: {
     bgParam: "rgba(255, 255, 255, 0.46)",
-    frostPx: 18,
+    frostPx: 16,
     depth: 40,
-    borderWidthPx: 1.3,
+    borderWidthPx: 1,
     borderOpacity: 0.98,
     sparkleAngleDeg: -42,
     sparkleBoost: 1.22,
@@ -171,11 +171,34 @@ export const glass = ({
   const highContrastBg =
     bgParamHighContrast ??
     `color-mix(in srgb, ${resolvedBgParam} ${highContrastMixPercent}%, rgba(255, 255, 255, 0.98))`;
-
+  const materialOpacity = clamp(0.88 + k * 0.08, 0.88, 0.94);
+  const materialRed = parsedBg
+    ? Math.round(parsedBg.red * parsedBg.alpha + 255 * (1 - parsedBg.alpha))
+    : null;
+  const materialGreen = parsedBg
+    ? Math.round(parsedBg.green * parsedBg.alpha + 255 * (1 - parsedBg.alpha))
+    : null;
+  const materialBlue = parsedBg
+    ? Math.round(parsedBg.blue * parsedBg.alpha + 255 * (1 - parsedBg.alpha))
+    : null;
+  const materialFill = parsedBg
+    ? `rgba(${materialRed}, ${materialGreen}, ${materialBlue}, ${materialOpacity})`
+    : fallbackBg;
+  const unsupportedSurfaceFill = bgParamFallback ?? materialFill;
+  const reducedSurfaceFill =
+    bgParamReducedTransparency ??
+    (parsedBg
+      ? `rgba(${materialRed}, ${materialGreen}, ${materialBlue}, 0.98)`
+      : reducedBg);
+  const highContrastSurfaceFill =
+    bgParamHighContrast ??
+    (parsedBg
+      ? `rgb(${materialRed}, ${materialGreen}, ${materialBlue})`
+      : highContrastBg);
   const baseDropShadowOpacity =
-    (hasSolidTint ? 0.06 : 0.08) + k * (hasSolidTint ? 0.04 : 0.05);
-  const baseDropShadowY = (hasSolidTint ? 4 : 6) + k * (hasSolidTint ? 6 : 8);
-  const baseDropShadowBlur = (hasSolidTint ? 12 : 16) + k * (hasSolidTint ? 20 : 22);
+    (hasSolidTint ? 0.05 : 0.065) + k * (hasSolidTint ? 0.035 : 0.04);
+  const baseDropShadowY = (hasSolidTint ? 3 : 4) + k * (hasSolidTint ? 5 : 6);
+  const baseDropShadowBlur = (hasSolidTint ? 10 : 13) + k * (hasSolidTint ? 14 : 16);
   const dropShadowOpacity = baseDropShadowOpacity * resolvedShadowStrength;
   const dropShadowY = baseDropShadowY * resolvedShadowStrength;
   const dropShadowBlur = baseDropShadowBlur * resolvedShadowStrength;
@@ -184,7 +207,7 @@ export const glass = ({
   const bottomShade = (hasSolidTint ? 0.014 : 0.022) + k * 0.03;
   const innerTop = (hasSolidTint ? 0.03 : 0.07) + k * 0.05;
   const innerBottom = (hasSolidTint ? 0.01 : 0.018) + k * 0.025;
-  const innerRing = (hasSolidTint ? 0.135 : 0.22) + k * 0.08;
+  const innerRing = (hasSolidTint ? 0.105 : 0.16) + k * 0.06;
 
   const solidTintTopMix = hasVividTint ? 76 : isDarkTint ? 70 : hasSolidTint ? 64 : 0;
   const solidTintBottomMix = hasVividTint ? 90 : isDarkTint ? 86 : hasSolidTint ? 78 : 0;
@@ -197,7 +220,7 @@ export const glass = ({
     : "";
 
   const rimStrong = clamp(
-    (0.64 + k * 0.18) *
+    (0.5 + k * 0.15) *
       resolvedSparkleBoost *
       resolvedBorderOpacity *
       (hasSolidTint ? 0.92 : 1),
@@ -205,7 +228,7 @@ export const glass = ({
     1,
   );
   const rimMid = clamp(
-    (0.28 + k * 0.15) *
+    (0.22 + k * 0.12) *
       resolvedSparkleBoost *
       resolvedBorderOpacity *
       (hasSolidTint ? 0.9 : 1),
@@ -213,16 +236,17 @@ export const glass = ({
     1,
   );
   const rimSoft = clamp(
-    (0.08 + k * 0.08) *
+    (0.065 + k * 0.06) *
       resolvedSparkleBoost *
       resolvedBorderOpacity *
       (hasSolidTint ? 0.86 : 1),
     0,
     1,
   );
-  const rimDark = clamp((0.04 + k * 0.06) * resolvedBorderOpacity, 0, 0.2);
+  const rimDark = clamp((0.045 + k * 0.07) * resolvedBorderOpacity, 0, 0.2);
 
   const safariFrostPx = Math.max(0, Math.round(resolvedFrostPx * 0.74));
+  const compactFrostPx = Math.max(0, Math.min(9, Math.round(resolvedFrostPx * 0.72)));
   const safariShadowY = Math.max(
     Math.round(3 * resolvedShadowStrength),
     Math.round(dropShadowY * 0.82),
@@ -252,7 +276,7 @@ export const glass = ({
           }
 
           &:hover::after {
-            opacity: ${hasSolidTint ? 0.76 : 0.9};
+            opacity: ${hasSolidTint ? 0.7 : 0.82};
           }
         }
       `
@@ -282,7 +306,7 @@ export const glass = ({
 
     box-shadow:
       0 ${dropShadowY}px ${dropShadowBlur}px rgba(7, 10, 16, ${dropShadowOpacity}),
-      inset 0 1px 0 rgba(255, 255, 255, ${0.11 + k * 0.06}),
+      inset 0 1px 0 rgba(255, 255, 255, ${0.1 + k * 0.05}),
       inset 0 0 0 0.5px rgba(255, 255, 255, ${innerRing});
 
     transition:
@@ -296,28 +320,28 @@ export const glass = ({
       border-radius: inherit;
       pointer-events: none;
       padding: ${frameInsetPx}px;
-      opacity: 0.98;
+      opacity: 0.9;
       transition: opacity 0.2s ease;
       background:
         radial-gradient(
-          130% 98% at 18% -14%,
+          105% 72% at 14% -8%,
           rgba(255, 255, 255, ${rimStrong}) 0%,
-          rgba(255, 255, 255, ${rimMid}) 32%,
-          rgba(255, 255, 255, 0) 68%
+          rgba(255, 255, 255, ${rimMid}) 26%,
+          rgba(255, 255, 255, 0) 58%
         ),
         linear-gradient(
           ${resolvedSparkleAngleDeg}deg,
           rgba(255, 255, 255, ${rimStrong}) 0%,
-          rgba(255, 255, 255, ${rimMid}) 23%,
-          rgba(255, 255, 255, ${rimSoft}) 54%,
-          rgba(255, 255, 255, 0.01) 74%,
+          rgba(255, 255, 255, ${rimMid}) 18%,
+          rgba(255, 255, 255, ${rimSoft}) 42%,
+          rgba(255, 255, 255, 0.01) 64%,
           rgba(8, 10, 14, ${rimDark}) 100%
         ),
         linear-gradient(
           180deg,
-          rgba(255, 255, 255, 0.12) 0%,
+          rgba(255, 255, 255, 0.08) 0%,
           rgba(255, 255, 255, 0) 42%,
-          rgba(8, 10, 14, 0.04) 100%
+          rgba(8, 10, 14, 0.05) 100%
         );
       -webkit-mask:
         linear-gradient(#000 0 0) content-box,
@@ -335,7 +359,7 @@ export const glass = ({
       inset: ${innerInsetPx}px;
       border-radius: inherit;
       pointer-events: none;
-      opacity: ${hasSolidTint ? 0.7 : 0.82};
+      opacity: ${hasSolidTint ? 0.64 : 0.74};
       transition: opacity 0.2s ease;
       background:
         radial-gradient(
@@ -353,6 +377,11 @@ export const glass = ({
 
     ${hoverStyles}
 
+    @media (max-width: 767px) {
+      backdrop-filter: saturate(170%) contrast(102%) blur(${compactFrostPx}px);
+      -webkit-backdrop-filter: saturate(170%) contrast(102%) blur(${compactFrostPx}px);
+    }
+
     @supports (-webkit-touch-callout: none) {
       backdrop-filter: saturate(165%) contrast(102%) blur(${safariFrostPx}px);
       -webkit-backdrop-filter: saturate(165%) contrast(102%) blur(${safariFrostPx}px);
@@ -369,7 +398,7 @@ export const glass = ({
     }
 
     @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-      background: ${fallbackBg};
+      background: ${unsupportedSurfaceFill};
       box-shadow:
         0
           ${Math.max(
@@ -396,7 +425,7 @@ export const glass = ({
     @media (prefers-reduced-transparency: reduce) {
       backdrop-filter: none;
       -webkit-backdrop-filter: none;
-      background: ${reducedBg};
+      background: ${reducedSurfaceFill};
       box-shadow:
         0
           ${Math.max(
@@ -425,7 +454,7 @@ export const glass = ({
     }
 
     @media (prefers-contrast: more) {
-      background: ${highContrastBg};
+      background: ${highContrastSurfaceFill};
       box-shadow:
         0
           ${Math.max(

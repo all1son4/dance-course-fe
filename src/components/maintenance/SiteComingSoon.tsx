@@ -86,10 +86,12 @@ const Inner = styled(PageContainer)`
 const Panel = styled.section`
   width: min(720px, 100%);
   ${glass({
+    variant: "dialog",
     radius: "60px",
     bgParam: "rgba(255, 255, 255, 0.42)",
     frostPx: 10,
     depth: 38,
+    hoverEffect: false,
   })}
   padding: 50px;
   text-align: center;

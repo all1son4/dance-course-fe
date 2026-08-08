@@ -28,6 +28,7 @@ export const ResultCard = styled.div`
 
   ${glass({
     radius: "40px",
+    hoverEffect: false,
   })}
 
   > svg {
