@@ -157,10 +157,18 @@ test("checkout sends all four accepted agreements with the existing customer fie
   await page.getByRole("textbox", { name: "Postal code" }).fill("00-001");
   await page.getByRole("combobox", { name: "Country" }).selectOption("PL");
 
-  const agreements = page.locator('form input[type="checkbox"]');
+  const agreementNames = [
+    "immediate_access_consent",
+    "withdrawal_notice_acknowledgement",
+    "privacy_policy_acknowledgement",
+    "digital_content_agreement",
+  ];
 
-  for (let index = 0; index < 4; index += 1) {
-    await agreements.nth(index).check();
+  for (const agreementName of agreementNames) {
+    const agreement = page.locator(`input[name="${agreementName}"]`);
+
+    await page.locator(`label[for="${agreementName}"]`).click();
+    await expect(agreement).toBeChecked();
   }
 
   const requestBody = await paymentIntentBody;
