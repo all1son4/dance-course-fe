@@ -325,6 +325,57 @@ export const purchases = pgTable(
   ],
 );
 
+export const checkoutConsentEvidence = pgTable(
+  "checkout_consent_evidence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    paymentIntentId: text("payment_intent_id").notNull(),
+    checkoutSessionId: text("checkout_session_id").notNull(),
+    checkoutLocale: text("checkout_locale").notNull().$type<"ru" | "en" | "pl">(),
+    productExternalId: text("product_external_id").notNull(),
+    offerExternalId: text("offer_external_id").notNull(),
+    currency: text("currency").notNull().$type<"pln" | "eur">(),
+    immediateAccessConsent: boolean("immediate_access_consent").notNull(),
+    withdrawalNoticeAcknowledgement: boolean(
+      "withdrawal_notice_acknowledgement",
+    ).notNull(),
+    privacyPolicyAcknowledgement: boolean("privacy_policy_acknowledgement").notNull(),
+    digitalContentAgreement: boolean("digital_content_agreement").notNull(),
+    immediateAccessConsentVersion: text("immediate_access_consent_version").notNull(),
+    withdrawalNoticeAcknowledgementVersion: text(
+      "withdrawal_notice_acknowledgement_version",
+    ).notNull(),
+    privacyPolicyAcknowledgementVersion: text(
+      "privacy_policy_acknowledgement_version",
+    ).notNull(),
+    digitalContentAgreementVersion: text("digital_content_agreement_version").notNull(),
+    privacyPolicyVersion: text("privacy_policy_version").notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull(),
+    source: text("source").notNull(),
+    schemaVersion: text("schema_version").notNull(),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    uniqueIndex("checkout_consent_evidence_payment_intent_idx").on(table.paymentIntentId),
+    index("checkout_consent_evidence_checkout_session_idx").on(table.checkoutSessionId),
+    check(
+      "checkout_consent_evidence_all_accepted_check",
+      sql`${table.immediateAccessConsent}
+        AND ${table.withdrawalNoticeAcknowledgement}
+        AND ${table.privacyPolicyAcknowledgement}
+        AND ${table.digitalContentAgreement}`,
+    ),
+    check(
+      "checkout_consent_evidence_locale_check",
+      sql`${table.checkoutLocale} IN ('ru', 'en', 'pl')`,
+    ),
+    check(
+      "checkout_consent_evidence_currency_check",
+      sql`${table.currency} IN ('pln', 'eur')`,
+    ),
+  ],
+);
+
 export const stripeEvents = pgTable(
   "stripe_events",
   {
