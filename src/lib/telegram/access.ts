@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import {
+  claimTelegramAccessTokenRecord,
   findActiveTelegramUserBindings,
   findLatestTelegramAccessTokenRecordByPaymentIntentId,
   findPaymentRecordByIntentId,
@@ -20,6 +21,7 @@ import { toUtcIso } from "@/lib/time";
 
 import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
 import { buildTelegramBotStartLink, getTelegramChannelTargetByOfferId } from "./config";
+import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
 import {
   getOfferAccessDurationDaysByOfferId,
   isChoreoChannelOfferId,
@@ -27,7 +29,6 @@ import {
   isWithoutMentorOfferId,
 } from "./offer-access";
 
-type TelegramAccessTokenStatus = "expired" | "issued" | "revoked" | "used";
 type TelegramAccessUnavailableReason =
   | "access_window_expired"
   | "already_activated"
@@ -401,21 +402,27 @@ const trySyncPaymentByExistingActiveBinding = async ({
   }
 
   const bindings = await findTelegramUserBindingsByCustomerEmail(customerEmail);
-  const candidateBinding = bindings
-    .filter(
-      (binding) =>
-        binding.status === "active" &&
-        binding.chat_id.trim() === chatId &&
-        binding.telegram_user_id.trim() &&
-        parseTimestamp(binding.access_expires_at) > Date.now(),
-    )
-    .sort(
-      (left, right) =>
-        parseTimestamp(right.access_expires_at) - parseTimestamp(left.access_expires_at),
-    )[0];
+  const reusableBindings = getReusableTimedAccessTelegramBindings({
+    bindings,
+    chatId,
+    nowMs: Date.now(),
+  });
+  const candidateBinding = reusableBindings[0];
 
   if (!candidateBinding) {
     return;
+  }
+
+  const candidateUserIds = new Set(
+    reusableBindings.map((binding) => binding.telegram_user_id.trim()),
+  );
+
+  if (candidateUserIds.size > 1) {
+    console.warn("Multiple Telegram identities matched timed-access reuse", {
+      candidateCount: candidateUserIds.size,
+      chatId,
+      paymentIntentId: paymentRecord.payment_intent_id,
+    });
   }
 
   const now = toUtcIso();
@@ -1205,18 +1212,39 @@ const activateTelegramMembership = async ({
   const accessExpiresAt = accessContext.hasTimedAccess
     ? accessContext.accessExpiresAt
     : "";
+  const claimResult = await claimTelegramAccessTokenRecord({
+    accessExpiresAt,
+    chatId: identity.normalizedChatId,
+    claimedAt: identity.now,
+    telegramUserId: identity.normalizedUserId,
+    telegramUsername: identity.normalizedUsername,
+    tokenHash: tokenRecord.token_hash,
+  });
+
+  if (
+    claimResult.status !== "claimed" &&
+    claimResult.status !== "already_claimed_by_user"
+  ) {
+    await tryRemoveRejectedTelegramMember({
+      errorMessage: "Failed to remove user after rejected Telegram token claim",
+      ignoreMissingMember: true,
+      normalizedChatId: identity.normalizedChatId,
+      normalizedUserId: identity.normalizedUserId,
+      paymentIntentId: accessContext.paymentRecord.payment_intent_id,
+    });
+
+    return {
+      handled: false,
+      reason:
+        claimResult.status === "claimed_by_another_user"
+          ? "invite_claimed_by_another_user"
+          : claimResult.status === "expired"
+            ? "invite_expired"
+            : "invite_link_not_available",
+    };
+  }
 
   await Promise.all([
-    upsertTelegramAccessTokenRecord({
-      ...tokenRecord,
-      access_expires_at: accessExpiresAt,
-      chat_id: identity.normalizedChatId,
-      last_error: "",
-      status: "used" satisfies TelegramAccessTokenStatus,
-      telegram_user_id: identity.normalizedUserId,
-      telegram_username: identity.normalizedUsername,
-      used_at: identity.now,
-    }),
     upsertTelegramUserBindingRecord({
       access_expires_at: accessExpiresAt,
       bound_at: accessContext.existingBinding?.bound_at || identity.now,
@@ -1549,35 +1577,20 @@ const activateTelegramStartTokenInternal = async ({
   }
 
   if (tokenRecord.status === "used") {
-    if (tokenRecord.telegram_user_id === telegramUserId) {
-      const paymentRecord = await findPaymentRecordByIntentId(
-        tokenRecord.payment_intent_id,
-      );
-
-      if (!paymentRecord) {
-        return {
-          status: "not_available",
-        };
-      }
-
+    if (tokenRecord.telegram_user_id !== telegramUserId) {
       return {
-        paymentRecord,
-        status: "already_activated",
+        status: "token_claimed_by_another_user",
       };
     }
-
-    return {
-      status: "token_claimed_by_another_user",
-    };
   }
 
-  if (tokenRecord.status !== "issued") {
+  if (tokenRecord.status !== "issued" && tokenRecord.status !== "used") {
     return {
       status: "token_already_used",
     };
   }
 
-  if (isIsoExpired(tokenRecord.expires_at)) {
+  if (tokenRecord.status === "issued" && isIsoExpired(tokenRecord.expires_at)) {
     await upsertTelegramAccessTokenRecord({
       ...tokenRecord,
       status: "expired",
@@ -1612,15 +1625,38 @@ const activateTelegramStartTokenInternal = async ({
 
   const now = toUtcIso();
   const normalizedUsername = telegramUsername.trim();
+  const claimResult = await claimTelegramAccessTokenRecord({
+    claimedAt: now,
+    telegramUserId,
+    telegramUsername: normalizedUsername,
+    tokenHash,
+  });
+
+  if (claimResult.status === "not_found") {
+    return {
+      status: "invalid_token",
+    };
+  }
+
+  if (claimResult.status === "claimed_by_another_user") {
+    return {
+      status: "token_claimed_by_another_user",
+    };
+  }
+
+  if (claimResult.status === "expired") {
+    return {
+      status: "expired",
+    };
+  }
+
+  if (claimResult.status === "unavailable") {
+    return {
+      status: "token_already_used",
+    };
+  }
 
   await Promise.all([
-    upsertTelegramAccessTokenRecord({
-      ...tokenRecord,
-      status: "used" satisfies TelegramAccessTokenStatus,
-      telegram_user_id: telegramUserId,
-      telegram_username: normalizedUsername,
-      used_at: now,
-    }),
     upsertTelegramUserBindingRecord({
       access_expires_at: "",
       bound_at: existingBinding?.bound_at || now,
@@ -1650,7 +1686,10 @@ const activateTelegramStartTokenInternal = async ({
 
   return {
     paymentRecord,
-    status: existingBinding ? "already_activated" : "activated",
+    status:
+      existingBinding || claimResult.status === "already_claimed_by_user"
+        ? "already_activated"
+        : "activated",
   };
 };
 

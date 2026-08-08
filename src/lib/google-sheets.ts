@@ -8,6 +8,7 @@ import {
   upsertPaymentRecordToDatabase,
 } from "@/db/payment-records";
 import {
+  claimTelegramAccessTokenRecordInDatabase,
   findActiveTelegramUserBindingsFromDatabase,
   findEmailCampaignLeadByCampaignAndEmailFromDatabase,
   findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
@@ -1936,6 +1937,36 @@ export const upsertTelegramAccessTokenRecord = async (
     record: databaseRecord,
     sheetTitle: config.telegramAccessTokensSheetName,
   });
+};
+
+export const claimTelegramAccessTokenRecord = async (
+  claim: Parameters<typeof claimTelegramAccessTokenRecordInDatabase>[0],
+) => {
+  const result = await claimTelegramAccessTokenRecordInDatabase(claim);
+
+  if (
+    !result.record ||
+    result.status === "claimed_by_another_user" ||
+    result.status === "unavailable"
+  ) {
+    return result;
+  }
+
+  const config = getRequiredGoogleSheetsConfig();
+  const mirroredRecord = await upsertRecordByFieldValue({
+    config,
+    fieldName: "token_id",
+    fieldValue: result.record.token_id,
+    headers: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+    labelsMap: TELEGRAM_ACCESS_TOKENS_SHEET_HEADER_LABELS,
+    record: result.record,
+    sheetTitle: config.telegramAccessTokensSheetName,
+  });
+
+  return {
+    ...result,
+    record: mirroredRecord,
+  };
 };
 
 export const findTelegramUserBindingByPaymentIntentId = async (

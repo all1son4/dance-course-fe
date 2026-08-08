@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lte, ne, or } from "drizzle-orm";
 
 import type {
   EmailCampaignLeadSheetRecord,
@@ -419,6 +419,170 @@ export const findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase = 
   );
 };
 
+export type TelegramAccessTokenClaimResult =
+  | {
+      record: TelegramAccessTokenSheetRecord;
+      status:
+        | "already_claimed_by_user"
+        | "claimed"
+        | "claimed_by_another_user"
+        | "expired"
+        | "unavailable";
+    }
+  | {
+      record: null;
+      status: "not_found";
+    };
+
+export const claimTelegramAccessTokenRecordInDatabase = async ({
+  accessExpiresAt,
+  chatId,
+  claimedAt,
+  telegramUserId,
+  telegramUsername,
+  tokenHash,
+}: {
+  accessExpiresAt?: string;
+  chatId?: string;
+  claimedAt: string;
+  telegramUserId: string;
+  telegramUsername: string;
+  tokenHash: string;
+}): Promise<TelegramAccessTokenClaimResult> => {
+  const normalizedTokenHash = tokenHash.trim();
+  const normalizedUserId = telegramUserId.trim();
+  const normalizedUsername = telegramUsername.trim();
+  const claimTime = parseRequiredDate(claimedAt);
+
+  if (!normalizedTokenHash || !normalizedUserId) {
+    throw new Error("Telegram token claim requires a token hash and user ID.");
+  }
+
+  const claimResult = await getDatabase().transaction(async (transaction) => {
+    const [claimedToken] = await transaction
+      .update(telegramAccessTokens)
+      .set({
+        ...(accessExpiresAt === undefined
+          ? {}
+          : { accessExpiresAt: parseDate(accessExpiresAt) }),
+        ...(chatId === undefined ? {} : { chatId: nullIfEmpty(chatId) }),
+        lastError: null,
+        status: "used",
+        telegramUserId: normalizedUserId,
+        telegramUsername: normalizedUsername || null,
+        updatedAt: claimTime,
+        usedAt: claimTime,
+      })
+      .where(
+        and(
+          eq(telegramAccessTokens.tokenHash, normalizedTokenHash),
+          eq(telegramAccessTokens.status, "issued"),
+          gt(telegramAccessTokens.expiresAt, claimTime),
+          or(
+            isNull(telegramAccessTokens.telegramUserId),
+            eq(telegramAccessTokens.telegramUserId, ""),
+            eq(telegramAccessTokens.telegramUserId, normalizedUserId),
+          ),
+        ),
+      )
+      .returning();
+
+    if (claimedToken) {
+      return {
+        row: claimedToken,
+        status: "claimed" as const,
+      };
+    }
+
+    const [currentToken] = await transaction
+      .select()
+      .from(telegramAccessTokens)
+      .where(eq(telegramAccessTokens.tokenHash, normalizedTokenHash))
+      .limit(1);
+
+    if (!currentToken) {
+      return {
+        row: null,
+        status: "not_found" as const,
+      };
+    }
+
+    const currentUserId = currentToken.telegramUserId?.trim() ?? "";
+
+    if (currentToken.status === "used") {
+      return {
+        row: currentToken,
+        status:
+          currentUserId === normalizedUserId
+            ? ("already_claimed_by_user" as const)
+            : ("claimed_by_another_user" as const),
+      };
+    }
+
+    if (
+      currentToken.status === "issued" &&
+      currentUserId &&
+      currentUserId !== normalizedUserId
+    ) {
+      return {
+        row: currentToken,
+        status: "claimed_by_another_user" as const,
+      };
+    }
+
+    if (
+      currentToken.status === "issued" &&
+      currentToken.expiresAt.getTime() <= claimTime.getTime()
+    ) {
+      const [expiredToken] = await transaction
+        .update(telegramAccessTokens)
+        .set({
+          status: "expired",
+          updatedAt: claimTime,
+        })
+        .where(
+          and(
+            eq(telegramAccessTokens.id, currentToken.id),
+            eq(telegramAccessTokens.status, "issued"),
+            lte(telegramAccessTokens.expiresAt, claimTime),
+          ),
+        )
+        .returning();
+
+      return {
+        row: expiredToken ?? currentToken,
+        status: "expired" as const,
+      };
+    }
+
+    return {
+      row: currentToken,
+      status: "unavailable" as const,
+    };
+  });
+
+  if (!claimResult.row) {
+    return {
+      record: null,
+      status: claimResult.status,
+    };
+  }
+
+  const [record] = await hydrateTelegramAccessTokenRecords([claimResult.row]);
+
+  if (!record) {
+    return {
+      record: null,
+      status: "not_found",
+    };
+  }
+
+  return {
+    record,
+    status: claimResult.status,
+  };
+};
+
 export const upsertTelegramAccessTokenRecordToDatabase = async (
   record: TelegramAccessTokenSheetRecord,
 ) => {
@@ -454,6 +618,11 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
     updatedAt: now,
     usedAt: parseDate(record.used_at),
   };
+  const ownerCanBeUpdated = or(
+    isNull(telegramAccessTokens.telegramUserId),
+    eq(telegramAccessTokens.telegramUserId, ""),
+    eq(telegramAccessTokens.telegramUserId, values.telegramUserId ?? ""),
+  );
 
   await getDatabase()
     .insert(telegramAccessTokens)
@@ -464,6 +633,10 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
     })
     .onConflictDoUpdate({
       set: values,
+      setWhere:
+        values.status === "issued"
+          ? and(ownerCanBeUpdated, ne(telegramAccessTokens.status, "used"))
+          : ownerCanBeUpdated,
       target: telegramAccessTokens.tokenId,
     });
 

@@ -18,6 +18,7 @@ import {
   revokeTelegramChatInviteLink,
   unbanTelegramChatMember,
 } from "./bot-api";
+import { getOnlineGroupIdentityReuseLookup } from "./identity-reuse-policy";
 import { isOnlineGroupAccessOfferId } from "./offer-access";
 
 const INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -350,17 +351,20 @@ const findKnownTelegramIdentity = async ({
     };
   }
 
-  const customerMatch = purchase.customerId
-    ? eq(purchases.customerId, purchase.customerId)
-    : purchase.customerEmailSnapshot
-      ? eq(purchases.customerEmailSnapshot, purchase.customerEmailSnapshot)
-      : null;
+  const reuseLookup = getOnlineGroupIdentityReuseLookup({
+    customerEmailSnapshot: purchase.customerEmailSnapshot,
+    customerId: purchase.customerId,
+  });
 
-  if (!customerMatch) {
+  if (!reuseLookup) {
     return null;
   }
 
-  const [knownBinding] = await getDatabase()
+  const customerMatch =
+    reuseLookup.kind === "customer_id"
+      ? eq(purchases.customerId, reuseLookup.value)
+      : eq(purchases.customerEmailSnapshot, reuseLookup.value);
+  const knownBindings = await getDatabase()
     .select({
       telegramUserId: telegramUserBindings.telegramUserId,
       telegramUsername: telegramUserBindings.telegramUsername,
@@ -369,11 +373,25 @@ const findKnownTelegramIdentity = async ({
     .innerJoin(purchases, eq(telegramUserBindings.purchaseId, purchases.id))
     .where(and(eq(telegramUserBindings.chatId, chatId), customerMatch))
     .orderBy(desc(telegramUserBindings.lastSeenAt))
-    .limit(1);
+    .limit(10);
+  const knownBinding = knownBindings[0];
   const knownTelegramUserId = knownBinding?.telegramUserId.trim() ?? "";
 
   if (!knownTelegramUserId) {
     return null;
+  }
+
+  const candidateUserIds = new Set(
+    knownBindings.map((binding) => binding.telegramUserId.trim()).filter(Boolean),
+  );
+
+  if (candidateUserIds.size > 1) {
+    console.warn("Multiple Telegram identities matched Online Group reuse", {
+      candidateCount: candidateUserIds.size,
+      chatId,
+      lookupKind: reuseLookup.kind,
+      paymentIntentId: purchase.paymentIntentId,
+    });
   }
 
   return {
