@@ -31,6 +31,25 @@ Decision:
 5. Revisit the identity mechanism only as a separate post-cutover product/security
    decision.
 
+SAFE-06 characterization (2026-08-08):
+
+- the ordinary internal checkout creates a PaymentIntent with `receipt_email` but no
+  Stripe Customer, authenticated account, or other durable buyer identity;
+- the current internal `customerId` is itself resolved by normalized email when no
+  Stripe Customer exists, so replacing the email comparison with that ID would not
+  strengthen identity proof;
+- the checkout Telegram username, customer name, and browser checkout-session ID are
+  buyer-supplied or session-scoped and cannot prove control of a previously bound
+  Telegram account;
+- therefore a stronger automatic replacement cannot preserve the current zero-step
+  returning-customer experience. Safe alternatives require either an additional
+  verification/account-linking step or removal of automatic reuse.
+
+The accepted decision above remains in force. Current selection rules now have focused
+characterization coverage, and ambiguous matches involving multiple Telegram user IDs
+emit a warning without changing which existing candidate wins. No new reuse scope or
+ordinary-purchase verification was added.
+
 In plain language: when an existing customer buys again and the current implementation
 can associate that purchase with the customer's existing Telegram identity, the
 migration must keep that outcome. Ordinary purchases do not gain a new Telegram

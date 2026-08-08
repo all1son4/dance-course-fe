@@ -21,6 +21,7 @@ import { toUtcIso } from "@/lib/time";
 
 import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
 import { buildTelegramBotStartLink, getTelegramChannelTargetByOfferId } from "./config";
+import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
 import {
   getOfferAccessDurationDaysByOfferId,
   isChoreoChannelOfferId,
@@ -401,21 +402,27 @@ const trySyncPaymentByExistingActiveBinding = async ({
   }
 
   const bindings = await findTelegramUserBindingsByCustomerEmail(customerEmail);
-  const candidateBinding = bindings
-    .filter(
-      (binding) =>
-        binding.status === "active" &&
-        binding.chat_id.trim() === chatId &&
-        binding.telegram_user_id.trim() &&
-        parseTimestamp(binding.access_expires_at) > Date.now(),
-    )
-    .sort(
-      (left, right) =>
-        parseTimestamp(right.access_expires_at) - parseTimestamp(left.access_expires_at),
-    )[0];
+  const reusableBindings = getReusableTimedAccessTelegramBindings({
+    bindings,
+    chatId,
+    nowMs: Date.now(),
+  });
+  const candidateBinding = reusableBindings[0];
 
   if (!candidateBinding) {
     return;
+  }
+
+  const candidateUserIds = new Set(
+    reusableBindings.map((binding) => binding.telegram_user_id.trim()),
+  );
+
+  if (candidateUserIds.size > 1) {
+    console.warn("Multiple Telegram identities matched timed-access reuse", {
+      candidateCount: candidateUserIds.size,
+      chatId,
+      paymentIntentId: paymentRecord.payment_intent_id,
+    });
   }
 
   const now = toUtcIso();

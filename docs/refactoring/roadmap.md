@@ -322,6 +322,18 @@ only if the replacement preserves the intended user experience. If it cannot, wr
 decision record with options and stop for owner approval. Do not add Telegram Login to
 ordinary purchases. Keep the existing Online Group renewal verification flow.
 
+Status: `DONE` at the accepted decision boundary. Characterization confirmed that the
+ordinary internal PaymentIntent has no authenticated account or durable Stripe
+Customer and that the internal customer relation falls back to the same normalized
+email. The checkout name, Telegram username, and browser session are not independent
+proof of Telegram ownership, so no stronger automatic replacement can preserve the
+current zero-step returning-customer outcome. Existing owner-approved `DEC-01` therefore
+continues to preserve and contain the current reuse until a separate post-cutover
+product/security decision. Focused tests now lock the timed-access selection and Online
+Group customer/email precedence, while ambiguous multi-user matches produce diagnostic
+warnings. Reuse was not expanded, ordinary checkout gained no verification step, and
+the verified Online Group renewal path is unchanged.
+
 ### SAFE-07 — Make catalog failure behavior explicit
 
 Preserve the healthy-path catalog, offer, price, and currency behavior. Ensure inactive
