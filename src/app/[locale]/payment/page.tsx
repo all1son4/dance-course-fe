@@ -813,6 +813,7 @@ const PaymentPage = observer(function PaymentPage() {
   const { canUseFunctionalStorage } = useCookieConsent();
   const locale = useLocale();
   const t = useTranslations("PaymentPage");
+  const stripeT = useTranslations("StripePaymentTabs");
   const productT = useTranslations("SellableProducts");
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>(
     getFallbackCountryOptions,
@@ -849,9 +850,9 @@ const PaymentPage = observer(function PaymentPage() {
   const canRevealStripe = paymentStore.canShowStripe && isRenewalVerified;
   const renewalStatusTone = resolveRenewalStatusTone(renewalStatus);
   const stripeIntentErrorText = paymentStore.isCatalogUnavailable
-    ? t("errors.catalogUnavailable")
+    ? stripeT("errors.catalogUnavailable")
     : paymentStore.stripeIntentError
-      ? t(
+      ? stripeT(
           STRIPE_INTENT_ERROR_TRANSLATION_KEYS[paymentStore.stripeIntentError] ??
             "errors.paymentIntentRequestFailed",
         )
