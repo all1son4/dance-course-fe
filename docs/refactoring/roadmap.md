@@ -303,6 +303,18 @@ without changing checkout UI or provider calls.
 Use a PostgreSQL compare-and-set transaction and database constraints so that only one
 Telegram user can claim a token. Preserve the current claim UI and bot commands.
 
+Status: `DONE`. Legacy start-token and channel-invite claims now use an atomic
+PostgreSQL compare-and-set transaction. The first valid claimant becomes the immutable
+token owner; concurrent users receive the existing conflict result, same-user retries
+remain idempotent, and stale dual-writes cannot return a used token to `issued` or
+replace its owner. Expand migration `0009_atomic_telegram_token_claim` rejects new
+`used` rows without a Telegram user while remaining safe for unvalidated historical
+rows. A disposable-PostgreSQL integration test proves exactly one winner across eight
+concurrent claims and verifies both the constraint and stale-write protection. The
+existing bot commands, user-visible responses, ordinary purchase flow, and Online
+Group renewal verification flow are unchanged; the already-transactional Online Group
+membership claim path was intentionally left intact.
+
 ### SAFE-06 — Harden Telegram identity reuse without redesigning the flow
 
 First characterize the currently required reuse behavior. Remove unsafe trust in email
