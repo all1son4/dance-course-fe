@@ -4,6 +4,7 @@ import { and, asc, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
 
 import { getDatabase } from "@/db/client";
 import { invoices, purchases, stripeEvents } from "@/db/schema";
+import { escapeSpreadsheetCsvCell } from "@/lib/csv";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
   findMonthlySalesReportRunByKey,
@@ -78,16 +79,6 @@ const toUtcDateIso = (date: Date) =>
   [date.getUTCFullYear(), pad2(date.getUTCMonth() + 1), pad2(date.getUTCDate())].join(
     "-",
   );
-
-const escapeCsvCell = (value: string) => {
-  const normalizedValue = value.replace(/\r?\n/gu, " ").trim();
-
-  if (/[";,]/u.test(normalizedValue)) {
-    return `"${normalizedValue.replaceAll('"', '""')}"`;
-  }
-
-  return normalizedValue;
-};
 
 const formatAmount = (amountMinor: string, currency: string) => {
   const parsedAmountMinor = Number.parseInt(amountMinor, 10);
@@ -192,7 +183,7 @@ const buildCsv = (rows: string[][]) => {
   const csvRows = [headerRow, ...rows];
 
   return csvRows
-    .map((row) => row.map((cell) => escapeCsvCell(cell ?? "")).join(","))
+    .map((row) => row.map((cell) => escapeSpreadsheetCsvCell(cell ?? "")).join(","))
     .join("\n");
 };
 

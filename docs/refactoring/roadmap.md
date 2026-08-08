@@ -391,6 +391,12 @@ runtime; the previous runtime safely ignores the additive table.
 Preserve CSV columns and contents while making customer-controlled cells safe to open
 in spreadsheet software.
 
+Status: `IN_PROGRESS`. The monthly sales report is the only runtime CSV producer.
+Its shared cell encoder now preserves existing whitespace, quoting, columns, and
+ordinary values while forcing formula-like cells to spreadsheet text. Focused tests
+cover all supported formula prefixes and existing CSV quoting; full local and remote
+acceptance checks remain.
+
 ### SAFE-10 — Correct payment-result and hidden-control behavior
 
 Keep the same visible success, pending, and failure journeys while preventing a false
