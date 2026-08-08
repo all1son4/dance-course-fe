@@ -110,6 +110,144 @@ test("ordinary checkout has four fresh agreements and no Telegram verification",
       name: "digital_content_agreement",
     },
   ]);
+
+  const concealedStripeControls = page.locator('form [aria-hidden="true"][inert]');
+
+  await expect(concealedStripeControls).toHaveCount(1);
+});
+
+test("success result stays pending until Stripe confirms success", async ({ page }) => {
+  const product = SELLABLE_PRODUCTS["first-touch"];
+  const offer = product.offers[0];
+  let statusRequestCount = 0;
+
+  await page.route("**/api/stripe/payment-intent/status", async (route) => {
+    statusRequestCount += 1;
+    await route.fulfill({
+      body: JSON.stringify({
+        outcome: "processing",
+        paymentIntentId: "pi_safe10",
+        status: "processing",
+      }),
+      contentType: "application/json",
+      status: 200,
+    });
+  });
+
+  const searchParams = new URLSearchParams({
+    checkout: "checkout_safe10",
+    currency: "eur",
+    offer: offer.id,
+    payment_intent: "pi_safe10",
+    product: product.id,
+  });
+
+  await page.goto(`/payment/success?${searchParams.toString()}`);
+
+  await expect(page.getByText("Payment successful")).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "Your payment is still processing. Refresh this page in a moment and do not pay again.",
+    ),
+  ).toBeVisible();
+  expect(statusRequestCount).toBe(4);
+});
+
+test("checkout sends all four accepted agreements with the existing customer fields", async ({
+  page,
+}) => {
+  const product = SELLABLE_PRODUCTS["first-touch"];
+  const offer = product.offers[0];
+  let resolvePaymentIntentBody!: (body: Record<string, unknown>) => void;
+  const paymentIntentBody = new Promise<Record<string, unknown>>((resolve) => {
+    resolvePaymentIntentBody = resolve;
+  });
+  let hasCapturedPaymentIntent = false;
+
+  await page.route("**/api/catalog/sellable-products", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({
+        products: SELLABLE_PRODUCTS_LIST,
+      }),
+      contentType: "application/json",
+      status: 200,
+    });
+  });
+  await page.route("**/api/stripe/payment-intent", async (route) => {
+    if (!hasCapturedPaymentIntent) {
+      hasCapturedPaymentIntent = true;
+      resolvePaymentIntentBody(route.request().postDataJSON() as Record<string, unknown>);
+    }
+
+    await route.fulfill({
+      body: JSON.stringify({
+        errorCode: "consent_evidence_failed",
+      }),
+      contentType: "application/json",
+      status: 503,
+    });
+  });
+  await page.goto(`/payment?product=${product.id}&offer=${offer.id}`);
+  await page.getByRole("button", { name: "Reject" }).click();
+
+  await page.getByRole("textbox", { name: "Full name" }).fill("Anna Test");
+  await page.getByRole("textbox", { name: "Email" }).fill("buyer@example.com");
+  await page.getByRole("textbox", { name: "Telegram username" }).fill("@anna_test");
+  await page.getByRole("textbox", { name: "Address" }).fill("Main Street 1");
+  await page.getByRole("textbox", { name: "City" }).fill("Warsaw");
+  await page.getByRole("textbox", { name: "Postal code" }).fill("00-001");
+  await page.getByRole("combobox", { name: "Country" }).selectOption("PL");
+
+  const agreementNames = [
+    "immediate_access_consent",
+    "withdrawal_notice_acknowledgement",
+    "privacy_policy_acknowledgement",
+    "digital_content_agreement",
+  ];
+
+  for (const agreementName of agreementNames) {
+    const agreement = page.locator(`input[name="${agreementName}"]`);
+
+    await page.locator(`label[for="${agreementName}"] > div`).click();
+    await expect(agreement).toBeChecked();
+  }
+
+  const requestBody = await paymentIntentBody;
+
+  expect(requestBody.agreements).toEqual({
+    digitalContentAgreement: true,
+    immediateAccessConsent: true,
+    privacyPolicyAcknowledgement: true,
+    withdrawalNoticeAcknowledgement: true,
+  });
+  await expect(
+    page.getByText(
+      "We couldn't save the required consent confirmation. Please try again.",
+    ),
+  ).toBeVisible();
+});
+
+test("checkout fails closed with an explicit message when catalog is unavailable", async ({
+  page,
+}) => {
+  const product = SELLABLE_PRODUCTS["first-touch"];
+  const offer = product.offers[0];
+
+  await page.route("**/api/catalog/sellable-products", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({
+        errorCode: "catalog_unavailable",
+      }),
+      contentType: "application/json",
+      status: 503,
+    });
+  });
+  await page.goto(`/payment?product=${product.id}&offer=${offer.id}`);
+
+  await expect(
+    page.getByText("Sales are temporarily unavailable. Please try again later."),
+  ).toBeVisible();
+  await expect(page.locator("#payment-element")).toHaveCount(0);
 });
 
 const assertCheckoutContexts = (

@@ -34,12 +34,17 @@ type StripePaymentIntentIds = Partial<Record<SupportedCheckoutCurrency, string>>
 type StripeIntentErrors = Partial<
   Record<SupportedCheckoutCurrency, StripeIntentErrorCode | null>
 >;
+export type SellableCatalogStatus = "loading" | "ready" | "unavailable";
 type StripeIntentErrorCode =
+  | "catalog_unavailable"
+  | "consent_evidence_failed"
+  | "invalid_customer_data"
   | "missing_client_secret"
   | "missing_secret_key"
   | "online_group_campaign_not_configured"
   | "payment_intent_failed"
   | "payment_intent_request_failed"
+  | "required_consent_missing"
   | "renewal_campaign_inactive"
   | "renewal_payment_context_mismatch"
   | "telegram_renewal_verification_required";
@@ -122,6 +127,7 @@ const getStripeIntentErrorCode = (error: unknown): StripeIntentErrorCode => {
 
 export class PaymentStore {
   checkoutSessionId = createCheckoutSessionId();
+  catalogStatus: SellableCatalogStatus = "loading";
   customerData: PaymentCustomerData = { ...INITIAL_CUSTOMER_DATA };
   customerErrors: PaymentCustomerErrors = {};
   touchedFields: PaymentCustomerTouched = {};
@@ -175,12 +181,22 @@ export class PaymentStore {
   }
 
   get canShowStripe() {
-    return this.areAllAgreementsAccepted && this.isCustomerDataValid;
+    return (
+      this.catalogStatus === "ready" &&
+      this.areAllAgreementsAccepted &&
+      this.isCustomerDataValid
+    );
+  }
+
+  get isCatalogUnavailable() {
+    return this.catalogStatus === "unavailable";
   }
 
   get selectedProduct() {
     return (
-      this.getSellableProductById(this.selectedProductId) ?? DEFAULT_CHECKOUT_PRODUCT
+      this.getSellableProductById(this.selectedProductId) ??
+      this.sellableProducts[0] ??
+      DEFAULT_CHECKOUT_PRODUCT
     );
   }
 
@@ -228,20 +244,26 @@ export class PaymentStore {
 
   setSellableProducts(products: SellableProduct[]) {
     if (products.length === 0) {
+      this.setCatalogUnavailable();
       return;
     }
 
     const previousProductId = this.selectedProduct.id;
     const previousOfferId = this.selectedOffer.id;
     const previousPrice = this.selectedPrice;
+    const nextProduct =
+      products.find((product) => product.id === this.selectedProductId) ?? null;
+    const nextOffer = nextProduct
+      ? this.getSellableProductOfferById(nextProduct, this.selectedOfferId)
+      : null;
+
+    if (!nextProduct || !nextOffer) {
+      this.setCatalogUnavailable();
+      return;
+    }
 
     this.sellableProducts = products;
-
-    const nextProduct =
-      this.getSellableProductById(this.selectedProductId) ?? DEFAULT_CHECKOUT_PRODUCT;
-    const nextOffer =
-      this.getSellableProductOfferById(nextProduct, this.selectedOfferId) ??
-      getDefaultProductOffer(nextProduct);
+    this.catalogStatus = "ready";
 
     this.selectedProductId = nextProduct.id;
     this.selectedOfferId = nextOffer.id;
@@ -253,6 +275,11 @@ export class PaymentStore {
     ) {
       this.clearStripeIntentState(true);
     }
+  }
+
+  setCatalogUnavailable() {
+    this.catalogStatus = "unavailable";
+    this.clearStripeIntentState(true);
   }
 
   applyCheckoutDraft(draft: Partial<PaymentCheckoutDraft>) {
@@ -292,7 +319,10 @@ export class PaymentStore {
     productId?: string | null;
   }) {
     const nextProduct =
-      this.getSellableProductById(productId) ?? DEFAULT_CHECKOUT_PRODUCT;
+      this.getSellableProductById(productId) ??
+      this.getSellableProductById(DEFAULT_CHECKOUT_PRODUCT.id) ??
+      this.sellableProducts[0] ??
+      DEFAULT_CHECKOUT_PRODUCT;
     const nextOffer =
       this.getSellableProductOfferById(nextProduct, offerId) ??
       getDefaultProductOffer(nextProduct);
@@ -515,6 +545,7 @@ export class PaymentStore {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        agreements: this.agreements,
         checkoutLocale: this.validationLocale,
         checkoutSessionId: this.checkoutSessionId,
         customerData: this.customerData,
@@ -574,7 +605,10 @@ export class PaymentStore {
   }
 
   private isRetryableStripeIntentError(errorCode: StripeIntentErrorCode) {
-    return errorCode === "payment_intent_request_failed";
+    return (
+      errorCode === "consent_evidence_failed" ||
+      errorCode === "payment_intent_request_failed"
+    );
   }
 
   private async waitForNextStripeIntentRetry(attempt: number) {
@@ -636,6 +670,11 @@ export class PaymentStore {
 
   resetCheckoutForm() {
     const previousCheckoutSessionId = this.checkoutSessionId;
+    const defaultProduct =
+      this.getSellableProductById(DEFAULT_CHECKOUT_PRODUCT.id) ??
+      this.sellableProducts[0] ??
+      DEFAULT_CHECKOUT_PRODUCT;
+    const defaultOffer = getDefaultProductOffer(defaultProduct);
 
     this.clearStripeIntentState(true, previousCheckoutSessionId);
     this.checkoutSessionId = createCheckoutSessionId();
@@ -645,8 +684,8 @@ export class PaymentStore {
     this.agreements = normalizePaymentAgreementDraft();
     this.validationLocale = "ru";
     this.selectedCurrency = DEFAULT_CHECKOUT_CURRENCY;
-    this.selectedOfferId = DEFAULT_CHECKOUT_PRODUCT.defaultOfferId;
-    this.selectedProductId = DEFAULT_CHECKOUT_PRODUCT.id;
+    this.selectedOfferId = defaultOffer.id;
+    this.selectedProductId = defaultProduct.id;
     this.checkoutCurrencyInitialized = false;
     this.renewalCampaignSlug = "";
   }

@@ -35,7 +35,11 @@ Playwright intentionally covers only stable, critical journey invariants:
 
 - First Touch enters the lead dialog rather than direct checkout;
 - Online Group Standard and Plus enter their current internal checkout contexts;
-- ordinary checkout has four fresh agreements and no Telegram verification step.
+- ordinary checkout has four fresh agreements and no Telegram verification step;
+- checkout sends those same four accepted agreements with the existing customer data;
+- an unavailable authoritative catalog blocks Stripe and shows an explicit message;
+- a processing payment cannot render the success result, and hidden Stripe controls
+  are excluded from keyboard and accessibility interaction.
 
 Telegram verification remains exclusive to Online Group renewal. Provider payment,
 membership, email, and Telegram delivery behavior belongs in deterministic unit or

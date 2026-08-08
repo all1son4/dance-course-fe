@@ -96,11 +96,15 @@ const RENEWAL_PROFILE_FIELDS = [
   "country",
 ] as const satisfies readonly PaymentCustomerFieldName[];
 const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
+  catalog_unavailable: "errors.catalogUnavailable",
+  consent_evidence_failed: "errors.consentEvidenceFailed",
+  invalid_customer_data: "errors.invalidCustomerData",
   missing_client_secret: "errors.missingClientSecret",
   missing_secret_key: "errors.missingSecretKey",
   online_group_campaign_not_configured: "errors.onlineGroupCampaignNotConfigured",
   payment_intent_failed: "errors.paymentIntentFailed",
   payment_intent_request_failed: "errors.paymentIntentRequestFailed",
+  required_consent_missing: "errors.requiredConsentMissing",
   renewal_campaign_inactive: "errors.renewalCampaignInactive",
   renewal_payment_context_mismatch: "errors.renewalPaymentContextMismatch",
   telegram_renewal_verification_required: "errors.telegramRenewalVerificationRequired",
@@ -257,6 +261,7 @@ const TelegramPlaneIcon = () => (
 );
 
 type SellableProductsCatalogResponse = {
+  errorCode?: "catalog_unavailable";
   products?: SellableProduct[];
 };
 type RenewalCampaignResponse = {
@@ -800,7 +805,11 @@ const CheckoutForm = ({
     {stripeIntentErrorText ? (
       <PaymentPreparationError>{stripeIntentErrorText}</PaymentPreparationError>
     ) : null}
-    <StripeReveal $isVisible={canRevealStripe}>
+    <StripeReveal
+      $isVisible={canRevealStripe}
+      aria-hidden={!canRevealStripe}
+      inert={!canRevealStripe}
+    >
       <StripePaymentTabs key={stripeProps.resultCurrency} {...stripeProps} />
     </StripeReveal>
   </FormBox>
@@ -811,6 +820,7 @@ const PaymentPage = observer(function PaymentPage() {
   const { canUseFunctionalStorage } = useCookieConsent();
   const locale = useLocale();
   const t = useTranslations("PaymentPage");
+  const stripeT = useTranslations("StripePaymentTabs");
   const productT = useTranslations("SellableProducts");
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>(
     getFallbackCountryOptions,
@@ -846,12 +856,14 @@ const PaymentPage = observer(function PaymentPage() {
   const isRenewalVerified = !isRenewalCheckout || renewalStatus === "verified";
   const canRevealStripe = paymentStore.canShowStripe && isRenewalVerified;
   const renewalStatusTone = resolveRenewalStatusTone(renewalStatus);
-  const stripeIntentErrorText = paymentStore.stripeIntentError
-    ? t(
-        STRIPE_INTENT_ERROR_TRANSLATION_KEYS[paymentStore.stripeIntentError] ??
-          "errors.paymentIntentRequestFailed",
-      )
-    : "";
+  const stripeIntentErrorText = paymentStore.isCatalogUnavailable
+    ? stripeT("errors.catalogUnavailable")
+    : paymentStore.stripeIntentError
+      ? stripeT(
+          STRIPE_INTENT_ERROR_TRANSLATION_KEYS[paymentStore.stripeIntentError] ??
+            "errors.paymentIntentRequestFailed",
+        )
+      : "";
   const persistCheckoutDraftNow = useCallback(() => {
     if (typeof window === "undefined" || !canUseFunctionalStorage) {
       return;
@@ -876,6 +888,7 @@ const PaymentPage = observer(function PaymentPage() {
     })
       .then(async (response) => {
         if (!response.ok) {
+          paymentStore.setCatalogUnavailable();
           return null;
         }
 
@@ -884,6 +897,8 @@ const PaymentPage = observer(function PaymentPage() {
       .then((data) => {
         if (data?.products?.length) {
           paymentStore.setSellableProducts(data.products);
+        } else if (data) {
+          paymentStore.setCatalogUnavailable();
         }
       })
       .catch((error) => {
@@ -892,6 +907,7 @@ const PaymentPage = observer(function PaymentPage() {
         }
 
         console.warn("Failed to load sellable products catalog", error);
+        paymentStore.setCatalogUnavailable();
       });
 
     return () => {

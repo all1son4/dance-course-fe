@@ -118,32 +118,37 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     <ResultContainer>
       <ResultCard>
         <SuccessRedirectGuard
+          checkingText={t("verification.checking")}
           checkoutSessionId={checkoutSessionId}
           failedPath={failedPath}
           paymentIntentId={paymentIntentId}
-        />
-        <Success />
-        <SuccessContent
-          accessNotice={accessNotice}
-          checkoutSessionId={checkoutSessionId}
-          descriptionLine1={t(`description.${successCase}.line1`)}
-          descriptionLine2={t(`description.${successCase}.line2`)}
-          dateLocale={locale}
-          homeButtonText={t("buttons.home")}
-          isTelegramAccessPurchase={isTelegramAccessPurchase}
-          offerId={offerId}
-          paymentIntentId={paymentIntentId}
-          productId={productId}
-          telegramAccessActiveText={t("telegram.active")}
-          telegramContactSupportText={t("telegram.contactSupport")}
-          telegramInspirationLinkText={t("telegram.openInspiration")}
-          telegramInspirationUntilLabel={t("telegram.inspirationUntil")}
-          telegramMainGroupLinkText={t("telegram.openMainGroup")}
-          telegramOpenLinkText={t("telegram.openLink")}
-          telegramPendingText={t("telegram.pending")}
-          telegramUnavailableText={t("telegram.unavailable")}
-          title={t("title")}
-        />
+          paymentPath={paymentPath}
+          pendingText={t("verification.pending")}
+          unavailableText={t("verification.unavailable")}
+        >
+          <Success />
+          <SuccessContent
+            accessNotice={accessNotice}
+            checkoutSessionId={checkoutSessionId}
+            descriptionLine1={t(`description.${successCase}.line1`)}
+            descriptionLine2={t(`description.${successCase}.line2`)}
+            dateLocale={locale}
+            homeButtonText={t("buttons.home")}
+            isTelegramAccessPurchase={isTelegramAccessPurchase}
+            offerId={offerId}
+            paymentIntentId={paymentIntentId}
+            productId={productId}
+            telegramAccessActiveText={t("telegram.active")}
+            telegramContactSupportText={t("telegram.contactSupport")}
+            telegramInspirationLinkText={t("telegram.openInspiration")}
+            telegramInspirationUntilLabel={t("telegram.inspirationUntil")}
+            telegramMainGroupLinkText={t("telegram.openMainGroup")}
+            telegramOpenLinkText={t("telegram.openLink")}
+            telegramPendingText={t("telegram.pending")}
+            telegramUnavailableText={t("telegram.unavailable")}
+            title={t("title")}
+          />
+        </SuccessRedirectGuard>
       </ResultCard>
     </ResultContainer>
   );

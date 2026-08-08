@@ -732,6 +732,11 @@
   },
   "PaymentSuccessPage": {
     "title": "Оплата прошла успешно",
+    "verification": {
+      "checking": "Проверяем статус оплаты...",
+      "pending": "Платёж всё ещё обрабатывается. Обновите эту страницу через некоторое время и не оплачивайте повторно.",
+      "unavailable": "Не удалось подтвердить статус платежа. Обновите страницу или напишите в поддержку и не оплачивайте повторно."
+    },
     "description": {
       "firstTouch": {
         "line1": "Готовим ваш персональный доступ к курсу First Touch.",
@@ -805,9 +810,13 @@
     },
     "errors": {
       "missingClientSecret": "Stripe не вернул client secret.",
+      "catalogUnavailable": "Продажи временно недоступны. Пожалуйста, попробуйте позже.",
+      "consentEvidenceFailed": "Не удалось сохранить обязательное подтверждение согласий. Пожалуйста, попробуйте снова.",
+      "invalidCustomerData": "Проверьте данные покупателя и попробуйте снова.",
       "missingSecretKey": "Отсутствует STRIPE_SECRET_KEY. Добавьте его в .env и перезапустите сервер.",
       "paymentIntentFailed": "Не удалось подготовить платеж в Stripe. Проверьте настройки Stripe.",
       "paymentIntentRequestFailed": "Не удалось подготовить оплату. Попробуйте еще раз.",
+      "requiredConsentMissing": "Примите все обязательные соглашения, чтобы продолжить.",
       "onlineGroupCampaignNotConfigured": "Новый поток Online Group еще не настроен. Пожалуйста, напишите в поддержку.",
       "telegramRenewalVerificationRequired": "Сначала подтвердите Telegram для продления.",
       "renewalCampaignInactive": "Эта ссылка продления больше не активна. Используйте актуальную ссылку из группы.",

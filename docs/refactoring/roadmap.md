@@ -1,6 +1,6 @@
 # Reliability and PostgreSQL-only roadmap
 
-Version: 1.5
+Version: 1.8
 Status: active
 Started: 2026-07-30
 
@@ -341,20 +341,90 @@ commercial data cannot unintentionally become sellable. Implement the accepted
 `DEC-04` fail-closed policy after characterization tests; any different fallback policy
 requires a new owner decision.
 
+Status: `DONE`. Runtime sale authorization now comes exclusively from active
+PostgreSQL product, offer, price, and access-duration rows. The catalog API and
+PaymentIntent endpoint fail closed when that authority is unavailable, when a product
+has no active authoritative default offer, or when a requested known selection is
+inactive. Invalid code-only values retain the documented healthy fallback to the
+active database default; an inactive known value is never silently replaced. The
+browser blocks Stripe until the authoritative catalog is ready and shows an explicit
+localized degraded-state message. Code constants remain available for presentation
+metadata and explicit seed/recovery tooling, but cannot authorize a runtime sale.
+
+The accepted healthy product, offer, price, duration, and currency matrix remains
+unchanged. Twenty-eight unit tests and seven disposable-PostgreSQL integration tests
+pass, including active/inactive product, offer, default-offer, and price authorization.
+The exact revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31276562210)
+and all four deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31276598877).
+
 ### SAFE-08 — Validate checkout data and consent on the server
 
 Reuse the existing visible fields and agreements. Add server-side enforcement and an
 immutable evidence snapshot without adding user steps unless separately approved.
+
+Status: `DONE`. Expand migration `0010_checkout_consent_evidence` is applied in
+development and remains backward-compatible with the currently deployed application.
+The runtime reuses the client validation contract on the server, requires all four
+existing booleans on every new purchase, carries versioned evidence through
+PaymentIntent metadata, uses Stripe's stable server-side creation time as the
+acceptance timestamp, and records the snapshot idempotently before returning the
+client secret. A retry can recover from a temporary evidence-store failure without
+creating a second PaymentIntent or changing the immutable snapshot; a conflicting
+snapshot for the same PaymentIntent is rejected.
+
+No visible checkout fields, agreements, ordering, or Telegram steps changed. Invalid
+customer data or missing consent is rejected by the server, while an unavailable
+evidence store fails closed with an explicit localized retry message. Thirty-one unit
+tests and nine disposable-PostgreSQL integration tests pass. The development expand
+[migration](https://github.com/all1son4/dance-course-fe/actions/runs/31277053339),
+the exact final revision's
+[Quality run](https://github.com/all1son4/dance-course-fe/actions/runs/31278196379),
+and all five deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31278235316)
+passed. Production rollout remains schema-first: apply `0010` before deploying this
+runtime; the previous runtime safely ignores the additive table.
 
 ### SAFE-09 — Neutralize spreadsheet formulas in CSV exports
 
 Preserve CSV columns and contents while making customer-controlled cells safe to open
 in spreadsheet software.
 
+Status: `DONE`. The monthly sales report is the only runtime CSV producer. Its shared
+cell encoder preserves existing whitespace normalization, quoting, columns, and
+ordinary values while forcing cells beginning with `=`, `+`, `-`, or `@` to
+spreadsheet text. Leading whitespace and line breaks cannot bypass the check, quoted
+CSV remains syntactically valid, and the original formula-like content is retained.
+The admin report workflow, recipients, attachment name, and successful-report rows do
+not change.
+
+Thirty-four unit tests pass, including ordinary quoted values and every supported
+formula prefix. The exact final revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31278465482)
+and all five deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31278503198).
+
 ### SAFE-10 — Correct payment-result and hidden-control behavior
 
 Keep the same visible success, pending, and failure journeys while preventing a false
 success state and keyboard access to controls that are visually unavailable.
+
+Status: `DONE`. Success content and access-link effects are now gated on the
+authoritative Stripe outcome: only `succeeded` can reveal them, while `failed` and
+`canceled` keep the failure journey. `processing` and `requires_action` are polled and
+then remain in an explicit localized pending state that warns against paying again;
+an unavailable verification result also cannot expose success. Invalid or mismatched
+checkout ownership returns to checkout in accordance with the behavior contract.
+
+The concealed Stripe subtree retains its visual transition and mounted state, but is
+marked `inert` and hidden from the accessibility tree until the existing form and
+agreement conditions are satisfied. Thirty-six unit tests pass, including the
+complete result-outcome policy. The exact final revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31278886380)
+and all six deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31278925817),
+including a repeated `processing` response that never renders the success title.
 
 ### SAFE-11 — Resolve production dependency advisories
 
@@ -642,3 +712,9 @@ Status: `TODO`
 | 2026-08-06 | SAFE-02                 | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed   |
 | 2026-08-07 | SAFE-03                 | `DONE`       | Migration-free release; dev/prod no-op controls passed       |
 | 2026-08-08 | SAFE-04                 | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass |
+| 2026-08-08 | SAFE-05                 | `DONE`       | Atomic claims, DB invariant, and eight-way race test passed  |
+| 2026-08-08 | SAFE-06                 | `DONE`       | Reuse characterized at accepted decision boundary            |
+| 2026-08-08 | SAFE-07                 | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass |
+| 2026-08-08 | SAFE-08                 | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
+| 2026-08-08 | SAFE-09                 | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass    |
+| 2026-08-08 | SAFE-10                 | `DONE`       | Verified result gate; CI and six browser tests pass          |

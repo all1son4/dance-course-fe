@@ -1,6 +1,5 @@
-import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
-import { jsonNoStore } from "@/lib/http-security";
+import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 
 export const runtime = "nodejs";
 
@@ -8,17 +7,18 @@ export async function GET() {
   try {
     const products = await getSellableProductsWithDatabaseCommercialData();
 
-    return jsonNoStore({
-      products: products.length > 0 ? products : SELLABLE_PRODUCTS_LIST,
-    });
-  } catch (error) {
-    console.warn(
-      "Failed to load sellable product catalog from database, falling back to constants",
-      { error },
-    );
+    if (products.length === 0) {
+      console.error("Authoritative sellable product catalog is empty");
+
+      return jsonErrorNoStore("catalog_unavailable", { status: 503 });
+    }
 
     return jsonNoStore({
-      products: SELLABLE_PRODUCTS_LIST,
+      products,
     });
+  } catch (error) {
+    console.error("Failed to load authoritative sellable product catalog", { error });
+
+    return jsonErrorNoStore("catalog_unavailable", { status: 503 });
   }
 }

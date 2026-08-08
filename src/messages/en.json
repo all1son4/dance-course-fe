@@ -732,6 +732,11 @@
   },
   "PaymentSuccessPage": {
     "title": "Payment successful",
+    "verification": {
+      "checking": "Checking your payment status...",
+      "pending": "Your payment is still processing. Refresh this page in a moment and do not pay again.",
+      "unavailable": "We couldn't confirm the payment status. Refresh this page or contact support, and do not pay again."
+    },
     "description": {
       "firstTouch": {
         "line1": "We’re preparing your personal First Touch access.",
@@ -805,9 +810,13 @@
     },
     "errors": {
       "missingClientSecret": "Stripe did not return a client secret.",
+      "catalogUnavailable": "Sales are temporarily unavailable. Please try again later.",
+      "consentEvidenceFailed": "We couldn't save the required consent confirmation. Please try again.",
+      "invalidCustomerData": "Please check the customer details and try again.",
       "missingSecretKey": "STRIPE_SECRET_KEY is missing. Add it to .env and restart the server.",
       "paymentIntentFailed": "Failed to prepare the Stripe payment. Check your Stripe settings.",
       "paymentIntentRequestFailed": "Failed to prepare the payment. Please try again.",
+      "requiredConsentMissing": "Please accept all required agreements to continue.",
       "onlineGroupCampaignNotConfigured": "The new Online Group cycle is not configured yet. Please contact support.",
       "telegramRenewalVerificationRequired": "Confirm Telegram for this renewal first.",
       "renewalCampaignInactive": "This renewal link is no longer active. Use the current link from the group.",

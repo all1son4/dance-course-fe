@@ -67,10 +67,10 @@ const mapOfferFromDatabase = ({
   prices: Partial<Record<SupportedCheckoutCurrency, number>>;
 }): SellableProductOffer | null => {
   const fallbackOffer = fallbackOfferByExternalId.get(offer.externalOfferId);
-  const plnPrice = prices.pln ?? fallbackOffer?.prices.pln;
-  const eurPrice = prices.eur ?? fallbackOffer?.prices.eur;
+  const plnPrice = prices.pln;
+  const eurPrice = prices.eur;
 
-  if (!plnPrice || !eurPrice) {
+  if (!plnPrice || !eurPrice || offer.telegramAccessDurationDays === null) {
     return null;
   }
 
@@ -85,8 +85,7 @@ const mapOfferFromDatabase = ({
       eur: eurPrice,
       pln: plnPrice,
     },
-    telegramAccessDurationDays:
-      offer.telegramAccessDurationDays ?? fallbackOffer?.telegramAccessDurationDays ?? 0,
+    telegramAccessDurationDays: offer.telegramAccessDurationDays,
   };
 };
 
@@ -120,10 +119,13 @@ const mapProductFromDatabase = ({
     return null;
   }
 
-  const defaultOfferId =
-    offers.find((offer) => offer.id === productRow.defaultOfferExternalId)?.id ??
-    fallbackProduct?.defaultOfferId ??
-    offers[0].id;
+  const defaultOfferId = offers.find(
+    (offer) => offer.id === productRow.defaultOfferExternalId,
+  )?.id;
+
+  if (!defaultOfferId) {
+    return null;
+  }
 
   return {
     accessNote: fallbackProduct?.accessNote ?? productRow.accessNote ?? "",
@@ -221,10 +223,22 @@ export const getCheckoutSelectionFromDatabase = async ({
     return null;
   }
 
-  const selectedOffer =
-    offers.find((offer) => offer.id === offerId?.trim()) ??
-    offers.find((offer) => offer.id === productRow.defaultOfferExternalId) ??
-    offers[0];
+  const defaultOffer = offers.find(
+    (offer) => offer.id === productRow.defaultOfferExternalId,
+  );
+
+  if (!defaultOffer) {
+    return null;
+  }
+
+  const requestedOfferId = offerId?.trim();
+  const selectedOffer = requestedOfferId
+    ? offers.find((offer) => offer.id === requestedOfferId)
+    : defaultOffer;
+
+  if (!selectedOffer) {
+    return null;
+  }
   const amountMajor = selectedOffer.prices[currency];
 
   if (!amountMajor) {
@@ -245,7 +259,7 @@ export const getCheckoutSelectionFromDatabase = async ({
         "",
       code: (fallbackProductByExternalId.get(productRow.externalProductId)?.code ??
         productRow.code) as SellableProductCode,
-      defaultOfferId: productRow.defaultOfferExternalId ?? selectedOffer.id,
+      defaultOfferId: defaultOffer.id,
       description: productRow.description,
       descriptionKeys: productRow.descriptionKeys,
       id: productRow.externalProductId,
