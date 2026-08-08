@@ -805,6 +805,7 @@
     },
     "errors": {
       "missingClientSecret": "Stripe nie zwrócił client secret.",
+      "catalogUnavailable": "Sprzedaż jest tymczasowo niedostępna. Spróbuj ponownie później.",
       "missingSecretKey": "Brakuje STRIPE_SECRET_KEY. Dodaj go do .env i uruchom ponownie serwer.",
       "paymentIntentFailed": "Nie udało się przygotować płatności Stripe. Sprawdź ustawienia Stripe.",
       "paymentIntentRequestFailed": "Nie udało się przygotować płatności. Spróbuj ponownie.",

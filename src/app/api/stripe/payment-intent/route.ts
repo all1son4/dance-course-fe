@@ -2,7 +2,6 @@ import type Stripe from "stripe";
 
 import {
   DEFAULT_CHECKOUT_PRODUCT,
-  getProductPrice,
   getResolvedCheckoutCurrency,
   getSellableProductById,
   getSellableProductOfferById,
@@ -95,27 +94,12 @@ type LocalizedCheckout = {
   productTitle: string;
 };
 
-const getFallbackCheckoutSelection = ({
-  currency,
-  offerId,
-  productId,
-}: {
-  currency: SupportedCheckoutCurrency;
-  offerId?: string;
-  productId?: string;
-}): CheckoutSelection => {
-  const product = getSellableProductById(productId) ?? DEFAULT_CHECKOUT_PRODUCT;
-  const offer =
-    getSellableProductOfferById(product, offerId) ??
-    product.offers.find((item) => item.id === product.defaultOfferId) ??
-    product.offers[0];
-
-  return {
-    amountMinor: getProductPrice(product, offer.id, currency) * 100,
-    offer,
-    product,
-  };
-};
+class CatalogUnavailableError extends Error {
+  constructor(readonly status: 409 | 503) {
+    super("catalog_unavailable");
+    this.name = "CatalogUnavailableError";
+  }
+}
 
 const getCheckoutSelection = async ({
   currency,
@@ -126,27 +110,39 @@ const getCheckoutSelection = async ({
   offerId?: string;
   productId?: string;
 }): Promise<CheckoutSelection> => {
-  const fallbackSelection = getFallbackCheckoutSelection({
-    currency,
+  const configuredProduct = getSellableProductById(productId) ?? DEFAULT_CHECKOUT_PRODUCT;
+  const authoritativeOfferId = getSellableProductOfferById(
+    configuredProduct,
     offerId,
-    productId,
-  });
+  )?.id;
 
   try {
-    return (
-      (await getCheckoutSelectionFromDatabase({
+    const selection = await getCheckoutSelectionFromDatabase({
+      currency,
+      offerId: authoritativeOfferId,
+      productId: configuredProduct.id,
+    });
+
+    if (!selection) {
+      console.error("Requested checkout selection is not sellable", {
         currency,
         offerId,
-        productId: fallbackSelection.product.id,
-      })) ?? fallbackSelection
-    );
-  } catch (error) {
-    console.warn(
-      "Failed to load checkout product selection from database, falling back to constants",
-      { error, productId: fallbackSelection.product.id },
-    );
+        productId: configuredProduct.id,
+      });
+      throw new CatalogUnavailableError(409);
+    }
 
-    return fallbackSelection;
+    return selection;
+  } catch (error) {
+    if (error instanceof CatalogUnavailableError) {
+      throw error;
+    }
+
+    console.error("Failed to authorize checkout selection from database", {
+      error,
+      productId: configuredProduct.id,
+    });
+    throw new CatalogUnavailableError(503);
   }
 };
 
@@ -438,6 +434,10 @@ export async function POST(request: Request): Promise<Response> {
       paymentIntentId: paymentIntent.id,
     });
   } catch (error) {
+    if (error instanceof CatalogUnavailableError) {
+      return jsonErrorNoStore("catalog_unavailable", { status: error.status });
+    }
+
     console.error("Failed to create Stripe PaymentIntent", error);
 
     return jsonErrorNoStore("payment_intent_failed", { status: 500 });

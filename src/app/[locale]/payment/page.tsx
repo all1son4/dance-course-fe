@@ -96,6 +96,7 @@ const RENEWAL_PROFILE_FIELDS = [
   "country",
 ] as const satisfies readonly PaymentCustomerFieldName[];
 const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
+  catalog_unavailable: "errors.catalogUnavailable",
   missing_client_secret: "errors.missingClientSecret",
   missing_secret_key: "errors.missingSecretKey",
   online_group_campaign_not_configured: "errors.onlineGroupCampaignNotConfigured",
@@ -257,6 +258,7 @@ const TelegramPlaneIcon = () => (
 );
 
 type SellableProductsCatalogResponse = {
+  errorCode?: "catalog_unavailable";
   products?: SellableProduct[];
 };
 type RenewalCampaignResponse = {
@@ -846,12 +848,14 @@ const PaymentPage = observer(function PaymentPage() {
   const isRenewalVerified = !isRenewalCheckout || renewalStatus === "verified";
   const canRevealStripe = paymentStore.canShowStripe && isRenewalVerified;
   const renewalStatusTone = resolveRenewalStatusTone(renewalStatus);
-  const stripeIntentErrorText = paymentStore.stripeIntentError
-    ? t(
-        STRIPE_INTENT_ERROR_TRANSLATION_KEYS[paymentStore.stripeIntentError] ??
-          "errors.paymentIntentRequestFailed",
-      )
-    : "";
+  const stripeIntentErrorText = paymentStore.isCatalogUnavailable
+    ? t("errors.catalogUnavailable")
+    : paymentStore.stripeIntentError
+      ? t(
+          STRIPE_INTENT_ERROR_TRANSLATION_KEYS[paymentStore.stripeIntentError] ??
+            "errors.paymentIntentRequestFailed",
+        )
+      : "";
   const persistCheckoutDraftNow = useCallback(() => {
     if (typeof window === "undefined" || !canUseFunctionalStorage) {
       return;
@@ -876,6 +880,7 @@ const PaymentPage = observer(function PaymentPage() {
     })
       .then(async (response) => {
         if (!response.ok) {
+          paymentStore.setCatalogUnavailable();
           return null;
         }
 
@@ -884,6 +889,8 @@ const PaymentPage = observer(function PaymentPage() {
       .then((data) => {
         if (data?.products?.length) {
           paymentStore.setSellableProducts(data.products);
+        } else if (data) {
+          paymentStore.setCatalogUnavailable();
         }
       })
       .catch((error) => {
@@ -892,6 +899,7 @@ const PaymentPage = observer(function PaymentPage() {
         }
 
         console.warn("Failed to load sellable products catalog", error);
+        paymentStore.setCatalogUnavailable();
       });
 
     return () => {

@@ -112,6 +112,29 @@ test("ordinary checkout has four fresh agreements and no Telegram verification",
   ]);
 });
 
+test("checkout fails closed with an explicit message when catalog is unavailable", async ({
+  page,
+}) => {
+  const product = SELLABLE_PRODUCTS["first-touch"];
+  const offer = product.offers[0];
+
+  await page.route("**/api/catalog/sellable-products", async (route) => {
+    await route.fulfill({
+      body: JSON.stringify({
+        errorCode: "catalog_unavailable",
+      }),
+      contentType: "application/json",
+      status: 503,
+    });
+  });
+  await page.goto(`/payment?product=${product.id}&offer=${offer.id}`);
+
+  await expect(
+    page.getByText("Sales are temporarily unavailable. Please try again later."),
+  ).toBeVisible();
+  await expect(page.locator("#payment-element")).toHaveCount(0);
+});
+
 const assertCheckoutContexts = (
   contexts: Array<{ offerId: string | null; productId: string | null }>,
   productId: string,

@@ -341,6 +341,14 @@ commercial data cannot unintentionally become sellable. Implement the accepted
 `DEC-04` fail-closed policy after characterization tests; any different fallback policy
 requires a new owner decision.
 
+Status: `IN_PROGRESS`. Runtime sale authorization now comes exclusively from active
+PostgreSQL product, offer, price, and access-duration rows. The catalog API and
+PaymentIntent endpoint fail closed when that authority is unavailable or the requested
+known selection is inactive; the browser blocks Stripe until the authoritative catalog
+is ready and shows an explicit localized degraded-state message. Local unit,
+PostgreSQL integration, TypeScript, lint, formatting, and production-build checks pass.
+Remote CI and the deployed browser journey remain before terminal acceptance.
+
 ### SAFE-08 — Validate checkout data and consent on the server
 
 Reuse the existing visible fields and agreements. Add server-side enforcement and an
@@ -623,22 +631,25 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                    | Status       | Evidence                                                     |
-| ---------- | ----------------------- | ------------ | ------------------------------------------------------------ |
-| 2026-07-30 | Repository-wide audit   | `DONE`       | Audit discussion and local checks                            |
-| 2026-07-30 | Roadmap v1.3            | `DONE`       | This document                                                |
-| 2026-07-30 | BASE-01                 | `DONE`       | ADR-001 accepted                                             |
-| 2026-07-30 | BASE-02                 | `DONE`       | Current behavior contract recorded                           |
-| 2026-07-30 | BASE-03                 | `DONE`       | Seven Sheets and all dependency classes inventoried          |
-| 2026-07-30 | BASE-05 Telegram scope  | `DONE`       | ADR-002 accepted                                             |
-| 2026-07-30 | BASE-04 tooling         | `DONE`       | Read-only command and privacy fixture tests                  |
-| 2026-07-30 | BASE-04 capture         | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture   |
-| 2026-07-30 | BASE-05 decision draft  | `DONE`       | Defaults prepared before owner confirmation                  |
-| 2026-07-30 | BASE-05 owner decisions | `DONE`       | Owner accepted all four migration decisions                  |
-| 2026-08-06 | BASE-04 capture         | `DONE`       | Stable dev/prod fingerprints; differences classified         |
-| 2026-08-06 | Gate G0                 | `PASSED`     | Behavior, dependency, data, and decision baselines accepted  |
-| 2026-08-06 | Gate G0 formal audit    | `DONE`       | All 26 Sheets components classified; documents reconciled    |
-| 2026-08-06 | SAFE-01                 | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality`  |
-| 2026-08-06 | SAFE-02                 | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed   |
-| 2026-08-07 | SAFE-03                 | `DONE`       | Migration-free release; dev/prod no-op controls passed       |
-| 2026-08-08 | SAFE-04                 | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass |
+| Date       | Item                    | Status        | Evidence                                                      |
+| ---------- | ----------------------- | ------------- | ------------------------------------------------------------- |
+| 2026-07-30 | Repository-wide audit   | `DONE`        | Audit discussion and local checks                             |
+| 2026-07-30 | Roadmap v1.3            | `DONE`        | This document                                                 |
+| 2026-07-30 | BASE-01                 | `DONE`        | ADR-001 accepted                                              |
+| 2026-07-30 | BASE-02                 | `DONE`        | Current behavior contract recorded                            |
+| 2026-07-30 | BASE-03                 | `DONE`        | Seven Sheets and all dependency classes inventoried           |
+| 2026-07-30 | BASE-05 Telegram scope  | `DONE`        | ADR-002 accepted                                              |
+| 2026-07-30 | BASE-04 tooling         | `DONE`        | Read-only command and privacy fixture tests                   |
+| 2026-07-30 | BASE-04 capture         | `SUPERSEDED`  | Initial blocked attempt; replaced by the completed capture    |
+| 2026-07-30 | BASE-05 decision draft  | `DONE`        | Defaults prepared before owner confirmation                   |
+| 2026-07-30 | BASE-05 owner decisions | `DONE`        | Owner accepted all four migration decisions                   |
+| 2026-08-06 | BASE-04 capture         | `DONE`        | Stable dev/prod fingerprints; differences classified          |
+| 2026-08-06 | Gate G0                 | `PASSED`      | Behavior, dependency, data, and decision baselines accepted   |
+| 2026-08-06 | Gate G0 formal audit    | `DONE`        | All 26 Sheets components classified; documents reconciled     |
+| 2026-08-06 | SAFE-01                 | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality`   |
+| 2026-08-06 | SAFE-02                 | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed    |
+| 2026-08-07 | SAFE-03                 | `DONE`        | Migration-free release; dev/prod no-op controls passed        |
+| 2026-08-08 | SAFE-04                 | `DONE`        | Atomic terminal outcomes; race and deployed smoke tests pass  |
+| 2026-08-08 | SAFE-05                 | `DONE`        | Atomic claims, DB invariant, and eight-way race test passed   |
+| 2026-08-08 | SAFE-06                 | `DONE`        | Reuse characterized at accepted decision boundary             |
+| 2026-08-08 | SAFE-07 implementation  | `IN_PROGRESS` | Fail-closed catalog checks pass locally; remote gates pending |
