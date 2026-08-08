@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -519,6 +520,10 @@ export const telegramAccessTokens = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "telegram_access_tokens_used_claim_check",
+      sql`${table.status} <> 'used' OR NULLIF(BTRIM(${table.telegramUserId}), '') IS NOT NULL`,
+    ),
     uniqueIndex("telegram_access_tokens_token_id_idx").on(table.tokenId),
     uniqueIndex("telegram_access_tokens_token_hash_idx").on(table.tokenHash),
     index("telegram_access_tokens_purchase_id_idx").on(table.purchaseId),
