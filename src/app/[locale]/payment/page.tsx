@@ -805,7 +805,11 @@ const CheckoutForm = ({
     {stripeIntentErrorText ? (
       <PaymentPreparationError>{stripeIntentErrorText}</PaymentPreparationError>
     ) : null}
-    <StripeReveal $isVisible={canRevealStripe}>
+    <StripeReveal
+      $isVisible={canRevealStripe}
+      aria-hidden={!canRevealStripe}
+      inert={!canRevealStripe}
+    >
       <StripePaymentTabs key={stripeProps.resultCurrency} {...stripeProps} />
     </StripeReveal>
   </FormBox>

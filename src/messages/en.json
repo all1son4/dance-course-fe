@@ -732,6 +732,11 @@
   },
   "PaymentSuccessPage": {
     "title": "Payment successful",
+    "verification": {
+      "checking": "Checking your payment status...",
+      "pending": "Your payment is still processing. Refresh this page in a moment and do not pay again.",
+      "unavailable": "We couldn't confirm the payment status. Refresh this page or contact support, and do not pay again."
+    },
     "description": {
       "firstTouch": {
         "line1": "We’re preparing your personal First Touch access.",

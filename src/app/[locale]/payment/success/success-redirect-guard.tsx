@@ -1,24 +1,43 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+
+import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-intent/lib";
+
+import { ResultParagraph } from "../result-page.styles";
+import { resolveSuccessPageOutcomeAction } from "./success-outcome";
 
 const STATUS_CHECK_MAX_ATTEMPTS = 4;
 const STATUS_CHECK_RETRY_DELAY_MS = 1_000;
 const STATUS_REQUEST_TIMEOUT_MS = 8_000;
 
 type SuccessRedirectGuardProps = {
+  children: ReactNode;
+  checkingText: string;
   checkoutSessionId: string;
   failedPath: string;
   paymentIntentId: string;
+  paymentPath: string;
+  pendingText: string;
+  unavailableText: string;
 };
 
+type VerificationState = "checking" | "pending" | "succeeded" | "unavailable";
+
 export default function SuccessRedirectGuard({
+  children,
+  checkingText,
   checkoutSessionId,
   failedPath,
   paymentIntentId,
+  paymentPath,
+  pendingText,
+  unavailableText,
 }: SuccessRedirectGuardProps) {
   const router = useRouter();
+  const [verificationState, setVerificationState] =
+    useState<VerificationState>("checking");
 
   useEffect(() => {
     if (!paymentIntentId || !checkoutSessionId) {
@@ -65,11 +84,12 @@ export default function SuccessRedirectGuard({
 
           if (!response.ok) {
             if (response.status === 400 || response.status === 403) {
-              router.replace(failedPath);
+              router.replace(paymentPath);
               return;
             }
 
             if (attempt === STATUS_CHECK_MAX_ATTEMPTS - 1) {
+              setVerificationState("unavailable");
               return;
             }
 
@@ -78,17 +98,31 @@ export default function SuccessRedirectGuard({
           }
 
           const data = (await response.json()) as {
-            outcome?:
-              | "canceled"
-              | "failed"
-              | "processing"
-              | "requires_action"
-              | "succeeded";
+            outcome?: ManagedPaymentIntentOutcome;
           };
+          const action = resolveSuccessPageOutcomeAction(data.outcome);
 
-          if (data.outcome === "failed" || data.outcome === "canceled") {
-            router.replace(failedPath);
+          if (action === "show_success") {
+            setVerificationState("succeeded");
+            return;
           }
+
+          if (action === "redirect_failed") {
+            router.replace(failedPath);
+            return;
+          }
+
+          if (action === "show_pending") {
+            if (attempt === STATUS_CHECK_MAX_ATTEMPTS - 1) {
+              setVerificationState("pending");
+              return;
+            }
+
+            await wait(STATUS_CHECK_RETRY_DELAY_MS);
+            continue;
+          }
+
+          setVerificationState("unavailable");
           return;
         } catch {
           if (isDisposed) {
@@ -96,6 +130,7 @@ export default function SuccessRedirectGuard({
           }
 
           if (attempt === STATUS_CHECK_MAX_ATTEMPTS - 1) {
+            setVerificationState("unavailable");
             return;
           }
 
@@ -117,7 +152,23 @@ export default function SuccessRedirectGuard({
       });
       pendingTimeouts.clear();
     };
-  }, [checkoutSessionId, failedPath, paymentIntentId, router]);
+  }, [checkoutSessionId, failedPath, paymentIntentId, paymentPath, router]);
 
-  return null;
+  if (verificationState === "succeeded") {
+    return <>{children}</>;
+  }
+
+  return (
+    <ResultParagraph
+      role={verificationState === "unavailable" ? "alert" : "status"}
+      aria-atomic="true"
+      aria-live={verificationState === "unavailable" ? "assertive" : "polite"}
+    >
+      {verificationState === "checking"
+        ? checkingText
+        : verificationState === "pending"
+          ? pendingText
+          : unavailableText}
+    </ResultParagraph>
+  );
 }

@@ -410,6 +410,13 @@ and all five deployed
 Keep the same visible success, pending, and failure journeys while preventing a false
 success state and keyboard access to controls that are visually unavailable.
 
+Status: `IN_PROGRESS`. Success content is now gated on the authoritative Stripe
+outcome: only `succeeded` can reveal it, `failed` and `canceled` keep the failure
+journey, and non-terminal outcomes remain visibly pending without encouraging a
+second payment. The concealed Stripe subtree retains its visual transition and state
+but is marked `inert` and hidden from the accessibility tree. Focused unit and browser
+acceptance checks are added; full local and remote verification remains.
+
 ### SAFE-11 — Resolve production dependency advisories
 
 Upgrade or override only after compatibility tests. Do not use forced automated

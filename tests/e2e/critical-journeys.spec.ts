@@ -110,6 +110,47 @@ test("ordinary checkout has four fresh agreements and no Telegram verification",
       name: "digital_content_agreement",
     },
   ]);
+
+  const concealedStripeControls = page.locator('form [aria-hidden="true"][inert]');
+
+  await expect(concealedStripeControls).toHaveCount(1);
+});
+
+test("success result stays pending until Stripe confirms success", async ({ page }) => {
+  const product = SELLABLE_PRODUCTS["first-touch"];
+  const offer = product.offers[0];
+  let statusRequestCount = 0;
+
+  await page.route("**/api/stripe/payment-intent/status", async (route) => {
+    statusRequestCount += 1;
+    await route.fulfill({
+      body: JSON.stringify({
+        outcome: "processing",
+        paymentIntentId: "pi_safe10",
+        status: "processing",
+      }),
+      contentType: "application/json",
+      status: 200,
+    });
+  });
+
+  const searchParams = new URLSearchParams({
+    checkout: "checkout_safe10",
+    currency: "eur",
+    offer: offer.id,
+    payment_intent: "pi_safe10",
+    product: product.id,
+  });
+
+  await page.goto(`/payment/success?${searchParams.toString()}`);
+
+  await expect(page.getByText("Payment successful")).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "Your payment is still processing. Refresh this page in a moment and do not pay again.",
+    ),
+  ).toBeVisible();
+  expect(statusRequestCount).toBe(4);
 });
 
 test("checkout sends all four accepted agreements with the existing customer fields", async ({

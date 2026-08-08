@@ -732,6 +732,11 @@
   },
   "PaymentSuccessPage": {
     "title": "Płatność zakończona pomyślnie",
+    "verification": {
+      "checking": "Sprawdzamy status płatności...",
+      "pending": "Płatność jest nadal przetwarzana. Odśwież tę stronę za chwilę i nie płać ponownie.",
+      "unavailable": "Nie udało się potwierdzić statusu płatności. Odśwież stronę lub skontaktuj się ze wsparciem i nie płać ponownie."
+    },
     "description": {
       "firstTouch": {
         "line1": "Przygotowujemy Twój osobisty dostęp do kursu First Touch.",
