@@ -806,9 +806,12 @@
     "errors": {
       "missingClientSecret": "Stripe did not return a client secret.",
       "catalogUnavailable": "Sales are temporarily unavailable. Please try again later.",
+      "consentEvidenceFailed": "We couldn't save the required consent confirmation. Please try again.",
+      "invalidCustomerData": "Please check the customer details and try again.",
       "missingSecretKey": "STRIPE_SECRET_KEY is missing. Add it to .env and restart the server.",
       "paymentIntentFailed": "Failed to prepare the Stripe payment. Check your Stripe settings.",
       "paymentIntentRequestFailed": "Failed to prepare the payment. Please try again.",
+      "requiredConsentMissing": "Please accept all required agreements to continue.",
       "onlineGroupCampaignNotConfigured": "The new Online Group cycle is not configured yet. Please contact support.",
       "telegramRenewalVerificationRequired": "Confirm Telegram for this renewal first.",
       "renewalCampaignInactive": "This renewal link is no longer active. Use the current link from the group.",

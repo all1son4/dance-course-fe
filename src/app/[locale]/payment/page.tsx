@@ -97,11 +97,14 @@ const RENEWAL_PROFILE_FIELDS = [
 ] as const satisfies readonly PaymentCustomerFieldName[];
 const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
   catalog_unavailable: "errors.catalogUnavailable",
+  consent_evidence_failed: "errors.consentEvidenceFailed",
+  invalid_customer_data: "errors.invalidCustomerData",
   missing_client_secret: "errors.missingClientSecret",
   missing_secret_key: "errors.missingSecretKey",
   online_group_campaign_not_configured: "errors.onlineGroupCampaignNotConfigured",
   payment_intent_failed: "errors.paymentIntentFailed",
   payment_intent_request_failed: "errors.paymentIntentRequestFailed",
+  required_consent_missing: "errors.requiredConsentMissing",
   renewal_campaign_inactive: "errors.renewalCampaignInactive",
   renewal_payment_context_mismatch: "errors.renewalPaymentContextMismatch",
   telegram_renewal_verification_required: "errors.telegramRenewalVerificationRequired",

@@ -4,15 +4,80 @@ import test, { after } from "node:test";
 
 import postgres from "postgres";
 
+import { recordCheckoutConsentEvidence } from "@/db/checkout-consent-evidence";
+import { getDatabaseClient } from "@/db/client";
+import {
+  CHECKOUT_AGREEMENT_VERSIONS,
+  CHECKOUT_CONSENT_SCHEMA_VERSION,
+  CHECKOUT_CONSENT_SOURCE,
+  CHECKOUT_PRIVACY_POLICY_VERSION,
+  type CheckoutConsentEvidence,
+} from "@/lib/checkout-consent";
+
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
-const client = postgres(getRequiredTestDatabaseUrl(), {
+const databaseUrl = getRequiredTestDatabaseUrl();
+
+process.env.DATABASE_ENV = "development";
+process.env.DATABASE_DEV_DATABASE_URL = databaseUrl;
+
+const client = postgres(databaseUrl, {
   max: 2,
   prepare: false,
 });
+const applicationClient = getDatabaseClient();
 
 after(async () => {
-  await client.end();
+  await Promise.all([client.end(), applicationClient.end()]);
+});
+
+test("records an idempotent immutable snapshot and rejects conflicting retries", async () => {
+  const suffix = randomUUID().replaceAll("-", "");
+  const paymentIntentId = `pi_safe08_record_${suffix}`;
+  const evidence: CheckoutConsentEvidence = {
+    acceptedAt: new Date("2026-08-08T20:00:00.000Z"),
+    agreements: {
+      digitalContentAgreement: true,
+      immediateAccessConsent: true,
+      privacyPolicyAcknowledgement: true,
+      withdrawalNoticeAcknowledgement: true,
+    },
+    agreementVersions: CHECKOUT_AGREEMENT_VERSIONS,
+    checkoutLocale: "en",
+    checkoutSessionId: `checkout_safe08_record_${suffix}`,
+    currency: "eur",
+    offerExternalId: "off_safe08",
+    paymentIntentId,
+    privacyPolicyVersion: CHECKOUT_PRIVACY_POLICY_VERSION,
+    productExternalId: "prd_safe08",
+    schemaVersion: CHECKOUT_CONSENT_SCHEMA_VERSION,
+    source: CHECKOUT_CONSENT_SOURCE,
+  };
+
+  try {
+    await recordCheckoutConsentEvidence(evidence);
+    await recordCheckoutConsentEvidence(evidence);
+
+    const [rowCount] = await client<{ count: number }[]>`
+      SELECT COUNT(*)::integer AS count
+      FROM checkout_consent_evidence
+      WHERE payment_intent_id = ${paymentIntentId}
+    `;
+
+    assert.equal(rowCount?.count, 1);
+    await assert.rejects(
+      recordCheckoutConsentEvidence({
+        ...evidence,
+        checkoutLocale: "pl",
+      }),
+      /checkout_consent_evidence_conflict/u,
+    );
+  } finally {
+    await client`
+      DELETE FROM checkout_consent_evidence
+      WHERE payment_intent_id = ${paymentIntentId}
+    `;
+  }
 });
 
 test("keeps per-purchase consent evidence complete and immutable", async () => {

@@ -806,9 +806,12 @@
     "errors": {
       "missingClientSecret": "Stripe nie zwrócił client secret.",
       "catalogUnavailable": "Sprzedaż jest tymczasowo niedostępna. Spróbuj ponownie później.",
+      "consentEvidenceFailed": "Nie udało się zapisać wymaganego potwierdzenia zgód. Spróbuj ponownie.",
+      "invalidCustomerData": "Sprawdź dane klienta i spróbuj ponownie.",
       "missingSecretKey": "Brakuje STRIPE_SECRET_KEY. Dodaj go do .env i uruchom ponownie serwer.",
       "paymentIntentFailed": "Nie udało się przygotować płatności Stripe. Sprawdź ustawienia Stripe.",
       "paymentIntentRequestFailed": "Nie udało się przygotować płatności. Spróbuj ponownie.",
+      "requiredConsentMissing": "Zaakceptuj wszystkie wymagane zgody, aby kontynuować.",
       "onlineGroupCampaignNotConfigured": "Nowy cykl Online Group nie został jeszcze skonfigurowany. Skontaktuj się ze wsparciem.",
       "telegramRenewalVerificationRequired": "Najpierw potwierdź Telegram dla tej kontynuacji.",
       "renewalCampaignInactive": "Ten link kontynuacji nie jest już aktywny. Użyj aktualnego linku z grupy.",

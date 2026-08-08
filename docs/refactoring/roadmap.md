@@ -364,6 +364,16 @@ and all four deployed
 Reuse the existing visible fields and agreements. Add server-side enforcement and an
 immutable evidence snapshot without adding user steps unless separately approved.
 
+Status: `IN_PROGRESS`. Expand migration `0010_checkout_consent_evidence` is applied in
+development and remains backward-compatible with the currently deployed application.
+The runtime implementation reuses the client validation contract on the server,
+requires all four existing booleans, carries versioned evidence through PaymentIntent
+metadata, uses Stripe's server-side creation time for the stable acceptance timestamp,
+and records it idempotently before returning the Stripe client secret. Local
+unit, disposable-PostgreSQL, formatting, lint, TypeScript, and production-build checks
+pass. Remote runtime CI and the five deployed browser journeys remain before terminal
+acceptance.
+
 ### SAFE-09 — Neutralize spreadsheet formulas in CSV exports
 
 Preserve CSV columns and contents while making customer-controlled cells safe to open

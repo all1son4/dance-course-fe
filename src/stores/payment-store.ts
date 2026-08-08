@@ -37,11 +37,14 @@ type StripeIntentErrors = Partial<
 export type SellableCatalogStatus = "loading" | "ready" | "unavailable";
 type StripeIntentErrorCode =
   | "catalog_unavailable"
+  | "consent_evidence_failed"
+  | "invalid_customer_data"
   | "missing_client_secret"
   | "missing_secret_key"
   | "online_group_campaign_not_configured"
   | "payment_intent_failed"
   | "payment_intent_request_failed"
+  | "required_consent_missing"
   | "renewal_campaign_inactive"
   | "renewal_payment_context_mismatch"
   | "telegram_renewal_verification_required";
@@ -542,6 +545,7 @@ export class PaymentStore {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        agreements: this.agreements,
         checkoutLocale: this.validationLocale,
         checkoutSessionId: this.checkoutSessionId,
         customerData: this.customerData,
@@ -601,7 +605,10 @@ export class PaymentStore {
   }
 
   private isRetryableStripeIntentError(errorCode: StripeIntentErrorCode) {
-    return errorCode === "payment_intent_request_failed";
+    return (
+      errorCode === "consent_evidence_failed" ||
+      errorCode === "payment_intent_request_failed"
+    );
   }
 
   private async waitForNextStripeIntentRetry(attempt: number) {

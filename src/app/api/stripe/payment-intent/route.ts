@@ -11,12 +11,20 @@ import {
   type SellableProductOffer,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import { recordCheckoutConsentEvidence } from "@/db/checkout-consent-evidence";
 import {
   getActiveOnlineGroupCampaign,
   getActiveOnlineGroupTargetByOfferId,
 } from "@/db/online-group-campaigns";
 import { findValidRenewalVerification } from "@/db/renewal-campaigns";
 import { getCheckoutSelectionFromDatabase } from "@/db/sellable-products";
+import {
+  CHECKOUT_CONSENT_VERSION_KEY,
+  type CheckoutConsentEvidence,
+  createCheckoutConsentMetadata,
+  parseCheckoutConsentEvidence,
+  validateCheckoutCustomerAndConsent,
+} from "@/lib/checkout-consent";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -39,6 +47,7 @@ import {
 } from "./lib";
 
 type CreatePaymentIntentBody = {
+  agreements?: unknown;
   checkoutLocale?: string;
   checkoutSessionId?: string;
   customerData?: {
@@ -81,6 +90,7 @@ type OnlineGroupSettings = Awaited<
 type PaymentIntentContext = CheckoutSelection & {
   checkoutLocale: ReturnType<typeof getResolvedCheckoutLocale>;
   checkoutSessionId: string;
+  consentAcceptance: Pick<CheckoutConsentEvidence, "agreements">;
   currency: SupportedCheckoutCurrency;
   customerData: PaymentIntentCustomerData;
   onlineGroupTarget: OnlineGroupTarget;
@@ -100,6 +110,19 @@ class CatalogUnavailableError extends Error {
     this.name = "CatalogUnavailableError";
   }
 }
+
+class ConsentEvidenceUnavailableError extends Error {
+  constructor() {
+    super("consent_evidence_failed");
+    this.name = "ConsentEvidenceUnavailableError";
+  }
+}
+
+type ValidatedCheckoutInput = {
+  agreements: CheckoutConsentEvidence["agreements"];
+  checkoutLocale: ReturnType<typeof getResolvedCheckoutLocale>;
+  customerData: Parameters<typeof normalizePaymentIntentCustomerData>[0];
+};
 
 const getCheckoutSelection = async ({
   currency,
@@ -148,10 +171,10 @@ const getCheckoutSelection = async ({
 
 const resolvePaymentIntentContext = async (
   body: CreatePaymentIntentBody,
+  validatedCheckout: ValidatedCheckoutInput,
 ): Promise<PaymentIntentContext> => {
   const checkoutSessionId = normalizeCheckoutSessionId(body.checkoutSessionId);
-  const checkoutLocale = getResolvedCheckoutLocale(body.checkoutLocale);
-  const customerData = normalizePaymentIntentCustomerData(body.customerData ?? {});
+  const customerData = normalizePaymentIntentCustomerData(validatedCheckout.customerData);
   const currency = getResolvedCheckoutCurrency(body.currency);
   const selection = await getCheckoutSelection({
     currency,
@@ -174,8 +197,11 @@ const resolvePaymentIntentContext = async (
 
   return {
     ...selection,
-    checkoutLocale,
+    checkoutLocale: validatedCheckout.checkoutLocale,
     checkoutSessionId,
+    consentAcceptance: {
+      agreements: validatedCheckout.agreements,
+    },
     currency,
     customerData,
     onlineGroupTarget,
@@ -310,6 +336,7 @@ const createPaymentIntentMetadata = (
   checkout_currency: context.currency,
   checkout_locale: context.checkoutLocale,
   checkout_session_id: context.checkoutSessionId,
+  ...createCheckoutConsentMetadata(context.consentAcceptance),
   ...getAccessMetadata(context),
   offer_id: context.offer.id,
   offer_label: offerLabel,
@@ -343,15 +370,17 @@ const getPaymentIntentContextKey = ({
   onlineGroupTarget,
   renewalVerification,
 }: PaymentIntentContext): string => {
+  let accessContextKey = "";
+
   if (renewalVerification) {
-    return `renewal:${renewalVerification.campaign.slug}:${renewalVerification.verification.updatedAt.toISOString()}`;
+    accessContextKey = `renewal:${renewalVerification.campaign.slug}:${renewalVerification.verification.updatedAt.toISOString()}`;
+  } else if (onlineGroupTarget) {
+    accessContextKey = `online-group:${onlineGroupTarget.campaign.id}`;
   }
 
-  if (onlineGroupTarget) {
-    return `online-group:${onlineGroupTarget.campaign.id}`;
-  }
-
-  return "";
+  return [accessContextKey, `consent:${CHECKOUT_CONSENT_VERSION_KEY}`]
+    .filter(Boolean)
+    .join(":");
 };
 
 const createPaymentIntentRequestOptions = (
@@ -406,7 +435,22 @@ export async function POST(request: Request): Promise<Response> {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
-    const context = await resolvePaymentIntentContext(body);
+    const checkoutLocale = getResolvedCheckoutLocale(body.checkoutLocale);
+    const validatedCheckout = validateCheckoutCustomerAndConsent({
+      agreements: body.agreements,
+      checkoutLocale,
+      customerData: body.customerData,
+    });
+
+    if (!validatedCheckout.valid) {
+      return jsonErrorNoStore(validatedCheckout.errorCode, { status: 400 });
+    }
+
+    const context = await resolvePaymentIntentContext(body, {
+      agreements: validatedCheckout.agreements,
+      checkoutLocale,
+      customerData: validatedCheckout.customerData,
+    });
     const contextErrorResponse = getPaymentIntentContextErrorResponse(context);
 
     if (contextErrorResponse) {
@@ -429,6 +473,29 @@ export async function POST(request: Request): Promise<Response> {
       return jsonErrorNoStore("missing_client_secret", { status: 500 });
     }
 
+    const consentEvidence = parseCheckoutConsentEvidence({
+      acceptedAt: new Date(paymentIntent.created * 1_000),
+      metadata: paymentIntent.metadata,
+      paymentIntentId: paymentIntent.id,
+    });
+
+    if (!consentEvidence) {
+      console.error("Stripe PaymentIntent is missing valid consent evidence metadata", {
+        paymentIntentId: paymentIntent.id,
+      });
+      throw new ConsentEvidenceUnavailableError();
+    }
+
+    try {
+      await recordCheckoutConsentEvidence(consentEvidence);
+    } catch (error) {
+      console.error("Failed to persist immutable checkout consent evidence", {
+        error,
+        paymentIntentId: paymentIntent.id,
+      });
+      throw new ConsentEvidenceUnavailableError();
+    }
+
     return jsonNoStore({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
@@ -436,6 +503,10 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     if (error instanceof CatalogUnavailableError) {
       return jsonErrorNoStore("catalog_unavailable", { status: error.status });
+    }
+
+    if (error instanceof ConsentEvidenceUnavailableError) {
+      return jsonErrorNoStore("consent_evidence_failed", { status: 503 });
     }
 
     console.error("Failed to create Stripe PaymentIntent", error);
