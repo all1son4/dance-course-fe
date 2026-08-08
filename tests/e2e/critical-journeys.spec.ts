@@ -167,7 +167,7 @@ test("checkout sends all four accepted agreements with the existing customer fie
   for (const agreementName of agreementNames) {
     const agreement = page.locator(`input[name="${agreementName}"]`);
 
-    await page.locator(`label[for="${agreementName}"]`).click();
+    await page.locator(`label[for="${agreementName}"] > div`).click();
     await expect(agreement).toBeChecked();
   }
 
