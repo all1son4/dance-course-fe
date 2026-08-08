@@ -3,6 +3,10 @@ import type Stripe from "stripe";
 
 import { getDatabase } from "@/db/client";
 import {
+  getPaymentOutcomeTransitionCondition,
+  type PaymentOutcome,
+} from "@/db/payment-outcome-policy";
+import {
   accessEntitlements,
   customers,
   invoices,
@@ -57,9 +61,7 @@ const parseRequiredDate = (
   fallback: Date = new Date(),
 ) => parseDate(value) ?? fallback;
 
-const normalizeOutcome = (
-  value: string,
-): "succeeded" | "processing" | "requires_action" | "failed" | "canceled" => {
+const normalizeOutcome = (value: string): PaymentOutcome => {
   const normalizedValue = trim(value);
 
   if (
@@ -793,6 +795,7 @@ const createPurchaseValues = ({
   firstSeenAt,
   normalizedEmail,
   offerId,
+  outcome,
   paymentIntentId,
   paymentRecord,
   productId,
@@ -804,6 +807,7 @@ const createPurchaseValues = ({
   firstSeenAt: Date;
   normalizedEmail: string;
   offerId: string | null;
+  outcome: PaymentOutcome;
   paymentIntentId: string;
   paymentRecord: PaymentSheetRecord;
   productId: string | null;
@@ -833,7 +837,7 @@ const createPurchaseValues = ({
   offerExternalId: nullIfEmpty(paymentRecord.offer_id),
   offerId,
   offerLabelSnapshot: nullIfEmpty(paymentRecord.offer_label),
-  outcome: normalizeOutcome(paymentRecord.outcome),
+  outcome,
   productExternalId: nullIfEmpty(paymentRecord.product_id),
   productId,
   productTitleSnapshot: nullIfEmpty(paymentRecord.product_title),
@@ -906,12 +910,14 @@ const syncPurchase = async ({
     existingPurchase?.succeededAt ??
     null;
   const offerId = offer?.id ?? null;
+  const incomingOutcome = normalizeOutcome(paymentRecord.outcome);
   const purchaseValues = createPurchaseValues({
     customerId,
     existingPurchase,
     firstSeenAt,
     normalizedEmail,
     offerId,
+    outcome: incomingOutcome,
     paymentIntentId,
     paymentRecord,
     productId,
@@ -928,9 +934,25 @@ const syncPurchase = async ({
     })
     .onConflictDoUpdate({
       set: purchaseValues,
+      setWhere: getPaymentOutcomeTransitionCondition(purchases.outcome, incomingOutcome),
       target: purchases.paymentIntentId,
     })
     .returning({ id: purchases.id });
+
+  if (!savedPurchase) {
+    const [preservedPurchase] = await tx
+      .select({ id: purchases.id })
+      .from(purchases)
+      .where(eq(purchases.paymentIntentId, paymentIntentId))
+      .limit(1);
+
+    if (!preservedPurchase) {
+      throw new Error(`Purchase ${paymentIntentId} disappeared during state projection.`);
+    }
+
+    return preservedPurchase.id;
+  }
+
   const purchaseId = savedPurchase.id;
 
   await upsertAccessEntitlement({
