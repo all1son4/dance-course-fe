@@ -431,6 +431,17 @@ including a repeated `processing` response that never renders the success title.
 Upgrade or override only after compatibility tests. Do not use forced automated
 downgrades or `npm audit fix --force`.
 
+Status: `IN_PROGRESS`. Next.js and its matching ESLint configuration were upgraded
+from 16.2.12 to 16.3.0, replacing the vulnerable production chain with
+`sharp 0.35.3` and `nanoid 3.3.18`; the temporary Next.js PostCSS override is no
+longer needed because 16.3.0 depends on PostCSS 8.5.23 directly. A clean `npm ci`,
+format, lint, TypeScript, all 36 unit tests, and the 62-route production build pass.
+`npm audit --omit=dev` reports zero advisories. The four remaining moderate findings
+are confined to the development-only legacy `drizzle-kit`/`@esbuild-kit` chain;
+npm's proposed remediation is an unsafe downgrade from drizzle-kit 0.31.10 to
+0.18.1 and is intentionally not applied. Remote CI, isolated PostgreSQL integration
+tests, and deployed browser compatibility remain before `DONE`.
+
 ### Gate G1
 
 - All documented user journeys remain unchanged on the healthy path.
