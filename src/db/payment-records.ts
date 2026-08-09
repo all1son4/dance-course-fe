@@ -26,6 +26,7 @@ const nullIfEmpty = (value: string | null | undefined) => trim(value) || null;
 const normalizeEmail = (value: string | null | undefined) => trim(value).toLowerCase();
 
 type PaymentSideEffectStatus = "pending" | "sending" | "sent" | "skipped" | "failed";
+type StoredPaymentSideEffectStatus = PaymentSideEffectStatus | "dead_letter";
 
 const PAYMENT_SIDE_EFFECT_LEASE_TTL_MS = 2 * 60 * 1000;
 const LEASED_PAYMENT_SIDE_EFFECT_STATUSES = new Set<PaymentSideEffectStatus>([
@@ -91,13 +92,17 @@ const serializePaymentSideEffectStatus = (
   sideEffect:
     | {
         leaseToken: string | null;
-        status: PaymentSideEffectStatus;
+        status: StoredPaymentSideEffectStatus;
       }
     | null
     | undefined,
 ) => {
   if (!sideEffect) {
     return "";
+  }
+
+  if (sideEffect.status === "dead_letter") {
+    return "failed";
   }
 
   const leaseToken = trim(sideEffect.leaseToken);
@@ -353,6 +358,10 @@ const groupSideEffectsByPurchaseId = (
   const sideEffectsByPurchaseId = new Map<string, SideEffectRow[]>();
 
   for (const sideEffect of sideEffectRows) {
+    if (!sideEffect.purchaseId) {
+      continue;
+    }
+
     const purchaseSideEffectsForPurchase =
       sideEffectsByPurchaseId.get(sideEffect.purchaseId) ?? [];
 

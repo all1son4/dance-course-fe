@@ -12,6 +12,8 @@ live Stripe, Telegram, Resend, Google Sheets, or production databases.
   database named by `TEST_DATABASE_URL`.
 - `npm run test:integration` checks real PostgreSQL transaction, constraint, and
   concurrency behavior.
+- CI then performs a real PostgreSQL 17 logical dump and restores it into a second
+  disposable database, comparing schema/migration and core-domain row counts.
 - `PLAYWRIGHT_BASE_URL=<deployment-url> npm run test:e2e` runs the small Chromium
   journey suite from `tests/e2e` against a deployed revision.
 

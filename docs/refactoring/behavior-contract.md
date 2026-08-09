@@ -45,11 +45,10 @@ The default currency is:
 
 The browser loads the sellable catalog from
 [`/api/catalog/sellable-products`](../../src/app/api/catalog/sellable-products/route.ts).
-The current implementation can fall back to the code catalog. The owner accepted
-`DEC-04`: after characterization coverage is in place, runtime checkout must fail
-closed when authoritative PostgreSQL catalog state cannot be established. Code
-constants remain seed/recovery inputs only. The healthy catalog, selection, price, and
-currency behavior must remain unchanged.
+Since `SAFE-07`, runtime checkout is authorized only by the PostgreSQL catalog and
+fails closed when that authoritative state cannot be established. Code constants are
+presentation and seed/recovery inputs only; they cannot authorize a purchase. The
+healthy catalog, selection, price, and currency behavior remains unchanged.
 
 ## Public entry journeys
 

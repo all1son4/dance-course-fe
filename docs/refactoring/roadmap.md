@@ -1,6 +1,6 @@
 # Reliability and PostgreSQL-only roadmap
 
-Version: 1.8
+Version: 1.9
 Status: active
 Started: 2026-07-30
 
@@ -465,7 +465,13 @@ product behavior, and the production dependency audit is clear.
 
 ## Phase DB: target PostgreSQL primitives
 
-Status: `TODO`
+Status: `READY_FOR_PRODUCTION`
+
+Current-state audit (2026-08-09): the phase order remains correct. The implementation
+already contains several target primitives: a monotonic payment projection, atomic
+Telegram token claims, a DB-authoritative catalog, immutable consent evidence,
+`stripe_events`, and `purchase_side_effects`. The work below completes and separates
+those primitives; it must extend them rather than create parallel replacements.
 
 ### DB-01 — Define domain ownership
 
@@ -473,43 +479,125 @@ Create explicit PostgreSQL ownership boundaries for catalog, customers, payments
 Stripe events, consent evidence, entitlements, Telegram access, invoices, side
 effects, campaigns, and reports.
 
+Status: `DONE`. The accepted ownership, repository, transaction, cutover, and rollback
+boundaries are recorded in [`domain-ownership.md`](domain-ownership.md). This is a
+documentation-only boundary and does not change a user journey.
+
 ### DB-02 — Add database invariants
 
-Add foreign keys, unique and partial indexes, status and currency constraints, positive
-amount checks, valid ranges, invoice uniqueness, token-claim uniqueness, and event
-version timestamps. Clean and validate existing data before enforcing hard constraints.
+Audit the existing foreign keys, checks, unique and partial indexes first, then add only
+the missing status, currency, positive amount, valid-range, invoice, outbox, and inbox
+invariants. Preserve the consent, token-claim, catalog, and monotonic-projection
+constraints already introduced by the SAFE phase. Clean and validate existing data
+before enforcing a new hard constraint.
+
+Status: `READY_FOR_PRODUCTION`. The read-only
+[`invariant audit`](../../src/db/audit-invariants.ts) found zero violations in both
+development and production before enforcement. Expand migration
+[`0011_database_invariants.sql`](../../drizzle/0011_database_invariants.sql) adds and
+validates the missing scalar and ownership constraints. It passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/31313560174), the controlled
+[development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31313645443),
+a zero-difference post-migration audit, and the post-migration
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31313585992).
+Mark it `DONE` only after the bundled release and controlled production migration.
 
 ### DB-03 — Add an immutable webhook inbox
 
-Persist verified provider events with a unique provider/event ID, payload, provider
-timestamp, processing state, attempts, retry time, and error information.
+Evolve the existing `stripe_events` table in place, preserving and backfilling its
+rows. A verified provider event has a unique provider/event ID, immutable payload and
+provider timestamp, processing state, lease, attempts, retry time, and error/dead-letter
+information.
+
+Status: `READY_FOR_PRODUCTION`. Expand migration
+[`0012_stripe_event_inbox.sql`](../../drizzle/0012_stripe_event_inbox.sql) evolves the
+existing rows in place and adds lifecycle, lease, retry, dead-letter, claim-index, and
+verified-evidence immutability primitives. The repository safely deduplicates concurrent
+receipts and can promote a legacy row without replaying completed work. It passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/31315492127), the controlled
+[development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31315585734),
+a zero-difference post-migration audit, and the post-migration
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31315520197).
+The live webhook is intentionally not switched until `WRITE-01`/`WRITE-02`. Mark this
+item `DONE` after the bundled release and controlled production migration.
 
 ### DB-04 — Add explicit payment projection
 
-Process inbox rows through the tested state reducer and update purchases, events,
-access, and related projections transactionally.
+Extract and reuse the tested monotonic reducer already used by `database-sync.ts`.
+Process inbox rows through it and update purchases, access, event state, and required
+outbox entries transactionally; do not create a competing payment projection.
+
+Status: `READY_FOR_PRODUCTION`. The purpose-specific
+[`payment projection`](../../src/db/payment-projection.ts) owns the single monotonic
+purchase reducer and its customer, access, invoice, and outbox writes. The current
+webhook's isolated Sheet adapter now invokes that same projector rather than keeping a
+second implementation. The inbox worker claims verified rows with expiring leases and
+commits projection, deterministic outbox entries, and event completion atomically;
+projection failure rolls the transaction back before scheduling retry/dead-letter.
+Stripe settlement enrichment was moved before the database transaction. The live
+webhook acknowledgement flow remains unchanged until `WRITE-01`/`WRITE-02`.
 
 ### DB-05 — Add a transactional outbox
 
-Represent email, Telegram, reports, campaigns, and the transitional Sheets export as
-retryable jobs with deterministic deduplication keys, leases, attempts, and dead-letter
-state.
+Evolve the existing `purchase_side_effects` proto-outbox into the general transactional
+outbox. Represent email, Telegram, reports, campaigns, and the transitional Sheets
+export as retryable jobs with deterministic deduplication keys, leases, attempts, and
+dead-letter state.
+
+Status: `READY_FOR_PRODUCTION`. Expand migration
+[`0013_transactional_outbox_and_invoice_sequences.sql`](../../drizzle/0013_transactional_outbox_and_invoice_sequences.sql)
+evolves `purchase_side_effects` in place with deterministic keys, JSON job input,
+retry time, attempt evidence, claim leases, dead letters, and claim indexes. Existing
+application inserts remain compatible through a deterministic trigger. Only jobs
+versioned by the new [`outbox repository`](../../src/db/transactional-outbox.ts) are
+claimable, so historical proto-outbox rows cannot be delivered accidentally. Provider
+I/O happens after claim commit and receives the stable deduplication key.
 
 ### DB-06 — Add atomic claims and counters
 
-Use database primitives for token claims, entitlement allocation, invoice numbering,
-campaign recipients, report delivery, and side-effect deduplication.
+Keep the completed atomic Telegram token claim and add the remaining database
+primitives for entitlement allocation, invoice numbering, campaign recipients, report
+delivery, and outbox deduplication.
+
+Status: `READY_FOR_PRODUCTION`. Inbox and outbox selection use bounded
+`FOR UPDATE SKIP LOCKED` claims. Entitlements retain their unique purchase/access-key
+allocation and the completed Telegram compare-and-set claim. Reports and campaign
+recipients use typed outbox kinds and deterministic keys. The
+[`invoice repository`](../../src/db/invoice-repository.ts) serializes purchase and
+monthly allocation with transaction-scoped advisory locks, seeds its counter from
+existing invoices, and relies on purchase, invoice-number, and sequence uniqueness.
+Concurrent tests prove one outbox claimant, one invoice per purchase, and unique
+monthly sequences.
 
 ### DB-07 — Add repositories and domain feature flags
 
 Make domain code depend on PostgreSQL repositories rather than Google Sheets record
 shapes. Allow controlled, manual domain cutover without automatic fallback.
 
+Status: `READY_FOR_PRODUCTION`. New database-domain code is composed through
+[`domain-repositories.ts`](../../src/db/domain-repositories.ts) and accepts
+purpose-specific commands rather than Sheet records. The remaining Sheet-shaped code
+is an explicit legacy adapter/backfill/reconciliation boundary scheduled for the
+WRITE/READ/DROP phases. Independent validated flags expose `legacy`, `shadow`, and
+`database` modes for payment events, side effects, Telegram access, business
+operations, and the temporary Sheets export. Missing flags preserve `legacy`; invalid
+values fail configuration and there is no automatic database-to-Sheets fallback.
+
 ### DB-08 — Add operational visibility
 
-Measure inbox and outbox age, retries, dead letters, stale and duplicate events,
-access failures, reconciliation differences, report totals, and transitional export
-lag.
+Add lightweight structured logs, SQL health queries, and an operator runbook for inbox
+and outbox age, retries, dead letters, stale and duplicate events, access failures,
+reconciliation differences, report totals, and transitional export lag. A separate
+enterprise monitoring platform is not required.
+
+Status: `READY_FOR_PRODUCTION`. `npm run db:operations:status` emits only aggregate,
+PII-free inbox/outbox age, retry, lease, dead-letter, access, projection/export, and
+report totals. The versioned worker queues are separated from historical migration
+evidence. A reusable read-only
+[`SQL query`](sql/db-queue-health.sql) and the lightweight
+[`operator runbook`](db-operations-runbook.md) define investigation and replay rules.
+The post-migration development snapshot reported zero ready worker jobs, stale leases,
+dead letters, and retries; the invariant audit reported zero violations.
 
 ### Gate G2
 
@@ -517,6 +605,20 @@ lag.
 - Inbox replay and outbox retry are idempotent.
 - Backup and restore have been rehearsed outside production.
 - External API calls do not hold long database transactions.
+
+Status: `READY_FOR_PRODUCTION`. The exact revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31318090643)
+with 39 unit tests, 22 PostgreSQL integration tests, a fresh migration, and a real
+PostgreSQL 17 logical dump/restore comparison. The controlled
+[development expand migration](https://github.com/all1son4/dance-course-fe/actions/runs/31317259357)
+advanced the database from 13 to 14 migrations; the zero-violation invariant audit,
+PII-free queue snapshot, and all
+[deployed critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31318115237)
+passed on the expanded schema. Tests cover replay suppression, transactional rollback,
+uncertain provider-response retry with one visible delivery, concurrent claims, and
+invoice allocation. Provider enrichment/delivery is explicitly outside the bounded
+projection/claim transactions. Mark the DB phase and G2 `DONE` after the bundled
+release, controlled production expand migration, and production smoke.
 
 ## Phase DATA: backfill and reconciliation
 
@@ -528,14 +630,15 @@ Create a database backup, a controlled Sheets export, checksums, and a cut-off t
 
 ### DATA-02 — Build a resumable backfill
 
-The backfill is dry-run by default, idempotent, checkpointed, restartable, and reports
-insert, update, skip, and conflict counts.
+Harden the existing dry-run-by-default, idempotent backfill instead of replacing it.
+Use bounded batches rather than one large transaction; add checkpoints, restartability,
+and insert, update, skip, and conflict counts.
 
 ### DATA-03 — Reconcile domain data
 
-Compare PaymentIntent IDs, Stripe event IDs, money by currency and month, terminal
-payment state, active access, Telegram bindings, invoices, delivery statuses, catalog
-data, and customer snapshots.
+Extend the existing baseline and comparison tools to compare PaymentIntent IDs, Stripe
+event IDs, money by currency and month, terminal payment state, active access, Telegram
+bindings, invoices, delivery statuses, catalog data, and customer snapshots.
 
 ### DATA-04 — Resolve and record conflicts
 
@@ -570,12 +673,16 @@ state.
 
 ### WRITE-04 — Move Telegram access writes to PostgreSQL only
 
-Make PostgreSQL authoritative for tokens, bindings, membership, entitlement,
-expiration, and revocation without changing the bot or user flows.
+Move the remaining timed/legacy Telegram paths to PostgreSQL-only writes and remove
+their synchronous mirrors. Preserve the already database-native Online Group access
+persistence and do not change the bot, renewal verification, identity reuse, or other
+user flows.
 
-### WRITE-05 — Move catalog and admin writes to PostgreSQL only
+### WRITE-05 — Move remaining admin invite writes to PostgreSQL only
 
-Preserve the existing admin workflows and commercial semantics.
+The catalog is already DB-authoritative after `SAFE-07`. Replace the remaining admin
+invite writes to flattened payments and `SuccessfulCustomers` with domain commands and
+an optional outbox export, preserving existing workflows and commercial semantics.
 
 ### WRITE-06 — Move invoices, reports, and campaigns to PostgreSQL jobs
 
@@ -598,11 +705,12 @@ Status: `TODO`
 
 Switch domains independently, with shadow comparison before each switch:
 
-1. `READ-01`: catalog and checkout;
+1. `READ-01`: catalog and checkout — `DONE` early by `SAFE-07`;
 2. `READ-02`: payments and Stripe events;
-3. `READ-03`: Telegram access;
+3. `READ-03`: remaining timed/legacy Telegram access; Online Group persistence is
+   already DB-native;
 4. `READ-04`: invoices, reports, and campaigns;
-5. `READ-05`: admin views;
+5. `READ-05`: remaining admin invite/history read models;
 6. `READ-06`: remove automatic Sheets fallback.
 
 ### Gate G5
@@ -680,9 +788,11 @@ Status: `TODO`
   and revocable sessions;
 - `HARD-02`: mandatory distributed rate limits, bounded request bodies, and PII-safe logs;
 - `HARD-03`: hash or encrypt bearer material and erase it after use or expiry;
-- `HARD-04`: accessibility, locale, payment-result, polling, and navigation correctness;
+- `HARD-04`: finish remaining accessibility, locale, polling, and navigation
+  correctness without redoing the verified payment-result gate from `SAFE-10`;
 - `HARD-05`: split large modules by domain responsibility;
-- `HARD-06`: hermetic fonts, media delivery, dependency cleanup, and onboarding docs;
+- `HARD-06`: hermetic fonts, media delivery, remaining dependency cleanup, and
+  onboarding docs; the production advisory fix from `SAFE-11` stays complete;
 - `HARD-07`: coverage gates, SLOs, restore drills, and periodic integration tests.
 
 ## Permanent regression matrix
@@ -715,30 +825,34 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                    | Status       | Evidence                                                     |
-| ---------- | ----------------------- | ------------ | ------------------------------------------------------------ |
-| 2026-07-30 | Repository-wide audit   | `DONE`       | Audit discussion and local checks                            |
-| 2026-07-30 | Roadmap v1.3            | `DONE`       | This document                                                |
-| 2026-07-30 | BASE-01                 | `DONE`       | ADR-001 accepted                                             |
-| 2026-07-30 | BASE-02                 | `DONE`       | Current behavior contract recorded                           |
-| 2026-07-30 | BASE-03                 | `DONE`       | Seven Sheets and all dependency classes inventoried          |
-| 2026-07-30 | BASE-05 Telegram scope  | `DONE`       | ADR-002 accepted                                             |
-| 2026-07-30 | BASE-04 tooling         | `DONE`       | Read-only command and privacy fixture tests                  |
-| 2026-07-30 | BASE-04 capture         | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture   |
-| 2026-07-30 | BASE-05 decision draft  | `DONE`       | Defaults prepared before owner confirmation                  |
-| 2026-07-30 | BASE-05 owner decisions | `DONE`       | Owner accepted all four migration decisions                  |
-| 2026-08-06 | BASE-04 capture         | `DONE`       | Stable dev/prod fingerprints; differences classified         |
-| 2026-08-06 | Gate G0                 | `PASSED`     | Behavior, dependency, data, and decision baselines accepted  |
-| 2026-08-06 | Gate G0 formal audit    | `DONE`       | All 26 Sheets components classified; documents reconciled    |
-| 2026-08-06 | SAFE-01                 | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality`  |
-| 2026-08-06 | SAFE-02                 | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed   |
-| 2026-08-07 | SAFE-03                 | `DONE`       | Migration-free release; dev/prod no-op controls passed       |
-| 2026-08-08 | SAFE-04                 | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass |
-| 2026-08-08 | SAFE-05                 | `DONE`       | Atomic claims, DB invariant, and eight-way race test passed  |
-| 2026-08-08 | SAFE-06                 | `DONE`       | Reuse characterized at accepted decision boundary            |
-| 2026-08-08 | SAFE-07                 | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass |
-| 2026-08-08 | SAFE-08                 | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
-| 2026-08-08 | SAFE-09                 | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass    |
-| 2026-08-08 | SAFE-10                 | `DONE`       | Verified result gate; CI and six browser tests pass          |
-| 2026-08-09 | SAFE-11                 | `DONE`       | Zero production advisories; CI and six browser tests pass    |
-| 2026-08-09 | Gate G1                 | `PASSED`     | SAFE-01 through SAFE-11 acceptance criteria verified         |
+| Date       | Item                        | Status       | Evidence                                                     |
+| ---------- | --------------------------- | ------------ | ------------------------------------------------------------ |
+| 2026-07-30 | Repository-wide audit       | `DONE`       | Audit discussion and local checks                            |
+| 2026-07-30 | Roadmap v1.3                | `DONE`       | This document                                                |
+| 2026-07-30 | BASE-01                     | `DONE`       | ADR-001 accepted                                             |
+| 2026-07-30 | BASE-02                     | `DONE`       | Current behavior contract recorded                           |
+| 2026-07-30 | BASE-03                     | `DONE`       | Seven Sheets and all dependency classes inventoried          |
+| 2026-07-30 | BASE-05 Telegram scope      | `DONE`       | ADR-002 accepted                                             |
+| 2026-07-30 | BASE-04 tooling             | `DONE`       | Read-only command and privacy fixture tests                  |
+| 2026-07-30 | BASE-04 capture             | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture   |
+| 2026-07-30 | BASE-05 decision draft      | `DONE`       | Defaults prepared before owner confirmation                  |
+| 2026-07-30 | BASE-05 owner decisions     | `DONE`       | Owner accepted all four migration decisions                  |
+| 2026-08-06 | BASE-04 capture             | `DONE`       | Stable dev/prod fingerprints; differences classified         |
+| 2026-08-06 | Gate G0                     | `PASSED`     | Behavior, dependency, data, and decision baselines accepted  |
+| 2026-08-06 | Gate G0 formal audit        | `DONE`       | All 26 Sheets components classified; documents reconciled    |
+| 2026-08-06 | SAFE-01                     | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality`  |
+| 2026-08-06 | SAFE-02                     | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed   |
+| 2026-08-07 | SAFE-03                     | `DONE`       | Migration-free release; dev/prod no-op controls passed       |
+| 2026-08-08 | SAFE-04                     | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass |
+| 2026-08-08 | SAFE-05                     | `DONE`       | Atomic claims, DB invariant, and eight-way race test passed  |
+| 2026-08-08 | SAFE-06                     | `DONE`       | Reuse characterized at accepted decision boundary            |
+| 2026-08-08 | SAFE-07                     | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass |
+| 2026-08-08 | SAFE-08                     | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
+| 2026-08-08 | SAFE-09                     | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass    |
+| 2026-08-08 | SAFE-10                     | `DONE`       | Verified result gate; CI and six browser tests pass          |
+| 2026-08-09 | SAFE-11                     | `DONE`       | Zero production advisories; CI and six browser tests pass    |
+| 2026-08-09 | Gate G1                     | `PASSED`     | SAFE-01 through SAFE-11 acceptance criteria verified         |
+| 2026-08-09 | Roadmap current-state audit | `DONE`       | Remaining phases reconciled with current code and schema     |
+| 2026-08-09 | DB-01                       | `DONE`       | PostgreSQL domain and transaction ownership recorded         |
+| 2026-08-09 | DB-02 development           | `DONE`       | Preflight, CI, dev migration, audit, and smoke passed        |
+| 2026-08-09 | DB-03 development           | `DONE`       | Inbox migration, CI, dev apply, audit, and smoke passed      |
