@@ -235,7 +235,7 @@ and the reproducible [`data baseline`](data-baseline.md).
 
 ## Phase SAFE: safety net and behavior-preserving fixes
 
-Status: `IN_PROGRESS`
+Status: `DONE`
 
 ### SAFE-01 — Add remote CI
 
@@ -431,7 +431,29 @@ including a repeated `processing` response that never renders the success title.
 Upgrade or override only after compatibility tests. Do not use forced automated
 downgrades or `npm audit fix --force`.
 
+Status: `DONE`. Next.js and its matching ESLint configuration were upgraded
+from 16.2.12 to 16.3.0, replacing the vulnerable production chain with
+`sharp 0.35.3` and `nanoid 3.3.18`; the temporary Next.js PostCSS override is no
+longer needed because 16.3.0 depends on PostCSS 8.5.23 directly. A clean `npm ci`,
+format, lint, TypeScript, all 36 unit tests, and the 62-route production build pass.
+`npm audit --omit=dev` reports zero advisories. The four remaining moderate findings
+are confined to the development-only legacy `drizzle-kit`/`@esbuild-kit` chain;
+npm's proposed remediation is an unsafe downgrade from drizzle-kit 0.31.10 to
+0.18.1 and is intentionally not applied. The exact dependency revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31302111979),
+including isolated PostgreSQL integration tests, and all six deployed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31302162402).
+
 ### Gate G1
+
+Status: `PASSED` (terminal; the gate equivalent of `DONE`)
+
+SAFE-01 through SAFE-11 are complete. The behavior contract is protected by unit,
+PostgreSQL integration, and deployed browser tests; monotonic Stripe projection,
+atomic Telegram claims, fail-closed catalog authorization, server-side consent,
+formula-safe CSV exports, and migration-free builds all pass on the exact SAFE-11
+revision. The dependency-only change did not alter application routes or healthy-path
+product behavior, and the production dependency audit is clear.
 
 - All documented user journeys remain unchanged on the healthy path.
 - A stale Stripe event cannot regress a successful payment.
@@ -718,3 +740,5 @@ Status: `TODO`
 | 2026-08-08 | SAFE-08                 | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
 | 2026-08-08 | SAFE-09                 | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass    |
 | 2026-08-08 | SAFE-10                 | `DONE`       | Verified result gate; CI and six browser tests pass          |
+| 2026-08-09 | SAFE-11                 | `DONE`       | Zero production advisories; CI and six browser tests pass    |
+| 2026-08-09 | Gate G1                 | `PASSED`     | SAFE-01 through SAFE-11 acceptance criteria verified         |
