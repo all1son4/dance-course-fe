@@ -92,6 +92,13 @@
       "when": 1786280079000,
       "tag": "0012_stripe_event_inbox",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786285200000,
+      "tag": "0013_transactional_outbox_and_invoice_sequences",
+      "breakpoints": true
     }
   ]
 }

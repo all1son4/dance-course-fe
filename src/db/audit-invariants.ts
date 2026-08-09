@@ -141,6 +141,22 @@ const auditDatabaseInvariants = async (): Promise<InvariantAuditRow[]> => {
 
       UNION ALL
 
+      SELECT 'purchase_side_effects.lifecycle', count(*)::int
+      FROM purchase_side_effects
+      WHERE btrim(deduplication_key) = ''
+        OR jsonb_typeof(payload) <> 'object'
+        OR status NOT IN (
+          'pending',
+          'sending',
+          'sent',
+          'skipped',
+          'failed',
+          'dead_letter'
+        )
+        OR (status = 'dead_letter' AND dead_lettered_at IS NULL)
+
+      UNION ALL
+
       SELECT 'stripe_events.evidence', count(*)::int
       FROM stripe_events
       WHERE btrim(stripe_event_id) = ''
@@ -174,6 +190,33 @@ const auditDatabaseInvariants = async (): Promise<InvariantAuditRow[]> => {
         OR sequence_number <= 0
         OR amount_minor < 0
         OR currency NOT IN ('pln', 'eur')
+
+      UNION ALL
+
+      SELECT 'invoice_sequences.ranges', count(*)::int
+      FROM invoice_sequences
+      WHERE sequence_year < 2000
+        OR sequence_year > 9999
+        OR sequence_month NOT BETWEEN 1 AND 12
+        OR last_sequence <= 0
+
+      UNION ALL
+
+      SELECT 'invoice_sequences.behind_invoices', count(*)::int
+      FROM (
+        SELECT
+          sequence.sequence_year,
+          sequence.sequence_month
+        FROM invoice_sequences sequence
+        INNER JOIN invoices invoice
+          ON invoice.sequence_year = sequence.sequence_year
+          AND invoice.sequence_month = sequence.sequence_month
+        GROUP BY
+          sequence.sequence_year,
+          sequence.sequence_month,
+          sequence.last_sequence
+        HAVING sequence.last_sequence < max(invoice.sequence_number)
+      ) stale_invoice_sequence
 
       UNION ALL
 

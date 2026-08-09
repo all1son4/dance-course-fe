@@ -547,21 +547,36 @@ export const purchaseSideEffects = pgTable(
   "purchase_side_effects",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    purchaseId: uuid("purchase_id")
-      .notNull()
-      .references(() => purchases.id, { onDelete: "cascade" }),
+    purchaseId: uuid("purchase_id").references(() => purchases.id, {
+      onDelete: "cascade",
+    }),
+    deduplicationKey: text("deduplication_key").notNull().default(""),
     kind: text("kind")
       .notNull()
       .$type<
-        "purchase_success_email" | "admin_telegram_alert" | "successful_customer_export"
+        | "purchase_success_email"
+        | "admin_telegram_alert"
+        | "successful_customer_export"
+        | "telegram_access_delivery"
+        | "monthly_report_delivery"
+        | "campaign_email_delivery"
+        | "google_sheets_export"
       >(),
-    provider: text("provider").$type<"resend" | "telegram">(),
+    provider: text("provider").$type<
+      "resend" | "telegram" | "google_sheets" | "internal"
+    >(),
+    payload: jsonb("payload")
+      .notNull()
+      .default(sql`'{}'::jsonb`)
+      .$type<Record<string, unknown>>(),
     status: text("status")
       .notNull()
       .default("pending")
-      .$type<"pending" | "sending" | "sent" | "skipped" | "failed">(),
+      .$type<"pending" | "sending" | "sent" | "skipped" | "failed" | "dead_letter">(),
     leaseToken: text("lease_token"),
     leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
     recipient: text("recipient"),
     externalMessageId: text("external_message_id"),
     attemptCount: integer("attempt_count").notNull().default(0),
@@ -569,16 +584,38 @@ export const purchaseSideEffects = pgTable(
     lastErrorMessage: text("last_error_message"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     failedAt: timestamp("failed_at", { withTimezone: true }),
+    deadLetteredAt: timestamp("dead_lettered_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (table) => [
     check("purchase_side_effects_attempt_count_check", sql`${table.attemptCount} >= 0`),
+    check(
+      "purchase_side_effects_lifecycle_check",
+      sql`BTRIM(${table.deduplicationKey}) <> ''
+        AND JSONB_TYPEOF(${table.payload}) = 'object'
+        AND ${table.status} IN (
+          'pending',
+          'sending',
+          'sent',
+          'skipped',
+          'failed',
+          'dead_letter'
+        )
+        AND (
+          ${table.status} <> 'dead_letter'
+          OR ${table.deadLetteredAt} IS NOT NULL
+        )`,
+    ),
     uniqueIndex("purchase_side_effects_purchase_kind_idx").on(
       table.purchaseId,
       table.kind,
     ),
+    uniqueIndex("purchase_side_effects_deduplication_key_idx").on(table.deduplicationKey),
     index("purchase_side_effects_status_idx").on(table.status),
+    index("purchase_side_effects_claim_idx")
+      .on(table.status, table.nextAttemptAt, table.leaseExpiresAt, table.createdAt)
+      .where(sql`${table.status} IN ('pending', 'sending', 'failed')`),
   ],
 );
 
@@ -618,6 +655,30 @@ export const invoices = pgTable(
       table.sequenceYear,
       table.sequenceMonth,
       table.sequenceNumber,
+    ),
+  ],
+);
+
+export const invoiceSequences = pgTable(
+  "invoice_sequences",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sequenceYear: integer("sequence_year").notNull(),
+    sequenceMonth: integer("sequence_month").notNull(),
+    lastSequence: integer("last_sequence").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "invoice_sequences_ranges_check",
+      sql`${table.sequenceYear} BETWEEN 2000 AND 9999
+        AND ${table.sequenceMonth} BETWEEN 1 AND 12
+        AND ${table.lastSequence} > 0`,
+    ),
+    uniqueIndex("invoice_sequences_year_month_idx").on(
+      table.sequenceYear,
+      table.sequenceMonth,
     ),
   ],
 );

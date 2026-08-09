@@ -861,21 +861,16 @@ const syncPurchase = async ({
   now,
   paymentIntentId,
   paymentRecord,
-  stripe,
+  settlementSnapshot,
   tx,
 }: {
   event: Stripe.Event;
   now: Date;
   paymentIntentId: string;
   paymentRecord: PaymentSheetRecord;
-  stripe: Stripe;
+  settlementSnapshot: StripeSettlementSnapshot;
   tx: DatabaseTransaction;
 }): Promise<string> => {
-  const settlementSnapshot = await getPurchaseSettlementSnapshot({
-    paymentIntentId,
-    paymentRecord,
-    stripe,
-  });
   const { customerId, normalizedEmail } = await upsertCustomer({
     event,
     now,
@@ -999,18 +994,32 @@ export const syncStripeWebhookEventToDatabase = async ({
     throw new Error(`Stripe event ${event.id} has no payment_intent_id.`);
   }
 
+  // Provider I/O is completed before opening the projection transaction. This keeps
+  // the atomic database write short even when Stripe is slow or temporarily degraded.
+  const settlementSnapshot = handledEvent.skipped
+    ? null
+    : await getPurchaseSettlementSnapshot({
+        paymentIntentId,
+        paymentRecord,
+        stripe,
+      });
+
   // The purchase projections and Stripe event receipt must commit together so retries
   // can never observe a partially synchronized webhook.
   await db.transaction(async (tx) => {
     let purchaseId: string | null = null;
 
     if (!handledEvent.skipped) {
+      if (!settlementSnapshot) {
+        throw new Error(`Stripe event ${event.id} has no settlement snapshot.`);
+      }
+
       purchaseId = await syncPurchase({
         event,
         now,
         paymentIntentId,
         paymentRecord,
-        stripe,
+        settlementSnapshot,
         tx,
       });
     }

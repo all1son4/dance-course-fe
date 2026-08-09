@@ -66,7 +66,10 @@ Read APIs use the smallest projection required by the caller:
 - admin history joins purchases, access, and delivery state without owning them.
 
 During migration, legacy Sheet DTOs stay inside the isolated adapter, backfill, and
-comparison tooling. Removing that type coupling is part of `DB-07` and `DROP-04`.
+comparison tooling. New database-domain composition is exposed by
+[`domain-repositories.ts`](../../src/db/domain-repositories.ts), whose commands use
+purpose-specific types rather than Sheet rows. Existing legacy callers remain isolated
+until their WRITE/READ cutover; deleting those adapters is still `DROP-04` work.
 
 ## Transaction boundaries
 
@@ -89,6 +92,11 @@ release, never to stale Sheet data.
 
 The catalog is already in `database` state after `SAFE-07`. Other domains remain
 transitional until their WRITE and READ items pass.
+
+[`domain-persistence.ts`](../../src/db/domain-persistence.ts) defines one validated
+environment flag per domain. Missing flags deliberately mean `legacy`; invalid values
+fail configuration instead of silently falling back. The DB-phase release does not set
+any of these flags, so it adds no runtime cutover and changes no user journey.
 
 ## Implementation sequence enabled by this boundary
 

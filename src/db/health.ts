@@ -12,6 +12,7 @@ const REQUIRED_TABLES = [
   "customers",
   "email_campaign_leads",
   "invoices",
+  "invoice_sequences",
   "monthly_report_runs",
   "offer_prices",
   "product_offers",
