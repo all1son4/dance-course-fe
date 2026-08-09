@@ -2,7 +2,7 @@
 
 Status: baseline complete
 Captured: 2026-07-30
-Call-site audit refreshed: 2026-08-06
+Call-site audit refreshed: 2026-08-09
 Scope: runtime, maintenance tooling, and type coupling
 
 ## Purpose
@@ -44,6 +44,11 @@ PostgreSQL is therefore already first for most writes, but Sheets can still affe
 runtime availability and business decisions. A successful database commit followed by
 a failed Sheets call can also be reported as a failed operation.
 
+Catalog authorization is not a Sheets domain. Since `SAFE-07`, catalog and checkout
+commercial selection read PostgreSQL only and fail closed; code constants cannot
+authorize a purchase. The remaining Sheets migration must not reintroduce catalog
+fallback.
+
 ## Classification legend
 
 - `R`: read.
@@ -62,7 +67,7 @@ a failed Sheets call can also be reported as a failed operation.
 | Domain                                   | Current classifications | Main call sites                                                                                                                                                                                                                              | Target PostgreSQL owner                                                                         | Removal point                                                                               |
 | ---------------------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Payments projection                      | `R/W/M/F`               | Stripe sync and reconciliation, payment-status leases, Telegram access, invoice numbering, admin invite/history                                                                                                                              | Purchase commands plus a dedicated `PurchaseReadModel`                                          | Remove the generic Sheet-shaped facade after all callers use domain repositories            |
-| Stripe events                            | `R/W/M/F/C`             | [`webhook/_lib/sync.ts`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                                                                                                                                      | Immutable `stripe_event_inbox` with unique provider/event ID and a tested projection worker     | Replace as the first runtime cutover slice; do not perform a one-for-one adapter swap       |
+| Stripe events                            | `R/W/M/F/C`             | [`webhook/_lib/sync.ts`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                                                                                                                                      | Evolve `stripe_events` into an immutable inbox with a tested projection worker                  | Replace as the first runtime cutover slice; do not perform a one-for-one adapter swap       |
 | Successful customers                     | `W/M/X/C`               | Stripe success sync and manual admin invite                                                                                                                                                                                                  | Derivable query over succeeded purchases; temporary export through the outbox if still required | Remove the separate runtime side effect at full Sheets retirement                           |
 | Telegram access tokens                   | `R/W/M/F/C`             | [`telegram/access.ts`](../../src/lib/telegram/access.ts), admin history, maintenance                                                                                                                                                         | Telegram access repository with atomic issue, claim, revoke, and hash lookup commands           | Remove after token operations and history use PostgreSQL transactions and projections       |
 | Telegram user bindings                   | `R/W/M/F/C`             | [`telegram/access.ts`](../../src/lib/telegram/access.ts), maintenance                                                                                                                                                                        | Binding and entitlement repositories with explicit identity rules                               | Remove after the existing behavior contract is covered and PostgreSQL operations are atomic |
