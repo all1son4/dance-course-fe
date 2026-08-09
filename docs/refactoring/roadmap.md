@@ -509,6 +509,18 @@ rows. A verified provider event has a unique provider/event ID, immutable payloa
 provider timestamp, processing state, lease, attempts, retry time, and error/dead-letter
 information.
 
+Status: `READY_FOR_PRODUCTION`. Expand migration
+[`0012_stripe_event_inbox.sql`](../../drizzle/0012_stripe_event_inbox.sql) evolves the
+existing rows in place and adds lifecycle, lease, retry, dead-letter, claim-index, and
+verified-evidence immutability primitives. The repository safely deduplicates concurrent
+receipts and can promote a legacy row without replaying completed work. It passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/31315492127), the controlled
+[development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31315585734),
+a zero-difference post-migration audit, and the post-migration
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31315520197).
+The live webhook is intentionally not switched until `WRITE-01`/`WRITE-02`. Mark this
+item `DONE` after the bundled release and controlled production migration.
+
 ### DB-04 — Add explicit payment projection
 
 Extract and reuse the tested monotonic reducer already used by `database-sync.ts`.
@@ -782,3 +794,4 @@ Status: `TODO`
 | 2026-08-09 | Roadmap current-state audit | `DONE`       | Remaining phases reconciled with current code and schema     |
 | 2026-08-09 | DB-01                       | `DONE`       | PostgreSQL domain and transaction ownership recorded         |
 | 2026-08-09 | DB-02 development           | `DONE`       | Preflight, CI, dev migration, audit, and smoke passed        |
+| 2026-08-09 | DB-03 development           | `DONE`       | Inbox migration, CI, dev apply, audit, and smoke passed      |
