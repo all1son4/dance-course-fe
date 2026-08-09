@@ -491,6 +491,17 @@ invariants. Preserve the consent, token-claim, catalog, and monotonic-projection
 constraints already introduced by the SAFE phase. Clean and validate existing data
 before enforcing a new hard constraint.
 
+Status: `READY_FOR_PRODUCTION`. The read-only
+[`invariant audit`](../../src/db/audit-invariants.ts) found zero violations in both
+development and production before enforcement. Expand migration
+[`0011_database_invariants.sql`](../../drizzle/0011_database_invariants.sql) adds and
+validates the missing scalar and ownership constraints. It passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/31313560174), the controlled
+[development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31313645443),
+a zero-difference post-migration audit, and the post-migration
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31313585992).
+Mark it `DONE` only after the bundled release and controlled production migration.
+
 ### DB-03 — Add an immutable webhook inbox
 
 Evolve the existing `stripe_events` table in place, preserving and backfilling its
@@ -770,3 +781,4 @@ Status: `TODO`
 | 2026-08-09 | Gate G1                     | `PASSED`     | SAFE-01 through SAFE-11 acceptance criteria verified         |
 | 2026-08-09 | Roadmap current-state audit | `DONE`       | Remaining phases reconciled with current code and schema     |
 | 2026-08-09 | DB-01                       | `DONE`       | PostgreSQL domain and transaction ownership recorded         |
+| 2026-08-09 | DB-02 development           | `DONE`       | Preflight, CI, dev migration, audit, and smoke passed        |
