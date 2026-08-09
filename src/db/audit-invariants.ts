@@ -43,16 +43,6 @@ const auditDatabaseInvariants = async (): Promise<InvariantAuditRow[]> => {
 
       UNION ALL
 
-      SELECT 'product_offers.product_code_unique', count(*)::int
-      FROM (
-        SELECT product_id, code
-        FROM product_offers
-        GROUP BY product_id, code
-        HAVING count(*) > 1
-      ) duplicates
-
-      UNION ALL
-
       SELECT 'renewal_campaigns.status', count(*)::int
       FROM renewal_campaigns
       WHERE status NOT IN ('active', 'archived')

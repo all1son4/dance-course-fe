@@ -1,8 +1,6 @@
 -- migration-phase: expand
 CREATE UNIQUE INDEX "product_offers_id_product_id_idx"
 ON "product_offers" USING btree ("id", "product_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "product_offers_product_code_unique_idx"
-ON "product_offers" USING btree ("product_id", "code");--> statement-breakpoint
 CREATE UNIQUE INDEX "access_entitlements_id_purchase_id_idx"
 ON "access_entitlements" USING btree ("id", "purchase_id");--> statement-breakpoint
 ALTER TABLE "products"

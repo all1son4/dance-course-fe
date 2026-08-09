@@ -94,7 +94,6 @@ export const productOffers = pgTable(
     ),
     uniqueIndex("product_offers_external_offer_id_idx").on(table.externalOfferId),
     uniqueIndex("product_offers_id_product_id_idx").on(table.id, table.productId),
-    uniqueIndex("product_offers_product_code_unique_idx").on(table.productId, table.code),
     index("product_offers_product_id_idx").on(table.productId),
     index("product_offers_product_code_idx").on(table.productId, table.code),
   ],
