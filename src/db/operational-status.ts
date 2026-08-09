@@ -70,6 +70,7 @@ export const readOperationalDatabaseStatus = async () => {
             )
           ))::int AS "oldestReadyAgeSeconds"
         FROM purchase_side_effects
+        WHERE payload @> '{"_outboxVersion":1}'::jsonb
       `,
       client<
         {
@@ -152,8 +153,12 @@ const main = async () => {
 };
 
 if (process.argv[1]?.endsWith("operational-status.ts")) {
-  main().catch((error) => {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exitCode = 1;
-  });
+  main()
+    .catch((error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await getDatabaseClient().end();
+    });
 }

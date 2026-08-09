@@ -38,6 +38,8 @@ type DatabaseTransaction = Parameters<
 
 type OutboxExecutor = Pick<DatabaseTransaction, "insert" | "select">;
 
+const OUTBOX_PAYLOAD_VERSION = 1;
+
 const requireNonEmpty = (value: string, field: string) => {
   const normalizedValue = value.trim();
 
@@ -78,7 +80,10 @@ const enqueueWithExecutor = async (
     .values({
       deduplicationKey,
       kind: input.kind,
-      payload: input.payload ?? {},
+      payload: {
+        ...(input.payload ?? {}),
+        _outboxVersion: OUTBOX_PAYLOAD_VERSION,
+      },
       provider: input.provider ?? null,
       purchaseId: input.purchaseId ?? null,
       recipient: input.recipient?.trim() || null,
@@ -146,6 +151,7 @@ export const claimNextOutboxJob = async ({
       .from(purchaseSideEffects)
       .where(
         and(
+          sql`${purchaseSideEffects.payload} @> '{"_outboxVersion":1}'::jsonb`,
           kinds?.length ? inArray(purchaseSideEffects.kind, kinds) : undefined,
           or(
             and(

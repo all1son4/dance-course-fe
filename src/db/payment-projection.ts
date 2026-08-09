@@ -74,7 +74,11 @@ export type PaymentProjectionCommand = {
     sequenceNumber: number;
     sequenceYear: number;
   } | null;
+  firstSeenAt: Date;
+  livemode: boolean;
   outboxJobs: EnqueueOutboxJobInput[];
+  paymentIntentId: string;
+  projectedAt: Date;
   purchase: {
     amountMinor: number;
     checkoutCurrency: "pln" | "eur" | null;
@@ -88,17 +92,14 @@ export type PaymentProjectionCommand = {
     customerFullNameSnapshot: string | null;
     customerPostalCodeSnapshot: string | null;
     customerTelegramUsernameSnapshot: string | null;
-    firstSeenAt: Date;
     inspirationChatIdSnapshot: string | null;
     lastPaymentErrorCode: string | null;
     lastPaymentErrorMessage: string | null;
     latestEventId: string | null;
     latestEventType: string | null;
     lessonLanguage: "ru" | "en" | null;
-    livemode: boolean;
     offerLabelSnapshot: string | null;
     outcome: PaymentOutcome;
-    paymentIntentId: string;
     productTitleSnapshot: string | null;
     purchaseItemSnapshot: string | null;
     settlementAmountMinor: number | null;
@@ -156,7 +157,7 @@ const upsertCustomer = async (
 
   const values = {
     ...customer,
-    updatedAt: command.purchase.updatedAt,
+    updatedAt: command.projectedAt,
   };
 
   if (customerId) {
@@ -230,7 +231,7 @@ export const projectPaymentStateInTransaction = async ({
   command: PaymentProjectionCommand;
   transaction: DatabaseTransaction;
 }) => {
-  const paymentIntentId = command.purchase.paymentIntentId.trim();
+  const paymentIntentId = command.paymentIntentId.trim();
 
   if (!paymentIntentId) {
     throw new Error("payment_projection_payment_intent_id_required");
@@ -275,7 +276,12 @@ export const projectPaymentStateInTransaction = async ({
   };
   const [savedPurchase] = await transaction
     .insert(purchases)
-    .values(purchaseValues)
+    .values({
+      ...purchaseValues,
+      firstSeenAt: command.firstSeenAt,
+      livemode: command.livemode,
+      paymentIntentId,
+    })
     .onConflictDoUpdate({
       set: purchaseValues,
       setWhere: getPaymentOutcomeTransitionCondition(purchases.outcome, incomingOutcome),
@@ -308,7 +314,7 @@ export const projectPaymentStateInTransaction = async ({
         offerId: catalog.offerId,
         productId: catalog.productId,
         purchaseId,
-        updatedAt: command.purchase.updatedAt,
+        updatedAt: command.projectedAt,
       })
       .onConflictDoUpdate({
         set: {
@@ -316,7 +322,7 @@ export const projectPaymentStateInTransaction = async ({
           customerId,
           offerId: catalog.offerId,
           productId: catalog.productId,
-          updatedAt: command.purchase.updatedAt,
+          updatedAt: command.projectedAt,
         },
         target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
       });
@@ -328,12 +334,19 @@ export const projectPaymentStateInTransaction = async ({
       .values({
         ...command.invoice,
         purchaseId,
-        updatedAt: command.purchase.updatedAt,
+        updatedAt: command.projectedAt,
       })
       .onConflictDoUpdate({
         set: {
-          ...command.invoice,
-          updatedAt: command.purchase.updatedAt,
+          amountMinor: command.invoice.amountMinor,
+          buyerEmailSnapshot: command.invoice.buyerEmailSnapshot,
+          buyerNameSnapshot: command.invoice.buyerNameSnapshot,
+          currency: command.invoice.currency,
+          issuedAt: command.invoice.issuedAt,
+          sequenceMonth: command.invoice.sequenceMonth,
+          sequenceNumber: command.invoice.sequenceNumber,
+          sequenceYear: command.invoice.sequenceYear,
+          updatedAt: command.projectedAt,
         },
         target: invoices.purchaseId,
       });

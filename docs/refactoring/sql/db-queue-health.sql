@@ -33,6 +33,7 @@ WITH inbox AS (
         AND (next_attempt_at IS NULL OR next_attempt_at <= now())
     ) AS oldest_ready_at
   FROM purchase_side_effects
+  WHERE payload @> '{"_outboxVersion":1}'::jsonb
 )
 SELECT
   'inbox' AS queue,

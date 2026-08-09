@@ -16,6 +16,10 @@ For production, use `DATABASE_ENV=production` only from the approved operator
 environment. The JSON contains counts and ages, never recipients, event payloads,
 tokens, customer details, or error messages.
 
+The outbox queue counters include only versioned jobs enqueued by the new repository.
+Historical `purchase_side_effects` rows remain reconciliation evidence and are not
+eligible for worker claims merely because their legacy status is `pending`.
+
 Investigate when any of these conditions persists beyond a normal worker interval:
 
 - `inbox.oldestReadyAgeSeconds` or `outbox.oldestReadyAgeSeconds` keeps increasing;
