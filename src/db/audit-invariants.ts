@@ -141,6 +141,31 @@ const auditDatabaseInvariants = async (): Promise<InvariantAuditRow[]> => {
 
       UNION ALL
 
+      SELECT 'stripe_events.evidence', count(*)::int
+      FROM stripe_events
+      WHERE btrim(stripe_event_id) = ''
+        OR btrim(event_type) = ''
+        OR jsonb_typeof(payload) <> 'object'
+
+      UNION ALL
+
+      SELECT 'stripe_events.lifecycle', count(*)::int
+      FROM stripe_events
+      WHERE processing_status NOT IN (
+          'pending',
+          'processing',
+          'processed',
+          'skipped',
+          'failed',
+          'dead_letter'
+        )
+        OR (
+          processing_status IN ('processed', 'skipped')
+          AND processed_at IS NULL
+        )
+
+      UNION ALL
+
       SELECT 'invoices.ranges', count(*)::int
       FROM invoices
       WHERE sequence_year < 2000

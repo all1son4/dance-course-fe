@@ -467,7 +467,19 @@ export const stripeEvents = pgTable(
     processedAt: timestamp("processed_at", { withTimezone: true }),
     processingStatus: text("processing_status")
       .notNull()
-      .$type<"processed" | "skipped" | "failed">(),
+      .$type<
+        "pending" | "processing" | "processed" | "skipped" | "failed" | "dead_letter"
+      >(),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    providerPayloadVerified: boolean("provider_payload_verified")
+      .notNull()
+      .default(false),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    leaseToken: text("lease_token"),
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    deadLetteredAt: timestamp("dead_lettered_at", { withTimezone: true }),
     paymentStatusSnapshot: text("payment_status_snapshot"),
     outcomeSnapshot: text("outcome_snapshot"),
     livemode: boolean("livemode").notNull().default(false),
@@ -479,10 +491,55 @@ export const stripeEvents = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "stripe_events_evidence_check",
+      sql`BTRIM(${table.stripeEventId}) <> ''
+        AND BTRIM(${table.eventType}) <> ''
+        AND JSONB_TYPEOF(${table.payload}) = 'object'
+        AND (
+          NOT ${table.providerPayloadVerified}
+          OR ${table.stripeCreatedAt} IS NOT NULL
+        )`,
+    ),
+    check(
+      "stripe_events_lifecycle_check",
+      sql`${table.processingStatus} IN (
+          'pending',
+          'processing',
+          'processed',
+          'skipped',
+          'failed',
+          'dead_letter'
+        )
+        AND ${table.attemptCount} >= 0
+        AND (
+          ${table.processingStatus} <> 'processing'
+          OR (
+            NULLIF(BTRIM(${table.leaseToken}), '') IS NOT NULL
+            AND ${table.leaseExpiresAt} IS NOT NULL
+          )
+        )
+        AND (
+          ${table.processingStatus} <> 'dead_letter'
+          OR ${table.deadLetteredAt} IS NOT NULL
+        )
+        AND (
+          ${table.processingStatus} NOT IN ('processed', 'skipped')
+          OR ${table.processedAt} IS NOT NULL
+        )`,
+    ),
     uniqueIndex("stripe_events_stripe_event_id_idx").on(table.stripeEventId),
     index("stripe_events_payment_intent_id_idx").on(table.paymentIntentId),
     index("stripe_events_purchase_id_idx").on(table.purchaseId),
     index("stripe_events_processed_at_idx").on(table.processedAt),
+    index("stripe_events_inbox_claim_idx")
+      .on(
+        table.processingStatus,
+        table.nextAttemptAt,
+        table.leaseExpiresAt,
+        table.receivedAt,
+      )
+      .where(sql`${table.processingStatus} IN ('pending', 'processing', 'failed')`),
   ],
 );
 
