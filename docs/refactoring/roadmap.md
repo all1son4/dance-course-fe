@@ -465,7 +465,7 @@ product behavior, and the production dependency audit is clear.
 
 ## Phase DB: target PostgreSQL primitives
 
-Status: `READY_FOR_PRODUCTION`
+Status: `DONE`
 
 Current-state audit (2026-08-09): the phase order remains correct. The implementation
 already contains several target primitives: a monotonic payment projection, atomic
@@ -491,7 +491,7 @@ invariants. Preserve the consent, token-claim, catalog, and monotonic-projection
 constraints already introduced by the SAFE phase. Clean and validate existing data
 before enforcing a new hard constraint.
 
-Status: `READY_FOR_PRODUCTION`. The read-only
+Status: `DONE`. The read-only
 [`invariant audit`](../../src/db/audit-invariants.ts) found zero violations in both
 development and production before enforcement. Expand migration
 [`0011_database_invariants.sql`](../../drizzle/0011_database_invariants.sql) adds and
@@ -500,7 +500,8 @@ validates the missing scalar and ownership constraints. It passed
 [development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31313645443),
 a zero-difference post-migration audit, and the post-migration
 [critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31313585992).
-Mark it `DONE` only after the bundled release and controlled production migration.
+The bundled production expand migration and zero-violation post-migration audit are
+recorded under Gate G2.
 
 ### DB-03 — Add an immutable webhook inbox
 
@@ -509,7 +510,7 @@ rows. A verified provider event has a unique provider/event ID, immutable payloa
 provider timestamp, processing state, lease, attempts, retry time, and error/dead-letter
 information.
 
-Status: `READY_FOR_PRODUCTION`. Expand migration
+Status: `DONE`. Expand migration
 [`0012_stripe_event_inbox.sql`](../../drizzle/0012_stripe_event_inbox.sql) evolves the
 existing rows in place and adds lifecycle, lease, retry, dead-letter, claim-index, and
 verified-evidence immutability primitives. The repository safely deduplicates concurrent
@@ -518,8 +519,9 @@ receipts and can promote a legacy row without replaying completed work. It passe
 [development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31315585734),
 a zero-difference post-migration audit, and the post-migration
 [critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31315520197).
-The live webhook is intentionally not switched until `WRITE-01`/`WRITE-02`. Mark this
-item `DONE` after the bundled release and controlled production migration.
+The bundled production migration is recorded under Gate G2. The live webhook is
+intentionally not switched to durable pre-acknowledgement persistence until
+`WRITE-01`/`WRITE-02`.
 
 ### DB-04 — Add explicit payment projection
 
@@ -527,7 +529,7 @@ Extract and reuse the tested monotonic reducer already used by `database-sync.ts
 Process inbox rows through it and update purchases, access, event state, and required
 outbox entries transactionally; do not create a competing payment projection.
 
-Status: `READY_FOR_PRODUCTION`. The purpose-specific
+Status: `DONE`. The purpose-specific
 [`payment projection`](../../src/db/payment-projection.ts) owns the single monotonic
 purchase reducer and its customer, access, invoice, and outbox writes. The current
 webhook's isolated Sheet adapter now invokes that same projector rather than keeping a
@@ -544,7 +546,7 @@ outbox. Represent email, Telegram, reports, campaigns, and the transitional Shee
 export as retryable jobs with deterministic deduplication keys, leases, attempts, and
 dead-letter state.
 
-Status: `READY_FOR_PRODUCTION`. Expand migration
+Status: `DONE`. Expand migration
 [`0013_transactional_outbox_and_invoice_sequences.sql`](../../drizzle/0013_transactional_outbox_and_invoice_sequences.sql)
 evolves `purchase_side_effects` in place with deterministic keys, JSON job input,
 retry time, attempt evidence, claim leases, dead letters, and claim indexes. Existing
@@ -559,7 +561,7 @@ Keep the completed atomic Telegram token claim and add the remaining database
 primitives for entitlement allocation, invoice numbering, campaign recipients, report
 delivery, and outbox deduplication.
 
-Status: `READY_FOR_PRODUCTION`. Inbox and outbox selection use bounded
+Status: `DONE`. Inbox and outbox selection use bounded
 `FOR UPDATE SKIP LOCKED` claims. Entitlements retain their unique purchase/access-key
 allocation and the completed Telegram compare-and-set claim. Reports and campaign
 recipients use typed outbox kinds and deterministic keys. The
@@ -574,7 +576,7 @@ monthly sequences.
 Make domain code depend on PostgreSQL repositories rather than Google Sheets record
 shapes. Allow controlled, manual domain cutover without automatic fallback.
 
-Status: `READY_FOR_PRODUCTION`. New database-domain code is composed through
+Status: `DONE`. New database-domain code is composed through
 [`domain-repositories.ts`](../../src/db/domain-repositories.ts) and accepts
 purpose-specific commands rather than Sheet records. The remaining Sheet-shaped code
 is an explicit legacy adapter/backfill/reconciliation boundary scheduled for the
@@ -590,7 +592,7 @@ and outbox age, retries, dead letters, stale and duplicate events, access failur
 reconciliation differences, report totals, and transitional export lag. A separate
 enterprise monitoring platform is not required.
 
-Status: `READY_FOR_PRODUCTION`. `npm run db:operations:status` emits only aggregate,
+Status: `DONE`. `npm run db:operations:status` emits only aggregate,
 PII-free inbox/outbox age, retry, lease, dead-letter, access, projection/export, and
 report totals. The versioned worker queues are separated from historical migration
 evidence. A reusable read-only
@@ -606,7 +608,7 @@ dead letters, and retries; the invariant audit reported zero violations.
 - Backup and restore have been rehearsed outside production.
 - External API calls do not hold long database transactions.
 
-Status: `READY_FOR_PRODUCTION`. The exact revision passed
+Status: `DONE`. The exact revision passed
 [Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31318090643)
 with 39 unit tests, 22 PostgreSQL integration tests, a fresh migration, and a real
 PostgreSQL 17 logical dump/restore comparison. The controlled
@@ -617,8 +619,19 @@ PII-free queue snapshot, and all
 passed on the expanded schema. Tests cover replay suppression, transactional rollback,
 uncertain provider-response retry with one visible delivery, concurrent claims, and
 invoice allocation. Provider enrichment/delivery is explicitly outside the bounded
-projection/claim transactions. Mark the DB phase and G2 `DONE` after the bundled
-release, controlled production expand migration, and production smoke.
+projection/claim transactions.
+
+PR [#9](https://github.com/all1son4/dance-course-fe/pull/9) was merged as
+`709459b`. The exact merge commit passed production
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31318491171), then the
+controlled
+[production expand migration](https://github.com/all1son4/dance-course-fe/actions/runs/31321100354)
+applied `0011` through `0013` and advanced production from 11 to 14 migrations. The
+post-migration invariant audit reported zero violations; versioned inbox/outbox queues
+reported zero ready jobs, stale leases, retries, and dead letters; transitional Sheets
+export lag was zero. The exact production deployment then passed the repeated
+[post-migration critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31318520921).
+No DB worker flag was enabled and no user journey changed.
 
 ## Phase DATA: backfill and reconciliation
 
