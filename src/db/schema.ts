@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -38,6 +39,7 @@ export const products = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check("products_type_check", sql`${table.type} IN ('course', 'choreo')`),
     uniqueIndex("products_code_idx").on(table.code),
     uniqueIndex("products_external_product_id_idx").on(table.externalProductId),
     uniqueIndex("products_slug_idx").on(table.slug),
@@ -73,7 +75,26 @@ export const productOffers = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "product_offers_code_check",
+      sql`${table.code} IN (
+        'standard',
+        'library-access',
+        'without-mentor',
+        'with-mentor',
+        'renewal-discount',
+        'renewal-library-access'
+      )`,
+    ),
+    check(
+      "product_offers_ranges_check",
+      sql`${table.sortOrder} >= 0
+        AND (${table.telegramAccessDurationDays} IS NULL
+          OR ${table.telegramAccessDurationDays} >= 0)`,
+    ),
     uniqueIndex("product_offers_external_offer_id_idx").on(table.externalOfferId),
+    uniqueIndex("product_offers_id_product_id_idx").on(table.id, table.productId),
+    uniqueIndex("product_offers_product_code_unique_idx").on(table.productId, table.code),
     index("product_offers_product_id_idx").on(table.productId),
     index("product_offers_product_code_idx").on(table.productId, table.code),
   ],
@@ -123,6 +144,15 @@ export const renewalCampaigns = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "renewal_campaigns_status_check",
+      sql`${table.status} IN ('active', 'archived')`,
+    ),
+    foreignKey({
+      columns: [table.offerId, table.productId],
+      foreignColumns: [productOffers.id, productOffers.productId],
+      name: "renewal_campaigns_offer_product_fk",
+    }),
     uniqueIndex("renewal_campaigns_slug_idx").on(table.slug),
     uniqueIndex("renewal_campaigns_active_target_offer_idx")
       .on(table.targetChatId, table.offerExternalId)
@@ -171,6 +201,10 @@ export const onlineGroupCampaigns = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "online_group_campaigns_status_check",
+      sql`${table.status} IN ('active', 'archived')`,
+    ),
     uniqueIndex("online_group_campaigns_single_active_idx")
       .on(table.status)
       .where(sql`${table.status} = 'active'`),
@@ -199,6 +233,10 @@ export const telegramRenewalVerifications = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "telegram_renewal_verifications_status_check",
+      sql`${table.status} IN ('verified', 'not_member', 'failed')`,
+    ),
     uniqueIndex("telegram_renewal_verifications_checkout_campaign_idx").on(
       table.checkoutSessionId,
       table.campaignId,
@@ -222,6 +260,8 @@ export const offerPrices = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check("offer_prices_currency_check", sql`${table.currency} IN ('pln', 'eur')`),
+    check("offer_prices_amount_minor_check", sql`${table.amountMinor} > 0`),
     uniqueIndex("offer_prices_offer_currency_idx").on(table.offerId, table.currency),
     index("offer_prices_currency_idx").on(table.currency),
   ],
@@ -310,6 +350,44 @@ export const purchases = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check("purchases_amount_minor_check", sql`${table.amountMinor} >= 0`),
+    check(
+      "purchases_currency_check",
+      sql`${table.currency} IN ('pln', 'eur')
+        AND (${table.checkoutCurrency} IS NULL
+          OR ${table.checkoutCurrency} IN ('pln', 'eur'))
+        AND (${table.settlementCurrency} IS NULL
+          OR LENGTH(BTRIM(${table.settlementCurrency})) = 3)`,
+    ),
+    check(
+      "purchases_money_ranges_check",
+      sql`(${table.settlementAmountMinor} IS NULL OR ${table.settlementAmountMinor} >= 0)
+        AND (${table.stripeFeeAmountMinor} IS NULL OR ${table.stripeFeeAmountMinor} >= 0)`,
+    ),
+    check(
+      "purchases_locale_language_check",
+      sql`(${table.checkoutLocale} IS NULL OR ${table.checkoutLocale} IN ('ru', 'en', 'pl'))
+        AND (${table.lessonLanguage} IS NULL OR ${table.lessonLanguage} IN ('ru', 'en'))`,
+    ),
+    check(
+      "purchases_outcome_check",
+      sql`${table.outcome} IN (
+        'succeeded',
+        'processing',
+        'requires_action',
+        'failed',
+        'canceled'
+      )`,
+    ),
+    check(
+      "purchases_source_check",
+      sql`${table.source} IN ('stripe', 'admin_offer_link')`,
+    ),
+    foreignKey({
+      columns: [table.offerId, table.productId],
+      foreignColumns: [productOffers.id, productOffers.productId],
+      name: "purchases_offer_product_fk",
+    }),
     uniqueIndex("purchases_payment_intent_id_idx").on(table.paymentIntentId),
     index("purchases_checkout_session_id_idx").on(table.checkoutSessionId),
     index("purchases_customer_id_idx").on(table.customerId),
@@ -439,6 +517,7 @@ export const purchaseSideEffects = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check("purchase_side_effects_attempt_count_check", sql`${table.attemptCount} >= 0`),
     uniqueIndex("purchase_side_effects_purchase_kind_idx").on(
       table.purchaseId,
       table.kind,
@@ -469,6 +548,14 @@ export const invoices = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "invoices_ranges_check",
+      sql`${table.sequenceYear} BETWEEN 2000 AND 9999
+        AND ${table.sequenceMonth} BETWEEN 1 AND 12
+        AND ${table.sequenceNumber} > 0
+        AND ${table.amountMinor} >= 0
+        AND ${table.currency} IN ('pln', 'eur')`,
+    ),
     uniqueIndex("invoices_purchase_id_idx").on(table.purchaseId),
     uniqueIndex("invoices_invoice_number_idx").on(table.invoiceNumber),
     uniqueIndex("invoices_sequence_idx").on(
@@ -528,10 +615,36 @@ export const accessEntitlements = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "access_entitlements_status_check",
+      sql`${table.status} IN (
+        'pending',
+        'not_required',
+        'token_issued',
+        'activated',
+        'expired',
+        'revoked',
+        'left_channel',
+        'link_failed',
+        'manual_pending',
+        'manual_done'
+      )`,
+    ),
+    check(
+      "access_entitlements_external_target_type_check",
+      sql`${table.externalTargetType} IS NULL
+        OR ${table.externalTargetType} IN ('telegram_chat', 'telegram_bot', 'manual')`,
+    ),
+    foreignKey({
+      columns: [table.offerId, table.productId],
+      foreignColumns: [productOffers.id, productOffers.productId],
+      name: "access_entitlements_offer_product_fk",
+    }),
     uniqueIndex("access_entitlements_purchase_key_idx").on(
       table.purchaseId,
       table.accessKey,
     ),
+    uniqueIndex("access_entitlements_id_purchase_id_idx").on(table.id, table.purchaseId),
     index("access_entitlements_status_idx").on(table.status),
     index("access_entitlements_telegram_user_idx").on(table.telegramUserId),
     index("access_entitlements_expires_at_idx").on(table.expiresAt),
@@ -572,9 +685,19 @@ export const telegramAccessTokens = pgTable(
   },
   (table) => [
     check(
+      "telegram_access_tokens_kind_status_check",
+      sql`${table.linkKind} IN ('channel_invite', 'start_token')
+        AND ${table.status} IN ('issued', 'used', 'expired', 'revoked')`,
+    ),
+    check(
       "telegram_access_tokens_used_claim_check",
       sql`${table.status} <> 'used' OR NULLIF(BTRIM(${table.telegramUserId}), '') IS NOT NULL`,
     ),
+    foreignKey({
+      columns: [table.entitlementId, table.purchaseId],
+      foreignColumns: [accessEntitlements.id, accessEntitlements.purchaseId],
+      name: "telegram_access_tokens_entitlement_purchase_fk",
+    }),
     uniqueIndex("telegram_access_tokens_token_id_idx").on(table.tokenId),
     uniqueIndex("telegram_access_tokens_token_hash_idx").on(table.tokenHash),
     index("telegram_access_tokens_purchase_id_idx").on(table.purchaseId),
@@ -616,6 +739,15 @@ export const telegramUserBindings = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "telegram_user_bindings_status_check",
+      sql`${table.status} IN ('active', 'left', 'revoked')`,
+    ),
+    foreignKey({
+      columns: [table.entitlementId, table.purchaseId],
+      foreignColumns: [accessEntitlements.id, accessEntitlements.purchaseId],
+      name: "telegram_user_bindings_entitlement_purchase_fk",
+    }),
     uniqueIndex("telegram_user_bindings_purchase_chat_idx").on(
       table.purchaseId,
       table.chatId,
@@ -649,6 +781,12 @@ export const monthlyReportRuns = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "monthly_report_runs_status_range_check",
+      sql`${table.deliveryStatus} IN ('sent', 'skipped', 'failed')
+        AND ${table.rowCount} >= 0
+        AND ${table.periodEndUtc} > ${table.periodStartUtc}`,
+    ),
     uniqueIndex("monthly_report_runs_report_key_idx").on(table.reportKey),
     index("monthly_report_runs_period_idx").on(table.periodStartUtc, table.periodEndUtc),
   ],
@@ -676,6 +814,11 @@ export const emailCampaignLeads = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    check(
+      "email_campaign_leads_status_attempts_check",
+      sql`${table.emailSendStatus} IN ('blocked', 'excluded', 'failed', 'pending', 'sent')
+        AND ${table.emailSendAttempts} >= 0`,
+    ),
     uniqueIndex("email_campaign_leads_lead_id_idx").on(table.leadId),
     uniqueIndex("email_campaign_leads_campaign_email_idx").on(
       table.campaignKey,

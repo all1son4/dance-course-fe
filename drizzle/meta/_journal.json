@@ -78,6 +78,13 @@
       "when": 1786220735000,
       "tag": "0010_checkout_consent_evidence",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786277459000,
+      "tag": "0011_database_invariants",
+      "breakpoints": true
     }
   ]
 }

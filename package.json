@@ -17,6 +17,7 @@
     "test:unit": "tsx --test src/**/*.test.ts tests/unit/*.test.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
+    "db:audit:invariants": "tsx src/db/audit-invariants.ts",
     "db:audit:monthly-sales-report": "tsx src/db/audit-monthly-sales-report.ts",
     "db:backfill:sheets": "tsx src/db/backfill-google-sheets.ts",
     "db:backfill:stripe-settlement": "tsx src/db/backfill-stripe-settlement.ts",
