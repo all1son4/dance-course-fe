@@ -465,7 +465,7 @@ product behavior, and the production dependency audit is clear.
 
 ## Phase DB: target PostgreSQL primitives
 
-Status: `IN_PROGRESS`
+Status: `READY_FOR_PRODUCTION`
 
 Current-state audit (2026-08-09): the phase order remains correct. The implementation
 already contains several target primitives: a monotonic payment projection, atomic
@@ -527,6 +527,16 @@ Extract and reuse the tested monotonic reducer already used by `database-sync.ts
 Process inbox rows through it and update purchases, access, event state, and required
 outbox entries transactionally; do not create a competing payment projection.
 
+Status: `READY_FOR_PRODUCTION`. The purpose-specific
+[`payment projection`](../../src/db/payment-projection.ts) owns the single monotonic
+purchase reducer and its customer, access, invoice, and outbox writes. The current
+webhook's isolated Sheet adapter now invokes that same projector rather than keeping a
+second implementation. The inbox worker claims verified rows with expiring leases and
+commits projection, deterministic outbox entries, and event completion atomically;
+projection failure rolls the transaction back before scheduling retry/dead-letter.
+Stripe settlement enrichment was moved before the database transaction. The live
+webhook acknowledgement flow remains unchanged until `WRITE-01`/`WRITE-02`.
+
 ### DB-05 — Add a transactional outbox
 
 Evolve the existing `purchase_side_effects` proto-outbox into the general transactional
@@ -534,16 +544,44 @@ outbox. Represent email, Telegram, reports, campaigns, and the transitional Shee
 export as retryable jobs with deterministic deduplication keys, leases, attempts, and
 dead-letter state.
 
+Status: `READY_FOR_PRODUCTION`. Expand migration
+[`0013_transactional_outbox_and_invoice_sequences.sql`](../../drizzle/0013_transactional_outbox_and_invoice_sequences.sql)
+evolves `purchase_side_effects` in place with deterministic keys, JSON job input,
+retry time, attempt evidence, claim leases, dead letters, and claim indexes. Existing
+application inserts remain compatible through a deterministic trigger. Only jobs
+versioned by the new [`outbox repository`](../../src/db/transactional-outbox.ts) are
+claimable, so historical proto-outbox rows cannot be delivered accidentally. Provider
+I/O happens after claim commit and receives the stable deduplication key.
+
 ### DB-06 — Add atomic claims and counters
 
 Keep the completed atomic Telegram token claim and add the remaining database
 primitives for entitlement allocation, invoice numbering, campaign recipients, report
 delivery, and outbox deduplication.
 
+Status: `READY_FOR_PRODUCTION`. Inbox and outbox selection use bounded
+`FOR UPDATE SKIP LOCKED` claims. Entitlements retain their unique purchase/access-key
+allocation and the completed Telegram compare-and-set claim. Reports and campaign
+recipients use typed outbox kinds and deterministic keys. The
+[`invoice repository`](../../src/db/invoice-repository.ts) serializes purchase and
+monthly allocation with transaction-scoped advisory locks, seeds its counter from
+existing invoices, and relies on purchase, invoice-number, and sequence uniqueness.
+Concurrent tests prove one outbox claimant, one invoice per purchase, and unique
+monthly sequences.
+
 ### DB-07 — Add repositories and domain feature flags
 
 Make domain code depend on PostgreSQL repositories rather than Google Sheets record
 shapes. Allow controlled, manual domain cutover without automatic fallback.
+
+Status: `READY_FOR_PRODUCTION`. New database-domain code is composed through
+[`domain-repositories.ts`](../../src/db/domain-repositories.ts) and accepts
+purpose-specific commands rather than Sheet records. The remaining Sheet-shaped code
+is an explicit legacy adapter/backfill/reconciliation boundary scheduled for the
+WRITE/READ/DROP phases. Independent validated flags expose `legacy`, `shadow`, and
+`database` modes for payment events, side effects, Telegram access, business
+operations, and the temporary Sheets export. Missing flags preserve `legacy`; invalid
+values fail configuration and there is no automatic database-to-Sheets fallback.
 
 ### DB-08 — Add operational visibility
 
@@ -552,12 +590,35 @@ and outbox age, retries, dead letters, stale and duplicate events, access failur
 reconciliation differences, report totals, and transitional export lag. A separate
 enterprise monitoring platform is not required.
 
+Status: `READY_FOR_PRODUCTION`. `npm run db:operations:status` emits only aggregate,
+PII-free inbox/outbox age, retry, lease, dead-letter, access, projection/export, and
+report totals. The versioned worker queues are separated from historical migration
+evidence. A reusable read-only
+[`SQL query`](sql/db-queue-health.sql) and the lightweight
+[`operator runbook`](db-operations-runbook.md) define investigation and replay rules.
+The post-migration development snapshot reported zero ready worker jobs, stale leases,
+dead letters, and retries; the invariant audit reported zero violations.
+
 ### Gate G2
 
 - Additive schema works with both the current and next application releases.
 - Inbox replay and outbox retry are idempotent.
 - Backup and restore have been rehearsed outside production.
 - External API calls do not hold long database transactions.
+
+Status: `READY_FOR_PRODUCTION`. The exact revision passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31318090643)
+with 39 unit tests, 22 PostgreSQL integration tests, a fresh migration, and a real
+PostgreSQL 17 logical dump/restore comparison. The controlled
+[development expand migration](https://github.com/all1son4/dance-course-fe/actions/runs/31317259357)
+advanced the database from 13 to 14 migrations; the zero-violation invariant audit,
+PII-free queue snapshot, and all
+[deployed critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31318115237)
+passed on the expanded schema. Tests cover replay suppression, transactional rollback,
+uncertain provider-response retry with one visible delivery, concurrent claims, and
+invoice allocation. Provider enrichment/delivery is explicitly outside the bounded
+projection/claim transactions. Mark the DB phase and G2 `DONE` after the bundled
+release, controlled production expand migration, and production smoke.
 
 ## Phase DATA: backfill and reconciliation
 
