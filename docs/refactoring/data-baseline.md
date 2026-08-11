@@ -131,7 +131,8 @@ This fingerprint-and-reviewed-summary record is the accepted `BASE-04` evidence.
 can be reproduced with the same read-only command, but it is not a protected migration
 snapshot and must never be used as a backfill source. Durable database backups and
 controlled Sheet exports belong to `DATA-01`, where storage, access, checksum, and
-cut-off handling will be defined explicitly.
+cut-off handling are defined in
+[`data-source-snapshots.md`](./data-source-snapshots.md).
 
 ## Accepted production baseline
 
