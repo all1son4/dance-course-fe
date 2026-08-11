@@ -684,6 +684,17 @@ Extend the existing baseline and comparison tools to compare PaymentIntent IDs, 
 event IDs, money by currency and month, terminal payment state, active access, Telegram
 bindings, invoices, delivery statuses, catalog data, and customer snapshots.
 
+Status: `DONE`. Schema-v3 reconciliation uses one repeatable-read PostgreSQL snapshot,
+records the cross-provider capture window, and compares matching domain rows as well as
+keys and aggregates. Mismatch output contains only counts, field names, safe categories,
+and hashed canonical keys. The old raw-ID comparison command now invokes the same
+privacy-safe engine in strict mode. Forty-eight unit tests, full CI, deployed critical
+journeys, and two stable read-only captures per environment passed. Production money,
+catalog references, customer snapshots, invoices, reports, leads, side effects, and
+Stripe event rows match; the stable access/Telegram/product-reference differences are
+explicit input to DATA-04. Evidence:
+[`data-reconciliation.md`](./data-reconciliation.md).
+
 ### DATA-04 — Resolve and record conflicts
 
 Every conflict records its canonical source, decision, correction, owner, and time.
@@ -905,3 +916,4 @@ Status: `TODO`
 | 2026-08-11 | DATA-02 development         | `DONE`       | Migration, pause/resume/replay, invariants, smoke passed     |
 | 2026-08-11 | DATA-02 production backfill | `DONE`       | 258 rows accounted; replay no-op; plaintext removed          |
 | 2026-08-11 | DATA-02 counter invariant   | `DONE`       | Dev/prod migration and zero-violation audits passed          |
+| 2026-08-11 | DATA-03                     | `DONE`       | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass |
