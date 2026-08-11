@@ -641,14 +641,15 @@ Status: `IN_PROGRESS`
 
 Create a database backup, a controlled Sheets export, checksums, and a cut-off time.
 
-Status: `IN_PROGRESS`. The read-only capture, encrypted artifact workflow, checksum
-manifest, explicit cross-source capture window, and authenticated recovery command are
-implemented. The implementation does not change schema, runtime flags, or user flows;
-rollback is removal of maintenance tooling only. Local rehearsal covered live Sheets,
-archive encryption, checksum verification, decryption, and plaintext cleanup. Completion
-requires CI, an actual PostgreSQL 17 development rehearsal, a protected production
-capture from `main`, and a recovery check with the owner-held private key. Operational
-details and evidence fields are in
+Status: `DONE`. The read-only capture, checksum manifest, explicit cross-source capture
+window, AES-256-GCM/RSA protection, and authenticated recovery command are implemented.
+No credential was copied to GitHub; the existing local environment was used with a
+`spreadsheets.readonly` OAuth token. Development and production captures were created
+with PostgreSQL 17.10, decrypted with the owner-held key, and restored into separate
+disposable PostgreSQL 17 clusters. Aggregate verification passed, and every plaintext
+file and temporary cluster was deleted. The implementation does not change schema,
+runtime flags, or user flows; rollback is removal of maintenance tooling only.
+Capture IDs, cut-off times, checksums, counts, and recovery evidence are in
 [`data-source-snapshots.md`](./data-source-snapshots.md).
 
 ### DATA-02 — Build a resumable backfill
@@ -848,35 +849,35 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                        | Status        | Evidence                                                     |
-| ---------- | --------------------------- | ------------- | ------------------------------------------------------------ |
-| 2026-07-30 | Repository-wide audit       | `DONE`        | Audit discussion and local checks                            |
-| 2026-07-30 | Roadmap v1.3                | `DONE`        | This document                                                |
-| 2026-07-30 | BASE-01                     | `DONE`        | ADR-001 accepted                                             |
-| 2026-07-30 | BASE-02                     | `DONE`        | Current behavior contract recorded                           |
-| 2026-07-30 | BASE-03                     | `DONE`        | Seven Sheets and all dependency classes inventoried          |
-| 2026-07-30 | BASE-05 Telegram scope      | `DONE`        | ADR-002 accepted                                             |
-| 2026-07-30 | BASE-04 tooling             | `DONE`        | Read-only command and privacy fixture tests                  |
-| 2026-07-30 | BASE-04 capture             | `SUPERSEDED`  | Initial blocked attempt; replaced by the completed capture   |
-| 2026-07-30 | BASE-05 decision draft      | `DONE`        | Defaults prepared before owner confirmation                  |
-| 2026-07-30 | BASE-05 owner decisions     | `DONE`        | Owner accepted all four migration decisions                  |
-| 2026-08-06 | BASE-04 capture             | `DONE`        | Stable dev/prod fingerprints; differences classified         |
-| 2026-08-06 | Gate G0                     | `PASSED`      | Behavior, dependency, data, and decision baselines accepted  |
-| 2026-08-06 | Gate G0 formal audit        | `DONE`        | All 26 Sheets components classified; documents reconciled    |
-| 2026-08-06 | SAFE-01                     | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality`  |
-| 2026-08-06 | SAFE-02                     | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed   |
-| 2026-08-07 | SAFE-03                     | `DONE`        | Migration-free release; dev/prod no-op controls passed       |
-| 2026-08-08 | SAFE-04                     | `DONE`        | Atomic terminal outcomes; race and deployed smoke tests pass |
-| 2026-08-08 | SAFE-05                     | `DONE`        | Atomic claims, DB invariant, and eight-way race test passed  |
-| 2026-08-08 | SAFE-06                     | `DONE`        | Reuse characterized at accepted decision boundary            |
-| 2026-08-08 | SAFE-07                     | `DONE`        | DB-authorized catalog; remote CI and four browser tests pass |
-| 2026-08-08 | SAFE-08                     | `DONE`        | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
-| 2026-08-08 | SAFE-09                     | `DONE`        | Formula-safe CSV; CI and five deployed browser tests pass    |
-| 2026-08-08 | SAFE-10                     | `DONE`        | Verified result gate; CI and six browser tests pass          |
-| 2026-08-09 | SAFE-11                     | `DONE`        | Zero production advisories; CI and six browser tests pass    |
-| 2026-08-09 | Gate G1                     | `PASSED`      | SAFE-01 through SAFE-11 acceptance criteria verified         |
-| 2026-08-09 | Roadmap current-state audit | `DONE`        | Remaining phases reconciled with current code and schema     |
-| 2026-08-09 | DB-01                       | `DONE`        | PostgreSQL domain and transaction ownership recorded         |
-| 2026-08-09 | DB-02 development           | `DONE`        | Preflight, CI, dev migration, audit, and smoke passed        |
-| 2026-08-09 | DB-03 development           | `DONE`        | Inbox migration, CI, dev apply, audit, and smoke passed      |
-| 2026-08-11 | DATA-01 tooling             | `IN_PROGRESS` | Encrypted snapshot and recovery rehearsal passed locally     |
+| Date       | Item                        | Status       | Evidence                                                     |
+| ---------- | --------------------------- | ------------ | ------------------------------------------------------------ |
+| 2026-07-30 | Repository-wide audit       | `DONE`       | Audit discussion and local checks                            |
+| 2026-07-30 | Roadmap v1.3                | `DONE`       | This document                                                |
+| 2026-07-30 | BASE-01                     | `DONE`       | ADR-001 accepted                                             |
+| 2026-07-30 | BASE-02                     | `DONE`       | Current behavior contract recorded                           |
+| 2026-07-30 | BASE-03                     | `DONE`       | Seven Sheets and all dependency classes inventoried          |
+| 2026-07-30 | BASE-05 Telegram scope      | `DONE`       | ADR-002 accepted                                             |
+| 2026-07-30 | BASE-04 tooling             | `DONE`       | Read-only command and privacy fixture tests                  |
+| 2026-07-30 | BASE-04 capture             | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture   |
+| 2026-07-30 | BASE-05 decision draft      | `DONE`       | Defaults prepared before owner confirmation                  |
+| 2026-07-30 | BASE-05 owner decisions     | `DONE`       | Owner accepted all four migration decisions                  |
+| 2026-08-06 | BASE-04 capture             | `DONE`       | Stable dev/prod fingerprints; differences classified         |
+| 2026-08-06 | Gate G0                     | `PASSED`     | Behavior, dependency, data, and decision baselines accepted  |
+| 2026-08-06 | Gate G0 formal audit        | `DONE`       | All 26 Sheets components classified; documents reconciled    |
+| 2026-08-06 | SAFE-01                     | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality`  |
+| 2026-08-06 | SAFE-02                     | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed   |
+| 2026-08-07 | SAFE-03                     | `DONE`       | Migration-free release; dev/prod no-op controls passed       |
+| 2026-08-08 | SAFE-04                     | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass |
+| 2026-08-08 | SAFE-05                     | `DONE`       | Atomic claims, DB invariant, and eight-way race test passed  |
+| 2026-08-08 | SAFE-06                     | `DONE`       | Reuse characterized at accepted decision boundary            |
+| 2026-08-08 | SAFE-07                     | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass |
+| 2026-08-08 | SAFE-08                     | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests  |
+| 2026-08-08 | SAFE-09                     | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass    |
+| 2026-08-08 | SAFE-10                     | `DONE`       | Verified result gate; CI and six browser tests pass          |
+| 2026-08-09 | SAFE-11                     | `DONE`       | Zero production advisories; CI and six browser tests pass    |
+| 2026-08-09 | Gate G1                     | `PASSED`     | SAFE-01 through SAFE-11 acceptance criteria verified         |
+| 2026-08-09 | Roadmap current-state audit | `DONE`       | Remaining phases reconciled with current code and schema     |
+| 2026-08-09 | DB-01                       | `DONE`       | PostgreSQL domain and transaction ownership recorded         |
+| 2026-08-09 | DB-02 development           | `DONE`       | Preflight, CI, dev migration, audit, and smoke passed        |
+| 2026-08-09 | DB-03 development           | `DONE`       | Inbox migration, CI, dev apply, audit, and smoke passed      |
+| 2026-08-11 | DATA-01                     | `DONE`       | Dev/prod encrypted captures and PG17 restores passed         |

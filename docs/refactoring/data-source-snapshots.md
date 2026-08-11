@@ -1,6 +1,7 @@
 # Protected source snapshots
 
-Status: tooling ready; production capture pending
+Status: complete
+Implemented: 2026-08-11
 
 ## Purpose
 
@@ -27,23 +28,27 @@ Each run:
 4. packs the three plaintext files inside an ephemeral mode-`0700` directory;
 5. encrypts the archive with a new AES-256-GCM key and wraps that key with
    RSA-OAEP-SHA256;
-6. deletes the plaintext workspace and uploads only the ciphertext, wrapped key, and
-   PII-free public manifest.
+6. deletes the plaintext workspace and retains only the ciphertext, wrapped key, and
+   PII-free public manifest in the ignored local snapshot directory.
 
 AES-GCM authenticates the entire archive. The public manifest records the ciphertext
 and wrapped-key SHA-256 values, IV, authentication tag, and RSA public-key fingerprint.
-The RSA private key never enters GitHub, Vercel, application runtime, or the artifact.
+The RSA private key never enters GitHub, Vercel, application runtime, or the encrypted
+artifact. Google and database credentials remain in the existing local environment;
+no additional credential copy was created for snapshot automation.
 
-GitHub artifacts are retained for 90 days. If the DATA and cutover phases will exceed
-that window, take a new protected snapshot before the old artifact expires. A fresh
-snapshot is required again immediately before production cutover; this initial source
-snapshot is not a substitute for the `CUT-02` backup.
+The local `.data-snapshots` directory is excluded from Git and restricted to the owner.
+Keep the encrypted triplets and private key in the owner's normal encrypted computer
+backup until at least 30 days after final cutover. A fresh protected snapshot is still
+required immediately before production cutover; this initial source snapshot is not a
+substitute for the `CUT-02` backup.
 
 ## One-time key setup
 
-Generate a dedicated RSA key pair outside Git. The local directory is ignored, but the
-private key must also be copied to an owner-controlled password manager or encrypted
-offline backup before relying on a production snapshot.
+Generate a dedicated RSA key pair outside Git. The local directory is ignored and its
+permissions prevent other local users from reading the key. The key must be retained
+with the owner's normal encrypted computer backup; losing it makes every snapshot
+unrecoverable.
 
 ```bash
 mkdir -p .data-snapshots
@@ -59,35 +64,34 @@ openssl pkey \
   -out .data-snapshots/source-snapshot-public.pem
 ```
 
-Add the public PEM as `DATA_SNAPSHOT_PUBLIC_KEY` to both GitHub Environments used for
-captures. `Preview` and `Production` also require:
-
-- `DATABASE_URL_UNPOOLED`;
-- `GOOGLE_PRIVATE_KEY`;
-- `GOOGLE_SERVICE_ACCOUNT_EMAIL`;
-- `GOOGLE_SHEETS_SPREADSHEET_ID`.
-
-The Google service account needs only Viewer access for this workflow. The capture
-command requests a read-only OAuth token even when existing runtime credentials have
-broader compatibility permissions. A dedicated Viewer service account remains the
-preferred production setup because possession of a broader account's private key could
-still be used outside this workflow to request wider scopes.
+The capture command uses the existing local database and Google environment values. It
+requests a `spreadsheets.readonly` OAuth token even when the runtime service account has
+broader compatibility permissions, and the credential is not copied to GitHub.
 
 ## Controlled capture
 
-Run the `Protected data source snapshot` workflow manually. Development is accepted
-only from `dev` with `snapshot-development`; production is accepted only from `main`
-with `snapshot-production`. The selected GitHub Environment scopes database and Google
-credentials, and concurrency prevents overlapping captures for one target.
-
-For a local rehearsal with a compatible `pg_dump`/`pg_restore` client:
+Run locally with a PostgreSQL client at least as new as the source server. The accepted
+captures used the keg-only Homebrew PostgreSQL `17.10` client without relinking or
+starting its persistent service.
 
 ```bash
-DATABASE_ENV=development npm run db:snapshot:sources -- \
+PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" \
+npm run db:snapshot:sources -- \
   --target=development \
   --confirmation=snapshot-development \
   --public-key-path=.data-snapshots/source-snapshot-public.pem \
-  --output-dir=.data-snapshots
+  --output-dir=.data-snapshots/development
+```
+
+Production is always explicit:
+
+```bash
+PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" \
+npm run db:snapshot:sources -- \
+  --target=production \
+  --confirmation=snapshot-production \
+  --public-key-path=.data-snapshots/source-snapshot-public.pem \
+  --output-dir=.data-snapshots/production
 ```
 
 The command refuses an implicit target, an incorrect typed confirmation, conflicting
@@ -111,30 +115,36 @@ point-in-time consistency and do not interrupt user purchases to obtain it.
 
 ## Recovery check
 
-Download all three files from the same workflow artifact, then decrypt into a protected
-temporary path:
+Use all three files from one capture and decrypt only into a protected temporary path:
 
 ```bash
 npm run db:snapshot:decrypt -- \
-  --manifest=.data-snapshots/<capture>.manifest.json \
-  --archive=.data-snapshots/<capture>.tar.gz.enc \
-  --wrapped-key=.data-snapshots/<capture>.key.enc \
+  --manifest=.data-snapshots/<target>/<capture>.manifest.json \
+  --archive=.data-snapshots/<target>/<capture>.tar.gz.enc \
+  --wrapped-key=.data-snapshots/<target>/<capture>.key.enc \
   --private-key=.data-snapshots/source-snapshot-private.pem \
-  --output=.data-snapshots/<capture>.tar.gz
+  --output=/private/tmp/<capture>.tar.gz
 ```
 
 The command verifies both public checksums before unwrapping the key, and AES-GCM
-rejects any modified ciphertext. Inspect with `tar -tzf`; extract only into a temporary
-mode-`0700` directory. Never restore the dump over development or production. Actual
-restore validation belongs in an isolated disposable PostgreSQL instance.
+rejects any modified ciphertext. Both accepted captures were extracted into separate
+mode-`0700` temporary directories and restored into isolated disposable PostgreSQL
+17 clusters. The clusters, decrypted archives, raw Sheet exports, and plaintext dumps
+were deleted immediately after aggregate verification. Never restore over development
+or production.
 
 ## DATA-01 acceptance evidence
 
-Record the final workflow URL, artifact expiry, capture ID, cut-off time, ciphertext
-SHA-256, public-key fingerprint, Sheet counts, and recovery-check result here and in
-the roadmap. Do not record artifact contents or the private key.
+Public-key fingerprint for both captures:
+`727e890bb14185efcb4a4d8150de5730653c19793a1ce249de1996ed5fdafa87`.
 
-| Target      | Workflow | Capture ID | Cut-off | Recovery check |
-| ----------- | -------- | ---------- | ------- | -------------- |
-| development | pending  | pending    | pending | pending        |
-| production  | pending  | pending    | pending | pending        |
+| Target      | Capture ID                                     | Cut-off                    | Encrypted archive SHA-256                                          | Recovery check                                         |
+| ----------- | ---------------------------------------------- | -------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------ |
+| development | `development-20260811T112201570Z-065d71053dd1` | `2026-08-11T11:22:07.662Z` | `2d83476ef92f03657e4234b70ada7cbbb9ef4852257e03349c6ec1028e2f9bd5` | PostgreSQL 17 restore passed; 20 tables, 14 migrations |
+| production  | `production-20260811T112456139Z-065d71053dd1`  | `2026-08-11T11:25:02.023Z` | `f456bd24c0f4b7cb8721fa33d976c4a12c3eebf07037f034bf5d11e0862d8e04` | PostgreSQL 17 restore passed; 20 tables, 14 migrations |
+
+Development Sheet counts were `44/86/35/33/6/2/1`; production counts were
+`75/140/60/20/17/5/1`, in the documented Sheet order. Restored development aggregates
+were 38 purchases, 112 Stripe events, 5 invoices, and 40 entitlements. Restored
+production aggregates were 75 purchases, 171 Stripe events, 23 invoices, and 93
+entitlements. These are identifier-free verification summaries, not backfill input.
