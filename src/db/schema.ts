@@ -946,3 +946,89 @@ export const emailCampaignLeads = pgTable(
     index("email_campaign_leads_created_at_idx").on(table.createdAt),
   ],
 );
+
+export const dataBackfillRuns = pgTable(
+  "data_backfill_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    backfillKey: text("backfill_key").notNull(),
+    targetEnvironment: text("target_environment")
+      .notNull()
+      .$type<"development" | "production">(),
+    sourceCaptureId: text("source_capture_id").notNull(),
+    sourceFingerprint: text("source_fingerprint").notNull(),
+    sourceCutOffAt: timestamp("source_cut_off_at", { withTimezone: true }).notNull(),
+    sourceRowCounts: jsonb("source_row_counts").notNull().$type<Record<string, number>>(),
+    batchSize: integer("batch_size").notNull(),
+    stage: text("stage")
+      .notNull()
+      .$type<
+        | "payments"
+        | "stripeEvents"
+        | "telegramAccessTokens"
+        | "telegramUserBindings"
+        | "monthlyReportRuns"
+        | "emailCampaignLeads"
+      >(),
+    nextRowIndex: integer("next_row_index").notNull().default(0),
+    status: text("status")
+      .notNull()
+      .default("running")
+      .$type<"running" | "failed" | "completed">(),
+    stats: jsonb("stats").notNull().$type<
+      Record<
+        string,
+        {
+          conflicts: number;
+          inserted: number;
+          skipped: number;
+          updated: number;
+        }
+      >
+    >(),
+    lastErrorCode: text("last_error_code"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "data_backfill_runs_identity_check",
+      sql`BTRIM(${table.backfillKey}) <> ''
+        AND BTRIM(${table.sourceCaptureId}) <> ''
+        AND ${table.sourceFingerprint} ~ '^[a-f0-9]{64}$'`,
+    ),
+    check(
+      "data_backfill_runs_state_check",
+      sql`${table.targetEnvironment} IN ('development', 'production')
+        AND ${table.status} IN ('running', 'failed', 'completed')
+        AND ${table.stage} IN (
+          'payments',
+          'stripeEvents',
+          'telegramAccessTokens',
+          'telegramUserBindings',
+          'monthlyReportRuns',
+          'emailCampaignLeads'
+        )
+        AND ${table.batchSize} BETWEEN 1 AND 500
+        AND ${table.nextRowIndex} >= 0
+        AND JSONB_TYPEOF(${table.sourceRowCounts}) = 'object'
+        AND JSONB_TYPEOF(${table.stats}) = 'object'
+        AND (
+          ${table.status} <> 'completed'
+          OR ${table.completedAt} IS NOT NULL
+        )`,
+    ),
+    uniqueIndex("data_backfill_runs_source_idx").on(
+      table.backfillKey,
+      table.targetEnvironment,
+      table.sourceFingerprint,
+    ),
+    index("data_backfill_runs_status_idx").on(
+      table.targetEnvironment,
+      table.status,
+      table.updatedAt,
+    ),
+  ],
+);

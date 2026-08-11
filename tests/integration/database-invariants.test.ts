@@ -275,3 +275,82 @@ test("keeps offer ownership coherent across products", async () => {
     `;
   }
 });
+
+test("keeps one validated checkpoint per backfill source", async () => {
+  const sourceFingerprint = randomUUID().replaceAll("-", "").padEnd(64, "0");
+  const [run] = await client<{ id: string }[]>`
+    INSERT INTO data_backfill_runs (
+      backfill_key,
+      target_environment,
+      source_capture_id,
+      source_fingerprint,
+      source_cut_off_at,
+      source_row_counts,
+      batch_size,
+      stage,
+      stats
+    ) VALUES (
+      'google-sheets-v1',
+      'development',
+      'development-test-capture',
+      ${sourceFingerprint},
+      '2026-08-11T11:25:02Z',
+      '{"payments":2}'::jsonb,
+      25,
+      'payments',
+      '{}'::jsonb
+    )
+    RETURNING id
+  `;
+
+  try {
+    await assert.rejects(
+      client`
+        INSERT INTO data_backfill_runs (
+          backfill_key,
+          target_environment,
+          source_capture_id,
+          source_fingerprint,
+          source_cut_off_at,
+          source_row_counts,
+          batch_size,
+          stage,
+          stats
+        ) VALUES (
+          'google-sheets-v1',
+          'development',
+          'development-test-capture-duplicate',
+          ${sourceFingerprint},
+          '2026-08-11T11:25:02Z',
+          '{}'::jsonb,
+          25,
+          'payments',
+          '{}'::jsonb
+        )
+      `,
+      (error: unknown) =>
+        Boolean(
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          error.code === "23505" &&
+          "constraint_name" in error &&
+          error.constraint_name === "data_backfill_runs_source_idx",
+        ),
+    );
+
+    await assertConstraintViolation(
+      client`
+        UPDATE data_backfill_runs
+        SET status = 'completed'
+        WHERE id = ${run.id}
+      `,
+      "data_backfill_runs_state_check",
+    );
+  } finally {
+    await client`
+      DELETE FROM data_backfill_runs
+      WHERE id = ${run.id}
+    `;
+  }
+});

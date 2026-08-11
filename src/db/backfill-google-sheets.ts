@@ -1,4 +1,4 @@
-import { eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -12,11 +12,30 @@ import {
   type PaymentSheetRecord,
 } from "@/lib/google-sheets";
 
-import { getRequiredDatabaseUrlFromEnv } from "./env";
+import { getDatabaseEnvSelection, getRequiredDatabaseUrlFromEnv } from "./env";
+import {
+  createEmptyGoogleSheetsBackfillStats,
+  DEFAULT_GOOGLE_SHEETS_BACKFILL_BATCH_SIZE,
+  getGoogleSheetsBackfillDuplicateIndexes,
+  getGoogleSheetsBackfillPlan,
+  getGoogleSheetsBackfillRecordKey,
+  getNextGoogleSheetsBackfillBatch,
+  GOOGLE_SHEETS_BACKFILL_KEY,
+  GOOGLE_SHEETS_BACKFILL_STAGES,
+  type GoogleSheetsBackfillBatch,
+  type GoogleSheetsBackfillOperationCounts,
+  type GoogleSheetsBackfillRecords,
+  type GoogleSheetsBackfillStage,
+  type GoogleSheetsBackfillStats,
+  type GoogleSheetsBackfillTarget,
+  loadGoogleSheetsBackfillSource,
+  MAX_GOOGLE_SHEETS_BACKFILL_BATCH_SIZE,
+} from "./google-sheets-backfill-source";
 import { loadDatabaseEnvConfig } from "./load-env";
 import {
   accessEntitlements,
   customers,
+  dataBackfillRuns,
   emailCampaignLeads,
   invoices,
   monthlyReportRuns,
@@ -29,9 +48,7 @@ import {
   telegramUserBindings,
 } from "./schema";
 
-loadDatabaseEnvConfig();
-
-type BackfillStats = {
+type BackfillWriteStats = {
   accessEntitlements: number;
   customers: number;
   emailCampaignLeads: number;
@@ -56,7 +73,7 @@ type OfferLookup = {
   byExternalId: Map<string, { id: string; productId: string }>;
 };
 
-const EMPTY_STATS: BackfillStats = {
+const EMPTY_WRITE_STATS: BackfillWriteStats = {
   accessEntitlements: 0,
   customers: 0,
   emailCampaignLeads: 0,
@@ -300,7 +317,7 @@ const getExternalTargetType = (paymentRecord: PaymentSheetRecord) => {
   return null;
 };
 
-const loadSheetRecords = async () => {
+const loadLiveSheetRecords = async () => {
   const [
     paymentRecords,
     stripeEventRecords,
@@ -380,25 +397,137 @@ const getExistingCustomerLookup = async (db: ReturnType<typeof drizzle>) => {
   );
 };
 
-const readOnlyPlan = ({
-  emailLeadRecords,
-  monthlyReportRecords,
-  paymentRecords,
-  stripeEventRecords,
-  telegramBindingRecords,
-  telegramTokenRecords,
-}: Awaited<ReturnType<typeof loadSheetRecords>>) => ({
-  emailCampaignLeads: emailLeadRecords.filter((row) => row.lead_id.trim()).length,
-  monthlyReportRuns: monthlyReportRecords.filter((row) => row.report_key.trim()).length,
-  payments: paymentRecords.filter((row) => row.payment_intent_id.trim()).length,
-  stripeEvents: stripeEventRecords.filter((row) => row.event_id.trim()).length,
-  telegramAccessTokens: telegramTokenRecords.filter((row) => row.token_id.trim()).length,
-  telegramUserBindings: telegramBindingRecords.filter((row) =>
-    row.payment_intent_id.trim(),
-  ).length,
-});
+type ExistingBackfillLookups = {
+  entitlementIdByPaymentIntentId: Map<string, string>;
+  keys: Record<GoogleSheetsBackfillStage, Set<string>>;
+  purchaseIdByPaymentIntentId: Map<string, string>;
+  updatedAtByKey: Record<GoogleSheetsBackfillStage, Map<string, Date>>;
+};
 
-const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
+const getExistingBackfillLookups = async (
+  db: ReturnType<typeof drizzle>,
+): Promise<ExistingBackfillLookups> => {
+  const [
+    purchaseRows,
+    entitlementRows,
+    stripeEventRows,
+    tokenRows,
+    bindingRows,
+    reportRows,
+    leadRows,
+  ] = await Promise.all([
+    db
+      .select({
+        id: purchases.id,
+        paymentIntentId: purchases.paymentIntentId,
+        updatedAt: purchases.updatedAt,
+      })
+      .from(purchases),
+    db
+      .select({
+        id: accessEntitlements.id,
+        purchaseId: accessEntitlements.purchaseId,
+      })
+      .from(accessEntitlements)
+      .where(eq(accessEntitlements.accessKey, "primary")),
+    db
+      .select({
+        stripeEventId: stripeEvents.stripeEventId,
+        updatedAt: stripeEvents.updatedAt,
+      })
+      .from(stripeEvents),
+    db
+      .select({
+        tokenId: telegramAccessTokens.tokenId,
+        updatedAt: telegramAccessTokens.updatedAt,
+      })
+      .from(telegramAccessTokens),
+    db
+      .select({
+        chatId: telegramUserBindings.chatId,
+        purchaseId: telegramUserBindings.purchaseId,
+        updatedAt: telegramUserBindings.updatedAt,
+      })
+      .from(telegramUserBindings),
+    db
+      .select({
+        reportKey: monthlyReportRuns.reportKey,
+        updatedAt: monthlyReportRuns.updatedAt,
+      })
+      .from(monthlyReportRuns),
+    db
+      .select({
+        leadId: emailCampaignLeads.leadId,
+        updatedAt: emailCampaignLeads.updatedAt,
+      })
+      .from(emailCampaignLeads),
+  ]);
+  const purchaseIdByPaymentIntentId = new Map(
+    purchaseRows.map((row) => [row.paymentIntentId, row.id] as const),
+  );
+  const paymentIntentIdByPurchaseId = new Map(
+    purchaseRows.map((row) => [row.id, row.paymentIntentId] as const),
+  );
+  const entitlementIdByPaymentIntentId = new Map<string, string>();
+
+  for (const entitlement of entitlementRows) {
+    const paymentIntentId = paymentIntentIdByPurchaseId.get(entitlement.purchaseId);
+
+    if (paymentIntentId) {
+      entitlementIdByPaymentIntentId.set(paymentIntentId, entitlement.id);
+    }
+  }
+
+  return {
+    entitlementIdByPaymentIntentId,
+    keys: {
+      emailCampaignLeads: new Set(leadRows.map((row) => row.leadId)),
+      monthlyReportRuns: new Set(reportRows.map((row) => row.reportKey)),
+      payments: new Set(purchaseRows.map((row) => row.paymentIntentId)),
+      stripeEvents: new Set(stripeEventRows.map((row) => row.stripeEventId)),
+      telegramAccessTokens: new Set(tokenRows.map((row) => row.tokenId)),
+      telegramUserBindings: new Set(
+        bindingRows.flatMap((row) => {
+          const paymentIntentId = paymentIntentIdByPurchaseId.get(row.purchaseId);
+
+          return paymentIntentId ? [`${paymentIntentId}\u0000${row.chatId}`] : [];
+        }),
+      ),
+    },
+    purchaseIdByPaymentIntentId,
+    updatedAtByKey: {
+      emailCampaignLeads: new Map(
+        leadRows.map((row) => [row.leadId, row.updatedAt] as const),
+      ),
+      monthlyReportRuns: new Map(
+        reportRows.map((row) => [row.reportKey, row.updatedAt] as const),
+      ),
+      payments: new Map(
+        purchaseRows.map((row) => [row.paymentIntentId, row.updatedAt] as const),
+      ),
+      stripeEvents: new Map(
+        stripeEventRows.map((row) => [row.stripeEventId, row.updatedAt] as const),
+      ),
+      telegramAccessTokens: new Map(
+        tokenRows.map((row) => [row.tokenId, row.updatedAt] as const),
+      ),
+      telegramUserBindings: new Map(
+        bindingRows.flatMap((row) => {
+          const paymentIntentId = paymentIntentIdByPurchaseId.get(row.purchaseId);
+
+          return paymentIntentId
+            ? ([[`${paymentIntentId}\u0000${row.chatId}`, row.updatedAt]] as const)
+            : [];
+        }),
+      ),
+    },
+  };
+};
+
+const getPaymentSideEffects = (
+  paymentRecord: PaymentSheetRecord,
+  sourceCutOffAt: Date,
+) => {
   const sideEffects: Array<{
     kind:
       | "purchase_success_email"
@@ -410,6 +539,7 @@ const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
   }> = [];
   const fallbackUpdatedAt = parseRequiredDate(
     paymentRecord.updated_at || paymentRecord.first_seen_at,
+    sourceCutOffAt,
   );
   const emailStatus = normalizeSideEffectStatus(paymentRecord.email_delivery_status);
   const alertStatus = normalizeSideEffectStatus(paymentRecord.with_mentor_alert_status);
@@ -451,11 +581,23 @@ const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
 
 type Database = ReturnType<typeof drizzle>;
 type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
-type SheetRecords = Awaited<ReturnType<typeof loadSheetRecords>>;
+type SheetRecords = Awaited<ReturnType<typeof loadLiveSheetRecords>>;
 type TelegramTokenRecord = SheetRecords["telegramTokenRecords"][number];
 type TelegramBindingRecord = SheetRecords["telegramBindingRecords"][number];
 type MonthlyReportRecord = SheetRecords["monthlyReportRecords"][number];
 type EmailLeadRecord = SheetRecords["emailLeadRecords"][number];
+
+const toGoogleSheetsBackfillRecords = (
+  records: SheetRecords,
+): GoogleSheetsBackfillRecords => ({
+  emailCampaignLeads: records.emailLeadRecords,
+  monthlyReportRuns: records.monthlyReportRecords,
+  payments: records.paymentRecords,
+  stripeEvents: records.stripeEventRecords,
+  successfulCustomers: [],
+  telegramAccessTokens: records.telegramTokenRecords,
+  telegramUserBindings: records.telegramBindingRecords,
+});
 
 type BackfillTransactionContext = {
   customerIdByEmail: Map<string, string>;
@@ -464,7 +606,7 @@ type BackfillTransactionContext = {
   offerLookup: OfferLookup;
   productLookup: ProductLookup;
   purchaseIdByPaymentIntentId: Map<string, string>;
-  stats: BackfillStats;
+  stats: BackfillWriteStats;
   tx: DatabaseTransaction;
 };
 
@@ -520,7 +662,7 @@ const upsertPaymentCustomer = async ({
     await tx
       .update(customers)
       .set(customerValues)
-      .where(eq(customers.id, existingCustomerId));
+      .where(and(eq(customers.id, existingCustomerId), lte(customers.updatedAt, now)));
 
     return existingCustomerId;
   }
@@ -627,11 +769,26 @@ const upsertPaymentPurchase = async ({
     })
     .onConflictDoUpdate({
       set: purchaseValues,
+      setWhere: lte(purchases.updatedAt, purchaseValues.updatedAt),
       target: purchases.paymentIntentId,
     })
     .returning({ id: purchases.id });
 
-  return savedPurchase.id;
+  if (savedPurchase) {
+    return savedPurchase.id;
+  }
+
+  const [existingPurchase] = await tx
+    .select({ id: purchases.id })
+    .from(purchases)
+    .where(eq(purchases.paymentIntentId, paymentIntentId))
+    .limit(1);
+
+  if (!existingPurchase) {
+    throw new Error("backfill_purchase_resolution_failed");
+  }
+
+  return existingPurchase.id;
 };
 
 const upsertPaymentEntitlement = async ({
@@ -675,11 +832,31 @@ const upsertPaymentEntitlement = async ({
     })
     .onConflictDoUpdate({
       set: entitlementValues,
+      setWhere: lte(accessEntitlements.updatedAt, now),
       target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
     })
     .returning({ id: accessEntitlements.id });
 
-  return savedEntitlement.id;
+  if (savedEntitlement) {
+    return savedEntitlement.id;
+  }
+
+  const [existingEntitlement] = await tx
+    .select({ id: accessEntitlements.id })
+    .from(accessEntitlements)
+    .where(
+      and(
+        eq(accessEntitlements.purchaseId, purchaseId),
+        eq(accessEntitlements.accessKey, "primary"),
+      ),
+    )
+    .limit(1);
+
+  if (!existingEntitlement) {
+    throw new Error("backfill_entitlement_resolution_failed");
+  }
+
+  return existingEntitlement.id;
 };
 
 const upsertPaymentInvoice = async ({
@@ -738,6 +915,7 @@ const upsertPaymentInvoice = async ({
     })
     .onConflictDoUpdate({
       set: invoiceValues,
+      setWhere: lte(invoices.updatedAt, now),
       target: invoices.purchaseId,
     });
 
@@ -747,13 +925,15 @@ const upsertPaymentInvoice = async ({
 const upsertPaymentSideEffects = async ({
   paymentRecord,
   purchaseId,
+  sourceCutOffAt,
   stats,
   tx,
 }: Pick<BackfillTransactionContext, "stats" | "tx"> & {
   paymentRecord: PaymentSheetRecord;
   purchaseId: string;
+  sourceCutOffAt: Date;
 }): Promise<void> => {
-  for (const sideEffect of getPaymentSideEffects(paymentRecord)) {
+  for (const sideEffect of getPaymentSideEffects(paymentRecord, sourceCutOffAt)) {
     const sideEffectValues = {
       failedAt: sideEffect.status === "failed" ? sideEffect.updatedAt : null,
       provider: sideEffect.provider,
@@ -771,6 +951,7 @@ const upsertPaymentSideEffects = async ({
       })
       .onConflictDoUpdate({
         set: sideEffectValues,
+        setWhere: lte(purchaseSideEffects.updatedAt, sideEffect.updatedAt),
         target: [purchaseSideEffects.purchaseId, purchaseSideEffects.kind],
       });
 
@@ -780,24 +961,26 @@ const upsertPaymentSideEffects = async ({
 
 const backfillPayments = async ({
   context,
-  limit,
   paymentRecords,
 }: {
   context: BackfillTransactionContext;
-  limit: number | null;
   paymentRecords: SheetRecords["paymentRecords"];
 }): Promise<void> => {
-  const limitedPaymentRecords = paymentRecords
-    .filter((row) => row.payment_intent_id.trim())
-    .slice(0, limit ?? undefined);
+  const eligiblePaymentRecords = paymentRecords.filter((row) =>
+    row.payment_intent_id.trim(),
+  );
 
-  for (const paymentRecord of limitedPaymentRecords) {
+  for (const paymentRecord of eligiblePaymentRecords) {
     const paymentIntentId = paymentRecord.payment_intent_id.trim();
     const normalizedEmail = normalizeEmail(paymentRecord.customer_email);
+    const sourceUpdatedAt = parseRequiredDate(
+      paymentRecord.updated_at || paymentRecord.first_seen_at,
+      context.now,
+    );
     const customerId = await upsertPaymentCustomer({
       customerIdByEmail: context.customerIdByEmail,
       normalizedEmail,
-      now: context.now,
+      now: sourceUpdatedAt,
       paymentRecord,
       stats: context.stats,
       tx: context.tx,
@@ -810,6 +993,7 @@ const backfillPayments = async ({
     });
     const firstSeenAt = parseRequiredDate(
       paymentRecord.first_seen_at || paymentRecord.updated_at,
+      context.now,
     );
     const purchaseId = await upsertPaymentPurchase({
       customerId,
@@ -827,7 +1011,7 @@ const backfillPayments = async ({
 
     const entitlementId = await upsertPaymentEntitlement({
       customerId,
-      now: context.now,
+      now: sourceUpdatedAt,
       offerId,
       paymentRecord,
       productId,
@@ -841,7 +1025,7 @@ const backfillPayments = async ({
     await upsertPaymentInvoice({
       firstSeenAt,
       normalizedEmail,
-      now: context.now,
+      now: sourceUpdatedAt,
       paymentRecord,
       purchaseId,
       stats: context.stats,
@@ -850,6 +1034,7 @@ const backfillPayments = async ({
     await upsertPaymentSideEffects({
       paymentRecord,
       purchaseId,
+      sourceCutOffAt: sourceUpdatedAt,
       stats: context.stats,
       tx: context.tx,
     });
@@ -867,15 +1052,16 @@ const backfillStripeEvents = async ({
     const purchaseId = context.purchaseIdByPaymentIntentId.get(
       eventRecord.payment_intent_id.trim(),
     );
+    const processedAt = parseDate(eventRecord.processed_at) ?? context.now;
     const eventValues = {
       eventType: eventRecord.event_type.trim() || "unknown",
       outcomeSnapshot: nullIfEmpty(eventRecord.outcome),
       paymentIntentId: nullIfEmpty(eventRecord.payment_intent_id),
       paymentStatusSnapshot: nullIfEmpty(eventRecord.status),
-      processedAt: parseDate(eventRecord.processed_at) ?? context.now,
+      processedAt,
       processingStatus: "processed" as const,
       purchaseId: purchaseId ?? null,
-      updatedAt: context.now,
+      updatedAt: processedAt,
     };
 
     await context.tx
@@ -889,6 +1075,7 @@ const backfillStripeEvents = async ({
       })
       .onConflictDoUpdate({
         set: eventValues,
+        setWhere: lte(stripeEvents.updatedAt, processedAt),
         target: stripeEvents.stripeEventId,
       });
 
@@ -914,31 +1101,38 @@ const createTelegramTokenValues = ({
   productId: string | null;
   purchaseId: string;
   tokenRecord: TelegramTokenRecord;
-}) => ({
-  accessExpiresAt: parseDate(tokenRecord.access_expires_at),
-  chatId: tokenRecord.chat_id.trim(),
-  customerEmailSnapshot: nullIfEmpty(tokenRecord.customer_email),
-  entitlementId: context.entitlementIdByPaymentIntentId.get(paymentIntentId) ?? null,
-  expiresAt: parseRequiredDate(
-    tokenRecord.expires_at,
-    parseRequiredDate(tokenRecord.created_at),
-  ),
-  lastError: nullIfEmpty(tokenRecord.last_error),
-  linkKind:
-    tokenRecord.link_kind.trim() === "start_token"
-      ? ("start_token" as const)
-      : ("channel_invite" as const),
-  offerId,
-  productId,
-  purchaseId,
-  status: normalizeTokenStatus(tokenRecord.status),
-  telegramUserId: nullIfEmpty(tokenRecord.telegram_user_id),
-  telegramUsername: nullIfEmpty(tokenRecord.telegram_username),
-  tokenHash: tokenRecord.token_hash.trim() || tokenRecord.token_id.trim(),
-  tokenValue: nullIfEmpty(tokenRecord.token_value),
-  usedAt: parseDate(tokenRecord.used_at),
-  updatedAt: context.now,
-});
+}) => {
+  const updatedAt = parseRequiredDate(
+    tokenRecord.used_at || tokenRecord.created_at,
+    context.now,
+  );
+
+  return {
+    accessExpiresAt: parseDate(tokenRecord.access_expires_at),
+    chatId: tokenRecord.chat_id.trim(),
+    customerEmailSnapshot: nullIfEmpty(tokenRecord.customer_email),
+    entitlementId: context.entitlementIdByPaymentIntentId.get(paymentIntentId) ?? null,
+    expiresAt: parseRequiredDate(
+      tokenRecord.expires_at,
+      parseRequiredDate(tokenRecord.created_at, context.now),
+    ),
+    lastError: nullIfEmpty(tokenRecord.last_error),
+    linkKind:
+      tokenRecord.link_kind.trim() === "start_token"
+        ? ("start_token" as const)
+        : ("channel_invite" as const),
+    offerId,
+    productId,
+    purchaseId,
+    status: normalizeTokenStatus(tokenRecord.status),
+    telegramUserId: nullIfEmpty(tokenRecord.telegram_user_id),
+    telegramUsername: nullIfEmpty(tokenRecord.telegram_username),
+    tokenHash: tokenRecord.token_hash.trim() || tokenRecord.token_id.trim(),
+    tokenValue: nullIfEmpty(tokenRecord.token_value),
+    usedAt: parseDate(tokenRecord.used_at),
+    updatedAt,
+  };
+};
 
 const backfillTelegramAccessTokens = async ({
   context,
@@ -985,6 +1179,10 @@ const backfillTelegramAccessTokens = async ({
           purchaseId,
           tokenRecord,
         }),
+        setWhere: lte(
+          telegramAccessTokens.updatedAt,
+          parseRequiredDate(tokenRecord.used_at || tokenRecord.created_at, context.now),
+        ),
         target: telegramAccessTokens.tokenId,
       });
 
@@ -1004,24 +1202,31 @@ const createTelegramBindingValues = ({
   offerId: string | null;
   paymentIntentId: string;
   productId: string | null;
-}) => ({
-  accessExpiresAt: parseDate(bindingRecord.access_expires_at),
-  boundAt: parseRequiredDate(bindingRecord.bound_at),
-  customerEmailSnapshot: nullIfEmpty(bindingRecord.customer_email),
-  entitlementId: context.entitlementIdByPaymentIntentId.get(paymentIntentId) ?? null,
-  inviteLink: nullIfEmpty(bindingRecord.invite_link),
-  lastSeenAt: parseRequiredDate(
-    bindingRecord.last_seen_at,
-    parseRequiredDate(bindingRecord.bound_at),
-  ),
-  offerId,
-  productId,
-  revokedAt: parseDate(bindingRecord.revoked_at),
-  revokedReason: nullIfEmpty(bindingRecord.revoked_reason),
-  status: normalizeBindingStatus(bindingRecord.status),
-  telegramUsername: nullIfEmpty(bindingRecord.telegram_username),
-  updatedAt: context.now,
-});
+}) => {
+  const updatedAt = parseRequiredDate(
+    bindingRecord.last_seen_at || bindingRecord.bound_at,
+    context.now,
+  );
+
+  return {
+    accessExpiresAt: parseDate(bindingRecord.access_expires_at),
+    boundAt: parseRequiredDate(bindingRecord.bound_at, context.now),
+    customerEmailSnapshot: nullIfEmpty(bindingRecord.customer_email),
+    entitlementId: context.entitlementIdByPaymentIntentId.get(paymentIntentId) ?? null,
+    inviteLink: nullIfEmpty(bindingRecord.invite_link),
+    lastSeenAt: parseRequiredDate(
+      bindingRecord.last_seen_at,
+      parseRequiredDate(bindingRecord.bound_at, context.now),
+    ),
+    offerId,
+    productId,
+    revokedAt: parseDate(bindingRecord.revoked_at),
+    revokedReason: nullIfEmpty(bindingRecord.revoked_reason),
+    status: normalizeBindingStatus(bindingRecord.status),
+    telegramUsername: nullIfEmpty(bindingRecord.telegram_username),
+    updatedAt,
+  };
+};
 
 const backfillTelegramUserBindings = async ({
   bindingRecords,
@@ -1070,6 +1275,13 @@ const backfillTelegramUserBindings = async ({
           paymentIntentId,
           productId,
         }),
+        setWhere: lte(
+          telegramUserBindings.updatedAt,
+          parseRequiredDate(
+            bindingRecord.last_seen_at || bindingRecord.bound_at,
+            context.now,
+          ),
+        ),
         target: [telegramUserBindings.purchaseId, telegramUserBindings.chatId],
       });
 
@@ -1083,18 +1295,25 @@ const createMonthlyReportValues = ({
 }: {
   now: Date;
   reportRecord: MonthlyReportRecord;
-}) => ({
-  csvSha256: nullIfEmpty(reportRecord.csv_sha256),
-  deliveredAtUtc: parseDate(reportRecord.delivered_at_utc),
-  deliveredTo: nullIfEmpty(reportRecord.delivered_to),
-  deliveryStatus: normalizeDeliveryStatus(reportRecord.delivery_status),
-  generatedAtUtc: parseRequiredDate(reportRecord.generated_at_utc),
-  periodEndUtc: parseRequiredDate(reportRecord.period_end_utc),
-  periodStartUtc: parseRequiredDate(reportRecord.period_start_utc),
-  reportFamily: reportRecord.report_family.trim() || "monthly_sales",
-  rowCount: parseInteger(reportRecord.row_count),
-  updatedAt: now,
-});
+}) => {
+  const updatedAt = parseRequiredDate(
+    reportRecord.delivered_at_utc || reportRecord.generated_at_utc,
+    now,
+  );
+
+  return {
+    csvSha256: nullIfEmpty(reportRecord.csv_sha256),
+    deliveredAtUtc: parseDate(reportRecord.delivered_at_utc),
+    deliveredTo: nullIfEmpty(reportRecord.delivered_to),
+    deliveryStatus: normalizeDeliveryStatus(reportRecord.delivery_status),
+    generatedAtUtc: parseRequiredDate(reportRecord.generated_at_utc, now),
+    periodEndUtc: parseRequiredDate(reportRecord.period_end_utc, now),
+    periodStartUtc: parseRequiredDate(reportRecord.period_start_utc, now),
+    reportFamily: reportRecord.report_family.trim() || "monthly_sales",
+    rowCount: parseInteger(reportRecord.row_count),
+    updatedAt,
+  };
+};
 
 const backfillMonthlyReports = async ({
   context,
@@ -1115,10 +1334,8 @@ const backfillMonthlyReports = async ({
         reportKey: reportRecord.report_key.trim(),
       })
       .onConflictDoUpdate({
-        set: createMonthlyReportValues({
-          now: context.now,
-          reportRecord,
-        }),
+        set: insertReportValues,
+        setWhere: lte(monthlyReportRuns.updatedAt, insertReportValues.updatedAt),
         target: monthlyReportRuns.reportKey,
       });
 
@@ -1157,21 +1374,26 @@ const backfillEmailLeads = async ({
 }): Promise<void> => {
   for (const leadRecord of leadRecords.filter((row) => row.lead_id.trim())) {
     const normalizedEmail = normalizeEmail(leadRecord.email);
+    const sourceUpdatedAt = parseRequiredDate(
+      leadRecord.email_sent_at || leadRecord.created_at,
+      context.now,
+    );
     const leadValues = createEmailLeadValues({
       leadRecord,
       normalizedEmail,
-      now: context.now,
+      now: sourceUpdatedAt,
     });
 
     await context.tx
       .insert(emailCampaignLeads)
       .values({
         ...leadValues,
-        createdAt: parseRequiredDate(leadRecord.created_at),
+        createdAt: parseRequiredDate(leadRecord.created_at, context.now),
         leadId: leadRecord.lead_id.trim(),
       })
       .onConflictDoUpdate({
         set: leadValues,
+        setWhere: lte(emailCampaignLeads.updatedAt, sourceUpdatedAt),
         target: emailCampaignLeads.leadId,
       });
 
@@ -1179,81 +1401,518 @@ const backfillEmailLeads = async ({
   }
 };
 
-const runBackfillTransaction = async ({
+const BACKFILL_LOCK_ID = 2_026_081_102;
+
+type BackfillCliOptions = {
+  batchSize: number;
+  confirmation: string;
+  dryRun: boolean;
+  maxBatches: number | null;
+  sourceDirectory: string;
+  target: GoogleSheetsBackfillTarget | null;
+};
+
+type BackfillRunCheckpoint = {
+  id: string;
+  nextRowIndex: number;
+  stage: GoogleSheetsBackfillStage;
+  stats: GoogleSheetsBackfillStats;
+  status: "running" | "failed" | "completed";
+};
+
+const getArgumentValue = (name: string) => {
+  const prefix = `--${name}=`;
+  const argument = process.argv.find((value) => value.startsWith(prefix));
+
+  return argument?.slice(prefix.length).trim() ?? "";
+};
+
+const parsePositiveIntegerArgument = ({
+  defaultValue,
+  maximum,
+  name,
+}: {
+  defaultValue: number | null;
+  maximum?: number;
+  name: string;
+}) => {
+  const value = getArgumentValue(name);
+
+  if (!value) {
+    return defaultValue;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+
+  if (
+    !Number.isInteger(parsedValue) ||
+    parsedValue < 1 ||
+    (maximum !== undefined && parsedValue > maximum)
+  ) {
+    throw new Error(`backfill_${name.replaceAll("-", "_")}_invalid`);
+  }
+
+  return parsedValue;
+};
+
+const parseBackfillTarget = (value: string): GoogleSheetsBackfillTarget | null => {
+  if (!value) {
+    return null;
+  }
+
+  if (value === "development" || value === "production") {
+    return value;
+  }
+
+  throw new Error("backfill_target_invalid");
+};
+
+const parseCliOptions = (): BackfillCliOptions => {
+  const batchSizeValue = getArgumentValue("batch-size");
+  const legacyLimitValue = getArgumentValue("limit");
+
+  if (batchSizeValue && legacyLimitValue && batchSizeValue !== legacyLimitValue) {
+    throw new Error("backfill_batch_size_conflict");
+  }
+
+  const batchSize = parsePositiveIntegerArgument({
+    defaultValue: DEFAULT_GOOGLE_SHEETS_BACKFILL_BATCH_SIZE,
+    maximum: MAX_GOOGLE_SHEETS_BACKFILL_BATCH_SIZE,
+    name: batchSizeValue ? "batch-size" : legacyLimitValue ? "limit" : "batch-size",
+  });
+
+  if (batchSize === null) {
+    throw new Error("backfill_batch_size_missing");
+  }
+
+  return {
+    batchSize,
+    confirmation: getArgumentValue("confirmation"),
+    dryRun: !process.argv.includes("--write"),
+    maxBatches: parsePositiveIntegerArgument({
+      defaultValue: null,
+      name: "max-batches",
+    }),
+    sourceDirectory: getArgumentValue("source-dir"),
+    target: parseBackfillTarget(getArgumentValue("target").toLowerCase()),
+  };
+};
+
+const assertWriteOptions: (
+  options: BackfillCliOptions,
+) => asserts options is BackfillCliOptions & {
+  target: GoogleSheetsBackfillTarget;
+} = (options) => {
+  if (!options.target) {
+    throw new Error("Pass --target=development or --target=production explicitly.");
+  }
+
+  if (!options.sourceDirectory) {
+    throw new Error("Pass --source-dir with extracted immutable DATA-01 files.");
+  }
+
+  const expectedConfirmation = `backfill-${options.target}`;
+
+  if (options.confirmation !== expectedConfirmation) {
+    throw new Error(`Pass --confirmation=${expectedConfirmation} exactly.`);
+  }
+};
+
+const isBackfillStage = (value: string): value is GoogleSheetsBackfillStage =>
+  GOOGLE_SHEETS_BACKFILL_STAGES.some((stage) => stage === value);
+
+const parseStoredStats = (value: unknown): GoogleSheetsBackfillStats => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("backfill_stats_invalid");
+  }
+
+  const parsedStats = createEmptyGoogleSheetsBackfillStats();
+
+  for (const stage of GOOGLE_SHEETS_BACKFILL_STAGES) {
+    const counts = (value as Record<string, unknown>)[stage];
+
+    if (!counts || typeof counts !== "object" || Array.isArray(counts)) {
+      throw new Error(`backfill_stats_stage_invalid:${stage}`);
+    }
+
+    for (const key of ["conflicts", "inserted", "skipped", "updated"] as const) {
+      const count = (counts as Record<string, unknown>)[key];
+
+      if (!Number.isInteger(count) || (count as number) < 0) {
+        throw new Error(`backfill_stats_count_invalid:${stage}:${key}`);
+      }
+
+      parsedStats[stage][key] = count as number;
+    }
+  }
+
+  return parsedStats;
+};
+
+const cloneStats = (stats: GoogleSheetsBackfillStats): GoogleSheetsBackfillStats =>
+  Object.fromEntries(
+    GOOGLE_SHEETS_BACKFILL_STAGES.map((stage) => [stage, { ...stats[stage] }]),
+  ) as GoogleSheetsBackfillStats;
+
+const getOrCreateBackfillRun = async ({
+  batchSize,
+  db,
+  source,
+}: {
+  batchSize: number;
+  db: Database;
+  source: Awaited<ReturnType<typeof loadGoogleSheetsBackfillSource>>;
+}): Promise<BackfillRunCheckpoint> => {
+  const [existingRun] = await db
+    .select()
+    .from(dataBackfillRuns)
+    .where(
+      and(
+        eq(dataBackfillRuns.backfillKey, GOOGLE_SHEETS_BACKFILL_KEY),
+        eq(dataBackfillRuns.targetEnvironment, source.target),
+        eq(dataBackfillRuns.sourceFingerprint, source.fingerprint),
+      ),
+    )
+    .limit(1);
+
+  if (existingRun) {
+    if (!isBackfillStage(existingRun.stage)) {
+      throw new Error(`backfill_checkpoint_stage_invalid:${existingRun.stage}`);
+    }
+
+    const checkpoint = {
+      id: existingRun.id,
+      nextRowIndex: existingRun.nextRowIndex,
+      stage: existingRun.stage,
+      stats: parseStoredStats(existingRun.stats),
+      status: existingRun.status,
+    };
+
+    if (existingRun.status !== "completed") {
+      await db
+        .update(dataBackfillRuns)
+        .set({
+          batchSize,
+          lastErrorCode: null,
+          status: "running",
+          updatedAt: new Date(),
+        })
+        .where(eq(dataBackfillRuns.id, existingRun.id));
+
+      checkpoint.status = "running";
+    }
+
+    return checkpoint;
+  }
+
+  const stats = createEmptyGoogleSheetsBackfillStats();
+  const [createdRun] = await db
+    .insert(dataBackfillRuns)
+    .values({
+      backfillKey: GOOGLE_SHEETS_BACKFILL_KEY,
+      batchSize,
+      sourceCaptureId: source.captureId,
+      sourceCutOffAt: source.cutOffAt,
+      sourceFingerprint: source.fingerprint,
+      sourceRowCounts: source.rowCounts,
+      stage: GOOGLE_SHEETS_BACKFILL_STAGES[0],
+      stats,
+      targetEnvironment: source.target,
+    })
+    .returning({ id: dataBackfillRuns.id });
+
+  if (!createdRun) {
+    throw new Error("backfill_checkpoint_create_failed");
+  }
+
+  return {
+    id: createdRun.id,
+    nextRowIndex: 0,
+    stage: GOOGLE_SHEETS_BACKFILL_STAGES[0],
+    stats,
+    status: "running",
+  };
+};
+
+const getSanitizedErrorCode = (error: unknown) => {
+  if (error && typeof error === "object" && "code" in error) {
+    const code = String(error.code);
+
+    if (/^[a-z0-9_.:-]{1,120}$/iu.test(code)) {
+      return code;
+    }
+  }
+
+  if (error instanceof Error && /^[a-z0-9_.:-]{1,120}$/iu.test(error.message)) {
+    return error.message;
+  }
+
+  return error instanceof Error ? error.name.slice(0, 120) : "unknown_error";
+};
+
+const hasRequiredDependencies = ({
+  counts,
+  lookups,
+  record,
+  stage,
+}: {
+  counts: GoogleSheetsBackfillOperationCounts;
+  lookups: ExistingBackfillLookups;
+  record: GoogleSheetsBackfillBatch["records"][number]["record"];
+  stage: GoogleSheetsBackfillStage;
+}) => {
+  const values = record as Record<string, string>;
+
+  if (stage === "telegramAccessTokens") {
+    if (
+      !lookups.purchaseIdByPaymentIntentId.has(values.payment_intent_id?.trim() ?? "")
+    ) {
+      counts.conflicts += 1;
+      return false;
+    }
+  }
+
+  if (stage === "telegramUserBindings") {
+    const paymentIntentId = values.payment_intent_id?.trim() ?? "";
+
+    if (
+      !paymentIntentId ||
+      !values.chat_id?.trim() ||
+      !values.telegram_user_id?.trim() ||
+      !lookups.purchaseIdByPaymentIntentId.has(paymentIntentId)
+    ) {
+      counts.conflicts += 1;
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const getRecordSourceUpdatedAt = ({
+  fallback,
+  record,
+  stage,
+}: {
+  fallback: Date;
+  record: GoogleSheetsBackfillBatch["records"][number]["record"];
+  stage: GoogleSheetsBackfillStage;
+}) => {
+  const values = record as Record<string, string>;
+
+  switch (stage) {
+    case "payments":
+      return parseRequiredDate(values.updated_at || values.first_seen_at, fallback);
+    case "stripeEvents":
+      return parseRequiredDate(values.processed_at, fallback);
+    case "telegramAccessTokens":
+      return parseRequiredDate(values.used_at || values.created_at, fallback);
+    case "telegramUserBindings":
+      return parseRequiredDate(values.last_seen_at || values.bound_at, fallback);
+    case "monthlyReportRuns":
+      return parseRequiredDate(
+        values.delivered_at_utc || values.generated_at_utc,
+        fallback,
+      );
+    case "emailCampaignLeads":
+      return parseRequiredDate(values.email_sent_at || values.created_at, fallback);
+  }
+};
+
+const processStageRecords = async ({
+  context,
+  records,
+  stage,
+}: {
+  context: BackfillTransactionContext;
+  records: GoogleSheetsBackfillBatch["records"][number]["record"][];
+  stage: GoogleSheetsBackfillStage;
+}) => {
+  switch (stage) {
+    case "payments":
+      await backfillPayments({
+        context,
+        paymentRecords: records as SheetRecords["paymentRecords"],
+      });
+      return;
+    case "stripeEvents":
+      await backfillStripeEvents({
+        context,
+        eventRecords: records as SheetRecords["stripeEventRecords"],
+      });
+      return;
+    case "telegramAccessTokens":
+      await backfillTelegramAccessTokens({
+        context,
+        tokenRecords: records as SheetRecords["telegramTokenRecords"],
+      });
+      return;
+    case "telegramUserBindings":
+      await backfillTelegramUserBindings({
+        bindingRecords: records as SheetRecords["telegramBindingRecords"],
+        context,
+      });
+      return;
+    case "monthlyReportRuns":
+      await backfillMonthlyReports({
+        context,
+        reportRecords: records as SheetRecords["monthlyReportRecords"],
+      });
+      return;
+    case "emailCampaignLeads":
+      await backfillEmailLeads({
+        context,
+        leadRecords: records as SheetRecords["emailLeadRecords"],
+      });
+  }
+};
+
+const runBackfillBatch = async ({
+  batch,
+  checkpoint,
   customerIdByEmail,
   db,
-  limit,
-  now,
+  duplicateIndexes,
+  lookups,
   offerLookup,
   productLookup,
-  records,
-  stats,
+  sourceCutOffAt,
+  writeStats,
 }: {
+  batch: GoogleSheetsBackfillBatch;
+  checkpoint: BackfillRunCheckpoint;
   customerIdByEmail: Map<string, string>;
   db: Database;
-  limit: number | null;
-  now: Date;
+  duplicateIndexes: Set<number>;
+  lookups: ExistingBackfillLookups;
   offerLookup: OfferLookup;
   productLookup: ProductLookup;
-  records: SheetRecords;
-  stats: BackfillStats;
-}): Promise<void> => {
+  sourceCutOffAt: Date;
+  writeStats: BackfillWriteStats;
+}) => {
+  const nextStats = cloneStats(checkpoint.stats);
+  const counts = nextStats[batch.stage];
+  const eligibleRecords: GoogleSheetsBackfillBatch["records"][number]["record"][] = [];
+  const eligibleKeys: string[] = [];
+  const eligibleUpdatedAtByKey = new Map<string, Date>();
+
+  for (const { index, record } of batch.records) {
+    const key = getGoogleSheetsBackfillRecordKey(batch.stage, record);
+
+    if (!key) {
+      if (
+        batch.stage === "telegramUserBindings" &&
+        (record as Record<string, string>).payment_intent_id?.trim()
+      ) {
+        counts.conflicts += 1;
+      } else {
+        counts.skipped += 1;
+      }
+      continue;
+    }
+
+    if (duplicateIndexes.has(index)) {
+      counts.conflicts += 1;
+      continue;
+    }
+
+    if (!hasRequiredDependencies({ counts, lookups, record, stage: batch.stage })) {
+      continue;
+    }
+
+    const sourceUpdatedAt = getRecordSourceUpdatedAt({
+      fallback: sourceCutOffAt,
+      record,
+      stage: batch.stage,
+    });
+    const existingUpdatedAt = lookups.updatedAtByKey[batch.stage].get(key);
+
+    if (existingUpdatedAt && existingUpdatedAt > sourceUpdatedAt) {
+      counts.conflicts += 1;
+      continue;
+    }
+
+    eligibleRecords.push(record);
+    eligibleKeys.push(key);
+    eligibleUpdatedAtByKey.set(key, sourceUpdatedAt);
+  }
+
   await db.transaction(async (tx) => {
     const context: BackfillTransactionContext = {
       customerIdByEmail,
-      entitlementIdByPaymentIntentId: new Map<string, string>(),
-      now,
+      entitlementIdByPaymentIntentId: lookups.entitlementIdByPaymentIntentId,
+      now: sourceCutOffAt,
       offerLookup,
       productLookup,
-      purchaseIdByPaymentIntentId: new Map<string, string>(),
-      stats,
+      purchaseIdByPaymentIntentId: lookups.purchaseIdByPaymentIntentId,
+      stats: writeStats,
       tx,
     };
 
-    // Dependent sheets intentionally replay in this order and share one transaction:
-    // later records can only reference purchases and entitlements created in this run.
-    await backfillPayments({
-      context,
-      limit,
-      paymentRecords: records.paymentRecords,
-    });
-    await backfillStripeEvents({
-      context,
-      eventRecords: records.stripeEventRecords,
-    });
-    await backfillTelegramAccessTokens({
-      context,
-      tokenRecords: records.telegramTokenRecords,
-    });
-    await backfillTelegramUserBindings({
-      bindingRecords: records.telegramBindingRecords,
-      context,
-    });
-    await backfillMonthlyReports({
-      context,
-      reportRecords: records.monthlyReportRecords,
-    });
-    await backfillEmailLeads({
-      context,
-      leadRecords: records.emailLeadRecords,
-    });
+    await processStageRecords({ context, records: eligibleRecords, stage: batch.stage });
+
+    for (const key of eligibleKeys) {
+      if (lookups.keys[batch.stage].has(key)) {
+        counts.updated += 1;
+      } else {
+        counts.inserted += 1;
+        lookups.keys[batch.stage].add(key);
+      }
+
+      lookups.updatedAtByKey[batch.stage].set(
+        key,
+        eligibleUpdatedAtByKey.get(key) ?? sourceCutOffAt,
+      );
+    }
+
+    const completedAt = batch.completed ? new Date() : null;
+    const [savedCheckpoint] = await tx
+      .update(dataBackfillRuns)
+      .set({
+        completedAt,
+        lastErrorCode: null,
+        nextRowIndex: batch.nextRowIndex,
+        stage: batch.nextStage,
+        stats: nextStats,
+        status: batch.completed ? "completed" : "running",
+        updatedAt: new Date(),
+      })
+      .where(eq(dataBackfillRuns.id, checkpoint.id))
+      .returning({ id: dataBackfillRuns.id });
+
+    if (!savedCheckpoint) {
+      throw new Error("backfill_checkpoint_update_failed");
+    }
   });
+
+  return {
+    ...checkpoint,
+    nextRowIndex: batch.nextRowIndex,
+    stage: batch.nextStage,
+    stats: nextStats,
+    status: batch.completed ? ("completed" as const) : ("running" as const),
+  };
 };
 
-const backfill = async ({ dryRun, limit }: { dryRun: boolean; limit: number | null }) => {
-  const records = await loadSheetRecords();
-  const plannedCounts = readOnlyPlan(records);
+const runSnapshotBackfill = async ({
+  options,
+  source,
+}: {
+  options: BackfillCliOptions & { target: GoogleSheetsBackfillTarget };
+  source: Awaited<ReturnType<typeof loadGoogleSheetsBackfillSource>>;
+}) => {
+  const databaseSelection = getDatabaseEnvSelection("unpooled");
 
-  if (dryRun) {
-    console.warn("Google Sheets backfill dry run", plannedCounts);
-    console.warn("Run npm run db:backfill:sheets -- --write to insert/update rows.");
-    return;
+  if (databaseSelection.deploymentEnvironment !== options.target) {
+    throw new Error(
+      `Resolved ${databaseSelection.deploymentEnvironment} database for ${options.target} backfill.`,
+    );
   }
 
   const client = postgres(
     getRequiredDatabaseUrlFromEnv({
       kind: "unpooled",
-      purpose: "Google Sheets backfill",
+      purpose: `${options.target} Google Sheets backfill`,
     }),
     {
       max: 1,
@@ -1261,50 +1920,169 @@ const backfill = async ({ dryRun, limit }: { dryRun: boolean; limit: number | nu
     },
   );
   const db = drizzle(client);
-  const stats = { ...EMPTY_STATS };
-  const now = new Date();
+  let lockAcquired = false;
+  let checkpoint: BackfillRunCheckpoint | null = null;
 
   try {
+    const [lock] = await client<{ acquired: boolean }[]>`
+      SELECT pg_try_advisory_lock(${BACKFILL_LOCK_ID}) AS acquired
+    `;
+    lockAcquired = Boolean(lock?.acquired);
+
+    if (!lockAcquired) {
+      throw new Error("backfill_lock_unavailable");
+    }
+
+    checkpoint = await getOrCreateBackfillRun({
+      batchSize: options.batchSize,
+      db,
+      source,
+    });
+
+    if (checkpoint.status === "completed") {
+      console.warn(
+        JSON.stringify({
+          captureId: source.captureId,
+          sourceFingerprint: source.fingerprint,
+          stats: checkpoint.stats,
+          status: "already_completed",
+          target: source.target,
+        }),
+      );
+      return;
+    }
+
     const productLookup = await getProductLookup(db);
     const offerLookup = await getOfferLookup(db);
     const customerIdByEmail = await getExistingCustomerLookup(db);
+    const lookups = await getExistingBackfillLookups(db);
+    const writeStats = { ...EMPTY_WRITE_STATS };
+    const duplicateIndexes = Object.fromEntries(
+      GOOGLE_SHEETS_BACKFILL_STAGES.map((stage) => [
+        stage,
+        getGoogleSheetsBackfillDuplicateIndexes(source.records, stage),
+      ]),
+    ) as Record<GoogleSheetsBackfillStage, Set<number>>;
+    let processedBatches = 0;
 
-    await runBackfillTransaction({
-      customerIdByEmail,
-      db,
-      limit,
-      now,
-      offerLookup,
-      productLookup,
-      records,
-      stats,
-    });
+    while (checkpoint.status !== "completed") {
+      if (options.maxBatches !== null && processedBatches >= options.maxBatches) {
+        break;
+      }
 
-    console.warn("Google Sheets backfill completed", {
-      plannedCounts,
-      stats,
-    });
+      const batch = getNextGoogleSheetsBackfillBatch({
+        batchSize: options.batchSize,
+        nextRowIndex: checkpoint.nextRowIndex,
+        records: source.records,
+        stage: checkpoint.stage,
+      });
+
+      checkpoint = await runBackfillBatch({
+        batch,
+        checkpoint,
+        customerIdByEmail,
+        db,
+        duplicateIndexes: duplicateIndexes[batch.stage],
+        lookups,
+        offerLookup,
+        productLookup,
+        sourceCutOffAt: source.cutOffAt,
+        writeStats,
+      });
+      processedBatches += 1;
+    }
+
+    console.warn(
+      JSON.stringify({
+        captureId: source.captureId,
+        checkpoint: {
+          nextRowIndex: checkpoint.nextRowIndex,
+          stage: checkpoint.stage,
+        },
+        processedBatches,
+        sourceFingerprint: source.fingerprint,
+        stats: checkpoint.stats,
+        status: checkpoint.status === "completed" ? "completed" : "paused",
+        target: source.target,
+      }),
+    );
+  } catch (error) {
+    if (checkpoint && checkpoint.status !== "completed") {
+      await db
+        .update(dataBackfillRuns)
+        .set({
+          lastErrorCode: getSanitizedErrorCode(error),
+          status: "failed",
+          updatedAt: new Date(),
+        })
+        .where(eq(dataBackfillRuns.id, checkpoint.id));
+    }
+
+    throw error;
   } finally {
+    if (lockAcquired) {
+      await client`SELECT pg_advisory_unlock(${BACKFILL_LOCK_ID})`;
+    }
+
     await client.end();
   }
 };
 
-const parseLimit = () => {
-  const limitArg = process.argv.find((arg) => arg.startsWith("--limit="));
-
-  if (!limitArg) {
-    return null;
+const backfill = async (options: BackfillCliOptions) => {
+  if (options.target) {
+    process.env.DATABASE_ENV = options.target;
   }
 
-  const limit = Number.parseInt(limitArg.slice("--limit=".length), 10);
+  loadDatabaseEnvConfig();
 
-  return Number.isFinite(limit) && limit > 0 ? limit : null;
+  if (options.dryRun && !options.sourceDirectory) {
+    const liveRecords = await loadLiveSheetRecords();
+    const records = toGoogleSheetsBackfillRecords(liveRecords);
+
+    console.warn(
+      JSON.stringify({
+        plan: getGoogleSheetsBackfillPlan(records),
+        source: "live_read_only_google_sheets",
+        status: "dry_run",
+      }),
+    );
+    console.warn(
+      "Write mode requires an extracted immutable DATA-01 source and explicit target confirmation.",
+    );
+    return;
+  }
+
+  if (!options.target) {
+    throw new Error("Pass --target with --source-dir.");
+  }
+
+  const source = await loadGoogleSheetsBackfillSource({
+    directory: options.sourceDirectory,
+    expectedTarget: options.target,
+  });
+
+  if (options.dryRun) {
+    console.warn(
+      JSON.stringify({
+        captureId: source.captureId,
+        cutOffAt: source.cutOffAt.toISOString(),
+        plan: getGoogleSheetsBackfillPlan(source.records),
+        sourceFingerprint: source.fingerprint,
+        status: "dry_run",
+        target: source.target,
+      }),
+    );
+    return;
+  }
+
+  assertWriteOptions(options);
+  await runSnapshotBackfill({ options, source });
 };
 
-backfill({
-  dryRun: !process.argv.includes("--write"),
-  limit: parseLimit(),
-}).catch((error) => {
-  console.error("Google Sheets backfill failed", error);
+backfill(parseCliOptions()).catch((error) => {
+  console.error(
+    "Google Sheets backfill failed",
+    error instanceof Error ? error.message : String(error),
+  );
   process.exitCode = 1;
 });
