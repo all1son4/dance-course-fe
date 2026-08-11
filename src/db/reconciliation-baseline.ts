@@ -81,6 +81,7 @@ export type DatabaseReconciliationSnapshot = {
   }>;
   purchases: Array<{
     amountMinor: number;
+    catalogProductExternalId: string;
     checkoutCurrency: string | null;
     currency: string;
     customerAddressLineSnapshot: string | null;
@@ -171,7 +172,7 @@ type ReconciliationBaselineOptions = {
 type KeyComparison = ReturnType<typeof compareKeys>;
 type PaymentTotals = ReturnType<typeof summarizePayments>;
 
-const REPORT_SCHEMA_VERSION = 3;
+const REPORT_SCHEMA_VERSION = 4;
 const DEFAULT_SAMPLE_LIMIT = 20;
 
 const trim = (value: string | null | undefined) => value?.trim() ?? "";
@@ -443,7 +444,13 @@ const normalizeComparableDate = (value: unknown) => {
 
   const date = new Date(normalizedValue);
 
-  return Number.isFinite(date.getTime()) ? date.toISOString() : normalizedValue;
+  if (!Number.isFinite(date.getTime())) {
+    return normalizedValue;
+  }
+
+  date.setUTCMilliseconds(0);
+
+  return date.toISOString();
 };
 
 const compareMatchedRows = <DatabaseRow, SheetRow>({
@@ -474,6 +481,7 @@ const compareMatchedRows = <DatabaseRow, SheetRow>({
       .filter(([key]) => Boolean(key)),
   );
   const differencesByField = new Map<string, number>();
+  const differenceShapesByField = new Map<string, Map<string, number>>();
   const differenceKeys = new Set<string>();
   let comparedCount = 0;
 
@@ -487,12 +495,23 @@ const compareMatchedRows = <DatabaseRow, SheetRow>({
     comparedCount += 1;
 
     for (const field of fields) {
-      if (field.databaseValue(databaseRow) === field.sheetValue(sheetRow)) {
+      const databaseValue = field.databaseValue(databaseRow);
+      const sheetValue = field.sheetValue(sheetRow);
+
+      if (databaseValue === sheetValue) {
         continue;
       }
 
       differenceKeys.add(key);
       differencesByField.set(field.name, (differencesByField.get(field.name) ?? 0) + 1);
+      const shape = !databaseValue
+        ? "database-empty"
+        : !sheetValue
+          ? "sheet-empty"
+          : "both-present-different";
+      const shapesForField = differenceShapesByField.get(field.name) ?? new Map();
+      shapesForField.set(shape, (shapesForField.get(shape) ?? 0) + 1);
+      differenceShapesByField.set(field.name, shapesForField);
     }
   }
 
@@ -509,6 +528,16 @@ const compareMatchedRows = <DatabaseRow, SheetRow>({
       [...differencesByField.entries()].sort(([left], [right]) =>
         left.localeCompare(right),
       ),
+    ),
+    differenceShapesByField: Object.fromEntries(
+      [...differenceShapesByField.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([field, shapes]) => [
+          field,
+          Object.fromEntries(
+            [...shapes.entries()].sort(([left], [right]) => left.localeCompare(right)),
+          ),
+        ]),
     ),
     status: sortedDifferenceKeys.length === 0 ? ("ok" as const) : ("mismatch" as const),
   };
@@ -1016,6 +1045,404 @@ const getSheetEntitlementRows = (payments: PaymentSheetRecord[]) =>
       ...payment,
       key: `${trim(payment.payment_intent_id)}::primary`,
     }));
+
+const buildActiveAccessCoverage = <DatabaseRow, SheetRow>({
+  activeStatuses,
+  databaseRows,
+  getDatabaseKey,
+  getDatabaseStatus,
+  getSheetKey,
+  getSheetStatus,
+  sheetRows,
+}: {
+  activeStatuses: string[];
+  databaseRows: DatabaseRow[];
+  getDatabaseKey: (row: DatabaseRow) => string;
+  getDatabaseStatus: (row: DatabaseRow) => string;
+  getSheetKey: (row: SheetRow) => string;
+  getSheetStatus: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const activeStatusCategories = new Set(activeStatuses.map(normalizeStatusCategory));
+  const isActive = (value: string | null | undefined) =>
+    activeStatusCategories.has(normalizeStatusCategory(value));
+  const databaseKeys = new Set(
+    databaseRows.map(getDatabaseKey).map(trim).filter(Boolean),
+  );
+  const sheetKeys = new Set(sheetRows.map(getSheetKey).map(trim).filter(Boolean));
+  const activeDatabaseRows = databaseRows.filter((row) =>
+    isActive(getDatabaseStatus(row)),
+  );
+  const activeSheetRows = sheetRows.filter((row) => isActive(getSheetStatus(row)));
+
+  return {
+    activeStatuses: [...activeStatusCategories].sort(),
+    databaseActiveCount: activeDatabaseRows.length,
+    databaseActiveOnlyCount: activeDatabaseRows.filter(
+      (row) => !sheetKeys.has(trim(getDatabaseKey(row))),
+    ).length,
+    databaseActiveRepresentedInSheetCount: activeDatabaseRows.filter((row) =>
+      sheetKeys.has(trim(getDatabaseKey(row))),
+    ).length,
+    sheetActiveCount: activeSheetRows.length,
+    sheetActiveMatchedInDatabaseCount: activeSheetRows.filter((row) =>
+      databaseKeys.has(trim(getSheetKey(row))),
+    ).length,
+    sheetActiveMissingInDatabaseCount: activeSheetRows.filter(
+      (row) => !databaseKeys.has(trim(getSheetKey(row))),
+    ).length,
+  };
+};
+
+const buildStatusTransitions = <DatabaseRow, SheetRow>({
+  databaseRows,
+  getDatabaseKey,
+  getDatabaseStatus,
+  getSheetKey,
+  getSheetStatus,
+  sheetRows,
+}: {
+  databaseRows: DatabaseRow[];
+  getDatabaseKey: (row: DatabaseRow) => string;
+  getDatabaseStatus: (row: DatabaseRow) => string;
+  getSheetKey: (row: SheetRow) => string;
+  getSheetStatus: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const databaseByKey = new Map(
+    databaseRows.map((row) => [trim(getDatabaseKey(row)), row] as const),
+  );
+  const transitions = sheetRows.flatMap((sheetRow) => {
+    const databaseRow = databaseByKey.get(trim(getSheetKey(sheetRow)));
+
+    if (!databaseRow) {
+      return [];
+    }
+
+    const databaseStatus = normalizeStatusCategory(getDatabaseStatus(databaseRow));
+    const sheetStatus = normalizeStatusCategory(getSheetStatus(sheetRow));
+
+    return databaseStatus === sheetStatus
+      ? []
+      : [`sheet:${sheetStatus}->database:${databaseStatus}`];
+  });
+
+  return {
+    byTransition: countBy(transitions),
+    count: transitions.length,
+  };
+};
+
+const buildProductReferenceConflictSummary = <SheetRow>({
+  databasePurchases,
+  getSheetKey,
+  getSheetProductExternalId,
+  sheetRows,
+}: {
+  databasePurchases: DatabaseReconciliationSnapshot["purchases"];
+  getSheetKey: (row: SheetRow) => string;
+  getSheetProductExternalId: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const databaseByKey = new Map(
+    databasePurchases.map((row) => [trim(row.key), row] as const),
+  );
+  const differences = sheetRows.flatMap((sheetRow) => {
+    const databaseRow = databaseByKey.get(trim(getSheetKey(sheetRow)));
+
+    if (!databaseRow) {
+      return [];
+    }
+
+    const databaseValue = trim(databaseRow.productExternalId);
+    const sheetValue = trim(getSheetProductExternalId(sheetRow));
+
+    if (databaseValue === sheetValue) {
+      return [];
+    }
+
+    const catalogValue = trim(databaseRow.catalogProductExternalId);
+    let evidence: string;
+
+    if (databaseValue === "unknown" && !sheetValue) {
+      evidence = "database-placeholder-sheet-empty";
+    } else if (!catalogValue) {
+      evidence = "catalog-relation-missing";
+    } else if (databaseValue === catalogValue && sheetValue !== catalogValue) {
+      evidence = "database-value-matches-catalog-relation";
+    } else if (sheetValue === catalogValue && databaseValue !== catalogValue) {
+      evidence = "sheet-value-matches-catalog-relation";
+    } else {
+      evidence = "neither-value-matches-catalog-relation";
+    }
+
+    return [{ databaseRow, evidence }];
+  });
+
+  return {
+    byDatabaseOutcome: countByStatus(
+      differences.map(({ databaseRow }) => databaseRow.outcome),
+    ),
+    byDatabaseSource: countBySource(
+      differences.map(({ databaseRow }) => databaseRow.source),
+    ),
+    byEvidence: countBy(differences.map(({ evidence }) => evidence)),
+    differenceCount: differences.length,
+  };
+};
+
+const classifyDateDifference = (databaseValue: DateValue, sheetValue: string) => {
+  const databaseText = normalizeComparableText(databaseValue);
+  const sheetText = normalizeComparableText(sheetValue);
+
+  if (!databaseText && !sheetText) {
+    return "equal";
+  }
+
+  if (!databaseText && sheetText) {
+    return "database-empty";
+  }
+
+  if (databaseText && !sheetText) {
+    return "sheet-empty";
+  }
+
+  const databaseTimestamp = new Date(databaseText).getTime();
+  const sheetTimestamp = new Date(sheetText).getTime();
+
+  if (!Number.isFinite(databaseTimestamp) || !Number.isFinite(sheetTimestamp)) {
+    return "unparseable";
+  }
+
+  const deltaMs = Math.abs(databaseTimestamp - sheetTimestamp);
+
+  if (deltaMs === 0) {
+    return "equal";
+  }
+
+  if (deltaMs < 1_000) {
+    return "under-one-second";
+  }
+
+  if (deltaMs < 60_000) {
+    return "one-to-sixty-seconds";
+  }
+
+  if (deltaMs < 3_600_000) {
+    return "one-minute-to-one-hour";
+  }
+
+  if (deltaMs < 86_400_000) {
+    return "one-hour-to-one-day";
+  }
+
+  return "one-day-or-more";
+};
+
+const buildLifecycleDateDifferences = <DatabaseRow, SheetRow>({
+  databaseRows,
+  fields,
+  getDatabaseKey,
+  getSheetKey,
+  sheetRows,
+}: {
+  databaseRows: DatabaseRow[];
+  fields: Array<{
+    databaseValue: (row: DatabaseRow) => DateValue;
+    name: string;
+    sheetValue: (row: SheetRow) => string;
+  }>;
+  getDatabaseKey: (row: DatabaseRow) => string;
+  getSheetKey: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const databaseByKey = new Map(
+    databaseRows.map((row) => [trim(getDatabaseKey(row)), row] as const),
+  );
+
+  return Object.fromEntries(
+    fields.map((field) => {
+      const categories = sheetRows.flatMap((sheetRow) => {
+        const databaseRow = databaseByKey.get(trim(getSheetKey(sheetRow)));
+
+        if (!databaseRow) {
+          return [];
+        }
+
+        const databaseValue = field.databaseValue(databaseRow);
+        const sheetValue = field.sheetValue(sheetRow);
+        const category = classifyDateDifference(databaseValue, sheetValue);
+
+        return category === "equal" ? [] : [category];
+      });
+
+      return [
+        field.name,
+        {
+          byMagnitude: countBy(categories),
+          differenceCount: categories.length,
+        },
+      ];
+    }),
+  );
+};
+
+const buildConflictAnalysis = ({
+  database,
+  sheets,
+}: {
+  database: DatabaseReconciliationSnapshot;
+  sheets: SheetsReconciliationSnapshot;
+}) => {
+  const payments = getCanonicalPaymentRows(sheets.payments);
+  const sheetEntitlements = getSheetEntitlementRows(payments);
+  const primaryEntitlements = database.entitlements.filter(
+    (row) => row.accessKey === "primary",
+  );
+
+  return {
+    activeAccessCoverage: {
+      entitlements: buildActiveAccessCoverage({
+        activeStatuses: ["active", "activated", "token_issued"],
+        databaseRows: primaryEntitlements,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.key,
+        getSheetStatus: (row) => row.telegram_access_status,
+        sheetRows: sheetEntitlements,
+      }),
+      telegramAccessTokens: buildActiveAccessCoverage({
+        activeStatuses: ["issued"],
+        databaseRows: database.telegramAccessTokens,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.token_id,
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramAccessTokens,
+      }),
+      telegramUserBindings: buildActiveAccessCoverage({
+        activeStatuses: ["active"],
+        databaseRows: database.telegramUserBindings,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => getBindingKey(row.payment_intent_id, row.chat_id),
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramUserBindings,
+      }),
+    },
+    productReferences: {
+      payments: buildProductReferenceConflictSummary({
+        databasePurchases: database.purchases,
+        getSheetKey: (row: PaymentSheetRecord) => row.payment_intent_id,
+        getSheetProductExternalId: (row) => row.product_id,
+        sheetRows: payments,
+      }),
+      successfulCustomers: buildProductReferenceConflictSummary({
+        databasePurchases: database.purchases,
+        getSheetKey: (row: SuccessfulCustomersSheetRecord) => row.payment_intent_id,
+        getSheetProductExternalId: (row) => row.product_id,
+        sheetRows: sheets.successfulCustomers,
+      }),
+    },
+    lifecycleDateDifferences: {
+      entitlements: buildLifecycleDateDifferences({
+        databaseRows: primaryEntitlements,
+        fields: [
+          {
+            databaseValue: (row) => row.startsAt,
+            name: "startsAt",
+            sheetValue: (row) => row.telegram_token_used_at,
+          },
+          {
+            databaseValue: (row) => row.expiresAt,
+            name: "expiresAt",
+            sheetValue: (row) => row.telegram_access_expires_at,
+          },
+          {
+            databaseValue: (row) => row.revokedAt,
+            name: "revokedAt",
+            sheetValue: (row) => row.telegram_access_revoked_at,
+          },
+        ],
+        getDatabaseKey: (row) => row.key,
+        getSheetKey: (row) => row.key,
+        sheetRows: sheetEntitlements,
+      }),
+      telegramAccessTokens: buildLifecycleDateDifferences({
+        databaseRows: database.telegramAccessTokens,
+        fields: [
+          {
+            databaseValue: (row) => row.accessExpiresAt,
+            name: "accessExpiresAt",
+            sheetValue: (row) => row.access_expires_at,
+          },
+          {
+            databaseValue: (row) => row.expiresAt,
+            name: "expiresAt",
+            sheetValue: (row) => row.expires_at,
+          },
+          {
+            databaseValue: (row) => row.usedAt,
+            name: "usedAt",
+            sheetValue: (row) => row.used_at,
+          },
+        ],
+        getDatabaseKey: (row) => row.key,
+        getSheetKey: (row) => row.token_id,
+        sheetRows: sheets.telegramAccessTokens,
+      }),
+      telegramUserBindings: buildLifecycleDateDifferences({
+        databaseRows: database.telegramUserBindings,
+        fields: [
+          {
+            databaseValue: (row) => row.boundAt,
+            name: "boundAt",
+            sheetValue: (row) => row.bound_at,
+          },
+          {
+            databaseValue: (row) => row.accessExpiresAt,
+            name: "accessExpiresAt",
+            sheetValue: (row) => row.access_expires_at,
+          },
+          {
+            databaseValue: (row) => row.revokedAt,
+            name: "revokedAt",
+            sheetValue: (row) => row.revoked_at,
+          },
+        ],
+        getDatabaseKey: (row) => row.key,
+        getSheetKey: (row) => getBindingKey(row.payment_intent_id, row.chat_id),
+        sheetRows: sheets.telegramUserBindings,
+      }),
+    },
+    statusTransitions: {
+      entitlements: buildStatusTransitions({
+        databaseRows: primaryEntitlements,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.key,
+        getSheetStatus: (row) => row.telegram_access_status,
+        sheetRows: sheetEntitlements,
+      }),
+      telegramAccessTokens: buildStatusTransitions({
+        databaseRows: database.telegramAccessTokens,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.token_id,
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramAccessTokens,
+      }),
+      telegramUserBindings: buildStatusTransitions({
+        databaseRows: database.telegramUserBindings,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => getBindingKey(row.payment_intent_id, row.chat_id),
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramUserBindings,
+      }),
+    },
+  };
+};
 
 const buildCatalogReferenceComparison = ({
   catalog,
@@ -1800,6 +2227,7 @@ export const buildReconciliationBaseline = ({
   const body = {
     catalog: buildCatalog(database.catalog),
     comparisons,
+    conflictAnalysis: buildConflictAnalysis({ database, sheets }),
     differenceAnalysis: buildDifferenceAnalysis({ database, sheets }),
     finance,
     rowComparisons,

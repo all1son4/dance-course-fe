@@ -109,6 +109,7 @@ const createDatabaseSnapshot = (): DatabaseReconciliationSnapshot => ({
   purchases: [
     {
       amountMinor: 5_000,
+      catalogProductExternalId: "prd_test",
       checkoutCurrency: "eur",
       currency: "eur",
       customerAddressLineSnapshot: "Private street 1",
@@ -331,7 +332,7 @@ test("builds a matching baseline without exposing identifiers or secrets", () =>
   assert.equal(report.finance.matchesByCurrency, true);
   assert.equal(report.finance.matchesByCurrencyMonth, true);
   assert.equal(report.metadata.piiIncluded, false);
-  assert.equal(report.metadata.reportSchemaVersion, 3);
+  assert.equal(report.metadata.reportSchemaVersion, 4);
   assert.equal(report.metadata.secretsIncluded, false);
   assert.equal(report.comparisons.payments.status, "ok");
   assert.ok(
@@ -342,6 +343,21 @@ test("builds a matching baseline without exposing identifiers or secrets", () =>
   assert.deepEqual(report.state.sheet.paymentSuccessfulCustomerExport, {
     pending: 1,
   });
+  assert.deepEqual(
+    report.conflictAnalysis.lifecycleDateDifferences.entitlements.revokedAt,
+    {
+      byMagnitude: {},
+      differenceCount: 0,
+    },
+  );
+  assert.equal(
+    report.conflictAnalysis.activeAccessCoverage.telegramAccessTokens.databaseActiveCount,
+    0,
+  );
+  assert.equal(
+    report.conflictAnalysis.activeAccessCoverage.telegramUserBindings.databaseActiveCount,
+    1,
+  );
   assert.ok(report.reportFingerprintSha256.length === 64);
 
   for (const sensitiveValue of [
@@ -375,8 +391,55 @@ test("makes matched state differences fail without exposing compared values", ()
   assert.equal(comparison.status, "mismatch");
   assert.equal(comparison.differenceCount, 1);
   assert.equal(comparison.differencesByField.status, 1);
+  assert.deepEqual(comparison.differenceShapesByField.status, {
+    "both-present-different": 1,
+  });
   assert.equal(comparison.differenceKeyHashes[0]?.length, 64);
   assert.equal(serialized.includes("tgi_sensitive"), false);
+});
+
+test("treats sub-second Sheet timestamp precision loss as equivalent", () => {
+  const sheets = createSheetsSnapshot();
+  sheets.telegramAccessTokens[0].expires_at = "2026-01-16T12:00:00.999Z";
+
+  const report = buildFixtureReport(createDatabaseSnapshot(), sheets);
+
+  assert.equal(report.rowComparisons.telegramAccessTokens.status, "ok");
+  assert.deepEqual(
+    report.conflictAnalysis.lifecycleDateDifferences.telegramAccessTokens.expiresAt,
+    {
+      byMagnitude: {
+        "under-one-second": 1,
+      },
+      differenceCount: 1,
+    },
+  );
+});
+
+test("keeps a genuinely empty product reference empty", () => {
+  const database = createDatabaseSnapshot();
+  const sheets = createSheetsSnapshot();
+  database.purchases[0].catalogProductExternalId = "";
+  database.purchases[0].productExternalId = "";
+  sheets.payments[0].product_id = "";
+  sheets.successfulCustomers[0].product_id = "";
+
+  const report = buildFixtureReport(database, sheets);
+
+  assert.equal(
+    report.rowComparisons.payments.differencesByField.productExternalId,
+    undefined,
+  );
+  assert.equal(
+    report.rowComparisons.successfulCustomerSnapshots.differencesByField
+      .productExternalId,
+    undefined,
+  );
+  assert.equal(report.conflictAnalysis.productReferences.payments.differenceCount, 0);
+  assert.equal(
+    report.conflictAnalysis.productReferences.successfulCustomers.differenceCount,
+    0,
+  );
 });
 
 test("compares customer snapshots and catalog references with key hashes only", () => {

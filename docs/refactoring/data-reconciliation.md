@@ -78,7 +78,7 @@ fingerprints:
 All four reports were stored only in a private temporary directory and deleted after
 aggregate review.
 
-## DATA-04 input
+## DATA-04 resolution
 
 Production financial totals still match by currency and UTC month. All Sheet keys for
 the expanded technical domains exist in PostgreSQL. Matching rows are already clean
@@ -94,7 +94,14 @@ The stable report exposes these unresolved classes without raw identifiers:
   Telegram binding rows with one or more lifecycle/state differences.
 
 Development retains the previously accepted synthetic history, duplicate Sheet rows,
-and stale test state. Its new matched-row differences are likewise stable. `DATA-04`
-must classify each production class by canonical source and decide whether it is an
-expected representation difference or requires a forward correction. DATA-03 itself
-performs no write and changes no user journey.
+and stale test state. Its new matched-row differences are likewise stable.
+
+`DATA-04` is now complete. Schema v4 proved that the product differences were a
+capture-only `unknown` placeholder and all lifecycle timestamp differences were
+sub-second Sheet precision loss. After correcting those comparisons, matched Payments,
+SuccessfulCustomers, Telegram tokens, and Telegram bindings are clean. The remaining
+15 entitlement differences are classified newer PostgreSQL claim/binding state, and
+the DB-only event/Telegram scope is accounted for. The complete canonical-source,
+decision, correction, owner, time, and Gate G3 evidence is in
+[`data-conflict-register.md`](./data-conflict-register.md). No production data or user
+journey was changed.

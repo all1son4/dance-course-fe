@@ -178,6 +178,10 @@ const loadDatabaseSnapshotInTransaction = async (
   const purchaseRows = await transaction
     .select({
       amountMinor: purchases.amountMinor,
+      catalogProductExternalId: sql<string>`coalesce(
+        ${products.externalProductId},
+        ''
+      )`,
       checkoutCurrency: purchases.checkoutCurrency,
       currency: purchases.currency,
       customerAddressLineSnapshot: purchases.customerAddressLineSnapshot,
@@ -348,6 +352,7 @@ const loadDatabaseSnapshotInTransaction = async (
     onlineGroupCampaigns: onlineGroupCampaignRows,
     purchases: purchaseRows.map((row) => ({
       amountMinor: row.amountMinor,
+      catalogProductExternalId: row.catalogProductExternalId,
       checkoutCurrency: row.checkoutCurrency,
       currency: row.currency,
       customerAddressLineSnapshot: row.customerAddressLineSnapshot,
@@ -365,7 +370,7 @@ const loadDatabaseSnapshotInTransaction = async (
       offerExternalId: row.offerExternalId,
       offerLabelSnapshot: row.offerLabelSnapshot,
       outcome: row.outcome,
-      productExternalId: row.productExternalId || "unknown",
+      productExternalId: row.productExternalId,
       productTitleSnapshot: row.productTitleSnapshot,
       purchaseItemSnapshot: row.purchaseItemSnapshot,
       source: row.source,
@@ -383,7 +388,7 @@ const loadDatabaseSnapshotInTransaction = async (
     telegramAccessTokens: telegramTokenRows.map((row) => ({
       ...row,
       offerExternalId: offerExternalIdByPurchaseId.get(row.purchaseId) ?? "",
-      productExternalId: productExternalIdByPurchaseId.get(row.purchaseId) || "unknown",
+      productExternalId: productExternalIdByPurchaseId.get(row.purchaseId) ?? "",
     })),
     telegramUserBindings: telegramBindingRows.map((row) => ({
       accessExpiresAt: row.accessExpiresAt,
@@ -392,7 +397,7 @@ const loadDatabaseSnapshotInTransaction = async (
         row.chatId ?? ""
       }`,
       offerExternalId: offerExternalIdByPurchaseId.get(row.purchaseId) ?? "",
-      productExternalId: productExternalIdByPurchaseId.get(row.purchaseId) || "unknown",
+      productExternalId: productExternalIdByPurchaseId.get(row.purchaseId) ?? "",
       revokedAt: row.revokedAt,
       status: row.status,
       telegramUserId: row.telegramUserId,
