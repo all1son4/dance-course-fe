@@ -1,6 +1,6 @@
 # Resumable Google Sheets backfill
 
-Status: implementation ready; controlled environment runs pending
+Status: implementation and development run complete; production pending
 Implemented: 2026-08-11
 
 ## Purpose
@@ -126,7 +126,27 @@ reconciliation evidence for `DATA-03` and `DATA-04`.
 
 ## Acceptance evidence
 
-| Target      | Capture | Dry-run | Pause/resume | Replay no-op | Final counts |
-| ----------- | ------- | ------- | ------------ | ------------ | ------------ |
-| development | pending | pending | pending      | pending      | pending      |
-| production  | pending | pending | pending      | pending      | pending      |
+| Target      | Capture                                        | Dry-run | Pause/resume  | Replay no-op        | Final counts   |
+| ----------- | ---------------------------------------------- | ------- | ------------- | ------------------- | -------------- |
+| development | `development-20260811T112201570Z-065d71053dd1` | passed  | `payments:25` | `already_completed` | recorded below |
+| production  | pending                                        | pending | pending       | pending             | pending        |
+
+Development migration
+[run `31490416293`](https://github.com/all1son4/dance-course-fe/actions/runs/31490416293)
+applied `0014` from exact implementation SHA `4bd023f`. The first write committed one
+25-row batch and paused at `payments:25`; the next command resumed and completed ten
+remaining batches. All stage totals equal their immutable source row counts. A third
+command returned `already_completed`. The post-run invariant audit reported zero
+violations, and the exact deployed SHA passed
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31490301407).
+No source row was inserted because development already contained every canonical key;
+rows newer than the snapshot were retained and counted as conflicts.
+
+Development final counts use `C/I/S/U` for conflict/insert/skip/update:
+
+- payments `32/0/5/7`;
+- Stripe events `86/0/0/0`;
+- Telegram tokens `33/0/0/0`;
+- Telegram bindings `6/0/0/0`;
+- monthly reports `2/0/0/0`;
+- email leads `1/0/0/0`.
