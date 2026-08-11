@@ -1,0 +1,125 @@
+name: Protected data source snapshot
+run-name: DATA snapshot ${{ inputs.target }} @ ${{ github.ref_name }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Source environment to capture
+        required: true
+        type: choice
+        options:
+          - development
+          - production
+      confirmation:
+        description: Type snapshot-<target> exactly
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: data-source-snapshot-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate snapshot request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Require the target release branch and confirmation
+        env:
+          REQUESTED_TARGET: ${{ inputs.target }}
+          TYPED_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          expected_ref="dev"
+          if [ "${REQUESTED_TARGET}" = "production" ]; then
+            expected_ref="main"
+          fi
+
+          if [ "${GITHUB_REF_NAME}" != "${expected_ref}" ]; then
+            echo "::error::${REQUESTED_TARGET} snapshots must run from ${expected_ref}."
+            exit 1
+          fi
+
+          expected_confirmation="snapshot-${REQUESTED_TARGET}"
+          if [ "${TYPED_CONFIRMATION}" != "${expected_confirmation}" ]; then
+            echo "::error::Type ${expected_confirmation} exactly."
+            exit 1
+          fi
+
+  capture:
+    name: Capture and encrypt ${{ inputs.target }} sources
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: ${{ inputs.target == 'production' && 'Production' || 'Preview' }}
+
+    env:
+      CI: true
+      DATA_SNAPSHOT_PG_MODE: docker
+      DATA_SNAPSHOT_POSTGRES_IMAGE: postgres:17-alpine
+      DATA_SNAPSHOT_PUBLIC_KEY: ${{ secrets.DATA_SNAPSHOT_PUBLIC_KEY }}
+      DATABASE_ENV: ${{ inputs.target }}
+      DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+      GOOGLE_PRIVATE_KEY: ${{ secrets.GOOGLE_PRIVATE_KEY }}
+      GOOGLE_SERVICE_ACCOUNT_EMAIL: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_EMAIL }}
+      GOOGLE_SHEETS_SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEETS_SPREADSHEET_ID }}
+      HUSKY: "0"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - name: Check out requested revision
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Require protected source secrets
+        run: |
+          missing=0
+          for name in DATABASE_URL_UNPOOLED GOOGLE_PRIVATE_KEY GOOGLE_SERVICE_ACCOUNT_EMAIL GOOGLE_SHEETS_SPREADSHEET_ID DATA_SNAPSHOT_PUBLIC_KEY; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Add ${name} to the selected GitHub Environment."
+              missing=1
+            fi
+          done
+          exit "${missing}"
+
+      - name: Pull the pinned PostgreSQL client family
+        run: docker pull "${DATA_SNAPSHOT_POSTGRES_IMAGE}"
+
+      - name: Capture, validate, and encrypt sources
+        env:
+          REQUESTED_TARGET: ${{ inputs.target }}
+          TYPED_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          npm run db:snapshot:sources -- \
+            --target="${REQUESTED_TARGET}" \
+            --confirmation="${TYPED_CONFIRMATION}" \
+            --output-dir="${RUNNER_TEMP}/data-source-snapshots"
+
+      - name: Upload encrypted snapshot only
+        uses: actions/upload-artifact@v7
+        with:
+          name: data-source-snapshot-${{ inputs.target }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/data-source-snapshots/*.tar.gz.enc
+            ${{ runner.temp }}/data-source-snapshots/*.key.enc
+            ${{ runner.temp }}/data-source-snapshots/*.manifest.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 90
+          include-hidden-files: false

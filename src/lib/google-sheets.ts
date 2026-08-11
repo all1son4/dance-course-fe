@@ -1,4 +1,4 @@
-import { createSign } from "node:crypto";
+import { createHash, createSign } from "node:crypto";
 
 import {
   findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
@@ -1202,6 +1202,95 @@ const readDatabaseCollection = async <T>({
 };
 
 export const isGoogleSheetsConfigured = () => Boolean(getGoogleSheetsConfig());
+
+export type GoogleSheetsSourceSnapshot = {
+  captureCompletedAt: string;
+  captureStartedAt: string;
+  schemaVersion: 1;
+  sheets: Array<{
+    columnCount: number;
+    expectedColumns: readonly string[];
+    key: string;
+    rowCount: number;
+    title: string;
+    values: string[][];
+  }>;
+  spreadsheetIdSha256: string;
+};
+
+/**
+ * Captures the seven migration-owned ranges without schema synchronization or any
+ * other write. The result contains PII and bearer material and must only be written
+ * inside the protected DATA snapshot workspace.
+ */
+export const captureGoogleSheetsSourceSnapshot =
+  async (): Promise<GoogleSheetsSourceSnapshot> => {
+    const captureStartedAt = new Date().toISOString();
+    const config = getRequiredGoogleSheetsConfig();
+    const definitions = [
+      {
+        expectedColumns: PAYMENT_SHEET_HEADERS,
+        key: "payments",
+        title: config.paymentsSheetName,
+      },
+      {
+        expectedColumns: STRIPE_EVENT_SHEET_HEADERS,
+        key: "stripeEvents",
+        title: config.stripeEventsSheetName,
+      },
+      {
+        expectedColumns: SUCCESSFUL_CUSTOMERS_SHEET_HEADERS,
+        key: "successfulCustomers",
+        title: config.successfulCustomersSheetName,
+      },
+      {
+        expectedColumns: TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
+        key: "telegramAccessTokens",
+        title: config.telegramAccessTokensSheetName,
+      },
+      {
+        expectedColumns: TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
+        key: "telegramUserBindings",
+        title: config.telegramUserBindingsSheetName,
+      },
+      {
+        expectedColumns: MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
+        key: "monthlySalesReportRuns",
+        title: config.monthlySalesReportRunsSheetName,
+      },
+      {
+        expectedColumns: EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
+        key: "emailCampaignLeads",
+        title: config.emailCampaignLeadsSheetName,
+      },
+    ] as const;
+    const sheets = await Promise.all(
+      definitions.map(async ({ expectedColumns, key, title }) => {
+        const lastColumnLetter = columnIndexToLetter(expectedColumns.length);
+        const values = await getSheetValues(config, title, `A1:${lastColumnLetter}`);
+
+        return {
+          columnCount: expectedColumns.length,
+          expectedColumns,
+          key,
+          rowCount: values.slice(1).filter((row) => row.some((cell) => cell !== ""))
+            .length,
+          title,
+          values,
+        };
+      }),
+    );
+
+    return {
+      captureCompletedAt: new Date().toISOString(),
+      captureStartedAt,
+      schemaVersion: 1,
+      sheets,
+      spreadsheetIdSha256: createHash("sha256")
+        .update(config.spreadsheetId)
+        .digest("hex"),
+    };
+  };
 
 export const ensureGoogleSheetsSchema = async () => {
   if (schemaSyncPromise) {

@@ -21,6 +21,7 @@
 
 # production
 /build
+/.data-snapshots/
 
 # misc
 .DS_Store
