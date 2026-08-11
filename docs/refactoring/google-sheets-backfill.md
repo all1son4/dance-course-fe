@@ -1,6 +1,7 @@
 # Resumable Google Sheets backfill
 
-Status: implementation and development run complete; production pending
+Status: backfill complete in development and production; final production invariant
+repair pending
 Implemented: 2026-08-11
 
 ## Purpose
@@ -129,7 +130,7 @@ reconciliation evidence for `DATA-03` and `DATA-04`.
 | Target      | Capture                                        | Dry-run | Pause/resume  | Replay no-op        | Final counts   |
 | ----------- | ---------------------------------------------- | ------- | ------------- | ------------------- | -------------- |
 | development | `development-20260811T112201570Z-065d71053dd1` | passed  | `payments:25` | `already_completed` | recorded below |
-| production  | pending                                        | pending | pending       | pending             | pending        |
+| production  | `production-20260811T112456139Z-065d71053dd1`  | passed  | `payments:25` | `already_completed` | recorded below |
 
 Development migration
 [run `31490416293`](https://github.com/all1son4/dance-course-fe/actions/runs/31490416293)
@@ -150,3 +151,39 @@ Development final counts use `C/I/S/U` for conflict/insert/skip/update:
 - Telegram bindings `6/0/0/0`;
 - monthly reports `2/0/0/0`;
 - email leads `1/0/0/0`.
+
+Production migration
+[run `31491474783`](https://github.com/all1son4/dance-course-fe/actions/runs/31491474783)
+applied `0014` from exact merge SHA `52c3902`. The dry-run validated 258 unique
+source rows with no duplicate keys or missing dependencies. The first write committed
+one 25-row batch and paused at `payments:25`; the resumed command completed 12 more
+batches, and the replay returned `already_completed`. No row was inserted because the
+production database already contained every canonical key. Forty-five eligible
+projections were updated from the protected snapshot; 213 newer or already complete
+database projections were retained as conflicts. The temporary decrypted archive,
+database dump, manifest, and Sheets JSON were deleted immediately after the run.
+
+Production final counts use `C/I/S/U` for conflict/insert/skip/update:
+
+- payments `31/0/0/44`;
+- Stripe events `140/0/0/0`;
+- Telegram tokens `20/0/0/0`;
+- Telegram bindings `17/0/0/0`;
+- monthly reports `5/0/0/0`;
+- email leads `0/0/0/1`.
+
+The production post-run audit found one supporting counter behind an already existing
+invoice (`invoice_sequences.behind_invoices`); the other 31 invariants were clean. The
+invoice allocator already reads `max(invoices.sequence_number)`, so duplicate issuance
+was prevented and the discrepancy did not change a user flow. The cause was a gap in
+paths that import a preassigned invoice number after the counter was introduced.
+Expand migration
+[`0015_synchronize_invoice_sequences.sql`](../../drizzle/0015_synchronize_invoice_sequences.sql)
+closes the gap transactionally for every invoice insert/update and repairs existing
+counters monotonically. Its regression test, exact
+[CI run](https://github.com/all1son4/dance-course-fe/actions/runs/31492627734), controlled
+[development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31492817083),
+zero-violation development audit, and
+[deployed smoke](https://github.com/all1son4/dance-course-fe/actions/runs/31492676736)
+passed. DATA-02 becomes complete after `0015` is applied to production and the
+production invariant audit returns zero violations.
