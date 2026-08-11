@@ -1,3 +1,5 @@
+import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
+import { getStripeWriteRuntime } from "@/app/api/stripe/webhook/_lib/write-runtime";
 import { jsonNoStore } from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
@@ -8,6 +10,7 @@ import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 const isAuthorizedCronRequest = (request: Request) => {
   const configuredSecret = process.env.CRON_SECRET?.trim() ?? "";
@@ -42,6 +45,9 @@ export async function GET(request: Request) {
     typeof toMonthlySalesReportDeliveryResponse
   > | null = null;
   let monthlySalesReportError: string | null = null;
+  let paymentJobsError: string | null = null;
+  let paymentJobsResult: Awaited<ReturnType<typeof runStripeBackgroundJobs>> | null =
+    null;
 
   try {
     const [standard, onlineGroup] = await Promise.all([
@@ -69,7 +75,25 @@ export async function GET(request: Request) {
     }
   }
 
-  const hasFailure = Boolean(accessRevocationError || monthlySalesReportError);
+  // Payment recovery runs after the established maintenance journeys, so a queue or
+  // provider slowdown cannot prevent access revocation or the monthly report.
+  try {
+    if (getStripeWriteRuntime() === "database") {
+      paymentJobsResult = await runStripeBackgroundJobs({
+        inboxLimit: 8,
+        outboxLimit: 16,
+      });
+    }
+  } catch (error) {
+    console.error("Daily maintenance: Stripe background recovery failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    paymentJobsError = "stripe_background_recovery_failed";
+  }
+
+  const hasFailure = Boolean(
+    accessRevocationError || monthlySalesReportError || paymentJobsError,
+  );
 
   return jsonNoStore(
     {
@@ -77,6 +101,8 @@ export async function GET(request: Request) {
       accessRevocationResult,
       monthlySalesReportError,
       monthlySalesReportResult,
+      paymentJobsError,
+      paymentJobsResult,
       ok: !hasFailure,
     },
     { status: hasFailure ? 500 : 200 },

@@ -201,10 +201,12 @@ const markOutboxJobDelivered = async ({
   externalMessageId,
   job,
   now,
+  skipped,
 }: {
   externalMessageId?: string | null;
   job: ClaimedOutboxJob;
   now: Date;
+  skipped: boolean;
 }) => {
   const [updated] = await getDatabase()
     .update(purchaseSideEffects)
@@ -212,8 +214,8 @@ const markOutboxJobDelivered = async ({
       externalMessageId: externalMessageId?.trim() || null,
       leaseExpiresAt: null,
       leaseToken: null,
-      sentAt: now,
-      status: "sent",
+      sentAt: skipped ? null : now,
+      status: skipped ? "skipped" : "sent",
       updatedAt: now,
     })
     .where(
@@ -244,7 +246,11 @@ const markOutboxJobFailed = async ({
   maxAttempts: number;
   now: Date;
 }) => {
-  const deadLettered = job.attemptCount >= maxAttempts;
+  const retryable =
+    !error || typeof error !== "object" || !("retryable" in error)
+      ? true
+      : error.retryable !== false;
+  const deadLettered = !retryable || job.attemptCount >= maxAttempts;
   const errorCode =
     error && typeof error === "object" && "code" in error
       ? String(error.code).slice(0, 120)
@@ -284,6 +290,7 @@ const markOutboxJobFailed = async ({
 
 export type OutboxDeliveryResult = {
   externalMessageId?: string | null;
+  skipped?: boolean;
 };
 
 export const processNextOutboxJob = async ({
@@ -315,9 +322,13 @@ export const processNextOutboxJob = async ({
       externalMessageId: delivery.externalMessageId,
       job,
       now: new Date(),
+      skipped: delivery.skipped === true,
     });
 
-    return { job, status: "sent" as const };
+    return {
+      job,
+      status: delivery.skipped ? ("skipped" as const) : ("sent" as const),
+    };
   } catch (error) {
     const deadLettered = await markOutboxJobFailed({
       error,
@@ -332,4 +343,40 @@ export const processNextOutboxJob = async ({
       status: deadLettered ? ("dead_letter" as const) : ("retry" as const),
     };
   }
+};
+
+export const replayOutboxJob = async ({
+  deduplicationKey,
+  now = new Date(),
+}: {
+  deduplicationKey: string;
+  now?: Date;
+}) => {
+  const normalizedKey = requireNonEmpty(deduplicationKey, "deduplication_key");
+  const [replayed] = await getDatabase()
+    .update(purchaseSideEffects)
+    .set({
+      deadLetteredAt: null,
+      failedAt: null,
+      lastErrorCode: null,
+      lastErrorMessage: null,
+      leaseExpiresAt: null,
+      leaseToken: null,
+      nextAttemptAt: null,
+      status: "pending",
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(purchaseSideEffects.deduplicationKey, normalizedKey),
+        inArray(purchaseSideEffects.status, ["failed", "dead_letter"]),
+      ),
+    )
+    .returning({
+      attemptCount: purchaseSideEffects.attemptCount,
+      id: purchaseSideEffects.id,
+      status: purchaseSideEffects.status,
+    });
+
+  return replayed ?? null;
 };

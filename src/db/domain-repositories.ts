@@ -4,12 +4,14 @@ import {
   claimNextStripeInboxEvent,
   processNextStripeInboxEvent,
   recordVerifiedStripeEvent,
+  replayStripeInboxEvent,
 } from "./stripe-event-inbox";
 import {
   claimNextOutboxJob,
   enqueueOutboxJob,
   enqueueOutboxJobInTransaction,
   processNextOutboxJob,
+  replayOutboxJob,
 } from "./transactional-outbox";
 
 // This is the database-facing composition root for the domains introduced during
@@ -22,6 +24,7 @@ export const domainRepositories = Object.freeze({
     enqueue: enqueueOutboxJob,
     enqueueInTransaction: enqueueOutboxJobInTransaction,
     processNext: processNextOutboxJob,
+    replay: replayOutboxJob,
   }),
   paymentProjection: Object.freeze({
     projectInTransaction: projectPaymentStateInTransaction,
@@ -30,5 +33,6 @@ export const domainRepositories = Object.freeze({
     claimNext: claimNextStripeInboxEvent,
     processNext: processNextStripeInboxEvent,
     recordVerified: recordVerifiedStripeEvent,
+    replay: replayStripeInboxEvent,
   }),
 });

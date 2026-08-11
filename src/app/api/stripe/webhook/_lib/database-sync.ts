@@ -14,7 +14,7 @@ import {
 
 import type { StripeWebhookSyncResult } from "./side-effects/types";
 
-type StripeSettlementSnapshot = {
+export type StripeSettlementSnapshot = {
   settlementAmountMinor: number | null;
   settlementCurrency: string | null;
   stripeBalanceTransactionId: string | null;
@@ -506,7 +506,7 @@ const upsertStripeEvent = async ({
     });
 };
 
-const getPurchaseSettlementSnapshot = async ({
+export const getPurchaseSettlementSnapshot = async ({
   paymentIntentId,
   paymentRecord,
   stripe,
@@ -532,21 +532,21 @@ const getPurchaseSettlementSnapshot = async ({
   };
 };
 
-const syncPurchase = async ({
+export const createStripePaymentProjectionCommand = ({
   event,
   now,
+  outboxJobs = [],
   paymentIntentId,
   paymentRecord,
   settlementSnapshot,
-  tx,
 }: {
   event: Stripe.Event;
   now: Date;
+  outboxJobs?: PaymentProjectionCommand["outboxJobs"];
   paymentIntentId: string;
   paymentRecord: PaymentSheetRecord;
   settlementSnapshot: StripeSettlementSnapshot;
-  tx: DatabaseTransaction;
-}): Promise<string> => {
+}): PaymentProjectionCommand => {
   const firstSeenAt = parseRequiredDate(
     paymentRecord.first_seen_at || paymentRecord.updated_at,
   );
@@ -559,7 +559,7 @@ const syncPurchase = async ({
     | "pln"
     | "eur"
     | null;
-  const command: PaymentProjectionCommand = {
+  return {
     access: {
       accessKey: "primary",
       accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
@@ -613,7 +613,7 @@ const syncPurchase = async ({
         }
       : null,
     livemode: event.livemode,
-    outboxJobs: [],
+    outboxJobs,
     paymentIntentId,
     projectedAt: now,
     purchase: {
@@ -651,6 +651,30 @@ const syncPurchase = async ({
       updatedAt: parseRequiredDate(paymentRecord.updated_at, firstSeenAt),
     },
   };
+};
+
+const syncPurchase = async ({
+  event,
+  now,
+  paymentIntentId,
+  paymentRecord,
+  settlementSnapshot,
+  tx,
+}: {
+  event: Stripe.Event;
+  now: Date;
+  paymentIntentId: string;
+  paymentRecord: PaymentSheetRecord;
+  settlementSnapshot: StripeSettlementSnapshot;
+  tx: DatabaseTransaction;
+}): Promise<string> => {
+  const command = createStripePaymentProjectionCommand({
+    event,
+    now,
+    paymentIntentId,
+    paymentRecord,
+    settlementSnapshot,
+  });
   const projection = await projectPaymentStateInTransaction({ command, transaction: tx });
 
   if (projection.paymentStateAccepted) {
@@ -724,20 +748,35 @@ export const syncStripeWebhookEventToDatabase = async ({
   });
 };
 
-export const syncStripeChargeSettlementToDatabase = async ({
+export type PreparedStripeChargeSettlement = {
+  paymentIntentId: string;
+  settlementSnapshot: StripeSettlementSnapshot;
+  status: "pending_balance_transaction" | "ready" | "skipped";
+  stripeBalanceTransactionId: string | null;
+};
+
+export const prepareStripeChargeSettlement = async ({
   event,
   stripe,
 }: {
   event: Stripe.Event;
   stripe: Stripe;
-}) => {
+}): Promise<PreparedStripeChargeSettlement> => {
   const charge = event.data.object as Stripe.Charge;
   const paymentIntentId = getPaymentIntentIdFromCharge(charge);
 
   if (!paymentIntentId) {
     return {
       paymentIntentId: "",
-      status: "skipped" as const,
+      settlementSnapshot: {
+        settlementAmountMinor: null,
+        settlementCurrency: null,
+        stripeBalanceTransactionId: getBalanceTransactionId(charge.balance_transaction),
+        stripeExchangeRate: null,
+        stripeFeeAmountMinor: null,
+        stripeNetAmountMinor: null,
+      },
+      status: "skipped",
       stripeBalanceTransactionId: getBalanceTransactionId(charge.balance_transaction),
     };
   }
@@ -753,29 +792,68 @@ export const syncStripeChargeSettlementToDatabase = async ({
   ) {
     return {
       paymentIntentId,
-      status: "pending_balance_transaction" as const,
+      settlementSnapshot,
+      status: "pending_balance_transaction",
       stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
     };
   }
 
-  const db = getDatabase();
-  const [updatedPurchase] = await db
+  return {
+    paymentIntentId,
+    settlementSnapshot,
+    status: "ready",
+    stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
+  };
+};
+
+export const applyPreparedStripeChargeSettlement = async ({
+  prepared,
+  transaction,
+}: {
+  prepared: PreparedStripeChargeSettlement;
+  transaction: DatabaseTransaction;
+}) => {
+  if (prepared.status !== "ready") {
+    return {
+      paymentIntentId: prepared.paymentIntentId,
+      purchaseId: null,
+      status: prepared.status,
+      stripeBalanceTransactionId: prepared.stripeBalanceTransactionId,
+    };
+  }
+
+  const [updatedPurchase] = await transaction
     .update(purchases)
     .set({
-      settlementAmountMinor: settlementSnapshot.settlementAmountMinor,
-      settlementCurrency: settlementSnapshot.settlementCurrency,
-      stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
-      stripeExchangeRate: settlementSnapshot.stripeExchangeRate,
-      stripeFeeAmountMinor: settlementSnapshot.stripeFeeAmountMinor,
-      stripeNetAmountMinor: settlementSnapshot.stripeNetAmountMinor,
+      settlementAmountMinor: prepared.settlementSnapshot.settlementAmountMinor,
+      settlementCurrency: prepared.settlementSnapshot.settlementCurrency,
+      stripeBalanceTransactionId: prepared.settlementSnapshot.stripeBalanceTransactionId,
+      stripeExchangeRate: prepared.settlementSnapshot.stripeExchangeRate,
+      stripeFeeAmountMinor: prepared.settlementSnapshot.stripeFeeAmountMinor,
+      stripeNetAmountMinor: prepared.settlementSnapshot.stripeNetAmountMinor,
       updatedAt: new Date(),
     })
-    .where(eq(purchases.paymentIntentId, paymentIntentId))
+    .where(eq(purchases.paymentIntentId, prepared.paymentIntentId))
     .returning({ id: purchases.id });
 
   return {
-    paymentIntentId,
+    paymentIntentId: prepared.paymentIntentId,
+    purchaseId: updatedPurchase?.id ?? null,
     status: updatedPurchase ? ("updated" as const) : ("purchase_not_found" as const),
-    stripeBalanceTransactionId: settlementSnapshot.stripeBalanceTransactionId,
+    stripeBalanceTransactionId: prepared.stripeBalanceTransactionId,
   };
+};
+
+export const syncStripeChargeSettlementToDatabase = async ({
+  event,
+  stripe,
+}: {
+  event: Stripe.Event;
+  stripe: Stripe;
+}) => {
+  const prepared = await prepareStripeChargeSettlement({ event, stripe });
+
+  return getDatabase().transaction((transaction) =>
+    applyPreparedStripeChargeSettlement({ prepared, transaction }),
+  );
 };

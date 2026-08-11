@@ -13,12 +13,14 @@ import {
 import {
   processNextStripeInboxEvent,
   recordVerifiedStripeEvent,
+  replayStripeInboxEvent,
 } from "@/db/stripe-event-inbox";
 import {
   claimNextOutboxJob,
   enqueueOutboxJob,
   enqueueOutboxJobInTransaction,
   processNextOutboxJob,
+  replayOutboxJob,
 } from "@/db/transactional-outbox";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
@@ -225,6 +227,118 @@ test("retries an uncertain outbox response without a second visible delivery", a
     await client`
       DELETE FROM purchase_side_effects
       WHERE deduplication_key = ${deduplicationKey}
+    `;
+  }
+});
+
+test("persists skipped delivery and dead-letters a non-retryable provider result", async () => {
+  const skippedKey = `write03:skipped:${randomUUID()}`;
+  const deadLetterKey = `write03:dead:${randomUUID()}`;
+
+  try {
+    await enqueueOutboxJob({
+      deduplicationKey: skippedKey,
+      kind: "campaign_email_delivery",
+      provider: "resend",
+    });
+    await enqueueOutboxJob({
+      deduplicationKey: deadLetterKey,
+      kind: "telegram_access_delivery",
+      provider: "telegram",
+    });
+
+    const skipped = await processNextOutboxJob({
+      deliver: async () => ({ skipped: true }),
+      kinds: ["campaign_email_delivery"],
+    });
+    const deadLettered = await processNextOutboxJob({
+      deliver: async () => {
+        throw Object.assign(new Error("uncertain Telegram response"), {
+          retryable: false,
+        });
+      },
+      kinds: ["telegram_access_delivery"],
+    });
+    const stored = await client<
+      { deduplication_key: string; sent_at: Date | null; status: string }[]
+    >`
+      SELECT deduplication_key, sent_at, status
+      FROM purchase_side_effects
+      WHERE deduplication_key IN (${skippedKey}, ${deadLetterKey})
+      ORDER BY deduplication_key
+    `;
+
+    assert.equal(skipped.status, "skipped");
+    assert.equal(deadLettered.status, "dead_letter");
+    assert.deepEqual(
+      Object.fromEntries(
+        stored.map((row) => [
+          row.deduplication_key,
+          { sentAt: row.sent_at, status: row.status },
+        ]),
+      ),
+      {
+        [deadLetterKey]: { sentAt: null, status: "dead_letter" },
+        [skippedKey]: { sentAt: null, status: "skipped" },
+      },
+    );
+  } finally {
+    await client`
+      DELETE FROM purchase_side_effects
+      WHERE deduplication_key IN (${skippedKey}, ${deadLetterKey})
+    `;
+  }
+});
+
+test("replays dead-letter inbox and outbox rows without erasing attempt evidence", async () => {
+  const eventType = `write02.replay.${randomUUID()}`;
+  const stripeEventId = `evt_write02_replay_${randomUUID()}`;
+  const outboxKey = `write03:replay:${randomUUID()}`;
+
+  try {
+    await recordVerifiedStripeEvent({
+      apiVersion: "2026-07-29.basil",
+      eventType,
+      livemode: false,
+      payload: { id: stripeEventId, object: "event" },
+      stripeCreatedAt: new Date(),
+      stripeEventId,
+    });
+    await enqueueOutboxJob({
+      deduplicationKey: outboxKey,
+      kind: "campaign_email_delivery",
+      provider: "resend",
+    });
+    await processNextStripeInboxEvent({
+      eventTypes: [eventType],
+      maxAttempts: 1,
+      project: async () => {
+        throw new Error("projection failed");
+      },
+    });
+    await processNextOutboxJob({
+      deliver: async () => {
+        throw new Error("delivery failed");
+      },
+      kinds: ["campaign_email_delivery"],
+      maxAttempts: 1,
+    });
+
+    const inboxReplay = await replayStripeInboxEvent({ stripeEventId });
+    const outboxReplay = await replayOutboxJob({ deduplicationKey: outboxKey });
+
+    assert.equal(inboxReplay?.processingStatus, "pending");
+    assert.equal(inboxReplay?.attemptCount, 1);
+    assert.equal(outboxReplay?.status, "pending");
+    assert.equal(outboxReplay?.attemptCount, 1);
+  } finally {
+    await client`
+      DELETE FROM purchase_side_effects
+      WHERE deduplication_key = ${outboxKey}
+    `;
+    await client`
+      DELETE FROM stripe_events
+      WHERE stripe_event_id = ${stripeEventId}
     `;
   }
 });

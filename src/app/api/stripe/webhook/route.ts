@@ -5,6 +5,7 @@ import { GoogleSheetsError, isGoogleSheetsConfigured } from "@/lib/google-sheets
 import { isPayloadTooLarge, jsonNoStore } from "@/lib/http-security";
 
 import { getStripeServer } from "../payment-intent/lib";
+import { scheduleStripeBackgroundJobs } from "./_lib/background-jobs";
 import {
   syncStripeChargeSettlementToDatabase,
   syncStripeWebhookEventToDatabase,
@@ -13,8 +14,10 @@ import { persistVerifiedStripeWebhookEvent } from "./_lib/inbox-ingress";
 import { runWebhookSideEffects } from "./_lib/side-effects";
 import {
   isSupportedStripePaymentIntentEvent,
+  shouldIgnoreStripeCheckoutSessionEvent,
   syncStripePaymentEventToGoogleSheets,
 } from "./_lib/sync";
+import { getStripeWriteRuntime } from "./_lib/write-runtime";
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
@@ -22,6 +25,7 @@ const STRIPE_SIGNATURE_HEADER = "stripe-signature";
 const UNKNOWN_DATABASE_SYNC_ERROR = "Unknown database sync error.";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const STRIPE_CHARGE_SETTLEMENT_EVENT_TYPES = new Set<string>([
   "charge.succeeded",
@@ -52,6 +56,7 @@ type WebhookErrorCode =
   | "missing_webhook_signature"
   | "payload_too_large"
   | "stripe_webhook_failed"
+  | "stripe_webhook_configuration_invalid"
   | "stripe_webhook_inbox_failed"
   | "stripe_webhook_sync_failed";
 
@@ -250,16 +255,6 @@ const createIgnoredEventResponse = (event: Stripe.Event): Response =>
     type: event.type,
   });
 
-const shouldIgnoreCheckoutSessionEvent = (event: Stripe.Event): boolean => {
-  if (event.type !== "checkout.session.completed") {
-    return false;
-  }
-
-  const checkoutSession = event.data.object as Stripe.Checkout.Session;
-
-  return checkoutSession.mode !== "payment" || !checkoutSession.payment_intent;
-};
-
 const throwFailedDatabaseSyncInDevelopment = (databaseSync: DatabaseSyncResult): void => {
   if (databaseSync.status === "failed" && process.env.NODE_ENV !== "production") {
     throw databaseSync.error;
@@ -342,7 +337,7 @@ const handleVerifiedStripeEvent = async ({
     return createIgnoredEventResponse(event);
   }
 
-  if (shouldIgnoreCheckoutSessionEvent(event)) {
+  if (shouldIgnoreStripeCheckoutSessionEvent(event)) {
     return createIgnoredEventResponse(event);
   }
 
@@ -405,6 +400,29 @@ export async function POST(request: Request): Promise<Response> {
 
     if (inboxPersistenceErrorResponse) {
       return inboxPersistenceErrorResponse;
+    }
+
+    let writeRuntime: ReturnType<typeof getStripeWriteRuntime>;
+
+    try {
+      writeRuntime = getStripeWriteRuntime();
+    } catch (error) {
+      console.error("Invalid Stripe write runtime configuration", {
+        errorName: getSafeErrorName(error),
+      });
+
+      return createWebhookErrorResponse("stripe_webhook_configuration_invalid", 500);
+    }
+
+    if (writeRuntime === "database") {
+      scheduleStripeBackgroundJobs();
+
+      return jsonNoStore({
+        eventId: verifiedEvent.event.id,
+        queued: true,
+        received: true,
+        type: verifiedEvent.event.type,
+      });
     }
 
     const legacyProcessingConfigurationErrorResponse =

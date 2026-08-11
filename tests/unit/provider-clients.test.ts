@@ -36,6 +36,37 @@ test("Telegram fixture records the provider request without network access", asy
   });
 });
 
+test("Telegram outbox mode performs one provider attempt after a claim", async (t) => {
+  const calls = installJsonFetchFixture(t, [
+    {
+      body: {
+        description: "temporary failure",
+        error_code: 500,
+        ok: false,
+      },
+      status: 500,
+    },
+    {
+      body: {
+        ok: true,
+        result: { message_id: 43 },
+      },
+    },
+  ]);
+
+  await assert.rejects(
+    sendTelegramMessage({
+      botToken: "fixture-token",
+      chatId: "-100123",
+      maxAttempts: 1,
+      text: "Test outbox message",
+    }),
+    /telegram_api_failed/u,
+  );
+
+  assert.equal(calls.length, 1);
+});
+
 test("Resend fixture records normalized email and idempotency data", async (t) => {
   const previousApiKey = process.env.RESEND_API_KEY;
   const previousFromEmail = process.env.RESEND_FROM_EMAIL;

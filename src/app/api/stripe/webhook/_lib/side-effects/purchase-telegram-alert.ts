@@ -27,6 +27,15 @@ import type { StripeWebhookSyncResult } from "./types";
 
 const pendingPurchaseAlertSyncs = new Map<string, Promise<void>>();
 
+export class TelegramAlertDeliveryUncertainError extends Error {
+  readonly retryable = false;
+
+  constructor() {
+    super("telegram_delivery_uncertain_manual_review_required");
+    this.name = "TelegramAlertDeliveryUncertainError";
+  }
+}
+
 const getOnlineGroupAccessStatesForAlert = async ({
   eventId,
   offerId,
@@ -201,4 +210,67 @@ export const sendPurchaseAlert = async ({
 
   pendingPurchaseAlertSyncs.set(paymentIntentId, alertSyncPromise);
   await alertSyncPromise;
+};
+
+export const deliverPurchaseAlertFromOutbox = async ({
+  event,
+  handledEvent,
+}: {
+  event: Stripe.Event;
+  handledEvent: StripeWebhookSyncResult;
+}): Promise<{ externalMessageId?: string; skipped?: boolean }> => {
+  if (
+    !shouldRunPurchaseSuccessSideEffects(event) ||
+    handledEvent.skipped ||
+    handledEvent.paymentRecord.outcome !== "succeeded" ||
+    !shouldSendPurchaseSideEffectForEnvironment(event)
+  ) {
+    return { skipped: true };
+  }
+
+  if (!isTelegramAlertsConfigured()) {
+    throw new Error("telegram_alerts_not_configured");
+  }
+
+  const alertsChatId = getTelegramAlertsChatId();
+  const alertsBotToken = getTelegramAlertsBotToken();
+
+  if (!alertsChatId || !alertsBotToken) {
+    throw new Error("telegram_alerts_not_configured");
+  }
+
+  const paymentIntentId = handledEvent.paymentRecord.payment_intent_id;
+  const onlineGroupAccessStates = await getOnlineGroupAccessStatesForAlert({
+    eventId: handledEvent.eventId,
+    offerId: handledEvent.paymentRecord.offer_id,
+    paymentIntentId,
+  });
+  const alertText = buildPurchaseAlertText({
+    eventCreatedAtIso: toUtcIso(event.created * 1000),
+    eventId: handledEvent.eventId,
+    eventType: handledEvent.eventType,
+    onlineGroupAccessStates,
+    paymentRecord: handledEvent.paymentRecord,
+    processedAtIso: toUtcIso(),
+  });
+  // Telegram Bot API has no idempotency key for sendMessage. The outbox owns the
+  // durable deduplication and this adapter deliberately performs one provider attempt;
+  // an uncertain response is dead-lettered for operator review instead of auto-sending
+  // a possibly visible duplicate.
+  let message: Awaited<ReturnType<typeof sendTelegramMessage>>;
+
+  try {
+    message = await sendTelegramMessage({
+      botToken: alertsBotToken,
+      chatId: alertsChatId,
+      disableWebPagePreview: true,
+      maxAttempts: 1,
+      parseMode: "HTML",
+      text: alertText,
+    });
+  } catch {
+    throw new TelegramAlertDeliveryUncertainError();
+  }
+
+  return { externalMessageId: String(message.message_id) };
 };

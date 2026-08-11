@@ -120,7 +120,7 @@ const CHECKOUT_CUSTOM_FIELD_KEYS = {
   ],
 } as const;
 
-type StripePaymentWebhookResult = {
+export type StripePaymentWebhookResult = {
   duplicate: boolean;
   eventId: string;
   eventType: string;
@@ -873,6 +873,16 @@ export const isSupportedStripePaymentIntentEvent = (eventType: string) =>
   SUPPORTED_PAYMENT_INTENT_EVENT_TYPES.has(eventType) ||
   SUPPORTED_CHECKOUT_SESSION_EVENT_TYPES.has(eventType);
 
+export const shouldIgnoreStripeCheckoutSessionEvent = (event: Stripe.Event): boolean => {
+  if (event.type !== "checkout.session.completed") {
+    return false;
+  }
+
+  const checkoutSession = event.data.object as Stripe.Checkout.Session;
+
+  return checkoutSession.mode !== "payment" || !checkoutSession.payment_intent;
+};
+
 const withPaymentIntentSyncLock = async <T>(
   paymentIntentId: string,
   task: () => Promise<T>,
@@ -1129,6 +1139,37 @@ export const syncStripePaymentEventToGoogleSheets = async (
   pendingStripeWebhookSyncs.set(event.id, syncPromise);
 
   return syncPromise;
+};
+
+export const prepareStripePaymentEventForDatabase = async (
+  event: Stripe.Event,
+): Promise<StripePaymentWebhookResult> => {
+  const paymentIntent = await getPaymentIntentForEvent(event);
+
+  if (!paymentIntent) {
+    throw new Error(`Stripe event ${event.id} does not include a PaymentIntent.`);
+  }
+
+  const existingPaymentRecord = await findPaymentRecordByIntentId(paymentIntent.id, {
+    cacheTtlMs: 0,
+    source: "database",
+  });
+  const sourceContext = await getPaymentSourceContext(event, paymentIntent);
+  const paymentRecord = mapPaymentIntentToPaymentRecord(
+    event,
+    paymentIntent,
+    existingPaymentRecord,
+    sourceContext,
+  );
+
+  return {
+    duplicate: false,
+    eventId: event.id,
+    eventType: event.type,
+    paymentRecord,
+    received: true,
+    skipped: event.type === "payment_intent.canceled" && !existingPaymentRecord,
+  };
 };
 
 const syncStripePaymentEventToGoogleSheetsInternal = async (

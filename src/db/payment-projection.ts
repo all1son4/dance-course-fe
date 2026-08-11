@@ -76,7 +76,11 @@ export type PaymentProjectionCommand = {
   } | null;
   firstSeenAt: Date;
   livemode: boolean;
-  outboxJobs: EnqueueOutboxJobInput[];
+  outboxJobs: Array<
+    Omit<EnqueueOutboxJobInput, "deduplicationKey" | "purchaseId"> & {
+      deduplicationKey?: string;
+    }
+  >;
   paymentIntentId: string;
   projectedAt: Date;
   purchase: {
@@ -355,6 +359,8 @@ export const projectPaymentStateInTransaction = async ({
   for (const job of command.outboxJobs) {
     await enqueueOutboxJobInTransaction(transaction, {
       ...job,
+      deduplicationKey:
+        job.deduplicationKey?.trim() || `purchase:${purchaseId}:${job.kind}`,
       purchaseId,
     });
   }

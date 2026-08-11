@@ -302,17 +302,20 @@ const markStripeInboxEventFailed = async ({
   return deadLettered;
 };
 
-export const processNextStripeInboxEvent = async ({
+export const processNextStripeInboxEvent = async <Prepared = undefined>({
   eventTypes,
   maxAttempts = 8,
   now = new Date(),
+  prepare,
   project,
 }: {
   eventTypes?: string[];
   maxAttempts?: number;
   now?: Date;
+  prepare?: (event: ClaimedStripeInboxEvent) => Promise<Prepared>;
   project: (input: {
     event: ClaimedStripeInboxEvent;
+    prepared: Prepared;
     transaction: DatabaseTransaction;
   }) => Promise<StripeInboxProjectionResult>;
 }) => {
@@ -327,10 +330,11 @@ export const processNextStripeInboxEvent = async ({
   }
 
   try {
+    // Provider enrichment happens after the short claim transaction and before the
+    // atomic projection transaction. It must never keep database locks open.
+    const prepared = prepare ? await prepare(event) : (undefined as Prepared);
     const projection = await getDatabase().transaction(async (transaction) => {
-      // The projector contract is database-only: external enrichment must be prepared
-      // before this transaction starts and passed through the durable inbox payload.
-      const result = await project({ event, transaction });
+      const result = await project({ event, prepared, transaction });
       const completedAt = new Date();
       const [updated] = await transaction
         .update(stripeEvents)
@@ -380,4 +384,39 @@ export const processNextStripeInboxEvent = async ({
       status: deadLettered ? ("dead_letter" as const) : ("retry" as const),
     };
   }
+};
+
+export const replayStripeInboxEvent = async ({
+  now = new Date(),
+  stripeEventId,
+}: {
+  now?: Date;
+  stripeEventId: string;
+}) => {
+  const normalizedEventId = requireNonEmpty(stripeEventId, "event_id");
+  const [replayed] = await getDatabase()
+    .update(stripeEvents)
+    .set({
+      deadLetteredAt: null,
+      errorCode: null,
+      errorMessage: null,
+      leaseExpiresAt: null,
+      leaseToken: null,
+      nextAttemptAt: null,
+      processingStatus: "pending",
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(stripeEvents.stripeEventId, normalizedEventId),
+        inArray(stripeEvents.processingStatus, ["failed", "dead_letter"]),
+      ),
+    )
+    .returning({
+      attemptCount: stripeEvents.attemptCount,
+      id: stripeEvents.id,
+      processingStatus: stripeEvents.processingStatus,
+    });
+
+  return replayed ?? null;
 };

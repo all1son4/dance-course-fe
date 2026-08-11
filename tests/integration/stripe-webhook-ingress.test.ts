@@ -213,3 +213,40 @@ test("returns a retryable error when verified evidence cannot enter the inbox", 
 
   assert.equal(stored?.count, 0);
 });
+
+test("acknowledges from the durable inbox without Sheets in database mode", async () => {
+  clearGoogleSheetsConfiguration();
+  process.env.DB_PAYMENT_EVENTS_MODE = "database";
+  process.env.DB_SIDE_EFFECTS_MODE = "database";
+  const eventId = `evt_write02_database_${randomUUID()}`;
+
+  try {
+    const response = await POST(createSignedRequest(createEvent({ eventId })));
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      eventId,
+      queued: true,
+      received: true,
+      type: "customer.created",
+    });
+
+    const [stored] = await client<
+      { processing_status: string; provider_payload_verified: boolean }[]
+    >`
+      SELECT processing_status, provider_payload_verified
+      FROM stripe_events
+      WHERE stripe_event_id = ${eventId}
+    `;
+
+    assert.ok(
+      stored?.processing_status === "pending" || stored?.processing_status === "skipped",
+    );
+    assert.equal(stored?.provider_payload_verified, true);
+  } finally {
+    delete process.env.DB_PAYMENT_EVENTS_MODE;
+    delete process.env.DB_SIDE_EFFECTS_MODE;
+    configureGoogleSheets();
+    await deleteEvent(eventId);
+  }
+});

@@ -30,23 +30,73 @@ Investigate when any of these conditions persists beyond a normal worker interva
 - access `linkFailed` or `manualPending` grows without an explained operator task;
 - report status totals differ from the expected scheduled runs.
 
-Between `WRITE-01` and `WRITE-02`, the webhook records verified events but the inbox
-worker is intentionally disabled. New `pending` rows and an increasing ready age are
-therefore expected transition evidence, not permission to run the unfinished worker.
-Record their aggregate count at each deployment and investigate any ingress write
-failure, stale lease, retry, or dead letter. The normal ready-age threshold applies
-after `WRITE-02` enables the event-type policy and worker schedule.
+The asynchronous Stripe path is enabled only when both variables have the same
+database value:
+
+```bash
+DB_PAYMENT_EVENTS_MODE=database
+DB_SIDE_EFFECTS_MODE=database
+```
+
+An unset pair keeps the legacy synchronous behavior. A mixed pair fails closed rather
+than accepting an event into a partially migrated runtime. Change both variables in
+one deployment and verify that no old revision is still receiving webhooks before
+interpreting queue age.
+
+In database mode, an immediate bounded worker run is scheduled after the webhook
+response. Successful payment-status polling also schedules recovery. The existing
+daily maintenance request runs a final bounded recovery pass after its established
+access and report tasks. The daily pass is a safety net, not the normal latency path;
+the project intentionally does not require a higher-frequency Vercel cron plan.
+
+An operator can run bounded recovery explicitly. The confirmation must exactly match
+the selected environment:
+
+```bash
+DATABASE_ENV=development \
+DB_JOBS_RUN_CONFIRM=development \
+npm run db:jobs:run
+```
+
+Optional `DB_JOBS_INBOX_LIMIT` and `DB_JOBS_OUTBOX_LIMIT` values are capped at 100.
+Use `DATABASE_ENV=production` and `DB_JOBS_RUN_CONFIRM=production` only from the
+approved production operator environment. Output is aggregate and contains no event
+payloads, recipients, tokens, or provider error messages.
 
 ## Retry and replay rules
 
 - Never edit a verified Stripe payload. Provider evidence is immutable.
 - A retry must claim the existing inbox/outbox row; do not insert a replacement with a
   new deduplication key.
-- Outbox adapters must pass `deduplicationKey` as the provider idempotency key. A retry
-  after an uncertain response therefore cannot create another visible delivery.
+- Outbox adapters pass a stable provider idempotency key where the provider supports
+  one. Resend email uses the purchase/payment key. Telegram Bot API `sendMessage` does
+  not accept such a key, so the adapter makes one network attempt per claim and sends
+  an uncertain response directly to dead-letter review rather than risking a duplicate
+  visible alert.
 - A dead-letter replay is a deliberate operator action performed only after the cause
   is understood. Record the row ID, reason, operator, and time in the release log.
 - Do not reset attempt counters. They are operational evidence.
+
+Replay only a failed or dead-lettered row, using its exact durable key and an exact
+confirmation of both queue and key:
+
+```bash
+DATABASE_ENV=development \
+DB_REPLAY_QUEUE=inbox \
+DB_REPLAY_KEY=evt_example \
+DB_REPLAY_CONFIRM=inbox:evt_example \
+npm run db:jobs:replay
+
+DATABASE_ENV=development \
+DB_REPLAY_QUEUE=outbox \
+DB_REPLAY_KEY=purchase:example:purchase-email \
+DB_REPLAY_CONFIRM=outbox:purchase:example:purchase-email \
+npm run db:jobs:replay
+```
+
+Replay preserves the attempt counter and returns the same row to `pending`. It does
+not run the worker automatically; run the bounded recovery command separately after
+the cause has been corrected.
 
 ## Stale leases
 
@@ -60,6 +110,11 @@ Use `npm run db:baseline:sheets` and `npm run db:compare:sheets` for detailed co
 reconciliation. The operational command only reports safe aggregate warning signals.
 Until `WRITE-07` is complete, a Sheets export failure is investigated but must not be
 allowed to change payment or access state.
+
+After database write mode has accepted events, do not roll back to a release that does
+not understand the inbox/outbox workers. Disable only through a DB-compatible release
+or deploy a forward fix; immutable inbox rows and versioned outbox jobs must remain
+claimable.
 
 The protected source backfill has its own checkpoint and recovery procedure in
 [`google-sheets-backfill.md`](./google-sheets-backfill.md). Resume the same source
