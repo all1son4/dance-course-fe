@@ -66,6 +66,103 @@ test("rolls back a failed event transaction", async () => {
   assert.equal(row?.count, 0);
 });
 
+test("keeps invoice counters aligned for imported invoice numbers", async () => {
+  const suffix = randomUUID();
+  const paymentIntentIds = [
+    `pi_invoice_sequence_import_first_${suffix}`,
+    `pi_invoice_sequence_import_second_${suffix}`,
+  ];
+  const sequenceYear = 2097;
+  const sequenceMonth = 5;
+
+  try {
+    const purchases = await client<{ id: string }[]>`
+      INSERT INTO purchases (
+        payment_intent_id,
+        amount_minor,
+        currency,
+        stripe_status,
+        outcome
+      )
+      SELECT
+        payment_intent_id,
+        5000,
+        'eur',
+        'succeeded',
+        'succeeded'
+      FROM unnest(${paymentIntentIds}::text[]) AS input(payment_intent_id)
+      RETURNING id
+    `;
+
+    await client`
+      INSERT INTO invoices (
+        purchase_id,
+        invoice_number,
+        issued_at,
+        sequence_year,
+        sequence_month,
+        sequence_number,
+        amount_minor,
+        currency
+      ) VALUES (
+        ${purchases[0].id},
+        'FV/2097/05/901',
+        '2097-05-01T10:00:00Z',
+        ${sequenceYear},
+        ${sequenceMonth},
+        901,
+        5000,
+        'eur'
+      ), (
+        ${purchases[1].id},
+        'FV/2097/05/900',
+        '2097-05-01T10:01:00Z',
+        ${sequenceYear},
+        ${sequenceMonth},
+        900,
+        5000,
+        'eur'
+      )
+    `;
+
+    const [afterInsert] = await client<{ lastSequence: number }[]>`
+      SELECT last_sequence AS "lastSequence"
+      FROM invoice_sequences
+      WHERE sequence_year = ${sequenceYear}
+        AND sequence_month = ${sequenceMonth}
+    `;
+
+    assert.equal(afterInsert?.lastSequence, 901);
+
+    await client`
+      UPDATE invoices
+      SET
+        invoice_number = 'FV/2097/05/902',
+        sequence_number = 902
+      WHERE purchase_id = ${purchases[1].id}
+    `;
+
+    const [afterUpdate] = await client<{ lastSequence: number }[]>`
+      SELECT last_sequence AS "lastSequence"
+      FROM invoice_sequences
+      WHERE sequence_year = ${sequenceYear}
+        AND sequence_month = ${sequenceMonth}
+    `;
+
+    assert.equal(afterUpdate?.lastSequence, 902);
+  } finally {
+    await client`
+      DELETE FROM purchases
+      WHERE payment_intent_id IN ${client(paymentIntentIds)}
+    `;
+    await client`
+      DELETE FROM invoice_sequences
+      WHERE sequence_year = ${sequenceYear}
+        AND sequence_month = ${sequenceMonth}
+    `;
+  }
+});
+
 test("stores one provider event under concurrent duplicate inserts", async () => {
   const eventId = `evt_test_safe02_unique_${randomUUID()}`;
   const insertEvent = () => client`
