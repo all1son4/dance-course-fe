@@ -30,6 +30,13 @@ Investigate when any of these conditions persists beyond a normal worker interva
 - access `linkFailed` or `manualPending` grows without an explained operator task;
 - report status totals differ from the expected scheduled runs.
 
+Between `WRITE-01` and `WRITE-02`, the webhook records verified events but the inbox
+worker is intentionally disabled. New `pending` rows and an increasing ready age are
+therefore expected transition evidence, not permission to run the unfinished worker.
+Record their aggregate count at each deployment and investigate any ingress write
+failure, stale lease, retry, or dead letter. The normal ready-age threshold applies
+after `WRITE-02` enables the event-type policy and worker schedule.
+
 ## Retry and replay rules
 
 - Never edit a verified Stripe payload. Provider evidence is immutable.
