@@ -65,6 +65,15 @@ Two consecutive production captures were stable:
 
 The private temporary reports were deleted after aggregate review.
 
+## Implementation verification
+
+Exact implementation commit `d0ae0a6` passed 51 unit tests, formatting, lint,
+TypeScript, PostgreSQL integration tests, logical backup/restore rehearsal, the
+migration-free production build, and deployed critical journeys:
+
+- [Quality run `31497816221`](https://github.com/all1son4/dance-course-fe/actions/runs/31497816221)
+- [deployment smoke `31497875191`](https://github.com/all1son4/dance-course-fe/actions/runs/31497875191)
+
 ## Gate G3 result
 
 Gate G3 is `PASSED`:
