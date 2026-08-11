@@ -658,6 +658,20 @@ Harden the existing dry-run-by-default, idempotent backfill instead of replacing
 Use bounded batches rather than one large transaction; add checkpoints, restartability,
 and insert, update, skip, and conflict counts.
 
+Status: `IN_PROGRESS`. The implementation now consumes the immutable `DATA-01` source,
+validates its target/schema/checksum/private files, and requires explicit write
+confirmation. Migration `0014` adds one checkpoint per target and source fingerprint.
+Each bounded batch and checkpoint are atomic; the same command resumes after a pause,
+while a completed fingerprint is a replay no-op. Duplicate keys, missing required
+dependencies, and database rows newer than the source are counted as conflicts instead
+of being silently overwritten. Unit tests, a real development-snapshot dry-run, all 25
+local PostgreSQL integration tests, and a pause/resume/replay integration scenario pass.
+No runtime flag or user flow changes. Completion still requires controlled migration
+and backfill evidence from production. Development migration, one-batch pause, resume,
+replay no-op, zero-violation invariant audit, and deployed critical journeys passed.
+Full evidence is documented in
+[`google-sheets-backfill.md`](./google-sheets-backfill.md).
+
 ### DATA-03 — Reconcile domain data
 
 Extend the existing baseline and comparison tools to compare PaymentIntent IDs, Stripe
@@ -881,3 +895,5 @@ Status: `TODO`
 | 2026-08-09 | DB-02 development           | `DONE`       | Preflight, CI, dev migration, audit, and smoke passed        |
 | 2026-08-09 | DB-03 development           | `DONE`       | Inbox migration, CI, dev apply, audit, and smoke passed      |
 | 2026-08-11 | DATA-01                     | `DONE`       | Dev/prod encrypted captures and PG17 restores passed         |
+| 2026-08-11 | DATA-02 implementation      | `DONE`       | Snapshot validation, atomic checkpoints, resume tests pass   |
+| 2026-08-11 | DATA-02 development         | `DONE`       | Migration, pause/resume/replay, invariants, smoke passed     |

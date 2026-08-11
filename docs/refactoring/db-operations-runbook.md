@@ -54,6 +54,10 @@ reconciliation. The operational command only reports safe aggregate warning sign
 Until `WRITE-07` is complete, a Sheets export failure is investigated but must not be
 allowed to change payment or access state.
 
+The protected source backfill has its own checkpoint and recovery procedure in
+[`google-sheets-backfill.md`](./google-sheets-backfill.md). Resume the same source
+fingerprint; do not edit `data_backfill_runs` manually or start a second operator run.
+
 ## Backup and restore
 
 CI rehearses a logical dump and restore against disposable PostgreSQL on every exact
