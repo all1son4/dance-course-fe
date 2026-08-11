@@ -18,7 +18,8 @@ Each run:
 
 1. captures `database.dump` with PostgreSQL custom format and validates its archive
    directory with `pg_restore --list`;
-2. reads only the configured columns of `Payments`, `StripeEvents`,
+2. requests the `spreadsheets.readonly` OAuth scope and reads only the configured
+   columns of `Payments`, `StripeEvents`,
    `SuccessfulCustomers`, `TelegramAccessTokens`, `TelegramUserBindings`,
    `MonthlySalesReports`, and `EmailCampaignLeads`;
 3. writes an internal manifest with source times, row counts, Git revision, file sizes,
@@ -66,10 +67,11 @@ captures. `Preview` and `Production` also require:
 - `GOOGLE_SERVICE_ACCOUNT_EMAIL`;
 - `GOOGLE_SHEETS_SPREADSHEET_ID`.
 
-The Google service account needs only read access for this workflow. Existing runtime
-credentials currently have broader compatibility permissions; reducing that account
-to a dedicated read-only snapshot principal is optional hardening and is not required
-to preserve current behavior.
+The Google service account needs only Viewer access for this workflow. The capture
+command requests a read-only OAuth token even when existing runtime credentials have
+broader compatibility permissions. A dedicated Viewer service account remains the
+preferred production setup because possession of a broader account's private key could
+still be used outside this workflow to request wider scopes.
 
 ## Controlled capture
 
