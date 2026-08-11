@@ -79,6 +79,8 @@ export type {
 const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_SHEETS_API_BASE_URL = "https://sheets.googleapis.com/v4/spreadsheets";
 const GOOGLE_SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets";
+const GOOGLE_SHEETS_READ_ONLY_SCOPE =
+  "https://www.googleapis.com/auth/spreadsheets.readonly";
 const GOOGLE_SERVICE_ACCOUNT_JWT_TTL_SECONDS = 3_600;
 const GOOGLE_ACCESS_TOKEN_DEFAULT_TTL_SECONDS = 3_600;
 const GOOGLE_ACCESS_TOKEN_REFRESH_BUFFER_SECONDS = 60;
@@ -149,6 +151,7 @@ type GoogleSheetsConfig = {
 
 type AccessTokenCache = {
   expiresAt: number;
+  scope: string;
   token: string;
 };
 
@@ -349,7 +352,7 @@ const getRequiredGoogleSheetsConfig = () => {
   return config;
 };
 
-const getJwtAssertion = (config: GoogleSheetsConfig) => {
+const getJwtAssertion = (config: GoogleSheetsConfig, scope: string) => {
   const nowInSeconds = Math.floor(Date.now() / 1000);
   const header = encodeBase64Url(
     JSON.stringify({
@@ -363,7 +366,7 @@ const getJwtAssertion = (config: GoogleSheetsConfig) => {
       exp: nowInSeconds + GOOGLE_SERVICE_ACCOUNT_JWT_TTL_SECONDS,
       iat: nowInSeconds,
       iss: config.serviceAccountEmail,
-      scope: GOOGLE_SHEETS_SCOPE,
+      scope,
     }),
   );
   const unsignedToken = `${header}.${payload}`;
@@ -382,13 +385,16 @@ const getJwtAssertion = (config: GoogleSheetsConfig) => {
   return `${unsignedToken}.${signature}`;
 };
 
-const createGoogleAccessTokenRequest = (config: GoogleSheetsConfig): RequestInit => ({
+const createGoogleAccessTokenRequest = (
+  config: GoogleSheetsConfig,
+  scope: string,
+): RequestInit => ({
   method: "POST",
   headers: {
     "Content-Type": FORM_URLENCODED_CONTENT_TYPE,
   },
   body: new URLSearchParams({
-    assertion: getJwtAssertion(config),
+    assertion: getJwtAssertion(config, scope),
     grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
   }),
   cache: "no-store",
@@ -405,7 +411,10 @@ const parseGoogleAccessTokenResponse = async (
   };
 };
 
-const cacheGoogleAccessToken = (data: GoogleSheetsTokenResponse): string => {
+const cacheGoogleAccessToken = (
+  data: GoogleSheetsTokenResponse,
+  scope: string,
+): string => {
   const token = data.access_token ?? "";
   const expiresInMs =
     Math.max(
@@ -416,6 +425,7 @@ const cacheGoogleAccessToken = (data: GoogleSheetsTokenResponse): string => {
 
   accessTokenCache = {
     expiresAt: Date.now() + expiresInMs,
+    scope,
     token,
   };
 
@@ -436,15 +446,17 @@ const resolveGoogleAccessTokenResponse = ({
   attempt,
   parsedResponse,
   response,
+  scope,
 }: {
   attempt: number;
   parsedResponse: ParsedGoogleAccessTokenResponse;
   response: Response;
+  scope: string;
 }): GoogleSheetsResponseResolution<string> => {
   if (response.ok && parsedResponse.data?.access_token) {
     return {
       kind: "complete",
-      value: cacheGoogleAccessToken(parsedResponse.data),
+      value: cacheGoogleAccessToken(parsedResponse.data, scope),
     };
   }
 
@@ -468,10 +480,17 @@ const resolveGoogleAccessTokenResponse = ({
   throw createGoogleAccessTokenError(response, parsedResponse);
 };
 
-const getGoogleAccessToken = async (config: GoogleSheetsConfig): Promise<string> => {
+const getGoogleAccessToken = async (
+  config: GoogleSheetsConfig,
+  scope: string,
+): Promise<string> => {
   assertGoogleSheetsRateLimitWindow();
 
-  if (accessTokenCache && accessTokenCache.expiresAt > Date.now()) {
+  if (
+    accessTokenCache &&
+    accessTokenCache.expiresAt > Date.now() &&
+    accessTokenCache.scope === scope
+  ) {
     return accessTokenCache.token;
   }
 
@@ -481,7 +500,7 @@ const getGoogleAccessToken = async (config: GoogleSheetsConfig): Promise<string>
     try {
       response = await fetch(
         GOOGLE_OAUTH_TOKEN_URL,
-        createGoogleAccessTokenRequest(config),
+        createGoogleAccessTokenRequest(config, scope),
       );
     } catch (error) {
       if (attempt === GOOGLE_SHEETS_REQUEST_MAX_RETRIES) {
@@ -502,6 +521,7 @@ const getGoogleAccessToken = async (config: GoogleSheetsConfig): Promise<string>
       attempt,
       parsedResponse: await parseGoogleAccessTokenResponse(response),
       response,
+      scope,
     });
 
     if (resolution.kind === "complete") {
@@ -673,6 +693,7 @@ const googleSheetsRequest = async <T>(
   config: GoogleSheetsConfig,
   path: string,
   init?: RequestInit,
+  scope = GOOGLE_SHEETS_SCOPE,
 ): Promise<T> => {
   assertGoogleSheetsRateLimitWindow();
 
@@ -680,7 +701,7 @@ const googleSheetsRequest = async <T>(
     let accessToken: string;
 
     try {
-      accessToken = await getGoogleAccessToken(config);
+      accessToken = await getGoogleAccessToken(config, scope);
     } catch (error) {
       if (attempt === GOOGLE_SHEETS_REQUEST_MAX_RETRIES) {
         throw error;
@@ -806,6 +827,9 @@ const getSheetValues = async (
   config: GoogleSheetsConfig,
   sheetTitle: string,
   range: string,
+  options?: {
+    scope?: string;
+  },
 ) => {
   const encodedRange = encodeURIComponent(getSheetRange(sheetTitle, range));
   const data = await googleSheetsRequest<GoogleSheetsValuesResponse>(
@@ -814,6 +838,7 @@ const getSheetValues = async (
     {
       method: "GET",
     },
+    options?.scope,
   );
 
   return data.values ?? [];
@@ -1267,7 +1292,9 @@ export const captureGoogleSheetsSourceSnapshot =
     const sheets = await Promise.all(
       definitions.map(async ({ expectedColumns, key, title }) => {
         const lastColumnLetter = columnIndexToLetter(expectedColumns.length);
-        const values = await getSheetValues(config, title, `A1:${lastColumnLetter}`);
+        const values = await getSheetValues(config, title, `A1:${lastColumnLetter}`, {
+          scope: GOOGLE_SHEETS_READ_ONLY_SCOPE,
+        });
 
         return {
           columnCount: expectedColumns.length,
