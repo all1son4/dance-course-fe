@@ -4,6 +4,11 @@ Status: complete
 Implemented: 2026-07-30
 Accepted: 2026-08-06
 
+This document preserves the accepted BASE-04 schema-v2 evidence. The operational
+comparison was extended by DATA-03 into a privacy-safe per-key schema-v3 report; see
+[`data-reconciliation.md`](./data-reconciliation.md). The historical fingerprints
+below are intentionally not rewritten.
+
 ## Purpose
 
 `BASE-04` requires a repeatable comparison of PostgreSQL and all seven Google Sheets

@@ -1,5 +1,6 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -170,77 +171,151 @@ const loadCatalogSnapshot = async (
 const loadDatabaseSnapshotInTransaction = async (
   transaction: DatabaseTransaction,
 ): Promise<DatabaseReconciliationSnapshot> => {
-  await transaction.execute(sql`set transaction read only`);
+  await transaction.execute(
+    sql`set transaction isolation level repeatable read, read only`,
+  );
 
   const purchaseRows = await transaction
     .select({
       amountMinor: purchases.amountMinor,
+      catalogProductExternalId: sql<string>`coalesce(
+        ${products.externalProductId},
+        ''
+      )`,
+      checkoutCurrency: purchases.checkoutCurrency,
       currency: purchases.currency,
+      customerAddressLineSnapshot: purchases.customerAddressLineSnapshot,
+      customerCitySnapshot: purchases.customerCitySnapshot,
+      customerCountrySnapshot: purchases.customerCountrySnapshot,
+      customerEmailSnapshot: purchases.customerEmailSnapshot,
+      customerFullNameSnapshot: purchases.customerFullNameSnapshot,
+      customerPostalCodeSnapshot: purchases.customerPostalCodeSnapshot,
+      customerTelegramUsernameSnapshot: purchases.customerTelegramUsernameSnapshot,
       firstSeenAt: purchases.firstSeenAt,
       id: purchases.id,
+      latestEventId: purchases.latestEventId,
+      latestEventType: purchases.latestEventType,
+      lessonLanguage: purchases.lessonLanguage,
+      offerExternalId: sql<string>`coalesce(
+        ${purchases.offerExternalId},
+        ${productOffers.externalOfferId},
+        ''
+      )`,
+      offerLabelSnapshot: purchases.offerLabelSnapshot,
       outcome: purchases.outcome,
       paymentIntentId: purchases.paymentIntentId,
-      productExternalId: purchases.productExternalId,
+      productExternalId: sql<string>`coalesce(
+        ${purchases.productExternalId},
+        ${products.externalProductId},
+        ''
+      )`,
+      productTitleSnapshot: purchases.productTitleSnapshot,
+      purchaseItemSnapshot: purchases.purchaseItemSnapshot,
       source: purchases.source,
+      stripeStatus: purchases.stripeStatus,
       succeededAt: purchases.succeededAt,
     })
-    .from(purchases);
+    .from(purchases)
+    .leftJoin(products, eq(purchases.productId, products.id))
+    .leftJoin(productOffers, eq(purchases.offerId, productOffers.id));
   const paymentIntentIdByPurchaseId = new Map(
     purchaseRows.map((row) => [row.id, row.paymentIntentId] as const),
+  );
+  const productExternalIdByPurchaseId = new Map(
+    purchaseRows.map((row) => [row.id, row.productExternalId] as const),
+  );
+  const offerExternalIdByPurchaseId = new Map(
+    purchaseRows.map((row) => [row.id, row.offerExternalId] as const),
   );
   const stripeEventRows = await transaction
     .select({
       eventType: stripeEvents.eventType,
       key: stripeEvents.stripeEventId,
+      outcome: sql<string>`coalesce(${stripeEvents.outcomeSnapshot}, '')`,
+      paymentIntentId: sql<string>`coalesce(${stripeEvents.paymentIntentId}, '')`,
       source: sql<string>`coalesce(${stripeEvents.payload} ->> 'source', 'runtime')`,
-      status: stripeEvents.processingStatus,
+      status: sql<string>`coalesce(
+        ${stripeEvents.paymentStatusSnapshot},
+        ${stripeEvents.processingStatus}
+      )`,
     })
     .from(stripeEvents);
   const telegramTokenRows = await transaction
     .select({
+      accessExpiresAt: telegramAccessTokens.accessExpiresAt,
+      chatId: telegramAccessTokens.chatId,
+      expiresAt: telegramAccessTokens.expiresAt,
       key: telegramAccessTokens.tokenId,
       linkKind: telegramAccessTokens.linkKind,
-      productExternalId: purchases.productExternalId,
+      paymentIntentId: purchases.paymentIntentId,
+      purchaseId: telegramAccessTokens.purchaseId,
       status: telegramAccessTokens.status,
+      telegramUserId: telegramAccessTokens.telegramUserId,
+      usedAt: telegramAccessTokens.usedAt,
     })
     .from(telegramAccessTokens)
     .innerJoin(purchases, eq(telegramAccessTokens.purchaseId, purchases.id));
   const telegramBindingRows = await transaction
     .select({
+      accessExpiresAt: telegramUserBindings.accessExpiresAt,
+      boundAt: telegramUserBindings.boundAt,
       chatId: telegramUserBindings.chatId,
-      productExternalId: purchases.productExternalId,
       purchaseId: telegramUserBindings.purchaseId,
+      revokedAt: telegramUserBindings.revokedAt,
       status: telegramUserBindings.status,
+      telegramUserId: telegramUserBindings.telegramUserId,
     })
     .from(telegramUserBindings)
     .innerJoin(purchases, eq(telegramUserBindings.purchaseId, purchases.id));
   const entitlementRows = await transaction
     .select({
       accessKey: accessEntitlements.accessKey,
+      accessWorkflow: accessEntitlements.accessWorkflow,
+      currentTokenId: accessEntitlements.currentTokenId,
+      deliveryChannel: accessEntitlements.deliveryChannel,
+      expiresAt: accessEntitlements.expiresAt,
+      purchaseId: accessEntitlements.purchaseId,
+      revokedAt: accessEntitlements.revokedAt,
+      startsAt: accessEntitlements.startsAt,
       status: accessEntitlements.status,
+      telegramChatId: accessEntitlements.telegramChatId,
+      telegramUserId: accessEntitlements.telegramUserId,
     })
-    .from(accessEntitlements);
+    .from(accessEntitlements)
+    .innerJoin(purchases, eq(accessEntitlements.purchaseId, purchases.id));
   const invoiceRows = await transaction
     .select({
+      amountMinor: invoices.amountMinor,
+      currency: invoices.currency,
+      issuedAt: invoices.issuedAt,
       key: invoices.invoiceNumber,
+      paymentIntentId: purchases.paymentIntentId,
     })
-    .from(invoices);
+    .from(invoices)
+    .innerJoin(purchases, eq(invoices.purchaseId, purchases.id));
   const sideEffectRows = await transaction
     .select({
       kind: purchaseSideEffects.kind,
+      paymentIntentId: purchases.paymentIntentId,
       status: purchaseSideEffects.status,
     })
-    .from(purchaseSideEffects);
+    .from(purchaseSideEffects)
+    .leftJoin(purchases, eq(purchaseSideEffects.purchaseId, purchases.id));
   const monthlyRunRows = await transaction
     .select({
+      csvSha256: monthlyReportRuns.csvSha256,
       key: monthlyReportRuns.reportKey,
+      reportFamily: monthlyReportRuns.reportFamily,
+      rowCount: monthlyReportRuns.rowCount,
       status: monthlyReportRuns.deliveryStatus,
     })
     .from(monthlyReportRuns);
   const emailLeadRows = await transaction
     .select({
       campaignKey: emailCampaignLeads.campaignKey,
+      emailSendAttempts: emailCampaignLeads.emailSendAttempts,
       key: emailCampaignLeads.leadId,
+      locale: emailCampaignLeads.locale,
       status: emailCampaignLeads.emailSendStatus,
     })
     .from(emailCampaignLeads);
@@ -266,34 +341,66 @@ const loadDatabaseSnapshotInTransaction = async (
     catalog,
     customerCount: customerRows.length,
     emailCampaignLeads: emailLeadRows,
-    entitlements: entitlementRows,
+    entitlements: entitlementRows.map((row) => ({
+      ...row,
+      key: `${paymentIntentIdByPurchaseId.get(row.purchaseId) ?? ""}::${row.accessKey}`,
+      offerExternalId: offerExternalIdByPurchaseId.get(row.purchaseId) ?? "",
+      productExternalId: productExternalIdByPurchaseId.get(row.purchaseId) ?? "",
+    })),
     invoices: invoiceRows,
     monthlyReportRuns: monthlyRunRows,
     onlineGroupCampaigns: onlineGroupCampaignRows,
     purchases: purchaseRows.map((row) => ({
       amountMinor: row.amountMinor,
+      catalogProductExternalId: row.catalogProductExternalId,
+      checkoutCurrency: row.checkoutCurrency,
       currency: row.currency,
+      customerAddressLineSnapshot: row.customerAddressLineSnapshot,
+      customerCitySnapshot: row.customerCitySnapshot,
+      customerCountrySnapshot: row.customerCountrySnapshot,
+      customerEmailSnapshot: row.customerEmailSnapshot,
+      customerFullNameSnapshot: row.customerFullNameSnapshot,
+      customerPostalCodeSnapshot: row.customerPostalCodeSnapshot,
+      customerTelegramUsernameSnapshot: row.customerTelegramUsernameSnapshot,
       firstSeenAt: row.firstSeenAt,
       key: row.paymentIntentId,
+      latestEventId: row.latestEventId,
+      latestEventType: row.latestEventType,
+      lessonLanguage: row.lessonLanguage,
+      offerExternalId: row.offerExternalId,
+      offerLabelSnapshot: row.offerLabelSnapshot,
       outcome: row.outcome,
-      productExternalId: row.productExternalId ?? "unknown",
+      productExternalId: row.productExternalId,
+      productTitleSnapshot: row.productTitleSnapshot,
+      purchaseItemSnapshot: row.purchaseItemSnapshot,
       source: row.source,
+      stripeStatus: row.stripeStatus,
       succeededAt: row.succeededAt,
     })),
-    purchaseSideEffects: sideEffectRows,
+    purchaseSideEffects: sideEffectRows.map((row) => ({
+      key: `${row.paymentIntentId ?? ""}::${row.kind}`,
+      kind: row.kind,
+      status: row.status,
+    })),
     renewalCampaigns: renewalCampaignRows,
     renewalVerifications: renewalVerificationRows,
     stripeEvents: stripeEventRows,
     telegramAccessTokens: telegramTokenRows.map((row) => ({
       ...row,
-      productExternalId: row.productExternalId ?? "unknown",
+      offerExternalId: offerExternalIdByPurchaseId.get(row.purchaseId) ?? "",
+      productExternalId: productExternalIdByPurchaseId.get(row.purchaseId) ?? "",
     })),
     telegramUserBindings: telegramBindingRows.map((row) => ({
+      accessExpiresAt: row.accessExpiresAt,
+      boundAt: row.boundAt,
       key: `${paymentIntentIdByPurchaseId.get(row.purchaseId) ?? ""}::${
         row.chatId ?? ""
       }`,
-      productExternalId: row.productExternalId ?? "unknown",
+      offerExternalId: offerExternalIdByPurchaseId.get(row.purchaseId) ?? "",
+      productExternalId: productExternalIdByPurchaseId.get(row.purchaseId) ?? "",
+      revokedAt: row.revokedAt,
       status: row.status,
+      telegramUserId: row.telegramUserId,
     })),
   };
 };
@@ -339,17 +446,24 @@ const writeReport = async (serializedReport: string) => {
   process.stdout.write(`Baseline written to ${resolvedOutputPath}\n`);
 };
 
-const main = async () => {
-  const capturedAt = new Date().toISOString();
+export const runReconciliationBaseline = async ({
+  strict = process.argv.includes("--strict"),
+}: {
+  strict?: boolean;
+} = {}) => {
+  const captureStartedAt = new Date().toISOString();
   const databaseSelection = getDatabaseEnvSelection("unpooled");
   const [database, sheets] = await Promise.all([
     loadDatabaseSnapshot(),
     loadSheetsSnapshot(),
   ]);
+  const captureCompletedAt = new Date().toISOString();
   const report = buildReconciliationBaseline({
     database,
     options: {
-      capturedAt,
+      captureCompletedAt,
+      captureStartedAt,
+      capturedAt: captureCompletedAt,
       databaseEnvironment: databaseSelection.deploymentEnvironment,
       databaseVariableName: databaseSelection.variableName,
       sampleLimit: getSampleLimit(),
@@ -360,13 +474,15 @@ const main = async () => {
 
   await writeReport(serializedReport);
 
-  if (process.argv.includes("--strict") && report.status !== "ok") {
+  if (strict && report.status !== "ok") {
     process.exitCode = 1;
   }
 };
 
-main().catch((error) => {
-  const message = error instanceof Error ? error.message : "Unknown baseline error";
-  console.error(`Failed to capture reconciliation baseline: ${message}`);
-  process.exitCode = 1;
-});
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  void runReconciliationBaseline().catch((error) => {
+    const message = error instanceof Error ? error.message : "Unknown baseline error";
+    console.error(`Failed to capture reconciliation baseline: ${message}`);
+    process.exitCode = 1;
+  });
+}

@@ -42,18 +42,38 @@ export type DatabaseReconciliationSnapshot = {
   customerCount: number;
   emailCampaignLeads: Array<{
     campaignKey: string;
+    emailSendAttempts: number;
     key: string;
+    locale: string;
     status: string;
   }>;
   entitlements: Array<{
     accessKey: string;
+    accessWorkflow: string | null;
+    currentTokenId: string | null;
+    deliveryChannel: string | null;
+    expiresAt: DateValue;
+    key: string;
+    offerExternalId: string;
+    productExternalId: string;
+    revokedAt: DateValue;
+    startsAt: DateValue;
     status: string;
+    telegramChatId: string | null;
+    telegramUserId: string | null;
   }>;
   invoices: Array<{
+    amountMinor: number;
+    currency: string;
+    issuedAt: DateValue;
     key: string;
+    paymentIntentId: string;
   }>;
   monthlyReportRuns: Array<{
+    csvSha256: string | null;
     key: string;
+    reportFamily: string;
+    rowCount: number;
     status: string;
   }>;
   onlineGroupCampaigns: Array<{
@@ -61,15 +81,33 @@ export type DatabaseReconciliationSnapshot = {
   }>;
   purchases: Array<{
     amountMinor: number;
+    catalogProductExternalId: string;
+    checkoutCurrency: string | null;
     currency: string;
+    customerAddressLineSnapshot: string | null;
+    customerCitySnapshot: string | null;
+    customerCountrySnapshot: string | null;
+    customerEmailSnapshot: string | null;
+    customerFullNameSnapshot: string | null;
+    customerPostalCodeSnapshot: string | null;
+    customerTelegramUsernameSnapshot: string | null;
     firstSeenAt: DateValue;
     key: string;
+    latestEventId: string | null;
+    latestEventType: string | null;
+    lessonLanguage: string | null;
+    offerExternalId: string;
+    offerLabelSnapshot: string | null;
     outcome: string;
     productExternalId: string;
+    productTitleSnapshot: string | null;
+    purchaseItemSnapshot: string | null;
     source: string;
+    stripeStatus: string;
     succeededAt: DateValue;
   }>;
   purchaseSideEffects: Array<{
+    key: string;
     kind: string;
     status: string;
   }>;
@@ -82,19 +120,33 @@ export type DatabaseReconciliationSnapshot = {
   stripeEvents: Array<{
     eventType: string;
     key: string;
+    outcome: string;
+    paymentIntentId: string;
     source: string;
     status: string;
   }>;
   telegramAccessTokens: Array<{
+    accessExpiresAt: DateValue;
+    chatId: string | null;
+    expiresAt: DateValue;
     key: string;
     linkKind: string;
+    offerExternalId: string;
+    paymentIntentId: string;
     productExternalId: string;
     status: string;
+    telegramUserId: string | null;
+    usedAt: DateValue;
   }>;
   telegramUserBindings: Array<{
+    accessExpiresAt: DateValue;
+    boundAt: DateValue;
     key: string;
+    offerExternalId: string;
     productExternalId: string;
+    revokedAt: DateValue;
     status: string;
+    telegramUserId: string;
   }>;
 };
 
@@ -109,6 +161,8 @@ export type SheetsReconciliationSnapshot = {
 };
 
 type ReconciliationBaselineOptions = {
+  captureCompletedAt?: string;
+  captureStartedAt?: string;
   capturedAt: string;
   databaseEnvironment: string;
   databaseVariableName: string | null;
@@ -118,7 +172,7 @@ type ReconciliationBaselineOptions = {
 type KeyComparison = ReturnType<typeof compareKeys>;
 type PaymentTotals = ReturnType<typeof summarizePayments>;
 
-const REPORT_SCHEMA_VERSION = 2;
+const REPORT_SCHEMA_VERSION = 4;
 const DEFAULT_SAMPLE_LIMIT = 20;
 
 const trim = (value: string | null | undefined) => value?.trim() ?? "";
@@ -356,6 +410,136 @@ const compareKeys = ({
       uniqueCount: sheetKeySet.size,
     },
     status,
+  };
+};
+
+type MatchedRowField<DatabaseRow, SheetRow> = {
+  databaseValue: (row: DatabaseRow) => string;
+  name: string;
+  sheetValue: (row: SheetRow) => string;
+};
+
+const normalizeComparableText = (value: unknown) =>
+  typeof value === "string"
+    ? value.trim()
+    : value === null || value === undefined
+      ? ""
+      : String(value);
+
+const normalizeComparableLower = (value: unknown) =>
+  normalizeComparableText(value).toLowerCase();
+
+const normalizeComparableInteger = (value: unknown) => {
+  const parsedValue = Number.parseInt(normalizeComparableText(value), 10);
+
+  return Number.isSafeInteger(parsedValue) ? String(parsedValue) : "0";
+};
+
+const normalizeComparableDate = (value: unknown) => {
+  const normalizedValue = normalizeComparableText(value);
+
+  if (!normalizedValue) {
+    return "";
+  }
+
+  const date = new Date(normalizedValue);
+
+  if (!Number.isFinite(date.getTime())) {
+    return normalizedValue;
+  }
+
+  date.setUTCMilliseconds(0);
+
+  return date.toISOString();
+};
+
+const compareMatchedRows = <DatabaseRow, SheetRow>({
+  databaseRows,
+  fields,
+  getDatabaseKey,
+  getSheetKey,
+  namespace,
+  sampleLimit,
+  sheetRows,
+}: {
+  databaseRows: DatabaseRow[];
+  fields: Array<MatchedRowField<DatabaseRow, SheetRow>>;
+  getDatabaseKey: (row: DatabaseRow) => string;
+  getSheetKey: (row: SheetRow) => string;
+  namespace: string;
+  sampleLimit: number;
+  sheetRows: SheetRow[];
+}) => {
+  const databaseByKey = new Map(
+    databaseRows
+      .map((row) => [trim(getDatabaseKey(row)), row] as const)
+      .filter(([key]) => Boolean(key)),
+  );
+  const sheetByKey = new Map(
+    sheetRows
+      .map((row) => [trim(getSheetKey(row)), row] as const)
+      .filter(([key]) => Boolean(key)),
+  );
+  const differencesByField = new Map<string, number>();
+  const differenceShapesByField = new Map<string, Map<string, number>>();
+  const differenceKeys = new Set<string>();
+  let comparedCount = 0;
+
+  for (const [key, databaseRow] of databaseByKey) {
+    const sheetRow = sheetByKey.get(key);
+
+    if (!sheetRow) {
+      continue;
+    }
+
+    comparedCount += 1;
+
+    for (const field of fields) {
+      const databaseValue = field.databaseValue(databaseRow);
+      const sheetValue = field.sheetValue(sheetRow);
+
+      if (databaseValue === sheetValue) {
+        continue;
+      }
+
+      differenceKeys.add(key);
+      differencesByField.set(field.name, (differencesByField.get(field.name) ?? 0) + 1);
+      const shape = !databaseValue
+        ? "database-empty"
+        : !sheetValue
+          ? "sheet-empty"
+          : "both-present-different";
+      const shapesForField = differenceShapesByField.get(field.name) ?? new Map();
+      shapesForField.set(shape, (shapesForField.get(shape) ?? 0) + 1);
+      differenceShapesByField.set(field.name, shapesForField);
+    }
+  }
+
+  const sortedDifferenceKeys = [...differenceKeys].sort();
+
+  return {
+    comparedCount,
+    differenceCount: sortedDifferenceKeys.length,
+    differenceKeyHashes: sortedDifferenceKeys
+      .slice(0, sampleLimit)
+      .map((key) => hashIdentifier(namespace, key))
+      .sort(),
+    differencesByField: Object.fromEntries(
+      [...differencesByField.entries()].sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    ),
+    differenceShapesByField: Object.fromEntries(
+      [...differenceShapesByField.entries()]
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([field, shapes]) => [
+          field,
+          Object.fromEntries(
+            [...shapes.entries()].sort(([left], [right]) => left.localeCompare(right)),
+          ),
+        ]),
+    ),
+    status: sortedDifferenceKeys.length === 0 ? ("ok" as const) : ("mismatch" as const),
   };
 };
 
@@ -831,6 +1015,1035 @@ const buildDifferenceAnalysis = ({
 const getBindingKey = (paymentIntentId: string, chatId: string) =>
   `${trim(paymentIntentId)}::${trim(chatId)}`;
 
+const getLegacySideEffectRows = (payments: PaymentSheetRecord[]) =>
+  payments.flatMap((payment) =>
+    [
+      {
+        key: `${trim(payment.payment_intent_id)}::purchase_success_email`,
+        status: payment.email_delivery_status,
+      },
+      {
+        key: `${trim(payment.payment_intent_id)}::admin_telegram_alert`,
+        status: payment.with_mentor_alert_status,
+      },
+      {
+        key: `${trim(payment.payment_intent_id)}::successful_customer_export`,
+        status: payment.successful_customer_log_status,
+      },
+    ].filter((row) => trim(row.status)),
+  );
+
+const getSheetEntitlementRows = (payments: PaymentSheetRecord[]) =>
+  payments
+    .filter(
+      (payment) =>
+        trim(payment.telegram_access_status) ||
+        trim(payment.access_workflow) ||
+        trim(payment.delivery_channel),
+    )
+    .map((payment) => ({
+      ...payment,
+      key: `${trim(payment.payment_intent_id)}::primary`,
+    }));
+
+const buildActiveAccessCoverage = <DatabaseRow, SheetRow>({
+  activeStatuses,
+  databaseRows,
+  getDatabaseKey,
+  getDatabaseStatus,
+  getSheetKey,
+  getSheetStatus,
+  sheetRows,
+}: {
+  activeStatuses: string[];
+  databaseRows: DatabaseRow[];
+  getDatabaseKey: (row: DatabaseRow) => string;
+  getDatabaseStatus: (row: DatabaseRow) => string;
+  getSheetKey: (row: SheetRow) => string;
+  getSheetStatus: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const activeStatusCategories = new Set(activeStatuses.map(normalizeStatusCategory));
+  const isActive = (value: string | null | undefined) =>
+    activeStatusCategories.has(normalizeStatusCategory(value));
+  const databaseKeys = new Set(
+    databaseRows.map(getDatabaseKey).map(trim).filter(Boolean),
+  );
+  const sheetKeys = new Set(sheetRows.map(getSheetKey).map(trim).filter(Boolean));
+  const activeDatabaseRows = databaseRows.filter((row) =>
+    isActive(getDatabaseStatus(row)),
+  );
+  const activeSheetRows = sheetRows.filter((row) => isActive(getSheetStatus(row)));
+
+  return {
+    activeStatuses: [...activeStatusCategories].sort(),
+    databaseActiveCount: activeDatabaseRows.length,
+    databaseActiveOnlyCount: activeDatabaseRows.filter(
+      (row) => !sheetKeys.has(trim(getDatabaseKey(row))),
+    ).length,
+    databaseActiveRepresentedInSheetCount: activeDatabaseRows.filter((row) =>
+      sheetKeys.has(trim(getDatabaseKey(row))),
+    ).length,
+    sheetActiveCount: activeSheetRows.length,
+    sheetActiveMatchedInDatabaseCount: activeSheetRows.filter((row) =>
+      databaseKeys.has(trim(getSheetKey(row))),
+    ).length,
+    sheetActiveMissingInDatabaseCount: activeSheetRows.filter(
+      (row) => !databaseKeys.has(trim(getSheetKey(row))),
+    ).length,
+  };
+};
+
+const buildStatusTransitions = <DatabaseRow, SheetRow>({
+  databaseRows,
+  getDatabaseKey,
+  getDatabaseStatus,
+  getSheetKey,
+  getSheetStatus,
+  sheetRows,
+}: {
+  databaseRows: DatabaseRow[];
+  getDatabaseKey: (row: DatabaseRow) => string;
+  getDatabaseStatus: (row: DatabaseRow) => string;
+  getSheetKey: (row: SheetRow) => string;
+  getSheetStatus: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const databaseByKey = new Map(
+    databaseRows.map((row) => [trim(getDatabaseKey(row)), row] as const),
+  );
+  const transitions = sheetRows.flatMap((sheetRow) => {
+    const databaseRow = databaseByKey.get(trim(getSheetKey(sheetRow)));
+
+    if (!databaseRow) {
+      return [];
+    }
+
+    const databaseStatus = normalizeStatusCategory(getDatabaseStatus(databaseRow));
+    const sheetStatus = normalizeStatusCategory(getSheetStatus(sheetRow));
+
+    return databaseStatus === sheetStatus
+      ? []
+      : [`sheet:${sheetStatus}->database:${databaseStatus}`];
+  });
+
+  return {
+    byTransition: countBy(transitions),
+    count: transitions.length,
+  };
+};
+
+const buildProductReferenceConflictSummary = <SheetRow>({
+  databasePurchases,
+  getSheetKey,
+  getSheetProductExternalId,
+  sheetRows,
+}: {
+  databasePurchases: DatabaseReconciliationSnapshot["purchases"];
+  getSheetKey: (row: SheetRow) => string;
+  getSheetProductExternalId: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const databaseByKey = new Map(
+    databasePurchases.map((row) => [trim(row.key), row] as const),
+  );
+  const differences = sheetRows.flatMap((sheetRow) => {
+    const databaseRow = databaseByKey.get(trim(getSheetKey(sheetRow)));
+
+    if (!databaseRow) {
+      return [];
+    }
+
+    const databaseValue = trim(databaseRow.productExternalId);
+    const sheetValue = trim(getSheetProductExternalId(sheetRow));
+
+    if (databaseValue === sheetValue) {
+      return [];
+    }
+
+    const catalogValue = trim(databaseRow.catalogProductExternalId);
+    let evidence: string;
+
+    if (databaseValue === "unknown" && !sheetValue) {
+      evidence = "database-placeholder-sheet-empty";
+    } else if (!catalogValue) {
+      evidence = "catalog-relation-missing";
+    } else if (databaseValue === catalogValue && sheetValue !== catalogValue) {
+      evidence = "database-value-matches-catalog-relation";
+    } else if (sheetValue === catalogValue && databaseValue !== catalogValue) {
+      evidence = "sheet-value-matches-catalog-relation";
+    } else {
+      evidence = "neither-value-matches-catalog-relation";
+    }
+
+    return [{ databaseRow, evidence }];
+  });
+
+  return {
+    byDatabaseOutcome: countByStatus(
+      differences.map(({ databaseRow }) => databaseRow.outcome),
+    ),
+    byDatabaseSource: countBySource(
+      differences.map(({ databaseRow }) => databaseRow.source),
+    ),
+    byEvidence: countBy(differences.map(({ evidence }) => evidence)),
+    differenceCount: differences.length,
+  };
+};
+
+const classifyDateDifference = (databaseValue: DateValue, sheetValue: string) => {
+  const databaseText = normalizeComparableText(databaseValue);
+  const sheetText = normalizeComparableText(sheetValue);
+
+  if (!databaseText && !sheetText) {
+    return "equal";
+  }
+
+  if (!databaseText && sheetText) {
+    return "database-empty";
+  }
+
+  if (databaseText && !sheetText) {
+    return "sheet-empty";
+  }
+
+  const databaseTimestamp = new Date(databaseText).getTime();
+  const sheetTimestamp = new Date(sheetText).getTime();
+
+  if (!Number.isFinite(databaseTimestamp) || !Number.isFinite(sheetTimestamp)) {
+    return "unparseable";
+  }
+
+  const deltaMs = Math.abs(databaseTimestamp - sheetTimestamp);
+
+  if (deltaMs === 0) {
+    return "equal";
+  }
+
+  if (deltaMs < 1_000) {
+    return "under-one-second";
+  }
+
+  if (deltaMs < 60_000) {
+    return "one-to-sixty-seconds";
+  }
+
+  if (deltaMs < 3_600_000) {
+    return "one-minute-to-one-hour";
+  }
+
+  if (deltaMs < 86_400_000) {
+    return "one-hour-to-one-day";
+  }
+
+  return "one-day-or-more";
+};
+
+const buildLifecycleDateDifferences = <DatabaseRow, SheetRow>({
+  databaseRows,
+  fields,
+  getDatabaseKey,
+  getSheetKey,
+  sheetRows,
+}: {
+  databaseRows: DatabaseRow[];
+  fields: Array<{
+    databaseValue: (row: DatabaseRow) => DateValue;
+    name: string;
+    sheetValue: (row: SheetRow) => string;
+  }>;
+  getDatabaseKey: (row: DatabaseRow) => string;
+  getSheetKey: (row: SheetRow) => string;
+  sheetRows: SheetRow[];
+}) => {
+  const databaseByKey = new Map(
+    databaseRows.map((row) => [trim(getDatabaseKey(row)), row] as const),
+  );
+
+  return Object.fromEntries(
+    fields.map((field) => {
+      const categories = sheetRows.flatMap((sheetRow) => {
+        const databaseRow = databaseByKey.get(trim(getSheetKey(sheetRow)));
+
+        if (!databaseRow) {
+          return [];
+        }
+
+        const databaseValue = field.databaseValue(databaseRow);
+        const sheetValue = field.sheetValue(sheetRow);
+        const category = classifyDateDifference(databaseValue, sheetValue);
+
+        return category === "equal" ? [] : [category];
+      });
+
+      return [
+        field.name,
+        {
+          byMagnitude: countBy(categories),
+          differenceCount: categories.length,
+        },
+      ];
+    }),
+  );
+};
+
+const buildConflictAnalysis = ({
+  database,
+  sheets,
+}: {
+  database: DatabaseReconciliationSnapshot;
+  sheets: SheetsReconciliationSnapshot;
+}) => {
+  const payments = getCanonicalPaymentRows(sheets.payments);
+  const sheetEntitlements = getSheetEntitlementRows(payments);
+  const primaryEntitlements = database.entitlements.filter(
+    (row) => row.accessKey === "primary",
+  );
+
+  return {
+    activeAccessCoverage: {
+      entitlements: buildActiveAccessCoverage({
+        activeStatuses: ["active", "activated", "token_issued"],
+        databaseRows: primaryEntitlements,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.key,
+        getSheetStatus: (row) => row.telegram_access_status,
+        sheetRows: sheetEntitlements,
+      }),
+      telegramAccessTokens: buildActiveAccessCoverage({
+        activeStatuses: ["issued"],
+        databaseRows: database.telegramAccessTokens,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.token_id,
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramAccessTokens,
+      }),
+      telegramUserBindings: buildActiveAccessCoverage({
+        activeStatuses: ["active"],
+        databaseRows: database.telegramUserBindings,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => getBindingKey(row.payment_intent_id, row.chat_id),
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramUserBindings,
+      }),
+    },
+    productReferences: {
+      payments: buildProductReferenceConflictSummary({
+        databasePurchases: database.purchases,
+        getSheetKey: (row: PaymentSheetRecord) => row.payment_intent_id,
+        getSheetProductExternalId: (row) => row.product_id,
+        sheetRows: payments,
+      }),
+      successfulCustomers: buildProductReferenceConflictSummary({
+        databasePurchases: database.purchases,
+        getSheetKey: (row: SuccessfulCustomersSheetRecord) => row.payment_intent_id,
+        getSheetProductExternalId: (row) => row.product_id,
+        sheetRows: sheets.successfulCustomers,
+      }),
+    },
+    lifecycleDateDifferences: {
+      entitlements: buildLifecycleDateDifferences({
+        databaseRows: primaryEntitlements,
+        fields: [
+          {
+            databaseValue: (row) => row.startsAt,
+            name: "startsAt",
+            sheetValue: (row) => row.telegram_token_used_at,
+          },
+          {
+            databaseValue: (row) => row.expiresAt,
+            name: "expiresAt",
+            sheetValue: (row) => row.telegram_access_expires_at,
+          },
+          {
+            databaseValue: (row) => row.revokedAt,
+            name: "revokedAt",
+            sheetValue: (row) => row.telegram_access_revoked_at,
+          },
+        ],
+        getDatabaseKey: (row) => row.key,
+        getSheetKey: (row) => row.key,
+        sheetRows: sheetEntitlements,
+      }),
+      telegramAccessTokens: buildLifecycleDateDifferences({
+        databaseRows: database.telegramAccessTokens,
+        fields: [
+          {
+            databaseValue: (row) => row.accessExpiresAt,
+            name: "accessExpiresAt",
+            sheetValue: (row) => row.access_expires_at,
+          },
+          {
+            databaseValue: (row) => row.expiresAt,
+            name: "expiresAt",
+            sheetValue: (row) => row.expires_at,
+          },
+          {
+            databaseValue: (row) => row.usedAt,
+            name: "usedAt",
+            sheetValue: (row) => row.used_at,
+          },
+        ],
+        getDatabaseKey: (row) => row.key,
+        getSheetKey: (row) => row.token_id,
+        sheetRows: sheets.telegramAccessTokens,
+      }),
+      telegramUserBindings: buildLifecycleDateDifferences({
+        databaseRows: database.telegramUserBindings,
+        fields: [
+          {
+            databaseValue: (row) => row.boundAt,
+            name: "boundAt",
+            sheetValue: (row) => row.bound_at,
+          },
+          {
+            databaseValue: (row) => row.accessExpiresAt,
+            name: "accessExpiresAt",
+            sheetValue: (row) => row.access_expires_at,
+          },
+          {
+            databaseValue: (row) => row.revokedAt,
+            name: "revokedAt",
+            sheetValue: (row) => row.revoked_at,
+          },
+        ],
+        getDatabaseKey: (row) => row.key,
+        getSheetKey: (row) => getBindingKey(row.payment_intent_id, row.chat_id),
+        sheetRows: sheets.telegramUserBindings,
+      }),
+    },
+    statusTransitions: {
+      entitlements: buildStatusTransitions({
+        databaseRows: primaryEntitlements,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.key,
+        getSheetStatus: (row) => row.telegram_access_status,
+        sheetRows: sheetEntitlements,
+      }),
+      telegramAccessTokens: buildStatusTransitions({
+        databaseRows: database.telegramAccessTokens,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => row.token_id,
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramAccessTokens,
+      }),
+      telegramUserBindings: buildStatusTransitions({
+        databaseRows: database.telegramUserBindings,
+        getDatabaseKey: (row) => row.key,
+        getDatabaseStatus: (row) => row.status,
+        getSheetKey: (row) => getBindingKey(row.payment_intent_id, row.chat_id),
+        getSheetStatus: (row) => row.status,
+        sheetRows: sheets.telegramUserBindings,
+      }),
+    },
+  };
+};
+
+const buildCatalogReferenceComparison = ({
+  catalog,
+  payments,
+  sampleLimit,
+}: {
+  catalog: DatabaseReconciliationSnapshot["catalog"];
+  payments: PaymentSheetRecord[];
+  sampleLimit: number;
+}) => {
+  const productIds = new Set(
+    catalog.products.map((product) => product.externalProductId),
+  );
+  const offerProductById = new Map(
+    catalog.offers.map((offer) => [offer.externalOfferId, offer.productExternalId]),
+  );
+  const differencesByField = new Map<string, number>();
+  const differenceKeys = new Set<string>();
+  let comparedCount = 0;
+
+  const recordDifference = (field: string, key: string) => {
+    differenceKeys.add(key);
+    differencesByField.set(field, (differencesByField.get(field) ?? 0) + 1);
+  };
+
+  for (const payment of payments) {
+    const key = trim(payment.payment_intent_id);
+    const productExternalId = trim(payment.product_id);
+    const offerExternalId = trim(payment.offer_id);
+
+    if (!key || (!productExternalId && !offerExternalId)) {
+      continue;
+    }
+
+    comparedCount += 1;
+
+    if (productExternalId && !productIds.has(productExternalId)) {
+      recordDifference("unknownProduct", key);
+    }
+
+    if (offerExternalId && !offerProductById.has(offerExternalId)) {
+      recordDifference("unknownOffer", key);
+    }
+
+    if (
+      productExternalId &&
+      offerExternalId &&
+      offerProductById.has(offerExternalId) &&
+      offerProductById.get(offerExternalId) !== productExternalId
+    ) {
+      recordDifference("offerProductOwnership", key);
+    }
+  }
+
+  const sortedDifferenceKeys = [...differenceKeys].sort();
+
+  return {
+    comparedCount,
+    differenceCount: sortedDifferenceKeys.length,
+    differenceKeyHashes: sortedDifferenceKeys
+      .slice(0, sampleLimit)
+      .map((key) => hashIdentifier("catalog-reference", key))
+      .sort(),
+    differencesByField: Object.fromEntries(
+      [...differencesByField.entries()].sort(([left], [right]) =>
+        left.localeCompare(right),
+      ),
+    ),
+    status: sortedDifferenceKeys.length === 0 ? ("ok" as const) : ("mismatch" as const),
+  };
+};
+
+const buildRowComparisons = ({
+  database,
+  sampleLimit,
+  sheets,
+}: {
+  database: DatabaseReconciliationSnapshot;
+  sampleLimit: number;
+  sheets: SheetsReconciliationSnapshot;
+}) => {
+  const payments = getCanonicalPaymentRows(sheets.payments);
+  const succeededPurchases = database.purchases.filter(
+    (purchase) => normalizeStatus(purchase.outcome) === "succeeded",
+  );
+  const invoicePayments = payments.filter((payment) => trim(payment.invoice_number));
+  const legacySideEffects = getLegacySideEffectRows(payments);
+  const sheetEntitlements = getSheetEntitlementRows(payments);
+
+  return {
+    accessEntitlements: compareMatchedRows({
+      databaseRows: database.entitlements.filter(
+        (entitlement) => entitlement.accessKey === "primary",
+      ),
+      fields: [
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.status),
+          name: "status",
+          sheetValue: (row) => normalizeStatusCategory(row.telegram_access_status),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.productExternalId),
+          name: "productExternalId",
+          sheetValue: (row) => normalizeComparableText(row.product_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.offerExternalId),
+          name: "offerExternalId",
+          sheetValue: (row) => normalizeComparableText(row.offer_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.deliveryChannel),
+          name: "deliveryChannel",
+          sheetValue: (row) => normalizeComparableText(row.delivery_channel),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.accessWorkflow),
+          name: "accessWorkflow",
+          sheetValue: (row) => normalizeComparableText(row.access_workflow),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.currentTokenId),
+          name: "currentTokenId",
+          sheetValue: (row) => normalizeComparableText(row.telegram_token_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.telegramChatId),
+          name: "telegramChatId",
+          sheetValue: (row) => normalizeComparableText(row.telegram_channel_chat_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.telegramUserId),
+          name: "telegramUserId",
+          sheetValue: (row) => normalizeComparableText(row.telegram_user_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.startsAt),
+          name: "startsAt",
+          sheetValue: (row) => normalizeComparableDate(row.telegram_token_used_at),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.expiresAt),
+          name: "expiresAt",
+          sheetValue: (row) => normalizeComparableDate(row.telegram_access_expires_at),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.revokedAt),
+          name: "revokedAt",
+          sheetValue: (row) => normalizeComparableDate(row.telegram_access_revoked_at),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.key,
+      namespace: "access-entitlement-state",
+      sampleLimit,
+      sheetRows: sheetEntitlements,
+    }),
+    catalogReferences: buildCatalogReferenceComparison({
+      catalog: database.catalog,
+      payments,
+      sampleLimit,
+    }),
+    emailCampaignLeads: compareMatchedRows({
+      databaseRows: database.emailCampaignLeads,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableText(row.campaignKey),
+          name: "campaignKey",
+          sheetValue: (row) => normalizeComparableText(row.campaign_key),
+        },
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.status),
+          name: "status",
+          sheetValue: (row) => normalizeStatusCategory(row.email_send_status),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.locale),
+          name: "locale",
+          sheetValue: (row) => normalizeComparableText(row.locale),
+        },
+        {
+          databaseValue: (row) => normalizeComparableInteger(row.emailSendAttempts),
+          name: "attempts",
+          sheetValue: (row) => normalizeComparableInteger(row.email_send_attempts),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.lead_id,
+      namespace: "email-campaign-lead-state",
+      sampleLimit,
+      sheetRows: sheets.emailCampaignLeads,
+    }),
+    invoices: compareMatchedRows({
+      databaseRows: database.invoices,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableText(row.paymentIntentId),
+          name: "paymentIntentId",
+          sheetValue: (row) => normalizeComparableText(row.payment_intent_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableInteger(row.amountMinor),
+          name: "amountMinor",
+          sheetValue: (row) => normalizeComparableInteger(row.amount),
+        },
+        {
+          databaseValue: (row) => normalizeComparableLower(row.currency),
+          name: "currency",
+          sheetValue: (row) =>
+            normalizeComparableLower(row.checkout_currency || row.currency),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.issuedAt),
+          name: "issuedAt",
+          sheetValue: (row) => normalizeComparableDate(row.invoice_issued_at),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.invoice_number,
+      namespace: "invoice-state",
+      sampleLimit,
+      sheetRows: invoicePayments,
+    }),
+    monthlyReportRuns: compareMatchedRows({
+      databaseRows: database.monthlyReportRuns,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableText(row.reportFamily),
+          name: "reportFamily",
+          sheetValue: (row) => normalizeComparableText(row.report_family),
+        },
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.status),
+          name: "status",
+          sheetValue: (row) => normalizeStatusCategory(row.delivery_status),
+        },
+        {
+          databaseValue: (row) => normalizeComparableInteger(row.rowCount),
+          name: "rowCount",
+          sheetValue: (row) => normalizeComparableInteger(row.row_count),
+        },
+        {
+          databaseValue: (row) => normalizeComparableLower(row.csvSha256),
+          name: "csvSha256",
+          sheetValue: (row) => normalizeComparableLower(row.csv_sha256),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.report_key,
+      namespace: "monthly-report-state",
+      sampleLimit,
+      sheetRows: sheets.monthlyReportRuns,
+    }),
+    paymentCustomerSnapshots: compareMatchedRows({
+      databaseRows: database.purchases,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableLower(row.customerEmailSnapshot),
+          name: "email",
+          sheetValue: (row) => normalizeComparableLower(row.customer_email),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.customerFullNameSnapshot),
+          name: "fullName",
+          sheetValue: (row) => normalizeComparableText(row.customer_full_name),
+        },
+        {
+          databaseValue: (row) =>
+            normalizeComparableLower(row.customerTelegramUsernameSnapshot),
+          name: "telegramUsername",
+          sheetValue: (row) => normalizeComparableLower(row.customer_nickname),
+        },
+        {
+          databaseValue: (row) => normalizeComparableLower(row.customerCountrySnapshot),
+          name: "country",
+          sheetValue: (row) => normalizeComparableLower(row.customer_country),
+        },
+        {
+          databaseValue: (row) =>
+            normalizeComparableText(row.customerAddressLineSnapshot),
+          name: "addressLine",
+          sheetValue: (row) => normalizeComparableText(row.customer_address),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.customerCitySnapshot),
+          name: "city",
+          sheetValue: (row) => normalizeComparableText(row.customer_city),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.customerPostalCodeSnapshot),
+          name: "postalCode",
+          sheetValue: (row) => normalizeComparableText(row.customer_postal_code),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.payment_intent_id,
+      namespace: "payment-customer-snapshot",
+      sampleLimit,
+      sheetRows: payments,
+    }),
+    payments: compareMatchedRows({
+      databaseRows: database.purchases,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableInteger(row.amountMinor),
+          name: "amountMinor",
+          sheetValue: (row) => normalizeComparableInteger(row.amount),
+        },
+        {
+          databaseValue: (row) => normalizeComparableLower(row.currency),
+          name: "currency",
+          sheetValue: (row) =>
+            normalizeComparableLower(row.checkout_currency || row.currency),
+        },
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.outcome),
+          name: "outcome",
+          sheetValue: (row) => normalizeStatusCategory(row.outcome),
+        },
+        {
+          databaseValue: (row) => normalizeStatus(row.stripeStatus),
+          name: "stripeStatus",
+          sheetValue: (row) => normalizeStatus(row.status),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.productExternalId),
+          name: "productExternalId",
+          sheetValue: (row) => normalizeComparableText(row.product_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.offerExternalId),
+          name: "offerExternalId",
+          sheetValue: (row) => normalizeComparableText(row.offer_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.productTitleSnapshot),
+          name: "productTitle",
+          sheetValue: (row) => normalizeComparableText(row.product_title),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.offerLabelSnapshot),
+          name: "offerLabel",
+          sheetValue: (row) => normalizeComparableText(row.offer_label),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.purchaseItemSnapshot),
+          name: "purchaseItem",
+          sheetValue: (row) => normalizeComparableText(row.purchase_item),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.lessonLanguage),
+          name: "lessonLanguage",
+          sheetValue: (row) => normalizeComparableText(row.lesson_language),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.latestEventId),
+          name: "latestEventId",
+          sheetValue: (row) => normalizeComparableText(row.latest_event_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.latestEventType),
+          name: "latestEventType",
+          sheetValue: (row) => normalizeComparableText(row.latest_event_type),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.payment_intent_id,
+      namespace: "payment-state",
+      sampleLimit,
+      sheetRows: payments,
+    }),
+    purchaseSideEffects: compareMatchedRows({
+      databaseRows: database.purchaseSideEffects.filter((row) =>
+        [
+          "purchase_success_email",
+          "admin_telegram_alert",
+          "successful_customer_export",
+        ].includes(row.kind),
+      ),
+      fields: [
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.status),
+          name: "status",
+          sheetValue: (row) => normalizeStatusCategory(row.status),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.key,
+      namespace: "purchase-side-effect-state",
+      sampleLimit,
+      sheetRows: legacySideEffects,
+    }),
+    stripeEvents: compareMatchedRows({
+      databaseRows: database.stripeEvents,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableText(row.eventType),
+          name: "eventType",
+          sheetValue: (row) => normalizeComparableText(row.event_type),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.paymentIntentId),
+          name: "paymentIntentId",
+          sheetValue: (row) => normalizeComparableText(row.payment_intent_id),
+        },
+        {
+          databaseValue: (row) => normalizeStatus(row.status),
+          name: "status",
+          sheetValue: (row) => normalizeStatus(row.status),
+        },
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.outcome),
+          name: "outcome",
+          sheetValue: (row) => normalizeStatusCategory(row.outcome),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.event_id,
+      namespace: "stripe-event-state",
+      sampleLimit,
+      sheetRows: sheets.stripeEvents,
+    }),
+    successfulCustomerSnapshots: compareMatchedRows({
+      databaseRows: succeededPurchases,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableLower(row.customerEmailSnapshot),
+          name: "email",
+          sheetValue: (row) => normalizeComparableLower(row.customer_email),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.customerFullNameSnapshot),
+          name: "fullName",
+          sheetValue: (row) => normalizeComparableText(row.customer_full_name),
+        },
+        {
+          databaseValue: (row) =>
+            normalizeComparableLower(row.customerTelegramUsernameSnapshot),
+          name: "telegramUsername",
+          sheetValue: (row) => normalizeComparableLower(row.customer_nickname),
+        },
+        {
+          databaseValue: (row) =>
+            normalizeComparableText(
+              [
+                row.customerAddressLineSnapshot,
+                row.customerCitySnapshot,
+                row.customerPostalCodeSnapshot,
+              ]
+                .map(normalizeComparableText)
+                .filter(Boolean)
+                .join(", "),
+            ),
+          name: "fullAddress",
+          sheetValue: (row) => normalizeComparableText(row.customer_full_address),
+        },
+        {
+          databaseValue: (row) => normalizeComparableLower(row.customerCountrySnapshot),
+          name: "country",
+          sheetValue: (row) => normalizeComparableLower(row.customer_country),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.purchaseItemSnapshot),
+          name: "purchaseItem",
+          sheetValue: (row) => normalizeComparableText(row.purchase_item),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.productExternalId),
+          name: "productExternalId",
+          sheetValue: (row) => normalizeComparableText(row.product_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.productTitleSnapshot),
+          name: "productTitle",
+          sheetValue: (row) => normalizeComparableText(row.product_title),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.offerExternalId),
+          name: "offerExternalId",
+          sheetValue: (row) => normalizeComparableText(row.offer_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.offerLabelSnapshot),
+          name: "offerLabel",
+          sheetValue: (row) => normalizeComparableText(row.offer_label),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.payment_intent_id,
+      namespace: "successful-customer-snapshot",
+      sampleLimit,
+      sheetRows: sheets.successfulCustomers,
+    }),
+    telegramAccessTokens: compareMatchedRows({
+      databaseRows: database.telegramAccessTokens,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableText(row.paymentIntentId),
+          name: "paymentIntentId",
+          sheetValue: (row) => normalizeComparableText(row.payment_intent_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.productExternalId),
+          name: "productExternalId",
+          sheetValue: (row) => normalizeComparableText(row.product_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.offerExternalId),
+          name: "offerExternalId",
+          sheetValue: (row) => normalizeComparableText(row.offer_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.linkKind),
+          name: "linkKind",
+          sheetValue: (row) => normalizeComparableText(row.link_kind),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.chatId),
+          name: "chatId",
+          sheetValue: (row) => normalizeComparableText(row.chat_id),
+        },
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.status),
+          name: "status",
+          sheetValue: (row) => normalizeStatusCategory(row.status),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.accessExpiresAt),
+          name: "accessExpiresAt",
+          sheetValue: (row) => normalizeComparableDate(row.access_expires_at),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.expiresAt),
+          name: "expiresAt",
+          sheetValue: (row) => normalizeComparableDate(row.expires_at),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.usedAt),
+          name: "usedAt",
+          sheetValue: (row) => normalizeComparableDate(row.used_at),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.telegramUserId),
+          name: "telegramUserId",
+          sheetValue: (row) => normalizeComparableText(row.telegram_user_id),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => row.token_id,
+      namespace: "telegram-access-token-state",
+      sampleLimit,
+      sheetRows: sheets.telegramAccessTokens,
+    }),
+    telegramUserBindings: compareMatchedRows({
+      databaseRows: database.telegramUserBindings,
+      fields: [
+        {
+          databaseValue: (row) => normalizeComparableText(row.productExternalId),
+          name: "productExternalId",
+          sheetValue: (row) => normalizeComparableText(row.product_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.offerExternalId),
+          name: "offerExternalId",
+          sheetValue: (row) => normalizeComparableText(row.offer_id),
+        },
+        {
+          databaseValue: (row) => normalizeStatusCategory(row.status),
+          name: "status",
+          sheetValue: (row) => normalizeStatusCategory(row.status),
+        },
+        {
+          databaseValue: (row) => normalizeComparableText(row.telegramUserId),
+          name: "telegramUserId",
+          sheetValue: (row) => normalizeComparableText(row.telegram_user_id),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.boundAt),
+          name: "boundAt",
+          sheetValue: (row) => normalizeComparableDate(row.bound_at),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.accessExpiresAt),
+          name: "accessExpiresAt",
+          sheetValue: (row) => normalizeComparableDate(row.access_expires_at),
+        },
+        {
+          databaseValue: (row) => normalizeComparableDate(row.revokedAt),
+          name: "revokedAt",
+          sheetValue: (row) => normalizeComparableDate(row.revoked_at),
+        },
+      ],
+      getDatabaseKey: (row) => row.key,
+      getSheetKey: (row) => getBindingKey(row.payment_intent_id, row.chat_id),
+      namespace: "telegram-user-binding-state",
+      sampleLimit,
+      sheetRows: sheets.telegramUserBindings,
+    }),
+  };
+};
+
 const buildComparisons = ({
   database,
   sampleLimit,
@@ -1006,11 +2219,18 @@ export const buildReconciliationBaseline = ({
     database: getDatabasePaymentTotals(database.purchases),
     sheets: getSheetPaymentTotals(sheets.payments),
   });
+  const rowComparisons = buildRowComparisons({
+    database,
+    sampleLimit,
+    sheets,
+  });
   const body = {
     catalog: buildCatalog(database.catalog),
     comparisons,
+    conflictAnalysis: buildConflictAnalysis({ database, sheets }),
     differenceAnalysis: buildDifferenceAnalysis({ database, sheets }),
     finance,
+    rowComparisons,
     state: buildStateSummary({
       database,
       sheets,
@@ -1019,13 +2239,23 @@ export const buildReconciliationBaseline = ({
   const hasKeyMismatch = Object.values(comparisons).some(
     (comparison: KeyComparison) => comparison.status !== "ok",
   );
+  const hasRowMismatch = Object.values(rowComparisons).some(
+    (comparison) => comparison.status !== "ok",
+  );
   const status =
-    !hasKeyMismatch && finance.matchesByCurrency && finance.matchesByCurrencyMonth
+    !hasKeyMismatch &&
+    !hasRowMismatch &&
+    finance.matchesByCurrency &&
+    finance.matchesByCurrencyMonth
       ? ("ok" as const)
       : ("mismatch" as const);
 
   return {
     metadata: {
+      captureWindow: {
+        completedAt: options.captureCompletedAt ?? options.capturedAt,
+        startedAt: options.captureStartedAt ?? options.capturedAt,
+      },
       capturedAt: options.capturedAt,
       databaseEnvironment: options.databaseEnvironment,
       databaseVariableName: options.databaseVariableName,

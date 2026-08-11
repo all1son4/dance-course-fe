@@ -1,7 +1,6 @@
 # Resumable Google Sheets backfill
 
-Status: backfill complete in development and production; final production invariant
-repair pending
+Status: `DONE`
 Implemented: 2026-08-11
 
 ## Purpose
@@ -185,5 +184,11 @@ counters monotonically. Its regression test, exact
 [development migration](https://github.com/all1son4/dance-course-fe/actions/runs/31492817083),
 zero-violation development audit, and
 [deployed smoke](https://github.com/all1son4/dance-course-fe/actions/runs/31492676736)
-passed. DATA-02 becomes complete after `0015` is applied to production and the
-production invariant audit returns zero violations.
+passed. The final merge SHA `af2bc1d` then passed
+[production Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31493498635)
+and
+[production smoke](https://github.com/all1son4/dance-course-fe/actions/runs/31493549934).
+Controlled production
+[migration `31493696710`](https://github.com/all1son4/dance-course-fe/actions/runs/31493696710)
+applied `0015`, and the final production audit reported zero violations for all 32
+invariants. DATA-02 is complete.
