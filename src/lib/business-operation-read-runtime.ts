@@ -53,6 +53,21 @@ export type BusinessOperationReadOptions = {
   onShadowComparison?: (comparison: BusinessOperationReadShadowComparison) => void;
 };
 
+const sheetsDependencies: BusinessOperationReadSource = {
+  findCampaignLead: (input) =>
+    findLegacyEmailCampaignLead({ ...input, source: "sheets" }),
+  findInvoicePaymentByIntentId: (paymentIntentId) =>
+    findLegacyInvoicePayment(paymentIntentId, {
+      cacheTtlMs: 0,
+      source: "sheets",
+    }),
+  findMonthlyReportRun: (reportKey) =>
+    findLegacyMonthlyReportRun(reportKey, { source: "sheets" }),
+  listCampaignLeads: () => listLegacyCampaignLeads({ cacheTtlMs: 0, source: "sheets" }),
+  listInvoicePayments: () =>
+    listLegacyInvoicePayments({ cacheTtlMs: 0, source: "sheets" }),
+};
+
 const defaultDependencies: BusinessOperationReadDependencies = {
   database: {
     findCampaignLead: domainRepositories.businessOperationReads.findCampaignLead,
@@ -61,28 +76,8 @@ const defaultDependencies: BusinessOperationReadDependencies = {
     listCampaignLeads: domainRepositories.businessOperationReads.listCampaignLeads,
     listInvoicePayments: domainRepositories.businessOperationReads.listInvoicePayments,
   },
-  legacy: {
-    findCampaignLead: (input) => findLegacyEmailCampaignLead(input),
-    findInvoicePaymentByIntentId: (paymentIntentId) =>
-      findLegacyInvoicePayment(paymentIntentId, { cacheTtlMs: 0 }),
-    findMonthlyReportRun: (reportKey) => findLegacyMonthlyReportRun(reportKey),
-    listCampaignLeads: () => listLegacyCampaignLeads({ cacheTtlMs: 0 }),
-    listInvoicePayments: () => listLegacyInvoicePayments({ cacheTtlMs: 0 }),
-  },
-  sheets: {
-    findCampaignLead: (input) =>
-      findLegacyEmailCampaignLead({ ...input, source: "sheets" }),
-    findInvoicePaymentByIntentId: (paymentIntentId) =>
-      findLegacyInvoicePayment(paymentIntentId, {
-        cacheTtlMs: 0,
-        source: "sheets",
-      }),
-    findMonthlyReportRun: (reportKey) =>
-      findLegacyMonthlyReportRun(reportKey, { source: "sheets" }),
-    listCampaignLeads: () => listLegacyCampaignLeads({ cacheTtlMs: 0, source: "sheets" }),
-    listInvoicePayments: () =>
-      listLegacyInvoicePayments({ cacheTtlMs: 0, source: "sheets" }),
-  },
+  legacy: sheetsDependencies,
+  sheets: sheetsDependencies,
 };
 
 export const getBusinessOperationReadRuntime = (
@@ -125,16 +120,13 @@ const readSingle = async <RecordType extends object>({
     return databaseRead();
   }
 
-  const primaryRecord = await legacyRead();
+  const primaryRecord = await (mode === "shadow" ? sheetsRead() : legacyRead());
 
   if (mode === "shadow") {
     try {
-      const [databaseRecord, sheetsRecord] = await Promise.all([
-        databaseRead(),
-        sheetsRead(),
-      ]);
+      const databaseRecord = await databaseRead();
 
-      onShadowComparison(compare(databaseRecord, sheetsRecord, key));
+      onShadowComparison(compare(databaseRecord, primaryRecord, key));
     } catch (error) {
       reportBusinessOperationShadowFailure(recordType, error);
     }
@@ -172,16 +164,15 @@ const readCollection = async <RecordType extends object>({
     return databaseRead();
   }
 
-  const primaryRecords = await legacyRead();
+  const primaryRecords = await (mode === "shadow" ? sheetsRead() : legacyRead());
 
   if (mode === "shadow") {
     try {
-      const [databaseRecords, sheetsRecords] = await Promise.all([
-        databaseRead(),
-        sheetsRead(),
-      ]);
+      const databaseRecords = await databaseRead();
 
-      onShadowComparison(compare({ databaseRecords, key, sheetsRecords }));
+      onShadowComparison(
+        compare({ databaseRecords, key, sheetsRecords: primaryRecords }),
+      );
     } catch (error) {
       reportBusinessOperationShadowFailure(recordType, error);
     }

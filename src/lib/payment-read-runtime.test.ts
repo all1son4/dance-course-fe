@@ -156,8 +156,8 @@ test("keeps payment-intent precedence and succeeded checkout fallback", async ()
   );
 });
 
-test("shadow mode returns the legacy result and emits only sanitized drift metadata", async () => {
-  const primaryRecord = createPaymentRecord({ customer_full_name: "Primary result" });
+test("shadow mode returns the explicit Sheets result and emits only sanitized drift metadata", async () => {
+  const legacyRecord = createPaymentRecord({ customer_full_name: "Legacy result" });
   const databaseRecord = createPaymentRecord({
     customer_email: "CUSTOMER@EXAMPLE.COM",
     customer_full_name: "Database value",
@@ -174,7 +174,7 @@ test("shadow mode returns the legacy result and emits only sanitized drift metad
     checkoutSessionId: "cs_test",
     dependencies: createDependencies({
       databaseIntent: databaseRecord,
-      legacyIntent: primaryRecord,
+      legacyIntent: legacyRecord,
       sheetsIntent: sheetsRecord,
     }),
     environment: { DB_PAYMENT_EVENTS_MODE: "shadow" },
@@ -182,7 +182,7 @@ test("shadow mode returns the legacy result and emits only sanitized drift metad
     paymentIntentId: "pi_test",
   });
 
-  assert.equal(result, primaryRecord);
+  assert.equal(result, sheetsRecord);
   assert.equal(comparisons.length, 1);
   assert.equal(comparisons[0].status, "mismatch");
   assert.deepEqual(comparisons[0].differingFields, ["customer_full_name"]);
@@ -190,9 +190,9 @@ test("shadow mode returns the legacy result and emits only sanitized drift metad
   assert.doesNotMatch(JSON.stringify(comparisons[0]), /Database value|Sheets value/u);
 });
 
-test("shadow comparison failures never change the legacy result", async (t) => {
+test("shadow comparison failures never change the Sheets result", async (t) => {
   const primaryRecord = createPaymentRecord();
-  const dependencies = createDependencies({ legacyIntent: primaryRecord });
+  const dependencies = createDependencies({ sheetsIntent: primaryRecord });
   dependencies.database.findByPaymentIntentId = async () => {
     throw new Error("database shadow unavailable");
   };

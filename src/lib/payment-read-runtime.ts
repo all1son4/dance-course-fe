@@ -5,7 +5,6 @@ import { domainRepositories } from "@/db/domain-repositories";
 import type { StripeInboxReadModel } from "@/db/stripe-event-inbox";
 import {
   findLatestPaymentRecordByCheckoutSessionId,
-  findLatestSucceededPaymentRecordByCheckoutSessionId,
   findPaymentRecordByIntentId,
   type PaymentSheetRecord,
 } from "@/lib/google-sheets";
@@ -41,32 +40,37 @@ type PaymentSource = Pick<
   "findByCheckoutSessionId" | "findByPaymentIntentId"
 >;
 
+const sheetsDependencies: PaymentReadDependencies["sheets"] = {
+  findByCheckoutSessionId: async (checkoutSessionId) => {
+    const record = await findLatestPaymentRecordByCheckoutSessionId(checkoutSessionId, {
+      source: "sheets",
+    });
+
+    return record?.outcome === "succeeded" ? record : null;
+  },
+  findByPaymentIntentId: (paymentIntentId) =>
+    findPaymentRecordByIntentId(paymentIntentId, {
+      cacheTtlMs: 0,
+      source: "sheets",
+    }),
+};
+
+const legacySheetsDependencies: PaymentReadDependencies["legacy"] = {
+  ...sheetsDependencies,
+  findByPaymentIntentId: (paymentIntentId) =>
+    findPaymentRecordByIntentId(paymentIntentId, {
+      source: "sheets",
+    }),
+};
+
 const defaultDependencies: PaymentReadDependencies = {
   database: {
     findByCheckoutSessionId: domainRepositories.paymentReads.findByCheckoutSessionId,
     findByPaymentIntentId: domainRepositories.paymentReads.findByPaymentIntentId,
     findStripeEvent: domainRepositories.stripeInbox.findReadModel,
   },
-  legacy: {
-    findByCheckoutSessionId: (checkoutSessionId) =>
-      findLatestSucceededPaymentRecordByCheckoutSessionId(checkoutSessionId),
-    findByPaymentIntentId: (paymentIntentId) =>
-      findPaymentRecordByIntentId(paymentIntentId),
-  },
-  sheets: {
-    findByCheckoutSessionId: async (checkoutSessionId) => {
-      const record = await findLatestPaymentRecordByCheckoutSessionId(checkoutSessionId, {
-        source: "sheets",
-      });
-
-      return record?.outcome === "succeeded" ? record : null;
-    },
-    findByPaymentIntentId: (paymentIntentId) =>
-      findPaymentRecordByIntentId(paymentIntentId, {
-        cacheTtlMs: 0,
-        source: "sheets",
-      }),
-  },
+  legacy: legacySheetsDependencies,
+  sheets: sheetsDependencies,
 };
 
 const PAYMENT_COMPARISON_FIELDS = [
@@ -289,29 +293,22 @@ export const findPaymentAccessRecord = async ({
   const primaryRecord = await resolveAccessPaymentRecord({
     checkoutSessionId,
     paymentIntentId,
-    source: dependencies.legacy,
+    source: mode === "shadow" ? dependencies.sheets : dependencies.legacy,
   });
 
   if (mode === "shadow") {
     try {
-      const [databaseRecord, sheetsRecord] = await Promise.all([
-        resolveAccessPaymentRecord({
-          checkoutSessionId,
-          paymentIntentId,
-          source: dependencies.database,
-        }),
-        resolveAccessPaymentRecord({
-          checkoutSessionId,
-          paymentIntentId,
-          source: dependencies.sheets,
-        }),
-      ]);
+      const databaseRecord = await resolveAccessPaymentRecord({
+        checkoutSessionId,
+        paymentIntentId,
+        source: dependencies.database,
+      });
 
       onShadowComparison(
         comparePaymentRecords({
           databaseRecord,
           key: `payment:${paymentIntentId}:${checkoutSessionId}`,
-          sheetsRecord,
+          sheetsRecord: primaryRecord,
         }),
       );
     } catch (error) {

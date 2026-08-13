@@ -215,8 +215,11 @@ test("database mode fails closed instead of consulting legacy access data", asyn
   assert.equal(legacyCalls, 0);
 });
 
-test("shadow mode preserves the legacy result and normalizes timestamp precision", async () => {
-  const primaryRecord = createPaymentRecord({ telegram_access_status: "pending" });
+test("shadow mode preserves the Sheets result and normalizes timestamp precision", async () => {
+  const legacyRecord = createPaymentRecord({ telegram_access_status: "pending" });
+  const sheetsRecord = createPaymentRecord({
+    telegram_access_expires_at: "2026-10-01T10:00:00.100Z",
+  });
   const comparisons: TelegramAccessReadShadowComparison[] = [];
   const result = await findPaymentRecordByIntentId("pi_test", {
     dependencies: createDependencies({
@@ -226,19 +229,16 @@ test("shadow mode preserves the legacy result and normalizes timestamp precision
             telegram_access_expires_at: "2026-10-01T10:00:00.900Z",
           }),
       },
-      legacy: { findPaymentByIntentId: async () => primaryRecord },
+      legacy: { findPaymentByIntentId: async () => legacyRecord },
       sheets: {
-        findPaymentByIntentId: async () =>
-          createPaymentRecord({
-            telegram_access_expires_at: "2026-10-01T10:00:00.100Z",
-          }),
+        findPaymentByIntentId: async () => sheetsRecord,
       },
     }),
     environment: { DB_TELEGRAM_ACCESS_MODE: "shadow" },
     onShadowComparison: (comparison) => comparisons.push(comparison),
   });
 
-  assert.equal(result, primaryRecord);
+  assert.equal(result, sheetsRecord);
   assert.equal(comparisons[0].status, "match");
 });
 
@@ -263,7 +263,7 @@ test("shadow diagnostics never expose bearer values or lookup keys", async () =>
     onShadowComparison: (comparison) => comparisons.push(comparison),
   });
 
-  assert.equal(result?.token_value, "legacy_primary_secret");
+  assert.equal(result?.token_value, "sheets_bearer_secret");
   assert.deepEqual(comparisons[0].differingFields, ["token_value"]);
   assert.match(comparisons[0].keyHash, /^[a-f0-9]{64}$/u);
   assert.doesNotMatch(
@@ -290,7 +290,7 @@ test("shadow binding comparisons ignore row order and report only field names", 
     onShadowComparison: (comparison) => comparisons.push(comparison),
   });
 
-  assert.deepEqual(result, [second]);
+  assert.deepEqual(result, [second, first]);
   assert.equal(comparisons[0].status, "match");
 
   const drift: TelegramAccessReadShadowComparison[] = [];
@@ -312,7 +312,7 @@ test("shadow binding comparisons ignore row order and report only field names", 
   assert.doesNotMatch(JSON.stringify(drift[0]), /private_invite_value/u);
 });
 
-test("shadow comparison failures do not change the legacy response", async (t) => {
+test("shadow comparison failures do not change the Sheets response", async (t) => {
   const primaryRecord = createTokenRecord();
   t.mock.method(console, "warn", () => undefined);
 
@@ -323,7 +323,7 @@ test("shadow comparison failures do not change the legacy response", async (t) =
           throw new Error("shadow database unavailable");
         },
       },
-      legacy: { findTokenByValue: async () => primaryRecord },
+      sheets: { findTokenByValue: async () => primaryRecord },
     }),
     environment: { DB_TELEGRAM_ACCESS_MODE: "shadow" },
   });

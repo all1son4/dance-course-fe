@@ -39,17 +39,17 @@ export type AdminInviteLinkHistoryReadOptions = {
   onShadowComparison?: (comparison: AdminInviteLinkHistoryShadowComparison) => void;
 };
 
+const sheetsDependencies: AdminInviteLinkHistoryReadSource = {
+  list: (input) =>
+    findLegacyAdminInviteLinkHistoryRecords({ ...input, source: "sheets" }),
+};
+
 const defaultDependencies: AdminInviteLinkHistoryReadDependencies = {
   database: {
     list: domainRepositories.adminInviteLinkHistory.list,
   },
-  legacy: {
-    list: (input) => findLegacyAdminInviteLinkHistoryRecords(input),
-  },
-  sheets: {
-    list: (input) =>
-      findLegacyAdminInviteLinkHistoryRecords({ ...input, source: "sheets" }),
-  },
+  legacy: sheetsDependencies,
+  sheets: sheetsDependencies,
 };
 
 export const getAdminInviteLinkHistoryReadRuntime = (
@@ -68,19 +68,18 @@ export const listAdminInviteLinkHistoryRecords = async (
     return dependencies.database.list(input);
   }
 
-  const primaryRecords = await dependencies.legacy.list(input);
+  const primaryRecords = await (mode === "shadow"
+    ? dependencies.sheets.list(input)
+    : dependencies.legacy.list(input));
 
   if (mode === "shadow") {
     try {
-      const [databaseRecords, sheetsRecords] = await Promise.all([
-        dependencies.database.list(input),
-        dependencies.sheets.list(input),
-      ]);
+      const databaseRecords = await dependencies.database.list(input);
       const limitKey = input.limit === undefined ? "all" : String(input.limit);
       const comparison = compareAdminInviteLinkHistoryRecords({
         databaseRecords,
         key: `admin_invite_link_history:${input.accessWorkflow}:${limitKey}`,
-        sheetsRecords,
+        sheetsRecords: primaryRecords,
       });
 
       (options.onShadowComparison ?? reportAdminInviteLinkHistoryShadowComparison)(

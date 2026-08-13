@@ -64,6 +64,52 @@ export type TelegramAccessReadOptions = {
   onShadowComparison?: (comparison: TelegramAccessReadShadowComparison) => void;
 };
 
+const sheetsDependencies: TelegramAccessReadSource = {
+  findActiveBindings: () => findLegacyActiveTelegramUserBindings({ source: "sheets" }),
+  findBindingByPaymentIntentId: (paymentIntentId) =>
+    findLegacyTelegramUserBindingByPaymentIntentId(paymentIntentId, {
+      source: "sheets",
+    }),
+  findBindingsByCustomerEmail: (customerEmail) =>
+    findLegacyTelegramUserBindingsByCustomerEmail(customerEmail, {
+      source: "sheets",
+    }),
+  findBindingsByTelegramUserId: (telegramUserId) =>
+    findLegacyTelegramUserBindingsByTelegramUserId(telegramUserId, {
+      source: "sheets",
+    }),
+  findBindingsByTelegramUserIdAndChatId: (input) =>
+    findLegacyTelegramUserBindingsByTelegramUserIdAndChatId({
+      ...input,
+      source: "sheets",
+    }),
+  findLatestTokenByPaymentIntentId: (paymentIntentId) =>
+    findLegacyLatestTelegramAccessTokenRecordByPaymentIntentId(paymentIntentId, {
+      source: "sheets",
+    }),
+  findPaymentByIntentId: (paymentIntentId) =>
+    findLegacyPaymentRecordByIntentId(paymentIntentId, {
+      cacheTtlMs: 0,
+      source: "sheets",
+    }),
+  findTokenByHash: (tokenHash) =>
+    findLegacyTelegramAccessTokenRecordByTokenHash(tokenHash, {
+      source: "sheets",
+    }),
+  findTokenByValue: (tokenValue) =>
+    findLegacyTelegramAccessTokenRecordByTokenValue(tokenValue, {
+      source: "sheets",
+    }),
+};
+
+const legacySheetsDependencies: TelegramAccessReadSource = {
+  ...sheetsDependencies,
+  findPaymentByIntentId: (paymentIntentId) =>
+    findLegacyPaymentRecordByIntentId(paymentIntentId, {
+      source: "sheets",
+    }),
+};
+
 const defaultDependencies: TelegramAccessReadDependencies = {
   database: {
     findActiveBindings: domainRepositories.telegramAccessReads.findActiveBindings,
@@ -81,62 +127,8 @@ const defaultDependencies: TelegramAccessReadDependencies = {
     findTokenByHash: domainRepositories.telegramAccessReads.findTokenByHash,
     findTokenByValue: domainRepositories.telegramAccessReads.findTokenByValue,
   },
-  legacy: {
-    findActiveBindings: () => findLegacyActiveTelegramUserBindings(),
-    findBindingByPaymentIntentId: (paymentIntentId) =>
-      findLegacyTelegramUserBindingByPaymentIntentId(paymentIntentId),
-    findBindingsByCustomerEmail: (customerEmail) =>
-      findLegacyTelegramUserBindingsByCustomerEmail(customerEmail),
-    findBindingsByTelegramUserId: (telegramUserId) =>
-      findLegacyTelegramUserBindingsByTelegramUserId(telegramUserId),
-    findBindingsByTelegramUserIdAndChatId: (input) =>
-      findLegacyTelegramUserBindingsByTelegramUserIdAndChatId(input),
-    findLatestTokenByPaymentIntentId: (paymentIntentId) =>
-      findLegacyLatestTelegramAccessTokenRecordByPaymentIntentId(paymentIntentId),
-    findPaymentByIntentId: (paymentIntentId) =>
-      findLegacyPaymentRecordByIntentId(paymentIntentId),
-    findTokenByHash: (tokenHash) =>
-      findLegacyTelegramAccessTokenRecordByTokenHash(tokenHash),
-    findTokenByValue: (tokenValue) =>
-      findLegacyTelegramAccessTokenRecordByTokenValue(tokenValue),
-  },
-  sheets: {
-    findActiveBindings: () => findLegacyActiveTelegramUserBindings({ source: "sheets" }),
-    findBindingByPaymentIntentId: (paymentIntentId) =>
-      findLegacyTelegramUserBindingByPaymentIntentId(paymentIntentId, {
-        source: "sheets",
-      }),
-    findBindingsByCustomerEmail: (customerEmail) =>
-      findLegacyTelegramUserBindingsByCustomerEmail(customerEmail, {
-        source: "sheets",
-      }),
-    findBindingsByTelegramUserId: (telegramUserId) =>
-      findLegacyTelegramUserBindingsByTelegramUserId(telegramUserId, {
-        source: "sheets",
-      }),
-    findBindingsByTelegramUserIdAndChatId: (input) =>
-      findLegacyTelegramUserBindingsByTelegramUserIdAndChatId({
-        ...input,
-        source: "sheets",
-      }),
-    findLatestTokenByPaymentIntentId: (paymentIntentId) =>
-      findLegacyLatestTelegramAccessTokenRecordByPaymentIntentId(paymentIntentId, {
-        source: "sheets",
-      }),
-    findPaymentByIntentId: (paymentIntentId) =>
-      findLegacyPaymentRecordByIntentId(paymentIntentId, {
-        cacheTtlMs: 0,
-        source: "sheets",
-      }),
-    findTokenByHash: (tokenHash) =>
-      findLegacyTelegramAccessTokenRecordByTokenHash(tokenHash, {
-        source: "sheets",
-      }),
-    findTokenByValue: (tokenValue) =>
-      findLegacyTelegramAccessTokenRecordByTokenValue(tokenValue, {
-        source: "sheets",
-      }),
-  },
+  legacy: legacySheetsDependencies,
+  sheets: sheetsDependencies,
 };
 
 export const getTelegramAccessReadRuntime = (
@@ -172,16 +164,13 @@ const readSingle = async <RecordType extends object>({
     return databaseRead();
   }
 
-  const primaryRecord = await legacyRead();
+  const primaryRecord = await (mode === "shadow" ? sheetsRead() : legacyRead());
 
   if (mode === "shadow") {
     try {
-      const [databaseRecord, sheetsRecord] = await Promise.all([
-        databaseRead(),
-        sheetsRead(),
-      ]);
+      const databaseRecord = await databaseRead();
 
-      onShadowComparison(compare(databaseRecord, sheetsRecord, key));
+      onShadowComparison(compare(databaseRecord, primaryRecord, key));
     } catch (error) {
       reportTelegramAccessShadowFailure(recordType, error);
     }
@@ -211,17 +200,18 @@ const readBindings = async ({
     return databaseRead();
   }
 
-  const primaryRecords = await legacyRead();
+  const primaryRecords = await (mode === "shadow" ? sheetsRead() : legacyRead());
 
   if (mode === "shadow") {
     try {
-      const [databaseRecords, sheetsRecords] = await Promise.all([
-        databaseRead(),
-        sheetsRead(),
-      ]);
+      const databaseRecords = await databaseRead();
 
       onShadowComparison(
-        compareTelegramBindingCollections({ databaseRecords, key, sheetsRecords }),
+        compareTelegramBindingCollections({
+          databaseRecords,
+          key,
+          sheetsRecords: primaryRecords,
+        }),
       );
     } catch (error) {
       reportTelegramAccessShadowFailure("telegram_user_binding", error);

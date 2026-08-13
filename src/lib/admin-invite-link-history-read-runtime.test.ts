@@ -158,6 +158,7 @@ test("shadow history ignores order and sub-second timestamp precision", async ()
     createdAt: "2026-08-13T11:00:00.000Z",
   });
   const primary = [first];
+  const sheetsRecords = [second, { ...first, createdAt: "2026-08-13T10:00:00.100Z" }];
   const comparisons: AdminInviteLinkHistoryShadowComparison[] = [];
   const result = await listAdminInviteLinkHistoryRecords(
     { accessWorkflow: "admin-offer-link" },
@@ -168,14 +169,14 @@ test("shadow history ignores order and sub-second timestamp precision", async ()
           second,
         ],
         legacy: async () => primary,
-        sheets: async () => [second, { ...first, createdAt: "2026-08-13T10:00:00.100Z" }],
+        sheets: async () => sheetsRecords,
       }),
       environment: { DB_BUSINESS_OPERATIONS_MODE: "shadow" },
       onShadowComparison: (comparison) => comparisons.push(comparison),
     },
   );
 
-  assert.equal(result, primary);
+  assert.equal(result, sheetsRecords);
   assert.equal(comparisons[0].status, "match");
 });
 
@@ -196,7 +197,7 @@ test("shadow diagnostics contain no invite URLs, labels, or workflow lookup", as
     },
   );
 
-  assert.equal(result[0].adminLabel, "Legacy Primary Label");
+  assert.equal(result[0].adminLabel, "Sheets Private Label");
   assert.deepEqual(comparisons[0].differingFields, ["adminLabel"]);
   assert.match(comparisons[0].keyHash, /^[a-f0-9]{64}$/u);
   assert.doesNotMatch(
@@ -205,7 +206,7 @@ test("shadow diagnostics contain no invite URLs, labels, or workflow lookup", as
   );
 });
 
-test("shadow failures do not alter cached-route source data", async (context) => {
+test("shadow failures do not alter cached-route Sheets data", async (context) => {
   const primary = [createHistoryRecord()];
   context.mock.method(console, "warn", () => undefined);
 
@@ -216,7 +217,7 @@ test("shadow failures do not alter cached-route source data", async (context) =>
         database: async () => {
           throw new Error("shadow database unavailable");
         },
-        legacy: async () => primary,
+        sheets: async () => primary,
       }),
       environment: { DB_BUSINESS_OPERATIONS_MODE: "shadow" },
     },

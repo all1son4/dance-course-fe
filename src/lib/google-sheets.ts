@@ -33,6 +33,7 @@ import {
   upsertTelegramAccessTokenRecordToDatabase,
   upsertTelegramUserBindingRecordToDatabase,
 } from "@/db/sheet-records";
+import { type ExplicitReadSource, resolveExplicitRead } from "@/lib/explicit-read-source";
 import {
   type AdminInviteLinkHistorySourceRecord,
   DEFAULT_EMAIL_CAMPAIGN_LEADS_SHEET_NAME,
@@ -180,16 +181,7 @@ type PaymentRecordByIntentCacheEntry = {
   record: PaymentSheetRecord | null;
 };
 
-type RecordSource = "auto" | "database" | "sheets";
-
-type DatabaseReadResolution<T> =
-  | {
-      kind: "fallback";
-    }
-  | {
-      kind: "resolved";
-      value: T;
-    };
+type RecordSource = ExplicitReadSource;
 
 export class GoogleSheetsError extends Error {
   code: string;
@@ -1155,7 +1147,7 @@ const cacheMirroredPaymentRecord = (record: PaymentSheetRecord): void => {
     cacheTtlMs: PAYMENT_RECORD_CACHE_TTL_MS,
     paymentIntentId: record.payment_intent_id,
     record,
-    source: "auto",
+    source: "database",
   });
   cachePaymentRecord({
     cacheTtlMs: PAYMENT_RECORD_CACHE_TTL_MS,
@@ -1165,66 +1157,8 @@ const cacheMirroredPaymentRecord = (record: PaymentSheetRecord): void => {
   });
 };
 
-const readDatabaseRecord = async <T>({
-  read,
-  source,
-  warn,
-}: {
-  read: () => Promise<T | null>;
-  source: RecordSource;
-  warn: (error: unknown) => void;
-}): Promise<DatabaseReadResolution<T | null>> => {
-  if (source === "sheets") {
-    return { kind: "fallback" };
-  }
-
-  try {
-    const record = await read();
-
-    if (record || source === "database") {
-      return {
-        kind: "resolved",
-        value: record,
-      };
-    }
-  } catch (error) {
-    if (source === "database") {
-      throw error;
-    }
-
-    warn(error);
-  }
-
-  return { kind: "fallback" };
-};
-
-const readDatabaseCollection = async <T>({
-  read,
-  source,
-  warn,
-}: {
-  read: () => Promise<T>;
-  source: RecordSource;
-  warn: (error: unknown) => void;
-}): Promise<DatabaseReadResolution<T>> => {
-  if (source === "sheets") {
-    return { kind: "fallback" };
-  }
-
-  try {
-    return {
-      kind: "resolved",
-      value: await read(),
-    };
-  } catch (error) {
-    if (source === "database") {
-      throw error;
-    }
-
-    warn(error);
-    return { kind: "fallback" };
-  }
-};
+const readDatabaseRecord = resolveExplicitRead;
+const readDatabaseCollection = resolveExplicitRead;
 
 export const isGoogleSheetsConfigured = () => Boolean(getGoogleSheetsConfig());
 
@@ -1383,9 +1317,9 @@ export const ensureGoogleSheetsSchema = async () => {
 
 export const findPaymentRecordByIntentId = async (
   paymentIntentId: string,
-  options?: {
+  options: {
     cacheTtlMs?: number;
-    source?: RecordSource;
+    source: RecordSource;
   },
 ) => {
   const normalizedPaymentIntentId = paymentIntentId.trim();
@@ -1394,7 +1328,7 @@ export const findPaymentRecordByIntentId = async (
     return null;
   }
 
-  const source = options?.source ?? "auto";
+  const { source } = options;
   const cacheTtlMs = options?.cacheTtlMs ?? PAYMENT_RECORD_CACHE_TTL_MS;
   const cacheKey = `${source}:${normalizedPaymentIntentId}`;
   const cachedEntry = paymentRecordByIntentCache.get(cacheKey);
@@ -1406,18 +1340,9 @@ export const findPaymentRecordByIntentId = async (
   const databaseResolution = await readDatabaseRecord({
     read: () => findPaymentRecordByIntentIdFromDatabase(normalizedPaymentIntentId),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load payment record from database, falling back to Sheets",
-        {
-          error,
-          paymentIntentId: normalizedPaymentIntentId,
-        },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     if (cacheTtlMs > 0) {
       cachePaymentRecord({
         cacheTtlMs,
@@ -1456,11 +1381,11 @@ export const findPaymentRecordByIntentId = async (
 
 export const listSucceededPaymentRecordsInUtcRange = async ({
   endUtcIsoExclusive,
-  source = "auto",
+  source,
   startUtcIso,
 }: {
   endUtcIsoExclusive: string;
-  source?: RecordSource;
+  source: RecordSource;
   startUtcIso: string;
 }) => {
   if (source === "sheets") {
@@ -1473,27 +1398,19 @@ export const listSucceededPaymentRecordsInUtcRange = async ({
   });
 };
 
-export const listPaymentRecords = async (options?: {
+export const listPaymentRecords = async (options: {
   cacheTtlMs?: number;
   readOnly?: boolean;
-  source?: RecordSource;
+  source: RecordSource;
 }): Promise<PaymentSheetRecord[]> => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => listPaymentRecordsFromDatabase(),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to list payment records from database, falling back to Sheets",
-        {
-          error,
-        },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1513,24 +1430,18 @@ export const listPaymentRecords = async (options?: {
 
 export const findLatestPaymentRecordByCheckoutSessionId = async (
   checkoutSessionId: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () => findLatestPaymentRecordByCheckoutSessionIdFromDatabase(checkoutSessionId),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load latest checkout payment record from database, falling back to Sheets",
-        { checkoutSessionId, error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1560,8 +1471,8 @@ export const findLatestPaymentRecordByCheckoutSessionId = async (
 
 export const findLatestSucceededPaymentRecordByCheckoutSessionId = async (
   checkoutSessionId: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
   const latestPaymentRecord = await findLatestPaymentRecordByCheckoutSessionId(
@@ -1578,24 +1489,18 @@ export const findLatestSucceededPaymentRecordByCheckoutSessionId = async (
 
 export const findStripeEventRecordByEventId = async (
   eventId: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () => findStripeEventRecordByEventIdFromDatabase(eventId),
     source,
-    warn: (error) => {
-      console.warn("Failed to load Stripe event from database, falling back to Sheets", {
-        error,
-        eventId,
-      });
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1614,24 +1519,19 @@ export const findStripeEventRecordByEventId = async (
   return record;
 };
 
-export const listStripeEventRecords = async (options?: {
+export const listStripeEventRecords = async (options: {
   cacheTtlMs?: number;
   readOnly?: boolean;
-  source?: RecordSource;
+  source: RecordSource;
 }): Promise<StripeEventSheetRecord[]> => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => listStripeEventRecordsFromDatabase(),
     source,
-    warn: (error) => {
-      console.warn("Failed to list Stripe events from database, falling back to Sheets", {
-        error,
-      });
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1718,7 +1618,7 @@ export const upsertPaymentRecord = async (
       cacheTtlMs: PAYMENT_RECORD_CACHE_TTL_MS,
       paymentIntentId: databaseRecord.payment_intent_id,
       record: databaseRecord,
-      source: "auto",
+      source: "database",
     });
 
     return databaseRecord;
@@ -1765,24 +1665,18 @@ export const upsertPaymentRecord = async (
 
 export const findTelegramAccessTokenRecordByTokenId = async (
   tokenId: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () => findTelegramAccessTokenRecordByTokenIdFromDatabase(tokenId),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load Telegram access token by id from database, falling back to Sheets",
-        { error, tokenId },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1802,24 +1696,18 @@ export const findTelegramAccessTokenRecordByTokenId = async (
 
 export const findTelegramAccessTokenRecordByTokenHash = async (
   tokenHash: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () => findTelegramAccessTokenRecordByTokenHashFromDatabase(tokenHash),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load Telegram access token by hash from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1839,24 +1727,18 @@ export const findTelegramAccessTokenRecordByTokenHash = async (
 
 export const findTelegramAccessTokenRecordByTokenValue = async (
   tokenValue: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () => findTelegramAccessTokenRecordByTokenValueFromDatabase(tokenValue),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load Telegram access token by value from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1874,25 +1756,19 @@ export const findTelegramAccessTokenRecordByTokenValue = async (
   return record;
 };
 
-export const listTelegramAccessTokenRecords = async (options?: {
+export const listTelegramAccessTokenRecords = async (options: {
   cacheTtlMs?: number;
   readOnly?: boolean;
-  source?: RecordSource;
+  source: RecordSource;
 }): Promise<TelegramAccessTokenSheetRecord[]> => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => listTelegramAccessTokenRecordsFromDatabase(),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to list Telegram access tokens from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1912,25 +1788,19 @@ export const listTelegramAccessTokenRecords = async (options?: {
 
 export const findLatestTelegramAccessTokenRecordByPaymentIntentId = async (
   paymentIntentId: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () =>
       findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase(paymentIntentId),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load latest Telegram access token from database, falling back to Sheets",
-        { error, paymentIntentId },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -1996,11 +1866,11 @@ const createAdminInviteLinkHistorySourceRecord = ({
 export const findAdminInviteLinkHistorySourceRecords = async ({
   accessWorkflow,
   limit,
-  source = "auto",
+  source,
 }: {
   accessWorkflow: string;
   limit?: number;
-  source?: RecordSource;
+  source: RecordSource;
 }) => {
   const normalizedAccessWorkflow = accessWorkflow.trim().toLowerCase();
 
@@ -2094,24 +1964,18 @@ export const claimTelegramAccessTokenRecord = async (
 
 export const findTelegramUserBindingByPaymentIntentId = async (
   paymentIntentId: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () => findTelegramUserBindingByPaymentIntentIdFromDatabase(paymentIntentId),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load Telegram user binding by payment from database, falling back to Sheets",
-        { error, paymentIntentId },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2131,24 +1995,18 @@ export const findTelegramUserBindingByPaymentIntentId = async (
 
 export const findMonthlySalesReportRunByKey = async (
   reportKey: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseRecord({
     read: () => findMonthlySalesReportRunByKeyFromDatabase(reportKey),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load monthly sales report run from database, falling back to Sheets",
-        { error, reportKey },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2166,25 +2024,19 @@ export const findMonthlySalesReportRunByKey = async (
   return record;
 };
 
-export const listMonthlySalesReportRunRecords = async (options?: {
+export const listMonthlySalesReportRunRecords = async (options: {
   cacheTtlMs?: number;
   readOnly?: boolean;
-  source?: RecordSource;
+  source: RecordSource;
 }): Promise<MonthlySalesReportRunSheetRecord[]> => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => listMonthlySalesReportRunRecordsFromDatabase(),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to list monthly sales report runs from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2219,25 +2071,19 @@ export const upsertMonthlySalesReportRun = async (
   });
 };
 
-export const listEmailCampaignLeadRecords = async (options?: {
+export const listEmailCampaignLeadRecords = async (options: {
   cacheTtlMs?: number;
   readOnly?: boolean;
-  source?: RecordSource;
+  source: RecordSource;
 }): Promise<EmailCampaignLeadSheetRecord[]> => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => listEmailCampaignLeadRecordsFromDatabase(),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to list email campaign leads from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2258,11 +2104,11 @@ export const listEmailCampaignLeadRecords = async (options?: {
 export const findEmailCampaignLeadByCampaignAndEmail = async ({
   campaignKey,
   email,
-  source = "auto",
+  source,
 }: {
   campaignKey: string;
   email: string;
-  source?: RecordSource;
+  source: RecordSource;
 }) => {
   const normalizedCampaignKey = campaignKey.trim();
   const normalizedEmail = email.trim().toLowerCase();
@@ -2278,15 +2124,9 @@ export const findEmailCampaignLeadByCampaignAndEmail = async ({
         email: normalizedEmail,
       }),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load email campaign lead from database, falling back to Sheets",
-        { campaignKey: normalizedCampaignKey, error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2323,24 +2163,18 @@ export const upsertEmailCampaignLeadRecord = async (
 
 export const findTelegramUserBindingsByTelegramUserId = async (
   telegramUserId: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => findTelegramUserBindingsByTelegramUserIdFromDatabase(telegramUserId),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load Telegram user bindings by user id from database, falling back to Sheets",
-        { error, telegramUserId },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2358,24 +2192,18 @@ export const findTelegramUserBindingsByTelegramUserId = async (
 
 export const findTelegramUserBindingsByCustomerEmail = async (
   customerEmail: string,
-  options?: {
-    source?: RecordSource;
+  options: {
+    source: RecordSource;
   },
 ) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => findTelegramUserBindingsByCustomerEmailFromDatabase(customerEmail),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load Telegram user bindings by customer email from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2396,11 +2224,11 @@ export const findTelegramUserBindingsByCustomerEmail = async (
 
 export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
   chatId,
-  source = "auto",
+  source,
   telegramUserId,
 }: {
   chatId: string;
-  source?: RecordSource;
+  source: RecordSource;
   telegramUserId: string;
 }) => {
   const databaseResolution = await readDatabaseCollection({
@@ -2410,15 +2238,9 @@ export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
         telegramUserId,
       }),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load Telegram user bindings by user/chat from database, falling back to Sheets",
-        { error, telegramUserId },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2438,23 +2260,17 @@ export const findTelegramUserBindingsByTelegramUserIdAndChatId = async ({
   );
 };
 
-export const findActiveTelegramUserBindings = async (options?: {
-  source?: RecordSource;
+export const findActiveTelegramUserBindings = async (options: {
+  source: RecordSource;
 }) => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => findActiveTelegramUserBindingsFromDatabase(),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to load active Telegram user bindings from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 
@@ -2470,25 +2286,19 @@ export const findActiveTelegramUserBindings = async (options?: {
   return rows.filter((row) => row.status === "active");
 };
 
-export const listTelegramUserBindingRecords = async (options?: {
+export const listTelegramUserBindingRecords = async (options: {
   cacheTtlMs?: number;
   readOnly?: boolean;
-  source?: RecordSource;
+  source: RecordSource;
 }): Promise<TelegramUserBindingSheetRecord[]> => {
-  const source = options?.source ?? "auto";
+  const { source } = options;
 
   const databaseResolution = await readDatabaseCollection({
     read: () => listTelegramUserBindingRecordsFromDatabase(),
     source,
-    warn: (error) => {
-      console.warn(
-        "Failed to list Telegram user bindings from database, falling back to Sheets",
-        { error },
-      );
-    },
   });
 
-  if (databaseResolution.kind === "resolved") {
+  if (databaseResolution.kind === "database") {
     return databaseResolution.value;
   }
 

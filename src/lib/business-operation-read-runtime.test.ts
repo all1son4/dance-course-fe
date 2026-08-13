@@ -222,10 +222,18 @@ test("legacy mode preserves the current result without shadow queries", async ()
   assert.equal(sheetsCalls, 0);
 });
 
-test("shadow singles preserve legacy results and emit sanitized drift metadata", async () => {
-  const primaryInvoice = createInvoicePayment({ invoice_number: "legacy-primary" });
-  const primaryReport = createMonthlyReport({ delivery_status: "skipped" });
-  const primaryLead = createCampaignLead({ full_name: "Legacy Primary" });
+test("shadow singles preserve Sheets results and emit sanitized drift metadata", async () => {
+  const legacyInvoice = createInvoicePayment({ invoice_number: "legacy-primary" });
+  const legacyReport = createMonthlyReport({ delivery_status: "skipped" });
+  const legacyLead = createCampaignLead({ full_name: "Legacy Primary" });
+  const sheetsInvoice = createInvoicePayment({
+    invoice_issued_at: "2026-08-13T10:00:00.100Z",
+  });
+  const sheetsReport = createMonthlyReport({ row_count: "3" });
+  const sheetsLead = createCampaignLead({
+    created_at: "2026-08-13T10:00:00.100Z",
+    full_name: "Sheets Secret Name",
+  });
   const comparisons: BusinessOperationReadShadowComparison[] = [];
   const dependencies = createDependencies({
     database: {
@@ -241,19 +249,14 @@ test("shadow singles preserve legacy results and emit sanitized drift metadata",
         createMonthlyReport({ delivered_to: "OWNER@EXAMPLE.COM", row_count: "4" }),
     },
     legacy: {
-      findCampaignLead: async () => primaryLead,
-      findInvoicePaymentByIntentId: async () => primaryInvoice,
-      findMonthlyReportRun: async () => primaryReport,
+      findCampaignLead: async () => legacyLead,
+      findInvoicePaymentByIntentId: async () => legacyInvoice,
+      findMonthlyReportRun: async () => legacyReport,
     },
     sheets: {
-      findCampaignLead: async () =>
-        createCampaignLead({
-          created_at: "2026-08-13T10:00:00.100Z",
-          full_name: "Sheets Secret Name",
-        }),
-      findInvoicePaymentByIntentId: async () =>
-        createInvoicePayment({ invoice_issued_at: "2026-08-13T10:00:00.100Z" }),
-      findMonthlyReportRun: async () => createMonthlyReport({ row_count: "3" }),
+      findCampaignLead: async () => sheetsLead,
+      findInvoicePaymentByIntentId: async () => sheetsInvoice,
+      findMonthlyReportRun: async () => sheetsReport,
     },
   });
   const options = {
@@ -265,18 +268,18 @@ test("shadow singles preserve legacy results and emit sanitized drift metadata",
 
   assert.equal(
     await findInvoicePaymentRecordByIntentId("pi_private_lookup", options),
-    primaryInvoice,
+    sheetsInvoice,
   );
   assert.equal(
     await findMonthlyReportRunRecord("private_report_key", options),
-    primaryReport,
+    sheetsReport,
   );
   assert.equal(
     await findEmailCampaignLeadRecord(
       { campaignKey: "private_campaign", email: "private@example.com" },
       options,
     ),
-    primaryLead,
+    sheetsLead,
   );
 
   assert.equal(comparisons[0].status, "match");
@@ -323,12 +326,19 @@ test("shadow collections ignore order and compare only invoice-bearing payments"
       comparisons.push(comparison),
   };
 
-  assert.deepEqual(await listInvoicePaymentRecords(options), [invoice]);
-  assert.deepEqual(await listEmailCampaignLeadReadRecords(options), [firstLead]);
+  assert.deepEqual(await listInvoicePaymentRecords(options), [
+    paymentWithoutInvoice,
+    secondInvoice,
+    invoice,
+  ]);
+  assert.deepEqual(await listEmailCampaignLeadReadRecords(options), [
+    secondLead,
+    firstLead,
+  ]);
   assert.ok(comparisons.every(({ status }) => status === "match"));
 });
 
-test("shadow comparison failures never alter the legacy response", async (context) => {
+test("shadow comparison failures never alter the Sheets response", async (context) => {
   const primary = createMonthlyReport();
   context.mock.method(console, "warn", () => undefined);
 
@@ -339,7 +349,7 @@ test("shadow comparison failures never alter the legacy response", async (contex
           throw new Error("shadow database unavailable");
         },
       },
-      legacy: { findMonthlyReportRun: async () => primary },
+      sheets: { findMonthlyReportRun: async () => primary },
     }),
     environment: { DB_BUSINESS_OPERATIONS_MODE: "shadow" },
   });
