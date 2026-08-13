@@ -1,5 +1,15 @@
 import { createAdminOfferGrantInDatabase } from "./admin-offer-grants";
-import { allocateInvoice } from "./invoice-repository";
+import {
+  claimEmailCampaignLeadForDelivery,
+  createEmailCampaignLeadInDatabase,
+  excludeEmailCampaignLeadInDatabase,
+  findMonthlyReportRunInDatabase,
+  listEmailCampaignLeadsFromDatabase,
+  markEmailCampaignLeadFailed,
+  markEmailCampaignLeadSent,
+  recordMonthlyReportRunInDatabase,
+} from "./business-operation-jobs";
+import { allocateInvoice, allocateInvoiceForPaymentIntent } from "./invoice-repository";
 import { projectPaymentStateInTransaction } from "./payment-projection";
 import {
   claimNextStripeInboxEvent,
@@ -10,9 +20,11 @@ import {
 import { updateTelegramAccessInDatabase } from "./telegram-access";
 import {
   claimNextOutboxJob,
+  claimOutboxJobByDeduplicationKey,
   enqueueOutboxJob,
   enqueueOutboxJobInTransaction,
   processNextOutboxJob,
+  processOutboxJobByDeduplicationKey,
   replayOutboxJob,
 } from "./transactional-outbox";
 
@@ -21,11 +33,28 @@ import {
 // through this boundary to Google Sheets DTOs.
 export const domainRepositories = Object.freeze({
   adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
-  invoices: Object.freeze({ allocate: allocateInvoice }),
+  emailCampaigns: Object.freeze({
+    claimLeadForDelivery: claimEmailCampaignLeadForDelivery,
+    createLead: createEmailCampaignLeadInDatabase,
+    excludeLead: excludeEmailCampaignLeadInDatabase,
+    listLeads: listEmailCampaignLeadsFromDatabase,
+    markLeadFailed: markEmailCampaignLeadFailed,
+    markLeadSent: markEmailCampaignLeadSent,
+  }),
+  invoices: Object.freeze({
+    allocate: allocateInvoice,
+    allocateForPaymentIntent: allocateInvoiceForPaymentIntent,
+  }),
+  monthlyReports: Object.freeze({
+    findRun: findMonthlyReportRunInDatabase,
+    recordRun: recordMonthlyReportRunInDatabase,
+  }),
   outbox: Object.freeze({
+    claimByDeduplicationKey: claimOutboxJobByDeduplicationKey,
     claimNext: claimNextOutboxJob,
     enqueue: enqueueOutboxJob,
     enqueueInTransaction: enqueueOutboxJobInTransaction,
+    processByDeduplicationKey: processOutboxJobByDeduplicationKey,
     processNext: processNextOutboxJob,
     replay: replayOutboxJob,
   }),

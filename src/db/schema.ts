@@ -918,7 +918,7 @@ export const emailCampaignLeads = pgTable(
     emailSendStatus: text("email_send_status")
       .notNull()
       .default("pending")
-      .$type<"blocked" | "excluded" | "failed" | "pending" | "sent">(),
+      .$type<"blocked" | "excluded" | "failed" | "pending" | "sending" | "sent">(),
     fullName: text("full_name").notNull().default(""),
     socialContact: text("social_contact").notNull().default(""),
     email: text("email").notNull(),
@@ -933,7 +933,14 @@ export const emailCampaignLeads = pgTable(
   (table) => [
     check(
       "email_campaign_leads_status_attempts_check",
-      sql`${table.emailSendStatus} IN ('blocked', 'excluded', 'failed', 'pending', 'sent')
+      sql`${table.emailSendStatus} IN (
+          'blocked',
+          'excluded',
+          'failed',
+          'pending',
+          'sending',
+          'sent'
+        )
         AND ${table.emailSendAttempts} >= 0`,
     ),
     uniqueIndex("email_campaign_leads_lead_id_idx").on(table.leadId),

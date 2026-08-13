@@ -113,6 +113,13 @@
       "when": 1786455600000,
       "tag": "0015_synchronize_invoice_sequences",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1786620646237,
+      "tag": "0016_email_campaign_sending_status",
+      "breakpoints": true
     }
   ]
 }

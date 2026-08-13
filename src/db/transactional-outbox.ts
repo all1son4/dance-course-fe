@@ -129,11 +129,13 @@ export const enqueueOutboxJobInTransaction = (
   input: EnqueueOutboxJobInput,
 ) => enqueueWithExecutor(input, transaction);
 
-export const claimNextOutboxJob = async ({
+const claimOutboxJob = async ({
+  deduplicationKey,
   kinds,
   leaseDurationMs = 2 * 60 * 1000,
   now = new Date(),
 }: {
+  deduplicationKey?: string;
   kinds?: OutboxJobKind[];
   leaseDurationMs?: number;
   now?: Date;
@@ -152,6 +154,9 @@ export const claimNextOutboxJob = async ({
       .where(
         and(
           sql`${purchaseSideEffects.payload} @> '{"_outboxVersion":1}'::jsonb`,
+          deduplicationKey
+            ? eq(purchaseSideEffects.deduplicationKey, deduplicationKey)
+            : undefined,
           kinds?.length ? inArray(purchaseSideEffects.kind, kinds) : undefined,
           or(
             and(
@@ -196,6 +201,29 @@ export const claimNextOutboxJob = async ({
     return claimed ? toClaimedOutboxJob(claimed) : null;
   });
 };
+
+export const claimNextOutboxJob = (
+  options: {
+    kinds?: OutboxJobKind[];
+    leaseDurationMs?: number;
+    now?: Date;
+  } = {},
+) => claimOutboxJob(options);
+
+export const claimOutboxJobByDeduplicationKey = ({
+  deduplicationKey,
+  leaseDurationMs,
+  now,
+}: {
+  deduplicationKey: string;
+  leaseDurationMs?: number;
+  now?: Date;
+}) =>
+  claimOutboxJob({
+    deduplicationKey: requireNonEmpty(deduplicationKey, "deduplication_key"),
+    leaseDurationMs,
+    now,
+  });
 
 const markOutboxJobDelivered = async ({
   externalMessageId,
@@ -293,22 +321,20 @@ export type OutboxDeliveryResult = {
   skipped?: boolean;
 };
 
-export const processNextOutboxJob = async ({
+const processClaimedOutboxJob = async ({
+  claim,
   deliver,
-  kinds,
   maxAttempts = 8,
-  now = new Date(),
 }: {
+  claim: () => Promise<ClaimedOutboxJob | null>;
   deliver: (job: ClaimedOutboxJob) => Promise<OutboxDeliveryResult>;
-  kinds?: OutboxJobKind[];
   maxAttempts?: number;
-  now?: Date;
 }) => {
   if (!Number.isInteger(maxAttempts) || maxAttempts <= 0) {
     throw new Error("outbox_max_attempts_invalid");
   }
 
-  const job = await claimNextOutboxJob({ kinds, now });
+  const job = await claim();
 
   if (!job) {
     return { status: "empty" as const };
@@ -344,6 +370,44 @@ export const processNextOutboxJob = async ({
     };
   }
 };
+
+export const processNextOutboxJob = ({
+  deliver,
+  kinds,
+  maxAttempts = 8,
+  now = new Date(),
+}: {
+  deliver: (job: ClaimedOutboxJob) => Promise<OutboxDeliveryResult>;
+  kinds?: OutboxJobKind[];
+  maxAttempts?: number;
+  now?: Date;
+}) =>
+  processClaimedOutboxJob({
+    claim: () => claimNextOutboxJob({ kinds, now }),
+    deliver,
+    maxAttempts,
+  });
+
+export const processOutboxJobByDeduplicationKey = ({
+  deduplicationKey,
+  deliver,
+  maxAttempts = 8,
+  now = new Date(),
+}: {
+  deduplicationKey: string;
+  deliver: (job: ClaimedOutboxJob) => Promise<OutboxDeliveryResult>;
+  maxAttempts?: number;
+  now?: Date;
+}) =>
+  processClaimedOutboxJob({
+    claim: () =>
+      claimOutboxJobByDeduplicationKey({
+        deduplicationKey,
+        now,
+      }),
+    deliver,
+    maxAttempts,
+  });
 
 export const replayOutboxJob = async ({
   deduplicationKey,

@@ -1,10 +1,11 @@
 import {
   createEmailCampaignLead,
   FIRST_TOUCH_SALES_START_CAMPAIGN_KEY,
+  getEmailCampaignPersistenceErrorDetails,
+  isEmailCampaignPersistenceRateLimitError,
   isValidEmailCampaignEmail,
   normalizeEmailCampaignEmail,
 } from "@/lib/email-campaigns";
-import { GoogleSheetsError, isGoogleSheetsRateLimitError } from "@/lib/google-sheets";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
       status: "registered",
     });
   } catch (error) {
-    if (isGoogleSheetsRateLimitError(error)) {
+    if (isEmailCampaignPersistenceRateLimitError(error)) {
       return jsonErrorNoStore("rate_limited", {
         headers: {
           "Retry-After": "20",
@@ -104,12 +105,13 @@ export async function POST(request: Request) {
       });
     }
 
-    if (error instanceof GoogleSheetsError) {
-      console.error("Failed to store course signup lead in Google Sheets", {
-        details: error.details,
-        errorCode: error.code,
-        status: error.status,
-      });
+    const persistenceErrorDetails = getEmailCampaignPersistenceErrorDetails(error);
+
+    if (persistenceErrorDetails) {
+      console.error(
+        "Failed to store course signup lead in legacy persistence",
+        persistenceErrorDetails,
+      );
 
       return jsonErrorNoStore("course_signup_failed", { status: 500 });
     }

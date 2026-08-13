@@ -290,7 +290,14 @@ const auditDatabaseInvariants = async (): Promise<InvariantAuditRow[]> => {
 
       SELECT 'email_campaign_leads.status_attempts', count(*)::int
       FROM email_campaign_leads
-      WHERE email_send_status NOT IN ('blocked', 'excluded', 'failed', 'pending', 'sent')
+      WHERE email_send_status NOT IN (
+          'blocked',
+          'excluded',
+          'failed',
+          'pending',
+          'sending',
+          'sent'
+        )
         OR email_send_attempts < 0
     ) audit
     ORDER BY invariant

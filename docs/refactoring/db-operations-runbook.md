@@ -84,30 +84,51 @@ known non-production start-token plus timed join/leave journey. Once DB-only acc
 writes have begun, rollback is only to a release that understands the PostgreSQL
 access rows; never restore authority to a stale Sheet mirror.
 
-## Admin offer-grant write mode
+## Business-operation write mode
 
-Ordinary and Online Group admin invite generators switch their initial grant write
-together with:
+Admin grants, invoice allocation, monthly-report delivery, and campaign signup and
+delivery switch together with:
 
 ```bash
 DB_BUSINESS_OPERATIONS_MODE=database
 ```
 
-An unset value or `shadow` retains the synchronous legacy mirror. `database` creates
-the technical zero-value purchase, primary entitlement, and at most one transitional
-`SuccessfulCustomers` export job atomically in PostgreSQL. Google failure no longer
-fails the admin request. Ordinary admin links also require
+An unset value or `shadow` retains the synchronous legacy paths. In `database` mode:
+
+- admin grants create the technical zero-value purchase, primary entitlement, and at
+  most one transitional `SuccessfulCustomers` export job atomically;
+- invoices use the PostgreSQL monthly sequence and one-invoice-per-purchase lock;
+- reports enqueue one exact CSV delivery and use a stable Resend idempotency key;
+- campaign leads use the unique campaign/email key, and every recipient is claimed
+  and delivered by its own durable Resend job.
+
+Google failure no longer fails these database operations. Ordinary admin links also require
 `DB_TELEGRAM_ACCESS_MODE=database`; enable Telegram access first so their downstream
 token write cannot return to the legacy facade. Online Group access remains DB-native.
+
+The admin report and broadcast buttons still wait for their bounded delivery attempts
+and return the existing result shapes. The daily maintenance request additionally
+recovers ready report/campaign jobs. An operator can run the same bounded recovery
+without requiring a Stripe secret:
+
+```bash
+DATABASE_ENV=development \
+DB_BUSINESS_JOBS_RUN_CONFIRM=development \
+npm run db:business-jobs:run
+```
+
+Optional `DB_BUSINESS_JOBS_LIMIT` is capped at 100. Production requires both values to
+name `production`. Output contains aggregate counts only.
 
 The export job is enabled while `DB_SHEETS_EXPORT_MODE` is unset or `shadow`. Setting
 it to `database` stops creating new Sheet export jobs and is reserved for the later
 export-retirement step. Do not use that value as an admin-write cutover switch.
 
-At `CUT-03`, verify one ordinary and one Online Group admin grant, their history after
-the corresponding READ cutover, a single entitlement per access key, and no duplicate
-`successful_customer_export` rows. A rollback must use a DB-compatible release and
-must not treat the stale Sheet projection as authoritative.
+At `CUT-03`, verify one ordinary and one Online Group admin grant, one invoice, one
+report, one signup plus broadcast, their views after the corresponding READ cutover,
+and no duplicate invoice, campaign email, report email, entitlement, or export rows.
+A rollback must use a DB-compatible release and must not treat the stale Sheet
+projection as authoritative.
 
 ## Retry and replay rules
 
@@ -115,10 +136,10 @@ must not treat the stale Sheet projection as authoritative.
 - A retry must claim the existing inbox/outbox row; do not insert a replacement with a
   new deduplication key.
 - Outbox adapters pass a stable provider idempotency key where the provider supports
-  one. Resend email uses the purchase/payment key. Telegram Bot API `sendMessage` does
-  not accept such a key, so the adapter makes one network attempt per claim and sends
-  an uncertain response directly to dead-letter review rather than risking a duplicate
-  visible alert.
+  one. Resend email uses the purchase/payment, report-job, or campaign-recipient key.
+  Telegram Bot API `sendMessage` does not accept such a key, so the adapter makes one
+  network attempt per claim and sends an uncertain response directly to dead-letter
+  review rather than risking a duplicate visible alert.
 - A dead-letter replay is a deliberate operator action performed only after the cause
   is understood. Record the row ID, reason, operator, and time in the release log.
 - Do not reset attempt counters. They are operational evidence.

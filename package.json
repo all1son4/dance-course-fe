@@ -32,6 +32,7 @@
     "db:operations:status": "tsx src/db/operational-status.ts",
     "db:jobs:replay": "tsx src/db/replay-durable-job.ts",
     "db:jobs:run": "tsx src/db/run-stripe-background-jobs.ts",
+    "db:business-jobs:run": "tsx src/db/run-business-operation-jobs.ts",
     "db:seed:products": "tsx src/db/seed-products.ts",
     "db:snapshot:decrypt": "tsx src/db/decrypt-source-snapshot.ts",
     "db:snapshot:sources": "tsx src/db/capture-source-snapshot.ts",

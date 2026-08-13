@@ -1,5 +1,7 @@
 import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
 import { getStripeWriteRuntime } from "@/app/api/stripe/webhook/_lib/write-runtime";
+import { getDomainPersistenceMode } from "@/db/domain-persistence";
+import { runBusinessOperationOutboxJobs } from "@/lib/business-operation-outbox";
 import { jsonNoStore } from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
@@ -41,6 +43,10 @@ export async function GET(request: Request) {
     standard: Awaited<ReturnType<typeof revokeExpiredTelegramChannelAccess>>;
   } | null = null;
   let accessRevocationError: string | null = null;
+  let businessJobsError: string | null = null;
+  let businessJobsResult: Awaited<
+    ReturnType<typeof runBusinessOperationOutboxJobs>
+  > | null = null;
   let monthlySalesReportResult: ReturnType<
     typeof toMonthlySalesReportDeliveryResponse
   > | null = null;
@@ -75,6 +81,17 @@ export async function GET(request: Request) {
     }
   }
 
+  try {
+    if (getDomainPersistenceMode("businessOperations") === "database") {
+      businessJobsResult = await runBusinessOperationOutboxJobs();
+    }
+  } catch (error) {
+    console.error("Daily maintenance: business outbox recovery failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    businessJobsError = "business_outbox_recovery_failed";
+  }
+
   // Payment recovery runs after the established maintenance journeys, so a queue or
   // provider slowdown cannot prevent access revocation or the monthly report.
   try {
@@ -92,13 +109,18 @@ export async function GET(request: Request) {
   }
 
   const hasFailure = Boolean(
-    accessRevocationError || monthlySalesReportError || paymentJobsError,
+    accessRevocationError ||
+    businessJobsError ||
+    monthlySalesReportError ||
+    paymentJobsError,
   );
 
   return jsonNoStore(
     {
       accessRevocationError,
       accessRevocationResult,
+      businessJobsError,
+      businessJobsResult,
       monthlySalesReportError,
       monthlySalesReportResult,
       paymentJobsError,
