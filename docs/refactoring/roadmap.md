@@ -959,7 +959,7 @@ Switch domains independently, with shadow comparison before each switch:
 2. `READ-02`: payments and Stripe events — `DONE`;
 3. `READ-03`: remaining timed/legacy Telegram access — `DONE`; Online Group
    persistence is already DB-native;
-4. `READ-04`: invoices, reports, and campaigns;
+4. `READ-04`: invoices, reports, and campaigns — `DONE`;
 5. `READ-05`: remaining admin invite/history read models;
 6. `READ-06`: remove automatic Sheets fallback.
 
@@ -1030,6 +1030,40 @@ logical backup/restore, and a production build. The credential-free integration
 exercises every Telegram read operation through the database runtime, including the
 empty-chat legacy binding. Its Vercel development deployment passed all six
 [critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31705609326).
+No production flag changed.
+
+### READ-04 — Invoices, reports, and campaigns
+
+Status: `DONE`. Invoice numbering, monthly-report run checks, and campaign lead
+lookups and scans now use one explicit read boundary controlled by the existing
+`DB_BUSINESS_OPERATIONS_MODE`. Unset/`legacy` preserves the current DB-first facade
+and Sheets fallback. `shadow` returns that same result while independently comparing
+PostgreSQL with an explicit Sheets read. `database` reads PostgreSQL only: an absent
+invoice, report run, or lead remains absent, and a database failure propagates without
+consulting Sheets.
+
+The write selector remains separate: `shadow` does not enable the PostgreSQL-only
+WRITE-06 jobs or change invoice allocation, report delivery, campaign signup,
+duplicate detection, exclusion, global blocking, retry, or delivery behavior.
+PostgreSQL campaign scans retain deterministic creation/lead ordering. Invoice-list
+comparisons intentionally consider only payment rows carrying invoice state, so
+unrelated payment drift is not misclassified as an invoice mismatch.
+
+Shadow comparisons normalize email case and sub-second timestamp precision and ignore
+collection order. Diagnostics contain only record type, status, differing field names,
+and a SHA-256 lookup-key hash. Invoice/payment IDs, report keys and recipients,
+campaign keys, email addresses, names, social contacts, and record values are never
+logged. A shadow-read failure cannot alter the legacy response. No schema migration or
+production flag change is required; rollback is an application revert or `legacy`
+mode, while actual enablement remains a `CUT-03` operation.
+
+The exact implementation revision `8243010` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31709139026)
+with 94 unit tests, 48 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. The credential-free
+integration reads allocated invoices, completed reports, and final campaign state
+through the strict database runtime. Its Vercel development deployment passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31709197510).
 No production flag changed.
 
 ### Gate G5
@@ -1193,3 +1227,4 @@ Status: `TODO`
 | 2026-08-13 | Gate G4                     | `PASSED`     | DB write paths survive blocked Sheets; dev queues clean       |
 | 2026-08-13 | READ-02 implementation      | `DONE`       | DB-only reads; 78 unit, 48 PG17 and six journeys pass         |
 | 2026-08-13 | READ-03 implementation      | `DONE`       | DB-only reads; 87 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-04 implementation      | `DONE`       | DB-only reads; 94 unit, 48 PG17 and six journeys pass         |
