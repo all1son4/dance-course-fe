@@ -961,7 +961,7 @@ Switch domains independently, with shadow comparison before each switch:
    persistence is already DB-native;
 4. `READ-04`: invoices, reports, and campaigns — `DONE`;
 5. `READ-05`: remaining admin invite/history read models — `DONE`;
-6. `READ-06`: remove automatic Sheets fallback.
+6. `READ-06`: remove automatic Sheets fallback — `DONE`.
 
 ### READ-02 — Payments and Stripe events
 
@@ -1102,12 +1102,49 @@ six
 [critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31711160244).
 No production flag changed.
 
+### READ-06 — Remove automatic Sheets fallback
+
+Status: `DONE`. The shared Google facade no longer accepts an `auto` source. Every
+facade read now requires an explicit `database` or `sheets` source at the TypeScript
+boundary. An explicit database read preserves an absent row or empty collection and
+propagates a database failure; it cannot consult Sheets. The dedicated source
+dispatcher has contract tests for all three properties.
+
+Unset/`legacy` read selectors now explicitly use Sheets, preserving the rollback
+source until `CUT-03`. `shadow` performs one explicit Sheets read, returns that same
+result, and compares it with one PostgreSQL read; it no longer repeats the Sheets
+request through a DB-first composite facade. `database` remains PostgreSQL-only and
+fail-closed. The DB-first/fallback wording in the staged `READ-02` through `READ-05`
+sections describes those earlier implementation revisions and is superseded by this
+source contract.
+
+The remaining legacy Stripe payment-status lease also names Sheets explicitly. The
+database outbox delivery path and its PostgreSQL leases remain separate and do not
+gain a Google dependency. Payment resolution precedence, succeeded gating, Telegram
+access and verification rules, invoice/report/campaign behavior, admin history,
+caching, route responses, and visible user scenarios are unchanged. No migration,
+production flag, or production deployment is part of this task.
+
+The exact implementation revision `4b132b0` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31713049222)
+with 105 unit tests, 48 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. Its Vercel development
+deployment passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31713113186).
+Static source audit found no automatic source token or database-to-Sheets fallback
+branch under `src`.
+
 ### Gate G5
 
 - Domain behavior-contract tests pass.
 - Shadow comparisons have no unexplained mismatch.
 - There are no automatic fallback hits.
 - Expected fail-closed behavior is verified.
+
+Status: `IN_PROGRESS`. READ implementation and the automatic-fallback removal are
+complete. Gate closure still requires controlled shadow observation with every
+mismatch explained, followed by the recorded fail-closed verification; no production
+read flag has been changed yet.
 
 ## Phase CUT: production cutover and observation
 
@@ -1265,3 +1302,4 @@ Status: `TODO`
 | 2026-08-13 | READ-03 implementation      | `DONE`       | DB-only reads; 87 unit, 48 PG17 and six journeys pass         |
 | 2026-08-13 | READ-04 implementation      | `DONE`       | DB-only reads; 94 unit, 48 PG17 and six journeys pass         |
 | 2026-08-13 | READ-05 implementation      | `DONE`       | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
+| 2026-08-13 | READ-06 implementation      | `DONE`       | Explicit sources; 105 unit, 48 PG17 and six journeys pass     |
