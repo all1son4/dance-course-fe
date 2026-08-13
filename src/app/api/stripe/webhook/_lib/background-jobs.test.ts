@@ -27,6 +27,13 @@ test("registers the durable worker as an after-response task", async () => {
           sent: 0,
           skipped: 0,
         },
+        sheetsExport: {
+          dead_letter: 0,
+          empty: 1,
+          retry: 0,
+          sent: 0,
+          skipped: 0,
+        },
       };
     },
     schedule: (task) => {

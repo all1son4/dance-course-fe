@@ -8,6 +8,7 @@ import {
   isLastDayOfMonthUtc,
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
+import { runSheetsExportOutboxJobs } from "@/lib/sheets-export-outbox";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
@@ -53,6 +54,9 @@ export async function GET(request: Request) {
   let monthlySalesReportError: string | null = null;
   let paymentJobsError: string | null = null;
   let paymentJobsResult: Awaited<ReturnType<typeof runStripeBackgroundJobs>> | null =
+    null;
+  let sheetsExportError: string | null = null;
+  let sheetsExportResult: Awaited<ReturnType<typeof runSheetsExportOutboxJobs>> | null =
     null;
 
   try {
@@ -108,6 +112,17 @@ export async function GET(request: Request) {
     paymentJobsError = "stripe_background_recovery_failed";
   }
 
+  // Sheets is an optional one-way sink. Its queue is recovered independently from
+  // Stripe so admin-created exports do not require Stripe mode or credentials.
+  try {
+    sheetsExportResult = await runSheetsExportOutboxJobs();
+  } catch (error) {
+    console.error("Daily maintenance: Sheets export recovery failed", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
+    sheetsExportError = "sheets_export_recovery_failed";
+  }
+
   const hasFailure = Boolean(
     accessRevocationError ||
     businessJobsError ||
@@ -125,6 +140,8 @@ export async function GET(request: Request) {
       monthlySalesReportResult,
       paymentJobsError,
       paymentJobsResult,
+      sheetsExportError,
+      sheetsExportResult,
       ok: !hasFailure,
     },
     { status: hasFailure ? 500 : 200 },

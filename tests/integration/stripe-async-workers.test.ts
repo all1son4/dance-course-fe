@@ -10,6 +10,7 @@ import { deliverStripeOutboxJob } from "@/app/api/stripe/webhook/_lib/outbox-del
 import { getDatabaseClient } from "@/db/client";
 import { recordVerifiedStripeEvent } from "@/db/stripe-event-inbox";
 import { processNextOutboxJob } from "@/db/transactional-outbox";
+import { deliverSheetsExportOutboxJob } from "@/lib/sheets-export-outbox";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -23,6 +24,15 @@ const client = postgres(databaseUrl, {
   prepare: false,
 });
 const applicationClient = getDatabaseClient();
+
+const restoreEnvironmentVariable = (name: string, value: string | undefined) => {
+  if (value === undefined) {
+    delete process.env[name];
+    return;
+  }
+
+  process.env[name] = value;
+};
 
 after(async () => {
   await Promise.all([client.end(), applicationClient.end()]);
@@ -217,6 +227,171 @@ test("marks unsupported verified events skipped instead of growing the queue", a
     await client`
       DELETE FROM stripe_events
       WHERE stripe_event_id = ${eventId}
+    `;
+  }
+});
+
+test("isolates a blocked Sheets API from the completed purchase workflow", async (t) => {
+  const previousExportMode = process.env.DB_SHEETS_EXPORT_MODE;
+  const runId = randomUUID();
+  const eventId = `evt_write07_blocked_${runId}`;
+  const paymentIntentId = `pi_write07_blocked_${runId}`;
+  const event = createSucceededEvent({ eventId, paymentIntentId });
+  let exportedProjection: Record<string, string> | null = null;
+
+  process.env.DB_SHEETS_EXPORT_MODE = "legacy";
+  t.after(() => {
+    restoreEnvironmentVariable("DB_SHEETS_EXPORT_MODE", previousExportMode);
+  });
+
+  try {
+    await recordVerifiedStripeEvent({
+      apiVersion: event.api_version ?? null,
+      eventType: event.type,
+      livemode: event.livemode,
+      payload: event as unknown as Record<string, unknown>,
+      stripeCreatedAt: new Date(event.created * 1_000),
+      stripeEventId: event.id,
+    });
+
+    const stripe = createStripeFixture(paymentIntentId);
+    const inboxResult = await processNextStripeWebhookInboxJob({
+      eventTypes: [event.type],
+      stripe,
+    });
+    const emailDelivery = await processNextOutboxJob({
+      deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
+      kinds: ["purchase_success_email"],
+    });
+    const alertDelivery = await processNextOutboxJob({
+      deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
+      kinds: ["admin_telegram_alert"],
+    });
+    const exportDelivery = await processNextOutboxJob({
+      deliver: (job) =>
+        deliverSheetsExportOutboxJob(job, {
+          appendSuccessfulCustomer: async (projection) => {
+            exportedProjection = projection;
+            throw new Error("blocked_google_sheets_api");
+          },
+          environment: { DB_SHEETS_EXPORT_MODE: "legacy" },
+        }),
+      kinds: ["successful_customer_export"],
+    });
+    const [stored] = await client<
+      {
+        eventStatus: string;
+        exportStatus: string;
+        otherSideEffectsFinal: number;
+        outcome: string;
+      }[]
+    >`
+      SELECT
+        max(event.processing_status) AS "eventStatus",
+        max(effect.status) FILTER (
+          WHERE effect.kind = 'successful_customer_export'
+        ) AS "exportStatus",
+        count(effect.id) FILTER (
+          WHERE effect.kind IN ('purchase_success_email', 'admin_telegram_alert')
+            AND effect.status IN ('sent', 'skipped')
+        )::int AS "otherSideEffectsFinal",
+        max(purchase.outcome) AS outcome
+      FROM stripe_events event
+      JOIN purchases purchase ON purchase.id = event.purchase_id
+      JOIN purchase_side_effects effect ON effect.purchase_id = purchase.id
+      WHERE event.stripe_event_id = ${eventId}
+    `;
+
+    assert.equal(inboxResult.status, "processed");
+    assert.equal(emailDelivery.status, "skipped");
+    assert.equal(alertDelivery.status, "skipped");
+    assert.equal(exportDelivery.status, "retry");
+    assert.deepEqual(stored, {
+      eventStatus: "processed",
+      exportStatus: "failed",
+      otherSideEffectsFinal: 2,
+      outcome: "succeeded",
+    });
+    assert.deepEqual(Object.keys(exportedProjection ?? {}).sort(), [
+      "customer_country",
+      "customer_email",
+      "customer_full_address",
+      "customer_full_name",
+      "customer_nickname",
+      "offer_id",
+      "offer_label",
+      "payment_intent_id",
+      "product_id",
+      "product_title",
+      "purchase_item",
+    ]);
+  } finally {
+    await client`
+      DELETE FROM stripe_events
+      WHERE stripe_event_id = ${eventId}
+    `;
+    await client`
+      DELETE FROM purchases
+      WHERE payment_intent_id = ${paymentIntentId}
+    `;
+  }
+});
+
+test("does not enqueue a Sheets export after the sink is retired", async (t) => {
+  const previousExportMode = process.env.DB_SHEETS_EXPORT_MODE;
+  const runId = randomUUID();
+  const eventId = `evt_write07_retired_${runId}`;
+  const paymentIntentId = `pi_write07_retired_${runId}`;
+  const event = createSucceededEvent({ eventId, paymentIntentId });
+
+  process.env.DB_SHEETS_EXPORT_MODE = "database";
+  t.after(() => {
+    restoreEnvironmentVariable("DB_SHEETS_EXPORT_MODE", previousExportMode);
+  });
+
+  try {
+    await recordVerifiedStripeEvent({
+      apiVersion: event.api_version ?? null,
+      eventType: event.type,
+      livemode: event.livemode,
+      payload: event as unknown as Record<string, unknown>,
+      stripeCreatedAt: new Date(event.created * 1_000),
+      stripeEventId: event.id,
+    });
+
+    const result = await processNextStripeWebhookInboxJob({
+      eventTypes: [event.type],
+      stripe: createStripeFixture(paymentIntentId),
+    });
+    const [stored] = await client<
+      { exportCount: number; outboxCount: number; outcome: string }[]
+    >`
+      SELECT
+        count(effect.id) FILTER (
+          WHERE effect.kind = 'successful_customer_export'
+        )::int AS "exportCount",
+        count(effect.id)::int AS "outboxCount",
+        max(purchase.outcome) AS outcome
+      FROM stripe_events event
+      JOIN purchases purchase ON purchase.id = event.purchase_id
+      LEFT JOIN purchase_side_effects effect ON effect.purchase_id = purchase.id
+      WHERE event.stripe_event_id = ${eventId}
+    `;
+
+    assert.equal(result.status, "processed");
+    assert.deepEqual(stored, {
+      exportCount: 0,
+      outboxCount: 2,
+      outcome: "succeeded",
+    });
+  } finally {
+    await client`
+      DELETE FROM stripe_events
+      WHERE stripe_event_id = ${eventId}
+    `;
+    await client`
+      DELETE FROM purchases
+      WHERE payment_intent_id = ${paymentIntentId}
     `;
   }
 });

@@ -9,6 +9,7 @@ import {
   upsertPaymentRecord,
 } from "@/lib/google-sheets";
 import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
+import { isSheetsExportEnabled } from "@/lib/sheets-export-outbox";
 
 export type AdminOfferGrantRuntime = "database" | "legacy";
 
@@ -23,7 +24,7 @@ export const getAdminOfferGrantRuntime = (
 
 export const shouldExportAdminOfferGrantToSheets = (
   environment: Readonly<Record<string, string | undefined>> = process.env,
-) => getDomainPersistenceMode("sheetsExport", environment) !== "database";
+) => isSheetsExportEnabled(environment);
 
 const usesDatabase = () => getAdminOfferGrantRuntime() === "database";
 

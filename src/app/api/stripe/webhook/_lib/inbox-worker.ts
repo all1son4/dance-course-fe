@@ -1,7 +1,11 @@
 import type Stripe from "stripe";
 
-import { projectPaymentStateInTransaction } from "@/db/payment-projection";
+import {
+  type PaymentProjectionCommand,
+  projectPaymentStateInTransaction,
+} from "@/db/payment-projection";
 import { processNextStripeInboxEvent } from "@/db/stripe-event-inbox";
+import { isSheetsExportEnabled } from "@/lib/sheets-export-outbox";
 
 import {
   applyPreparedStripeChargeSettlement,
@@ -66,7 +70,7 @@ const createPurchaseOutboxJobs = ({
     stripeEventId: event.id,
   };
 
-  return [
+  const jobs: PaymentProjectionCommand["outboxJobs"] = [
     {
       kind: "purchase_success_email" as const,
       payload: {
@@ -81,12 +85,17 @@ const createPurchaseOutboxJobs = ({
       payload: sharedPayload,
       provider: "telegram" as const,
     },
-    {
+  ];
+
+  if (isSheetsExportEnabled()) {
+    jobs.push({
       kind: "successful_customer_export" as const,
       payload: sharedPayload,
       provider: "google_sheets" as const,
-    },
-  ];
+    });
+  }
+
+  return jobs;
 };
 
 const prepareInboxEvent = async ({
