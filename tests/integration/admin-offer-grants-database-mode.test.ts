@@ -192,7 +192,6 @@ test("creates and reads one atomic admin grant and export job without Google cre
       SET
         current_token_id = ${tokenId},
         starts_at = ${tokenUsedAt},
-        status = 'activated',
         updated_at = ${tokenUsedAt}
       WHERE id = ${accessOwner.entitlementId}
     `;
