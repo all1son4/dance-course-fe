@@ -960,7 +960,7 @@ Switch domains independently, with shadow comparison before each switch:
 3. `READ-03`: remaining timed/legacy Telegram access — `DONE`; Online Group
    persistence is already DB-native;
 4. `READ-04`: invoices, reports, and campaigns — `DONE`;
-5. `READ-05`: remaining admin invite/history read models;
+5. `READ-05`: remaining admin invite/history read models — `DONE`;
 6. `READ-06`: remove automatic Sheets fallback.
 
 ### READ-02 — Payments and Stripe events
@@ -1064,6 +1064,42 @@ PostgreSQL 17, logical backup/restore, and a production build. The credential-fr
 integration reads allocated invoices, completed reports, and final campaign state
 through the strict database runtime. Its Vercel development deployment passed all six
 [critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31709197510).
+No production flag changed.
+
+### READ-05 — Admin invite-link history
+
+Status: `DONE`. The remaining ordinary admin invite-link history GET now reads
+through an explicit boundary controlled by `DB_BUSINESS_OPERATIONS_MODE`.
+Unset/`legacy` preserves the current DB-first composite facade and Sheets fallback.
+`shadow` returns that same result while independently comparing PostgreSQL with an
+explicit Sheets read. `database` uses only a purpose-specific PostgreSQL read model;
+an empty result remains empty and a database error fails closed without consulting
+Sheets. Online Group invite history was already PostgreSQL-native and is unchanged.
+
+The SQL model joins each purchase to its primary entitlement, current Telegram token,
+and optional successful-customer export state. It preserves the existing workflow
+filter, link visibility, admin and selection labels, active/used interpretation, date
+fallback precedence, newest-first ordering, and optional limit. The route response,
+30-second fresh cache, five-minute stale cache, refresh behavior, authentication, and
+rate limiting are unchanged. Google-specific rate-limit and provider diagnostics are
+now confined to the legacy/shadow boundary.
+
+Shadow comparison normalizes sub-second timestamps and ignores collection order.
+Diagnostics contain only record type, status, differing field names, and a SHA-256
+query-key hash. Invite URLs, token values, payment data, workflow values, admin labels,
+product selections, and timestamps are never logged. Shadow failure cannot alter the
+legacy response. No schema migration or production flag change is required; rollback
+is an application revert or `legacy` mode, and actual enablement remains a `CUT-03`
+operation.
+
+The final implementation revision `c433d08` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31711125542)
+with 102 unit tests, 48 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. The credential-free
+integration creates an admin grant and used invite token, then reads the exact history
+projection through strict database mode. Its Vercel development deployment passed all
+six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31711160244).
 No production flag changed.
 
 ### Gate G5
@@ -1228,3 +1264,4 @@ Status: `TODO`
 | 2026-08-13 | READ-02 implementation      | `DONE`       | DB-only reads; 78 unit, 48 PG17 and six journeys pass         |
 | 2026-08-13 | READ-03 implementation      | `DONE`       | DB-only reads; 87 unit, 48 PG17 and six journeys pass         |
 | 2026-08-13 | READ-04 implementation      | `DONE`       | DB-only reads; 94 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-05 implementation      | `DONE`       | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
