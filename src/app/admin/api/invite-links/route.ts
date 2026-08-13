@@ -10,12 +10,9 @@ import {
 } from "@/constants/sellable-products";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
-  appendSuccessfulCustomerRecord,
-  GoogleSheetsError,
-  isGoogleSheetsRateLimitError,
-  type PaymentSheetRecord,
-  upsertPaymentRecord,
-} from "@/lib/google-sheets";
+  createAdminOfferGrant,
+  isAdminOfferGrantPersistenceRateLimitError,
+} from "@/lib/admin-offer-grants";
 import {
   hasJsonContentType,
   isPayloadTooLarge,
@@ -26,7 +23,6 @@ import {
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
-import { toUtcIso } from "@/lib/time";
 
 export const runtime = "nodejs";
 
@@ -134,84 +130,32 @@ const buildPurchaseItemLabel = ({
   return baseLabel || normalizedAdminLabel;
 };
 
-const getCustomerFullAddress = (paymentRecord: PaymentSheetRecord) =>
-  [
-    paymentRecord.customer_address.trim(),
-    paymentRecord.customer_city.trim(),
-    paymentRecord.customer_postal_code.trim(),
-  ]
-    .filter(Boolean)
-    .join(", ");
-
-const createAdminOfferPaymentRecord = ({
+const createAdminOfferGrantCommand = ({
   adminLabel,
   lessonLanguage,
   offer,
   product,
 }: ResolvedAdminSelection & {
   adminLabel: string;
-}): PaymentSheetRecord => {
-  const now = toUtcIso();
-  const paymentIntentId = createSyntheticId("adm_offer_pi_");
-  const checkoutSessionId = createSyntheticId("adm_offer_cs_");
-  const eventId = createSyntheticId("adm_offer_evt_");
-  const purchaseItem = buildPurchaseItemLabel({
+}) =>
+  ({
+    accessWorkflow: ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW,
     adminLabel,
+    checkoutSessionId: createSyntheticId("adm_offer_cs_"),
+    createdAt: new Date(),
+    eventId: createSyntheticId("adm_offer_evt_"),
+    lessonLanguage,
+    offerExternalId: offer.id,
     offerLabel: offer.label,
+    paymentIntentId: createSyntheticId("adm_offer_pi_"),
+    productExternalId: product.id,
     productTitle: product.title,
-  });
-
-  return {
-    amount: "0",
-    checkout_currency: "pln",
-    checkout_locale: "ru",
-    checkout_session_id: checkoutSessionId,
-    currency: "pln",
-    customer_address: "",
-    customer_city: "",
-    customer_country: "",
-    customer_email: "",
-    customer_full_name: "",
-    customer_nickname: adminLabel,
-    customer_postal_code: "",
-    delivery_channel: "telegram",
-    access_workflow: ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW,
-    email_delivery_status: "",
-    email_delivery_updated_at: "",
-    first_seen_at: now,
-    invoice_issued_at: "",
-    invoice_number: "",
-    last_payment_error_code: "",
-    last_payment_error_message: "",
-    latest_event_id: eventId,
-    latest_event_type: "admin.offer_link.generated",
-    lesson_language: lessonLanguage,
-    offer_id: offer.id,
-    offer_label: offer.label,
-    outcome: "succeeded",
-    payment_intent_id: paymentIntentId,
-    product_id: product.id,
-    product_title: product.title,
-    purchase_item: purchaseItem,
-    status: "succeeded",
-    successful_customer_logged_at: now,
-    successful_customer_log_status: "sent",
-    telegram_access_expires_at: "",
-    telegram_access_revoked_at: "",
-    telegram_access_status: "pending",
-    telegram_channel_chat_id: "",
-    telegram_inspiration_access_expires_at: "",
-    telegram_inspiration_chat_id: "",
-    telegram_token_expires_at: "",
-    telegram_token_id: "",
-    telegram_token_used_at: "",
-    telegram_user_id: "",
-    telegram_username: "",
-    updated_at: now,
-    with_mentor_alert_status: "",
-    with_mentor_alert_updated_at: "",
-  };
-};
+    purchaseItem: buildPurchaseItemLabel({
+      adminLabel,
+      offerLabel: offer.label,
+      productTitle: product.title,
+    }),
+  }) as const;
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
@@ -294,25 +238,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const initialPaymentRecord = createAdminOfferPaymentRecord({
+    const grantCommand = createAdminOfferGrantCommand({
       ...resolvedSelection,
       adminLabel: getNormalizedAdminLabel(body.adminLabel),
     });
-    const paymentRecord = await upsertPaymentRecord(initialPaymentRecord);
-
-    await appendSuccessfulCustomerRecord({
-      payment_intent_id: paymentRecord.payment_intent_id,
-      customer_country: paymentRecord.customer_country,
-      customer_email: paymentRecord.customer_email,
-      customer_full_address: getCustomerFullAddress(paymentRecord),
-      customer_full_name: paymentRecord.customer_full_name,
-      customer_nickname: paymentRecord.customer_nickname,
-      purchase_item: paymentRecord.purchase_item,
-      product_id: paymentRecord.product_id,
-      product_title: paymentRecord.product_title,
-      offer_id: paymentRecord.offer_id,
-      offer_label: paymentRecord.offer_label,
-    });
+    const paymentRecord = await createAdminOfferGrant(grantCommand);
     const accessLink = await ensureTelegramAccessLinkForPayment(paymentRecord);
 
     if (accessLink.status !== "ready") {
@@ -334,7 +264,7 @@ export async function POST(request: Request) {
       tokenExpiresAt: accessLink.tokenExpiresAt,
     });
   } catch (error) {
-    if (isGoogleSheetsRateLimitError(error)) {
+    if (isAdminOfferGrantPersistenceRateLimitError(error)) {
       console.warn("Google Sheets rate limit reached while generating admin invite link");
 
       return jsonNoStore(
@@ -347,21 +277,6 @@ export async function POST(request: Request) {
           },
           status: 429,
         },
-      );
-    }
-
-    if (error instanceof GoogleSheetsError) {
-      console.error("Failed to generate admin invite link in Google Sheets", {
-        details: error.details,
-        errorCode: error.code,
-        status: error.status,
-      });
-
-      return jsonNoStore(
-        {
-          errorCode: "admin_invite_link_failed",
-        },
-        { status: 500 },
       );
     }
 

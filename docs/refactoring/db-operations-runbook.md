@@ -84,6 +84,31 @@ known non-production start-token plus timed join/leave journey. Once DB-only acc
 writes have begun, rollback is only to a release that understands the PostgreSQL
 access rows; never restore authority to a stale Sheet mirror.
 
+## Admin offer-grant write mode
+
+Ordinary and Online Group admin invite generators switch their initial grant write
+together with:
+
+```bash
+DB_BUSINESS_OPERATIONS_MODE=database
+```
+
+An unset value or `shadow` retains the synchronous legacy mirror. `database` creates
+the technical zero-value purchase, primary entitlement, and at most one transitional
+`SuccessfulCustomers` export job atomically in PostgreSQL. Google failure no longer
+fails the admin request. Ordinary admin links also require
+`DB_TELEGRAM_ACCESS_MODE=database`; enable Telegram access first so their downstream
+token write cannot return to the legacy facade. Online Group access remains DB-native.
+
+The export job is enabled while `DB_SHEETS_EXPORT_MODE` is unset or `shadow`. Setting
+it to `database` stops creating new Sheet export jobs and is reserved for the later
+export-retirement step. Do not use that value as an admin-write cutover switch.
+
+At `CUT-03`, verify one ordinary and one Online Group admin grant, their history after
+the corresponding READ cutover, a single entitlement per access key, and no duplicate
+`successful_customer_export` rows. A rollback must use a DB-compatible release and
+must not treat the stale Sheet projection as authoritative.
+
 ## Retry and replay rules
 
 - Never edit a verified Stripe payload. Provider evidence is immutable.

@@ -10,12 +10,9 @@ import { getActiveOnlineGroupTargetByOfferId } from "@/db/online-group-campaigns
 import { listActiveTelegramChats } from "@/db/renewal-campaigns";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
-  appendSuccessfulCustomerRecord,
-  GoogleSheetsError,
-  isGoogleSheetsRateLimitError,
-  type PaymentSheetRecord,
-  upsertPaymentRecord,
-} from "@/lib/google-sheets";
+  createAdminOfferGrant,
+  isAdminOfferGrantPersistenceRateLimitError,
+} from "@/lib/admin-offer-grants";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonNoStore,
@@ -23,7 +20,6 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
-import { toUtcIso } from "@/lib/time";
 
 export const runtime = "nodejs";
 
@@ -68,7 +64,7 @@ const buildPurchaseItemLabel = ({
   offer: SellableProductOffer;
 }) => `${ONLINE_GROUP_PRODUCT.title} — ${offer.label} (${adminLabel})`;
 
-const createAdminOnlineGroupPaymentRecord = ({
+const createAdminOnlineGroupGrantCommand = ({
   adminLabel,
   inspirationChatId,
   mainChatId,
@@ -78,61 +74,24 @@ const createAdminOnlineGroupPaymentRecord = ({
   inspirationChatId: string;
   mainChatId: string;
   offer: SellableProductOffer;
-}): PaymentSheetRecord => {
-  const now = toUtcIso();
-
-  return {
-    access_workflow: "telegram-online-group",
-    amount: "0",
-    checkout_currency: "pln",
-    checkout_locale: "ru",
-    checkout_session_id: createSyntheticId("adm_offer_cs_"),
-    currency: "pln",
-    customer_address: "",
-    customer_city: "",
-    customer_country: "",
-    customer_email: "",
-    customer_full_name: "",
-    customer_nickname: adminLabel,
-    customer_postal_code: "",
-    delivery_channel: "telegram",
-    email_delivery_status: "",
-    email_delivery_updated_at: "",
-    first_seen_at: now,
-    invoice_issued_at: "",
-    invoice_number: "",
-    last_payment_error_code: "",
-    last_payment_error_message: "",
-    latest_event_id: createSyntheticId("adm_offer_evt_"),
-    latest_event_type: "admin.online_group_link.generated",
-    lesson_language: "ru",
-    offer_id: offer.id,
-    offer_label: offer.label,
-    outcome: "succeeded",
+}) =>
+  ({
+    accessWorkflow: "telegram-online-group",
+    adminLabel,
+    checkoutSessionId: createSyntheticId("adm_offer_cs_"),
+    createdAt: new Date(),
+    eventId: createSyntheticId("adm_offer_evt_"),
+    inspirationChatId,
+    lessonLanguage: "ru",
+    mainChatId,
+    offerExternalId: offer.id,
+    offerLabel: offer.label,
     // This prefix marks the technical grant as admin-only and keeps it out of sales.
-    payment_intent_id: createSyntheticId("adm_offer_pi_"),
-    product_id: ONLINE_GROUP_PRODUCT.id,
-    product_title: ONLINE_GROUP_PRODUCT.title,
-    purchase_item: buildPurchaseItemLabel({ adminLabel, offer }),
-    status: "succeeded",
-    successful_customer_logged_at: now,
-    successful_customer_log_status: "sent",
-    telegram_access_expires_at: "",
-    telegram_access_revoked_at: "",
-    telegram_access_status: "pending",
-    telegram_channel_chat_id: mainChatId,
-    telegram_inspiration_access_expires_at: "",
-    telegram_inspiration_chat_id: inspirationChatId,
-    telegram_token_expires_at: "",
-    telegram_token_id: "",
-    telegram_token_used_at: "",
-    telegram_user_id: "",
-    telegram_username: "",
-    updated_at: now,
-    with_mentor_alert_status: "",
-    with_mentor_alert_updated_at: "",
-  };
-};
+    paymentIntentId: createSyntheticId("adm_offer_pi_"),
+    productExternalId: ONLINE_GROUP_PRODUCT.id,
+    productTitle: ONLINE_GROUP_PRODUCT.title,
+    purchaseItem: buildPurchaseItemLabel({ adminLabel, offer }),
+  }) as const;
 
 const serializeGrant = (
   grant: Awaited<ReturnType<typeof listRecentAdminOnlineGroupAccessGrants>>[number],
@@ -255,27 +214,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const initialPaymentRecord = createAdminOnlineGroupPaymentRecord({
+    const grantCommand = createAdminOnlineGroupGrantCommand({
       adminLabel,
       inspirationChatId: target.inspirationChatId ?? "",
       mainChatId: target.mainChatId,
       offer,
     });
-    const paymentRecord = await upsertPaymentRecord(initialPaymentRecord);
-
-    await appendSuccessfulCustomerRecord({
-      customer_country: paymentRecord.customer_country,
-      customer_email: paymentRecord.customer_email,
-      customer_full_address: "",
-      customer_full_name: paymentRecord.customer_full_name,
-      customer_nickname: paymentRecord.customer_nickname,
-      offer_id: paymentRecord.offer_id,
-      offer_label: paymentRecord.offer_label,
-      payment_intent_id: paymentRecord.payment_intent_id,
-      product_id: paymentRecord.product_id,
-      product_title: paymentRecord.product_title,
-      purchase_item: paymentRecord.purchase_item,
-    });
+    const paymentRecord = await createAdminOfferGrant(grantCommand);
     const accesses = await ensureOnlineGroupAccessForPayment(paymentRecord);
 
     if (!accesses?.length) {
@@ -334,22 +279,14 @@ export async function POST(request: Request) {
       status,
     });
   } catch (error) {
-    if (isGoogleSheetsRateLimitError(error)) {
+    if (isAdminOfferGrantPersistenceRateLimitError(error)) {
       return jsonNoStore(
         { errorCode: "rate_limited" },
         { headers: { "Retry-After": "20" }, status: 429 },
       );
     }
 
-    if (error instanceof GoogleSheetsError) {
-      console.error("Failed to mirror admin Online Group invite link", {
-        details: error.details,
-        errorCode: error.code,
-        status: error.status,
-      });
-    } else {
-      console.error("Failed to generate admin Online Group invite links", error);
-    }
+    console.error("Failed to generate admin Online Group invite links", error);
 
     return jsonNoStore(
       { errorCode: "online_group_invite_links_failed" },

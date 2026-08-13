@@ -1,3 +1,4 @@
+import { createAdminOfferGrantInDatabase } from "./admin-offer-grants";
 import { allocateInvoice } from "./invoice-repository";
 import { projectPaymentStateInTransaction } from "./payment-projection";
 import {
@@ -19,6 +20,7 @@ import {
 // the DB phase. Runtime routes choose a domain mode separately and never reach
 // through this boundary to Google Sheets DTOs.
 export const domainRepositories = Object.freeze({
+  adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
   invoices: Object.freeze({ allocate: allocateInvoice }),
   outbox: Object.freeze({
     claimNext: claimNextOutboxJob,

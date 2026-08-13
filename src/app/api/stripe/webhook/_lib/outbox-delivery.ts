@@ -3,7 +3,7 @@ import type Stripe from "stripe";
 
 import { getDatabase } from "@/db/client";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
-import { stripeEvents } from "@/db/schema";
+import { purchases, stripeEvents } from "@/db/schema";
 import type { ClaimedOutboxJob, OutboxDeliveryResult } from "@/db/transactional-outbox";
 import { appendSuccessfulCustomerRecord } from "@/lib/google-sheets";
 
@@ -100,6 +100,35 @@ const loadDeliveryContext = async (job: ClaimedOutboxJob) => {
   return { event, handledEvent, paymentIntentId, paymentRecord };
 };
 
+const loadSuccessfulCustomerExportContext = async (job: ClaimedOutboxJob) => {
+  const paymentIntentId = requirePayloadString(job.payload, "paymentIntentId");
+  const source = typeof job.payload.source === "string" ? job.payload.source.trim() : "";
+
+  if (source !== "admin_offer_link") {
+    return loadDeliveryContext(job);
+  }
+
+  const [purchase, paymentRecord] = await Promise.all([
+    getDatabase()
+      .select({ source: purchases.source })
+      .from(purchases)
+      .where(eq(purchases.paymentIntentId, paymentIntentId))
+      .limit(1)
+      .then(([row]) => row ?? null),
+    findPaymentRecordByIntentIdFromDatabase(paymentIntentId),
+  ]);
+
+  if (purchase?.source !== "admin_offer_link") {
+    throw new NonRetryableOutboxDeliveryError("outbox_admin_offer_purchase_missing");
+  }
+
+  if (!paymentRecord) {
+    throw new Error("outbox_payment_projection_missing");
+  }
+
+  return { paymentIntentId, paymentRecord };
+};
+
 export const deliverStripeOutboxJob = async ({
   job,
   stripe,
@@ -107,6 +136,29 @@ export const deliverStripeOutboxJob = async ({
   job: ClaimedOutboxJob;
   stripe: Stripe;
 }): Promise<OutboxDeliveryResult> => {
+  if (job.kind === "successful_customer_export") {
+    const context = await loadSuccessfulCustomerExportContext(job);
+
+    await appendSuccessfulCustomerRecord(
+      {
+        customer_country: context.paymentRecord.customer_country,
+        customer_email: context.paymentRecord.customer_email,
+        customer_full_address: getCustomerFullAddress(context.paymentRecord),
+        customer_full_name: context.paymentRecord.customer_full_name,
+        customer_nickname: context.paymentRecord.customer_nickname,
+        offer_id: context.paymentRecord.offer_id,
+        offer_label: context.paymentRecord.offer_label,
+        payment_intent_id: context.paymentIntentId,
+        product_id: context.paymentRecord.product_id,
+        product_title: context.paymentRecord.product_title,
+        purchase_item: getPurchaseItemLabel(context.paymentRecord),
+      },
+      { mirrorToDatabase: false },
+    );
+
+    return {};
+  }
+
   const context = await loadDeliveryContext(job);
 
   if (job.kind === "purchase_success_email") {
@@ -128,27 +180,6 @@ export const deliverStripeOutboxJob = async ({
       event: context.event,
       handledEvent: context.handledEvent,
     });
-  }
-
-  if (job.kind === "successful_customer_export") {
-    await appendSuccessfulCustomerRecord(
-      {
-        customer_country: context.paymentRecord.customer_country,
-        customer_email: context.paymentRecord.customer_email,
-        customer_full_address: getCustomerFullAddress(context.paymentRecord),
-        customer_full_name: context.paymentRecord.customer_full_name,
-        customer_nickname: context.paymentRecord.customer_nickname,
-        offer_id: context.paymentRecord.offer_id,
-        offer_label: context.paymentRecord.offer_label,
-        payment_intent_id: context.paymentIntentId,
-        product_id: context.paymentRecord.product_id,
-        product_title: context.paymentRecord.product_title,
-        purchase_item: getPurchaseItemLabel(context.paymentRecord),
-      },
-      { mirrorToDatabase: false },
-    );
-
-    return {};
   }
 
   throw new NonRetryableOutboxDeliveryError("unsupported_stripe_outbox_kind");

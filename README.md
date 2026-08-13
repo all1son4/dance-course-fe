@@ -56,6 +56,10 @@ Optional Telegram env variables:
   both unset preserves the legacy synchronous path)
 - `DB_TELEGRAM_ACCESS_MODE` (optional; `database` enables PostgreSQL-only timed/legacy
   Telegram access persistence; leave unset until the controlled cutover)
+- `DB_BUSINESS_OPERATIONS_MODE` (optional; `database` enables PostgreSQL-only admin
+  offer-grant creation; leave unset until the controlled cutover)
+- `DB_SHEETS_EXPORT_MODE` (optional; set to `database` only after the transitional
+  one-way Sheets exporter is deliberately retired)
 
 `TELEGRAM_WEBHOOK_SECRET` is required in production (`NODE_ENV=production`).
 
