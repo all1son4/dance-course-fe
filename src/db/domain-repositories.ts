@@ -12,7 +12,12 @@ import {
 import { allocateInvoice, allocateInvoiceForPaymentIntent } from "./invoice-repository";
 import { projectPaymentStateInTransaction } from "./payment-projection";
 import {
+  findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
+  findPaymentRecordByIntentIdFromDatabase,
+} from "./payment-records";
+import {
   claimNextStripeInboxEvent,
+  findStripeInboxReadModel,
   processNextStripeInboxEvent,
   recordVerifiedStripeEvent,
   replayStripeInboxEvent,
@@ -29,8 +34,9 @@ import {
 } from "./transactional-outbox";
 
 // This is the database-facing composition root for the domains introduced during
-// the DB phase. Runtime routes choose a domain mode separately and never reach
-// through this boundary to Google Sheets DTOs.
+// the DB phase. Runtime routes choose a domain mode separately. The paymentReads
+// compatibility projection remains deliberately flattened until READ-03 removes the
+// legacy Telegram aggregate coupling; provider access stays outside this boundary.
 export const domainRepositories = Object.freeze({
   adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
   emailCampaigns: Object.freeze({
@@ -61,8 +67,13 @@ export const domainRepositories = Object.freeze({
   paymentProjection: Object.freeze({
     projectInTransaction: projectPaymentStateInTransaction,
   }),
+  paymentReads: Object.freeze({
+    findByCheckoutSessionId: findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
+    findByPaymentIntentId: findPaymentRecordByIntentIdFromDatabase,
+  }),
   stripeInbox: Object.freeze({
     claimNext: claimNextStripeInboxEvent,
+    findReadModel: findStripeInboxReadModel,
     processNext: processNextStripeInboxEvent,
     recordVerified: recordVerifiedStripeEvent,
     replay: replayStripeInboxEvent,

@@ -9,6 +9,7 @@ import {
   type PaymentSheetRecord,
   upsertPaymentRecord,
 } from "@/lib/google-sheets";
+import { observeStripeEventReadShadow } from "@/lib/payment-read-runtime";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 import { toUtcIso } from "@/lib/time";
 
@@ -1190,6 +1191,10 @@ const syncStripePaymentEventToGoogleSheetsInternal = async (
       source: "sheets",
     }),
   ]);
+  await observeStripeEventReadShadow({
+    eventId: event.id,
+    sheetsRecord: existingEvent,
+  });
   const sourceContext = await getPaymentSourceContext(event, paymentIntent);
   const paymentRecord = mapPaymentIntentToPaymentRecord(
     event,

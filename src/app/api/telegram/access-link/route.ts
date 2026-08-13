@@ -2,18 +2,14 @@ import {
   normalizeCheckoutSessionId,
   normalizePaymentIntentId,
 } from "@/app/api/stripe/payment-intent/lib";
-import {
-  findLatestSucceededPaymentRecordByCheckoutSessionId,
-  findPaymentRecordByIntentId,
-  GoogleSheetsError,
-  isGoogleSheetsRateLimitError,
-} from "@/lib/google-sheets";
+import { GoogleSheetsError, isGoogleSheetsRateLimitError } from "@/lib/google-sheets";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
+import { findPaymentAccessRecord } from "@/lib/payment-read-runtime";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
@@ -29,25 +25,8 @@ type TelegramAccessLinkBody = {
   productId?: string;
 };
 
-type PaymentRecord = NonNullable<Awaited<ReturnType<typeof findPaymentRecordByIntentId>>>;
+type PaymentRecord = NonNullable<Awaited<ReturnType<typeof findPaymentAccessRecord>>>;
 type AccessLinkResponse = ReturnType<typeof jsonNoStore>;
-
-const findAccessPaymentRecord = async ({
-  checkoutSessionId,
-  paymentIntentId,
-}: {
-  checkoutSessionId: string;
-  paymentIntentId: string;
-}): Promise<PaymentRecord | null> => {
-  const paymentIntentRecord = paymentIntentId
-    ? await findPaymentRecordByIntentId(paymentIntentId)
-    : null;
-
-  return (
-    paymentIntentRecord ??
-    (await findLatestSucceededPaymentRecordByCheckoutSessionId(checkoutSessionId))
-  );
-};
 
 const getPaymentContextErrorResponse = ({
   checkoutSessionId,
@@ -214,7 +193,7 @@ export async function POST(request: Request) {
       return jsonErrorNoStore("missing_checkout_session_id", { status: 400 });
     }
 
-    const paymentRecord = await findAccessPaymentRecord({
+    const paymentRecord = await findPaymentAccessRecord({
       checkoutSessionId,
       paymentIntentId,
     });

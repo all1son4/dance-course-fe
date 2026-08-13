@@ -27,6 +27,15 @@ export type StripeInboxReceipt = {
     | "dead_letter";
 };
 
+export type StripeInboxReadModel = {
+  eventType: string;
+  outcome: string | null;
+  paymentIntentId: string | null;
+  paymentStatus: string | null;
+  processingStatus: StripeInboxReceipt["processingStatus"];
+  stripeEventId: string;
+};
+
 export type ClaimedStripeInboxEvent = {
   apiVersion: string | null;
   attemptCount: number;
@@ -60,6 +69,31 @@ const requireNonEmpty = (value: string, field: string) => {
   }
 
   return normalizedValue;
+};
+
+export const findStripeInboxReadModel = async (
+  stripeEventId: string,
+): Promise<StripeInboxReadModel | null> => {
+  const normalizedEventId = stripeEventId.trim();
+
+  if (!normalizedEventId) {
+    return null;
+  }
+
+  const [event] = await getDatabase()
+    .select({
+      eventType: stripeEvents.eventType,
+      outcome: stripeEvents.outcomeSnapshot,
+      paymentIntentId: stripeEvents.paymentIntentId,
+      paymentStatus: stripeEvents.paymentStatusSnapshot,
+      processingStatus: stripeEvents.processingStatus,
+      stripeEventId: stripeEvents.stripeEventId,
+    })
+    .from(stripeEvents)
+    .where(eq(stripeEvents.stripeEventId, normalizedEventId))
+    .limit(1);
+
+  return event ?? null;
 };
 
 export const recordVerifiedStripeEvent = async (
