@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
 
 import {
   PAYMENT_SHEET_HEADERS,
@@ -127,12 +127,6 @@ const parseDate = (value: string | null | undefined) => {
   const timestamp = Date.parse(trim(value));
 
   return Number.isFinite(timestamp) ? new Date(timestamp) : null;
-};
-
-const parseTimestamp = (value: string | null | undefined) => {
-  const timestamp = Date.parse(trim(value));
-
-  return Number.isFinite(timestamp) ? timestamp : 0;
 };
 
 const parseRequiredDate = (
@@ -590,18 +584,11 @@ export const findLatestPaymentRecordByCheckoutSessionIdFromDatabase = async (
     .select()
     .from(purchases)
     .where(eq(purchases.checkoutSessionId, normalizedCheckoutSessionId))
-    .orderBy(purchases.updatedAt, purchases.firstSeenAt)
-    .limit(10);
+    .orderBy(desc(purchases.updatedAt), desc(purchases.firstSeenAt), desc(purchases.id))
+    .limit(1);
   const records = await hydratePaymentRecords(rows);
 
-  return (
-    records.sort((left, right) => {
-      const rightTs = parseTimestamp(right.updated_at || right.first_seen_at);
-      const leftTs = parseTimestamp(left.updated_at || left.first_seen_at);
-
-      return rightTs - leftTs;
-    })[0] ?? null
-  );
+  return records[0] ?? null;
 };
 
 const upsertPaymentCustomer = async ({

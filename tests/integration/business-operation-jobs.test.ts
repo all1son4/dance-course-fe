@@ -12,6 +12,13 @@ import {
 import { getDatabaseClient } from "@/db/client";
 import { allocateInvoiceForPaymentIntent } from "@/db/invoice-repository";
 import { claimOutboxJobByDeduplicationKey } from "@/db/transactional-outbox";
+import {
+  findEmailCampaignLeadRecord,
+  findInvoicePaymentRecordByIntentId,
+  findMonthlyReportRunRecord,
+  listEmailCampaignLeadReadRecords,
+  listInvoicePaymentRecords,
+} from "@/lib/business-operation-read-runtime";
 
 import { installJsonFetchFixture } from "../fixtures/providers";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
@@ -21,6 +28,10 @@ const databaseUrl = getRequiredTestDatabaseUrl();
 process.env.DATABASE_ENV = "development";
 process.env.DATABASE_DEV_DATABASE_URL = databaseUrl;
 process.env.RESEND_API_KEY = "re_write06_fixture";
+
+const databaseReadOptions = {
+  environment: { DB_BUSINESS_OPERATIONS_MODE: "database" },
+} as const;
 
 const client = postgres(databaseUrl, {
   max: 8,
@@ -97,6 +108,11 @@ test("allocates and hydrates one invoice for a payment intent concurrently", asy
         allocateInvoiceForPaymentIntent({ issuedAt, paymentIntentId }),
       ),
     );
+    const readRecord = await findInvoicePaymentRecordByIntentId(
+      paymentIntentId,
+      databaseReadOptions,
+    );
+    const readRecords = await listInvoicePaymentRecords(databaseReadOptions);
     const [stored] = await client<
       {
         amountMinor: number;
@@ -119,6 +135,8 @@ test("allocates and hydrates one invoice for a payment intent concurrently", asy
 
     assert.equal(new Set(records.map((record) => record.invoice_number)).size, 1);
     assert.match(records[0].invoice_number, /^FV\/2097\/05\/\d{3,}$/u);
+    assert.equal(readRecord?.invoice_number, records[0].invoice_number);
+    assert.ok(readRecords.some((record) => record.payment_intent_id === paymentIntentId));
     assert.deepEqual(stored, {
       amountMinor: 7500,
       buyerAddress: "Street 1, Warsaw, 00-001",
@@ -187,6 +205,11 @@ test("campaign jobs retry with one Resend idempotency key and persist final stat
         ON effect.deduplication_key = ${deduplicationKey}
       WHERE lead.lead_id = ${leadId}
     `;
+    const readLead = await findEmailCampaignLeadRecord(
+      { campaignKey, email },
+      databaseReadOptions,
+    );
+    const readLeads = await listEmailCampaignLeadReadRecords(databaseReadOptions);
 
     assert.equal(second.status, "sent");
     assert.equal(calls.length, 2);
@@ -203,6 +226,9 @@ test("campaign jobs retry with one Resend idempotency key and persist final stat
       jobStatus: "sent",
       leadStatus: "sent",
     });
+    assert.equal(readLead?.email_send_attempts, "2");
+    assert.equal(readLead?.email_send_status, "sent");
+    assert.ok(readLeads.some((lead) => lead.lead_id === leadId));
   } finally {
     await client`
       DELETE FROM purchase_side_effects
@@ -302,6 +328,7 @@ test("monthly report jobs persist delivery and never resend a completed job", as
       FROM monthly_report_runs
       WHERE report_key = ${reportKey}
     `;
+    const readRun = await findMonthlyReportRunRecord(reportKey, databaseReadOptions);
 
     assert.equal(first.status, "sent");
     assert.equal(second.status, "empty");
@@ -315,6 +342,8 @@ test("monthly report jobs persist delivery and never resend a completed job", as
       rowCount: 3,
       status: "sent",
     });
+    assert.equal(readRun?.delivery_status, "sent");
+    assert.equal(readRun?.row_count, "3");
   } finally {
     await client`
       DELETE FROM purchase_side_effects

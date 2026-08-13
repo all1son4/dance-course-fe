@@ -71,6 +71,7 @@ const getFreshPaymentRecord = async ({
     return (
       (await findPaymentRecordByIntentId(paymentIntentId, {
         cacheTtlMs: FRESH_PAYMENT_LOOKUP_CACHE_TTL_MS,
+        source: "sheets",
       })) ?? fallbackPaymentRecord
     );
   } catch (error) {

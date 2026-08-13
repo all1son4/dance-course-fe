@@ -5,6 +5,7 @@ import test, { after, type TestContext } from "node:test";
 import postgres from "postgres";
 
 import { getDatabaseClient } from "@/db/client";
+import { listAdminInviteLinkHistoryRecords } from "@/lib/admin-invite-link-history-read-runtime";
 import { createAdminOfferGrant } from "@/lib/admin-offer-grants";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
@@ -58,7 +59,7 @@ const configureDatabaseOnlyAdminOffers = (context: TestContext) => {
   });
 };
 
-test("creates one atomic admin grant and export job without Google credentials", async (t) => {
+test("creates and reads one atomic admin grant and export job without Google credentials", async (t) => {
   const suffix = randomUUID().replaceAll("-", "");
   const productExternalId = `prd_write05_${suffix}`;
   const offerExternalId = `off_write05_${suffix}`;
@@ -127,6 +128,73 @@ test("creates one atomic admin grant and export job without Google credentials",
     const results = await Promise.all(
       Array.from({ length: 8 }, () => createAdminOfferGrant(command)),
     );
+    const tokenId = `tgi_read05_${suffix}`;
+    const accessUrl = `https://t.me/+read05_${suffix}`;
+    const tokenExpiresAt = new Date("2026-09-13T10:00:00.000Z");
+    const tokenUsedAt = new Date("2026-08-13T10:03:00.000Z");
+    const [accessOwner] = await client<
+      {
+        entitlementId: string;
+        offerId: string;
+        productId: string;
+        purchaseId: string;
+      }[]
+    >`
+      SELECT
+        entitlement.id AS "entitlementId",
+        purchase.offer_id AS "offerId",
+        purchase.product_id AS "productId",
+        purchase.id AS "purchaseId"
+      FROM purchases purchase
+      INNER JOIN access_entitlements entitlement
+        ON entitlement.purchase_id = purchase.id
+        AND entitlement.access_key = 'primary'
+      WHERE purchase.payment_intent_id = ${paymentIntentId}
+    `;
+
+    assert.ok(accessOwner);
+
+    await client`
+      INSERT INTO telegram_access_tokens (
+        token_id,
+        token_hash,
+        token_value,
+        purchase_id,
+        entitlement_id,
+        product_id,
+        offer_id,
+        link_kind,
+        status,
+        expires_at,
+        used_at,
+        telegram_user_id,
+        created_at,
+        updated_at
+      ) VALUES (
+        ${tokenId},
+        ${`hash_${suffix}`},
+        ${accessUrl},
+        ${accessOwner.purchaseId},
+        ${accessOwner.entitlementId},
+        ${accessOwner.productId},
+        ${accessOwner.offerId},
+        'channel_invite',
+        'used',
+        ${tokenExpiresAt},
+        '2026-08-13T10:02:00.000Z',
+        ${`read05_user_${suffix}`},
+        '2026-08-13T10:01:00.000Z',
+        '2026-08-13T10:02:00.000Z'
+      )
+    `;
+    await client`
+      UPDATE access_entitlements
+      SET
+        current_token_id = ${tokenId},
+        starts_at = ${tokenUsedAt},
+        updated_at = ${tokenUsedAt}
+      WHERE id = ${accessOwner.entitlementId}
+    `;
 
     await assert.rejects(
       createAdminOfferGrant({
@@ -169,6 +237,11 @@ test("creates one atomic admin grant and export job without Google credentials",
         AND effect.kind = 'successful_customer_export'
       WHERE purchase.payment_intent_id = ${paymentIntentId}
     `;
+    const history = await listAdminInviteLinkHistoryRecords(
+      { accessWorkflow: "admin-offer-link" },
+      { environment: { DB_BUSINESS_OPERATIONS_MODE: "database" } },
+    );
+    const historyRecord = history.find((record) => record.accessUrl === accessUrl);
 
     assert.equal(results.length, 8);
     assert.ok(
@@ -189,6 +262,17 @@ test("creates one atomic admin grant and export job without Google credentials",
       purchaseCount: 1,
       source: "admin_offer_link",
       succeededAt: null,
+    });
+    assert.deepEqual(historyRecord, {
+      accessUrl,
+      adminLabel: "WRITE-05 admin",
+      createdAt: "2026-08-13T10:00:00.000Z",
+      lessonLanguage: "en",
+      offerLabel: "WRITE-05 access",
+      productTitle: "WRITE-05 fixture",
+      purchaseItem: "WRITE-05 fixture — WRITE-05 access",
+      tokenExpiresAt: tokenExpiresAt.toISOString(),
+      tokenUsedAt: tokenUsedAt.toISOString(),
     });
   } finally {
     await client`

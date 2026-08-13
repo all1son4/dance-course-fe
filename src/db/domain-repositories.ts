@@ -1,3 +1,4 @@
+import { listAdminInviteLinkHistoryRecordsFromDatabase } from "./admin-invite-link-history";
 import { createAdminOfferGrantInDatabase } from "./admin-offer-grants";
 import {
   claimEmailCampaignLeadForDelivery,
@@ -12,7 +13,26 @@ import {
 import { allocateInvoice, allocateInvoiceForPaymentIntent } from "./invoice-repository";
 import { projectPaymentStateInTransaction } from "./payment-projection";
 import {
+  findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
+  findPaymentRecordByIntentIdFromDatabase,
+  listPaymentRecordsFromDatabase,
+} from "./payment-records";
+import {
+  findActiveTelegramUserBindingsFromDatabase,
+  findEmailCampaignLeadByCampaignAndEmailFromDatabase,
+  findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
+  findMonthlySalesReportRunByKeyFromDatabase,
+  findTelegramAccessTokenRecordByTokenHashFromDatabase,
+  findTelegramAccessTokenRecordByTokenValueFromDatabase,
+  findTelegramUserBindingByPaymentIntentIdFromDatabase,
+  findTelegramUserBindingsByCustomerEmailFromDatabase,
+  findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
+  findTelegramUserBindingsByTelegramUserIdFromDatabase,
+  listEmailCampaignLeadRecordsFromDatabase,
+} from "./sheet-records";
+import {
   claimNextStripeInboxEvent,
+  findStripeInboxReadModel,
   processNextStripeInboxEvent,
   recordVerifiedStripeEvent,
   replayStripeInboxEvent,
@@ -29,10 +49,20 @@ import {
 } from "./transactional-outbox";
 
 // This is the database-facing composition root for the domains introduced during
-// the DB phase. Runtime routes choose a domain mode separately and never reach
-// through this boundary to Google Sheets DTOs.
+// the DB phase. Runtime routes choose a domain mode separately. Payment and Telegram
+// reads deliberately retain flattened compatibility projections during the staged
+// cutover; provider access stays outside this boundary.
 export const domainRepositories = Object.freeze({
+  adminInviteLinkHistory: Object.freeze({
+    list: listAdminInviteLinkHistoryRecordsFromDatabase,
+  }),
   adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
+  businessOperationReads: Object.freeze({
+    findCampaignLead: findEmailCampaignLeadByCampaignAndEmailFromDatabase,
+    findMonthlyReportRun: findMonthlySalesReportRunByKeyFromDatabase,
+    listCampaignLeads: listEmailCampaignLeadRecordsFromDatabase,
+    listInvoicePayments: listPaymentRecordsFromDatabase,
+  }),
   emailCampaigns: Object.freeze({
     claimLeadForDelivery: claimEmailCampaignLeadForDelivery,
     createLead: createEmailCampaignLeadInDatabase,
@@ -61,13 +91,30 @@ export const domainRepositories = Object.freeze({
   paymentProjection: Object.freeze({
     projectInTransaction: projectPaymentStateInTransaction,
   }),
+  paymentReads: Object.freeze({
+    findByCheckoutSessionId: findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
+    findByPaymentIntentId: findPaymentRecordByIntentIdFromDatabase,
+  }),
   stripeInbox: Object.freeze({
     claimNext: claimNextStripeInboxEvent,
+    findReadModel: findStripeInboxReadModel,
     processNext: processNextStripeInboxEvent,
     recordVerified: recordVerifiedStripeEvent,
     replay: replayStripeInboxEvent,
   }),
   telegramAccess: Object.freeze({
     update: updateTelegramAccessInDatabase,
+  }),
+  telegramAccessReads: Object.freeze({
+    findActiveBindings: findActiveTelegramUserBindingsFromDatabase,
+    findBindingByPaymentIntentId: findTelegramUserBindingByPaymentIntentIdFromDatabase,
+    findBindingsByCustomerEmail: findTelegramUserBindingsByCustomerEmailFromDatabase,
+    findBindingsByTelegramUserId: findTelegramUserBindingsByTelegramUserIdFromDatabase,
+    findBindingsByTelegramUserIdAndChatId:
+      findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
+    findLatestTokenByPaymentIntentId:
+      findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
+    findTokenByHash: findTelegramAccessTokenRecordByTokenHashFromDatabase,
+    findTokenByValue: findTelegramAccessTokenRecordByTokenValueFromDatabase,
   }),
 });

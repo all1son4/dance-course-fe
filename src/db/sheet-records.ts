@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 
 import type {
   EmailCampaignLeadSheetRecord,
@@ -409,14 +409,12 @@ export const findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase = 
   const rows = await getDatabase()
     .select()
     .from(telegramAccessTokens)
-    .where(eq(telegramAccessTokens.purchaseId, purchase.id));
+    .where(eq(telegramAccessTokens.purchaseId, purchase.id))
+    .orderBy(desc(telegramAccessTokens.createdAt), desc(telegramAccessTokens.id))
+    .limit(1);
   const records = await hydrateTelegramAccessTokenRecords(rows);
 
-  return (
-    records.sort(
-      (left, right) => Date.parse(right.created_at) - Date.parse(left.created_at),
-    )[0] ?? null
-  );
+  return records[0] ?? null;
 };
 
 export type TelegramAccessTokenClaimResult =
@@ -746,13 +744,16 @@ export const findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase = asy
   chatId: string;
   telegramUserId: string;
 }) => {
+  const normalizedChatId = chatId.trim();
   const rows = await getDatabase()
     .select()
     .from(telegramUserBindings)
     .where(
       and(
         eq(telegramUserBindings.telegramUserId, telegramUserId.trim()),
-        eq(telegramUserBindings.chatId, chatId.trim()),
+        normalizedChatId
+          ? eq(telegramUserBindings.chatId, normalizedChatId)
+          : or(isNull(telegramUserBindings.chatId), eq(telegramUserBindings.chatId, "")),
       ),
     );
 
@@ -942,7 +943,10 @@ const mapEmailCampaignLeadRecordFromDatabase = (
 });
 
 export const listEmailCampaignLeadRecordsFromDatabase = async () => {
-  const rows = await getDatabase().select().from(emailCampaignLeads);
+  const rows = await getDatabase()
+    .select()
+    .from(emailCampaignLeads)
+    .orderBy(asc(emailCampaignLeads.createdAt), asc(emailCampaignLeads.leadId));
 
   return rows
     .map(mapEmailCampaignLeadRecordFromDatabase)

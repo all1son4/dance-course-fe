@@ -951,17 +951,188 @@ the next phase.
 
 ## Phase READ: PostgreSQL-only reads
 
-Status: `TODO`
+Status: `IN_PROGRESS`
 
 Switch domains independently, with shadow comparison before each switch:
 
 1. `READ-01`: catalog and checkout — `DONE` early by `SAFE-07`;
-2. `READ-02`: payments and Stripe events;
-3. `READ-03`: remaining timed/legacy Telegram access; Online Group persistence is
-   already DB-native;
-4. `READ-04`: invoices, reports, and campaigns;
-5. `READ-05`: remaining admin invite/history read models;
-6. `READ-06`: remove automatic Sheets fallback.
+2. `READ-02`: payments and Stripe events — `DONE`;
+3. `READ-03`: remaining timed/legacy Telegram access — `DONE`; Online Group
+   persistence is already DB-native;
+4. `READ-04`: invoices, reports, and campaigns — `DONE`;
+5. `READ-05`: remaining admin invite/history read models — `DONE`;
+6. `READ-06`: remove automatic Sheets fallback — `DONE`.
+
+### READ-02 — Payments and Stripe events
+
+Status: `DONE`. The post-payment access endpoint now resolves its payment
+context through an explicit read boundary controlled by the existing
+`DB_PAYMENT_EVENTS_MODE`. Unset/`legacy` preserves the current DB-first facade and its
+Sheets fallback. `shadow` still returns that exact result while independently
+comparing PostgreSQL with an explicit Sheets read. `database` reads PostgreSQL only:
+a missing row stays missing and a database error fails closed instead of consulting
+Sheets. This changes only storage selection; PaymentIntent precedence, checkout retry
+selection, succeeded gating, response states, and every Telegram access flow remain
+unchanged.
+
+The same shadow boundary compares legacy Stripe-event finality with the immutable
+PostgreSQL inbox. Diagnostics contain only the record type, status, differing field
+names, and a SHA-256 lookup-key hash; values, customer data, payment IDs, event IDs,
+and provider payloads are not logged. The PostgreSQL checkout lookup now orders in SQL
+and returns one deterministic newest row, fixing the previous bounded in-memory sort
+that could inspect the ten oldest attempts instead.
+
+No schema migration or production flag change is required. Rollback is an application
+revert or `legacy` mode. Enabling `database` remains a `CUT-03` operation coupled with
+the already documented Stripe write-mode switch; `shadow` can be enabled beforehand
+without changing the synchronous writer.
+
+The exact implementation revision `772d562` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31703627258)
+with 78 unit tests, 48 PostgreSQL integration tests, a fresh PostgreSQL 17 migration,
+logical backup/restore, and a production build. Its Vercel development deployment
+passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31703677446).
+The new credential-free integration proves database-only reads, true newest-checkout
+selection beyond ten attempts, missing-record behavior, and the Stripe inbox read
+model. No production flag changed.
+
+### READ-03 — Timed and legacy Telegram access
+
+Status: `DONE`. Timed channel access and legacy bot-start access now read
+payment access projections, access tokens, and user bindings through an explicit
+runtime controlled by `DB_TELEGRAM_ACCESS_MODE`. Unset/`legacy` preserves the current
+DB-first facade and Sheets fallback. `shadow` returns that same result while comparing
+explicit PostgreSQL and Sheets reads. `database` uses PostgreSQL only: missing tokens
+or bindings remain missing, and database failures fail closed without consulting
+Sheets. The WRITE-04 persistence selector remains separate, so shadow verification
+does not switch writes.
+
+The boundary covers payment-owned access fields; latest token by payment; token lookup
+by hash or bearer value; binding lookup by payment, customer email, Telegram user, and
+user/chat; and the active-binding scan used by revocation. Comparisons normalize email
+case and sub-second timestamp precision, ignore collection order, and emit only record
+type, status, differing field names, and a SHA-256 lookup-key hash. Token values,
+invite links, customer data, payment IDs, Telegram identities, and chat IDs never enter
+diagnostics. Shadow read failure cannot change the legacy response.
+
+PostgreSQL now selects the newest token deterministically in SQL instead of hydrating
+and sorting every token in memory. Empty-chat binding lookup treats the database's
+`NULL` representation as the same value as an empty Sheets cell, preserving legacy
+bot bindings. Online Group remains on its existing DB-native path, and Telegram
+verification remains exclusive to Online Group renewal. No schema migration or
+production flag change is required.
+
+The exact implementation revision `1698775` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31705551593)
+with 87 unit tests, 48 PostgreSQL integration tests, a fresh PostgreSQL 17 migration,
+logical backup/restore, and a production build. The credential-free integration
+exercises every Telegram read operation through the database runtime, including the
+empty-chat legacy binding. Its Vercel development deployment passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31705609326).
+No production flag changed.
+
+### READ-04 — Invoices, reports, and campaigns
+
+Status: `DONE`. Invoice numbering, monthly-report run checks, and campaign lead
+lookups and scans now use one explicit read boundary controlled by the existing
+`DB_BUSINESS_OPERATIONS_MODE`. Unset/`legacy` preserves the current DB-first facade
+and Sheets fallback. `shadow` returns that same result while independently comparing
+PostgreSQL with an explicit Sheets read. `database` reads PostgreSQL only: an absent
+invoice, report run, or lead remains absent, and a database failure propagates without
+consulting Sheets.
+
+The write selector remains separate: `shadow` does not enable the PostgreSQL-only
+WRITE-06 jobs or change invoice allocation, report delivery, campaign signup,
+duplicate detection, exclusion, global blocking, retry, or delivery behavior.
+PostgreSQL campaign scans retain deterministic creation/lead ordering. Invoice-list
+comparisons intentionally consider only payment rows carrying invoice state, so
+unrelated payment drift is not misclassified as an invoice mismatch.
+
+Shadow comparisons normalize email case and sub-second timestamp precision and ignore
+collection order. Diagnostics contain only record type, status, differing field names,
+and a SHA-256 lookup-key hash. Invoice/payment IDs, report keys and recipients,
+campaign keys, email addresses, names, social contacts, and record values are never
+logged. A shadow-read failure cannot alter the legacy response. No schema migration or
+production flag change is required; rollback is an application revert or `legacy`
+mode, while actual enablement remains a `CUT-03` operation.
+
+The exact implementation revision `8243010` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31709139026)
+with 94 unit tests, 48 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. The credential-free
+integration reads allocated invoices, completed reports, and final campaign state
+through the strict database runtime. Its Vercel development deployment passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31709197510).
+No production flag changed.
+
+### READ-05 — Admin invite-link history
+
+Status: `DONE`. The remaining ordinary admin invite-link history GET now reads
+through an explicit boundary controlled by `DB_BUSINESS_OPERATIONS_MODE`.
+Unset/`legacy` preserves the current DB-first composite facade and Sheets fallback.
+`shadow` returns that same result while independently comparing PostgreSQL with an
+explicit Sheets read. `database` uses only a purpose-specific PostgreSQL read model;
+an empty result remains empty and a database error fails closed without consulting
+Sheets. Online Group invite history was already PostgreSQL-native and is unchanged.
+
+The SQL model joins each purchase to its primary entitlement, current Telegram token,
+and optional successful-customer export state. It preserves the existing workflow
+filter, link visibility, admin and selection labels, active/used interpretation, date
+fallback precedence, newest-first ordering, and optional limit. The route response,
+30-second fresh cache, five-minute stale cache, refresh behavior, authentication, and
+rate limiting are unchanged. Google-specific rate-limit and provider diagnostics are
+now confined to the legacy/shadow boundary.
+
+Shadow comparison normalizes sub-second timestamps and ignores collection order.
+Diagnostics contain only record type, status, differing field names, and a SHA-256
+query-key hash. Invite URLs, token values, payment data, workflow values, admin labels,
+product selections, and timestamps are never logged. Shadow failure cannot alter the
+legacy response. No schema migration or production flag change is required; rollback
+is an application revert or `legacy` mode, and actual enablement remains a `CUT-03`
+operation.
+
+The final implementation revision `c433d08` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31711125542)
+with 102 unit tests, 48 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. The credential-free
+integration creates an admin grant and used invite token, then reads the exact history
+projection through strict database mode. Its Vercel development deployment passed all
+six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31711160244).
+No production flag changed.
+
+### READ-06 — Remove automatic Sheets fallback
+
+Status: `DONE`. The shared Google facade no longer accepts an `auto` source. Every
+facade read now requires an explicit `database` or `sheets` source at the TypeScript
+boundary. An explicit database read preserves an absent row or empty collection and
+propagates a database failure; it cannot consult Sheets. The dedicated source
+dispatcher has contract tests for all three properties.
+
+Unset/`legacy` read selectors now explicitly use Sheets, preserving the rollback
+source until `CUT-03`. `shadow` performs one explicit Sheets read, returns that same
+result, and compares it with one PostgreSQL read; it no longer repeats the Sheets
+request through a DB-first composite facade. `database` remains PostgreSQL-only and
+fail-closed. The DB-first/fallback wording in the staged `READ-02` through `READ-05`
+sections describes those earlier implementation revisions and is superseded by this
+source contract.
+
+The remaining legacy Stripe payment-status lease also names Sheets explicitly. The
+database outbox delivery path and its PostgreSQL leases remain separate and do not
+gain a Google dependency. Payment resolution precedence, succeeded gating, Telegram
+access and verification rules, invoice/report/campaign behavior, admin history,
+caching, route responses, and visible user scenarios are unchanged. No migration,
+production flag, or production deployment is part of this task.
+
+The exact implementation revision `4b132b0` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31713049222)
+with 105 unit tests, 48 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. Its Vercel development
+deployment passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31713113186).
+Static source audit found no automatic source token or database-to-Sheets fallback
+branch under `src`.
 
 ### Gate G5
 
@@ -969,6 +1140,32 @@ Switch domains independently, with shadow comparison before each switch:
 - Shadow comparisons have no unexplained mismatch.
 - There are no automatic fallback hits.
 - Expected fail-closed behavior is verified.
+
+Status: `IN_PROGRESS`. READ implementation and the automatic-fallback removal are
+complete. Controlled Gate observation on 2026-08-13 used the explicit Sheets reads and
+the SELECT-only PostgreSQL reconciliation over Neon HTTP because the operator network
+blocked port 5432. Two consecutive development captures at
+`15:41:39.081–40.613Z` and `15:45:13.727–14.815Z` produced the same privacy-safe body
+fingerprint `690ba4f048b40c4b5666ccd6e004bc24cd61f99e85734007f0c03fe75c3351bc`.
+They reproduced the accepted development-only test history exactly: one duplicate
+Payments key plus five empty legacy rows, one reused test PaymentIntent state conflict,
+legacy duplicate events/customers/binding, settlement-backfill events, and DB-native
+Online Group access. There was no new or unexplained difference, and a provider read
+confirmed that the reused development intent itself is now `succeeded`; no identifier
+or customer data was logged.
+
+The four focused read-runtime suites passed all 31 shadow, privacy, explicit-source,
+and fail-closed cases. The full local pipeline passed formatting, lint, TypeScript, all
+105 unit tests, and the production build; the production dependency audit reported
+zero vulnerabilities. Release candidate `d61b100` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31717712704)
+with 48 PostgreSQL integration tests, all migrations on fresh PostgreSQL 17, logical
+backup/restore, and the production build. Its deployed preview passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31717774427).
+
+The gate is release-ready, but remains `IN_PROGRESS` until this exact READ-compatible
+release passes the protected production deployment and post-deployment smoke. No
+production read flag has been changed.
 
 ## Phase CUT: production cutover and observation
 
@@ -1075,50 +1272,56 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                        | Status       | Evidence                                                      |
-| ---------- | --------------------------- | ------------ | ------------------------------------------------------------- |
-| 2026-07-30 | Repository-wide audit       | `DONE`       | Audit discussion and local checks                             |
-| 2026-07-30 | Roadmap v1.3                | `DONE`       | This document                                                 |
-| 2026-07-30 | BASE-01                     | `DONE`       | ADR-001 accepted                                              |
-| 2026-07-30 | BASE-02                     | `DONE`       | Current behavior contract recorded                            |
-| 2026-07-30 | BASE-03                     | `DONE`       | Seven Sheets and all dependency classes inventoried           |
-| 2026-07-30 | BASE-05 Telegram scope      | `DONE`       | ADR-002 accepted                                              |
-| 2026-07-30 | BASE-04 tooling             | `DONE`       | Read-only command and privacy fixture tests                   |
-| 2026-07-30 | BASE-04 capture             | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture    |
-| 2026-07-30 | BASE-05 decision draft      | `DONE`       | Defaults prepared before owner confirmation                   |
-| 2026-07-30 | BASE-05 owner decisions     | `DONE`       | Owner accepted all four migration decisions                   |
-| 2026-08-06 | BASE-04 capture             | `DONE`       | Stable dev/prod fingerprints; differences classified          |
-| 2026-08-06 | Gate G0                     | `PASSED`     | Behavior, dependency, data, and decision baselines accepted   |
-| 2026-08-06 | Gate G0 formal audit        | `DONE`       | All 26 Sheets components classified; documents reconciled     |
-| 2026-08-06 | SAFE-01                     | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality`   |
-| 2026-08-06 | SAFE-02                     | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed    |
-| 2026-08-07 | SAFE-03                     | `DONE`       | Migration-free release; dev/prod no-op controls passed        |
-| 2026-08-08 | SAFE-04                     | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass  |
-| 2026-08-08 | SAFE-05                     | `DONE`       | Atomic claims, DB invariant, and eight-way race test passed   |
-| 2026-08-08 | SAFE-06                     | `DONE`       | Reuse characterized at accepted decision boundary             |
-| 2026-08-08 | SAFE-07                     | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass  |
-| 2026-08-08 | SAFE-08                     | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests   |
-| 2026-08-08 | SAFE-09                     | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass     |
-| 2026-08-08 | SAFE-10                     | `DONE`       | Verified result gate; CI and six browser tests pass           |
-| 2026-08-09 | SAFE-11                     | `DONE`       | Zero production advisories; CI and six browser tests pass     |
-| 2026-08-09 | Gate G1                     | `PASSED`     | SAFE-01 through SAFE-11 acceptance criteria verified          |
-| 2026-08-09 | Roadmap current-state audit | `DONE`       | Remaining phases reconciled with current code and schema      |
-| 2026-08-09 | DB-01                       | `DONE`       | PostgreSQL domain and transaction ownership recorded          |
-| 2026-08-09 | DB-02 development           | `DONE`       | Preflight, CI, dev migration, audit, and smoke passed         |
-| 2026-08-09 | DB-03 development           | `DONE`       | Inbox migration, CI, dev apply, audit, and smoke passed       |
-| 2026-08-11 | DATA-01                     | `DONE`       | Dev/prod encrypted captures and PG17 restores passed          |
-| 2026-08-11 | DATA-02 implementation      | `DONE`       | Snapshot validation, atomic checkpoints, resume tests pass    |
-| 2026-08-11 | DATA-02 development         | `DONE`       | Migration, pause/resume/replay, invariants, smoke passed      |
-| 2026-08-11 | DATA-02 production backfill | `DONE`       | 258 rows accounted; replay no-op; plaintext removed           |
-| 2026-08-11 | DATA-02 counter invariant   | `DONE`       | Dev/prod migration and zero-violation audits passed           |
-| 2026-08-11 | DATA-03                     | `DONE`       | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass  |
-| 2026-08-11 | DATA-04                     | `DONE`       | Every production/backfill conflict classified; no data write  |
-| 2026-08-11 | Gate G3                     | `PASSED`     | Stable finance/access/invoice/replay evidence; 32 audits pass |
-| 2026-08-11 | WRITE-01                    | `DONE`       | Pre-ack inbox gate; CI, PG17 and deployed dev smoke pass      |
-| 2026-08-11 | WRITE-02 implementation     | `DONE`       | Async inbox worker; CI, PG17 and deployed dev smoke pass      |
-| 2026-08-11 | WRITE-03 implementation     | `DONE`       | Durable delivery; CI, PG17 and deployed dev smoke pass        |
-| 2026-08-13 | WRITE-04 implementation     | `DONE`       | DB-only path; CI, PG17 and deployed dev smoke pass            |
-| 2026-08-13 | WRITE-05 implementation     | `DONE`       | Atomic grants; CI, PG17 and deployed dev smoke pass           |
-| 2026-08-13 | WRITE-06 implementation     | `DONE`       | Durable jobs; CI, PG17, dev migration and smoke pass          |
-| 2026-08-13 | WRITE-07 implementation     | `DONE`       | Isolated allowlisted export; blocked-provider tests pass      |
-| 2026-08-13 | Gate G4                     | `PASSED`     | DB write paths survive blocked Sheets; dev queues clean       |
+| Date       | Item                        | Status        | Evidence                                                      |
+| ---------- | --------------------------- | ------------- | ------------------------------------------------------------- |
+| 2026-07-30 | Repository-wide audit       | `DONE`        | Audit discussion and local checks                             |
+| 2026-07-30 | Roadmap v1.3                | `DONE`        | This document                                                 |
+| 2026-07-30 | BASE-01                     | `DONE`        | ADR-001 accepted                                              |
+| 2026-07-30 | BASE-02                     | `DONE`        | Current behavior contract recorded                            |
+| 2026-07-30 | BASE-03                     | `DONE`        | Seven Sheets and all dependency classes inventoried           |
+| 2026-07-30 | BASE-05 Telegram scope      | `DONE`        | ADR-002 accepted                                              |
+| 2026-07-30 | BASE-04 tooling             | `DONE`        | Read-only command and privacy fixture tests                   |
+| 2026-07-30 | BASE-04 capture             | `SUPERSEDED`  | Initial blocked attempt; replaced by the completed capture    |
+| 2026-07-30 | BASE-05 decision draft      | `DONE`        | Defaults prepared before owner confirmation                   |
+| 2026-07-30 | BASE-05 owner decisions     | `DONE`        | Owner accepted all four migration decisions                   |
+| 2026-08-06 | BASE-04 capture             | `DONE`        | Stable dev/prod fingerprints; differences classified          |
+| 2026-08-06 | Gate G0                     | `PASSED`      | Behavior, dependency, data, and decision baselines accepted   |
+| 2026-08-06 | Gate G0 formal audit        | `DONE`        | All 26 Sheets components classified; documents reconciled     |
+| 2026-08-06 | SAFE-01                     | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality`   |
+| 2026-08-06 | SAFE-02                     | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed    |
+| 2026-08-07 | SAFE-03                     | `DONE`        | Migration-free release; dev/prod no-op controls passed        |
+| 2026-08-08 | SAFE-04                     | `DONE`        | Atomic terminal outcomes; race and deployed smoke tests pass  |
+| 2026-08-08 | SAFE-05                     | `DONE`        | Atomic claims, DB invariant, and eight-way race test passed   |
+| 2026-08-08 | SAFE-06                     | `DONE`        | Reuse characterized at accepted decision boundary             |
+| 2026-08-08 | SAFE-07                     | `DONE`        | DB-authorized catalog; remote CI and four browser tests pass  |
+| 2026-08-08 | SAFE-08                     | `DONE`        | Versioned consent evidence; CI, PostgreSQL, 5 browser tests   |
+| 2026-08-08 | SAFE-09                     | `DONE`        | Formula-safe CSV; CI and five deployed browser tests pass     |
+| 2026-08-08 | SAFE-10                     | `DONE`        | Verified result gate; CI and six browser tests pass           |
+| 2026-08-09 | SAFE-11                     | `DONE`        | Zero production advisories; CI and six browser tests pass     |
+| 2026-08-09 | Gate G1                     | `PASSED`      | SAFE-01 through SAFE-11 acceptance criteria verified          |
+| 2026-08-09 | Roadmap current-state audit | `DONE`        | Remaining phases reconciled with current code and schema      |
+| 2026-08-09 | DB-01                       | `DONE`        | PostgreSQL domain and transaction ownership recorded          |
+| 2026-08-09 | DB-02 development           | `DONE`        | Preflight, CI, dev migration, audit, and smoke passed         |
+| 2026-08-09 | DB-03 development           | `DONE`        | Inbox migration, CI, dev apply, audit, and smoke passed       |
+| 2026-08-11 | DATA-01                     | `DONE`        | Dev/prod encrypted captures and PG17 restores passed          |
+| 2026-08-11 | DATA-02 implementation      | `DONE`        | Snapshot validation, atomic checkpoints, resume tests pass    |
+| 2026-08-11 | DATA-02 development         | `DONE`        | Migration, pause/resume/replay, invariants, smoke passed      |
+| 2026-08-11 | DATA-02 production backfill | `DONE`        | 258 rows accounted; replay no-op; plaintext removed           |
+| 2026-08-11 | DATA-02 counter invariant   | `DONE`        | Dev/prod migration and zero-violation audits passed           |
+| 2026-08-11 | DATA-03                     | `DONE`        | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass  |
+| 2026-08-11 | DATA-04                     | `DONE`        | Every production/backfill conflict classified; no data write  |
+| 2026-08-11 | Gate G3                     | `PASSED`      | Stable finance/access/invoice/replay evidence; 32 audits pass |
+| 2026-08-11 | WRITE-01                    | `DONE`        | Pre-ack inbox gate; CI, PG17 and deployed dev smoke pass      |
+| 2026-08-11 | WRITE-02 implementation     | `DONE`        | Async inbox worker; CI, PG17 and deployed dev smoke pass      |
+| 2026-08-11 | WRITE-03 implementation     | `DONE`        | Durable delivery; CI, PG17 and deployed dev smoke pass        |
+| 2026-08-13 | WRITE-04 implementation     | `DONE`        | DB-only path; CI, PG17 and deployed dev smoke pass            |
+| 2026-08-13 | WRITE-05 implementation     | `DONE`        | Atomic grants; CI, PG17 and deployed dev smoke pass           |
+| 2026-08-13 | WRITE-06 implementation     | `DONE`        | Durable jobs; CI, PG17, dev migration and smoke pass          |
+| 2026-08-13 | WRITE-07 implementation     | `DONE`        | Isolated allowlisted export; blocked-provider tests pass      |
+| 2026-08-13 | Gate G4                     | `PASSED`      | DB write paths survive blocked Sheets; dev queues clean       |
+| 2026-08-13 | READ-02 implementation      | `DONE`        | DB-only reads; 78 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-03 implementation      | `DONE`        | DB-only reads; 87 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-04 implementation      | `DONE`        | DB-only reads; 94 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-05 implementation      | `DONE`        | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
+| 2026-08-13 | READ-06 implementation      | `DONE`        | Explicit sources; 105 unit, 48 PG17 and six journeys pass     |
+| 2026-08-13 | Gate G5 release candidate   | `IN_PROGRESS` | Stable audit, fail-closed, CI and preview smoke pass          |

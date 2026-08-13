@@ -1,11 +1,10 @@
 import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import { allocateInvoiceForPaymentIntent } from "@/db/invoice-repository";
 import {
-  findPaymentRecordByIntentId,
-  listPaymentRecords,
-  type PaymentSheetRecord,
-  upsertPaymentRecord,
-} from "@/lib/google-sheets";
+  findInvoicePaymentRecordByIntentId,
+  listInvoicePaymentRecords,
+} from "@/lib/business-operation-read-runtime";
+import { type PaymentSheetRecord, upsertPaymentRecord } from "@/lib/google-sheets";
 import { toUtcIso } from "@/lib/time";
 
 const INVOICE_NUMBER_PREFIX = "FV";
@@ -61,9 +60,7 @@ const buildInvoiceNumber = (issuedAt: Date, sequence: number) =>
 
 const findNextInvoiceSequence = async (issuedAt: Date) => {
   const invoiceMonthPrefix = getInvoiceMonthPrefix(issuedAt);
-  const paymentRecords = await listPaymentRecords({
-    cacheTtlMs: 0,
-  });
+  const paymentRecords = await listInvoicePaymentRecords();
   const maxSequence = paymentRecords.reduce((currentMaxSequence, paymentRecord) => {
     const sequence = parseInvoiceSequence(
       paymentRecord.invoice_number,
@@ -116,9 +113,8 @@ const ensureInvoiceNumberForPaymentInternal = async ({
   }
 
   const latestPaymentRecord =
-    (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id, {
-      cacheTtlMs: 0,
-    })) ?? paymentRecord;
+    (await findInvoicePaymentRecordByIntentId(paymentRecord.payment_intent_id)) ??
+    paymentRecord;
   const existingInvoiceNumber = latestPaymentRecord.invoice_number.trim();
 
   if (existingInvoiceNumber) {

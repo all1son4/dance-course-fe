@@ -2,10 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 
 import { and, asc, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
 
-import {
-  findMonthlyReportRunInDatabase,
-  recordMonthlyReportRunInDatabase,
-} from "@/db/business-operation-jobs";
+import { recordMonthlyReportRunInDatabase } from "@/db/business-operation-jobs";
 import { getDatabase } from "@/db/client";
 import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import { invoices, purchases, stripeEvents } from "@/db/schema";
@@ -13,10 +10,10 @@ import {
   enqueueMonthlyReportDelivery,
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
+import { findMonthlyReportRunRecord } from "@/lib/business-operation-read-runtime";
 import { escapeSpreadsheetCsvCell } from "@/lib/csv";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
-  findMonthlySalesReportRunByKey,
   type MonthlySalesReportRunSheetRecord,
   upsertMonthlySalesReportRun,
 } from "@/lib/google-sheets";
@@ -73,7 +70,7 @@ type MonthlySalesReportSaleRecord = {
 };
 
 type ExistingMonthlySalesReportRun = NonNullable<
-  Awaited<ReturnType<typeof findMonthlySalesReportRunByKey>>
+  Awaited<ReturnType<typeof findMonthlyReportRunRecord>>
 >;
 
 export const getMonthlySalesReportRuntime = (
@@ -453,31 +450,6 @@ const buildMonthlySalesReportRunRecord = ({
   row_count: String(rowCount),
 });
 
-const mapMonthlyReportRunFromDatabase = (
-  run: NonNullable<Awaited<ReturnType<typeof findMonthlyReportRunInDatabase>>>,
-): MonthlySalesReportRunSheetRecord => ({
-  csv_sha256: run.csvSha256 ?? "",
-  delivered_at_utc: run.deliveredAtUtc?.toISOString() ?? "",
-  delivered_to: run.deliveredTo ?? "",
-  delivery_status: run.deliveryStatus,
-  generated_at_utc: run.generatedAtUtc.toISOString(),
-  period_end_utc: run.periodEndUtc.toISOString(),
-  period_start_utc: run.periodStartUtc.toISOString(),
-  report_family: run.reportFamily,
-  report_key: run.reportKey,
-  row_count: String(run.rowCount),
-});
-
-const findMonthlySalesReportRun = async (reportKey: string) => {
-  if (!usesDatabaseJobs()) {
-    return findMonthlySalesReportRunByKey(reportKey);
-  }
-
-  const run = await findMonthlyReportRunInDatabase(reportKey);
-
-  return run ? mapMonthlyReportRunFromDatabase(run) : null;
-};
-
 const recordMonthlySalesReportRun = async (record: MonthlySalesReportRunSheetRecord) => {
   if (!usesDatabaseJobs()) {
     return upsertMonthlySalesReportRun(record);
@@ -771,7 +743,7 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
   referenceDate: Date;
   reportRecipient: string;
 }) => {
-  const existingRun = await findMonthlySalesReportRun(period.key);
+  const existingRun = await findMonthlyReportRunRecord(period.key);
 
   if (!force && existingRun?.delivery_status === "sent") {
     return buildAlreadyDeliveredMonthlySalesReportResult({
@@ -855,9 +827,9 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
     }
 
     if (delivery.status === "empty") {
-      const completedRun = await findMonthlyReportRunInDatabase(period.key);
+      const completedRun = await findMonthlyReportRunRecord(period.key);
 
-      if (completedRun?.deliveryStatus !== "sent") {
+      if (completedRun?.delivery_status !== "sent") {
         throw new Error("monthly_sales_report_delivery_in_progress");
       }
     }
