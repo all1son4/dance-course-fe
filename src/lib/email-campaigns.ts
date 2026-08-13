@@ -15,20 +15,21 @@ import {
   type EmailCampaignLead,
   excludeEmailCampaignLeadInDatabase,
   getCampaignEmailDeliveryDeduplicationKey,
-  listEmailCampaignLeadsFromDatabase,
 } from "@/db/business-operation-jobs";
 import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import {
   enqueueCampaignEmailDelivery,
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
+import {
+  findEmailCampaignLeadRecord,
+  listEmailCampaignLeadReadRecords,
+} from "@/lib/business-operation-read-runtime";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
   type EmailCampaignLeadSheetRecord,
-  findEmailCampaignLeadByCampaignAndEmail,
   GoogleSheetsError,
   isGoogleSheetsRateLimitError,
-  listEmailCampaignLeadRecords,
   upsertEmailCampaignLeadRecord,
 } from "@/lib/google-sheets";
 import { toUtcIso } from "@/lib/time";
@@ -171,15 +172,7 @@ const mapEmailCampaignLeadFromDatabase = (
   social_contact: lead.socialContact,
 });
 
-const listEmailCampaignRecords = async () => {
-  if (!usesDatabaseJobs()) {
-    return listEmailCampaignLeadRecords({ cacheTtlMs: 0 });
-  }
-
-  return (await listEmailCampaignLeadsFromDatabase()).map(
-    mapEmailCampaignLeadFromDatabase,
-  );
-};
+const listEmailCampaignRecords = () => listEmailCampaignLeadReadRecords();
 
 const getGloballyBlockedEmails = (rows: EmailCampaignLeadSheetRecord[]) =>
   new Set(
@@ -442,7 +435,7 @@ const createEmailCampaignLeadInternal = async ({
     };
   }
 
-  const existingLead = await findEmailCampaignLeadByCampaignAndEmail({
+  const existingLead = await findEmailCampaignLeadRecord({
     campaignKey,
     email: normalizedEmail,
   });
@@ -455,7 +448,7 @@ const createEmailCampaignLeadInternal = async ({
   }
 
   const now = toUtcIso();
-  const rows = await listEmailCampaignLeadRecords({ cacheTtlMs: 0 });
+  const rows = await listEmailCampaignLeadReadRecords();
   const isGloballyBlocked = getGloballyBlockedEmails(rows).has(normalizedEmail);
   const lead: EmailCampaignLeadSheetRecord = {
     campaign_key: campaignKey.trim(),
@@ -553,7 +546,7 @@ export const excludeEmailCampaignLead = async ({
 
   const normalizedCampaignKey = campaignKey.trim();
   const normalizedLeadId = leadId.trim();
-  const rows = await listEmailCampaignLeadRecords({ cacheTtlMs: 0 });
+  const rows = await listEmailCampaignLeadReadRecords();
   const lead = rows.find(
     (row) =>
       row.lead_id.trim() === normalizedLeadId &&

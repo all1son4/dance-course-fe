@@ -14,16 +14,20 @@ import { projectPaymentStateInTransaction } from "./payment-projection";
 import {
   findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
   findPaymentRecordByIntentIdFromDatabase,
+  listPaymentRecordsFromDatabase,
 } from "./payment-records";
 import {
   findActiveTelegramUserBindingsFromDatabase,
+  findEmailCampaignLeadByCampaignAndEmailFromDatabase,
   findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
+  findMonthlySalesReportRunByKeyFromDatabase,
   findTelegramAccessTokenRecordByTokenHashFromDatabase,
   findTelegramAccessTokenRecordByTokenValueFromDatabase,
   findTelegramUserBindingByPaymentIntentIdFromDatabase,
   findTelegramUserBindingsByCustomerEmailFromDatabase,
   findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
   findTelegramUserBindingsByTelegramUserIdFromDatabase,
+  listEmailCampaignLeadRecordsFromDatabase,
 } from "./sheet-records";
 import {
   claimNextStripeInboxEvent,
@@ -49,6 +53,12 @@ import {
 // cutover; provider access stays outside this boundary.
 export const domainRepositories = Object.freeze({
   adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
+  businessOperationReads: Object.freeze({
+    findCampaignLead: findEmailCampaignLeadByCampaignAndEmailFromDatabase,
+    findMonthlyReportRun: findMonthlySalesReportRunByKeyFromDatabase,
+    listCampaignLeads: listEmailCampaignLeadRecordsFromDatabase,
+    listInvoicePayments: listPaymentRecordsFromDatabase,
+  }),
   emailCampaigns: Object.freeze({
     claimLeadForDelivery: claimEmailCampaignLeadForDelivery,
     createLead: createEmailCampaignLeadInDatabase,
