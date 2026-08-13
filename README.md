@@ -54,6 +54,8 @@ Optional Telegram env variables:
 - `DB_PAYMENT_EVENTS_MODE` and `DB_SIDE_EFFECTS_MODE` (optional; set both to `database`
   in one deployment to enable asynchronous PostgreSQL inbox/outbox processing; leaving
   both unset preserves the legacy synchronous path)
+- `DB_TELEGRAM_ACCESS_MODE` (optional; `database` enables PostgreSQL-only timed/legacy
+  Telegram access persistence; leave unset until the controlled cutover)
 
 `TELEGRAM_WEBHOOK_SECRET` is required in production (`NODE_ENV=production`).
 

@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, lte, ne, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 
 import type {
   EmailCampaignLeadSheetRecord,
@@ -801,30 +801,43 @@ export const upsertTelegramUserBindingRecordToDatabase = async (
     telegramUsername: nullIfEmpty(record.telegram_username),
     updatedAt: now,
   };
-  const [existingBinding] = await getDatabase()
-    .select({ id: telegramUserBindings.id })
-    .from(telegramUserBindings)
-    .where(
-      and(
-        eq(telegramUserBindings.purchaseId, purchase.id),
-        eq(telegramUserBindings.chatId, record.chat_id.trim()),
-      ),
-    )
-    .limit(1);
+  const normalizedChatId = record.chat_id.trim();
+  await getDatabase().transaction(async (transaction) => {
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(
+        hashtextextended(
+          ${`telegram-binding:${purchase.id}:${normalizedChatId || "direct"}`},
+          0
+        )
+      )`,
+    );
 
-  if (existingBinding) {
-    await getDatabase()
-      .update(telegramUserBindings)
-      .set(values)
-      .where(eq(telegramUserBindings.id, existingBinding.id));
-  } else {
-    await getDatabase()
-      .insert(telegramUserBindings)
-      .values({
-        ...values,
-        boundAt,
-      });
-  }
+    const [existingBinding] = await transaction
+      .select({ id: telegramUserBindings.id })
+      .from(telegramUserBindings)
+      .where(
+        and(
+          eq(telegramUserBindings.purchaseId, purchase.id),
+          normalizedChatId
+            ? eq(telegramUserBindings.chatId, normalizedChatId)
+            : isNull(telegramUserBindings.chatId),
+        ),
+      )
+      .limit(1);
+
+    if (existingBinding) {
+      await transaction
+        .update(telegramUserBindings)
+        .set(values)
+        .where(eq(telegramUserBindings.id, existingBinding.id));
+      return;
+    }
+
+    await transaction.insert(telegramUserBindings).values({
+      ...values,
+      boundAt,
+    });
+  });
 
   return (
     (await findTelegramUserBindingByPaymentIntentIdFromDatabase(

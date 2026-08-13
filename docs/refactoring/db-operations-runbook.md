@@ -63,6 +63,27 @@ Use `DATABASE_ENV=production` and `DB_JOBS_RUN_CONFIRM=production` only from the
 approved production operator environment. Output is aggregate and contains no event
 payloads, recipients, tokens, or provider error messages.
 
+## Telegram access write mode
+
+Timed channel access and legacy bot-start access switch together with:
+
+```bash
+DB_TELEGRAM_ACCESS_MODE=database
+```
+
+An unset value or `shadow` retains the current synchronous legacy mirror. `database`
+makes the access engine fail closed on PostgreSQL errors and removes automatic Sheets
+fallback from token, binding, entitlement, membership, identity-reuse, and revocation
+operations. Online Group access is already DB-native and is not switched by this flag.
+Its Telegram verification remains exclusive to the renewal flow.
+
+Do not enable this variable independently during a normal deploy. It is a controlled
+`CUT-03` action after the final backup/reconciliation checklist. Immediately after a
+switch, verify access `linkFailed`, pending/manual totals, application errors, and one
+known non-production start-token plus timed join/leave journey. Once DB-only access
+writes have begun, rollback is only to a release that understands the PostgreSQL
+access rows; never restore authority to a stale Sheet mirror.
+
 ## Retry and replay rules
 
 - Never edit a verified Stripe payload. Provider evidence is immutable.

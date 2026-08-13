@@ -6,6 +6,7 @@ import {
   recordVerifiedStripeEvent,
   replayStripeInboxEvent,
 } from "./stripe-event-inbox";
+import { updateTelegramAccessInDatabase } from "./telegram-access";
 import {
   claimNextOutboxJob,
   enqueueOutboxJob,
@@ -34,5 +35,8 @@ export const domainRepositories = Object.freeze({
     processNext: processNextStripeInboxEvent,
     recordVerified: recordVerifiedStripeEvent,
     replay: replayStripeInboxEvent,
+  }),
+  telegramAccess: Object.freeze({
+    update: updateTelegramAccessInDatabase,
   }),
 });

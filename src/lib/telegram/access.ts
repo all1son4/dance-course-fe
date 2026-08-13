@@ -1,5 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
+import { toUtcIso } from "@/lib/time";
+
 import {
   claimTelegramAccessTokenRecord,
   findActiveTelegramUserBindings,
@@ -11,14 +13,12 @@ import {
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,
   findTelegramUserBindingsByTelegramUserIdAndChatId,
-  isGoogleSheetsRateLimitError,
+  isTelegramAccessPersistenceRateLimitError,
   type PaymentSheetRecord,
-  upsertPaymentRecord,
+  persistTelegramPaymentAccess,
   upsertTelegramAccessTokenRecord,
   upsertTelegramUserBindingRecord,
-} from "@/lib/google-sheets";
-import { toUtcIso } from "@/lib/time";
-
+} from "./access-persistence";
 import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
 import { buildTelegramBotStartLink, getTelegramChannelTargetByOfferId } from "./config";
 import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
@@ -358,10 +358,12 @@ const updatePaymentAccessWindow = async (paymentRecord: PaymentSheetRecord) => {
   }
 
   const now = toUtcIso();
-  const nextPaymentRecord = await upsertPaymentRecord({
-    ...paymentRecord,
-    telegram_access_expires_at: computedAccessExpiresAt,
-    updated_at: now,
+  const nextPaymentRecord = await persistTelegramPaymentAccess({
+    patch: {
+      telegram_access_expires_at: computedAccessExpiresAt,
+      updated_at: now,
+    },
+    paymentRecord,
   });
 
   return {
@@ -451,16 +453,18 @@ const trySyncPaymentByExistingActiveBinding = async ({
   const latestPaymentRecord =
     (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id)) ?? paymentRecord;
 
-  await upsertPaymentRecord({
-    ...latestPaymentRecord,
-    telegram_access_expires_at: accessExpiresAt,
-    telegram_access_revoked_at: "",
-    telegram_access_status: "activated",
-    telegram_channel_chat_id: chatId,
-    telegram_user_id: candidateBinding.telegram_user_id,
-    telegram_username:
-      latestPaymentRecord.telegram_username || candidateBinding.telegram_username,
-    updated_at: now,
+  await persistTelegramPaymentAccess({
+    patch: {
+      telegram_access_expires_at: accessExpiresAt,
+      telegram_access_revoked_at: "",
+      telegram_access_status: "activated",
+      telegram_channel_chat_id: chatId,
+      telegram_user_id: candidateBinding.telegram_user_id,
+      telegram_username:
+        latestPaymentRecord.telegram_username || candidateBinding.telegram_username,
+      updated_at: now,
+    },
+    paymentRecord: latestPaymentRecord,
   });
 };
 
@@ -494,10 +498,12 @@ const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentSheetRecord) =
   const joinedAt = paymentRecord.telegram_token_used_at.trim() || toUtcIso();
   const paymentRecordWithJoinTimestamp = paymentRecord.telegram_token_used_at.trim()
     ? paymentRecord
-    : await upsertPaymentRecord({
-        ...paymentRecord,
-        telegram_token_used_at: joinedAt,
-        updated_at: joinedAt,
+    : await persistTelegramPaymentAccess({
+        patch: {
+          telegram_token_used_at: joinedAt,
+          updated_at: joinedAt,
+        },
+        paymentRecord,
       });
 
   if (paymentRecordWithJoinTimestamp.telegram_access_expires_at.trim()) {
@@ -582,12 +588,14 @@ const resolveCachedOrExpiredAccessLink = async ({
   ) {
     const now = toUtcIso();
 
-    await upsertPaymentRecord({
-      ...paymentRecord,
-      telegram_access_status: "expired",
-      telegram_channel_chat_id: context.normalizedChatId,
-      telegram_access_revoked_at: now,
-      updated_at: now,
+    await persistTelegramPaymentAccess({
+      patch: {
+        telegram_access_status: "expired",
+        telegram_channel_chat_id: context.normalizedChatId,
+        telegram_access_revoked_at: now,
+        updated_at: now,
+      },
+      paymentRecord,
     });
 
     return getUnavailableTelegramAccessLinkResult("access_window_expired");
@@ -738,7 +746,7 @@ const trySyncExistingTelegramBinding = async ({
       paymentRecord,
     });
   } catch (syncError) {
-    if (isGoogleSheetsRateLimitError(syncError)) {
+    if (isTelegramAccessPersistenceRateLimitError(syncError)) {
       console.warn(
         "Skipped optional Telegram binding sync due to Google Sheets rate limit",
         {
@@ -767,7 +775,7 @@ const persistTelegramAccessLinkFailure = async ({
 }): Promise<TelegramAccessLinkResult> => {
   telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
 
-  if (isGoogleSheetsRateLimitError(error)) {
+  if (isTelegramAccessPersistenceRateLimitError(error)) {
     throw error;
   }
 
@@ -778,11 +786,13 @@ const persistTelegramAccessLinkFailure = async ({
   });
 
   try {
-    await upsertPaymentRecord({
-      ...paymentRecord,
-      telegram_access_status: "link_failed",
-      telegram_channel_chat_id: normalizedChatId,
-      updated_at: createdAt,
+    await persistTelegramPaymentAccess({
+      patch: {
+        telegram_access_status: "link_failed",
+        telegram_channel_chat_id: normalizedChatId,
+        updated_at: createdAt,
+      },
+      paymentRecord,
     });
   } catch (statusError) {
     console.error("Failed to persist Telegram link failure status", {
@@ -842,16 +852,18 @@ const createTelegramAccessLink = async ({
       used_at: "",
     });
 
-    const nextPaymentRecord = await upsertPaymentRecord({
-      ...paymentRecord,
-      telegram_access_expires_at: context.accessExpiresAt,
-      telegram_access_revoked_at: "",
-      telegram_access_status: "token_issued",
-      telegram_channel_chat_id: context.normalizedChatId,
-      telegram_token_expires_at: linkExpiresAt,
-      telegram_token_id: tokenId,
-      telegram_token_used_at: paymentRecord.telegram_token_used_at,
-      updated_at: createdAt,
+    const nextPaymentRecord = await persistTelegramPaymentAccess({
+      patch: {
+        telegram_access_expires_at: context.accessExpiresAt,
+        telegram_access_revoked_at: "",
+        telegram_access_status: "token_issued",
+        telegram_channel_chat_id: context.normalizedChatId,
+        telegram_token_expires_at: linkExpiresAt,
+        telegram_token_id: tokenId,
+        telegram_token_used_at: paymentRecord.telegram_token_used_at,
+        updated_at: createdAt,
+      },
+      paymentRecord,
     });
 
     if (context.hasTimedAccess && context.accessExpiresAt) {
@@ -984,11 +996,13 @@ const syncTelegramMemberLeft = async ({
       continue;
     }
 
-    await upsertPaymentRecord({
-      ...paymentRecord,
-      telegram_access_revoked_at: now,
-      telegram_access_status: "left_channel",
-      updated_at: now,
+    await persistTelegramPaymentAccess({
+      patch: {
+        telegram_access_revoked_at: now,
+        telegram_access_status: "left_channel",
+        updated_at: now,
+      },
+      paymentRecord,
     });
   }
 
@@ -1183,14 +1197,16 @@ const revokeExpiredTelegramMembership = async ({
     telegram_username: identity.normalizedUsername,
   });
 
-  await upsertPaymentRecord({
-    ...accessContext.paymentRecordWithWindow,
-    telegram_access_revoked_at: identity.now,
-    telegram_access_status: "revoked",
-    telegram_channel_chat_id: identity.normalizedChatId,
-    telegram_user_id: identity.normalizedUserId,
-    telegram_username: identity.normalizedUsername,
-    updated_at: identity.now,
+  await persistTelegramPaymentAccess({
+    patch: {
+      telegram_access_revoked_at: identity.now,
+      telegram_access_status: "revoked",
+      telegram_channel_chat_id: identity.normalizedChatId,
+      telegram_user_id: identity.normalizedUserId,
+      telegram_username: identity.normalizedUsername,
+      updated_at: identity.now,
+    },
+    paymentRecord: accessContext.paymentRecordWithWindow,
   });
 
   return {
@@ -1261,18 +1277,20 @@ const activateTelegramMembership = async ({
       telegram_user_id: identity.normalizedUserId,
       telegram_username: identity.normalizedUsername,
     }),
-    upsertPaymentRecord({
-      ...accessContext.paymentRecordWithWindow,
-      telegram_access_expires_at: accessExpiresAt,
-      telegram_access_revoked_at: "",
-      telegram_access_status: "activated",
-      telegram_channel_chat_id: identity.normalizedChatId,
-      telegram_token_expires_at: tokenRecord.expires_at,
-      telegram_token_id: tokenRecord.token_id,
-      telegram_token_used_at: identity.now,
-      telegram_user_id: identity.normalizedUserId,
-      telegram_username: identity.normalizedUsername,
-      updated_at: identity.now,
+    persistTelegramPaymentAccess({
+      patch: {
+        telegram_access_expires_at: accessExpiresAt,
+        telegram_access_revoked_at: "",
+        telegram_access_status: "activated",
+        telegram_channel_chat_id: identity.normalizedChatId,
+        telegram_token_expires_at: tokenRecord.expires_at,
+        telegram_token_id: tokenRecord.token_id,
+        telegram_token_used_at: identity.now,
+        telegram_user_id: identity.normalizedUserId,
+        telegram_username: identity.normalizedUsername,
+        updated_at: identity.now,
+      },
+      paymentRecord: accessContext.paymentRecordWithWindow,
     }),
   ]);
 
@@ -1541,11 +1559,13 @@ export const revokeExpiredTelegramChannelAccess =
           continue;
         }
 
-        await upsertPaymentRecord({
-          ...paymentRecord,
-          telegram_access_revoked_at: now,
-          telegram_access_status: "revoked",
-          updated_at: now,
+        await persistTelegramPaymentAccess({
+          patch: {
+            telegram_access_revoked_at: now,
+            telegram_access_status: "revoked",
+            updated_at: now,
+          },
+          paymentRecord,
         });
       }
     }
@@ -1673,14 +1693,16 @@ const activateTelegramStartTokenInternal = async ({
       telegram_user_id: telegramUserId,
       telegram_username: normalizedUsername,
     }),
-    upsertPaymentRecord({
-      ...paymentRecord,
-      telegram_access_status: "activated",
-      telegram_token_id: tokenRecord.token_id,
-      telegram_token_used_at: now,
-      telegram_user_id: telegramUserId,
-      telegram_username: normalizedUsername,
-      updated_at: now,
+    persistTelegramPaymentAccess({
+      patch: {
+        telegram_access_status: "activated",
+        telegram_token_id: tokenRecord.token_id,
+        telegram_token_used_at: now,
+        telegram_user_id: telegramUserId,
+        telegram_username: normalizedUsername,
+        updated_at: now,
+      },
+      paymentRecord,
     }),
   ]);
 

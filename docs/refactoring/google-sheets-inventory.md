@@ -111,7 +111,7 @@ removes the legacy boundary.
 | [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | payment find/list/upsert and DTO                                                                | `R/W/M/F/C/T`   | `WRITE-06`, `READ-04`, `DROP-01`            |
 | [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | payment DTO                                                                                     | `T`             | `DB-07`, `DROP-04`                          |
 | [`monthly-sales-report`](../../src/lib/monthly-sales-report.ts)                                                   | monthly-run find/upsert and DTO                                                                 | `R/W/M/F/C/T`   | `WRITE-06`, `READ-04`, `DROP-01`            |
-| [`telegram/access`](../../src/lib/telegram/access.ts)                                                             | payment/token/binding reads and upserts, DTOs, rate-limit handling                              | `R/W/M/F/C/E/T` | `WRITE-04`, `READ-03`, `DROP-01`            |
+| [`telegram/access`](../../src/lib/telegram/access.ts)                                                             | explicit persistence boundary; DB mode is PostgreSQL-only, legacy mode retains mirror and DTOs  | `R/W/M/F/C/E/T` | `READ-03`, `CUT-03`, `DROP-01`              |
 | [`telegram/online-group-access`](../../src/lib/telegram/online-group-access.ts)                                   | payment DTO only; its access persistence is already database-native                             | `T`             | `DB-07`, `DROP-04`                          |
 
 ### Maintenance, comparison, and internal adapters
