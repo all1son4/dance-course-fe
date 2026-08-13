@@ -16,6 +16,16 @@ import {
   findPaymentRecordByIntentIdFromDatabase,
 } from "./payment-records";
 import {
+  findActiveTelegramUserBindingsFromDatabase,
+  findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
+  findTelegramAccessTokenRecordByTokenHashFromDatabase,
+  findTelegramAccessTokenRecordByTokenValueFromDatabase,
+  findTelegramUserBindingByPaymentIntentIdFromDatabase,
+  findTelegramUserBindingsByCustomerEmailFromDatabase,
+  findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
+  findTelegramUserBindingsByTelegramUserIdFromDatabase,
+} from "./sheet-records";
+import {
   claimNextStripeInboxEvent,
   findStripeInboxReadModel,
   processNextStripeInboxEvent,
@@ -34,9 +44,9 @@ import {
 } from "./transactional-outbox";
 
 // This is the database-facing composition root for the domains introduced during
-// the DB phase. Runtime routes choose a domain mode separately. The paymentReads
-// compatibility projection remains deliberately flattened until READ-03 removes the
-// legacy Telegram aggregate coupling; provider access stays outside this boundary.
+// the DB phase. Runtime routes choose a domain mode separately. Payment and Telegram
+// reads deliberately retain flattened compatibility projections during the staged
+// cutover; provider access stays outside this boundary.
 export const domainRepositories = Object.freeze({
   adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
   emailCampaigns: Object.freeze({
@@ -80,5 +90,17 @@ export const domainRepositories = Object.freeze({
   }),
   telegramAccess: Object.freeze({
     update: updateTelegramAccessInDatabase,
+  }),
+  telegramAccessReads: Object.freeze({
+    findActiveBindings: findActiveTelegramUserBindingsFromDatabase,
+    findBindingByPaymentIntentId: findTelegramUserBindingByPaymentIntentIdFromDatabase,
+    findBindingsByCustomerEmail: findTelegramUserBindingsByCustomerEmailFromDatabase,
+    findBindingsByTelegramUserId: findTelegramUserBindingsByTelegramUserIdFromDatabase,
+    findBindingsByTelegramUserIdAndChatId:
+      findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
+    findLatestTokenByPaymentIntentId:
+      findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
+    findTokenByHash: findTelegramAccessTokenRecordByTokenHashFromDatabase,
+    findTokenByValue: findTelegramAccessTokenRecordByTokenValueFromDatabase,
   }),
 });

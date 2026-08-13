@@ -1,30 +1,12 @@
 import { getDomainPersistenceMode } from "@/db/domain-persistence";
-import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import {
   claimTelegramAccessTokenRecordInDatabase,
-  findActiveTelegramUserBindingsFromDatabase,
-  findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
-  findTelegramAccessTokenRecordByTokenHashFromDatabase,
-  findTelegramAccessTokenRecordByTokenValueFromDatabase,
-  findTelegramUserBindingByPaymentIntentIdFromDatabase,
-  findTelegramUserBindingsByCustomerEmailFromDatabase,
-  findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
-  findTelegramUserBindingsByTelegramUserIdFromDatabase,
   upsertTelegramAccessTokenRecordToDatabase,
   upsertTelegramUserBindingRecordToDatabase,
 } from "@/db/sheet-records";
 import { updateTelegramAccessInDatabase } from "@/db/telegram-access";
 import {
   claimTelegramAccessTokenRecord as claimLegacyTelegramAccessTokenRecord,
-  findActiveTelegramUserBindings as findLegacyActiveTelegramUserBindings,
-  findLatestTelegramAccessTokenRecordByPaymentIntentId as findLegacyLatestTelegramAccessTokenRecordByPaymentIntentId,
-  findPaymentRecordByIntentId as findLegacyPaymentRecordByIntentId,
-  findTelegramAccessTokenRecordByTokenHash as findLegacyTelegramAccessTokenRecordByTokenHash,
-  findTelegramAccessTokenRecordByTokenValue as findLegacyTelegramAccessTokenRecordByTokenValue,
-  findTelegramUserBindingByPaymentIntentId as findLegacyTelegramUserBindingByPaymentIntentId,
-  findTelegramUserBindingsByCustomerEmail as findLegacyTelegramUserBindingsByCustomerEmail,
-  findTelegramUserBindingsByTelegramUserId as findLegacyTelegramUserBindingsByTelegramUserId,
-  findTelegramUserBindingsByTelegramUserIdAndChatId as findLegacyTelegramUserBindingsByTelegramUserIdAndChatId,
   isGoogleSheetsRateLimitError,
   upsertPaymentRecord as upsertLegacyPaymentRecord,
   upsertTelegramAccessTokenRecord as upsertLegacyTelegramAccessTokenRecord,
@@ -152,56 +134,6 @@ const usesDatabase = () => getTelegramAccessRuntime() === "database";
 export const isTelegramAccessPersistenceRateLimitError = (error: unknown) =>
   !usesDatabase() && isGoogleSheetsRateLimitError(error);
 
-export const findPaymentRecordByIntentId = (paymentIntentId: string) =>
-  usesDatabase()
-    ? findPaymentRecordByIntentIdFromDatabase(paymentIntentId)
-    : findLegacyPaymentRecordByIntentId(paymentIntentId);
-
-export const findLatestTelegramAccessTokenRecordByPaymentIntentId = (
-  paymentIntentId: string,
-) =>
-  usesDatabase()
-    ? findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase(paymentIntentId)
-    : findLegacyLatestTelegramAccessTokenRecordByPaymentIntentId(paymentIntentId);
-
-export const findTelegramAccessTokenRecordByTokenHash = (tokenHash: string) =>
-  usesDatabase()
-    ? findTelegramAccessTokenRecordByTokenHashFromDatabase(tokenHash)
-    : findLegacyTelegramAccessTokenRecordByTokenHash(tokenHash);
-
-export const findTelegramAccessTokenRecordByTokenValue = (tokenValue: string) =>
-  usesDatabase()
-    ? findTelegramAccessTokenRecordByTokenValueFromDatabase(tokenValue)
-    : findLegacyTelegramAccessTokenRecordByTokenValue(tokenValue);
-
-export const findTelegramUserBindingByPaymentIntentId = (paymentIntentId: string) =>
-  usesDatabase()
-    ? findTelegramUserBindingByPaymentIntentIdFromDatabase(paymentIntentId)
-    : findLegacyTelegramUserBindingByPaymentIntentId(paymentIntentId);
-
-export const findTelegramUserBindingsByCustomerEmail = (customerEmail: string) =>
-  usesDatabase()
-    ? findTelegramUserBindingsByCustomerEmailFromDatabase(customerEmail)
-    : findLegacyTelegramUserBindingsByCustomerEmail(customerEmail);
-
-export const findTelegramUserBindingsByTelegramUserId = (telegramUserId: string) =>
-  usesDatabase()
-    ? findTelegramUserBindingsByTelegramUserIdFromDatabase(telegramUserId)
-    : findLegacyTelegramUserBindingsByTelegramUserId(telegramUserId);
-
-export const findTelegramUserBindingsByTelegramUserIdAndChatId = (input: {
-  chatId: string;
-  telegramUserId: string;
-}) =>
-  usesDatabase()
-    ? findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase(input)
-    : findLegacyTelegramUserBindingsByTelegramUserIdAndChatId(input);
-
-export const findActiveTelegramUserBindings = () =>
-  usesDatabase()
-    ? findActiveTelegramUserBindingsFromDatabase()
-    : findLegacyActiveTelegramUserBindings();
-
 export const upsertTelegramAccessTokenRecord = (
   record: TelegramAccessTokenSheetRecord,
 ) =>
@@ -289,4 +221,15 @@ export const persistTelegramPaymentAccess = async ({
   };
 };
 
+export {
+  findActiveTelegramUserBindings,
+  findLatestTelegramAccessTokenRecordByPaymentIntentId,
+  findPaymentRecordByIntentId,
+  findTelegramAccessTokenRecordByTokenHash,
+  findTelegramAccessTokenRecordByTokenValue,
+  findTelegramUserBindingByPaymentIntentId,
+  findTelegramUserBindingsByCustomerEmail,
+  findTelegramUserBindingsByTelegramUserId,
+  findTelegramUserBindingsByTelegramUserIdAndChatId,
+} from "./access-read-runtime";
 export type { PaymentSheetRecord } from "@/lib/google-sheets-schema";

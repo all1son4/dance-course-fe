@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import test, { after, before, type TestContext } from "node:test";
 
 import postgres from "postgres";
@@ -10,6 +10,17 @@ import {
   findTelegramUserBindingByPaymentIntentIdFromDatabase,
   upsertTelegramUserBindingRecordToDatabase,
 } from "@/db/sheet-records";
+import {
+  findActiveTelegramUserBindings,
+  findLatestTelegramAccessTokenRecordByPaymentIntentId,
+  findPaymentRecordByIntentId,
+  findTelegramAccessTokenRecordByTokenHash,
+  findTelegramAccessTokenRecordByTokenValue,
+  findTelegramUserBindingByPaymentIntentId,
+  findTelegramUserBindingsByCustomerEmail,
+  findTelegramUserBindingsByTelegramUserId,
+  findTelegramUserBindingsByTelegramUserIdAndChatId,
+} from "@/lib/telegram/access-read-runtime";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -145,6 +156,53 @@ test("activates legacy Telegram access through PostgreSQL without Sheets", async
       await findTelegramUserBindingByPaymentIntentIdFromDatabase(paymentIntentId);
 
     assert.ok(binding);
+
+    const tokenHash = createHash("sha256").update(tokenValue).digest("hex");
+    const [
+      runtimePayment,
+      latestToken,
+      tokenByHash,
+      tokenByValue,
+      runtimeBinding,
+      bindingsByEmail,
+      bindingsByUser,
+      bindingsByUserAndChat,
+      activeBindings,
+    ] = await Promise.all([
+      findPaymentRecordByIntentId(paymentIntentId),
+      findLatestTelegramAccessTokenRecordByPaymentIntentId(paymentIntentId),
+      findTelegramAccessTokenRecordByTokenHash(tokenHash),
+      findTelegramAccessTokenRecordByTokenValue(tokenValue),
+      findTelegramUserBindingByPaymentIntentId(paymentIntentId),
+      findTelegramUserBindingsByCustomerEmail("WRITE04@example.test"),
+      findTelegramUserBindingsByTelegramUserId("write04-user"),
+      findTelegramUserBindingsByTelegramUserIdAndChatId({
+        chatId: "",
+        telegramUserId: "write04-user",
+      }),
+      findActiveTelegramUserBindings(),
+    ]);
+
+    assert.equal(runtimePayment?.payment_intent_id, paymentIntentId);
+    assert.ok(latestToken);
+    assert.ok(latestToken.token_id.startsWith("tga_"));
+    assert.equal(tokenByHash?.token_id, latestToken.token_id);
+    assert.equal(tokenByValue?.token_id, latestToken.token_id);
+    assert.equal(runtimeBinding?.payment_intent_id, paymentIntentId);
+    assert.ok(
+      bindingsByEmail.some((record) => record.payment_intent_id === paymentIntentId),
+    );
+    assert.ok(
+      bindingsByUser.some((record) => record.payment_intent_id === paymentIntentId),
+    );
+    assert.ok(
+      bindingsByUserAndChat.some(
+        (record) => record.payment_intent_id === paymentIntentId,
+      ),
+    );
+    assert.ok(
+      activeBindings.some((record) => record.payment_intent_id === paymentIntentId),
+    );
 
     await Promise.all(
       Array.from({ length: 8 }, () => upsertTelegramUserBindingRecordToDatabase(binding)),
