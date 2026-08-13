@@ -2,7 +2,9 @@ import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { neon } from "@neondatabase/serverless";
 import { eq, sql } from "drizzle-orm";
+import { drizzle as drizzleNeonHttp } from "drizzle-orm/neon-http";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -58,6 +60,16 @@ const getSampleLimit = () => {
   const parsedValue = Number.parseInt(getArgumentValue("sample-limit"), 10);
 
   return Number.isSafeInteger(parsedValue) && parsedValue > 0 ? parsedValue : undefined;
+};
+
+const getDatabaseTransport = () => {
+  const transport = getArgumentValue("transport") || "postgres";
+
+  if (transport !== "postgres" && transport !== "http") {
+    throw new Error('The --transport value must be either "postgres" or "http".');
+  }
+
+  return transport;
 };
 
 const loadSheetsSnapshot = async () => {
@@ -170,10 +182,13 @@ const loadCatalogSnapshot = async (
 
 const loadDatabaseSnapshotInTransaction = async (
   transaction: DatabaseTransaction,
+  { setReadOnlyTransaction = true }: { setReadOnlyTransaction?: boolean } = {},
 ): Promise<DatabaseReconciliationSnapshot> => {
-  await transaction.execute(
-    sql`set transaction isolation level repeatable read, read only`,
-  );
+  if (setReadOnlyTransaction) {
+    await transaction.execute(
+      sql`set transaction isolation level repeatable read, read only`,
+    );
+  }
 
   const purchaseRows = await transaction
     .select({
@@ -406,17 +421,24 @@ const loadDatabaseSnapshotInTransaction = async (
 };
 
 const loadDatabaseSnapshot = async () => {
-  const client = postgres(
-    getRequiredDatabaseUrlFromEnv({
-      kind: "unpooled",
-      purpose: "read-only reconciliation baseline",
-    }),
-    {
-      connect_timeout: 15,
-      max: 1,
-      prepare: false,
-    },
-  );
+  const databaseUrl = getRequiredDatabaseUrlFromEnv({
+    kind: "unpooled",
+    purpose: "read-only reconciliation baseline",
+  });
+
+  if (getDatabaseTransport() === "http") {
+    const database = drizzleNeonHttp(neon(databaseUrl));
+
+    return loadDatabaseSnapshotInTransaction(database as unknown as DatabaseTransaction, {
+      setReadOnlyTransaction: false,
+    });
+  }
+
+  const client = postgres(databaseUrl, {
+    connect_timeout: 15,
+    max: 1,
+    prepare: false,
+  });
   const database = drizzle(client);
 
   try {

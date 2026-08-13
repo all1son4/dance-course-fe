@@ -87,9 +87,18 @@ output.
 --sample-limit=N   maximum number of hashed mismatch samples per domain
 --strict           exit with status 1 when any comparison or financial total differs
 --output=PATH      create a mode-0600 JSON file; refuses to overwrite an existing file
+--transport=VALUE  PostgreSQL transport: postgres (default) or http
 ```
 
 Without `--output`, the safe report is written to stdout.
+
+The default `postgres` transport captures the database side in one repeatable-read,
+read-only transaction and remains the preferred release/cutover evidence. Use the
+official Neon `http` transport only for a read-only observation when the operator's
+network blocks PostgreSQL port 5432. HTTP executes the same SELECT-only query set but
+cannot provide an interactive transaction, so accept it only when two consecutive
+captures have the same body fingerprint and no writes occur during the short capture
+window.
 
 ## Timestamp limitation
 
@@ -105,14 +114,15 @@ The Payments worksheet has no dedicated succeeded timestamp. Its monthly groupin
 
 ## Capture log
 
-| Date       | Environment           | Result                                                   |
-| ---------- | --------------------- | -------------------------------------------------------- |
-| 2026-07-30 | development, pooled   | Connection timeout before data read                      |
-| 2026-07-30 | production, pooled    | Connection timeout before data read                      |
-| 2026-07-30 | development, unpooled | Connection timeout before data read                      |
-| 2026-07-30 | production, unpooled  | Connection timeout before data read                      |
-| 2026-08-06 | development, unpooled | Captured twice; reviewed mismatch; stable fingerprint    |
-| 2026-08-06 | production, unpooled  | Captured twice; expected differences; stable fingerprint |
+| Date       | Environment           | Result                                                      |
+| ---------- | --------------------- | ----------------------------------------------------------- |
+| 2026-07-30 | development, pooled   | Connection timeout before data read                         |
+| 2026-07-30 | production, pooled    | Connection timeout before data read                         |
+| 2026-07-30 | development, unpooled | Connection timeout before data read                         |
+| 2026-07-30 | production, unpooled  | Connection timeout before data read                         |
+| 2026-08-06 | development, unpooled | Captured twice; reviewed mismatch; stable fingerprint       |
+| 2026-08-06 | production, unpooled  | Captured twice; expected differences; stable fingerprint    |
+| 2026-08-13 | development, HTTP     | Captured twice for G5; accepted differences remained stable |
 
 The accepted schema-v2 fingerprints are:
 
