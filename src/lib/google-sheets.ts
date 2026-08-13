@@ -1996,9 +1996,11 @@ const createAdminInviteLinkHistorySourceRecord = ({
 export const findAdminInviteLinkHistorySourceRecords = async ({
   accessWorkflow,
   limit,
+  source = "auto",
 }: {
   accessWorkflow: string;
   limit?: number;
+  source?: RecordSource;
 }) => {
   const normalizedAccessWorkflow = accessWorkflow.trim().toLowerCase();
 
@@ -2006,7 +2008,7 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
     return [] as AdminInviteLinkHistorySourceRecord[];
   }
 
-  const paymentRows = await listPaymentRecords();
+  const paymentRows = await listPaymentRecords({ source });
   const adminPaymentRows = paymentRows.filter(
     (row) =>
       row.access_workflow.trim().toLowerCase() === normalizedAccessWorkflow &&
@@ -2017,7 +2019,7 @@ export const findAdminInviteLinkHistorySourceRecords = async ({
     return [] as AdminInviteLinkHistorySourceRecord[];
   }
 
-  const tokenRows = await listTelegramAccessTokenRecords();
+  const tokenRows = await listTelegramAccessTokenRecords({ source });
   const tokenById = new Map(
     tokenRows
       .map((row) => [row.token_id.trim(), row] as const)

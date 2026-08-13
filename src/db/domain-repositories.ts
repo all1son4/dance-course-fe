@@ -1,3 +1,4 @@
+import { listAdminInviteLinkHistoryRecordsFromDatabase } from "./admin-invite-link-history";
 import { createAdminOfferGrantInDatabase } from "./admin-offer-grants";
 import {
   claimEmailCampaignLeadForDelivery,
@@ -52,6 +53,9 @@ import {
 // reads deliberately retain flattened compatibility projections during the staged
 // cutover; provider access stays outside this boundary.
 export const domainRepositories = Object.freeze({
+  adminInviteLinkHistory: Object.freeze({
+    list: listAdminInviteLinkHistoryRecordsFromDatabase,
+  }),
   adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
   businessOperationReads: Object.freeze({
     findCampaignLead: findEmailCampaignLeadByCampaignAndEmailFromDatabase,

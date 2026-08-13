@@ -1,9 +1,9 @@
-import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
-  findAdminInviteLinkHistorySourceRecords,
-  GoogleSheetsError,
-  isGoogleSheetsRateLimitError,
-} from "@/lib/google-sheets";
+  getAdminInviteLinkHistoryProviderErrorDetails,
+  isAdminInviteLinkHistoryRateLimitError,
+  listAdminInviteLinkHistoryRecords,
+} from "@/lib/admin-invite-link-history-read-runtime";
+import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonNoStore } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
@@ -69,8 +69,8 @@ const isFreshHistoryCache = (entry: HistoryCacheEntry) =>
 const hasUsableStaleHistoryCache = (entry: HistoryCacheEntry) =>
   entry.cachedAt + STALE_HISTORY_CACHE_TTL_MS > Date.now();
 
-const fetchHistoryItemsFromSheets = async () => {
-  const historySourceRows = await findAdminInviteLinkHistorySourceRecords({
+const fetchHistoryItems = async () => {
+  const historySourceRows = await listAdminInviteLinkHistoryRecords({
     accessWorkflow: ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW,
   });
 
@@ -108,7 +108,7 @@ const resolveHistoryItems = async ({ forceRefresh }: { forceRefresh: boolean }) 
     return pendingHistoryFetch;
   }
 
-  pendingHistoryFetch = fetchHistoryItemsFromSheets().finally(() => {
+  pendingHistoryFetch = fetchHistoryItems().finally(() => {
     pendingHistoryFetch = null;
   });
 
@@ -171,7 +171,7 @@ export async function GET(request: Request) {
       items,
     });
   } catch (error) {
-    if (isGoogleSheetsRateLimitError(error)) {
+    if (isAdminInviteLinkHistoryRateLimitError(error)) {
       if (historyCacheEntry && hasUsableStaleHistoryCache(historyCacheEntry)) {
         return jsonNoStore({
           items: historyCacheEntry.items,
@@ -199,14 +199,17 @@ export async function GET(request: Request) {
       });
     }
 
-    if (error instanceof GoogleSheetsError) {
-      console.error("Failed to fetch admin invite-link history from Google Sheets", {
-        details: error.details,
-        errorCode: error.code,
-        status: error.status,
-      });
+    const providerErrorDetails = getAdminInviteLinkHistoryProviderErrorDetails(error);
+
+    if (providerErrorDetails) {
+      console.error(
+        "Failed to fetch admin invite-link history from legacy provider",
+        providerErrorDetails,
+      );
     } else {
-      console.error("Failed to fetch admin invite-link history", error);
+      console.error("Failed to fetch admin invite-link history", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
     }
 
     return jsonNoStore(
