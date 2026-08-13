@@ -1684,8 +1684,13 @@ export const appendStripeEventRecord = async (record: StripeEventSheetRecord) =>
 
 export const appendSuccessfulCustomerRecord = async (
   record: SuccessfulCustomersSheetRecord,
+  options?: {
+    mirrorToDatabase?: boolean;
+  },
 ) => {
-  await recordSuccessfulCustomerExportToDatabase(record);
+  if (options?.mirrorToDatabase ?? true) {
+    await recordSuccessfulCustomerExportToDatabase(record);
+  }
   const config = getRequiredGoogleSheetsConfig();
 
   return upsertRecordByFieldValue({

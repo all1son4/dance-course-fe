@@ -5,15 +5,19 @@ import { GoogleSheetsError, isGoogleSheetsConfigured } from "@/lib/google-sheets
 import { isPayloadTooLarge, jsonNoStore } from "@/lib/http-security";
 
 import { getStripeServer } from "../payment-intent/lib";
+import { scheduleStripeBackgroundJobs } from "./_lib/background-jobs";
 import {
   syncStripeChargeSettlementToDatabase,
   syncStripeWebhookEventToDatabase,
 } from "./_lib/database-sync";
+import { persistVerifiedStripeWebhookEvent } from "./_lib/inbox-ingress";
 import { runWebhookSideEffects } from "./_lib/side-effects";
 import {
   isSupportedStripePaymentIntentEvent,
+  shouldIgnoreStripeCheckoutSessionEvent,
   syncStripePaymentEventToGoogleSheets,
 } from "./_lib/sync";
+import { getStripeWriteRuntime } from "./_lib/write-runtime";
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 const MAX_WEBHOOK_BODY_BYTES = 1_000_000;
@@ -21,6 +25,7 @@ const STRIPE_SIGNATURE_HEADER = "stripe-signature";
 const UNKNOWN_DATABASE_SYNC_ERROR = "Unknown database sync error.";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const STRIPE_CHARGE_SETTLEMENT_EVENT_TYPES = new Set<string>([
   "charge.succeeded",
@@ -51,6 +56,8 @@ type WebhookErrorCode =
   | "missing_webhook_signature"
   | "payload_too_large"
   | "stripe_webhook_failed"
+  | "stripe_webhook_configuration_invalid"
+  | "stripe_webhook_inbox_failed"
   | "stripe_webhook_sync_failed";
 
 type VerifiedStripeEvent =
@@ -62,6 +69,9 @@ type VerifiedStripeEvent =
       event?: never;
       response: Response;
     };
+
+const getSafeErrorName = (error: unknown): string =>
+  error instanceof Error ? error.name : "UnknownError";
 
 const trySyncStripeWebhookEventToDatabase = async ({
   event,
@@ -122,17 +132,18 @@ const createWebhookErrorResponse = (
     { status },
   );
 
-const getWebhookConfigurationErrorResponse = (): Response | null => {
-  if (!isGoogleSheetsConfigured()) {
-    return createWebhookErrorResponse("google_sheets_not_configured", 500);
-  }
-
+const getWebhookVerificationConfigurationErrorResponse = (): Response | null => {
   if (!STRIPE_WEBHOOK_SECRET) {
     return createWebhookErrorResponse("missing_webhook_secret", 500);
   }
 
   return null;
 };
+
+const getLegacyProcessingConfigurationErrorResponse = (): Response | null =>
+  isGoogleSheetsConfigured()
+    ? null
+    : createWebhookErrorResponse("google_sheets_not_configured", 500);
 
 const verifyStripeWebhookEvent = ({
   payload,
@@ -148,11 +159,42 @@ const verifyStripeWebhookEvent = ({
       event: stripe.webhooks.constructEvent(payload, signature, STRIPE_WEBHOOK_SECRET),
     };
   } catch (error) {
-    console.error("Failed to verify Stripe webhook signature", error);
+    console.error("Failed to verify Stripe webhook signature", {
+      errorName: getSafeErrorName(error),
+    });
 
     return {
       response: createWebhookErrorResponse("invalid_webhook_signature", 400),
     };
+  }
+};
+
+const persistVerifiedStripeEventBeforeProcessing = async (
+  event: Stripe.Event,
+): Promise<Response | null> => {
+  const databaseEnv = getDatabaseEnvSelection("pooled");
+
+  try {
+    const receipt = await persistVerifiedStripeWebhookEvent({ event });
+
+    console.warn("Verified Stripe event persisted to inbox", {
+      databaseEnv,
+      duplicate: receipt.duplicate,
+      eventId: event.id,
+      eventType: event.type,
+      processingStatus: receipt.processingStatus,
+    });
+
+    return null;
+  } catch (error) {
+    console.error("Failed to persist verified Stripe event to inbox", {
+      databaseEnv,
+      errorName: getSafeErrorName(error),
+      eventId: event.id,
+      eventType: event.type,
+    });
+
+    return createWebhookErrorResponse("stripe_webhook_inbox_failed", 500);
   }
 };
 
@@ -212,16 +254,6 @@ const createIgnoredEventResponse = (event: Stripe.Event): Response =>
     received: true,
     type: event.type,
   });
-
-const shouldIgnoreCheckoutSessionEvent = (event: Stripe.Event): boolean => {
-  if (event.type !== "checkout.session.completed") {
-    return false;
-  }
-
-  const checkoutSession = event.data.object as Stripe.Checkout.Session;
-
-  return checkoutSession.mode !== "payment" || !checkoutSession.payment_intent;
-};
 
 const throwFailedDatabaseSyncInDevelopment = (databaseSync: DatabaseSyncResult): void => {
   if (databaseSync.status === "failed" && process.env.NODE_ENV !== "production") {
@@ -305,7 +337,7 @@ const handleVerifiedStripeEvent = async ({
     return createIgnoredEventResponse(event);
   }
 
-  if (shouldIgnoreCheckoutSessionEvent(event)) {
+  if (shouldIgnoreStripeCheckoutSessionEvent(event)) {
     return createIgnoredEventResponse(event);
   }
 
@@ -339,7 +371,7 @@ export async function POST(request: Request): Promise<Response> {
     return createWebhookErrorResponse("missing_secret_key", 500);
   }
 
-  const configurationErrorResponse = getWebhookConfigurationErrorResponse();
+  const configurationErrorResponse = getWebhookVerificationConfigurationErrorResponse();
 
   if (configurationErrorResponse) {
     return configurationErrorResponse;
@@ -361,6 +393,43 @@ export async function POST(request: Request): Promise<Response> {
 
     if (verifiedEvent.response) {
       return verifiedEvent.response;
+    }
+
+    const inboxPersistenceErrorResponse =
+      await persistVerifiedStripeEventBeforeProcessing(verifiedEvent.event);
+
+    if (inboxPersistenceErrorResponse) {
+      return inboxPersistenceErrorResponse;
+    }
+
+    let writeRuntime: ReturnType<typeof getStripeWriteRuntime>;
+
+    try {
+      writeRuntime = getStripeWriteRuntime();
+    } catch (error) {
+      console.error("Invalid Stripe write runtime configuration", {
+        errorName: getSafeErrorName(error),
+      });
+
+      return createWebhookErrorResponse("stripe_webhook_configuration_invalid", 500);
+    }
+
+    if (writeRuntime === "database") {
+      scheduleStripeBackgroundJobs();
+
+      return jsonNoStore({
+        eventId: verifiedEvent.event.id,
+        queued: true,
+        received: true,
+        type: verifiedEvent.event.type,
+      });
+    }
+
+    const legacyProcessingConfigurationErrorResponse =
+      getLegacyProcessingConfigurationErrorResponse();
+
+    if (legacyProcessingConfigurationErrorResponse) {
+      return legacyProcessingConfigurationErrorResponse;
     }
 
     return await handleVerifiedStripeEvent({

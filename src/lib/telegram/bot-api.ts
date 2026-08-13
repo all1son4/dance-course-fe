@@ -73,6 +73,7 @@ const callTelegramApi = async <T>(
   payload: Record<string, unknown>,
   options?: {
     botToken?: string;
+    maxAttempts?: number;
   },
 ): Promise<T> => {
   const apiUrl = getTelegramApiUrl({
@@ -84,7 +85,12 @@ const callTelegramApi = async <T>(
     throw new Error("telegram_bot_not_configured");
   }
 
-  for (let attempt = 0; attempt < TELEGRAM_API_MAX_ATTEMPTS; attempt += 1) {
+  const maxAttempts = Math.max(
+    1,
+    Math.min(options?.maxAttempts ?? TELEGRAM_API_MAX_ATTEMPTS, 10),
+  );
+
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const requestController = new AbortController();
     const timeoutId = setTimeout(() => {
       requestController.abort();
@@ -111,8 +117,7 @@ const callTelegramApi = async <T>(
 
       const description = data?.description ?? "unknown_error";
       const shouldRetry =
-        attempt < TELEGRAM_API_MAX_ATTEMPTS - 1 &&
-        isRetryableTelegramHttpError(response.status, data);
+        attempt < maxAttempts - 1 && isRetryableTelegramHttpError(response.status, data);
 
       if (shouldRetry) {
         const retryAfterFromBody = data?.parameters?.retry_after;
@@ -135,7 +140,7 @@ const callTelegramApi = async <T>(
       throw new Error(`telegram_api_failed:${method}:${description}`);
     } catch (error) {
       const shouldRetry =
-        attempt < TELEGRAM_API_MAX_ATTEMPTS - 1 && isRetryableTelegramNetworkError(error);
+        attempt < maxAttempts - 1 && isRetryableTelegramNetworkError(error);
 
       if (shouldRetry) {
         await wait(
@@ -163,16 +168,18 @@ export const sendTelegramMessage = async ({
   botToken,
   chatId,
   disableWebPagePreview,
+  maxAttempts,
   parseMode,
   text,
 }: {
   botToken?: string;
   chatId: number | string;
   disableWebPagePreview?: boolean;
+  maxAttempts?: number;
   parseMode?: "HTML" | "MarkdownV2";
   text: string;
 }) =>
-  callTelegramApi(
+  callTelegramApi<{ message_id: number }>(
     "sendMessage",
     {
       chat_id: chatId,
@@ -182,6 +189,7 @@ export const sendTelegramMessage = async ({
     },
     {
       botToken,
+      maxAttempts,
     },
   );
 

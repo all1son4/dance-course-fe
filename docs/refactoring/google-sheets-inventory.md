@@ -94,43 +94,51 @@ removes the legacy boundary.
 
 ### Runtime and application modules
 
-| Component                                                                                                         | Imported surface                                                                                | Class           | Planned exit                                |
-| ----------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------- | ------------------------------------------- |
-| [`admin/invite-links/history`](../../src/app/admin/api/invite-links/history/route.ts)                             | `findAdminInviteLinkHistorySourceRecords`, Google errors/rate limits                            | `R/F/E`         | `READ-05`, `DROP-01`                        |
-| [`admin/invite-links`](../../src/app/admin/api/invite-links/route.ts)                                             | `upsertPaymentRecord`, `appendSuccessfulCustomerRecord`, payment DTO, Google errors/rate limits | `W/M/X/E/T`     | `WRITE-05`, `WRITE-07`, `DROP-01`           |
-| [`admin/online-group-invite-links`](../../src/app/admin/api/online-group-invite-links/route.ts)                   | `upsertPaymentRecord`, `appendSuccessfulCustomerRecord`, payment DTO, Google errors/rate limits | `W/M/X/E/T`     | `WRITE-05`, `WRITE-07`, `DROP-01`           |
-| [`course-signup`](../../src/app/api/course-signup/route.ts)                                                       | Google errors/rate limits propagated by the campaign repository                                 | `E`             | `WRITE-06`, `READ-04`, `DROP-01`            |
-| [`stripe/database-sync`](../../src/app/api/stripe/webhook/_lib/database-sync.ts)                                  | explicit Sheet `findPaymentRecordByIntentId`, payment DTO                                       | `R/F/T`         | `READ-02`, `DROP-01`                        |
-| [`stripe/purchase-alert`](../../src/app/api/stripe/webhook/_lib/purchase-alert.ts)                                | payment DTO                                                                                     | `T`             | `DB-07`, `DROP-04`                          |
-| [`stripe/payment-status-lease`](../../src/app/api/stripe/webhook/_lib/side-effects/payment-status-lease.ts)       | payment read/upsert, payment DTO, rate-limit handling                                           | `R/W/M/F/C/E/T` | `WRITE-03`, `READ-02`, `DROP-01`            |
-| [`stripe/purchase-telegram-alert`](../../src/app/api/stripe/webhook/_lib/side-effects/purchase-telegram-alert.ts) | Google rate-limit handling                                                                      | `E`             | `WRITE-03`, `DROP-01`                       |
-| [`stripe/sync`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                    | payment/event reads and upserts, successful-customer export, payment DTO                        | `R/W/M/F/C/X/T` | `WRITE-01`–`WRITE-03`, `READ-02`, `DROP-01` |
-| [`stripe/webhook`](../../src/app/api/stripe/webhook/route.ts)                                                     | Google configuration and error type                                                             | `E`             | `WRITE-01`, `DROP-01`                       |
-| [`telegram/access-link`](../../src/app/api/telegram/access-link/route.ts)                                         | payment/session reads, Google errors/rate limits                                                | `R/F/E`         | `READ-02`, `READ-03`, `DROP-01`             |
-| [`email-campaigns`](../../src/lib/email-campaigns.ts)                                                             | campaign lead find/list/upsert and DTO                                                          | `R/W/M/F/T`     | `WRITE-06`, `READ-04`, `DROP-01`            |
-| [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | payment find/list/upsert and DTO                                                                | `R/W/M/F/C/T`   | `WRITE-06`, `READ-04`, `DROP-01`            |
-| [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | payment DTO                                                                                     | `T`             | `DB-07`, `DROP-04`                          |
-| [`monthly-sales-report`](../../src/lib/monthly-sales-report.ts)                                                   | monthly-run find/upsert and DTO                                                                 | `R/W/M/F/C/T`   | `WRITE-06`, `READ-04`, `DROP-01`            |
-| [`telegram/access`](../../src/lib/telegram/access.ts)                                                             | payment/token/binding reads and upserts, DTOs, rate-limit handling                              | `R/W/M/F/C/E/T` | `WRITE-04`, `READ-03`, `DROP-01`            |
-| [`telegram/online-group-access`](../../src/lib/telegram/online-group-access.ts)                                   | payment DTO only; its access persistence is already database-native                             | `T`             | `DB-07`, `DROP-04`                          |
+| Component                                                                                                         | Imported surface                                                                      | Class           | Planned exit                                |
+| ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------- | ------------------------------------------- |
+| [`admin/invite-links/history`](../../src/app/admin/api/invite-links/history/route.ts)                             | `findAdminInviteLinkHistorySourceRecords`, Google errors/rate limits                  | `R/F/E`         | `READ-05`, `DROP-01`                        |
+| [`admin/invite-links`](../../src/app/admin/api/invite-links/route.ts)                                             | explicit grant boundary; DB mode writes PostgreSQL and an optional one-way export job | `W/M/X/E/T`     | `READ-05`, `WRITE-07`, `DROP-01`            |
+| [`admin/online-group-invite-links`](../../src/app/admin/api/online-group-invite-links/route.ts)                   | explicit grant boundary; DB mode writes PostgreSQL and an optional one-way export job | `W/M/X/E/T`     | `WRITE-07`, `DROP-01`                       |
+| [`course-signup`](../../src/app/api/course-signup/route.ts)                                                       | Google errors/rate limits propagated by the campaign repository                       | `E`             | `WRITE-06`, `READ-04`, `DROP-01`            |
+| [`stripe/database-sync`](../../src/app/api/stripe/webhook/_lib/database-sync.ts)                                  | explicit Sheet `findPaymentRecordByIntentId`, payment DTO                             | `R/F/T`         | `READ-02`, `DROP-01`                        |
+| [`stripe/purchase-alert`](../../src/app/api/stripe/webhook/_lib/purchase-alert.ts)                                | payment DTO                                                                           | `T`             | `DB-07`, `DROP-04`                          |
+| [`stripe/payment-status-lease`](../../src/app/api/stripe/webhook/_lib/side-effects/payment-status-lease.ts)       | payment read/upsert, payment DTO, rate-limit handling                                 | `R/W/M/F/C/E/T` | `WRITE-03`, `READ-02`, `DROP-01`            |
+| [`stripe/purchase-telegram-alert`](../../src/app/api/stripe/webhook/_lib/side-effects/purchase-telegram-alert.ts) | Google rate-limit handling                                                            | `E`             | `WRITE-03`, `DROP-01`                       |
+| [`stripe/sync`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                    | payment/event reads and upserts, successful-customer export, payment DTO              | `R/W/M/F/C/X/T` | `WRITE-01`–`WRITE-03`, `READ-02`, `DROP-01` |
+| [`stripe/webhook`](../../src/app/api/stripe/webhook/route.ts)                                                     | Google configuration and error type                                                   | `E`             | `WRITE-01`, `DROP-01`                       |
+| [`telegram/access-link`](../../src/app/api/telegram/access-link/route.ts)                                         | payment/session reads, Google errors/rate limits                                      | `R/F/E`         | `READ-02`, `READ-03`, `DROP-01`             |
+| [`email-campaigns`](../../src/lib/email-campaigns.ts)                                                             | campaign lead find/list/upsert and DTO                                                | `R/W/M/F/T`     | `WRITE-06`, `READ-04`, `DROP-01`            |
+| [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | payment find/list/upsert and DTO                                                      | `R/W/M/F/C/T`   | `WRITE-06`, `READ-04`, `DROP-01`            |
+| [`admin-offer-grants`](../../src/lib/admin-offer-grants.ts)                                                       | isolated legacy grant mirror and optional SuccessfulCustomers export boundary         | `W/M/X/E/T`     | `WRITE-07`, `DROP-01`, `DROP-04`            |
+| [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | payment DTO                                                                           | `T`             | `DB-07`, `DROP-04`                          |
+| [`monthly-sales-report`](../../src/lib/monthly-sales-report.ts)                                                   | monthly-run find/upsert and DTO                                                       | `R/W/M/F/C/T`   | `WRITE-06`, `READ-04`, `DROP-01`            |
+| [`sheets-export-outbox`](../../src/lib/sheets-export-outbox.ts)                                                   | isolated allowlisted `SuccessfulCustomers` outbox delivery                            | `X/T`           | `CUT-04`, `DROP-01`, `DROP-04`              |
+| [`telegram/access`](../../src/lib/telegram/access.ts)                                                             | mode-aware access engine using the isolated persistence boundary                      | `R/W/C/T`       | `READ-03`, `CUT-03`, `DROP-04`              |
+| [`telegram/access-persistence`](../../src/lib/telegram/access-persistence.ts)                                     | isolated legacy payment/token/binding mirror, fallback, Google errors, and DTOs       | `R/W/M/F/C/E/T` | `READ-03`, `CUT-03`, `DROP-01`, `DROP-04`   |
+| [`telegram/online-group-access`](../../src/lib/telegram/online-group-access.ts)                                   | payment DTO only; its access persistence is already database-native                   | `T`             | `DB-07`, `DROP-04`                          |
 
 ### Maintenance, comparison, and internal adapters
 
-| Component                                                                            | Imported surface                                                            | Class           | Planned exit                                     |
-| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- | --------------- | ------------------------------------------------ |
-| [`backfill-google-sheets`](../../src/db/backfill-google-sheets.ts)                   | six legacy Sheet list readers and DTOs                                      | `R/MT/T`        | `DATA-02`–`DATA-04`, `DROP-04`                   |
-| [`capture-reconciliation-baseline`](../../src/db/capture-reconciliation-baseline.ts) | all seven values-only Sheet readers                                         | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                   |
-| [`compare-google-sheets`](../../src/db/compare-google-sheets.ts)                     | six Sheet/database list readers                                             | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                   |
-| [`payment-records`](../../src/db/payment-records.ts)                                 | Sheet-shaped payment/event DTOs used by database projections                | `T`             | `DB-07`, `DROP-04`                               |
-| [`sheet-records`](../../src/db/sheet-records.ts)                                     | all Sheet-shaped DTOs used by database facade adapters                      | `T`             | `DB-07`, `DROP-04`                               |
-| [`reconciliation-baseline`](../../src/db/reconciliation-baseline.ts)                 | all seven Sheet DTOs used by the pure report builder                        | `MT/T`          | `CUT-04`, `DROP-04`                              |
-| [`reconciliation-baseline.test`](../../src/db/reconciliation-baseline.test.ts)       | all seven Sheet headers/DTOs used by privacy fixtures                       | `MT/T`          | Keep with the baseline tool; remove at `DROP-04` |
-| [`google-sheets`](../../src/lib/google-sheets.ts)                                    | sole Google OAuth/values API facade, caches, fallback, mirror, coordination | `R/W/M/F/C/X/E` | `DROP-01`, then `DROP-04`                        |
-| [`google-sheets-schema`](../../src/lib/google-sheets-schema.ts)                      | seven worksheet schemas and flattened record DTOs                           | `T`             | `DROP-04`                                        |
+| Component                                                                            | Imported surface                                                            | Class           | Planned exit                                      |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- | --------------- | ------------------------------------------------- |
+| [`backfill-google-sheets`](../../src/db/backfill-google-sheets.ts)                   | six legacy Sheet list readers and DTOs                                      | `R/MT/T`        | `DATA-02`–`DATA-04`, `DROP-04`                    |
+| [`capture-reconciliation-baseline`](../../src/db/capture-reconciliation-baseline.ts) | all seven values-only Sheet readers                                         | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                    |
+| [`capture-source-snapshot`](../../src/db/capture-source-snapshot.ts)                 | protected DATA-01 source capture through the isolated legacy readers        | `R/MT/T`        | Keep through rollback observation; then `DROP-04` |
+| [`compare-google-sheets`](../../src/db/compare-google-sheets.ts)                     | six Sheet/database list readers                                             | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                    |
+| [`payment-records`](../../src/db/payment-records.ts)                                 | Sheet-shaped payment/event DTOs used by database projections                | `T`             | `DB-07`, `DROP-04`                                |
+| [`sheet-records`](../../src/db/sheet-records.ts)                                     | all Sheet-shaped DTOs used by database facade adapters                      | `T`             | `DB-07`, `DROP-04`                                |
+| [`reconciliation-baseline`](../../src/db/reconciliation-baseline.ts)                 | all seven Sheet DTOs used by the pure report builder                        | `MT/T`          | `CUT-04`, `DROP-04`                               |
+| [`reconciliation-baseline.test`](../../src/db/reconciliation-baseline.test.ts)       | all seven Sheet headers/DTOs used by privacy fixtures                       | `MT/T`          | Keep with the baseline tool; remove at `DROP-04`  |
+| [`google-sheets`](../../src/lib/google-sheets.ts)                                    | sole Google OAuth/values API facade, caches, fallback, mirror, coordination | `R/W/M/F/C/X/E` | `DROP-01`, then `DROP-04`                         |
+| [`google-sheets-schema`](../../src/lib/google-sheets-schema.ts)                      | seven worksheet schemas and flattened record DTOs                           | `T`             | `DROP-04`                                         |
 
-## Critical runtime coupling
+## Remaining legacy and read coupling after WRITE-07
 
-The following dependencies must be removed before Google credentials can be disabled:
+The database write modes no longer require a successful Google call. Their only
+intentional write is the optional versioned export through
+[`sheets-export-outbox.ts`](../../src/lib/sheets-export-outbox.ts); failure is contained
+in that job. The following legacy/read dependencies must still be removed before
+Google credentials can be disabled for the whole runtime:
 
 1. [`stripe/webhook/route.ts`](../../src/app/api/stripe/webhook/route.ts) requires
    Google configuration before processing a webhook, including events whose durable
@@ -147,8 +155,9 @@ The following dependencies must be removed before Google credentials can be disa
 6. [`invoices/invoice-numbering.ts`](../../src/lib/invoices/invoice-numbering.ts)
    derives the next invoice number by scanning payment records instead of allocating
    it transactionally in PostgreSQL.
-7. Reports, campaigns, and admin invite routes can still treat a Sheets failure as a
-   failure of the whole request after a database write has succeeded.
+7. Reports, campaigns, and admin invite routes retain their legacy/read branches until
+   `READ-04`/`READ-05` and final fallback removal; their explicit database write modes
+   do not use those branches.
 
 ## Type-coupling warning
 
@@ -208,8 +217,11 @@ operator still needs the worksheet during transition, produce it through the opt
 PostgreSQL outbox exporter from `WRITE-07`. Do not backfill the worksheet into a new
 source of truth.
 
-The existing database marker `successful_customer_export=sent` is not proof that the
-Sheet write succeeded because it is stored before the Google API call.
+Historical unversioned database markers with
+`successful_customer_export=sent` are not proof that the Sheet write succeeded because
+the legacy path stored them before the Google API call. For WRITE-07 versioned jobs,
+`sent` is recorded only after the provider call returns successfully; `failed`,
+`dead_letter`, and `skipped` remain distinct operational evidence.
 
 ## Recommended cutover order
 

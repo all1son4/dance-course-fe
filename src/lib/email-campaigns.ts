@@ -10,10 +10,24 @@ import {
   getDefaultProductOffer,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
+import {
+  createEmailCampaignLeadInDatabase,
+  type EmailCampaignLead,
+  excludeEmailCampaignLeadInDatabase,
+  getCampaignEmailDeliveryDeduplicationKey,
+  listEmailCampaignLeadsFromDatabase,
+} from "@/db/business-operation-jobs";
+import { getDomainPersistenceMode } from "@/db/domain-persistence";
+import {
+  enqueueCampaignEmailDelivery,
+  processBusinessOperationOutboxJob,
+} from "@/lib/business-operation-outbox";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
   type EmailCampaignLeadSheetRecord,
   findEmailCampaignLeadByCampaignAndEmail,
+  GoogleSheetsError,
+  isGoogleSheetsRateLimitError,
   listEmailCampaignLeadRecords,
   upsertEmailCampaignLeadRecord,
 } from "@/lib/google-sheets";
@@ -97,6 +111,30 @@ const pendingEmailCampaignLeadCreates = new Map<
 let pendingFirstTouchSalesStartCampaignDelivery: Promise<EmailCampaignDeliveryResult> | null =
   null;
 
+export const getEmailCampaignRuntime = (
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+) =>
+  getDomainPersistenceMode("businessOperations", environment) === "database"
+    ? ("database" as const)
+    : ("legacy" as const);
+
+const usesDatabaseJobs = () => getEmailCampaignRuntime() === "database";
+
+export const isEmailCampaignPersistenceRateLimitError = (error: unknown) =>
+  !usesDatabaseJobs() && isGoogleSheetsRateLimitError(error);
+
+export const getEmailCampaignPersistenceErrorDetails = (error: unknown) => {
+  if (usesDatabaseJobs() || !(error instanceof GoogleSheetsError)) {
+    return null;
+  }
+
+  return {
+    details: error.details,
+    errorCode: error.code,
+    status: error.status,
+  };
+};
+
 export const normalizeEmailCampaignEmail = (value: string) =>
   value.trim().toLowerCase().slice(0, 254);
 
@@ -116,6 +154,32 @@ const createLeadId = ({ campaignKey, email }: { campaignKey: string; email: stri
     .update(getEmailCampaignLeadDedupeKey({ campaignKey, email }))
     .digest("hex")
     .slice(0, 24)}`;
+
+const mapEmailCampaignLeadFromDatabase = (
+  lead: EmailCampaignLead,
+): EmailCampaignLeadSheetRecord => ({
+  campaign_key: lead.campaignKey,
+  created_at: lead.createdAt.toISOString(),
+  email: lead.email,
+  email_send_attempts: String(lead.emailSendAttempts),
+  email_send_status: lead.emailSendStatus,
+  email_sent_at: lead.emailSentAt?.toISOString() ?? "",
+  full_name: lead.fullName,
+  last_email_error: lead.lastEmailError,
+  lead_id: lead.leadId,
+  locale: lead.locale,
+  social_contact: lead.socialContact,
+});
+
+const listEmailCampaignRecords = async () => {
+  if (!usesDatabaseJobs()) {
+    return listEmailCampaignLeadRecords({ cacheTtlMs: 0 });
+  }
+
+  return (await listEmailCampaignLeadsFromDatabase()).map(
+    mapEmailCampaignLeadFromDatabase,
+  );
+};
 
 const getGloballyBlockedEmails = (rows: EmailCampaignLeadSheetRecord[]) =>
   new Set(
@@ -360,6 +424,24 @@ const createEmailCampaignLeadInternal = async ({
   socialContact,
 }: CreateEmailCampaignLeadInput): Promise<CreateEmailCampaignLeadResult> => {
   const normalizedEmail = normalizeEmailCampaignEmail(email);
+
+  if (usesDatabaseJobs()) {
+    const result = await createEmailCampaignLeadInDatabase({
+      campaignKey,
+      createdAt: new Date(),
+      email: normalizedEmail,
+      fullName,
+      leadId: createLeadId({ campaignKey, email: normalizedEmail }),
+      locale,
+      socialContact,
+    });
+
+    return {
+      duplicate: !result.created,
+      lead: mapEmailCampaignLeadFromDatabase(result.lead),
+    };
+  }
+
   const existingLead = await findEmailCampaignLeadByCampaignAndEmail({
     campaignKey,
     email: normalizedEmail,
@@ -430,9 +512,7 @@ export const createEmailCampaignLead = async (
 export const getEmailCampaignAdminSnapshot = async (
   campaignKey: string,
 ): Promise<EmailCampaignAdminSnapshot> => {
-  const rows = await listEmailCampaignLeadRecords({
-    cacheTtlMs: 0,
-  });
+  const rows = await listEmailCampaignRecords();
 
   return buildEmailCampaignAdminSnapshot({ campaignKey, rows });
 };
@@ -451,6 +531,24 @@ export const excludeEmailCampaignLead = async ({
 }): Promise<ExcludeEmailCampaignLeadResult> => {
   if (pendingFirstTouchSalesStartCampaignDelivery) {
     return { status: "delivery_in_progress" };
+  }
+
+  if (usesDatabaseJobs()) {
+    const result = await excludeEmailCampaignLeadInDatabase({
+      campaignKey,
+      leadId,
+      scope,
+    });
+
+    if (result.status !== "excluded") {
+      return result;
+    }
+
+    return {
+      scope,
+      snapshot: await getEmailCampaignAdminSnapshot(campaignKey),
+      status: "excluded",
+    };
   }
 
   const normalizedCampaignKey = campaignKey.trim();
@@ -487,9 +585,7 @@ export const excludeEmailCampaignLead = async ({
 
 const deliverFirstTouchSalesStartCampaignInternal =
   async (): Promise<EmailCampaignDeliveryResult> => {
-    const rows = await listEmailCampaignLeadRecords({
-      cacheTtlMs: 0,
-    });
+    const rows = await listEmailCampaignRecords();
     const globallyBlockedEmails = getGloballyBlockedEmails(rows);
     const deliverableRows = rows.filter(
       (row) =>
@@ -499,6 +595,41 @@ const deliverFirstTouchSalesStartCampaignInternal =
         !globallyBlockedEmails.has(normalizeEmailCampaignEmail(row.email)),
     );
     let attempted = 0;
+
+    if (usesDatabaseJobs()) {
+      const deliveryKeys: string[] = [];
+
+      for (const lead of deliverableRows) {
+        const deduplicationKey = getCampaignEmailDeliveryDeduplicationKey({
+          campaignKey: lead.campaign_key,
+          leadId: lead.lead_id,
+        });
+        const emailPayload = buildFirstTouchSalesStartEmail(lead);
+
+        await enqueueCampaignEmailDelivery({
+          campaignKey: lead.campaign_key,
+          deduplicationKey,
+          email: {
+            html: emailPayload.html,
+            subject: emailPayload.subject,
+            text: emailPayload.text,
+            to: lead.email,
+          },
+          leadId: lead.lead_id,
+        });
+        deliveryKeys.push(deduplicationKey);
+      }
+
+      for (const deduplicationKey of deliveryKeys) {
+        attempted += 1;
+        await processBusinessOperationOutboxJob(deduplicationKey);
+      }
+
+      return {
+        ...(await getEmailCampaignStats(FIRST_TOUCH_SALES_START_CAMPAIGN_KEY)),
+        attempted,
+      };
+    }
 
     for (const lead of deliverableRows) {
       attempted += 1;

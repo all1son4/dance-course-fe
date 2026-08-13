@@ -1,3 +1,5 @@
+import { getDomainPersistenceMode } from "@/db/domain-persistence";
+import { allocateInvoiceForPaymentIntent } from "@/db/invoice-repository";
 import {
   findPaymentRecordByIntentId,
   listPaymentRecords,
@@ -11,6 +13,13 @@ const INVOICE_SEQUENCE_PADDING = 3;
 
 const pendingInvoiceNumberAssignments = new Map<string, Promise<PaymentSheetRecord>>();
 let invoiceNumberAssignmentQueue = Promise.resolve();
+
+export const getInvoiceNumberingRuntime = (
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+) =>
+  getDomainPersistenceMode("businessOperations", environment) === "database"
+    ? ("database" as const)
+    : ("legacy" as const);
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
 
@@ -99,6 +108,13 @@ const ensureInvoiceNumberForPaymentInternal = async ({
   issuedAt: Date;
   paymentRecord: PaymentSheetRecord;
 }) => {
+  if (getInvoiceNumberingRuntime() === "database") {
+    return allocateInvoiceForPaymentIntent({
+      issuedAt,
+      paymentIntentId: paymentRecord.payment_intent_id,
+    });
+  }
+
   const latestPaymentRecord =
     (await findPaymentRecordByIntentId(paymentRecord.payment_intent_id, {
       cacheTtlMs: 0,
@@ -138,11 +154,15 @@ export const ensureInvoiceNumberForPayment = async ({
     return pendingAssignment;
   }
 
-  const assignmentPromise = withInvoiceNumberAssignmentLock(() =>
+  const assignment = () =>
     ensureInvoiceNumberForPaymentInternal({
       issuedAt,
       paymentRecord,
-    }),
+    });
+  const assignmentPromise = (
+    getInvoiceNumberingRuntime() === "database"
+      ? assignment()
+      : withInvoiceNumberAssignmentLock(assignment)
   ).finally(() => {
     pendingInvoiceNumberAssignments.delete(paymentIntentId);
   });

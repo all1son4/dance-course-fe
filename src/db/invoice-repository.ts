@@ -1,7 +1,8 @@
 import { and, eq, max, sql } from "drizzle-orm";
 
 import { getDatabase } from "./client";
-import { invoices, invoiceSequences } from "./schema";
+import { findPaymentRecordByIntentIdFromDatabase } from "./payment-records";
+import { invoices, invoiceSequences, purchases } from "./schema";
 
 const INVOICE_SEQUENCE_PADDING = 3;
 
@@ -136,4 +137,69 @@ export const allocateInvoice = async (input: AllocateInvoiceInput) => {
 
     return { created: true, invoice };
   });
+};
+
+export const allocateInvoiceForPaymentIntent = async ({
+  issuedAt,
+  paymentIntentId,
+}: {
+  issuedAt: Date;
+  paymentIntentId: string;
+}) => {
+  const normalizedPaymentIntentId = paymentIntentId.trim();
+
+  if (!normalizedPaymentIntentId) {
+    throw new Error("invoice_payment_intent_id_required");
+  }
+
+  const [purchase] = await getDatabase()
+    .select({
+      amountMinor: purchases.amountMinor,
+      currency: purchases.currency,
+      customerAddressLineSnapshot: purchases.customerAddressLineSnapshot,
+      customerCitySnapshot: purchases.customerCitySnapshot,
+      customerEmailSnapshot: purchases.customerEmailSnapshot,
+      customerFullNameSnapshot: purchases.customerFullNameSnapshot,
+      customerPostalCodeSnapshot: purchases.customerPostalCodeSnapshot,
+      id: purchases.id,
+    })
+    .from(purchases)
+    .where(eq(purchases.paymentIntentId, normalizedPaymentIntentId))
+    .limit(1);
+
+  if (!purchase) {
+    throw new Error("invoice_purchase_not_found");
+  }
+
+  if (purchase.currency !== "pln" && purchase.currency !== "eur") {
+    throw new Error("invoice_purchase_currency_invalid");
+  }
+
+  await allocateInvoice({
+    amountMinor: purchase.amountMinor,
+    buyerAddressSnapshot:
+      [
+        purchase.customerAddressLineSnapshot,
+        purchase.customerCitySnapshot,
+        purchase.customerPostalCodeSnapshot,
+      ]
+        .map((part) => part?.trim() ?? "")
+        .filter(Boolean)
+        .join(", ") || null,
+    buyerEmailSnapshot: purchase.customerEmailSnapshot,
+    buyerNameSnapshot: purchase.customerFullNameSnapshot,
+    currency: purchase.currency,
+    issuedAt,
+    purchaseId: purchase.id,
+  });
+
+  const paymentRecord = await findPaymentRecordByIntentIdFromDatabase(
+    normalizedPaymentIntentId,
+  );
+
+  if (!paymentRecord?.invoice_number.trim()) {
+    throw new Error("invoice_projection_not_found");
+  }
+
+  return paymentRecord;
 };

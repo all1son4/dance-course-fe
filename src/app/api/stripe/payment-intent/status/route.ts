@@ -6,6 +6,8 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 
+import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
+import { getStripeWriteRuntime } from "../../webhook/_lib/write-runtime";
 import {
   getCheckoutOwnedPaymentIntent,
   getManagedPaymentIntentSnapshot,
@@ -13,6 +15,7 @@ import {
 } from "../lib";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 const MAX_PAYMENT_STATUS_BODY_BYTES = 8 * 1024;
 
 type PaymentIntentStatusBody = {
@@ -71,9 +74,21 @@ export async function POST(request: Request) {
       });
     }
 
-    return jsonNoStore(
-      getManagedPaymentIntentSnapshot(paymentIntentResult.paymentIntent),
-    );
+    const snapshot = getManagedPaymentIntentSnapshot(paymentIntentResult.paymentIntent);
+
+    if (snapshot.outcome === "succeeded") {
+      try {
+        if (getStripeWriteRuntime() === "database") {
+          scheduleStripeBackgroundJobs();
+        }
+      } catch (error) {
+        console.error("Failed to schedule payment background recovery", {
+          errorName: error instanceof Error ? error.name : "UnknownError",
+        });
+      }
+    }
+
+    return jsonNoStore(snapshot);
   } catch (error) {
     console.error("Failed to retrieve Stripe PaymentIntent status", error);
 

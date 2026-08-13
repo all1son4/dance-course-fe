@@ -1,6 +1,6 @@
 # Reliability and PostgreSQL-only roadmap
 
-Version: 1.9
+Version: 2.3
 Status: active
 Started: 2026-07-30
 
@@ -726,22 +726,86 @@ No runtime flag or user journey changed.
 
 ## Phase WRITE: PostgreSQL-only authoritative writes
 
-Status: `TODO`
+Status: `DONE`
 
 ### WRITE-01 — Persist Stripe events before acknowledging
 
 Verify the signature, durably insert the inbox event, then return success. Return a
 retryable error if the inbox cannot be written.
 
+Status: `DONE`. The webhook now verifies the Stripe signature before making an
+idempotent, awaited insert into the existing immutable PostgreSQL inbox. The inbox
+write precedes both the Google Sheets configuration check and every legacy processor or
+side effect. A rejected inbox write returns `500 stripe_webhook_inbox_failed`, so Stripe
+can retry; an invalid signature returns `400` without creating a row. Duplicate delivery
+keeps one verified provider record.
+
+This is intentionally an ingress-only cut. The current synchronous Sheets processor,
+database projection, and delivery side effects still run after the inbox gate until
+`WRITE-02`/`WRITE-03`, preserving response bodies, checkout outcomes, and all user
+journeys. No worker or feature flag is enabled by this task. Verified ignored and
+charge-only events may remain `pending` during this short transition and must not be
+manually replayed before the event-type policy in `WRITE-02` is deployed. Rollback is a
+DB-compatible application revert: already recorded rows remain valid immutable
+evidence, and no schema rollback is required.
+
+The exact implementation revision `947796a` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31500631054)
+with 50 unit tests, 30 PostgreSQL integration tests, a fresh migration, logical
+backup/restore, and a production build. Its Vercel development deployment passed all
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31500683969).
+No production promotion was performed as part of this task.
+
 ### WRITE-02 — Process Stripe events asynchronously
 
 Use leases, retry, backoff, dead-letter handling, replay, and the tested projection
 state machine.
 
+Status: `DONE`. Database write mode now acknowledges a verified Stripe event
+immediately after its durable inbox insert and schedules bounded processing after the
+response. The worker claims the existing row with an expiring lease, performs Stripe
+enrichment outside the projection transaction, and then commits the purchase/access
+projection, deterministic outbox jobs, and inbox completion atomically. Retryable
+failures use bounded backoff; exhausted and explicitly non-retryable failures become
+dead letters. Unsupported event types are completed as `skipped`, while supported
+charge events settle against the same canonical purchase projection.
+
+The immediate after-response run is supplemented by recovery from successful payment
+status polling, the existing daily maintenance schedule, and an explicit bounded
+operator command. Failed/dead-letter rows can be replayed without replacing immutable
+provider evidence or resetting attempt counters. `DB_PAYMENT_EVENTS_MODE` and
+`DB_SIDE_EFFECTS_MODE` must both be `database`; a mixed configuration fails closed and
+the unset/default configuration preserves the synchronous legacy path. Enabling these
+flags remains an explicit `CUT-03` operation, not part of this implementation task.
+
 ### WRITE-03 — Deliver side effects through the outbox
 
 Use provider idempotency for email and Telegram delivery and persist final delivery
 state.
+
+Status: `DONE`. A successful purchase projection now creates versioned email,
+Telegram-alert, and transitional `SuccessfulCustomers` export jobs in the same
+transaction. Workers claim only those versioned jobs, load their immutable Stripe
+event and canonical database payment record, and persist `sent`, `skipped`, retry, or
+dead-letter state. Purchase email retains its stable Resend idempotency key. The
+Sheets export is an idempotent upsert by payment-intent ID and does not mirror delivery
+state back into the job it is currently executing.
+
+Telegram Bot API does not accept a provider idempotency key for `sendMessage`.
+Consequently the worker makes one provider attempt per claim: configuration failures
+remain retryable, but an uncertain send response is dead-lettered for deliberate
+operator review instead of risking a duplicate visible alert. Test-mode notification
+suppression, recipient rules, access preparation, invoice behavior, and all existing
+user-visible journeys remain unchanged.
+
+The exact implementation revision `799fd54` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31504924679)
+with 59 unit tests, 37 PostgreSQL integration tests, a fresh PostgreSQL 17 migration,
+logical backup/restore, and a production build. Its Vercel development deployment
+passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31504988260).
+The default legacy runtime and all production flags remain unchanged; actual domain
+enablement is reserved for `CUT-03`.
 
 ### WRITE-04 — Move Telegram access writes to PostgreSQL only
 
@@ -750,26 +814,140 @@ their synchronous mirrors. Preserve the already database-native Online Group acc
 persistence and do not change the bot, renewal verification, identity reuse, or other
 user flows.
 
+Status: `DONE`. Timed channel access and legacy bot-start access now use an
+explicit persistence boundary. With `DB_TELEGRAM_ACCESS_MODE=database`, token,
+binding, entitlement, identity-reuse, membership, and revocation reads and writes go
+directly to PostgreSQL; no write calls the Google Sheets facade or mutates the generic
+flattened payment aggregate. The default and `shadow` modes retain the existing
+database-first synchronous legacy mirror until the controlled `CUT-03` switch.
+
+The DB command changes only the primary access entitlement and access-owned token or
+binding rows. Binding writes use a PostgreSQL advisory transaction lock, including the
+legacy `chat_id IS NULL` bot binding, so same-user retries and concurrent writers keep
+one binding. Tests preserve start-token activation, same-user replay, timed access
+starting on actual join, join/leave state, and immutable purchase money/outcome while
+Google credentials are absent. Online Group access remains on its existing DB-native
+implementation. Its renewal-only Telegram verification and membership checks are not
+reused by ordinary purchases. Enabling the flag remains a `CUT-03` operation.
+
+The exact implementation revision `7b53f36` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31689006275)
+with 62 unit tests, 39 PostgreSQL integration tests, a fresh PostgreSQL 17 migration,
+logical backup/restore, and a production build. Its Vercel development deployment
+passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31689063273).
+The default legacy runtime and all production flags remain unchanged; actual domain
+enablement is reserved for `CUT-03`.
+
 ### WRITE-05 — Move remaining admin invite writes to PostgreSQL only
 
 The catalog is already DB-authoritative after `SAFE-07`. Replace the remaining admin
 invite writes to flattened payments and `SuccessfulCustomers` with domain commands and
 an optional outbox export, preserving existing workflows and commercial semantics.
 
+Status: `DONE`. Both admin invite POST routes now use one explicit grant
+persistence boundary. With `DB_BUSINESS_OPERATIONS_MODE=database`, a purpose-specific
+command validates the active PostgreSQL catalog selection and atomically creates the
+zero-value `admin_offer_link` purchase, primary entitlement, and at most one versioned
+`successful_customer_export` outbox job. Concurrent retries are serialized by a
+transaction advisory lock and conflicting reuse of a synthetic payment ID fails
+closed. The technical grant retains `succeeded_at IS NULL`, so it remains outside
+commercial sales totals.
+
+The default and `shadow` modes preserve the existing synchronous Sheets mirror.
+`DB_SHEETS_EXPORT_MODE=database` independently suppresses the transitional export;
+until then export failure is asynchronous and cannot fail grant creation. Ordinary
+admin links require the Telegram DB mode before this flag is enabled, while Online
+Group continues through its already DB-native access implementation. GET history is
+intentionally unchanged until `READ-05`.
+
+The exact implementation revision `a8bdfd4` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31694939855)
+with 66 unit tests, 41 PostgreSQL integration tests, a fresh PostgreSQL 17 migration,
+logical backup/restore, and a production build. Its Vercel development deployment
+passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31694981774).
+The default legacy runtime and all production flags remain unchanged; actual domain
+enablement is reserved for `CUT-03` after the dependent READ cutovers.
+
 ### WRITE-06 — Move invoices, reports, and campaigns to PostgreSQL jobs
 
 Allocate invoices atomically and deliver reports and campaigns through durable claims
 and idempotent jobs.
+
+Status: `DONE`. Explicit database mode now routes through the atomic invoice allocator
+and purpose-specific report/campaign repositories.
+Reports and each campaign recipient use versioned outbox jobs, expiring claims,
+retry/dead-letter handling, and stable Resend idempotency keys; the existing admin
+requests still wait for their bounded attempt, while daily maintenance and an
+operator command recover unfinished jobs. Expand migration `0016` adds the campaign
+`sending` state required to coordinate exclusion against delivery without provider I/O
+inside a transaction. The default legacy/shadow runtime remains unchanged.
+
+The exact implementation revision `bc9b4d5` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31696784460)
+with 69 unit tests, 45 PostgreSQL integration tests, a fresh PostgreSQL 17 migration,
+logical backup/restore, and a production build. Its Vercel development deployment
+passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31696847498).
+The controlled development
+[expand migration](https://github.com/all1son4/dance-course-fe/actions/runs/31696975280)
+applied `0016`, after which all 32 invariants passed and the inbox/outbox had no ready,
+stale, or dead-letter jobs. Production flags remain unchanged; actual domain
+enablement is reserved for `CUT-03` after the dependent READ cutovers.
 
 ### WRITE-07 — Make Sheets a one-way optional export
 
 Export only non-secret projections asynchronously. Export failure must not affect any
 user request.
 
+Status: `DONE`. The only database-mode runtime write to Sheets is now the isolated
+[`Sheets export outbox`](../../src/lib/sheets-export-outbox.ts). It claims the existing
+versioned `successful_customer_export` job independently from Stripe delivery, loads
+the canonical PostgreSQL purchase projection, and crosses the provider boundary
+through an explicit eleven-field allowlist. Raw Stripe payloads, outbox metadata,
+credentials, Telegram access tokens, invite links, and membership identity never
+enter the export DTO. The projection contains the same customer contact fields the
+operator already receives in `SuccessfulCustomers`; they are not written to logs or
+queue payloads.
+
+Unset, `legacy`, and `shadow` export modes preserve the optional transitional export.
+`DB_SHEETS_EXPORT_MODE=database` prevents new jobs in both Stripe and admin-grant
+commands and marks an already queued versioned export `skipped` without loading its
+customer projection or calling Google. Provider failure changes only the export job
+to retry/dead-letter state. Stripe purchases receive an immediate bounded
+after-response attempt, while daily maintenance recovers exports independently of
+Stripe mode and credentials. The operational export-lag counter includes only
+versioned claimable jobs, not historical legacy markers.
+
+The exact implementation revision `283a363` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31698803709)
+with 71 unit tests, 47 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. Its Vercel development
+deployment passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31698847588).
+A post-deployment development audit passed all 32 invariants and reported zero ready,
+working, retry, stale, or dead-letter inbox/outbox jobs and zero waiting versioned
+Sheets exports. No schema or production flag changed.
+
 ### Gate G4
 
-Blocking the Google Sheets API in staging does not break checkout, Stripe webhooks,
-Telegram access, email, reports, or admin operations.
+In database write modes, blocking the Google Sheets API must not break checkout,
+Stripe webhooks, Telegram access, email, reports, campaigns, or admin write operations.
+Sheets-backed read views remain explicitly in `READ-02` through `READ-06` and are
+verified at Gate G5, so this write-side gate does not claim that Google credentials can
+already be removed from the whole runtime.
+
+Status: `PASSED`. The provider-block PostgreSQL test completes the verified Stripe
+inbox and canonical succeeded purchase, finalizes email and Telegram jobs, and leaves
+only the simulated blocked export in retry. Separate credential-free database-mode
+integration tests cover Telegram persistence, admin grants, invoices, reports, and
+campaigns; the database-authoritative checkout is already covered by its fail-closed
+catalog tests. `DB_SHEETS_EXPORT_MODE=database` is tested to enqueue no export and to
+skip an existing job without a Google call. The exact tree also passed the deployed
+Vercel critical journeys and the clean development database checks recorded above.
+The remaining runtime Google imports were re-inventoried as legacy/read boundaries for
+the next phase.
 
 ## Phase READ: PostgreSQL-only reads
 
@@ -936,3 +1114,11 @@ Status: `TODO`
 | 2026-08-11 | DATA-03                     | `DONE`       | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass  |
 | 2026-08-11 | DATA-04                     | `DONE`       | Every production/backfill conflict classified; no data write  |
 | 2026-08-11 | Gate G3                     | `PASSED`     | Stable finance/access/invoice/replay evidence; 32 audits pass |
+| 2026-08-11 | WRITE-01                    | `DONE`       | Pre-ack inbox gate; CI, PG17 and deployed dev smoke pass      |
+| 2026-08-11 | WRITE-02 implementation     | `DONE`       | Async inbox worker; CI, PG17 and deployed dev smoke pass      |
+| 2026-08-11 | WRITE-03 implementation     | `DONE`       | Durable delivery; CI, PG17 and deployed dev smoke pass        |
+| 2026-08-13 | WRITE-04 implementation     | `DONE`       | DB-only path; CI, PG17 and deployed dev smoke pass            |
+| 2026-08-13 | WRITE-05 implementation     | `DONE`       | Atomic grants; CI, PG17 and deployed dev smoke pass           |
+| 2026-08-13 | WRITE-06 implementation     | `DONE`       | Durable jobs; CI, PG17, dev migration and smoke pass          |
+| 2026-08-13 | WRITE-07 implementation     | `DONE`       | Isolated allowlisted export; blocked-provider tests pass      |
+| 2026-08-13 | Gate G4                     | `PASSED`     | DB write paths survive blocked Sheets; dev queues clean       |

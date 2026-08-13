@@ -413,3 +413,95 @@ export const sendPurchaseSuccessEmail = async ({
   pendingPurchaseEmailSyncs.set(paymentIntentId, emailSyncPromise);
   await emailSyncPromise;
 };
+
+export const deliverPurchaseSuccessEmailFromOutbox = async ({
+  event,
+  idempotencyKey,
+  paymentRecord,
+  stripe,
+}: {
+  event: Stripe.Event;
+  idempotencyKey: string;
+  paymentRecord: PurchasePaymentRecord;
+  stripe: Stripe;
+}): Promise<{ externalMessageId?: string; skipped?: boolean }> => {
+  if (
+    paymentRecord.outcome !== "succeeded" ||
+    !shouldSendPurchaseSideEffectForEnvironment(event)
+  ) {
+    return { skipped: true };
+  }
+
+  if (!isResendConfigured()) {
+    throw new Error("missing_resend_api_key");
+  }
+
+  const paymentIntent = await getPurchaseSideEffectPaymentIntent({ event, stripe });
+
+  if (!paymentIntent) {
+    throw new Error("purchase_email_payment_intent_missing");
+  }
+
+  const checkoutLocale = getResolvedCheckoutLocale(
+    paymentRecord.checkout_locale || paymentIntent.metadata.checkout_locale,
+  );
+  const localizedOfferMetadata = getLocalizedOfferMetadataByOfferId(
+    paymentRecord.offer_id,
+    checkoutLocale,
+  );
+  const access = await preparePurchaseEmailAccess(paymentRecord);
+  const accessFailure = getPurchaseEmailAccessFailure(access);
+
+  if (accessFailure) {
+    throw new Error(accessFailure);
+  }
+
+  const receipt = await getReceiptData(stripe, paymentIntent);
+  const recipientEmail = resolvePurchaseEmailRecipient({
+    paymentIntent,
+    paymentRecord,
+    receipt,
+  });
+
+  if (!recipientEmail) {
+    return { skipped: true };
+  }
+
+  const content = buildPreparedPurchaseSuccessEmail({
+    checkoutLocale,
+    localizedOfferMetadata,
+    onlineGroupAccess: access.onlineGroupAccess,
+    paymentIntent,
+    paymentRecord,
+    receipt,
+    telegramAccessLink: access.telegramAccessLink,
+  });
+  const invoiceIssuedAt = new Date(event.created * 1000);
+  const invoicedPaymentRecord = await ensureInvoiceNumberForPayment({
+    issuedAt: invoiceIssuedAt,
+    paymentRecord,
+  });
+  const invoiceAttachment = await buildPurchaseInvoiceAttachment({
+    issuedAt: invoiceIssuedAt,
+    paymentRecord: invoicedPaymentRecord,
+  });
+
+  try {
+    const { emailId } = await sendResendEmail({
+      attachments: [invoiceAttachment],
+      html: content.html,
+      idempotencyKey,
+      subject: content.subject,
+      text: content.text,
+      to: recipientEmail,
+    });
+
+    return { externalMessageId: emailId };
+  } catch (error) {
+    if (isExpectedResendRestrictionError(error)) {
+      return { skipped: true };
+    }
+
+    throw error;
+  }
+};

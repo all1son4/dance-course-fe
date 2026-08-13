@@ -1,9 +1,18 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 
 import { and, asc, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
 
+import {
+  findMonthlyReportRunInDatabase,
+  recordMonthlyReportRunInDatabase,
+} from "@/db/business-operation-jobs";
 import { getDatabase } from "@/db/client";
+import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import { invoices, purchases, stripeEvents } from "@/db/schema";
+import {
+  enqueueMonthlyReportDelivery,
+  processBusinessOperationOutboxJob,
+} from "@/lib/business-operation-outbox";
 import { escapeSpreadsheetCsvCell } from "@/lib/csv";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
@@ -66,6 +75,15 @@ type MonthlySalesReportSaleRecord = {
 type ExistingMonthlySalesReportRun = NonNullable<
   Awaited<ReturnType<typeof findMonthlySalesReportRunByKey>>
 >;
+
+export const getMonthlySalesReportRuntime = (
+  environment: Readonly<Record<string, string | undefined>> = process.env,
+) =>
+  getDomainPersistenceMode("businessOperations", environment) === "database"
+    ? ("database" as const)
+    : ("legacy" as const);
+
+const usesDatabaseJobs = () => getMonthlySalesReportRuntime() === "database";
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
 
@@ -435,6 +453,60 @@ const buildMonthlySalesReportRunRecord = ({
   row_count: String(rowCount),
 });
 
+const mapMonthlyReportRunFromDatabase = (
+  run: NonNullable<Awaited<ReturnType<typeof findMonthlyReportRunInDatabase>>>,
+): MonthlySalesReportRunSheetRecord => ({
+  csv_sha256: run.csvSha256 ?? "",
+  delivered_at_utc: run.deliveredAtUtc?.toISOString() ?? "",
+  delivered_to: run.deliveredTo ?? "",
+  delivery_status: run.deliveryStatus,
+  generated_at_utc: run.generatedAtUtc.toISOString(),
+  period_end_utc: run.periodEndUtc.toISOString(),
+  period_start_utc: run.periodStartUtc.toISOString(),
+  report_family: run.reportFamily,
+  report_key: run.reportKey,
+  row_count: String(run.rowCount),
+});
+
+const findMonthlySalesReportRun = async (reportKey: string) => {
+  if (!usesDatabaseJobs()) {
+    return findMonthlySalesReportRunByKey(reportKey);
+  }
+
+  const run = await findMonthlyReportRunInDatabase(reportKey);
+
+  return run ? mapMonthlyReportRunFromDatabase(run) : null;
+};
+
+const recordMonthlySalesReportRun = async (record: MonthlySalesReportRunSheetRecord) => {
+  if (!usesDatabaseJobs()) {
+    return upsertMonthlySalesReportRun(record);
+  }
+
+  const deliveryStatus = record.delivery_status;
+
+  if (
+    deliveryStatus !== "failed" &&
+    deliveryStatus !== "sent" &&
+    deliveryStatus !== "skipped"
+  ) {
+    throw new Error("monthly_sales_report_delivery_status_invalid");
+  }
+
+  return recordMonthlyReportRunInDatabase({
+    csvSha256: record.csv_sha256,
+    deliveredAtUtc: record.delivered_at_utc ? new Date(record.delivered_at_utc) : null,
+    deliveredTo: record.delivered_to,
+    deliveryStatus,
+    generatedAtUtc: new Date(record.generated_at_utc),
+    periodEndUtc: new Date(record.period_end_utc),
+    periodStartUtc: new Date(record.period_start_utc),
+    reportFamily: record.report_family,
+    reportKey: record.report_key,
+    rowCount: Number.parseInt(record.row_count, 10) || 0,
+  });
+};
+
 const generateMonthlySalesReportContent = (
   saleRecords: MonthlySalesReportSaleRecord[],
 ) => {
@@ -699,7 +771,7 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
   referenceDate: Date;
   reportRecipient: string;
 }) => {
-  const existingRun = await findMonthlySalesReportRunByKey(period.key);
+  const existingRun = await findMonthlySalesReportRun(period.key);
 
   if (!force && existingRun?.delivery_status === "sent") {
     return buildAlreadyDeliveredMonthlySalesReportResult({
@@ -716,10 +788,85 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
   const { csv, rowCount, sha256 } = generateMonthlySalesReportContent(saleRecords);
 
   if (rowCount === 0) {
+    if (usesDatabaseJobs()) {
+      await recordMonthlySalesReportRun(
+        buildMonthlySalesReportRunRecord({
+          csvSha256: sha256,
+          deliveredAtUtc: "",
+          deliveredTo: reportRecipient,
+          endUtcIso: period.endUtcIso,
+          generatedAtUtc,
+          rowCount,
+          startUtcIso: period.startUtcIso,
+          status: "skipped",
+        }),
+      );
+    }
+
     return buildEmptyMonthlySalesReportResult({
       csv,
       generatedAtUtc,
       period,
+      reportRecipient,
+      rowCount,
+      sha256,
+    });
+  }
+
+  if (usesDatabaseJobs()) {
+    const { attachments, html, subject, text } = buildEmailPayload({
+      csv,
+      endUtcIso: period.endUtcIso,
+      month: period.month,
+      rowCount,
+      startUtcIso: period.startUtcIso,
+    });
+    const deduplicationKey = force
+      ? `monthly-report:${period.key}:force:${randomUUID()}`
+      : `monthly-report:${period.key}:${sha256}`;
+
+    await enqueueMonthlyReportDelivery({
+      deduplicationKey,
+      email: {
+        attachments,
+        html,
+        subject,
+        text,
+        to: reportRecipient,
+      },
+      force,
+      report: {
+        csvSha256: sha256,
+        deliveredAtUtc: referenceDate.toISOString(),
+        deliveredTo: reportRecipient,
+        generatedAtUtc,
+        periodEndUtc: period.endUtcIso,
+        periodStartUtc: period.startUtcIso,
+        reportFamily: MONTHLY_SALES_REPORT_FAMILY,
+        reportKey: period.key,
+        rowCount,
+      },
+    });
+
+    const delivery = await processBusinessOperationOutboxJob(deduplicationKey);
+
+    if (delivery.status === "retry" || delivery.status === "dead_letter") {
+      throw delivery.error;
+    }
+
+    if (delivery.status === "empty") {
+      const completedRun = await findMonthlyReportRunInDatabase(period.key);
+
+      if (completedRun?.deliveryStatus !== "sent") {
+        throw new Error("monthly_sales_report_delivery_in_progress");
+      }
+    }
+
+    return buildSentMonthlySalesReportResult({
+      csv,
+      generatedAtUtc,
+      period,
+      referenceDate,
       reportRecipient,
       rowCount,
       sha256,
@@ -743,7 +890,7 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
       to: reportRecipient,
     });
 
-    await upsertMonthlySalesReportRun(
+    await recordMonthlySalesReportRun(
       buildMonthlySalesReportRunRecord({
         csvSha256: sha256,
         deliveredAtUtc: referenceDate.toISOString(),
@@ -766,7 +913,7 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
       sha256,
     });
   } catch (error) {
-    await upsertMonthlySalesReportRun(
+    await recordMonthlySalesReportRun(
       buildMonthlySalesReportRunRecord({
         csvSha256: sha256,
         deliveredAtUtc: "",
