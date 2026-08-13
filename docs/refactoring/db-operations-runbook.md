@@ -120,9 +120,17 @@ npm run db:business-jobs:run
 Optional `DB_BUSINESS_JOBS_LIMIT` is capped at 100. Production requires both values to
 name `production`. Output contains aggregate counts only.
 
-The export job is enabled while `DB_SHEETS_EXPORT_MODE` is unset or `shadow`. Setting
-it to `database` stops creating new Sheet export jobs and is reserved for the later
-export-retirement step. Do not use that value as an admin-write cutover switch.
+The optional one-way export job is enabled while `DB_SHEETS_EXPORT_MODE` is unset,
+`legacy`, or `shadow`. It exports only the allowlisted `SuccessfulCustomers`
+projection; no provider payload, credential, access token, invite link, or raw outbox
+payload is sent to Sheets. A Google failure changes only that durable job to retry or
+dead-letter state and cannot change the purchase, access state, webhook result, or
+admin response. Daily maintenance recovers this queue independently from Stripe.
+
+Setting the mode to `database` stops creating new Sheet export jobs. An already queued
+versioned export is marked `skipped` without loading customer data or calling Google.
+This value is reserved for the later export-retirement step; do not use it as an
+admin-write cutover switch.
 
 At `CUT-03`, verify one ordinary and one Online Group admin grant, one invoice, one
 report, one signup plus broadcast, their views after the corresponding READ cutover,
@@ -175,8 +183,10 @@ old worker revision is still active, then inspect application logs by the row ID
 
 Use `npm run db:baseline:sheets` and `npm run db:compare:sheets` for detailed controlled
 reconciliation. The operational command only reports safe aggregate warning signals.
-Until `WRITE-07` is complete, a Sheets export failure is investigated but must not be
-allowed to change payment or access state.
+`projection.waitingSheetsExports` counts only versioned jobs that the exporter can
+claim; historical unversioned migration markers are deliberately excluded. Investigate
+a growing count as an optional-sink problem. It must never be repaired by changing
+payment or access state.
 
 After database write mode has accepted events, do not roll back to a release that does
 not understand the inbox/outbox workers. Disable only through a DB-compatible release

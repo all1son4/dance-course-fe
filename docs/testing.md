@@ -22,6 +22,12 @@ Provider fixtures live in `tests/fixtures`. They record Stripe method calls and 
 fixtures there instead of embedding live credentials or making tests depend on
 provider sandboxes.
 
+The optional Sheets exporter accepts an injected provider boundary in tests. The Gate
+G4 integration deliberately throws at that boundary and proves that the verified
+Stripe event, succeeded purchase, email, and Telegram jobs remain final while only the
+export becomes retryable. A separate test proves retired mode makes no Google call and
+does not load the customer projection.
+
 ## Database safety
 
 Integration tests require an explicit `TEST_DATABASE_URL`. The database name must

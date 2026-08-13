@@ -726,7 +726,7 @@ No runtime flag or user journey changed.
 
 ## Phase WRITE: PostgreSQL-only authoritative writes
 
-Status: `IN_PROGRESS`
+Status: `DONE`
 
 ### WRITE-01 — Persist Stripe events before acknowledging
 
@@ -901,10 +901,53 @@ enablement is reserved for `CUT-03` after the dependent READ cutovers.
 Export only non-secret projections asynchronously. Export failure must not affect any
 user request.
 
+Status: `DONE`. The only database-mode runtime write to Sheets is now the isolated
+[`Sheets export outbox`](../../src/lib/sheets-export-outbox.ts). It claims the existing
+versioned `successful_customer_export` job independently from Stripe delivery, loads
+the canonical PostgreSQL purchase projection, and crosses the provider boundary
+through an explicit eleven-field allowlist. Raw Stripe payloads, outbox metadata,
+credentials, Telegram access tokens, invite links, and membership identity never
+enter the export DTO. The projection contains the same customer contact fields the
+operator already receives in `SuccessfulCustomers`; they are not written to logs or
+queue payloads.
+
+Unset, `legacy`, and `shadow` export modes preserve the optional transitional export.
+`DB_SHEETS_EXPORT_MODE=database` prevents new jobs in both Stripe and admin-grant
+commands and marks an already queued versioned export `skipped` without loading its
+customer projection or calling Google. Provider failure changes only the export job
+to retry/dead-letter state. Stripe purchases receive an immediate bounded
+after-response attempt, while daily maintenance recovers exports independently of
+Stripe mode and credentials. The operational export-lag counter includes only
+versioned claimable jobs, not historical legacy markers.
+
+The exact implementation revision `283a363` passed
+[Quality](https://github.com/all1son4/dance-course-fe/actions/runs/31698803709)
+with 71 unit tests, 47 PostgreSQL integration tests, all 17 migrations on fresh
+PostgreSQL 17, logical backup/restore, and a production build. Its Vercel development
+deployment passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/31698847588).
+A post-deployment development audit passed all 32 invariants and reported zero ready,
+working, retry, stale, or dead-letter inbox/outbox jobs and zero waiting versioned
+Sheets exports. No schema or production flag changed.
+
 ### Gate G4
 
-Blocking the Google Sheets API in staging does not break checkout, Stripe webhooks,
-Telegram access, email, reports, or admin operations.
+In database write modes, blocking the Google Sheets API must not break checkout,
+Stripe webhooks, Telegram access, email, reports, campaigns, or admin write operations.
+Sheets-backed read views remain explicitly in `READ-02` through `READ-06` and are
+verified at Gate G5, so this write-side gate does not claim that Google credentials can
+already be removed from the whole runtime.
+
+Status: `PASSED`. The provider-block PostgreSQL test completes the verified Stripe
+inbox and canonical succeeded purchase, finalizes email and Telegram jobs, and leaves
+only the simulated blocked export in retry. Separate credential-free database-mode
+integration tests cover Telegram persistence, admin grants, invoices, reports, and
+campaigns; the database-authoritative checkout is already covered by its fail-closed
+catalog tests. `DB_SHEETS_EXPORT_MODE=database` is tested to enqueue no export and to
+skip an existing job without a Google call. The exact tree also passed the deployed
+Vercel critical journeys and the clean development database checks recorded above.
+The remaining runtime Google imports were re-inventoried as legacy/read boundaries for
+the next phase.
 
 ## Phase READ: PostgreSQL-only reads
 
@@ -1077,3 +1120,5 @@ Status: `TODO`
 | 2026-08-13 | WRITE-04 implementation     | `DONE`       | DB-only path; CI, PG17 and deployed dev smoke pass            |
 | 2026-08-13 | WRITE-05 implementation     | `DONE`       | Atomic grants; CI, PG17 and deployed dev smoke pass           |
 | 2026-08-13 | WRITE-06 implementation     | `DONE`       | Durable jobs; CI, PG17, dev migration and smoke pass          |
+| 2026-08-13 | WRITE-07 implementation     | `DONE`       | Isolated allowlisted export; blocked-provider tests pass      |
+| 2026-08-13 | Gate G4                     | `PASSED`     | DB write paths survive blocked Sheets; dev queues clean       |
