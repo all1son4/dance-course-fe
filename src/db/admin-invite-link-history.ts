@@ -10,7 +10,19 @@ import {
   telegramAccessTokens,
 } from "./schema";
 
-const toIso = (value: Date | null) => value?.toISOString() ?? "";
+const toIso = (value: Date | string | null) => {
+  if (!value) {
+    return "";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (!Number.isFinite(date.getTime())) {
+    throw new Error("admin_invite_link_history_invalid_timestamp");
+  }
+
+  return date.toISOString();
+};
 
 const getQueryLimit = (limit: number | undefined) => {
   if (typeof limit !== "number" || !Number.isFinite(limit) || limit <= 0) {
@@ -34,13 +46,15 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
   }
 
   const database = getDatabase();
-  const createdAt = sql<Date>`COALESCE(
+  // postgres.js returns raw SQL timestamp expressions as strings, while direct
+  // timestamp columns are mapped to Date by Drizzle.
+  const createdAt = sql<string>`COALESCE(
     ${purchaseSideEffects.sentAt},
     ${purchases.firstSeenAt},
     ${purchases.updatedAt},
     ${telegramAccessTokens.createdAt}
   )`;
-  const tokenUsedAt = sql<Date | null>`COALESCE(
+  const tokenUsedAt = sql<string | null>`COALESCE(
     ${accessEntitlements.startsAt},
     ${telegramAccessTokens.usedAt}
   )`;
