@@ -108,6 +108,7 @@ export const readOperationalDatabaseStatus = async () => {
             SELECT count(*)::int
             FROM purchase_side_effects
             WHERE kind IN ('successful_customer_export', 'google_sheets_export')
+              AND payload @> '{"_outboxVersion":1}'::jsonb
               AND status NOT IN ('sent', 'skipped')
           ) AS "waitingSheetsExports"
       `,
