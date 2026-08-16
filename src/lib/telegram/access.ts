@@ -19,7 +19,11 @@ import {
   upsertTelegramAccessTokenRecord,
   upsertTelegramUserBindingRecord,
 } from "./access-persistence";
-import { banTelegramChatMember, createTelegramChatInviteLink } from "./bot-api";
+import {
+  banTelegramChatMember,
+  createTelegramChatInviteLink,
+  shouldIgnoreKickFailure,
+} from "./bot-api";
 import { buildTelegramBotStartLink, getTelegramChannelTargetByOfferId } from "./config";
 import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
 import {
@@ -267,11 +271,6 @@ const getEffectiveBindingAccessExpiresAt = ({
 
   return toUtcIso(new Date(boundAtTimestamp + accessDurationMs));
 };
-
-const shouldIgnoreKickFailure = (error: unknown) =>
-  error instanceof Error &&
-  (error.message.includes("USER_NOT_PARTICIPANT") ||
-    error.message.includes("user not found"));
 
 const getCachedAccessLink = ({
   chatId,
