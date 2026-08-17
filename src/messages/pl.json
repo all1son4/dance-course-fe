@@ -317,7 +317,7 @@
           "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
         },
         "startLabel": "Start kolejnego cyklu",
-        "startValue": "10 sierpnia",
+        "startValue": "Październik - listopad",
         "button": "Więcej o kursie"
       },
       "choreo": {
@@ -512,7 +512,7 @@
         "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
       },
       "startLabel": "Start kolejnej grupy",
-      "startDate": "10 sierpnia",
+      "startDate": "Październik - listopad",
       "priceLabel": "Cena dla nowych uczestników",
       "price": "220 PLN / 50 €",
       "renewalNote": "Uczestnicy obecnej grupy otrzymują specjalną cenę kontynuacji. Kontynuacja jest dostępna wyłącznie przez indywidualny link.",

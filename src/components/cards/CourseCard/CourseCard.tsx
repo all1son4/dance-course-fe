@@ -31,14 +31,16 @@ export default function CourseCard({
       </TitleBox>
       <ContentBox className="courseCardContentBox">
         <Content className="courseCardContent">{cardContent}</Content>
-        <Button
-          className="courseCardButton"
-          buttonText={buttonText}
-          width="200px"
-          href={buttonHref}
-          rel={buttonRel}
-          target={buttonTarget}
-        />
+        {buttonText && buttonHref && (
+          <Button
+            className="courseCardButton"
+            buttonText={buttonText}
+            width="200px"
+            href={buttonHref}
+            rel={buttonRel}
+            target={buttonTarget}
+          />
+        )}
       </ContentBox>
     </CardContainer>
   );
