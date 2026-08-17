@@ -16,6 +16,7 @@ import {
   banTelegramChatMember,
   createTelegramChatInviteLink,
   revokeTelegramChatInviteLink,
+  shouldIgnoreKickFailure,
   unbanTelegramChatMember,
 } from "./bot-api";
 import { getOnlineGroupIdentityReuseLookup } from "./identity-reuse-policy";
@@ -1221,6 +1222,8 @@ export const syncOnlineGroupMembership = async ({
 };
 
 export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
+  failedGroups: number;
+  processedGroups: number;
   revokedBindings: number;
   revokedGroups: number;
 }> => {
@@ -1247,6 +1250,9 @@ export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
     groups.set(key, [...(groups.get(key) ?? []), row]);
   }
 
+  let failedGroups = 0;
+  let processedGroups = 0;
+  let revokedBindings = 0;
   let revokedGroups = 0;
 
   for (const rows of groups.values()) {
@@ -1255,6 +1261,8 @@ export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
     if (!sample?.binding.chatId) {
       continue;
     }
+
+    processedGroups += 1;
 
     const [newerBinding] = await db
       .select()
@@ -1273,9 +1281,27 @@ export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
       .limit(1);
 
     if (!newerBinding) {
-      await kickUnexpectedMember(sample.binding.chatId, sample.binding.telegramUserId);
+      // One unreachable chat must not abort the whole run: an unrevoked group stays
+      // active and is retried next run, while every other group still gets processed.
+      try {
+        await kickUnexpectedMember(sample.binding.chatId, sample.binding.telegramUserId);
+      } catch (error) {
+        if (!shouldIgnoreKickFailure(error)) {
+          failedGroups += 1;
+          console.error("Failed to revoke expired Online Group access", {
+            chatId: sample.binding.chatId,
+            error,
+            telegramUserId: sample.binding.telegramUserId,
+          });
+
+          continue;
+        }
+      }
+
       revokedGroups += 1;
     }
+
+    revokedBindings += rows.length;
 
     await Promise.all(
       rows.map(async ({ binding, entitlement }) => {
@@ -1302,7 +1328,9 @@ export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
   }
 
   return {
-    revokedBindings: expiredRows.length,
+    failedGroups,
+    processedGroups,
+    revokedBindings,
     revokedGroups,
   };
 };

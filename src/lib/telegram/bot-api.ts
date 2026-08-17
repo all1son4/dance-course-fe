@@ -32,6 +32,13 @@ const isRetryableTelegramHttpError = (
 const isRetryableTelegramNetworkError = (error: unknown) =>
   error instanceof TypeError || isAbortError(error);
 
+// A member who already left the chat, or was never in it, cannot be kicked. Both
+// access subsystems treat that as a completed revocation rather than a failure.
+export const shouldIgnoreKickFailure = (error: unknown) =>
+  error instanceof Error &&
+  (error.message.includes("USER_NOT_PARTICIPANT") ||
+    error.message.includes("user not found"));
+
 const getRetryDelayMs = ({
   attempt,
   retryAfterSeconds,

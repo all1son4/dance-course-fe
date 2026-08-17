@@ -236,14 +236,11 @@ const handleChargeSettlementEvent = async ({
       throw error;
     }
 
-    return jsonNoStore({
-      databaseSync: {
-        status: "failed",
-      },
-      eventId: event.id,
-      received: true,
-      type: event.type,
-    });
+    // Ordinary ordering races are reported as statuses ("purchase_not_found",
+    // "pending_balance_transaction"), so reaching this catch means the sync itself
+    // failed. Fail closed like every other webhook path and let Stripe retry rather
+    // than acknowledging an event whose settlement columns were never written.
+    return createWebhookErrorResponse("stripe_webhook_sync_failed", 500);
   }
 };
 
