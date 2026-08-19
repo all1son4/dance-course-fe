@@ -11,38 +11,38 @@
     "keywords": "Anna Strok, Frame Up Strip, dance classes Warsaw, online dance course, offline dance classes, choreography tutorial, high heels dance",
     "pages": {
       "home": {
-        "title": "Anna Strok — Frame Up Strip Classes in Warsaw & Online",
-        "description": "Learn Frame Up Strip with professional dancer Anna Strok: online courses and regular training, plus offline classes and improvisation practice in Warsaw.",
+        "title": "Frame Up Strip Classes in Warsaw & Online",
+        "description": "Frame Up Strip with Anna Strok: online courses in Telegram with personal feedback and in-person classes in Warsaw. Start from zero or keep growing.",
         "ogImageAlt": "Anna Strok with students during a Frame Up Strip class",
         "keywords": "Anna Strok dance, Frame Up Strip Warsaw, online dance classes, offline dance classes Warsaw, high heels dance lessons"
       },
       "online": {
-        "title": "Online Frame Up Strip Courses",
-        "description": "Train Frame Up Strip online with Anna Strok in Telegram: a six-week Online Group with feedback, the First Touch beginner course and choreography tutorials.",
+        "title": "Online Frame Up Strip Courses in Telegram",
+        "description": "All of Anna Strok's online formats: the First Touch beginner course, Online Group with personal feedback and choreography tutorials. Train from any country.",
         "ogImageAlt": "Online Frame Up Strip courses by Anna Strok",
         "keywords": "online frame up course, first touch dance program, choreography tutorial online, telegram dance classes, Anna Strok online"
       },
       "firstTouch": {
-        "title": "First Touch — Frame Up Strip Beginner Course",
-        "description": "First Touch by Anna Strok: core Frame Up Strip technique, body control, emotion work, and your first choreography in one program.",
+        "title": "First Touch — Frame Up Strip for Beginners",
+        "description": "Frame Up Strip from scratch: technique, footwork, body control and emotion. In six weeks you learn your first choreography. Lesson access for four months.",
         "ogImageAlt": "First Touch beginner course by Anna Strok",
         "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
       },
       "onlineGroup": {
-        "title": "Online Group — 6-Week Frame Up Strip Training",
-        "description": "Join Anna Strok's six-week Online Group: weekly Frame Up Strip lessons, personal feedback, a private Telegram chat and optional Inspiration Hub access.",
+        "title": "Online Group — Regular Frame Up Strip Training",
+        "description": "Weekly Frame Up Strip lessons, assignments with personal feedback and a private Telegram chat. Train at home at your own pace and stay in touch.",
         "ogImageAlt": "Anna Strok regular online dance training group",
         "keywords": "online group anna strok, online dance training, frame up online, telegram dance course"
       },
       "choreo": {
-        "title": "Birthday Drop “Love me in the morning” Choreography Tutorial",
-        "description": "Birthday Drop by Anna Strok: the “Love me in the morning” choreography breakdown, a playlist, a moodboard and 34 questions. Lifetime access, pay from any country.",
-        "ogImageAlt": "Birthday Drop “Love me in the morning” by Anna Strok",
-        "keywords": "birthday drop, love me in the morning, choreography tutorial, still alive choreography, her lies choreography, choreography bundle, frame up dance tutorial, Anna Strok choreography"
+        "title": "Frame Up Strip Choreography Tutorials",
+        "description": "Step-by-step breakdowns of original choreographies: technique, delivery and musicality. Replay the lessons as often as you need to build the full routine.",
+        "ogImageAlt": "Anna Strok choreography tutorials",
+        "keywords": "choreography tutorial online, still alive dance, her lies dance, choreography bundle, frame up choreography, anna strok choreography"
       },
       "offline": {
-        "title": "Offline Frame Up Strip Classes in Warsaw",
-        "description": "Explore in-person Frame Up Strip training with Anna Strok in Warsaw, including Impro Room improvisation practice and private class enquiries.",
+        "title": "Frame Up Strip Classes in Warsaw",
+        "description": "Studio training with Anna Strok in Warsaw: Impro Room improvisation practice and private lessons. Hands-on corrections and work on your stage presence.",
         "ogImageAlt": "Offline Frame Up Strip classes in Warsaw",
         "keywords": "frame up strip warsaw, offline dance classes warsaw, high heels dance warsaw, trial dance class, women dance classes"
       },
@@ -57,6 +57,12 @@
         "description": "Cookie policy for Anna Strok website: what storage technologies are used, for what purposes, and how to manage consent.",
         "ogImageAlt": "Anna Strok cookie policy page",
         "keywords": "cookie policy anna strok, cookie consent settings, website cookies, analytics consent"
+      },
+      "birthdayDrop": {
+        "title": "Birthday Drop “Love me in the morning”",
+        "description": "The “Love me in the morning” choreography breakdown, a playlist, a moodboard and a 34-questions interview. Lifetime access, pay from any country.",
+        "ogImageAlt": "Birthday Drop “Love me in the morning” by Anna Strok",
+        "keywords": "birthday drop, love me in the morning, choreography tutorial, frame up dance tutorial, Anna Strok choreography"
       }
     }
   },
@@ -284,7 +290,8 @@
             "prefix": "Online Group",
             "highlight": "by Anna Strok"
           },
-          "3": "Choreography tutorials"
+          "3": "Choreography tutorials",
+          "4": "Birthday Drop"
         }
       }
     }
@@ -330,6 +337,17 @@
         "startValue": "Anytime",
         "salesLabel": "Availability",
         "salesValue": "Sales are temporarily closed",
+        "button": "Learn more"
+      },
+      "birthdayDrop": {
+        "title": "The Birthday Drop",
+        "description": {
+          "1": "I am turning 34, and I want to mark the day together with you.",
+          "2": "So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you.",
+          "3": "Access to all the materials stays yours <strong>forever</strong>."
+        },
+        "salesLabel": "Sales open until",
+        "salesValue": "7 September",
         "button": "Learn more"
       }
     },
@@ -404,7 +422,8 @@
             "prefix": "Online Group",
             "highlight": "by Anna Strok"
           },
-          "3": "Choreography tutorials"
+          "3": "Choreography tutorials",
+          "4": "Birthday Drop"
         }
       }
     }
@@ -565,7 +584,9 @@
         }
       }
     },
-    "about": { "title": "What to expect in the Online Group" },
+    "about": {
+      "title": "What to expect in the Online Group"
+    },
     "suggestions": {
       "1": {
         "title": "Regular training with me",
@@ -598,42 +619,6 @@
     }
   },
   "ChoreoPage": {
-    "birthday": {
-      "title": "Birthday Drop<br></br>“Love me in the morning”",
-      "description": "This year I am turning 34, and I want to mark the day with something more personal and creative. So I have put together a small collection of materials that reflect my path, my style and my love for dance — with a sincere wish to inspire you.",
-      "salesLabel": "Birthday Drop sales",
-      "salesValue": "Until 7 September",
-      "heroButton": "Birthday Drop",
-      "buyButton": "Buy for {price}",
-      "detailsButton": "Learn more",
-      "aboutTitle": "What awaits you in the Birthday Drop",
-      "suggestions": {
-        "video": {
-          "title": "Choreography breakdown “Love me in the morning”",
-          "text": "You get access to the expressive combination, its technique and delivery. Every movement is broken down step by step: you know exactly what you are doing, how and why."
-        },
-        "playlist": {
-          "title": "Birthday Playlist",
-          "text": "A selection of my own favourite tracks: music tied to me, to my style and to different periods of my work."
-        },
-        "questions": {
-          "title": "34 questions to my 34",
-          "text": "An interview-reflection about what I feel, what I have learned, what I have rethought and where I want to move next. I am still choosing the format — it may be an article or a video. Either way it will be honest, deep and real."
-        },
-        "moodboard": {
-          "title": "A moodboard for the choreography",
-          "text": "<p>Atmosphere, character, colour, style — everything that helps you feel the choreography before the very first step:</p><list><item>the overall energy and mood;</item><item>the colour palette;</item><item>clothes and shoes;</item><item>hair and make-up;</item><item>light and location;</item><item>several looks to choose from.</item></list>"
-        },
-        "access": {
-          "title": "Access to the materials — forever",
-          "text": "A comfortable format: you have time to go through everything, repeat it and make it yours at your own pace."
-        },
-        "telegram": {
-          "title": "Instant access through private Telegram chats",
-          "text": "No extra platforms — the whole drop lives in one place, right after the payment."
-        }
-      }
-    },
     "hero": {
       "title": "Video tutorials of my choreographies",
       "description": {
@@ -1057,8 +1042,45 @@
   },
   "BirthdayPopup": {
     "title": "Happy Birthday to me!",
-    "text": "I am turning 34, and I want to mark the day with something more personal and creative. So I have put together a small collection of materials that reflect my path, my style and my love for dance — with a sincere wish to inspire you.",
+    "text": "I am turning 34, and I want to mark the day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
     "cta": "Learn more",
     "close": "Close"
+  },
+  "BirthdayDropPage": {
+    "title": "Birthday Drop<br></br>“Love me in the morning”",
+    "description": "I am turning 34, and I want to mark the day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
+    "buyButton": "Buy for {price}",
+    "detailsButton": "Learn more",
+    "aboutTitle": "What awaits you in the Birthday Drop",
+    "suggestions": {
+      "video": {
+        "title": "Choreography breakdown “Love me in the morning”",
+        "text": "You get access to a tutorial for this choreography in two languages: Russian and English."
+      },
+      "playlist": {
+        "title": "Birthday Playlist",
+        "text": "A selection of my own favourite tracks: music tied to me, to my style and to different periods of my work."
+      },
+      "questions": {
+        "title": "34 questions to my 34",
+        "text": "An interview with me — a reflection on what I feel, what I have learned, what I have rethought and where I want to go next. Honest, deep and real."
+      },
+      "moodboard": {
+        "title": "A moodboard for the choreography",
+        "text": "<p>Atmosphere, character, colour, style — everything that helps you feel the choreography before the very first step:</p><list><item>the colour palette;</item><item>clothes and shoes;</item><item>hair and make-up;</item><item>light and location.</item></list>"
+      },
+      "access": {
+        "title": "Access to the materials — forever",
+        "text": "A comfortable format: you have time to go through everything, repeat it and make it yours at your own pace."
+      },
+      "telegram": {
+        "title": "Instant access through private Telegram chats",
+        "text": "No extra platforms — the whole drop lives in one place, right after the payment."
+      },
+      "payment": {
+        "title": "Pay from any country",
+        "text": "<p>You can pay by <strong>Visa / Mastercard</strong>, via <strong>BLIK</strong>, or with <strong>Google/Apple Pay</strong> from any country, including Belarus.</p><p>Available currencies: <strong>PLN</strong> and <strong>EUR</strong>. If your card is in another currency, your bank will automatically convert the amount.</p>"
+      }
+    }
   }
 }

@@ -11,38 +11,38 @@
     "keywords": "Anna Strok, Frame Up Strip, taniec Warszawa, kurs tańca online, zajęcia taneczne offline, tutorial choreografii, high heels dance",
     "pages": {
       "home": {
-        "title": "Kursy Frame Up Strip w Warszawie — online i offline",
-        "description": "Ucz się Frame Up Strip z Anną Strok: kursy i regularne treningi online oraz zajęcia stacjonarne i praktyka improwizacji w Warszawie.",
+        "title": "Frame Up Strip w Warszawie i online",
+        "description": "Frame Up Strip z Anną Strok: kursy online w Telegramie z indywidualnym feedbackiem i zajęcia stacjonarne w Warszawie. Zacznij od zera lub rozwijaj się dalej.",
         "ogImageAlt": "Anna Strok i uczestniczki podczas zajęć Frame Up Strip",
         "keywords": "Anna Strok taniec, Frame Up Strip Warszawa, kurs tańca online, zajęcia taneczne Warszawa, high heels dance"
       },
       "online": {
-        "title": "Kursy online Frame Up Strip",
-        "description": "Trenuj Frame Up Strip online z Anną Strok w Telegramie: dołącz do sześciotygodniowej Online Group z feedbackiem lub zacznij od kursu First Touch.",
+        "title": "Kursy Frame Up Strip online w Telegramie",
+        "description": "Wszystkie formaty online Anny Strok: kurs First Touch dla początkujących, Online Group z feedbackiem i samouczki choreografii. Trenuj z dowolnego kraju.",
         "ogImageAlt": "Kursy online Frame Up Strip prowadzone przez Annę Strok",
         "keywords": "kurs frame up online, first touch kurs, tutorial choreografii online, telegram kurs tańca, Anna Strok online"
       },
       "firstTouch": {
-        "title": "First Touch — kurs Frame Up Strip dla początkujących",
-        "description": "First Touch od Anny Strok: podstawy Frame Up Strip, technika, kontrola ciała, emocje i pierwsza choreografia w jednym kursie.",
+        "title": "First Touch — kurs dla początkujących",
+        "description": "Frame Up Strip od zera: technika, praca stóp, plastyka i emocje. W półtora miesiąca nauczysz się pierwszej choreografii. Dostęp do lekcji przez 4 miesiące.",
         "ogImageAlt": "Kurs First Touch dla początkujących",
         "keywords": "First Touch kurs, kurs tańca dla początkujących online, frame up strip podstawy, Anna Strok First Touch"
       },
       "onlineGroup": {
-        "title": "Online Group by Anna Strok — regularne treningi",
-        "description": "Sześciotygodniowa Online Group Anny Strok: cotygodniowe lekcje Frame Up Strip, zadania z indywidualnym feedbackiem, prywatny czat Telegram i opcjonalny Inspiration Hub.",
+        "title": "Online Group — regularne treningi online",
+        "description": "Cotygodniowe lekcje Frame Up Strip, zadania z indywidualnym feedbackiem i prywatny czat na Telegramie. Trenuj w domu we własnym tempie.",
         "ogImageAlt": "Grupa regularnych treningów online Anny Strok",
         "keywords": "online group anna strok, treningi tańca online, frame up online, taniec telegram"
       },
       "choreo": {
-        "title": "Birthday Drop „Love me in the morning” — tutorial choreografii",
-        "description": "Birthday Drop od Anny Strok: rozbiór choreografii „Love me in the morning”, playlista, moodboard i 34 pytania. Dostęp na zawsze, płatność z każdego kraju.",
-        "ogImageAlt": "Birthday Drop „Love me in the morning” od Anny Strok",
-        "keywords": "birthday drop, love me in the morning, tutorial choreografii online, still alive choreografia, her lies choreografia, bundle choreografii, frame up tutorial, Anna Strok choreografia"
+        "title": "Samouczki choreografii Frame Up Strip",
+        "description": "Krok po kroku rozbiory autorskich choreografii: technika, wyraz i muzykalność. Powtarzaj lekcje tyle razy, ile potrzebujesz, by złożyć cały układ.",
+        "ogImageAlt": "Samouczki choreograficzne Anny Strok",
+        "keywords": "samouczek choreografii online, still alive dance, her lies dance, pakiet choreografii, frame up choreography, anna strok choreography"
       },
       "offline": {
-        "title": "Zajęcia offline Frame Up Strip w Warszawie",
-        "description": "Treningi stacjonarne Frame Up Strip z Anną Strok w Warszawie: praktyka improwizacji w Impro Room i zapisy na zajęcia indywidualne.",
+        "title": "Zajęcia Frame Up Strip w Warszawie",
+        "description": "Treningi w studiu z Anną Strok w Warszawie: praktyka improwizacji w Impro Room i zajęcia indywidualne. Korekty na żywo i praca nad wyrazem scenicznym.",
         "ogImageAlt": "Zajęcia offline Frame Up Strip w Warszawie",
         "keywords": "frame up strip warszawa, zajęcia taneczne warszawa, high heels warszawa, lekcja próbna tańca"
       },
@@ -57,6 +57,12 @@
         "description": "Polityka cookies serwisu Anna Strok: jakie technologie przechowywania są używane, w jakim celu i jak zarządzać zgodą.",
         "ogImageAlt": "Polityka cookies Anna Strok",
         "keywords": "polityka cookies anna strok, zgoda na cookies, ustawienia cookies, pliki cookies serwisu"
+      },
+      "birthdayDrop": {
+        "title": "Birthday Drop „Love me in the morning”",
+        "description": "Rozbiór choreografii „Love me in the morning”, playlista, moodboard i wywiad „34 pytania”. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
+        "ogImageAlt": "Birthday Drop „Love me in the morning” od Anny Strok",
+        "keywords": "birthday drop, love me in the morning, tutorial choreografii online, frame up tutorial, Anna Strok choreografia"
       }
     }
   },
@@ -284,7 +290,8 @@
             "prefix": "Grupa online",
             "highlight": "by Anna Strok"
           },
-          "3": "Samouczki choreograficzne"
+          "3": "Samouczki choreograficzne",
+          "4": "Birthday Drop"
         }
       }
     }
@@ -330,6 +337,17 @@
         "startValue": "W dowolnym momencie",
         "salesLabel": "Dostępność",
         "salesValue": "Sprzedaż jest tymczasowo zamknięta",
+        "button": "Więcej o kursie"
+      },
+      "birthdayDrop": {
+        "title": "The Birthday Drop",
+        "description": {
+          "1": "Kończę 34 lata i chcę uczcić ten dzień razem z wami.",
+          "2": "Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów.",
+          "3": "Dostęp do wszystkich materiałów zostaje z wami <strong>na zawsze</strong>."
+        },
+        "salesLabel": "Sprzedaż otwarta do",
+        "salesValue": "7 września",
         "button": "Więcej o kursie"
       }
     },
@@ -404,7 +422,8 @@
             "prefix": "Grupa online",
             "highlight": "by Anna Strok"
           },
-          "3": "Samouczki choreograficzne"
+          "3": "Samouczki choreograficzne",
+          "4": "Birthday Drop"
         }
       }
     }
@@ -565,7 +584,9 @@
         }
       }
     },
-    "about": { "title": "Co czeka Cię w Online Group" },
+    "about": {
+      "title": "Co czeka Cię w Online Group"
+    },
     "suggestions": {
       "1": {
         "title": "Regularne treningi ze mną",
@@ -598,42 +619,6 @@
     }
   },
   "ChoreoPage": {
-    "birthday": {
-      "title": "Birthday Drop<br></br>„Love me in the morning”",
-      "description": "W tym roku kończę 34 lata i chcę uczcić ten dzień w sposób bardziej osobisty i twórczy. Dlatego przygotowałam niewielki zbiór materiałów, które odzwierciedlają moją drogę, mój styl i moją miłość do tańca — ze szczerym pragnieniem, by zainspirować.",
-      "salesLabel": "Sprzedaż Birthday Drop",
-      "salesValue": "Do 7 września",
-      "heroButton": "Birthday Drop",
-      "buyButton": "Kup za {price}",
-      "detailsButton": "Dowiedz się więcej",
-      "aboutTitle": "Co czeka Cię w Birthday Drop",
-      "suggestions": {
-        "video": {
-          "title": "Rozbiór choreografii „Love me in the morning”",
-          "text": "Otrzymujesz dostęp do wyrazistej kombinacji, jej techniki i podania. Każdy ruch jest rozłożony na czynniki pierwsze: dokładnie wiesz, co robisz, jak i po co."
-        },
-        "playlist": {
-          "title": "Birthday Playlist",
-          "text": "Wybór moich ulubionych utworów: muzyka związana ze mną, z moim stylem i różnymi okresami twórczości."
-        },
-        "questions": {
-          "title": "34 pytania do moich 34",
-          "text": "Wywiad-refleksja o tym, co czuję, czego się nauczyłam, co przemyślałam na nowo i dokąd chcę zmierzać dalej. Format jeszcze wybieram — to może być artykuł albo wideo. W każdym razie będzie szczerze, głęboko i naprawdę."
-        },
-        "moodboard": {
-          "title": "Moodboard do choreografii",
-          "text": "<p>Atmosfera, charakter, kolor, styl — wszystko, co pomaga poczuć choreografię jeszcze przed pierwszym krokiem:</p><list><item>ogólna energia i nastrój;</item><item>paleta kolorów;</item><item>ubranie i buty;</item><item>włosy i makijaż;</item><item>światło i lokacja;</item><item>kilka wariantów stylizacji.</item></list>"
-        },
-        "access": {
-          "title": "Dostęp do materiałów — na zawsze",
-          "text": "Wygodny format: zdążysz przejść, powtórzyć i utrwalić wszystko we własnym tempie."
-        },
-        "telegram": {
-          "title": "Natychmiastowe dołączenie przez zamknięte czaty na Telegramie",
-          "text": "Żadnych dodatkowych platform — cała nauka w jednym miejscu, od razu po opłaceniu."
-        }
-      }
-    },
     "hero": {
       "title": "Samouczki choreograficzne",
       "description": {
@@ -1057,8 +1042,45 @@
   },
   "BirthdayPopup": {
     "title": "Happy Birthday to me!",
-    "text": "Kończę 34 lata i chcę uczcić ten dzień w sposób bardziej osobisty i twórczy. Dlatego przygotowałam niewielki zbiór materiałów, które odzwierciedlają moją drogę, mój styl i moją miłość do tańca — ze szczerym pragnieniem, by zainspirować.",
+    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "cta": "Dowiedz się więcej",
     "close": "Zamknij"
+  },
+  "BirthdayDropPage": {
+    "title": "Birthday Drop<br></br>„Love me in the morning”",
+    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "buyButton": "Kup za {price}",
+    "detailsButton": "Dowiedz się więcej",
+    "aboutTitle": "Co czeka Cię w Birthday Drop",
+    "suggestions": {
+      "video": {
+        "title": "Rozbiór choreografii „Love me in the morning”",
+        "text": "Otrzymujesz dostęp do samouczka tej choreografii w dwóch językach: rosyjskim i angielskim."
+      },
+      "playlist": {
+        "title": "Birthday Playlist",
+        "text": "Wybór moich ulubionych utworów: muzyka związana ze mną, z moim stylem i różnymi okresami twórczości."
+      },
+      "questions": {
+        "title": "34 pytania do moich 34",
+        "text": "Wywiad ze mną — refleksja o tym, co czuję, czego się nauczyłam, co przemyślałam na nowo i dokąd chcę iść dalej. Szczerze, głęboko i naprawdę."
+      },
+      "moodboard": {
+        "title": "Moodboard do choreografii",
+        "text": "<p>Atmosfera, charakter, kolor, styl — wszystko, co pomaga poczuć choreografię jeszcze przed pierwszym krokiem:</p><list><item>paleta kolorów;</item><item>ubranie i buty;</item><item>włosy i makijaż;</item><item>światło i lokacja.</item></list>"
+      },
+      "access": {
+        "title": "Dostęp do materiałów — na zawsze",
+        "text": "Wygodny format: zdążysz przejść, powtórzyć i utrwalić wszystko we własnym tempie."
+      },
+      "telegram": {
+        "title": "Natychmiastowe dołączenie przez zamknięte czaty na Telegramie",
+        "text": "Żadnych dodatkowych platform — cała nauka w jednym miejscu, od razu po opłaceniu."
+      },
+      "payment": {
+        "title": "Płatność z dowolnego kraju",
+        "text": "<p>Możesz zapłacić kartą <strong>Visa / Mastercard</strong>, przez <strong>BLIK</strong> lub za pomocą <strong>Google/Apple Pay</strong> z dowolnego kraju, w tym z Białorusi.</p><p>Dostępne waluty: <strong>PLN</strong> i <strong>EUR</strong>. Jeśli Twoja karta jest w innej walucie, bank automatycznie przeliczy płatność.</p>"
+      }
+    }
   }
 }

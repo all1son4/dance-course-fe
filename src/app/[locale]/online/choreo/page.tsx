@@ -1,26 +1,30 @@
 import type { Metadata } from "next";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import Button from "@/components/common/Button";
+import { Contacts, TextContentCard } from "@/components";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import {
   buildBreadcrumbStructuredData,
   buildPageMetadata,
-  normalizedSiteUrl,
   seoTargetLocale,
 } from "@/lib/seo";
 
-import BirthdayDropSection from "./birthday-drop-section";
-import { BIRTHDAY_SECTION_ID } from "./choreo.constants";
+import { createRichText } from "../_shared/content";
 import {
-  ButtonBox,
-  Date,
+  AboutChoreoCards,
+  AboutChoreoSection,
+  AboutChoreoTitle,
+  SpecialWrapper,
+} from "../_shared/section.styles";
+import { getOnlineSuggestions } from "./constants";
+import {
+  ClosedIconBox,
+  ClosedSalesCard,
   DateBox,
   Description,
   DescriptionParagraph,
-  From,
   IconBox,
   ImageBox,
   InfoBoxGroup,
@@ -54,44 +58,18 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-// The Birthday Drop buy button follows the admin sales switch, so this page is
-// rendered per request instead of being prerendered with a stale answer baked in.
-export const dynamic = "force-dynamic";
-
 export default function ChoreoPage() {
-  const locale = useLocale();
   const t = useTranslations("ChoreoPage");
-
-  const birthdayDropStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    // t.markup keeps the message as a plain string: the title carries a line
-    // break tag, which plain t() refuses to render.
-    name: t
-      .markup("birthday.title", { br: () => " " })
-      .replace(/\s+/gu, " ")
-      .trim(),
-    description: t("birthday.description"),
-    category: "Dance choreography tutorial",
-    inLanguage: locale,
-    brand: {
-      "@type": "Brand",
-      name: "Anna Strok",
-    },
-    url: `${normalizedSiteUrl}/online/choreo`,
-  };
+  const onlineSuggestions = getOnlineSuggestions((key) => t(key), createRichText(t));
 
   return (
     <>
       <StructuredData
-        data={[
-          buildBreadcrumbStructuredData([
-            { name: "Home", path: "/" },
-            { name: "Online classes", path: "/online" },
-            { name: t("hero.title"), path: "/online/choreo" },
-          ]),
-          birthdayDropStructuredData,
-        ]}
+        data={buildBreadcrumbStructuredData([
+          { name: "Home", path: "/" },
+          { name: "Online classes", path: "/online" },
+          { name: t("hero.title"), path: "/online/choreo" },
+        ])}
       />
       <IntroductionSection>
         <TextBox>
@@ -102,20 +80,6 @@ export default function ChoreoPage() {
           </Description>
 
           <InfoBoxGroup>
-            <DateBox>
-              <From>{t("birthday.salesLabel")}</From>
-              <Date>{t("birthday.salesValue")}</Date>
-            </DateBox>
-
-            <ButtonBox>
-              <Button
-                buttonText={t("birthday.heroButton")}
-                href={`#${BIRTHDAY_SECTION_ID}`}
-              />
-            </ButtonBox>
-          </InfoBoxGroup>
-
-          {/* <InfoBoxGroup>
             <DateBox>
               <ClosedSalesCard>
                 <ClosedIconBox>
@@ -130,7 +94,7 @@ export default function ChoreoPage() {
                 <p>{t("hero.closedValue")}</p>
               </ClosedSalesCard>
             </DateBox>
-          </InfoBoxGroup> */}
+          </InfoBoxGroup>
         </TextBox>
 
         <MobileImagesBox>
@@ -174,15 +138,7 @@ export default function ChoreoPage() {
         </IconBox>
       </IntroductionSection>
 
-      <BirthdayDropSection />
-
-      {/*
-        Preserved: the about-and-contacts pair as this page looked before the
-        Birthday Drop took it over. Restoring it needs `getOnlineSuggestions`,
-        `TextContentCard`, `Contacts` and the AboutChoreo* / SpecialWrapper
-        styles back among the imports.
-      */}
-      {/* <SpecialWrapper>
+      <SpecialWrapper>
         <AboutChoreoSection>
           <AboutChoreoTitle>{t("about.title")}</AboutChoreoTitle>
           <AboutChoreoCards>
@@ -192,7 +148,7 @@ export default function ChoreoPage() {
           </AboutChoreoCards>
         </AboutChoreoSection>
         <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
-      </SpecialWrapper> */}
+      </SpecialWrapper>
     </>
   );
 
@@ -205,7 +161,9 @@ export default function ChoreoPage() {
    *
    * The catalogue itself already follows the admin sales switch: a breakdown
    * with sales off keeps its card and loses only the buy buttons, so restoring
-   * this block cannot reopen a closed product.
+   * this block cannot reopen a closed product. Because it reads that switch,
+   * restoring it also means bringing `export const dynamic = "force-dynamic"`
+   * back to this page - otherwise the answer is baked in at build time.
    */
   // <>
   //   <StructuredData data={choreographyProductsStructuredData} />

@@ -13,10 +13,10 @@ export const BIRTHDAY_POPUP_UPDATED_EVENT = "birthday-popup-updated";
 export const BIRTHDAY_POPUP_ENABLED = true;
 
 /** Where the call to action sends the visitor. */
-export const BIRTHDAY_POPUP_CTA_HREF = "/online/choreo#birthday-special-offer";
+export const BIRTHDAY_POPUP_CTA_HREF = "/online/birthday-drop#birthday-special-offer";
 
 /** Route part of the link, used to keep the popup off its own destination. */
-export const BIRTHDAY_POPUP_CTA_PATHNAME = "/online/choreo";
+export const BIRTHDAY_POPUP_CTA_PATHNAME = "/online/birthday-drop";
 
 /** Offers that count as "this campaign was bought". */
 const BIRTHDAY_OFFER_IDS: readonly string[] = [BIRTHDAY_DROP_OFFER_ID];

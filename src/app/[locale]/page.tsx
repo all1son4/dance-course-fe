@@ -262,6 +262,9 @@ export default function Home() {
                 <HighlightText>{t("courses.online.items.2.highlight")}</HighlightText>
               </li>
               <li>{t("courses.online.items.3")}</li>
+              <li>
+                <HighlightText>{t("courses.online.items.4")}</HighlightText>
+              </li>
             </CourseList>
           }
           buttonText={commonT("details")}

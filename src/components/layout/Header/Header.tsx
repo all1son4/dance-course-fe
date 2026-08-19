@@ -43,6 +43,7 @@ const PREFETCH_ROUTES = [
   "/online/first-touch",
   "/online/group",
   "/online/choreo",
+  "/online/birthday-drop",
 ] as const;
 
 type SupportedLocale = (typeof routing.locales)[number];

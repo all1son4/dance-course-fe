@@ -8,20 +8,20 @@ import { BIRTHDAY_DROP_PRODUCT_ID } from "@/constants/sellable-products";
 import { isProductSaleOpen } from "@/lib/sales-availability";
 import { Birthday34Badge } from "@/svg";
 
-import {
-  BIRTHDAY_ABOUT_SECTION_ID,
-  BIRTHDAY_DROP_VIDEO_SRC,
-  BIRTHDAY_SECTION_ID,
-} from "./choreo.constants";
-import {
-  createChoreoRichText,
-  getBirthdayDropCheckout,
-  getBirthdaySuggestions,
-} from "./constants";
+import { createRichText } from "../_shared/content";
 import {
   AboutChoreoCards,
   AboutChoreoSection,
   AboutChoreoTitle,
+  SpecialWrapper,
+} from "../_shared/section.styles";
+import {
+  BIRTHDAY_ABOUT_SECTION_ID,
+  BIRTHDAY_DROP_VIDEO_SRC,
+  BIRTHDAY_SECTION_ID,
+} from "./constants";
+import { getBirthdayDropCheckout, getBirthdaySuggestions } from "./constants";
+import {
   AbsoluteIconBox,
   BirthdayBlock,
   BirthdayContentButtons,
@@ -29,13 +29,12 @@ import {
   BirthdayTextContentDescription,
   BirthdayTextContentTitle,
   BirthdayVideoContent,
-  SpecialWrapper,
 } from "./page.styles";
 
 /** The offer itself, then what it includes, then contacts. */
 export default async function BirthdayDropSection() {
-  const t = await getTranslations("ChoreoPage");
-  const richText = createChoreoRichText(t);
+  const t = await getTranslations("BirthdayDropPage");
+  const richText = createRichText(t);
   const checkout = (await isProductSaleOpen(BIRTHDAY_DROP_PRODUCT_ID))
     ? getBirthdayDropCheckout()
     : null;
@@ -48,22 +47,20 @@ export default async function BirthdayDropSection() {
           <Birthday34Badge />
         </AbsoluteIconBox>
         <BirthdayTextContent>
-          <BirthdayTextContentTitle>
-            {richText("birthday.title")}
-          </BirthdayTextContentTitle>
+          <BirthdayTextContentTitle>{richText("title")}</BirthdayTextContentTitle>
           <BirthdayTextContentDescription>
-            {t("birthday.description")}
+            {t("description")}
           </BirthdayTextContentDescription>
           <BirthdayContentButtons>
             {checkout ? (
               <Button
-                buttonText={t("birthday.buyButton", { price: checkout.price })}
+                buttonText={t("buyButton", { price: checkout.price })}
                 href={checkout.href}
                 variant="white"
               />
             ) : null}
             <Button
-              buttonText={t("birthday.detailsButton")}
+              buttonText={t("detailsButton")}
               variant="ghost"
               width="180px"
               href={`#${BIRTHDAY_ABOUT_SECTION_ID}`}
@@ -81,7 +78,7 @@ export default async function BirthdayDropSection() {
       </BirthdayBlock>
 
       <AboutChoreoSection id={BIRTHDAY_ABOUT_SECTION_ID}>
-        <AboutChoreoTitle>{t("birthday.aboutTitle")}</AboutChoreoTitle>
+        <AboutChoreoTitle>{t("aboutTitle")}</AboutChoreoTitle>
         <AboutChoreoCards>
           {suggestions.map(({ id, ...suggestion }) => (
             <TextContentCard key={id} {...suggestion} />

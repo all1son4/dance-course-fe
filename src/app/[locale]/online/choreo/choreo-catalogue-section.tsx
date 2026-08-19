@@ -16,7 +16,10 @@ import { ChoreoSection } from "./page.styles";
  * would be read once at build time.
  */
 export default async function ChoreoCatalogueSection() {
-  const t = await getTranslations("ChoreoPage");
+  // Every string the cards need - product titles, offer labels, the bundle's
+  // heading - is catalogue copy, so the translator is bound to SellableProducts
+  // rather than to this page's own namespace.
+  const t = await getTranslations("SellableProducts");
   const choreos = getChoreos((key) => t(key), await getOpenSaleProductIds());
 
   return (

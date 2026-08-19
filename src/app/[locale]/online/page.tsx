@@ -14,6 +14,7 @@ import {
   seoTargetLocale,
 } from "@/lib/seo";
 
+import { createRichText } from "./_shared/content";
 import { getOnlineCoursesArray } from "./constants";
 import {
   ContactSection,
@@ -61,7 +62,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function Online() {
   const t = useTranslations("OnlinePage");
-  const onlineCoursesArray = getOnlineCoursesArray((key) => t(key));
+  const onlineCoursesArray = getOnlineCoursesArray((key) => t(key), createRichText(t));
   const onlineCoursesStructuredData = {
     "@context": "https://schema.org",
     "@type": "ItemList",
