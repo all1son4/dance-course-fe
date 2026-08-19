@@ -25,18 +25,33 @@ test("First Touch entry remains a lead dialog instead of direct checkout", async
   ).toBeVisible();
 });
 
-test("Online Group entry keeps both internal Standard and Plus checkout links", async ({
-  page,
-}) => {
+test("Online Group entry follows the authoritative sales switch", async ({ page }) => {
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
   const expectedOfferIds = product.offers
     .filter((offer) => offer.code === "standard" || offer.code === "library-access")
     .map((offer) => offer.id)
     .sort();
+  const catalogResponse = await page.request.get("/api/catalog/sellable-products");
+
+  expect(catalogResponse.ok()).toBe(true);
+
+  const catalog = (await catalogResponse.json()) as {
+    products: Array<{ id: string; salesEnabled: boolean }>;
+  };
+  const catalogProduct = catalog.products.find((item) => item.id === product.id);
+
+  expect(catalogProduct).toBeDefined();
 
   await page.goto("/online/group");
 
   const purchaseLinks = page.getByRole("link", { name: "Buy", exact: true });
+
+  if (!catalogProduct?.salesEnabled) {
+    await expect(purchaseLinks).toHaveCount(0);
+    await expect(page.locator('a[href*="/payment?"]')).toHaveCount(0);
+    return;
+  }
+
   await expect(purchaseLinks).toHaveCount(2);
 
   const checkoutContexts = await purchaseLinks.evaluateAll((links) =>
