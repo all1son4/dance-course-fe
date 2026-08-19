@@ -1173,16 +1173,35 @@ the READ phase is closed.
 
 ## Phase CUT: production cutover and observation
 
-Status: `TODO`
+Status: `IN_PROGRESS`
 
 ### CUT-01 — Deploy a DB-compatible rollback release
 
+Status: `DONE`
+
 The release must work without Sheets while still supporting the temporary exporter.
+
+Production revision `3b9efddd2fb04316923ae25d4f7972be4ab84db2` is the fixed
+DB-compatible rollback target. Its candidate passed Quality and preview journeys; the
+merge passed Vercel deployment and production critical journeys. It supports every
+PostgreSQL-only runtime mode and retains the isolated optional `SuccessfulCustomers`
+exporter. Exact evidence and rollback rules are recorded in the
+[`production cutover runbook`](./production-cutover-runbook.md).
 
 ### CUT-02 — Rehearse and prepare cutover
 
+Status: `DONE`
+
 Take backups, run final delta reconciliation, freeze unrelated changes, assign an
 operator, and prepare a written rollback checklist.
+
+A fresh encrypted production DB + Sheets snapshot was captured and restored into
+disposable PostgreSQL 17; two post-backup reconciliation captures were stable and all
+differences are classified; production invariants, report controls, and queues were
+reviewed; the freeze, operator, switch order, and rollback checklist are prepared. The
+owner created the provider-managed Neon snapshot
+`dance_course_prod/main/cut-02-2026-08-19`, retained without expiration. See the
+[`production cutover runbook`](./production-cutover-runbook.md).
 
 ### CUT-03 — Enable domain flags gradually
 
@@ -1329,3 +1348,5 @@ Status: `TODO`
 | 2026-08-13 | READ-05 implementation      | `DONE`       | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
 | 2026-08-13 | READ-06 implementation      | `DONE`       | Explicit sources; 105 unit, 48 PG17 and six journeys pass     |
 | 2026-08-13 | Gate G5                     | `PASSED`     | Stable audit, fail-closed, prod CI and six journeys pass      |
+| 2026-08-19 | CUT-01                      | `DONE`       | Fixed rollback release `3b9efdd`; prod CI/smoke green         |
+| 2026-08-19 | CUT-02                      | `DONE`       | Neon + encrypted restore evidence; stable delta; runbook      |
