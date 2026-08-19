@@ -5,9 +5,11 @@ import { glass } from "@/styles/mixins/glass";
 export const CardContainer = styled.div<{ $bgColor?: string }>`
   ${({ $bgColor }) =>
     glass({
+      frost: "static",
       variant: "surface",
       radius: "100px",
       bgParam: $bgColor ?? "rgba(255, 255, 255, 0.4)",
+      hoverEffect: false,
     })}
 
   min-width: 460px;

@@ -123,8 +123,9 @@ export default function Home() {
         <InteractiveBox>
           <InteractiveHint>{t("hero.hint")}</InteractiveHint>
           <ButtonsBox>
-            <Button buttonText={t("hero.buttons.online")} href="/online" />
-            <Button buttonText={t("hero.buttons.offline")} href="/offline" />
+            {/* Hero sits on the background photo, so these two get real frost. */}
+            <Button buttonText={t("hero.buttons.online")} href="/online" frost="live" />
+            <Button buttonText={t("hero.buttons.offline")} href="/offline" frost="live" />
           </ButtonsBox>
         </InteractiveBox>
       </MainTextBox>

@@ -35,6 +35,10 @@ export const products = pgTable(
     accessNoteKey: text("access_note_key"),
     defaultOfferExternalId: text("default_offer_external_id"),
     isActive: boolean("is_active").notNull().default(true),
+    // `isActive` says the product exists in the catalogue at all; `salesEnabled`
+    // says money may be taken for it. Closing sales keeps the product - and its
+    // prices - readable so the storefront can render "closed" instead of an error.
+    salesEnabled: boolean("sales_enabled").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

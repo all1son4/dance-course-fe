@@ -695,6 +695,7 @@ export const buildPurchaseAlertText = ({
   eventCreatedAtIso,
   eventId,
   eventType,
+  hasClosedSales,
   onlineGroupAccessStates,
   processedAtIso,
   paymentRecord,
@@ -702,6 +703,7 @@ export const buildPurchaseAlertText = ({
   eventCreatedAtIso: string;
   eventId: string;
   eventType: string;
+  hasClosedSales?: boolean;
   onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
   processedAtIso: string;
   paymentRecord: PaymentSheetRecord;
@@ -725,6 +727,15 @@ export const buildPurchaseAlertText = ({
   });
   const accessWorkflowLabel = getAccessWorkflowLabel(paymentRecord.access_workflow);
   const lines = [
+    // Sales were closed for this product when the payment settled: the buyer
+    // still gets access, this only makes sure the sale cannot pass unnoticed.
+    ...(hasClosedSales
+      ? [
+          "⚠️ <b>Продажи этого продукта выключены</b>",
+          "Оплата прошла уже после закрытия продаж. Доступ выдан — проверь покупку.",
+          "",
+        ]
+      : []),
     "🛒 <b>Новая покупка</b>",
     `<b>${escapeTelegramHtml(purchaseItem || "—")}</b>`,
     `💰 ${escapeTelegramHtml(amountLabel || "—")}`,

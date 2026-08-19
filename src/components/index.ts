@@ -12,6 +12,7 @@ import Footer from "./layout/Footer";
 import Header from "./layout/Header";
 import PageContainer from "./layout/PageContainer";
 import TopMenu from "./layout/TopMenu";
+import BirthdayPopup from "./other/BirthdayPopup";
 import Contacts from "./other/Contacts";
 import CurrencySwitch from "./other/CurrencySwitch";
 import FAQ from "./other/FAQ";
@@ -21,6 +22,7 @@ import StripePaymentTabs from "./other/StripePaymentTabs";
 import VideoPlayer from "./other/VideoPlayer";
 
 export {
+  BirthdayPopup,
   Button,
   Checkbox,
   ChoreoCard,

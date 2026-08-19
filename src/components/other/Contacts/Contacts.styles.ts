@@ -11,6 +11,7 @@ export const Container = styled.div<{ $bgColor?: string }>`
 
   ${({ $bgColor }) =>
     glass({
+      frost: "static",
       variant: "surface",
       radius: "100px",
       bgParam: $bgColor ?? "rgba(255, 255, 255, 0.5)",
@@ -28,7 +29,7 @@ export const Container = styled.div<{ $bgColor?: string }>`
   @media (max-width: 880px) {
     padding: 30px;
     gap: 40px;
-    border-radius: 40px !important;
+    --glass-radius: 40px;
   }
 
   @media (max-width: 680px) {

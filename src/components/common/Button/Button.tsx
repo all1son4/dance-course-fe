@@ -137,6 +137,7 @@ export default function Button<T extends ElementType = "button">({
   width = "100%",
   buttonText = "",
   size = "lg",
+  frost = "static",
   href = "",
   target = SELF_TARGET,
   isLoading = false,
@@ -235,6 +236,7 @@ export default function Button<T extends ElementType = "button">({
 
     return (
       <ButtonAnchorWrapper
+        $frost={frost}
         $size={size}
         $variant={variant}
         $width={width}
@@ -276,6 +278,7 @@ export default function Button<T extends ElementType = "button">({
 
     return (
       <ButtonLinkWrapper
+        $frost={frost}
         $size={size}
         $variant={variant}
         $width={width}
@@ -296,6 +299,7 @@ export default function Button<T extends ElementType = "button">({
 
   return (
     <StyledButton
+      $frost={frost}
       $variant={variant}
       $width={width}
       $size={size}

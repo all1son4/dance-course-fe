@@ -207,3 +207,106 @@ test("authorizes checkout only from active database commercial rows", async () =
     `;
   }
 });
+
+test("keeps a closed product sellable-shaped but flagged as closed", async () => {
+  const suffix = randomUUID().replaceAll("-", "");
+  const productExternalId = `prd_sales_switch_${suffix}`;
+  const offerExternalId = `off_sales_switch_${suffix}`;
+  const [product] = await client<{ id: string }[]>`
+    INSERT INTO products (
+      code,
+      external_product_id,
+      slug,
+      type,
+      title,
+      description,
+      description_keys,
+      default_offer_external_id,
+      is_active
+    ) VALUES (
+      'first-touch',
+      ${productExternalId},
+      ${`sales-switch-${suffix}`},
+      'course',
+      'Sales switch fixture',
+      '[]'::jsonb,
+      '[]'::jsonb,
+      ${offerExternalId},
+      true
+    )
+    RETURNING id
+  `;
+
+  assert.ok(product);
+
+  const [offer] = await client<{ id: string }[]>`
+    INSERT INTO product_offers (
+      external_offer_id,
+      product_id,
+      code,
+      label,
+      telegram_access_duration_days,
+      is_active,
+      sort_order
+    ) VALUES (
+      ${offerExternalId},
+      ${product.id},
+      'standard',
+      'Sales switch fixture',
+      30,
+      true,
+      0
+    )
+    RETURNING id
+  `;
+
+  assert.ok(offer);
+
+  await client`
+    INSERT INTO offer_prices (offer_id, currency, amount_minor, is_active)
+    VALUES
+      (${offer.id}, 'pln', 22000, true),
+      (${offer.id}, 'eur', 5000, true)
+  `;
+
+  try {
+    const openSelection = await getCheckoutSelectionFromDatabase({
+      currency: "pln",
+      offerId: offerExternalId,
+      productId: productExternalId,
+    });
+
+    assert.equal(openSelection?.product.salesEnabled, true);
+
+    await client`
+      UPDATE products
+      SET sales_enabled = false
+      WHERE id = ${product.id}
+    `;
+
+    // Closing sales must not hide the product: the storefront still needs its
+    // title and price to render a "closed" state instead of an error.
+    const closedCatalogProduct = (
+      await getSellableProductsWithDatabaseCommercialData()
+    ).find((productItem) => productItem.id === productExternalId);
+
+    assert.equal(closedCatalogProduct?.salesEnabled, false);
+    assert.equal(closedCatalogProduct?.offers[0]?.prices.pln, 220);
+
+    // The selection still resolves - the payment route is what refuses it, and
+    // it needs the price and offer to report a precise error.
+    const closedSelection = await getCheckoutSelectionFromDatabase({
+      currency: "pln",
+      offerId: offerExternalId,
+      productId: productExternalId,
+    });
+
+    assert.equal(closedSelection?.product.salesEnabled, false);
+    assert.equal(closedSelection?.amountMinor, 22000);
+  } finally {
+    await client`
+      DELETE FROM products
+      WHERE id = ${product.id}
+    `;
+  }
+});

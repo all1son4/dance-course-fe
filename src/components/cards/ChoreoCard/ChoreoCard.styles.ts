@@ -31,7 +31,9 @@ export const CardSurface = styled.div<CardSurfaceProps>`
   overflow: hidden;
 
   ${glass({
+    frost: "static",
     radius: "40px",
+    hoverEffect: false,
   })}
 
   ${({ $isSpecialOffer }) => $isSpecialOffer && specialOfferStyles}

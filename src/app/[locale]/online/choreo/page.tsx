@@ -1,33 +1,31 @@
 import type { Metadata } from "next";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import TextContentCard from "@/components/cards/TextContentCard";
+import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
-import Contacts from "@/components/other/Contacts";
 import {
   buildBreadcrumbStructuredData,
   buildPageMetadata,
+  normalizedSiteUrl,
   seoTargetLocale,
 } from "@/lib/seo";
 
-import { getOnlineSuggestions } from "./constants";
+import BirthdayDropSection from "./birthday-drop-section";
+import { BIRTHDAY_SECTION_ID } from "./choreo.constants";
 import {
-  AboutChoreoCards,
-  AboutChoreoSection,
-  AboutChoreoTitle,
-  ClosedIconBox,
-  ClosedSalesCard,
+  ButtonBox,
+  Date,
   DateBox,
   Description,
   DescriptionParagraph,
+  From,
   IconBox,
   ImageBox,
   InfoBoxGroup,
   IntroductionSection,
   MobileImagesBox,
-  SpecialWrapper,
   TextBox,
   Title,
 } from "./page.styles";
@@ -56,25 +54,44 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
+// The Birthday Drop buy button follows the admin sales switch, so this page is
+// rendered per request instead of being prerendered with a stale answer baked in.
+export const dynamic = "force-dynamic";
+
 export default function ChoreoPage() {
+  const locale = useLocale();
   const t = useTranslations("ChoreoPage");
-  const onlineSuggestions = getOnlineSuggestions(
-    (key) => t(key),
-    (key) =>
-      t.rich(key, {
-        p: (chunks) => <p>{chunks}</p>,
-        strong: (chunks) => <strong>{chunks}</strong>,
-      }),
-  ).slice(0, 5);
+
+  const birthdayDropStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    // t.markup keeps the message as a plain string: the title carries a line
+    // break tag, which plain t() refuses to render.
+    name: t
+      .markup("birthday.title", { br: () => " " })
+      .replace(/\s+/gu, " ")
+      .trim(),
+    description: t("birthday.description"),
+    category: "Dance choreography tutorial",
+    inLanguage: locale,
+    brand: {
+      "@type": "Brand",
+      name: "Anna Strok",
+    },
+    url: `${normalizedSiteUrl}/online/choreo`,
+  };
 
   return (
     <>
       <StructuredData
-        data={buildBreadcrumbStructuredData([
-          { name: "Home", path: "/" },
-          { name: "Online classes", path: "/online" },
-          { name: t("hero.title"), path: "/online/choreo" },
-        ])}
+        data={[
+          buildBreadcrumbStructuredData([
+            { name: "Home", path: "/" },
+            { name: "Online classes", path: "/online" },
+            { name: t("hero.title"), path: "/online/choreo" },
+          ]),
+          birthdayDropStructuredData,
+        ]}
       />
       <IntroductionSection>
         <TextBox>
@@ -83,7 +100,22 @@ export default function ChoreoPage() {
             <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
             <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
           </Description>
+
           <InfoBoxGroup>
+            <DateBox>
+              <From>{t("birthday.salesLabel")}</From>
+              <Date>{t("birthday.salesValue")}</Date>
+            </DateBox>
+
+            <ButtonBox>
+              <Button
+                buttonText={t("birthday.heroButton")}
+                href={`#${BIRTHDAY_SECTION_ID}`}
+              />
+            </ButtonBox>
+          </InfoBoxGroup>
+
+          {/* <InfoBoxGroup>
             <DateBox>
               <ClosedSalesCard>
                 <ClosedIconBox>
@@ -98,7 +130,7 @@ export default function ChoreoPage() {
                 <p>{t("hero.closedValue")}</p>
               </ClosedSalesCard>
             </DateBox>
-          </InfoBoxGroup>
+          </InfoBoxGroup> */}
         </TextBox>
 
         <MobileImagesBox>
@@ -142,7 +174,15 @@ export default function ChoreoPage() {
         </IconBox>
       </IntroductionSection>
 
-      <SpecialWrapper>
+      <BirthdayDropSection />
+
+      {/*
+        Preserved: the about-and-contacts pair as this page looked before the
+        Birthday Drop took it over. Restoring it needs `getOnlineSuggestions`,
+        `TextContentCard`, `Contacts` and the AboutChoreo* / SpecialWrapper
+        styles back among the imports.
+      */}
+      {/* <SpecialWrapper>
         <AboutChoreoSection>
           <AboutChoreoTitle>{t("about.title")}</AboutChoreoTitle>
           <AboutChoreoCards>
@@ -152,95 +192,102 @@ export default function ChoreoPage() {
           </AboutChoreoCards>
         </AboutChoreoSection>
         <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
-      </SpecialWrapper>
+      </SpecialWrapper> */}
     </>
-    // Temporarily preserved sales layout. Uncomment it when choreography sales reopen.
-    // <>
-    //   <StructuredData data={choreographyProductsStructuredData} />
-    //   <IntroductionSection>
-    //     <TextBox>
-    //       <Title>{t("hero.title")}</Title>
-
-    //       <Description>
-    //         <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
-    //         <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
-    //       </Description>
-
-    //       <InfoBoxGroup>
-    //         <DateBox>
-    //           <From>{t("hero.startLabel")}</From>
-    //           <Date>{t("hero.startValue")}</Date>
-    //         </DateBox>
-
-    //         <DateBox>
-    //           <From>{t("hero.salesLabel")}</From>
-    //           <Date>{t("hero.salesValue")}</Date>
-    //         </DateBox>
-    //       </InfoBoxGroup>
-
-    //       <ButtonBox>
-    //         <Button buttonText={t("hero.button")} href="#choreo-section" />
-    //       </ButtonBox>
-    //     </TextBox>
-
-    //     <MobileImagesBox>
-    //       <ImageBox id="mobile-only-image-box">
-    //         <SvgAsset
-    //           src="/svg/OnlineChoreoPageBackgroundPhoto.webp"
-    //           width={794}
-    //           height={989}
-    //           sizes="(max-width: 767px) 100vw, 0px"
-    //           priority
-    //           unoptimized
-    //         />
-    //       </ImageBox>
-
-    //       <IconBox id="mobile-only-icon-box">
-    //         <SvgAsset
-    //           src="/svg/TelegramChoreo.webp"
-    //           width={401}
-    //           height={421}
-    //           sizes="(max-width: 767px) 50vw, 0px"
-    //         />
-    //       </IconBox>
-    //     </MobileImagesBox>
-
-    //     <ImageBox id="desktop-only-image-box">
-    //       <SvgAsset
-    //         src="/svg/OnlineChoreoPageBackgroundPhoto.webp"
-    //         width={794}
-    //         height={989}
-    //         sizes="(max-width: 767px) 0px, (max-width: 880px) 490px, (max-width: 1140px) 540px, (max-width: 1240px) 640px, 794px"
-    //         priority
-    //         unoptimized
-    //       />
-    //     </ImageBox>
-
-    //     <IconBox id="desktop-only-icon-box">
-    //       <SvgAsset
-    //         src="/svg/TelegramChoreo.webp"
-    //         width={401}
-    //         height={421}
-    //         sizes="(max-width: 767px) 0px, (max-width: 880px) 240px, (max-width: 1140px) 260px, (max-width: 1240px) 320px, 401px"
-    //       />
-    //     </IconBox>
-    //   </IntroductionSection>
-    //   <SpecialWrapper>
-    //     <AboutChoreoSection>
-    //       <AboutChoreoTitle>{t("about.title")}</AboutChoreoTitle>
-    //       <AboutChoreoCards>
-    //         {onlineSuggestions.map(({ id, ...suggestion }) => (
-    //           <TextContentCard key={id} {...suggestion} />
-    //         ))}
-    //       </AboutChoreoCards>
-    //     </AboutChoreoSection>
-    //     <ChoreoSection id="choreo-section">
-    //       {choreos.map(({ id, ...choreo }) => (
-    //         <ChoreoCard key={id} {...choreo} />
-    //       ))}
-    //     </ChoreoSection>
-    //     <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
-    //   </SpecialWrapper>
-    // </>
   );
+
+  /*
+   * Preserved in full: the layout used while regular choreography sales were
+   * open - hero with start and sales dates, the generic suggestion cards and the
+   * choreography catalogue. Kept so it can be swapped back in without being
+   * rebuilt; it needs `ChoreoCatalogueSection` back among the imports, plus a
+   * rebuilt `choreographyProductsStructuredData` (its builder is gone).
+   *
+   * The catalogue itself already follows the admin sales switch: a breakdown
+   * with sales off keeps its card and loses only the buy buttons, so restoring
+   * this block cannot reopen a closed product.
+   */
+  // <>
+  //   <StructuredData data={choreographyProductsStructuredData} />
+  //   <IntroductionSection>
+  //     <TextBox>
+  //       <Title>{t("hero.title")}</Title>
+
+  //       <Description>
+  //         <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+  //         <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
+  //       </Description>
+
+  //       <InfoBoxGroup>
+  //         <DateBox>
+  //           <From>{t("hero.startLabel")}</From>
+  //           <Date>{t("hero.startValue")}</Date>
+  //         </DateBox>
+
+  //         <DateBox>
+  //           <From>{t("hero.salesLabel")}</From>
+  //           <Date>{t("hero.salesValue")}</Date>
+  //         </DateBox>
+  //       </InfoBoxGroup>
+
+  //       <ButtonBox>
+  //         <Button buttonText={t("hero.button")} href="#choreo-section" />
+  //       </ButtonBox>
+  //     </TextBox>
+
+  //     <MobileImagesBox>
+  //       <ImageBox id="mobile-only-image-box">
+  //         <SvgAsset
+  //           src="/svg/OnlineChoreoPageBackgroundPhoto.webp"
+  //           width={794}
+  //           height={989}
+  //           sizes="(max-width: 767px) 100vw, 0px"
+  //           priority
+  //           unoptimized
+  //         />
+  //       </ImageBox>
+
+  //       <IconBox id="mobile-only-icon-box">
+  //         <SvgAsset
+  //           src="/svg/TelegramChoreo.webp"
+  //           width={401}
+  //           height={421}
+  //           sizes="(max-width: 767px) 50vw, 0px"
+  //         />
+  //       </IconBox>
+  //     </MobileImagesBox>
+
+  //     <ImageBox id="desktop-only-image-box">
+  //       <SvgAsset
+  //         src="/svg/OnlineChoreoPageBackgroundPhoto.webp"
+  //         width={794}
+  //         height={989}
+  //         sizes="(max-width: 767px) 0px, (max-width: 880px) 490px, (max-width: 1140px) 540px, (max-width: 1240px) 640px, 794px"
+  //         priority
+  //         unoptimized
+  //       />
+  //     </ImageBox>
+
+  //     <IconBox id="desktop-only-icon-box">
+  //       <SvgAsset
+  //         src="/svg/TelegramChoreo.webp"
+  //         width={401}
+  //         height={421}
+  //         sizes="(max-width: 767px) 0px, (max-width: 880px) 240px, (max-width: 1140px) 260px, (max-width: 1240px) 320px, 401px"
+  //       />
+  //     </IconBox>
+  //   </IntroductionSection>
+  //   <SpecialWrapper>
+  //     <AboutChoreoSection>
+  //       <AboutChoreoTitle>{t("about.title")}</AboutChoreoTitle>
+  //       <AboutChoreoCards>
+  //         {onlineSuggestions.map(({ id, ...suggestion }) => (
+  //           <TextContentCard key={id} {...suggestion} />
+  //         ))}
+  //       </AboutChoreoCards>
+  //     </AboutChoreoSection>
+  //     <ChoreoCatalogueSection />
+  //     <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
+  //   </SpecialWrapper>
+  // </>
 }

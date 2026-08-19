@@ -1,3 +1,5 @@
+export * from "./Birthday34Badge";
+export * from "./Birthday34Popup";
 export * from "./CheckboxIcon";
 export * from "./Chevron";
 export * from "./EnglishFlag";
@@ -9,6 +11,9 @@ export * from "./OnlineCalendar";
 export * from "./OnlineCreditCard";
 export * from "./OnlineGroup";
 export * from "./OnlineHome";
+export * from "./OnlineInspiration";
+export * from "./OnlineMusic";
+export * from "./OnlineQuestion";
 export * from "./OnlineStructure";
 export * from "./OnlineTelegram";
 export * from "./OnlineVideo";

@@ -424,7 +424,7 @@ export const ImageDescriptionCard = styled.div`
   @media (max-width: 767px) {
     padding: 30px;
     margin: -200px 0 0 0;
-    border-radius: 40px !important;
+    --glass-radius: 40px;
   }
 
   @media (max-width: 450px) {

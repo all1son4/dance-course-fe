@@ -94,6 +94,7 @@ export const ReviewsSlider = styled.div`
 
 export const ReviewCard = styled.article`
   ${glass({
+    frost: "static",
     radius: "60px",
     bgParam: "rgba(228, 228, 228, 0.4)",
     shadowStrength: 0.1,
@@ -111,7 +112,7 @@ export const ReviewCard = styled.article`
 
   @media (max-width: 767px) {
     padding: 30px;
-    border-radius: 40px;
+    --glass-radius: 40px;
   }
 `;
 

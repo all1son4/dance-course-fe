@@ -11,10 +11,10 @@ export const CardContainer = styled.div<{ $hasCollapseToggle?: boolean }>`
   position: relative;
   padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "4px" : "0")};
 
-  ${glass({ radius: "50px", hoverEffect: false })}
+  ${glass({ radius: "50px", frost: "static", hoverEffect: false })}
 
   @media (max-width: 880px) {
-    border-radius: 40px !important;
+    --glass-radius: 40px;
   }
 `;
 

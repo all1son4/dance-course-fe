@@ -13,6 +13,7 @@ export const Card = styled.div`
   overflow: hidden;
 
   ${glass({
+    frost: "static",
     radius: "60px",
     hoverEffect: false,
   })}
@@ -20,7 +21,7 @@ export const Card = styled.div`
   @media (max-width: 767px) {
     padding: 30px 20px;
     gap: 20px;
-    border-radius: 40px !important;
+    --glass-radius: 40px;
   }
 `;
 
@@ -66,49 +67,6 @@ export const PaymentElementShell = styled.div`
     max-width: 100%;
     min-width: 0;
   }
-`;
-
-export const PlaceholderState = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 22px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px dashed rgba(72, 72, 72, 0.22);
-`;
-
-export const PlaceholderLine = styled.span<{ $short?: boolean }>`
-  display: block;
-  width: ${({ $short }) => ($short ? "52%" : "100%")};
-  height: ${({ $short }) => ($short ? "14px" : "48px")};
-  border-radius: ${({ $short }) => ($short ? "999px" : "16px")};
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.4) 0%,
-    rgba(255, 255, 255, 0.8) 50%,
-    rgba(255, 255, 255, 0.4) 100%
-  );
-`;
-
-export const PlaceholderGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-
-  @media (max-width: 767px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-export const PlaceholderNote = styled.p`
-  margin: 0;
-  color: rgba(72, 72, 72, 1);
-  font-weight: 300;
-  font-style: normal;
-  font-size: 14px;
-  line-height: 140%;
-  letter-spacing: 0;
 `;
 
 export const StatusText = styled.p`

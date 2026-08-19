@@ -74,6 +74,13 @@ test("keeps the accepted product, offer, price, and access-duration matrix", () 
     },
     {
       durationDays: 0,
+      eur: 20,
+      offer: "standard",
+      pln: 85,
+      product: "choreo-birthday-drop",
+    },
+    {
+      durationDays: 0,
       eur: 50,
       offer: "standard",
       pln: 220,

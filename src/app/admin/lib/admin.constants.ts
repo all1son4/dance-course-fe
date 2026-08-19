@@ -14,6 +14,7 @@ export const ADMIN_API_ENDPOINTS = {
   onlineGroupInviteLinks: "/admin/api/online-group-invite-links",
   onlineGroupSettings: "/admin/api/online-group-settings",
   renewalCampaigns: "/admin/api/renewal-campaigns",
+  sales: "/admin/api/sales",
   telegramChats: "/admin/api/telegram/chats",
 } as const;
 
@@ -23,6 +24,7 @@ export const JOURNAL_SKELETON_COUNT = 3;
 export const ADMIN_FEATURES: AdminFeature[] = [
   { id: "invite-links", label: "Invite-ссылки" },
   { id: "online-group", label: "Online Group" },
+  { id: "sales", label: "Продажи" },
   { id: "broadcasts", label: "Рассылки" },
   { id: "reports", label: "Отчеты" },
 ];
@@ -54,6 +56,10 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   "online-group": {
     description:
       "Настрой активный поток. После запуска здесь появятся ручная выдача доступа и управление продлениями.",
+  },
+  sales: {
+    description:
+      "Включай и выключай продажи по каждому продукту. Выключенный продукт остается на сайте, но кнопки покупки пропадают, а оплатить его нельзя даже по прямой ссылке.",
   },
   reports: {
     description:

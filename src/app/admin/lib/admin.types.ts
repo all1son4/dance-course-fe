@@ -1,4 +1,9 @@
-export type AdminFeatureId = "invite-links" | "online-group" | "broadcasts" | "reports";
+export type AdminFeatureId =
+  | "sales"
+  | "invite-links"
+  | "online-group"
+  | "broadcasts"
+  | "reports";
 export type GeneratorKind = "choreo" | "first-touch";
 export type LessonLanguage = "en" | "ru";
 export type LinkState = "active" | "used";
@@ -210,4 +215,27 @@ export type FirstTouchBroadcastResponse = {
     attempted: number;
   };
   stats?: BroadcastStats;
+};
+
+export type SalesProductOffer = {
+  label: string;
+  offerId: string;
+  price: string;
+};
+
+export type SalesProductEntry = {
+  code: string;
+  hasActiveCampaign: boolean;
+  offers: SalesProductOffer[];
+  productId: string;
+  requiresActiveCampaign: boolean;
+  salesEnabled: boolean;
+  title: string;
+  type: "choreo" | "course";
+};
+
+export type SalesStateResponse = {
+  activeCampaignTitle?: string;
+  errorCode?: string;
+  products?: SalesProductEntry[];
 };

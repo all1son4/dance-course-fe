@@ -35,10 +35,10 @@
         "keywords": "online group anna strok, treningi tańca online, frame up online, taniec telegram"
       },
       "choreo": {
-        "title": "Tutoriale choreografii Frame Up Strip",
-        "description": "Szczegółowe tutoriale choreografii Frame Up Strip Anny Strok: struktura ruchu, technika i wyraz sceniczny. Sprzedaż jest tymczasowo zamknięta.",
-        "ogImageAlt": "Tutoriale choreografii Frame Up Strip od Anny Strok",
-        "keywords": "tutorial choreografii online, still alive choreografia, her lies choreografia, bundle choreografii, frame up tutorial, Anna Strok choreografia"
+        "title": "Birthday Drop „Love me in the morning” — tutorial choreografii",
+        "description": "Birthday Drop od Anny Strok: rozbiór choreografii „Love me in the morning”, playlista, moodboard i 34 pytania. Dostęp na zawsze, płatność z każdego kraju.",
+        "ogImageAlt": "Birthday Drop „Love me in the morning” od Anny Strok",
+        "keywords": "birthday drop, love me in the morning, tutorial choreografii online, still alive choreografia, her lies choreografia, bundle choreografii, frame up tutorial, Anna Strok choreografia"
       },
       "offline": {
         "title": "Zajęcia offline Frame Up Strip w Warszawie",
@@ -598,6 +598,42 @@
     }
   },
   "ChoreoPage": {
+    "birthday": {
+      "title": "Birthday Drop<br></br>„Love me in the morning”",
+      "description": "W tym roku kończę 34 lata i chcę uczcić ten dzień w sposób bardziej osobisty i twórczy. Dlatego przygotowałam niewielki zbiór materiałów, które odzwierciedlają moją drogę, mój styl i moją miłość do tańca — ze szczerym pragnieniem, by zainspirować.",
+      "salesLabel": "Sprzedaż Birthday Drop",
+      "salesValue": "Do 7 września",
+      "heroButton": "Birthday Drop",
+      "buyButton": "Kup za {price}",
+      "detailsButton": "Dowiedz się więcej",
+      "aboutTitle": "Co czeka Cię w Birthday Drop",
+      "suggestions": {
+        "video": {
+          "title": "Rozbiór choreografii „Love me in the morning”",
+          "text": "Otrzymujesz dostęp do wyrazistej kombinacji, jej techniki i podania. Każdy ruch jest rozłożony na czynniki pierwsze: dokładnie wiesz, co robisz, jak i po co."
+        },
+        "playlist": {
+          "title": "Birthday Playlist",
+          "text": "Wybór moich ulubionych utworów: muzyka związana ze mną, z moim stylem i różnymi okresami twórczości."
+        },
+        "questions": {
+          "title": "34 pytania do moich 34",
+          "text": "Wywiad-refleksja o tym, co czuję, czego się nauczyłam, co przemyślałam na nowo i dokąd chcę zmierzać dalej. Format jeszcze wybieram — to może być artykuł albo wideo. W każdym razie będzie szczerze, głęboko i naprawdę."
+        },
+        "moodboard": {
+          "title": "Moodboard do choreografii",
+          "text": "<p>Atmosfera, charakter, kolor, styl — wszystko, co pomaga poczuć choreografię jeszcze przed pierwszym krokiem:</p><list><item>ogólna energia i nastrój;</item><item>paleta kolorów;</item><item>ubranie i buty;</item><item>włosy i makijaż;</item><item>światło i lokacja;</item><item>kilka wariantów stylizacji.</item></list>"
+        },
+        "access": {
+          "title": "Dostęp do materiałów — na zawsze",
+          "text": "Wygodny format: zdążysz przejść, powtórzyć i utrwalić wszystko we własnym tempie."
+        },
+        "telegram": {
+          "title": "Natychmiastowe dołączenie przez zamknięte czaty na Telegramie",
+          "text": "Żadnych dodatkowych platform — cała nauka w jednym miejscu, od razu po opłaceniu."
+        }
+      }
+    },
     "hero": {
       "title": "Samouczki choreograficzne",
       "description": {
@@ -649,6 +685,11 @@
     "title": "Płatność",
     "description": "Sprawdź szczegóły zamówienia i dokończ płatność. Po zakupie otrzymasz dostęp oraz dalsze instrukcje.",
     "personalDataTitle": "Dane kupującego",
+    "salesClosed": {
+      "title": "Sprzedaż zamknięta",
+      "description": "Nabór na ten produkt jest obecnie zamknięty. Napisz do nas — powiemy, kiedy ruszy kolejny, i pomożemy wybrać odpowiedni format.",
+      "contactButton": "Napisz na Telegramie"
+    },
     "summary": {
       "currencyLabel": "Waluta płatności",
       "amountLabel": "Kwota płatności",
@@ -757,13 +798,18 @@
       "renewal": {
         "line1": "Przygotowujemy Twój dostęp do nowej Online Group.",
         "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
+      },
+      "birthdayDrop": {
+        "line1": "Przygotowujemy Twój osobisty dostęp do materiałów.",
+        "line2": "Link pojawi się poniżej i przyjdzie także na e-mail."
       }
     },
     "accessNotice": {
       "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 4 miesiące od dołączenia.",
       "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 2 miesiące od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu."
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
+      "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
@@ -804,13 +850,10 @@
       "succeeded": "Płatność zakończona pomyślnie.",
       "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok."
     },
-    "placeholder": {
-      "missingPublishableKey": "Dodaj NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY do .env i uruchom ponownie dev server.",
-      "awaitingClientSecret": "Stripe jest gotowy. Payment Element pojawi się tutaj automatycznie po otrzymaniu clientSecret."
-    },
     "errors": {
       "missingClientSecret": "Stripe nie zwrócił client secret.",
       "catalogUnavailable": "Sprzedaż jest tymczasowo niedostępna. Spróbuj ponownie później.",
+      "salesClosed": "Sprzedaż tego produktu jest obecnie zamknięta.",
       "consentEvidenceFailed": "Nie udało się zapisać wymaganego potwierdzenia zgód. Spróbuj ponownie.",
       "invalidCustomerData": "Sprawdź dane klienta i spróbuj ponownie.",
       "missingSecretKey": "Brakuje STRIPE_SECRET_KEY. Dodaj go do .env i uruchom ponownie serwer.",
@@ -877,6 +920,18 @@
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"
+      }
+    },
+    "choreoBirthdayDrop": {
+      "title": "Birthday Drop „Love me in the morning”",
+      "description": {
+        "1": "Rozbiór choreografii Love me in the morning, przygotowany jako osobny Birthday Drop.",
+        "2": "W środku: rozbiór kombinacji, playlista, moodboard i wywiad „34 pytania do moich 34”.",
+        "3": "Dostęp do materiałów zostaje na zawsze: możesz wracać i powtarzać we własnym tempie."
+      },
+      "accessNote": "Dostęp do materiałów na zawsze, przez prywatny kanał na Telegramie.",
+      "offers": {
+        "standard": "Dostęp standardowy"
       }
     },
     "onlineGroupAnnaStrok": {
@@ -995,5 +1050,11 @@
         "text": "Szczegółowe informacje o przetwarzaniu danych osobowych, Twoich prawach i danych administratora znajdziesz w Polityce prywatności."
       }
     }
+  },
+  "BirthdayPopup": {
+    "title": "Happy Birthday to me!",
+    "text": "Kończę 34 lata i chcę uczcić ten dzień w sposób bardziej osobisty i twórczy. Dlatego przygotowałam niewielki zbiór materiałów, które odzwierciedlają moją drogę, mój styl i moją miłość do tańca — ze szczerym pragnieniem, by zainspirować.",
+    "cta": "Dowiedz się więcej",
+    "close": "Zamknij"
   }
 }

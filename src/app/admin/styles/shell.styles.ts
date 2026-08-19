@@ -69,29 +69,33 @@ export const LockViewport = styled.div`
 
 export const LockCard = styled.div`
   ${glass({
+    frost: "static",
     radius: "26px",
     bgParam: "rgba(255, 255, 255, 0.82)",
     depth: 32,
     frostPx: 10,
+    elevation: 3.2,
     hoverEffect: false,
   })}
   position: relative;
   width: min(500px, 100%);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.78);
   padding: clamp(22px, 4vw, 34px);
   box-sizing: border-box;
-  box-shadow:
-    0 28px 80px rgba(18, 20, 22, 0.13),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+`;
 
-  &::after {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 4px;
-    background: linear-gradient(90deg, rgba(124, 0, 2, 1), rgba(124, 0, 2, 0.3));
-  }
+/**
+ * Own element rather than a pseudo-element: glass() paints the rim with
+ * ::before and the inner face with ::after, so a card that claims either one
+ * silently deletes a layer of the material.
+ */
+export const LockAccent = styled.span`
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(124, 0, 2, 1), rgba(124, 0, 2, 0.3));
+  pointer-events: none;
 `;
 
 export const LockTitle = styled.h1`
@@ -159,11 +163,11 @@ export const Sidebar = styled.aside`
     bgParam: "rgba(255, 255, 255, 0.72)",
     depth: 28,
     frostPx: 10,
+    elevation: 3,
     hoverEffect: false,
   })}
   position: relative;
   z-index: 3;
-  border: 1px solid rgba(255, 255, 255, 0.72);
   padding: 14px 12px 12px;
   display: flex;
   flex-direction: column;
@@ -172,9 +176,6 @@ export const Sidebar = styled.aside`
   min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
-  box-shadow:
-    0 18px 54px rgba(22, 24, 27, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.88);
 
   @media (max-width: 980px) {
     position: sticky;
@@ -189,16 +190,19 @@ export const Sidebar = styled.aside`
     margin: 0 -12px;
     padding: 12px 24px 11px;
     border-width: 0 0 1px;
-    border-radius: 0 0 22px 22px;
-    background: rgba(250, 250, 249, 0.88);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 12px 34px rgba(22, 24, 27, 0.09);
+    ${glass({
+      variant: "chrome",
+      radius: "0 0 22px 22px",
+      bgParam: "rgba(250, 250, 249, 0.88)",
+      frostPx: 16,
+      hoverEffect: false,
+    })}
   }
 
   @media (max-width: 560px) {
     margin: 0 -8px;
     padding: 10px 16px;
-    border-radius: 0 0 18px 18px;
+    --glass-radius: 0 0 18px 18px;
   }
 `;
 
@@ -265,6 +269,7 @@ export const SidebarActionRow = styled.div`
 
 export const SidebarIconButton = styled.button<IconButtonStyleProps>`
   ${glass({
+    frost: "static",
     radius: "999px",
     bgParam: "rgba(255, 255, 255, 0.86)",
     depth: 14,
@@ -498,15 +503,16 @@ export const Card = styled.div`
 
 export const MainPanel = styled.main`
   ${glass({
+    frost: "static",
     radius: "24px",
     bgParam: "rgba(255, 255, 255, 0.8)",
     depth: 32,
     frostPx: 10,
+    elevation: 3.2,
     hoverEffect: false,
   })}
   ${refinedScrollbar}
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.72);
   padding: clamp(18px, 2vw, 28px);
   box-sizing: border-box;
   height: 100%;
@@ -517,9 +523,6 @@ export const MainPanel = styled.main`
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  box-shadow:
-    0 20px 60px rgba(22, 24, 27, 0.085),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 
   > p {
     margin-top: 16px;
@@ -619,19 +622,25 @@ export const FeatureHelpButton = styled.button`
 `;
 
 export const FeatureHelpTooltip = styled.span`
+  width: min(320px, calc(100vw - 48px));
+  padding: 11px 13px;
+  box-sizing: border-box;
+  ${glass({
+    variant: "chrome",
+    radius: "12px",
+    bgParam: "rgba(255, 255, 255, 0.96)",
+    frostPx: 14,
+    depth: 22,
+    hoverEffect: false,
+  })}
+  /* Placed after the mixin on purpose: glass() opens with its own
+     "position: relative", which would otherwise win and keep the tooltip in the
+     header flow, where its width pushes the help button off the panel edge. */
   position: absolute;
   z-index: 10;
   top: calc(100% + 9px);
   right: 0;
-  width: min(320px, calc(100vw - 48px));
-  padding: 11px 13px;
-  box-sizing: border-box;
-  border: 1px solid rgba(24, 24, 24, 0.1);
-  border-radius: 12px;
   color: rgba(30, 30, 30, 0.88);
-  background: rgba(255, 255, 255, 0.96);
-  box-shadow: 0 14px 36px rgba(22, 24, 27, 0.12);
-  backdrop-filter: blur(14px);
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;

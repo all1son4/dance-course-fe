@@ -20,8 +20,10 @@ import {
   RenewalGeneratorCard,
 } from "./components/online-group-workspace";
 import { ReportsWorkspace } from "./components/reports-workspace";
+import { SalesWorkspace } from "./components/sales-workspace";
 import { useBroadcastAdmin } from "./hooks/use-broadcast-admin";
 import { useReportsAdmin } from "./hooks/use-reports-admin";
+import { useSalesAdmin } from "./hooks/use-sales-admin";
 import {
   ADMIN_API_ENDPOINTS,
   ADMIN_FEATURES,
@@ -147,6 +149,7 @@ export default function AdminPage() {
   const isOnlineGroupFeatureActive = activeFeature.id === "online-group";
   const isBroadcastsFeatureActive = activeFeature.id === "broadcasts";
   const isReportsFeatureActive = activeFeature.id === "reports";
+  const isSalesFeatureActive = activeFeature.id === "sales";
   const telegramChatSelectOptions: SelectOption[] = telegramChats.map((chat) => ({
     label: `${chat.title} (${chat.chatId})`,
     value: chat.chatId,
@@ -239,6 +242,19 @@ export default function AdminPage() {
     status: monthlySalesReportStatus,
   } = useReportsAdmin({
     isActive: isReportsFeatureActive,
+    isAuthorized,
+    onUnauthorized: handleSessionExpired,
+  });
+  const {
+    activeCampaignTitle: salesActiveCampaignTitle,
+    isLoading: isLoadingSalesState,
+    load: loadSalesState,
+    products: salesProducts,
+    status: salesStatus,
+    toggle: handleToggleProductSales,
+    updatingProductId: updatingSalesProductId,
+  } = useSalesAdmin({
+    isActive: isSalesFeatureActive,
     isAuthorized,
     onUnauthorized: handleSessionExpired,
   });
@@ -1184,7 +1200,17 @@ export default function AdminPage() {
               <StatusText $tone={authStatus.tone}>{authStatus.text}</StatusText>
             )}
 
-            {isOnlineGroupFeatureActive ? (
+            {isSalesFeatureActive ? (
+              <SalesWorkspace
+                activeCampaignTitle={salesActiveCampaignTitle}
+                isLoading={isLoadingSalesState}
+                onRefresh={loadSalesState}
+                onToggle={handleToggleProductSales}
+                products={salesProducts}
+                status={salesStatus}
+                updatingProductId={updatingSalesProductId}
+              />
+            ) : isOnlineGroupFeatureActive ? (
               <OnlineGroupWorkspace>
                 <ActiveOnlineGroupCard
                   activeCampaign={activeOnlineGroupCampaign}

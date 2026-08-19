@@ -6,6 +6,7 @@ import type { ChangeEvent, FocusEvent, FormEvent, ReactNode } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import InteractiveCard from "@/components/cards/InteractiveCard";
+import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
 import Input from "@/components/common/Input";
@@ -18,6 +19,7 @@ import {
   getFallbackCountryOptions,
   getLocalizedCountryOptions,
 } from "@/constants/countries";
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
   formatCheckoutPrice,
   getDefaultCheckoutCurrencyByLocale,
@@ -26,6 +28,12 @@ import {
   type SellableProduct,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import {
+  applyBirthdayPopupSignal,
+  getBirthdayPopupState,
+  isBirthdayOfferId,
+  saveBirthdayPopupState,
+} from "@/lib/birthday-popup";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 import { usePaymentStore } from "@/stores";
@@ -49,6 +57,9 @@ import {
   PersonalDataTitle,
   Price,
   PriceBox,
+  SalesClosedDescription,
+  SalesClosedNotice,
+  SalesClosedTitle,
   StripeReveal,
   SummaryBottomContent,
   SummaryBoxDesktop,
@@ -107,6 +118,7 @@ const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
   required_consent_missing: "errors.requiredConsentMissing",
   renewal_campaign_inactive: "errors.renewalCampaignInactive",
   renewal_payment_context_mismatch: "errors.renewalPaymentContextMismatch",
+  sales_closed: "errors.salesClosed",
   telegram_renewal_verification_required: "errors.telegramRenewalVerificationRequired",
 } as const;
 
@@ -953,6 +965,21 @@ const PaymentPage = observer(function PaymentPage() {
     paymentStore.setRenewalCampaignSlug(searchParams.get("renewal"));
   }, [paymentStore, searchKey]);
 
+  // Reaching checkout for the campaign offer counts as "thinking about it": the
+  // birthday popup stays quiet until the next day even if the payment is dropped.
+  useEffect(() => {
+    const offerId = new URLSearchParams(searchKey).get("offer");
+
+    if (!offerId || !isBirthdayOfferId(offerId)) {
+      return;
+    }
+
+    saveBirthdayPopupState(
+      applyBirthdayPopupSignal(getBirthdayPopupState(), "checkout_started", new Date()),
+      canUseFunctionalStorage,
+    );
+  }, [canUseFunctionalStorage, searchKey]);
+
   useEffect(() => {
     const searchParams = new URLSearchParams(searchKey);
     const queryCurrency = searchParams.get("currency");
@@ -1388,27 +1415,42 @@ const PaymentPage = observer(function PaymentPage() {
             title={selectedProductCompactTitle}
           />
         </SummaryBoxMobile>
-        <CheckoutForm
-          agreements={checkoutAgreements}
-          canRevealStripe={canRevealStripe}
-          fields={checkoutInputFields}
-          isRenewalCheckout={isRenewalCheckout}
-          isRenewalVerified={isRenewalVerified}
-          onAgreementChange={handleAgreementChange}
-          onInputBlur={handleInputBlur}
-          onInputChange={handleInputChange}
-          onSubmit={handleSubmit}
-          onVerify={handleTelegramRenewalVerification}
-          personalDataTitle={t("personalDataTitle")}
-          renewalClientId={renewalClientId}
-          renewalNonce={renewalNonce}
-          renewalStatus={renewalStatus}
-          renewalStatusText={renewalStatusText}
-          renewalStatusTone={renewalStatusTone}
-          stripeIntentErrorText={stripeIntentErrorText}
-          stripeProps={stripeProps}
-          verifyLabel={t("renewal.buttons.verify")}
-        />
+        {paymentStore.isSalesClosed ? (
+          <SalesClosedNotice>
+            <SalesClosedTitle>{t("salesClosed.title")}</SalesClosedTitle>
+            <SalesClosedDescription>
+              {t("salesClosed.description")}
+            </SalesClosedDescription>
+            <Button
+              size="sm"
+              buttonText={t("salesClosed.contactButton")}
+              href={SUPPORT_TELEGRAM_URL}
+              target="_blank"
+            />
+          </SalesClosedNotice>
+        ) : (
+          <CheckoutForm
+            agreements={checkoutAgreements}
+            canRevealStripe={canRevealStripe}
+            fields={checkoutInputFields}
+            isRenewalCheckout={isRenewalCheckout}
+            isRenewalVerified={isRenewalVerified}
+            onAgreementChange={handleAgreementChange}
+            onInputBlur={handleInputBlur}
+            onInputChange={handleInputChange}
+            onSubmit={handleSubmit}
+            onVerify={handleTelegramRenewalVerification}
+            personalDataTitle={t("personalDataTitle")}
+            renewalClientId={renewalClientId}
+            renewalNonce={renewalNonce}
+            renewalStatus={renewalStatus}
+            renewalStatusText={renewalStatusText}
+            renewalStatusTone={renewalStatusTone}
+            stripeIntentErrorText={stripeIntentErrorText}
+            stripeProps={stripeProps}
+            verifyLabel={t("renewal.buttons.verify")}
+          />
+        )}
       </InteractiveBox>
       <SummaryBoxDesktop>
         <CheckoutSummaryCard {...summaryProps} title={summaryCardTitle} />

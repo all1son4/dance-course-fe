@@ -93,7 +93,10 @@ export const useBroadcastAdmin = ({
         }
 
         setStatus({
-          text: "Не удалось отправить рассылку. Проверь настройки Resend и таблицу.",
+          text:
+            data.errorCode === "product_sales_closed"
+              ? "Продажи First Touch выключены. Включи их в разделе «Продажи» — иначе в письме будет нерабочая ссылка на оплату."
+              : "Не удалось отправить рассылку. Проверь настройки Resend и таблицу.",
           tone: "error",
         });
         return;

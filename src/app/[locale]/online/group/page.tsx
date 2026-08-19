@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { useLocale, useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import CourseCard from "@/components/cards/CourseCard";
 import TextContentCard from "@/components/cards/TextContentCard";
@@ -10,6 +9,7 @@ import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import { isProductSaleOpen } from "@/lib/sales-availability";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -71,11 +71,16 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default function OnlineGroupPage() {
-  const locale = useLocale();
-  const t = useTranslations("OnlineGroupPage");
+// The buy buttons follow the admin sales switch, so this page is rendered per
+// request instead of being prerendered with a stale answer baked in.
+export const dynamic = "force-dynamic";
+
+export default async function OnlineGroupPage() {
+  const locale = await getLocale();
+  const t = await getTranslations("OnlineGroupPage");
   const onlineSuggestions = getOnlineSuggestions((key) => t(key));
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
+  const isSaleOpen = await isProductSaleOpen(product.id);
   const purchaseOffers = product.offers.filter(
     (offer) => offer.code === "standard" || offer.code === "library-access",
   );
@@ -194,12 +199,16 @@ export default function OnlineGroupPage() {
                 </DateBox>
               </TarifContentBox>
             }
-            buttonText={t("tariffs.buyButton")}
+            buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
             buttonRel="nofollow"
-            buttonHref={buildCheckoutHref({
-              offerId: standardOffer.id,
-              productId: product.id,
-            })}
+            buttonHref={
+              isSaleOpen
+                ? buildCheckoutHref({
+                    offerId: standardOffer.id,
+                    productId: product.id,
+                  })
+                : undefined
+            }
           />
         ) : null}
         {plusOffer ? (
@@ -226,12 +235,16 @@ export default function OnlineGroupPage() {
                 </DateBox>
               </TarifContentBox>
             }
-            buttonText={t("tariffs.buyButton")}
+            buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
             buttonRel="nofollow"
-            buttonHref={buildCheckoutHref({
-              offerId: plusOffer.id,
-              productId: product.id,
-            })}
+            buttonHref={
+              isSaleOpen
+                ? buildCheckoutHref({
+                    offerId: plusOffer.id,
+                    productId: product.id,
+                  })
+                : undefined
+            }
           />
         ) : null}
       </TariffOptionsBox>

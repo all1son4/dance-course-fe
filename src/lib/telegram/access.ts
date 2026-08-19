@@ -30,6 +30,7 @@ import {
   getOfferAccessDurationDaysByOfferId,
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
+  isLifetimeChannelOfferId,
   isWithoutMentorOfferId,
 } from "./offer-access";
 
@@ -467,12 +468,22 @@ const trySyncPaymentByExistingActiveBinding = async ({
   });
 };
 
-export const isOfferEligibleForTelegramBotAccess = (offerId: string) =>
+const isOfferEligibleForTelegramBotAccess = (offerId: string) =>
   isWithoutMentorOfferId(offerId);
 
+/**
+ * Who gets an invite link at all. Deliberately wider than the timed set below:
+ * lifetime offers are handed a link and never given an expiry.
+ */
 export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
-  isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
+  isChoreoChannelOfferId(offerId) ||
+  isFirstTouchOfferId(offerId) ||
+  isLifetimeChannelOfferId(offerId);
 
+/**
+ * Who gets an access window that can run out. Lifetime offers must stay out of
+ * this list - it is what the revocation sweep keys off.
+ */
 const isPaymentTimedTelegramAccess = (paymentRecord: PaymentSheetRecord) =>
   isChoreoChannelOfferId(paymentRecord.offer_id) ||
   isFirstTouchOfferId(paymentRecord.offer_id);

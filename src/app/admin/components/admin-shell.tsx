@@ -17,6 +17,7 @@ import {
   HeaderInfo,
   HeaderRow,
   HeaderTitleRow,
+  LockAccent,
   LockCard,
   LockDescription,
   LockTitle,
@@ -55,6 +56,7 @@ export const AdminLogin = ({
   <AdminInvitePage>
     <LockViewport>
       <LockCard>
+        <LockAccent aria-hidden />
         <LockTitle>Вход в админ-панель</LockTitle>
         <LockDescription>Управление курсами, потоками и приглашениями.</LockDescription>
         <Form onSubmit={onSubmit}>
