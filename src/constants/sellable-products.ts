@@ -32,6 +32,8 @@ export type SellableProductOffer = {
 export type SellableProduct = {
   accessNote: string;
   accessNoteKey: string;
+  /** Short name for the checkout summary, when the full title is too long. */
+  checkoutTitleKey?: string;
   code: SellableProductCode;
   description: string[];
   descriptionKeys: string[];
@@ -258,6 +260,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
   "choreo-birthday-drop": {
     accessNote: "Доступ к материалам навсегда, через приватный Telegram-канал.",
     accessNoteKey: "choreoBirthdayDrop.accessNote",
+    checkoutTitleKey: "choreoBirthdayDrop.checkoutTitle",
     code: "choreo-birthday-drop",
     description: [
       "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный Birthday Drop.",

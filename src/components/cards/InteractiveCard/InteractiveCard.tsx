@@ -28,6 +28,7 @@ export default function InteractiveCard({
   buttonText,
   collapseTopRow,
   defaultCollapseTopRow,
+  frost = "static",
   isTopRowCollapsible,
   onCollapseTopRowChange,
   title,
@@ -68,7 +69,7 @@ export default function InteractiveCard({
   };
 
   return (
-    <CardContainer $hasCollapseToggle={canCollapseTopRow}>
+    <CardContainer $frost={frost} $hasCollapseToggle={canCollapseTopRow}>
       <TitleBlock>
         <Title>{title}</Title>
       </TitleBlock>

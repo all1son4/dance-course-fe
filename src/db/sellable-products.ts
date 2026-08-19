@@ -130,6 +130,8 @@ const mapProductFromDatabase = ({
   return {
     accessNote: fallbackProduct?.accessNote ?? productRow.accessNote ?? "",
     accessNoteKey: fallbackProduct?.accessNoteKey ?? productRow.accessNoteKey ?? "",
+    // Presentation-only, so it lives in the catalogue constant rather than a column.
+    checkoutTitleKey: fallbackProduct?.checkoutTitleKey,
     code: (fallbackProduct?.code ?? productRow.code) as SellableProductCode,
     defaultOfferId,
     description: fallbackProduct?.description ?? productRow.description,

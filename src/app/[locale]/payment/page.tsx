@@ -638,6 +638,8 @@ const CheckoutSummaryCard = ({
 
   return (
     <InteractiveCard
+      // Pinned over the scrolling form on mobile, so it needs the real blur.
+      frost={isMobile ? "live" : "static"}
       title={title}
       topRowContent={topRowContent}
       bottomRowContent={bottomRowContent}
@@ -853,10 +855,16 @@ const PaymentPage = observer(function PaymentPage() {
     value: option.value,
   }));
   const selectedProductTitle = productT(paymentStore.selectedProduct.titleKey);
+  const checkoutTitleKey = paymentStore.selectedProduct.checkoutTitleKey;
   const renewalSlug = new URLSearchParams(searchKey).get("renewal")?.trim() ?? "";
   const isRenewalCheckout = Boolean(renewalSlug);
-  const summaryCardTitle = selectedProductTitle;
-  const selectedProductCompactTitle = getCompactSummaryTitle(summaryCardTitle);
+  // A product may name itself for the checkout - the drop is sold under its
+  // campaign name, not the track in quotes. Otherwise the wide card keeps the
+  // full title and the narrow one falls back to the quoted short name.
+  const checkoutTitle = checkoutTitleKey ? productT(checkoutTitleKey) : "";
+  const summaryCardTitle = checkoutTitle || selectedProductTitle;
+  const selectedProductCompactTitle =
+    checkoutTitle || getCompactSummaryTitle(selectedProductTitle);
   const productPaymentInputs = getVisiblePaymentInputs({
     isChoreoProduct,
     isRenewalCheckout: false,

@@ -2,7 +2,26 @@ import { css, keyframes, styled } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
-export const CardContainer = styled.div<{ $hasCollapseToggle?: boolean }>`
+import type { InteractiveCardFrost } from "./InteractiveCard.types";
+
+/**
+ * A card pinned over scrolling content needs the real blur, otherwise the text
+ * underneath reads straight through it. Everywhere else the backdrop is the
+ * flat page and static frost looks the same for a fraction of the cost.
+ */
+const frostStyles: Record<InteractiveCardFrost, ReturnType<typeof css>> = {
+  static: css`
+    ${glass({ radius: "50px", frost: "static", hoverEffect: false })}
+  `,
+  live: css`
+    ${glass({ radius: "50px", frost: "live", hoverEffect: false })}
+  `,
+};
+
+export const CardContainer = styled.div<{
+  $frost: InteractiveCardFrost;
+  $hasCollapseToggle?: boolean;
+}>`
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -11,7 +30,7 @@ export const CardContainer = styled.div<{ $hasCollapseToggle?: boolean }>`
   position: relative;
   padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "4px" : "0")};
 
-  ${glass({ radius: "50px", frost: "static", hoverEffect: false })}
+  ${({ $frost }) => frostStyles[$frost]}
 
   @media (max-width: 880px) {
     --glass-radius: 40px;
