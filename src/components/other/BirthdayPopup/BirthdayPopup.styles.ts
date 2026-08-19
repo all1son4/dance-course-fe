@@ -58,7 +58,7 @@ export const AbsoluteContainer = styled.div`
     grid-template-columns: 200px 1fr;
     left: 10px;
     right: 10px;
-    bottom: 26px;
+    bottom: 10px;
   }
 
   @media (max-width: 570px) {
