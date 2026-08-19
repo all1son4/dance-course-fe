@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
 
 import {
@@ -9,15 +7,11 @@ import {
 } from "../_shared/interactive-card-content";
 
 type Translate = (key: string) => string;
-type RichTranslate = (key: string) => ReactNode;
 type InteractiveCourseCard = InteractiveCardProps & {
   id: string;
 };
 
-export const getOnlineCoursesArray = (
-  t: Translate,
-  tRich: RichTranslate,
-): InteractiveCourseCard[] => [
+export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => [
   {
     id: "birthday-drop",
     title: t("cards.birthdayDrop.title"),
@@ -25,8 +19,6 @@ export const getOnlineCoursesArray = (
       <ContentStack $gap="16px">
         <DetailText>{t("cards.birthdayDrop.description.1")}</DetailText>
         <DetailText>{t("cards.birthdayDrop.description.2")}</DetailText>
-        {/* Carries <strong> markup, so it is resolved through the rich translator. */}
-        <DetailText>{tRich("cards.birthdayDrop.description.3")}</DetailText>
       </ContentStack>
     ),
     bottomRowContent: (

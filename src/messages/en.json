@@ -343,11 +343,10 @@
         "title": "The Birthday Drop",
         "description": {
           "1": "I am turning 34, and I want to mark the day together with you.",
-          "2": "So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you.",
-          "3": "Access to all the materials stays yours <strong>forever</strong>."
+          "2": "So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you."
         },
-        "salesLabel": "Sales open until",
-        "salesValue": "7 September",
+        "salesLabel": "Sales open until 7 September",
+        "salesValue": "Lifetime access!",
         "button": "Learn more"
       }
     },

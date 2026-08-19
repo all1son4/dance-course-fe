@@ -343,12 +343,11 @@
         "title": "The Birthday Drop",
         "description": {
           "1": "Kończę 34 lata i chcę uczcić ten dzień razem z wami.",
-          "2": "Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów.",
-          "3": "Dostęp do wszystkich materiałów zostaje z wami <strong>na zawsze</strong>."
+          "2": "Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
         },
-        "salesLabel": "Sprzedaż otwarta do",
-        "salesValue": "7 września",
-        "button": "Więcej o kursie"
+        "salesLabel": "Sprzedaż otwarta do 7 września",
+        "salesValue": "Dostęp na zawsze!",
+        "button": "Więcej o dropie"
       }
     },
     "studio": {
