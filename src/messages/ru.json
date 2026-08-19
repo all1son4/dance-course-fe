@@ -291,7 +291,7 @@
             "highlight": "by Anna Strok"
           },
           "3": "Разборы хореографий",
-          "4": "Birthday Drop"
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -422,7 +422,7 @@
             "highlight": "by Anna Strok"
           },
           "3": "Разборы хореографий",
-          "4": "Birthday Drop"
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -912,9 +912,9 @@
     },
     "choreoBirthdayDrop": {
       "title": "Birthday Drop «Love me in the morning»",
-      "checkoutTitle": "Birthday Drop",
+      "checkoutTitle": "The Birthday Drop",
       "description": {
-        "1": "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный Birthday Drop.",
+        "1": "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный дроп — The Birthday Drop.",
         "2": "Внутри — разбор связки, плейлист, мудборд и интервью «34 вопроса к моим 34».",
         "3": "Доступ к материалам остаётся навсегда: можно возвращаться и повторять в любом темпе."
       },
@@ -1051,7 +1051,7 @@
     "description": "Мне исполняется 34, и я хочу отметить этот день вместе с вами. Поэтому я подготовила для вас разбор одной из моих последних хореографий и ещё немного приятных бонусов для вас. Доступ ко всем материалам останется у вас навсегда.",
     "buyButton": "Купить за {price}",
     "detailsButton": "Подробнее",
-    "aboutTitle": "Что ждёт тебя в Birthday Drop",
+    "aboutTitle": "Что ждёт тебя в The Birthday Drop",
     "suggestions": {
       "video": {
         "title": "Разбор хореографии “Love me in the morning”",

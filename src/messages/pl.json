@@ -291,7 +291,7 @@
             "highlight": "by Anna Strok"
           },
           "3": "Samouczki choreograficzne",
-          "4": "Birthday Drop"
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -422,7 +422,7 @@
             "highlight": "by Anna Strok"
           },
           "3": "Samouczki choreograficzne",
-          "4": "Birthday Drop"
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -912,9 +912,9 @@
     },
     "choreoBirthdayDrop": {
       "title": "Birthday Drop „Love me in the morning”",
-      "checkoutTitle": "Birthday Drop",
+      "checkoutTitle": "The Birthday Drop",
       "description": {
-        "1": "Rozbiór choreografii Love me in the morning, przygotowany jako osobny Birthday Drop.",
+        "1": "Rozbiór choreografii Love me in the morning, przygotowany jako osobny drop: The Birthday Drop.",
         "2": "W środku: rozbiór kombinacji, playlista, moodboard i wywiad „34 pytania do moich 34”.",
         "3": "Dostęp do materiałów zostaje na zawsze: możesz wracać i powtarzać we własnym tempie."
       },
@@ -1051,7 +1051,7 @@
     "description": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "buyButton": "Kup za {price}",
     "detailsButton": "Dowiedz się więcej",
-    "aboutTitle": "Co czeka Cię w Birthday Drop",
+    "aboutTitle": "Co czeka Cię w The Birthday Drop",
     "suggestions": {
       "video": {
         "title": "Rozbiór choreografii „Love me in the morning”",

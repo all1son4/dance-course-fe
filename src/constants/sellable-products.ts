@@ -263,7 +263,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     checkoutTitleKey: "choreoBirthdayDrop.checkoutTitle",
     code: "choreo-birthday-drop",
     description: [
-      "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный Birthday Drop.",
+      "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный дроп — The Birthday Drop.",
       "Внутри — разбор связки, плейлист, мудборд и интервью «34 вопроса к моим 34».",
       "Доступ к материалам остаётся навсегда: можно возвращаться и повторять в любом темпе.",
     ],
