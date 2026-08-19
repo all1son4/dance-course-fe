@@ -850,6 +850,10 @@
       "succeeded": "Оплата прошла успешно.",
       "confirmed": "Платежные данные подтверждены. Stripe завершит оплату, если потребуется дополнительный шаг."
     },
+    "placeholder": {
+      "missingPublishableKey": "Добавьте NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY в .env и перезапустите dev server.",
+      "awaitingClientSecret": "Stripe готов. После получения clientSecret здесь автоматически появится Payment Element."
+    },
     "errors": {
       "missingClientSecret": "Stripe не вернул client secret.",
       "catalogUnavailable": "Продажи временно недоступны. Пожалуйста, попробуйте позже.",

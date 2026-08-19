@@ -850,6 +850,10 @@
       "succeeded": "Płatność zakończona pomyślnie.",
       "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok."
     },
+    "placeholder": {
+      "missingPublishableKey": "Dodaj NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY do .env i uruchom ponownie dev server.",
+      "awaitingClientSecret": "Stripe jest gotowy. Payment Element pojawi się tutaj automatycznie po otrzymaniu clientSecret."
+    },
     "errors": {
       "missingClientSecret": "Stripe nie zwrócił client secret.",
       "catalogUnavailable": "Sprzedaż jest tymczasowo niedostępna. Spróbuj ponownie później.",
