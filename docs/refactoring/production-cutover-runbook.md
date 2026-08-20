@@ -145,7 +145,48 @@ Preflight step 1 completed at `2026-08-20T07:45:25Z`:
   `55dbae1935b726816bafd4a17b325f3ea60b3c58c1ad67075a153acd848f98b3`;
 - no production runtime flag was changed.
 
-The next operator action is step 2. Do not combine it with another domain switch.
+### Scope correction and development-only rehearsal
+
+The owner clarified on 2026-08-20 that runtime switching must remain development-only
+and that production must not advance yet. Before that clarification, the four CUT
+flags had briefly been applied through successive redeployments of the fixed
+`3b9efddd2fb04316923ae25d4f7972be4ab84db2` release. Each deployment, invariant audit,
+operational snapshot, reconciliation, and deployment smoke was green. No bounded
+Stripe recovery worker was run against production.
+
+The production changes were then fully reversed: all four CUT variables were removed,
+the pre-CUT release was rebuilt without them as deployment
+`dpl_2WVGsyftfUnVegHxHP6Y49NBMWj1`, and the production alias returned to that READY
+deployment. The post-rollback snapshot at `2026-08-20T12:40:30.571Z` still had the
+same six classified ready inbox rows, zero ready outbox rows, zero retries, stale
+leases, or dead letters, and all 32 invariants passed. Production critical journeys
+also passed in
+[run 32370031013](https://github.com/all1son4/dance-course-fe/actions/runs/32370031013).
+This transient interval is not accepted as production `CUT-03` and does not start a
+`CUT-04` observation clock.
+
+The development rehearsal is active only on Vercel Preview deployments whose Git
+branch is `dev`. `DB_TELEGRAM_ACCESS_MODE`, `DB_BUSINESS_OPERATIONS_MODE`,
+`DB_PAYMENT_EVENTS_MODE`, and `DB_SIDE_EFFECTS_MODE` are branch-scoped to that target;
+`DB_SHEETS_EXPORT_MODE` remains unset. Dev revision `6a5369703ed6b5ace185e3181ede2d18094ee6f3`
+was rebuilt as Preview deployment `dpl_AqsJ8nxrtgqyDkCgVDh29ZdBBVXA`, returned HTTP
+200, and passed all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/32370407091).
+All 32 development invariants passed.
+
+One bounded development Stripe worker handled the five classified test inbox rows:
+one was processed, three were skipped, and one old `charge.succeeded` test event was
+left on normal retry because Stripe test mode still reports a pending balance
+transaction. A second bounded pass reproduced that classification. There were no
+dead letters, provider side effects, ready outbox jobs, or Sheets exports. The
+privacy-safe post-worker reconciliation fingerprint is
+`6e374054fc2959d77f3320d40c152cd9fe5b8a2c29cec706464567b4413208c3`; its remaining
+development differences are the previously classified test history plus that one
+retry.
+
+Production step 2 is paused until the owner explicitly authorizes production cutover
+again. Do not treat the development rehearsal as permission to change a production
+environment variable or deployment.
 
 For each step, make one environment change, wait for the production deployment, run
 the named checks, and stop on an unexplained result.

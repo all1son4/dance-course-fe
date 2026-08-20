@@ -1216,8 +1216,32 @@ leases, retries, ready outbox jobs, failed links, or manual access tasks. The si
 Stripe inbox rows remain the already classified pre-cutover events. A fresh read-only
 reconciliation reproduced the accepted fingerprint
 `55dbae1935b726816bafd4a17b325f3ea60b3c58c1ad67075a153acd848f98b3`
-with no new difference. No runtime flag was changed. Resume with the controlled
-`DB_TELEGRAM_ACCESS_MODE=database` switch and its immediate smoke checks.
+with no new difference.
+
+The owner subsequently restricted all runtime switching to development. A brief
+production switch sequence performed before that clarification was fully reversed
+before any production Stripe recovery worker ran: all four CUT variables are absent,
+the fixed SHA was rebuilt without them as `dpl_2WVGsyftfUnVegHxHP6Y49NBMWj1`, the
+production alias is READY, the six inbox rows and zero-ready outbox state are
+unchanged, all 32 invariants pass, and
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/32370031013)
+are green. That interval does not complete `CUT-03` or start `CUT-04`.
+
+The development rehearsal is complete on branch-scoped Vercel Preview flags for
+`dev`: Telegram access, business operations, payment events, and side effects use
+`database`, while the Sheets exporter remains unset. Revision `6a536970` Preview
+deployment `dpl_AqsJ8nxrtgqyDkCgVDh29ZdBBVXA` returned HTTP 200, passed all 32
+development invariants and all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/32370407091).
+The bounded test-mode worker processed one inbox row, skipped three, emitted no
+outbox/export delivery, and correctly retained one old `charge.succeeded` fixture on
+retry because its test balance transaction is still pending. The privacy-safe
+post-worker fingerprint is
+`6e374054fc2959d77f3320d40c152cd9fe5b8a2c29cec706464567b4413208c3`.
+
+Production `CUT-03` remains paused until explicit owner authorization. The next
+production action, when authorized, is again the isolated Telegram switch and its
+immediate checks.
 
 ### CUT-04 — Observe
 
@@ -1362,3 +1386,5 @@ Status: `TODO`
 | 2026-08-19 | CUT-01                      | `DONE`       | Fixed rollback release `3b9efdd`; prod CI/smoke green         |
 | 2026-08-19 | CUT-02                      | `DONE`       | Neon + encrypted restore evidence; stable delta; runbook      |
 | 2026-08-20 | CUT-03 preflight            | `DONE`       | Prod SHA/invariants/queues/stable delta verified; no switch   |
+| 2026-08-20 | CUT-03 dev rehearsal        | `DONE`       | Dev-only flags; smoke/audit green; one test retry classified  |
+| 2026-08-20 | CUT-03 production scope     | `PAUSED`     | Pre-CUT mode restored; no flags; production smoke green       |
