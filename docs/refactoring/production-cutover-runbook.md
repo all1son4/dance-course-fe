@@ -134,6 +134,19 @@ than queue failures.
 
 ## `CUT-03` preflight and order
 
+Preflight step 1 completed at `2026-08-20T07:45:25Z`:
+
+- production `main` and deployment `5941899827` remain on rollback revision
+  `3b9efddd2fb04316923ae25d4f7972be4ab84db2`;
+- all 32 production invariants passed;
+- queues contain zero dead letters, stale leases, retries, or ready outbox jobs;
+- six ready inbox rows are unchanged and match the classified Stripe events above;
+- the fresh privacy-safe reconciliation reproduced fingerprint
+  `55dbae1935b726816bafd4a17b325f3ea60b3c58c1ad67075a153acd848f98b3`;
+- no production runtime flag was changed.
+
+The next operator action is step 2. Do not combine it with another domain switch.
+
 For each step, make one environment change, wait for the production deployment, run
 the named checks, and stop on an unexplained result.
 

@@ -1205,8 +1205,19 @@ owner created the provider-managed Neon snapshot
 
 ### CUT-03 — Enable domain flags gradually
 
+Status: `IN_PROGRESS`
+
 Monitor errors, inbox/outbox backlog, money totals, access delivery, stale events,
 duplicate effects, and report results after each switch.
+
+Step 1 production preflight passed on 2026-08-20. Production still runs the fixed
+rollback revision `3b9efdd`; all 32 invariants pass; there are no dead letters, stale
+leases, retries, ready outbox jobs, failed links, or manual access tasks. The six ready
+Stripe inbox rows remain the already classified pre-cutover events. A fresh read-only
+reconciliation reproduced the accepted fingerprint
+`55dbae1935b726816bafd4a17b325f3ea60b3c58c1ad67075a153acd848f98b3`
+with no new difference. No runtime flag was changed. Resume with the controlled
+`DB_TELEGRAM_ACCESS_MODE=database` switch and its immediate smoke checks.
 
 ### CUT-04 — Observe
 
@@ -1350,3 +1361,4 @@ Status: `TODO`
 | 2026-08-13 | Gate G5                     | `PASSED`     | Stable audit, fail-closed, prod CI and six journeys pass      |
 | 2026-08-19 | CUT-01                      | `DONE`       | Fixed rollback release `3b9efdd`; prod CI/smoke green         |
 | 2026-08-19 | CUT-02                      | `DONE`       | Neon + encrypted restore evidence; stable delta; runbook      |
+| 2026-08-20 | CUT-03 preflight            | `DONE`       | Prod SHA/invariants/queues/stable delta verified; no switch   |
