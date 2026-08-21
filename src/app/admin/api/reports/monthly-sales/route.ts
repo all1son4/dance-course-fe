@@ -2,7 +2,6 @@ import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links
 import { isTrustedBrowserOrigin, jsonNoStore } from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
-  listAvailableMonthlySalesReportMonths,
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
 
@@ -11,34 +10,6 @@ export const runtime = "nodejs";
 type MonthlySalesReportRequestBody = {
   reportMonth?: unknown;
 };
-
-export async function GET(request: Request) {
-  if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
-  }
-
-  try {
-    const months = await listAvailableMonthlySalesReportMonths();
-
-    return jsonNoStore({
-      months,
-    });
-  } catch (error) {
-    console.error("Failed to load monthly sales report months", error);
-
-    return jsonNoStore(
-      {
-        errorCode: "monthly_sales_report_months_failed",
-      },
-      { status: 500 },
-    );
-  }
-}
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {

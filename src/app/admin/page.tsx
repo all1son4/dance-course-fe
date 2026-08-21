@@ -19,10 +19,12 @@ import {
   RenewalCampaignsCard,
   RenewalGeneratorCard,
 } from "./components/online-group-workspace";
-import { ReportsWorkspace } from "./components/reports-workspace";
+import { OperationsWorkspace } from "./components/operations-workspace";
+import { PurchasesWorkspace } from "./components/purchases-workspace";
 import { SalesWorkspace } from "./components/sales-workspace";
 import { useBroadcastAdmin } from "./hooks/use-broadcast-admin";
-import { useReportsAdmin } from "./hooks/use-reports-admin";
+import { useOperationsAdmin } from "./hooks/use-operations-admin";
+import { usePurchasesAdmin } from "./hooks/use-purchases-admin";
 import { useSalesAdmin } from "./hooks/use-sales-admin";
 import {
   ADMIN_API_ENDPOINTS,
@@ -148,7 +150,8 @@ export default function AdminPage() {
   const isInviteLinksFeatureActive = activeFeature.id === "invite-links";
   const isOnlineGroupFeatureActive = activeFeature.id === "online-group";
   const isBroadcastsFeatureActive = activeFeature.id === "broadcasts";
-  const isReportsFeatureActive = activeFeature.id === "reports";
+  const isOperationsFeatureActive = activeFeature.id === "operations";
+  const isPurchasesFeatureActive = activeFeature.id === "purchases";
   const isSalesFeatureActive = activeFeature.id === "sales";
   const telegramChatSelectOptions: SelectOption[] = telegramChats.map((chat) => ({
     label: `${chat.title} (${chat.chatId})`,
@@ -231,17 +234,13 @@ export default function AdminPage() {
     isAuthorized,
     onUnauthorized: handleSessionExpired,
   });
-  const {
-    generate: handleGenerateMonthlySalesReport,
-    isDisabled: isMonthlySalesReportDisabled,
-    isGenerating: isGeneratingMonthlySalesReport,
-    isLoadingMonths: isLoadingMonthlySalesReportMonths,
-    month: monthlySalesReportMonth,
-    monthOptions: monthlyReportMonthOptions,
-    selectMonth: handleMonthlySalesReportMonthChange,
-    status: monthlySalesReportStatus,
-  } = useReportsAdmin({
-    isActive: isReportsFeatureActive,
+  const purchasesAdmin = usePurchasesAdmin({
+    isActive: isPurchasesFeatureActive,
+    isAuthorized,
+    onUnauthorized: handleSessionExpired,
+  });
+  const operationsAdmin = useOperationsAdmin({
+    isActive: isOperationsFeatureActive,
     isAuthorized,
     onUnauthorized: handleSessionExpired,
   });
@@ -1365,16 +1364,44 @@ export default function AdminPage() {
                 stats={firstTouchBroadcastStats}
                 status={firstTouchBroadcastStatus}
               />
-            ) : isReportsFeatureActive ? (
-              <ReportsWorkspace
-                isDisabled={isMonthlySalesReportDisabled}
-                isGenerating={isGeneratingMonthlySalesReport}
-                isLoadingMonths={isLoadingMonthlySalesReportMonths}
-                month={monthlySalesReportMonth}
-                monthOptions={monthlyReportMonthOptions}
-                onGenerate={handleGenerateMonthlySalesReport}
-                onMonthChange={handleMonthlySalesReportMonthChange}
-                status={monthlySalesReportStatus}
+            ) : isPurchasesFeatureActive ? (
+              <PurchasesWorkspace
+                appliedSearch={purchasesAdmin.appliedSearch}
+                isDownloadingReport={purchasesAdmin.isDownloadingReport}
+                isLoading={purchasesAdmin.isLoading}
+                isSendingReport={purchasesAdmin.isSendingReport}
+                monthValue={purchasesAdmin.monthValue}
+                months={purchasesAdmin.months}
+                onClearSearch={purchasesAdmin.clearSearch}
+                onDownloadReport={purchasesAdmin.downloadReport}
+                onMonthChange={purchasesAdmin.selectMonth}
+                onRefresh={purchasesAdmin.refresh}
+                onResendEmail={purchasesAdmin.resendEmail}
+                onSearchInputChange={purchasesAdmin.setSearchInput}
+                onSendReport={purchasesAdmin.sendReport}
+                onSubmitSearch={purchasesAdmin.submitSearch}
+                previousSummary={purchasesAdmin.previousSummary}
+                products={purchasesAdmin.products}
+                purchases={purchasesAdmin.purchases}
+                reportStatus={purchasesAdmin.reportStatus}
+                resendingPaymentIntentId={purchasesAdmin.resendingPaymentIntentId}
+                searchInput={purchasesAdmin.searchInput}
+                status={purchasesAdmin.status}
+                summary={purchasesAdmin.summary}
+              />
+            ) : isOperationsFeatureActive ? (
+              <OperationsWorkspace
+                copyingUrl={copyingUrl}
+                isLoading={operationsAdmin.isLoading}
+                onCopy={handleCopyLink}
+                onRefresh={operationsAdmin.refresh}
+                onReissueAccess={operationsAdmin.reissueAccess}
+                onReplay={operationsAdmin.replay}
+                reissuedLinks={operationsAdmin.reissuedLinks}
+                reissuingPaymentIntentId={operationsAdmin.reissuingPaymentIntentId}
+                replayingKey={operationsAdmin.replayingKey}
+                snapshot={operationsAdmin.snapshot}
+                status={operationsAdmin.status}
               />
             ) : null}
           </MainPanel>

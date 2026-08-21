@@ -84,7 +84,7 @@ const usesDatabaseJobs = () => getMonthlySalesReportRuntime() === "database";
 
 const pad2 = (value: number) => String(value).padStart(2, "0");
 
-const getUtcMonthValue = (date: Date) =>
+export const getUtcMonthValue = (date: Date) =>
   `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}`;
 
 const capitalizeFirstLetter = (value: string) =>
@@ -108,7 +108,7 @@ const formatAmount = (amountMinor: string, currency: string) => {
   return `${majorAmount} ${normalizedCurrency}`;
 };
 
-const parseReportMonth = (reportMonth: string) => {
+export const parseReportMonth = (reportMonth: string) => {
   const match = /^(\d{4})-(\d{2})$/u.exec(reportMonth.trim());
 
   if (!match) {
@@ -128,7 +128,7 @@ const parseReportMonth = (reportMonth: string) => {
   };
 };
 
-const formatReportMonthLabel = (monthValue: string) => {
+export const formatReportMonthLabel = (monthValue: string) => {
   const parsedReportMonth = parseReportMonth(monthValue);
 
   if (!parsedReportMonth) {
@@ -712,6 +712,29 @@ export const listAvailableMonthlySalesReportMonths = async (
     label: formatReportMonthLabel(monthValue),
     value: monthValue,
   }));
+};
+
+export const generateMonthlySalesReportCsvForMonth = async ({
+  referenceDate = new Date(),
+  reportMonth,
+}: {
+  referenceDate?: Date;
+  reportMonth: string;
+}) => {
+  const period = getMonthlySalesReportPeriod({ referenceDate, reportMonth });
+  const saleRecords = await listSucceededSaleRecordsInUtcRange({
+    endUtcIsoExclusive: period.endUtcIso,
+    startUtcIso: period.startUtcIso,
+  });
+  const { csv, rowCount, sha256 } = generateMonthlySalesReportContent(saleRecords);
+
+  return {
+    csv,
+    filename: buildAttachmentFilename(period.month),
+    month: period.month,
+    rowCount,
+    sha256,
+  };
 };
 
 export const toMonthlySalesReportDeliveryResponse = (
