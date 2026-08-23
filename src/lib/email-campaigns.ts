@@ -291,7 +291,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
         "First Touch is ready to start. You can now pay for your place and join the course.",
       steps: [
         "After payment, we will confirm your place in the group.",
-        "Next, we will add you to the Telegram group for this First Touch stream.",
+        "Next, we will add you to the Telegram group for your First Touch cohort.",
         "Inside the group you will receive instructions, lessons, homework and feedback details.",
       ],
       stepsTitle: "What happens after payment",
@@ -315,7 +315,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
         "First Touch jest gotowy do startu. Możesz już opłacić swoje miejsce i dołączyć do kursu.",
       steps: [
         "Po płatności potwierdzimy Twoje miejsce w grupie.",
-        "Następnie dodamy Cię do grupy Telegram tego streamu First Touch.",
+        "Następnie dodamy Cię do grupy Telegram tej edycji First Touch.",
         "W grupie otrzymasz instrukcje, lekcje, zadania domowe i informacje o feedbacku.",
       ],
       stepsTitle: "Co wydarzy się po płatności",

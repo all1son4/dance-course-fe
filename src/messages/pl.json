@@ -106,7 +106,7 @@
       "phone": "+48 571 571 214"
     },
     "support": {
-      "title": "Masz pytanie? Jesteśmy obok",
+      "title": "Masz pytanie? Jesteśmy tu dla Ciebie",
       "button": "Napisz do wsparcia"
     },
     "copyright": "© 2026 Dance Platform. Wszelkie prawa zastrzeżone",
@@ -328,7 +328,7 @@
         "button": "Więcej o kursie"
       },
       "choreo": {
-        "title": "Samouczki choreograficzne",
+        "title": "Samouczki moich choreografii",
         "description": {
           "1": "Samouczki online moich choreografii.",
           "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
@@ -398,7 +398,7 @@
         "title": "Impro Room",
         "description": "Praktyka improwizacji.",
         "note": "W tej grupie nie ma stałego grafiku.",
-        "details": "Co miesiąc ustalamy, kiedy i gdzie się spotykamy, ćwiczymy różne zadania, badamy niuanse i tworzymy własny język ruchu.",
+        "details": "Co miesiąc ustalamy, kiedy i gdzie się spotykamy, ćwiczymy różne zadania, badamy niuanse, detale oraz grę z muzyką i ciszą, tworzymy własny język tańca.",
         "price": "50 PLN",
         "priceSuffix": "/ za zajęcia"
       }
@@ -636,7 +636,7 @@
     },
     "suggestions": {
       "1": {
-        "title": "Samouczki choreograficzne dla poziomu średniego i kontynuującego",
+        "title": "Samouczki choreograficzne dla poziomu średniozaawansowanego i zaawansowanego",
         "text": "Otrzymujesz dostęp do wyrazistych sekwencji, techniki i ekspresji."
       },
       "2": {
@@ -677,7 +677,7 @@
     "summary": {
       "currencyLabel": "Waluta płatności",
       "amountLabel": "Kwota płatności",
-      "offerLabel": "Wariant: {offer}"
+      "offerLabel": "Pakiet: {offer}"
     },
     "renewal": {
       "text": "Potwierdź Telegram, aby odblokować płatność za kontynuację.",
@@ -685,7 +685,7 @@
       "title": "Potwierdź Telegram przed płatnością",
       "description": "Aby przedłużyć ze zniżką, potwierdź konto Telegram: sprawdzimy udział w poprzednim czacie, a po płatności wyślemy osobisty link do nowej grupy.",
       "summaryCard": {
-        "description": "Przedłużenie udziału w grupie online na kolejny cykl w specjalnej cenie.",
+        "description": "Kontynuacja udziału w Online Group na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
         "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
       },
@@ -693,11 +693,11 @@
       "targetChat": "Dostęp po płatności: {title}",
       "buttons": {
         "verify": "Potwierdź Telegram",
-        "verifying": "Sprawdzam...",
+        "verifying": "Sprawdzamy...",
         "verified": "Telegram potwierdzony"
       },
       "status": {
-        "loading": "Przygotowujemy sprawdzenie...",
+        "loading": "Przygotowujemy weryfikację...",
         "ready": "Kliknij niebieską ikonę, aby potwierdzić konto Telegram.",
         "openingTelegram": "Potwierdź logowanie w Telegramie. Po potwierdzeniu spróbujemy automatycznie wrócić do płatności.",
         "checkingMembership": "Sprawdzamy czat...",
@@ -706,7 +706,7 @@
         "verifiedAsWithProfile": "Gotowe: {username}. Dane zostały uzupełnione — sprawdź je.",
         "notMember": "Tego konta Telegram nie znaleziono w starym czacie.",
         "usernameMismatch": "Wpisana nazwa użytkownika nie pasuje do potwierdzonego konta Telegram.",
-        "loadFailed": "Nie udało się załadować sprawdzenia.",
+        "loadFailed": "Nie udało się załadować weryfikacji.",
         "failed": "Nie udało się potwierdzić Telegrama."
       }
     },
@@ -785,7 +785,7 @@
       },
       "birthdayDrop": {
         "line1": "Przygotowujemy Twój osobisty dostęp do materiałów.",
-        "line2": "Link pojawi się poniżej i przyjdzie także na e-mail."
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       }
     },
     "accessNotice": {
@@ -934,8 +934,8 @@
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",
-        "renewalDiscount": "Przedłużenie Standard",
-        "renewalLibraryAccess": "Przedłużenie Plus"
+        "renewalDiscount": "Kontynuacja Standard",
+        "renewalLibraryAccess": "Kontynuacja Plus"
       }
     }
   },

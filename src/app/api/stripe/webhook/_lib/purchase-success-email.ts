@@ -17,7 +17,7 @@ const EMAIL_COPY = {
     backToSite: "Back to website",
     defaultOfferLabel: "Standard access",
     heading: "Thank you, your payment was successful",
-    intro: "We have prepared your course access and receipt details.",
+    intro: "We have prepared your access to the materials and the receipt details.",
     invoiceAttached: "The PDF invoice is attached to this email.",
     limitedAccessValidity:
       "Access to the materials is provided for {days} days from joining.",
@@ -101,7 +101,7 @@ const EMAIL_COPY = {
     backToSite: "Wróć na stronę",
     defaultOfferLabel: "Dostęp standardowy",
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
-    intro: "Przygotowaliśmy dostęp do kursu oraz dane dotyczące rachunku.",
+    intro: "Przygotowaliśmy dostęp do materiałów oraz potwierdzenie płatności.",
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
     limitedAccessValidity:
       "Dostęp do materiałów jest przyznawany na {days} dni od dołączenia.",
@@ -115,12 +115,13 @@ const EMAIL_COPY = {
     offerLabel: "Pakiet",
     paymentSucceededText: "Płatność zakończyła się sukcesem",
     productLabel: "Produkt",
-    receiptLinkCta: "Otwórz paragon Stripe",
-    receiptLinkValidity: "Link do paragonu jest tymczasowy i zwykle działa do 30 dni.",
-    receiptPdfCta: "Pobierz paragon PDF",
+    receiptLinkCta: "Otwórz potwierdzenie Stripe",
+    receiptLinkValidity:
+      "Link do potwierdzenia jest tymczasowy i zwykle działa do 30 dni.",
+    receiptPdfCta: "Pobierz potwierdzenie PDF",
     receiptPending:
-      "Paragon Stripe jest jeszcze przygotowywany. Wyślemy go, gdy tylko będzie dostępny.",
-    receiptTitle: "Rachunek za płatność",
+      "Potwierdzenie płatności Stripe jest jeszcze przygotowywane. Wyślemy je, gdy tylko będzie dostępne.",
+    receiptTitle: "Potwierdzenie płatności",
     siteLabel: "Strona",
     subjectPrefix: "Płatność potwierdzona",
     summaryTitle: "Podsumowanie zakupu",

@@ -24,7 +24,7 @@
       },
       "firstTouch": {
         "title": "First Touch — Frame Up Strip for Beginners",
-        "description": "Frame Up Strip from scratch: technique, footwork, body control and emotion. In six weeks you learn your first choreography. Lesson access for four months.",
+        "description": "Frame Up Strip from scratch: technique, footwork, body control and emotion. In 1.5 months you learn your first choreography. Lesson access for four months.",
         "ogImageAlt": "First Touch beginner course by Anna Strok",
         "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
       },
@@ -73,7 +73,7 @@
     "menu": {
       "offline": "Offline",
       "online": "Online",
-      "contacts": "Contacts",
+      "contacts": "Contact",
       "ariaLabel": "Primary navigation"
     },
     "language": {
@@ -106,7 +106,7 @@
       "phone": "+48 571 571 214"
     },
     "support": {
-      "title": "Have a question? We are here",
+      "title": "Have a question? We're here to help",
       "button": "Contact support"
     },
     "copyright": "© 2026 Dance Platform. All rights reserved",
@@ -114,7 +114,7 @@
     "cookieSettings": "Cookie settings"
   },
   "Contacts": {
-    "title": "Contacts",
+    "title": "Contact",
     "description": {
       "one": "If you have questions or want to learn more about my classes, reach out in any way that is convenient for you."
     },
@@ -137,7 +137,7 @@
       },
       "3": {
         "question": "Can I join in the middle of a month or course?",
-        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the \"Contacts\" section."
+        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the \"Contact\" section."
       },
       "4": {
         "question": "Is Frame Up right for me if I feel shy or afraid to move?",
@@ -157,7 +157,7 @@
       },
       "8": {
         "question": "Can I attend a trial class?",
-        "answer": "Yes, you can attend a trial class for only 70 PLN in the offline beginner or continuing groups. Registration is available here:",
+        "answer": "Yes, you can attend a trial class for only 70 PLN in the offline beginner or advanced groups. Registration is available here:",
         "linkLabel": "Open registration form"
       },
       "9": {
@@ -265,7 +265,7 @@
         "items": {
           "1": {
             "highlight": "Beginners",
-            "text": "for beginners"
+            "text": "learn from scratch"
           },
           "2": {
             "highlight": "Advanced group",
@@ -342,7 +342,7 @@
       "birthdayDrop": {
         "title": "The Birthday Drop",
         "description": {
-          "1": "I am turning 34, and I want to mark the day together with you.",
+          "1": "I am turning 34, and I want to celebrate this day together with you.",
           "2": "So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you."
         },
         "salesLabel": "Sales open until 7 September",
@@ -385,7 +385,7 @@
         "priceSuffix": "/ per month"
       },
       "advanced": {
-        "title": "Continuing group",
+        "title": "Advanced group",
         "description": "For dancers who strive for detail, dynamics and deeper style understanding, and want to improve musicality while working on technique, performance quality and memorizing more advanced choreographies.",
         "schedule": {
           "1": "Monday 19:00-20:30",
@@ -398,7 +398,7 @@
         "title": "Impro Room",
         "description": "Improvisation practice.",
         "note": "This group has no fixed schedule.",
-        "details": "Every month we decide when and where to meet, practice different exercises, explore details and nuances, and build our own dance language.",
+        "details": "Every month we decide when and where to meet, practice different exercises, explore nuances, details and the interplay with music and silence, and build our own dance language.",
         "price": "50 PLN",
         "priceSuffix": "/ per class"
       }
@@ -636,7 +636,7 @@
     },
     "suggestions": {
       "1": {
-        "title": "Choreography tutorials for intermediate and continuing level",
+        "title": "Choreography tutorials for intermediate and advanced levels",
         "text": "Get access to expressive combinations, technique and performance quality."
       },
       "2": {
@@ -784,8 +784,8 @@
         "line2": "The available links will appear below and are also sent to your email."
       },
       "birthdayDrop": {
-        "line1": "We are preparing your personal access to the materials.",
-        "line2": "The link will appear below and will also arrive by email."
+        "line1": "We’re preparing your personal access to the materials.",
+        "line2": "The link will appear below and is also sent to your email."
       }
     },
     "accessNotice": {
@@ -915,7 +915,7 @@
       "checkoutTitle": "The Birthday Drop",
       "description": {
         "1": "An online breakdown of the Love me in the morning choreography, put together as a separate drop: The Birthday Drop.",
-        "2": "Inside: the breakdown itself, a playlist, a moodboard and a YouTube link to the “34 questions to my 34” interview.",
+        "2": "Inside: the breakdown itself, a playlist, a moodboard and a YouTube link to the “34 questions for my 34th” interview.",
         "3": "Access to the materials stays forever: come back and repeat at your own pace."
       },
       "accessNote": "Lifetime access to the materials through a private Telegram channel.",
@@ -1042,13 +1042,13 @@
   },
   "BirthdayPopup": {
     "title": "Happy Birthday to me!",
-    "text": "I am turning 34, and I want to mark the day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
+    "text": "I am turning 34, and I want to celebrate this day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
     "cta": "Learn more",
     "close": "Close"
   },
   "BirthdayDropPage": {
     "title": "The Birthday Drop<br></br>“Love me in the morning”",
-    "description": "I am turning 34, and I want to mark the day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
+    "description": "I am turning 34, and I want to celebrate this day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
     "buyButton": "Buy for {price}",
     "detailsButton": "Learn more",
     "aboutTitle": "What awaits you in The Birthday Drop",
@@ -1062,11 +1062,11 @@
         "text": "A selection of my own favourite tracks: music tied to me, to my style and to different periods of my work."
       },
       "questions": {
-        "title": "34 questions to my 34",
+        "title": "34 questions for my 34th",
         "text": "A YouTube link to an interview with me — a reflection on what I feel, what I have learned, what I have rethought and where I want to go next. Honest, deep and real."
       },
       "moodboard": {
-        "title": "A moodboard for the choreography",
+        "title": "An inspiration moodboard for the choreography",
         "text": "<p>Atmosphere, character, colour, style — everything that helps you feel the choreography before the very first step:</p><list><item>the colour palette;</item><item>clothes and shoes;</item><item>hair and make-up;</item><item>light and location.</item></list>"
       },
       "access": {
