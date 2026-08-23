@@ -82,7 +82,7 @@ const BIRTHDAY_SUGGESTION_DEFINITIONS = [
 ] satisfies readonly OnlineSuggestionDefinition[];
 
 /**
- * Checkout details for the Birthday Drop button: the link and the price both
+ * Checkout details for The Birthday Drop button: the link and the price both
  * come from the catalogue, so the page never carries a second copy of a price.
  */
 export const getBirthdayDropCheckout = () => {

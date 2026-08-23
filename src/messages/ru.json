@@ -59,9 +59,9 @@
         "keywords": "cookie policy anna strok, политика cookies, согласие на cookie, настройки cookies сайта"
       },
       "birthdayDrop": {
-        "title": "Birthday Drop «Love me in the morning»",
+        "title": "The Birthday Drop «Love me in the morning»",
         "description": "Разбор хореографии «Love me in the morning», плейлист, мудборд и YouTube-ссылка на интервью «34 вопроса». Доступ ко всем материалам навсегда, оплата из любой страны.",
-        "ogImageAlt": "Birthday Drop «Love me in the morning» от Анны Строк",
+        "ogImageAlt": "The Birthday Drop «Love me in the morning» от Анны Строк",
         "keywords": "birthday drop, love me in the morning, разбор хореографии онлайн, frame up choreography, anna strok choreography"
       }
     }
@@ -911,7 +911,7 @@
       }
     },
     "choreoBirthdayDrop": {
-      "title": "Birthday Drop «Love me in the morning»",
+      "title": "The Birthday Drop «Love me in the morning»",
       "checkoutTitle": "The Birthday Drop",
       "description": {
         "1": "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный дроп — The Birthday Drop.",
@@ -1047,7 +1047,7 @@
     "close": "Закрыть"
   },
   "BirthdayDropPage": {
-    "title": "Birthday Drop<br></br>“Love me in the morning”",
+    "title": "The Birthday Drop<br></br>“Love me in the morning”",
     "description": "Мне исполняется 34, и я хочу отметить этот день вместе с вами. Поэтому я подготовила для вас разбор одной из моих последних хореографий и ещё немного приятных бонусов для вас. Доступ ко всем материалам останется у вас навсегда.",
     "buyButton": "Купить за {price}",
     "detailsButton": "Подробнее",

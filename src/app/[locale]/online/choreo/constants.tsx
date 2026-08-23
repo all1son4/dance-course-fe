@@ -163,7 +163,7 @@ export const getOnlineSuggestions = (
 
 /**
  * The regular breakdowns are the ones sold with and without a mentor. The
- * Birthday Drop is a choreo too, but it has its own section on this page, so it
+ * The Birthday Drop is a choreo too, but it has its own section on this page, so it
  * is deliberately kept out of the catalogue instead of being listed twice.
  */
 const isRegularChoreoProduct = (product: SellableProduct) =>

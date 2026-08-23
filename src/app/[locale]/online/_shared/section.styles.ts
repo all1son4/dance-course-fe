@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 /**
  * The white rounded slab and the about-cards grid inside it. Shared by the
- * choreography page and the Birthday Drop page, which lay out that section the
+ * choreography page and The Birthday Drop page, which lay out that section the
  * same way.
  */
 export const SpecialWrapper = styled.div`

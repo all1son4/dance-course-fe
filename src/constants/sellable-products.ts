@@ -275,7 +275,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     id: "prd_choreo_birthday_drop",
     salesEnabled: true,
     slug: "birthday-drop",
-    title: 'Birthday Drop "Love me in the morning"',
+    title: 'The Birthday Drop "Love me in the morning"',
     titleKey: "choreoBirthdayDrop.title",
     type: "choreo",
     defaultOfferId: "off_choreo_birthday_drop_standard",
