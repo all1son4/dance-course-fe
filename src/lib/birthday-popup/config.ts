@@ -35,7 +35,7 @@ const HOUR_MS = 3_600_000;
  * simply left it alone gets it again on the next page load, because ignoring it
  * carries no decision.
  */
-export const REACTED_COOLDOWN_MS = 8 * HOUR_MS;
+export const REACTED_COOLDOWN_MS = 4 * HOUR_MS;
 
 /**
  * Not a cadence rule but a guard for one page view: it keeps the card from
@@ -44,12 +44,7 @@ export const REACTED_COOLDOWN_MS = 8 * HOUR_MS;
  */
 export const BIRTHDAY_POPUP_SAME_VIEW_GAP_MS = 30 * 60_000;
 
-/**
- * Safety valve. MAX_IMPRESSIONS counts rounds the visitor actually reacted to,
- * so reloads they ignored never eat into it; the day window is what bounds a
- * visitor who never reacts at all.
- */
-export const MAX_IMPRESSIONS = 20;
+/** Campaign lifetime, counted from the first time the popup was shown. */
 export const MAX_CAMPAIGN_DAYS = 21;
 
 export const isBirthdayOfferId = (offerId: string) =>

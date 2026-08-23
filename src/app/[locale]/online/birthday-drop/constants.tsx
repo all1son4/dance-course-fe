@@ -48,17 +48,17 @@ const BIRTHDAY_SUGGESTION_DEFINITIONS = [
     textKey: "suggestions.playlist.text",
   },
   {
-    id: "questions",
-    icon: OnlineQuestion,
-    titleKey: "suggestions.questions.title",
-    textKey: "suggestions.questions.text",
-  },
-  {
     id: "moodboard",
     icon: OnlineInspiration,
     titleKey: "suggestions.moodboard.title",
     textKey: "suggestions.moodboard.text",
     textResolver: "rich",
+  },
+  {
+    id: "questions",
+    icon: OnlineQuestion,
+    titleKey: "suggestions.questions.title",
+    textKey: "suggestions.questions.text",
   },
   {
     id: "access",

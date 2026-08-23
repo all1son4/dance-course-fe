@@ -974,7 +974,7 @@ const PaymentPage = observer(function PaymentPage() {
   }, [paymentStore, searchKey]);
 
   // Reaching checkout for the campaign offer counts as "thinking about it": the
-  // birthday popup stays quiet until the next day even if the payment is dropped.
+  // birthday popup observes the reaction cooldown even if the payment is dropped.
   useEffect(() => {
     const offerId = new URLSearchParams(searchKey).get("offer");
 

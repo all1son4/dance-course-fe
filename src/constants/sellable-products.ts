@@ -264,7 +264,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     code: "choreo-birthday-drop",
     description: [
       "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный дроп — The Birthday Drop.",
-      "Внутри — разбор связки, плейлист, мудборд и интервью «34 вопроса к моим 34».",
+      "Внутри — разбор связки, плейлист, мудборд и YouTube-ссылка на интервью «34 вопроса к моим 34».",
       "Доступ к материалам остаётся навсегда: можно возвращаться и повторять в любом темпе.",
     ],
     descriptionKeys: [
@@ -293,8 +293,8 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         label: "Стандартный доступ",
         labelKey: "choreoBirthdayDrop.offers.standard",
         prices: {
-          pln: 85,
-          eur: 20,
+          pln: 65,
+          eur: 15,
         },
         // Unused for this offer - access never expires - but the field is
         // required by the catalogue and the database check demands >= 0.

@@ -166,8 +166,13 @@ export const useBirthdayPopup = () => {
     recordSignal("clicked");
   }, [pathname, recordSignal]);
 
+  // Shared layouts survive client navigation. Close an already-visible card
+  // when the visitor reaches a route where the popup itself is not allowed.
   useEffect(() => {
-    if (navigatedFromRef.current === null || navigatedFromRef.current === pathname) {
+    const hasCompletedCallToActionNavigation =
+      navigatedFromRef.current !== null && navigatedFromRef.current !== pathname;
+
+    if (!hasCompletedCallToActionNavigation && !isExcludedPath(pathname)) {
       return;
     }
 

@@ -4,12 +4,7 @@
  * No storage and no browser APIs live here.
  */
 
-import {
-  BIRTHDAY_POPUP_ENABLED,
-  MAX_CAMPAIGN_DAYS,
-  MAX_IMPRESSIONS,
-  REACTED_COOLDOWN_MS,
-} from "./config";
+import { BIRTHDAY_POPUP_ENABLED, MAX_CAMPAIGN_DAYS, REACTED_COOLDOWN_MS } from "./config";
 
 export type BirthdayPopupState = {
   version: 1;
@@ -86,7 +81,7 @@ const getLastReactionAt = (state: BirthdayPopupState): Date | null => {
  * Pure decision rule.
  *
  * - bought it                                        -> never again
- * - dismissed, opened the offer, or started checkout -> quiet for 8 hours
+ * - dismissed, opened the offer, or started checkout -> quiet for 4 hours
  * - shown and left alone                             -> again on the next page load
  */
 export const shouldShowBirthdayPopup = (
@@ -94,10 +89,6 @@ export const shouldShowBirthdayPopup = (
   now: Date,
 ): boolean => {
   if (!BIRTHDAY_POPUP_ENABLED || state.purchasedAt) {
-    return false;
-  }
-
-  if (state.seenCount >= MAX_IMPRESSIONS) {
     return false;
   }
 
@@ -134,12 +125,8 @@ export const applyBirthdayPopupSignal = (
     case "seen": {
       const lastSeenAt = parseDate(state.lastSeenAt);
       const lastReactionAt = getLastReactionAt(state);
-      /**
-       * The cap counts rounds of nagging, not raw appearances: while the visitor
-       * keeps leaving the popup alone, every repeat - a reload, a fresh entry -
-       * belongs to the round already counted. A new round starts only after they
-       * actually reacted to the previous one.
-       */
+      // Kept as campaign history and for compatibility with the version 1
+      // storage shape. This counter no longer limits whether the popup appears.
       const startsNewRound =
         lastSeenAt === null ||
         (lastReactionAt !== null && lastReactionAt.getTime() > lastSeenAt.getTime());
