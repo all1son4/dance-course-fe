@@ -21,6 +21,7 @@ import {
 } from "@/constants/countries";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
+  BIRTHDAY_DROP_PRODUCT_ID,
   formatCheckoutPrice,
   getDefaultCheckoutCurrencyByLocale,
   getResolvedCheckoutCurrency,
@@ -159,13 +160,13 @@ const formatTelegramUsernameInput = (value: string) => {
 };
 
 const getVisiblePaymentInputs = ({
-  isChoreoProduct,
   isRenewalCheckout,
+  showsLessonLanguage,
 }: {
-  isChoreoProduct: boolean;
   isRenewalCheckout: boolean;
+  showsLessonLanguage: boolean;
 }): PaymentInputConfig[] => {
-  const productInputs = isChoreoProduct
+  const productInputs = showsLessonLanguage
     ? PAYMENT_INPUTS
     : PAYMENT_INPUTS.filter((inputConfig) => inputConfig.name !== "lessonLanguage");
 
@@ -846,6 +847,10 @@ const PaymentPage = observer(function PaymentPage() {
   const [renewalStatusText, setRenewalStatusText] = useState("");
   const hasHydratedCheckoutDraftRef = useRef(false);
   const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
+  // The drop ships one Telegram channel with both languages inside, so a
+  // language choice on its checkout would be meaningless noise.
+  const showsLessonLanguage =
+    isChoreoProduct && paymentStore.selectedProduct.id !== BIRTHDAY_DROP_PRODUCT_ID;
   const isOnlineGroupCheckout =
     paymentStore.selectedProduct.code === "online-group-anna-strok";
   const isOnlineGroupPlusCheckout =
@@ -866,12 +871,12 @@ const PaymentPage = observer(function PaymentPage() {
   const selectedProductCompactTitle =
     checkoutTitle || getCompactSummaryTitle(selectedProductTitle);
   const productPaymentInputs = getVisiblePaymentInputs({
-    isChoreoProduct,
     isRenewalCheckout: false,
+    showsLessonLanguage,
   });
   const visiblePaymentInputs = getVisiblePaymentInputs({
-    isChoreoProduct,
     isRenewalCheckout,
+    showsLessonLanguage,
   });
   const isRenewalVerified = !isRenewalCheckout || renewalStatus === "verified";
   const canRevealStripe = paymentStore.canShowStripe && isRenewalVerified;
