@@ -26,4 +26,5 @@ export type TInput = {
   inputMask?: InputMaskPattern | null;
   id?: string;
   selectOptions?: InputOption[];
+  autoComplete?: string;
 };

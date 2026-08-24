@@ -181,10 +181,14 @@ export const redirectToResultPage = (
     return;
   }
 
-  try {
-    sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-  } catch {
-    // Payment completion must not be blocked by strict browser storage policies.
+  // The draft outlives a failed attempt so "back to payment" restores the
+  // filled form; only a completed purchase discards it.
+  if (pathname === PAYMENT_RESULT_PATHS.success) {
+    try {
+      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+    } catch {
+      // Payment completion must not be blocked by strict browser storage policies.
+    }
   }
 
   window.location.assign(

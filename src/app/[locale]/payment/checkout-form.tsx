@@ -79,6 +79,7 @@ const CheckoutInput = ({
 }: CheckoutInputProps) => {
   const inputNode = (
     <Input
+      autoComplete={field.autoComplete}
       errorMessage={field.errorMessage}
       id={field.id}
       label={field.label}
