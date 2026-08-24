@@ -19,6 +19,7 @@ import {
 } from "@/lib/seo";
 
 import { buildCourseOffersStructuredData } from "../_shared/structured-data";
+import { ClosedIconBox, ClosedSalesCard } from "../choreo/page.styles";
 import { getOnlineSuggestions } from "./constants";
 import {
   AboutCourseCards,
@@ -178,6 +179,22 @@ export default async function OnlineGroupPage() {
   const renderTariffSection = () => (
     <TariffSection id="tariffs">
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
+      {/* Without this card, closed sales leave the tariff cards buttonless and
+          the hero call to action pointing at an empty spot. */}
+      {!isSaleOpen && (
+        <ClosedSalesCard>
+          <ClosedIconBox>
+            <SvgAsset
+              src="/svg/Exclamation.webp"
+              width={57}
+              height={60}
+              sizes="(max-width: 767px) 34px, 57px"
+              unoptimized
+            />
+          </ClosedIconBox>
+          <p>{t("tariffs.closedNotice")}</p>
+        </ClosedSalesCard>
+      )}
       <TariffOptionsBox>
         {standardOffer ? (
           <CourseCard
