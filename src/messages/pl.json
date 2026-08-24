@@ -581,7 +581,8 @@
           "9": "Playlisty, moodboardy i filmy dla inspiracji",
           "10": "Przydatne rekomendacje"
         }
-      }
+      },
+      "closedNotice": "Sprzedaż jest tymczasowo zamknięta"
     },
     "about": {
       "title": "Co czeka Cię w Online Group"
@@ -708,6 +709,10 @@
         "usernameMismatch": "Wpisana nazwa użytkownika nie pasuje do potwierdzonego konta Telegram.",
         "loadFailed": "Nie udało się załadować weryfikacji.",
         "failed": "Nie udało się potwierdzić Telegrama."
+      },
+      "unavailable": {
+        "title": "Ten link do przedłużenia jest już nieaktywny",
+        "description": "Wygląda na to, że ta kampania przedłużeń dobiegła końca lub link wygasł. Napisz do nas — pomożemy przedłużyć udział."
       }
     },
     "inputs": {
@@ -753,6 +758,11 @@
       "withdrawalNoticeAcknowledgement": "Przyjmuję do wiadomości, że po uzyskaniu natychmiastowego dostępu do treści cyfrowych tracę prawo do odstąpienia od umowy w ciągu 14 dni.",
       "privacyPolicyAcknowledgement": "Oświadczam, że zapoznałam się z <link>polityką prywatności</link>.",
       "digitalContentAgreement": "Akceptuję warunki i zawieram umowę o dostarczenie treści cyfrowych."
+    },
+    "staleLink": {
+      "title": "Link jest nieaktualny",
+      "description": "Ta oferta nie jest już dostępna. Zobacz aktualne kursy i materiały — tam znajdziesz wszystko, co jest teraz w sprzedaży.",
+      "catalogButton": "Zobacz kursy"
     }
   },
   "PaymentSuccessPage": {
@@ -1081,6 +1091,7 @@
         "title": "Płatność z dowolnego kraju",
         "text": "<p>Możesz zapłacić kartą <strong>Visa / Mastercard</strong>, przez <strong>BLIK</strong> lub za pomocą <strong>Google/Apple Pay</strong> z dowolnego kraju, w tym z Białorusi.</p><p>Dostępne waluty: <strong>PLN</strong> i <strong>EUR</strong>. Jeśli Twoja karta jest w innej walucie, bank automatycznie przeliczy płatność.</p>"
       }
-    }
+    },
+    "closedNotice": "Sprzedaż jest tymczasowo zamknięta."
   }
 }

@@ -581,7 +581,8 @@
           "9": "Playlists, moodboards and inspiration videos",
           "10": "Helpful recommendations"
         }
-      }
+      },
+      "closedNotice": "Sales are temporarily closed"
     },
     "about": {
       "title": "What to expect in the Online Group"
@@ -708,6 +709,10 @@
         "usernameMismatch": "The entered username does not match the confirmed Telegram account.",
         "loadFailed": "Could not load the check.",
         "failed": "Could not confirm Telegram."
+      },
+      "unavailable": {
+        "title": "This renewal link is no longer active",
+        "description": "It looks like this renewal campaign has ended or the link has expired. Message us and we will help you renew."
       }
     },
     "inputs": {
@@ -753,6 +758,11 @@
       "withdrawalNoticeAcknowledgement": "I acknowledge that after receiving immediate access to digital content, I lose the right to withdraw from the agreement within 14 days.",
       "privacyPolicyAcknowledgement": "I declare that I have read the <link>privacy policy</link>.",
       "digitalContentAgreement": "I accept the terms and conclude the agreement for the delivery of digital content."
+    },
+    "staleLink": {
+      "title": "This link is out of date",
+      "description": "This offer is no longer available. Take a look at the current courses and materials to see what is on now.",
+      "catalogButton": "Browse courses"
     }
   },
   "PaymentSuccessPage": {
@@ -1081,6 +1091,7 @@
         "title": "Pay from any country",
         "text": "<p>You can pay by <strong>Visa / Mastercard</strong>, via <strong>BLIK</strong>, or with <strong>Google/Apple Pay</strong> from any country, including Belarus.</p><p>Available currencies: <strong>PLN</strong> and <strong>EUR</strong>. If your card is in another currency, your bank will automatically convert the amount.</p>"
       }
-    }
+    },
+    "closedNotice": "Sales are temporarily closed."
   }
 }

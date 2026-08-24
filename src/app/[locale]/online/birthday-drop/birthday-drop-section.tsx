@@ -47,6 +47,12 @@ export default async function BirthdayDropSection() {
           <BirthdayTextContentDescription>
             {t("description")}
           </BirthdayTextContentDescription>
+          {/* Closed sales must read as a state, not as a missing button. */}
+          {!checkout && (
+            <BirthdayTextContentDescription>
+              {t("closedNotice")}
+            </BirthdayTextContentDescription>
+          )}
           <BirthdayContentButtons>
             {checkout ? (
               <Button

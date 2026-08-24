@@ -40,6 +40,7 @@ export const useTelegramRenewal = ({
   const [renewalNonce, setRenewalNonce] = useState("");
   const [renewalStatus, setRenewalStatus] = useState<RenewalStatus>("idle");
   const [renewalStatusText, setRenewalStatusText] = useState("");
+  const [isRenewalUnavailable, setIsRenewalUnavailable] = useState(false);
 
   const renewalStatusTone = resolveRenewalStatusTone(renewalStatus);
 
@@ -49,6 +50,7 @@ export const useTelegramRenewal = ({
       setRenewalNonce("");
       setRenewalStatus("idle");
       setRenewalStatusText("");
+      setIsRenewalUnavailable(false);
       return;
     }
 
@@ -58,6 +60,7 @@ export const useTelegramRenewal = ({
       slug: renewalSlug,
     });
 
+    setIsRenewalUnavailable(false);
     setRenewalStatus("loading");
     setRenewalStatusText(t("renewal.status.loading"));
 
@@ -71,6 +74,13 @@ export const useTelegramRenewal = ({
         if (!response.ok || data.status !== "ready" || !data.campaign) {
           throw new Error(data.errorCode ?? "renewal_campaign_load_failed");
         }
+
+        // The campaign defines what is being renewed; a renewal link without
+        // product parameters must not fall back to the default product.
+        paymentStore.configureCheckoutSelection({
+          offerId: data.campaign.offerId,
+          productId: data.campaign.productId,
+        });
 
         const verifiedUsername = formatTelegramUsernameInput(
           data.telegramUser?.username ?? "",
@@ -94,10 +104,18 @@ export const useTelegramRenewal = ({
           return;
         }
 
+        // A missing or deactivated campaign is terminal: no retry can revive
+        // the link, so the page swaps the locked form for a clear notice.
+        const isTerminalCampaignError =
+          error instanceof Error &&
+          (error.message === "renewal_campaign_not_found" ||
+            error.message === "renewal_campaign_inactive");
+
         setRenewalClientId("");
         setRenewalNonce("");
         setRenewalStatus("error");
         setRenewalStatusText(t("renewal.status.loadFailed"));
+        setIsRenewalUnavailable(isTerminalCampaignError);
       });
 
     return () => {
@@ -206,6 +224,7 @@ export const useTelegramRenewal = ({
   };
 
   return {
+    isRenewalUnavailable,
     renewalClientId,
     renewalNonce,
     renewalStatus,

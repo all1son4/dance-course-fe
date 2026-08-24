@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
 import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-intent/lib";
+import Button from "@/components/common/Button";
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 
-import { ResultParagraph } from "../result-page.styles";
+import { ResultButtonBox, ResultParagraph } from "../result-page.styles";
 import { resolveSuccessPageOutcomeAction } from "./success-outcome";
 
 const STATUS_CHECK_MAX_ATTEMPTS = 4;
@@ -17,9 +19,11 @@ type SuccessRedirectGuardProps = {
   checkingText: string;
   checkoutSessionId: string;
   failedPath: string;
+  homeButtonText: string;
   paymentIntentId: string;
   paymentPath: string;
   pendingText: string;
+  supportButtonText: string;
   unavailableText: string;
 };
 
@@ -30,9 +34,11 @@ export default function SuccessRedirectGuard({
   checkingText,
   checkoutSessionId,
   failedPath,
+  homeButtonText,
   paymentIntentId,
   paymentPath,
   pendingText,
+  supportButtonText,
   unavailableText,
 }: SuccessRedirectGuardProps) {
   const router = useRouter();
@@ -159,16 +165,34 @@ export default function SuccessRedirectGuard({
   }
 
   return (
-    <ResultParagraph
-      role={verificationState === "unavailable" ? "alert" : "status"}
-      aria-atomic="true"
-      aria-live={verificationState === "unavailable" ? "assertive" : "polite"}
-    >
-      {verificationState === "checking"
-        ? checkingText
-        : verificationState === "pending"
-          ? pendingText
-          : unavailableText}
-    </ResultParagraph>
+    <>
+      <ResultParagraph
+        role={verificationState === "unavailable" ? "alert" : "status"}
+        aria-atomic="true"
+        aria-live={verificationState === "unavailable" ? "assertive" : "polite"}
+      >
+        {verificationState === "checking"
+          ? checkingText
+          : verificationState === "pending"
+            ? pendingText
+            : unavailableText}
+      </ResultParagraph>
+      {/* Header and footer are hidden on result pages, so the settled
+          non-success states carry their own minimal way out. A processing
+          payment only needs patience and a way home; the support button
+          appears once the status truly could not be confirmed. */}
+      {verificationState !== "checking" && (
+        <ResultButtonBox>
+          {verificationState === "unavailable" && (
+            <Button
+              buttonText={supportButtonText}
+              href={SUPPORT_TELEGRAM_URL}
+              target="_blank"
+            />
+          )}
+          <Button buttonText={homeButtonText} href="/" variant="secondary" />
+        </ResultButtonBox>
+      )}
+    </>
   );
 }

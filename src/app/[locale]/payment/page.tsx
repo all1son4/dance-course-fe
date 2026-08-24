@@ -117,6 +117,7 @@ const PaymentPage = observer(function PaymentPage() {
     showsLessonLanguage,
   });
   const {
+    isRenewalUnavailable,
     renewalClientId,
     renewalNonce,
     renewalStatus,
@@ -131,6 +132,22 @@ const PaymentPage = observer(function PaymentPage() {
     t,
   });
   const isRenewalVerified = !isRenewalCheckout || renewalStatus === "verified";
+
+  // A stale or mistyped link must not silently sell the default product: when
+  // the requested product or offer is missing from the ready catalogue, the
+  // form gives way to an honest notice pointing at the current offerings.
+  const requestedProductId = new URLSearchParams(searchKey).get("product") ?? "";
+  const requestedOfferId = new URLSearchParams(searchKey).get("offer") ?? "";
+  const requestedProduct = requestedProductId
+    ? paymentStore.sellableProducts.find((product) => product.id === requestedProductId)
+    : undefined;
+  const isStaleCheckoutLink =
+    paymentStore.catalogStatus === "ready" &&
+    !isRenewalCheckout &&
+    ((Boolean(requestedProductId) && !requestedProduct) ||
+      (Boolean(requestedProduct) &&
+        Boolean(requestedOfferId) &&
+        !requestedProduct?.offers.some((offer) => offer.id === requestedOfferId)));
   const canRevealStripe = paymentStore.canShowStripe && isRenewalVerified;
   const stripeIntentErrorText = paymentStore.isCatalogUnavailable
     ? stripeT("errors.catalogUnavailable")
@@ -514,13 +531,17 @@ const PaymentPage = observer(function PaymentPage() {
               : t("description")}
           </PaymentDescription>
         </TextBox>
-        <SummaryBoxMobile>
-          <CheckoutSummaryCard
-            {...summaryProps}
-            isMobile
-            title={selectedProductCompactTitle}
-          />
-        </SummaryBoxMobile>
+        {/* With an invalid link the selected product is just the fallback, so
+            showing its summary next to the notice would mislead. */}
+        {!isRenewalUnavailable && !isStaleCheckoutLink && (
+          <SummaryBoxMobile>
+            <CheckoutSummaryCard
+              {...summaryProps}
+              isMobile
+              title={selectedProductCompactTitle}
+            />
+          </SummaryBoxMobile>
+        )}
         {paymentStore.isSalesClosed ? (
           <SalesClosedNotice>
             <SalesClosedTitle>{t("salesClosed.title")}</SalesClosedTitle>
@@ -533,6 +554,25 @@ const PaymentPage = observer(function PaymentPage() {
               href={SUPPORT_TELEGRAM_URL}
               target="_blank"
             />
+          </SalesClosedNotice>
+        ) : isRenewalUnavailable ? (
+          <SalesClosedNotice>
+            <SalesClosedTitle>{t("renewal.unavailable.title")}</SalesClosedTitle>
+            <SalesClosedDescription>
+              {t("renewal.unavailable.description")}
+            </SalesClosedDescription>
+            <Button
+              size="sm"
+              buttonText={t("salesClosed.contactButton")}
+              href={SUPPORT_TELEGRAM_URL}
+              target="_blank"
+            />
+          </SalesClosedNotice>
+        ) : isStaleCheckoutLink ? (
+          <SalesClosedNotice>
+            <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
+            <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
+            <Button size="sm" buttonText={t("staleLink.catalogButton")} href="/online" />
           </SalesClosedNotice>
         ) : (
           <CheckoutForm
@@ -558,9 +598,11 @@ const PaymentPage = observer(function PaymentPage() {
           />
         )}
       </InteractiveBox>
-      <SummaryBoxDesktop>
-        <CheckoutSummaryCard {...summaryProps} title={summaryCardTitle} />
-      </SummaryBoxDesktop>
+      {!isRenewalUnavailable && !isStaleCheckoutLink && (
+        <SummaryBoxDesktop>
+          <CheckoutSummaryCard {...summaryProps} title={summaryCardTitle} />
+        </SummaryBoxDesktop>
+      )}
     </PaymentSection>
   );
 });

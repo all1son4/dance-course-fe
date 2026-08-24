@@ -128,9 +128,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           checkingText={t("verification.checking")}
           checkoutSessionId={checkoutSessionId}
           failedPath={failedPath}
+          homeButtonText={t("buttons.home")}
           paymentIntentId={paymentIntentId}
           paymentPath={paymentPath}
           pendingText={t("verification.pending")}
+          supportButtonText={t("telegram.contactSupport")}
           unavailableText={t("verification.unavailable")}
         >
           <Success />
