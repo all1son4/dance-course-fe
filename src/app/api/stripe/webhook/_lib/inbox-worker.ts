@@ -167,10 +167,24 @@ export const processNextStripeWebhookInboxJob = ({
           transaction,
         });
 
-        if (
-          settlement.status === "pending_balance_transaction" ||
-          settlement.status === "purchase_not_found"
-        ) {
+        // A charge.succeeded payload is frozen before Stripe finalizes the
+        // balance transaction, so when it names no transaction at all no retry
+        // can ever produce the amounts — the later charge.updated carries them.
+        // A named-but-unreadable transaction is a transient fetch failure and
+        // stays retryable, as does a purchase row that has not landed yet.
+        if (settlement.status === "pending_balance_transaction") {
+          if (!settlement.stripeBalanceTransactionId) {
+            return {
+              paymentIntentId: settlement.paymentIntentId || null,
+              purchaseId: settlement.purchaseId,
+              skipped: true,
+            };
+          }
+
+          throw new Error(`stripe_charge_${settlement.status}`);
+        }
+
+        if (settlement.status === "purchase_not_found") {
           throw new Error(`stripe_charge_${settlement.status}`);
         }
 
