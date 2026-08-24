@@ -18,21 +18,15 @@ import { formatDateTime } from "../lib/admin.utils";
 import {
   AdminDataTable,
   BroadcastActionButton,
-  ButtonRow,
-  CardControlsRow,
+  CardFooterActions,
+  CardFooterRow,
   DeltaChip,
-  Form,
-  FormControl,
-  HeroStat,
-  HeroStatLabel,
-  HeroStatMeta,
-  HeroStatRow,
-  HeroStatValue,
+  HeaderSelectWrap,
   IconActionButton,
+  InlineSearchRow,
   JournalEmptyState,
   JournalSkeletonCard,
   JournalSkeletonList,
-  MonoMeta,
   ProductBreakdownHeader,
   ProductBreakdownList,
   ProductBreakdownName,
@@ -44,15 +38,18 @@ import {
   SalesProductName,
   SalesStatusBadge,
   SalesTableWrap,
+  SearchFieldWrap,
   SectionHeading,
   SkeletonLine,
+  StatCell,
+  StatCellLabel,
+  StatCellMeta,
+  StatCellValue,
+  StatStrip,
   StatusText,
-  SummaryGrid,
-  SummaryItem,
-  SummaryLabel,
-  SummaryValue,
   SurfaceCard,
   SurfaceDescription,
+  SurfaceHeaderActions,
   SurfaceHeaderRow,
   SurfaceTitle,
   WorkspaceStack,
@@ -149,8 +146,6 @@ export const PurchasesWorkspace = ({
   status,
   summary,
 }: PurchasesWorkspaceProps) => {
-  const selectedMonthLabel =
-    months.find((option) => option.value === monthValue)?.label || monthValue;
   const isReportDisabled =
     !monthValue || isLoading || isSendingReport || isDownloadingReport;
   // A month with zero prior activity has nothing meaningful to compare against.
@@ -174,114 +169,108 @@ export const PurchasesWorkspace = ({
       <SurfaceCard>
         <SurfaceHeaderRow>
           <SurfaceTitle>Сводка за месяц</SurfaceTitle>
-          <IconActionButton
-            type="button"
-            onClick={onRefresh}
-            disabled={isLoading}
-            $isLoading={isLoading}
-            aria-label="Обновить продажи"
-            title="Обновить продажи"
-          >
-            {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-          </IconActionButton>
+          <SurfaceHeaderActions>
+            {months.length > 0 && (
+              <HeaderSelectWrap>
+                <Input
+                  id="admin-purchases-month"
+                  name="adminPurchasesMonth"
+                  label="Месяц"
+                  value={monthValue}
+                  placeholder="Месяц"
+                  selectOptions={months}
+                  onChange={(event) => void onMonthChange(event.target.value)}
+                  disabled={isLoading}
+                  width="100%"
+                />
+              </HeaderSelectWrap>
+            )}
+            <IconActionButton
+              type="button"
+              onClick={onRefresh}
+              disabled={isLoading}
+              $isLoading={isLoading}
+              aria-label="Обновить продажи"
+              title="Обновить продажи"
+            >
+              {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
+            </IconActionButton>
+          </SurfaceHeaderActions>
         </SurfaceHeaderRow>
         <SurfaceDescription>
-          Суммы считаются по успешным оплатам через Stripe. Ссылки, выданные из админки
-          бесплатно, в выручку не попадают.
+          Успешные оплаты через Stripe; бесплатные ссылки из админки в выручку не
+          попадают.
         </SurfaceDescription>
 
-        {months.length > 0 && (
-          <CardControlsRow>
-            <FormControl>
-              <Input
-                id="admin-purchases-month"
-                name="adminPurchasesMonth"
-                label="Месяц"
-                value={monthValue}
-                placeholder="Выбери месяц"
-                selectOptions={months}
-                onChange={(event) => void onMonthChange(event.target.value)}
-                disabled={isLoading}
-                width="100%"
-              />
-            </FormControl>
-          </CardControlsRow>
-        )}
-
         {summary && (
-          <>
-            <HeroStatRow>
-              <HeroStat>
-                <HeroStatLabel>Выручка PLN</HeroStatLabel>
-                <HeroStatValue>{summary.plnTotalLabel}</HeroStatValue>
-                {hasPreviousData && previousSummary && (
-                  <HeroStatMeta>
-                    <MonthDelta
-                      delta={summary.plnTotalMinor - previousSummary.plnTotalMinor}
-                      formattedDelta={formatMinorDelta(
-                        summary.plnTotalMinor - previousSummary.plnTotalMinor,
-                        "pln",
-                      )}
-                    />
-                  </HeroStatMeta>
-                )}
-              </HeroStat>
-              <HeroStat>
-                <HeroStatLabel>Выручка EUR</HeroStatLabel>
-                <HeroStatValue>{summary.eurTotalLabel}</HeroStatValue>
-                {hasPreviousData && previousSummary && (
-                  <HeroStatMeta>
-                    <MonthDelta
-                      delta={summary.eurTotalMinor - previousSummary.eurTotalMinor}
-                      formattedDelta={formatMinorDelta(
-                        summary.eurTotalMinor - previousSummary.eurTotalMinor,
-                        "eur",
-                      )}
-                    />
-                  </HeroStatMeta>
-                )}
-              </HeroStat>
-            </HeroStatRow>
-
-            <SummaryGrid>
-              <SummaryItem>
-                <SummaryLabel>Успешных оплат</SummaryLabel>
-                <SummaryValue>{summary.salesCount}</SummaryValue>
-                {hasPreviousData && previousSummary && (
-                  <HeroStatMeta>
-                    <MonthDelta
-                      delta={summary.salesCount - previousSummary.salesCount}
-                      formattedDelta={`${
-                        summary.salesCount > previousSummary.salesCount ? "+" : "−"
-                      }${Math.abs(summary.salesCount - previousSummary.salesCount)}`}
-                    />
-                  </HeroStatMeta>
-                )}
-              </SummaryItem>
-              <SummaryItem>
-                <SummaryLabel>Чистыми после комиссии</SummaryLabel>
-                <SummaryValue>
-                  {settlementPending ? "—" : summary.netTotalLabel}
-                </SummaryValue>
-                <HeroStatMeta>
-                  {settlementPending
-                    ? summary.salesCount > 0
-                      ? "Stripe еще не отдал данные о комиссии"
-                      : "В этом месяце оплат нет"
-                    : `комиссия Stripe: ${summary.feeTotalLabel}${
-                        settlementPartial
-                          ? ` · по ${summary.settledCount} из ${summary.salesCount} оплат`
-                          : ""
-                      }`}
-                </HeroStatMeta>
-              </SummaryItem>
-              <SummaryItem>
-                <SummaryLabel>Оплат не прошло</SummaryLabel>
-                <SummaryValue>{summary.failedAttempts}</SummaryValue>
-                <HeroStatMeta>карта отклонена или оплата отменена</HeroStatMeta>
-              </SummaryItem>
-            </SummaryGrid>
-          </>
+          <StatStrip>
+            <StatCell>
+              <StatCellLabel>Выручка PLN</StatCellLabel>
+              <StatCellValue $primary>{summary.plnTotalLabel}</StatCellValue>
+              {hasPreviousData && previousSummary && (
+                <StatCellMeta>
+                  <MonthDelta
+                    delta={summary.plnTotalMinor - previousSummary.plnTotalMinor}
+                    formattedDelta={formatMinorDelta(
+                      summary.plnTotalMinor - previousSummary.plnTotalMinor,
+                      "pln",
+                    )}
+                  />
+                </StatCellMeta>
+              )}
+            </StatCell>
+            <StatCell>
+              <StatCellLabel>Выручка EUR</StatCellLabel>
+              <StatCellValue $primary>{summary.eurTotalLabel}</StatCellValue>
+              {hasPreviousData && previousSummary && (
+                <StatCellMeta>
+                  <MonthDelta
+                    delta={summary.eurTotalMinor - previousSummary.eurTotalMinor}
+                    formattedDelta={formatMinorDelta(
+                      summary.eurTotalMinor - previousSummary.eurTotalMinor,
+                      "eur",
+                    )}
+                  />
+                </StatCellMeta>
+              )}
+            </StatCell>
+            <StatCell>
+              <StatCellLabel>Успешных оплат</StatCellLabel>
+              <StatCellValue>{summary.salesCount}</StatCellValue>
+              {hasPreviousData && previousSummary && (
+                <StatCellMeta>
+                  <MonthDelta
+                    delta={summary.salesCount - previousSummary.salesCount}
+                    formattedDelta={`${
+                      summary.salesCount > previousSummary.salesCount ? "+" : "−"
+                    }${Math.abs(summary.salesCount - previousSummary.salesCount)}`}
+                  />
+                </StatCellMeta>
+              )}
+            </StatCell>
+            <StatCell>
+              <StatCellLabel>Чистыми после комиссии</StatCellLabel>
+              <StatCellValue>
+                {settlementPending ? "—" : summary.netTotalLabel}
+              </StatCellValue>
+              <StatCellMeta>
+                {settlementPending
+                  ? summary.salesCount > 0
+                    ? "Stripe еще не отдал комиссию"
+                    : "оплат нет"
+                  : `комиссия: ${summary.feeTotalLabel}${
+                      settlementPartial
+                        ? ` · по ${summary.settledCount} из ${summary.salesCount}`
+                        : ""
+                    }`}
+              </StatCellMeta>
+            </StatCell>
+            <StatCell>
+              <StatCellLabel>Оплат не прошло</StatCellLabel>
+              <StatCellValue>{summary.failedAttempts}</StatCellValue>
+              <StatCellMeta>отклонена или отменена</StatCellMeta>
+            </StatCell>
+          </StatStrip>
         )}
 
         {products.length > 0 && (
@@ -314,24 +303,56 @@ export const PurchasesWorkspace = ({
           </>
         )}
 
+        <CardFooterRow>
+          <SalesProductMeta>
+            Отчет за месяц — CSV по подтвержденным продажам
+          </SalesProductMeta>
+          <CardFooterActions>
+            <Button
+              buttonText={isDownloadingReport ? "Формирую..." : "Скачать CSV"}
+              type="button"
+              onClick={onDownloadReport}
+              disabled={isReportDisabled}
+              isLoading={isDownloadingReport}
+              size="sm"
+              variant="secondary"
+              width="160px"
+            />
+            <Button
+              buttonText={isSendingReport ? "Отправляю..." : "Отправить на почту"}
+              type="button"
+              onClick={onSendReport}
+              disabled={isReportDisabled}
+              isLoading={isSendingReport}
+              size="sm"
+              width="200px"
+            />
+          </CardFooterActions>
+        </CardFooterRow>
+
+        {reportStatus && (
+          <StatusText $tone={reportStatus.tone}>{reportStatus.text}</StatusText>
+        )}
         {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
       </SurfaceCard>
 
       <SurfaceCard>
-        <SurfaceTitle>Покупки</SurfaceTitle>
+        <SurfaceHeaderRow>
+          <SurfaceTitle>Покупки</SurfaceTitle>
+        </SurfaceHeaderRow>
         <SurfaceDescription>
           {appliedSearch
             ? `Результаты поиска «${appliedSearch}» по всей истории продаж.`
-            : "Покупки выбранного месяца, включая неуспешные оплаты. Поиск по имени, email, номеру инвойса или платежа работает по всей истории."}
+            : "Покупки выбранного месяца, включая неуспешные. Поиск по имени, email, номеру инвойса или платежа — по всей истории."}
         </SurfaceDescription>
 
-        <Form
+        <InlineSearchRow
           onSubmit={(event) => {
             event.preventDefault();
             void onSubmitSearch();
           }}
         >
-          <FormControl>
+          <SearchFieldWrap>
             <Input
               id="admin-purchases-search"
               name="adminPurchasesSearch"
@@ -342,31 +363,27 @@ export const PurchasesWorkspace = ({
               disabled={isLoading}
               width="100%"
             />
-          </FormControl>
-          <CardControlsRow>
-            <ButtonRow>
-              <Button
-                buttonText={isLoading ? "Ищу..." : "Найти"}
-                type="submit"
-                disabled={isLoading || (!searchInput.trim() && !appliedSearch)}
-                isLoading={isLoading && Boolean(appliedSearch)}
-                width="100%"
-              />
-            </ButtonRow>
-            {appliedSearch && (
-              <ButtonRow>
-                <Button
-                  buttonText="Показать месяц"
-                  type="button"
-                  onClick={onClearSearch}
-                  disabled={isLoading}
-                  variant="secondary"
-                  width="100%"
-                />
-              </ButtonRow>
-            )}
-          </CardControlsRow>
-        </Form>
+          </SearchFieldWrap>
+          <Button
+            buttonText={isLoading ? "Ищу..." : "Найти"}
+            type="submit"
+            disabled={isLoading || (!searchInput.trim() && !appliedSearch)}
+            isLoading={isLoading && Boolean(appliedSearch)}
+            size="sm"
+            width="120px"
+          />
+          {appliedSearch && (
+            <Button
+              buttonText="Показать месяц"
+              type="button"
+              onClick={onClearSearch}
+              disabled={isLoading}
+              size="sm"
+              variant="secondary"
+              width="160px"
+            />
+          )}
+        </InlineSearchRow>
 
         {purchases.length > 0 && (
           <SalesProductMeta>
@@ -400,23 +417,26 @@ export const PurchasesWorkspace = ({
                     <tr key={purchase.paymentIntentId}>
                       <td data-label="Дата">{formatDateTime(purchase.soldAtIso)}</td>
                       <td data-label="Покупатель">
-                        <SalesProductName>
-                          {purchase.customerName || "Без имени"}
-                        </SalesProductName>
-                        {purchase.customerEmail && (
-                          <SalesProductMeta>{purchase.customerEmail}</SalesProductMeta>
-                        )}
+                        <span>
+                          <SalesProductName>
+                            {purchase.customerName || "Без имени"}
+                          </SalesProductName>
+                          {purchase.customerEmail && (
+                            <SalesProductMeta>{purchase.customerEmail}</SalesProductMeta>
+                          )}
+                        </span>
                       </td>
-                      <td data-label="Покупка">
-                        <SalesProductName>
-                          {purchase.purchaseItem || "—"}
-                        </SalesProductName>
-                        {purchase.invoiceNumber && (
-                          <SalesProductMeta>
-                            Инвойс: {purchase.invoiceNumber}
-                          </SalesProductMeta>
-                        )}
-                        <MonoMeta>{purchase.paymentIntentId}</MonoMeta>
+                      <td data-label="Покупка" title={purchase.paymentIntentId}>
+                        <span>
+                          <SalesProductName>
+                            {purchase.purchaseItem || "—"}
+                          </SalesProductName>
+                          {purchase.invoiceNumber && (
+                            <SalesProductMeta>
+                              Инвойс: {purchase.invoiceNumber}
+                            </SalesProductMeta>
+                          )}
+                        </span>
                       </td>
                       <td data-label="Сумма">
                         <SalesProductName>{purchase.amountLabel}</SalesProductName>
@@ -456,39 +476,6 @@ export const PurchasesWorkspace = ({
               ? "По запросу ничего не нашлось. Проверь написание или поищи по части email."
               : "В выбранном месяце покупок пока нет."}
           </JournalEmptyState>
-        )}
-      </SurfaceCard>
-
-      <SurfaceCard>
-        <SurfaceTitle>Отчет за месяц</SurfaceTitle>
-        <SurfaceDescription>
-          {`CSV по подтвержденным продажам за ${selectedMonthLabel || "выбранный месяц"}: скачай файл или отправь его на рабочую почту.`}
-        </SurfaceDescription>
-        <CardControlsRow>
-          <ButtonRow>
-            <Button
-              buttonText={isDownloadingReport ? "Формирую..." : "Скачать CSV"}
-              type="button"
-              onClick={onDownloadReport}
-              disabled={isReportDisabled}
-              isLoading={isDownloadingReport}
-              variant="secondary"
-              width="100%"
-            />
-          </ButtonRow>
-          <ButtonRow>
-            <Button
-              buttonText={isSendingReport ? "Отправляю..." : "Отправить на почту"}
-              type="button"
-              onClick={onSendReport}
-              disabled={isReportDisabled}
-              isLoading={isSendingReport}
-              width="100%"
-            />
-          </ButtonRow>
-        </CardControlsRow>
-        {reportStatus && (
-          <StatusText $tone={reportStatus.tone}>{reportStatus.text}</StatusText>
         )}
       </SurfaceCard>
     </WorkspaceStack>
