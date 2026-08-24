@@ -445,6 +445,88 @@ test("keeps non-payment Checkout Sessions ignored in async mode", async () => {
   }
 });
 
+test("skips a charge.succeeded whose balance transaction is not finalized yet", async () => {
+  const runId = randomUUID();
+  const eventId = `evt_write02_charge_pending_${runId}`;
+  const paymentIntentId = `pi_write02_charge_pending_${runId}`;
+  const event = {
+    api_version: "2026-07-29.basil",
+    created: 1_786_457_540,
+    data: {
+      object: {
+        balance_transaction: null,
+        id: `ch_${runId}`,
+        object: "charge",
+        payment_intent: paymentIntentId,
+      },
+    },
+    id: eventId,
+    livemode: false,
+    object: "event",
+    type: "charge.succeeded",
+  } as unknown as Stripe.Event;
+
+  try {
+    await client`
+      INSERT INTO purchases (
+        payment_intent_id,
+        amount_minor,
+        currency,
+        stripe_status,
+        outcome
+      ) VALUES (
+        ${paymentIntentId},
+        6000,
+        'pln',
+        'succeeded',
+        'succeeded'
+      )
+    `;
+    await recordVerifiedStripeEvent({
+      apiVersion: event.api_version ?? null,
+      eventType: event.type,
+      livemode: event.livemode,
+      payload: event as unknown as Record<string, unknown>,
+      stripeCreatedAt: new Date(event.created * 1_000),
+      stripeEventId: event.id,
+    });
+
+    const result = await processNextStripeWebhookInboxJob({
+      eventTypes: [event.type],
+      stripe: createStripeFixture(paymentIntentId),
+    });
+    const [stored] = await client<
+      {
+        event_status: string;
+        settlement_amount_minor: number | null;
+      }[]
+    >`
+      SELECT
+        event.processing_status AS event_status,
+        purchase.settlement_amount_minor
+      FROM stripe_events event
+      JOIN purchases purchase
+        ON purchase.payment_intent_id = ${paymentIntentId}
+      WHERE event.stripe_event_id = ${eventId}
+    `;
+
+    assert.equal(result.status, "skipped");
+    assert.deepEqual(stored, {
+      event_status: "skipped",
+      settlement_amount_minor: null,
+    });
+  } finally {
+    await client`
+      DELETE FROM stripe_events
+      WHERE stripe_event_id = ${eventId}
+    `;
+    await client`
+      DELETE FROM purchases
+      WHERE payment_intent_id = ${paymentIntentId}
+    `;
+  }
+});
+
 test("enriches a charge settlement through the leased inbox worker", async () => {
   const runId = randomUUID();
   const eventId = `evt_write02_charge_${runId}`;
