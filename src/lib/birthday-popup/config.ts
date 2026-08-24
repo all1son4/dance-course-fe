@@ -13,7 +13,7 @@ export const BIRTHDAY_POPUP_UPDATED_EVENT = "birthday-popup-updated";
 export const BIRTHDAY_POPUP_ENABLED = true;
 
 /** Where the call to action sends the visitor. */
-export const BIRTHDAY_POPUP_CTA_HREF = "/online/birthday-drop#birthday-special-offer";
+export const BIRTHDAY_POPUP_CTA_HREF = "/online/birthday-drop";
 
 /** Route part of the link, used to keep the popup off its own destination. */
 export const BIRTHDAY_POPUP_CTA_PATHNAME = "/online/birthday-drop";
@@ -22,7 +22,7 @@ export const BIRTHDAY_POPUP_CTA_PATHNAME = "/online/birthday-drop";
 const BIRTHDAY_OFFER_IDS: readonly string[] = [BIRTHDAY_DROP_OFFER_ID];
 
 /** Seconds on the site before the popup is allowed to appear. */
-export const BIRTHDAY_POPUP_DWELL_MS = 3_500;
+export const BIRTHDAY_POPUP_DWELL_MS = 2_500;
 
 /** Extra beat after the consent banner leaves the corner, so nothing jumps. */
 export const BIRTHDAY_POPUP_CONSENT_SETTLE_MS = 1_500;

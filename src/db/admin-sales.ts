@@ -4,7 +4,7 @@ import { PURCHASES_LIST_LIMIT } from "@/app/admin/lib/admin.constants";
 import { formatMinorAmount } from "@/lib/minor-amount";
 
 import { getDatabase } from "./client";
-import { invoices, purchases } from "./schema";
+import { invoices, productOffers, products, purchases } from "./schema";
 
 const PRODUCT_BREAKDOWN_LIMIT = 8;
 
@@ -155,7 +155,12 @@ export const getAdminPurchasesOverview = async ({
         ...(monthRange ? soldAtWithinRange(monthRange) : []),
       );
 
+  // Snapshots keep whatever language the buyer checked out in, so grouping by
+  // them splits one offer into per-language rows. The catalogue title and offer
+  // label are the canonical Russian names; snapshots remain the fallback for
+  // legacy purchases that predate the catalogue link.
   const productItemColumn = sql<string>`COALESCE(
+    ${products.title} || COALESCE(' — ' || NULLIF(BTRIM(${productOffers.label}), ''), ''),
     NULLIF(BTRIM(${purchases.purchaseItemSnapshot}), ''),
     NULLIF(BTRIM(${purchases.productTitleSnapshot}), ''),
     NULLIF(BTRIM(${purchases.offerLabelSnapshot}), ''),
@@ -170,15 +175,15 @@ export const getAdminPurchasesOverview = async ({
         customerEmail: purchases.customerEmailSnapshot,
         customerName: purchases.customerFullNameSnapshot,
         invoiceNumber: invoices.invoiceNumber,
-        offerLabel: purchases.offerLabelSnapshot,
         outcome: purchases.outcome,
         paymentIntentId: purchases.paymentIntentId,
-        productTitle: purchases.productTitleSnapshot,
-        purchaseItem: purchases.purchaseItemSnapshot,
+        purchaseItem: productItemColumn,
         soldAt: soldAtColumn,
       })
       .from(purchases)
       .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
+      .leftJoin(products, eq(products.id, purchases.productId))
+      .leftJoin(productOffers, eq(productOffers.id, purchases.offerId))
       .where(listFilter)
       .orderBy(desc(soldAtColumn), desc(purchases.paymentIntentId))
       .limit(PURCHASES_LIST_LIMIT),
@@ -218,6 +223,8 @@ export const getAdminPurchasesOverview = async ({
             salesCount: sql<number>`COUNT(*)::int`,
           })
           .from(purchases)
+          .leftJoin(products, eq(products.id, purchases.productId))
+          .leftJoin(productOffers, eq(productOffers.id, purchases.offerId))
           .where(succeededInMonthFilter(monthRange))
           .groupBy(productItemColumn)
           .orderBy(desc(sql`COUNT(*)`), desc(sql`SUM(${purchases.amountMinor})`))
@@ -255,9 +262,7 @@ export const getAdminPurchasesOverview = async ({
       invoiceNumber: row.invoiceNumber ?? "",
       outcome: row.outcome,
       paymentIntentId: row.paymentIntentId,
-      purchaseItem:
-        row.purchaseItem ??
-        [row.productTitle, row.offerLabel].filter(Boolean).join(" • "),
+      purchaseItem: row.purchaseItem,
       soldAtIso: new Date(row.soldAt).toISOString(),
     })),
     summary: {
