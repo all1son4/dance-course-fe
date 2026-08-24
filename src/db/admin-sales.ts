@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import { PURCHASES_LIST_LIMIT } from "@/app/admin/lib/admin.constants";
 import { formatMinorAmount } from "@/lib/minor-amount";
@@ -89,12 +89,19 @@ const escapeLikePattern = (value: string) => value.replaceAll(/([%_\\])/g, "\\$1
 // payments, first-seen time while the payment is still in flight or failed.
 const soldAtColumn = sql<Date>`COALESCE(${purchases.succeededAt}, ${purchases.createdAt})`;
 
+// Dates compared against a raw SQL expression must be bound as ISO strings
+// with an explicit cast: the driver cannot infer a parameter type from the
+// expression and refuses to serialize a Date object.
+const soldAtWithinRange = (monthRange: { end: Date; start: Date }) => [
+  sql`${soldAtColumn} >= ${monthRange.start.toISOString()}::timestamptz`,
+  sql`${soldAtColumn} < ${monthRange.end.toISOString()}::timestamptz`,
+];
+
 const succeededInMonthFilter = (monthRange: { end: Date; start: Date }) =>
   and(
     eq(purchases.source, "stripe"),
     eq(purchases.outcome, "succeeded"),
-    gte(soldAtColumn, monthRange.start),
-    lt(soldAtColumn, monthRange.end),
+    ...soldAtWithinRange(monthRange),
   );
 
 // Distinct sale months for the month selector — bucketed by the same soldAt
@@ -145,9 +152,7 @@ export const getAdminPurchasesOverview = async ({
       )
     : and(
         eq(purchases.source, "stripe"),
-        ...(monthRange
-          ? [gte(soldAtColumn, monthRange.start), lt(soldAtColumn, monthRange.end)]
-          : []),
+        ...(monthRange ? soldAtWithinRange(monthRange) : []),
       );
 
   const productItemColumn = sql<string>`COALESCE(
@@ -192,13 +197,7 @@ export const getAdminPurchasesOverview = async ({
             >`MIN(${purchases.settlementCurrency}) FILTER (WHERE ${purchases.outcome} = 'succeeded' AND ${purchases.settlementCurrency} IS NOT NULL)`,
           })
           .from(purchases)
-          .where(
-            and(
-              eq(purchases.source, "stripe"),
-              gte(soldAtColumn, monthRange.start),
-              lt(soldAtColumn, monthRange.end),
-            ),
-          )
+          .where(and(eq(purchases.source, "stripe"), ...soldAtWithinRange(monthRange)))
       : Promise.resolve([]),
     previousMonthRange
       ? db
