@@ -170,10 +170,6 @@ const PaymentPage = observer(function PaymentPage() {
   }, [canUseFunctionalStorage, paymentStore]);
 
   useEffect(() => {
-    document.body.removeAttribute("data-hide-footer");
-  }, []);
-
-  useEffect(() => {
     const requestController = new AbortController();
 
     void fetch(PAYMENT_API_ENDPOINTS.catalog, {

@@ -194,16 +194,3 @@ export const Answer = styled.p`
     font-size: 15px;
   }
 `;
-
-export const AnswerLink = styled.a`
-  color: rgba(56, 56, 56, 1);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  transition: color 0.2s ease;
-
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      color: rgba(124, 0, 2, 1);
-    }
-  }
-`;

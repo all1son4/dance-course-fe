@@ -76,10 +76,6 @@ main {
   width: 100%;
 }
 
-body[data-hide-footer="true"] main + footer {
-  display: none;
-}
-
 /* Media defaults */
 img,
 picture,
