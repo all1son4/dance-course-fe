@@ -184,9 +184,79 @@ privacy-safe post-worker reconciliation fingerprint is
 development differences are the previously classified test history plus that one
 retry.
 
-Production step 2 is paused until the owner explicitly authorizes production cutover
-again. Do not treat the development rehearsal as permission to change a production
-environment variable or deployment.
+Production step 2 remained paused until the owner explicitly authorized production
+cutover on 2026-08-24. The development rehearsal was not treated as permission to
+change production before that authorization.
+
+### Production cutover execution — 2026-08-24
+
+PRs 21–23 advanced production to revision
+`9594972f30cda1fb464ebed3f74eead4469eb6bc`. Its CI and initial production smoke were
+green. The repeated preflight passed all 32 invariants; queues had the same six
+classified ready inbox rows, no ready outbox rows, stale leases, dead letters, failed
+links, or manual access tasks. Reconciliation showed 80 shared unique Payments and
+the same one known duplicate Sheet occurrence; the additional unique Payment since
+the protected snapshot was present identically in both sources.
+
+The controlled deployments were:
+
+1. `DB_TELEGRAM_ACCESS_MODE=database` — deployment
+   `dpl_Hy9TqktqHUpu5uhVT7V6nVSsYz31`, smoke
+   [32677547407](https://github.com/all1son4/dance-course-fe/actions/runs/32677547407);
+2. plus `DB_BUSINESS_OPERATIONS_MODE=database` — deployment
+   `dpl_HNjw4f3oWUyJ8SycTyR8dChL1jYZ`, smoke
+   [32677748397](https://github.com/all1son4/dance-course-fe/actions/runs/32677748397);
+3. plus the paired `DB_PAYMENT_EVENTS_MODE=database` and
+   `DB_SIDE_EFFECTS_MODE=database` — deployment
+   `dpl_7yAXtL2v8BGRTx2WzB23jgv1bLqd`, smoke
+   [32678251575](https://github.com/all1son4/dance-course-fe/actions/runs/32678251575).
+
+Every deployment used the same production revision, became READY with the production
+aliases, passed all six browser journeys and all 32 invariants, and reproduced the
+accepted reconciliation state before the next switch. `DB_SHEETS_EXPORT_MODE`
+remained unset. The owner declined manufactured production purchases or deliveries
+without safe test accounts and accepted automated evidence plus natural-traffic
+verification during `CUT-04`.
+
+The bounded six-row recovery processed the two `charge.updated` events, skipped the
+two unsupported `payment_intent.created` events, and emitted no outbox or Sheets
+export. Two older `charge.succeeded` events remain on a classified first-attempt retry
+because their original balance transactions report pending. Aggregate checks, without
+identifiers or payloads, confirm that both are superseded by processed
+`charge.updated` events for purchases whose settlement fields are populated. Do not
+force, replay, or edit their verified payloads during observation. The post-worker
+operational snapshot has two ready inbox rows, no ready outbox, stale leases, dead
+letters, failed links, or manual tasks. The final privacy-safe reconciliation
+fingerprint is
+`bede6f2b5cd50373b64f30aef0b5cde3c8da2ba1c630077dd4fbd9c4eeb4c02f`;
+all 80 unique Payment keys and matched data agree, active access is fully accounted
+for, and the only financial total delta is the documented duplicate Sheet occurrence.
+
+`CUT-03` is complete. `CUT-04` observation started at
+`2026-08-24T00:56:17Z`; repeat the aggregate checks the next day and track the two
+classified retry rows without increasing their attempt counters manually.
+
+The same-day independent observation at `2026-08-24T01:12Z` found the final
+production deployment READY on all production aliases. Exactly the four CUT runtime
+variables remain present in Production and the Sheets exporter remains unset. Pooled
+and unpooled health, all 19 migrations, the 12-offer catalog, all 32 invariants, and
+all six safe production browser journeys passed. The queues still contain only the
+two classified superseded Stripe retries, with no outbox work, dead letters, stale
+leases, failed links, manual tasks, or pending Sheets exports. The privacy-safe
+reconciliation reproduced fingerprint
+`bede6f2b5cd50373b64f30aef0b5cde3c8da2ba1c630077dd4fbd9c4eeb4c02f`.
+No natural payment arrived during this short initial interval, so the check does not
+replace the required next-day verification. The earliest elapsed checkpoints are
+`2026-08-25T00:56:17Z` (next day), `2026-08-31T00:56:17Z` (seven days),
+`2026-09-07T00:56:17Z` (legacy reader/exporter review), and
+`2026-09-23T00:56:17Z` (destructive cleanup review); anomalies or insufficient
+natural traffic extend the relevant window.
+
+Operator note: `db:audit:monthly-sales-report` currently includes raw customer samples
+in addition to its aggregate control totals. During observation, do not retain or
+share that raw output; use only the duplicate and count summaries. Removing those
+samples from routine operator output is tracked by the existing `HARD-02` PII-safe
+logging item.
 
 For each step, make one environment change, wait for the production deployment, run
 the named checks, and stop on an unexplained result.
