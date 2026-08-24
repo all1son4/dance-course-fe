@@ -13,6 +13,12 @@ const isCompatibleStore = (store: RootStore) =>
   typeof store.paymentStore.getStripePaymentIntentId === "function";
 
 const getRootStore = () => {
+  // On the server this module is shared by every concurrent request, so the
+  // singleton must stay browser-only: each server render gets its own store.
+  if (typeof window === "undefined") {
+    return new RootStore();
+  }
+
   if (!storeSingleton || !isCompatibleStore(storeSingleton)) {
     storeSingleton = new RootStore();
   }

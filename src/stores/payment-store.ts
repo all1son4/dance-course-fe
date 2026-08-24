@@ -88,9 +88,13 @@ const normalizePaymentCustomerDataDraft = (
 ) =>
   PAYMENT_CUSTOMER_FIELD_NAMES.reduce<PaymentCustomerData>(
     (acc, fieldName) => {
+      // Drafts come from sessionStorage, so a field may hold any JSON value; a
+      // non-string falls back to the default instead of failing the whole draft.
+      const draftValue = customerData[fieldName];
+
       acc[fieldName] = normalizePaymentCustomerFieldValue(
         fieldName,
-        customerData[fieldName] ?? INITIAL_CUSTOMER_DATA[fieldName],
+        typeof draftValue === "string" ? draftValue : INITIAL_CUSTOMER_DATA[fieldName],
       );
 
       return acc;
