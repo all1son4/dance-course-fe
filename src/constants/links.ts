@@ -6,8 +6,6 @@ export const SUPPORT_TELEGRAM_URL = "https://t.me/annastroksupport";
 export const PERSONAL_TELEGRAM_HANDLE = "@annastrok_dance";
 export const PERSONAL_TELEGRAM_URL = "https://t.me/annastrok_dance";
 
-export const FIRST_TOUCH_TELEGRAM_CHANNEL_URL = "https://t.me/+YSmcfQx7nYhhOTgy";
-
 export const INSTAGRAM_PROFILE_HANDLE = "anna.strok_dance";
 export const INSTAGRAM_PROFILE_URL = "https://www.instagram.com/anna.strok_dance";
 export const INSTAGRAM_BASE_URL = "https://www.instagram.com";
@@ -18,8 +16,6 @@ export const INSTAGRAM_WORLD_OF_DANCE_POLAND_URL =
 export const INSTAGRAM_DIB_GALA_URL =
   "https://www.instagram.com/dib.gala?igsh=MWZ3eXgwYnFrMWU2dA==";
 
-export const TRIAL_REGISTRATION_FORM_VIEW_URL =
-  "https://docs.google.com/forms/d/1y6IJprqlLQccNyaQpnqfkrqR8J1tEoH-wxMzdjXIh0U/viewform";
 export const FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL =
   "https://docs.google.com/forms/d/1CQj--QKVTDUOeYMeZm8QBCKvBBD_I9xdS-6Y126oO00/viewform";
 
@@ -32,5 +28,3 @@ export const CONTACT_PHONE_HREF = "tel:+48571571214";
 
 export const GOOGLE_FONTS_MANROPE_CSS_URL =
   "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600&display=swap";
-
-export const ONLINE_GROUP_REGISTRATION_URL = "https://forms.gle/EBKbiouiGqeb8zmx8";

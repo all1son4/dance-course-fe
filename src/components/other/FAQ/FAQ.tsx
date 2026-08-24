@@ -8,7 +8,6 @@ import { Chevron } from "@/svg";
 import { getQuestionsArray } from "./FAQ.constants";
 import {
   Answer,
-  AnswerLink,
   AnswerWrap,
   FAQContainer,
   Question,
@@ -57,22 +56,7 @@ export default function FAQ() {
                 aria-labelledby={questionId}
                 $isOpened={isOpened}
               >
-                <Answer>
-                  {q.answer}
-                  {q.link && (
-                    <>
-                      {" "}
-                      <AnswerLink
-                        href={q.link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {q.link.label}
-                      </AnswerLink>
-                      {"."}
-                    </>
-                  )}
-                </Answer>
+                <Answer>{q.answer}</Answer>
               </AnswerWrap>
             </QuestionItem>
           );
