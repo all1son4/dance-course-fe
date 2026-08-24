@@ -7,6 +7,7 @@ import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { recordBirthdayOfferPurchase } from "@/lib/birthday-popup";
+import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 
 import {
   ResultButtonBox,
@@ -95,9 +96,17 @@ export default function SuccessContent({
   const { canUseFunctionalStorage } = useCookieConsent();
 
   // This component renders behind the verification guard, so reaching it means
-  // the payment intent really did succeed - the campaign popup can retire.
+  // the payment intent really did succeed - the campaign popup can retire and
+  // the checkout draft is finished (redirect-based payment methods land here
+  // without passing through the in-page completion path that clears it).
   useEffect(() => {
     recordBirthdayOfferPurchase(offerId, canUseFunctionalStorage);
+
+    try {
+      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
+    } catch {
+      // Strict storage policies must not break the success page.
+    }
   }, [canUseFunctionalStorage, offerId]);
   const [telegramAccessCount, setTelegramAccessCount] = useState(0);
   const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");

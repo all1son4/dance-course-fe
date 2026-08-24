@@ -47,9 +47,11 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
     }
   });
 
-  const paymentPath = contextParams.toString()
-    ? `/payment?${contextParams.toString()}`
-    : "/payment";
+  // The resume marker lets the payment page restore the saved checkout draft,
+  // which is otherwise reserved for reload navigations.
+  contextParams.set("resume", "1");
+
+  const paymentPath = `/payment?${contextParams.toString()}`;
 
   return (
     <ResultContainer>

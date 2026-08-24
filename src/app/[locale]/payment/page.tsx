@@ -267,9 +267,13 @@ const PaymentPage = observer(function PaymentPage() {
 
     hasHydratedCheckoutDraftRef.current = true;
 
-    // Drafts are a reload-only safety net. A fresh visit should start a new checkout
-    // session, while a browser refresh should keep typed customer data intact.
-    if (!isReloadNavigation()) {
+    // Drafts survive a reload and the "back to payment" return from a failed
+    // attempt (marked with resume=1). Any other fresh visit starts a clean
+    // checkout session.
+    const isResumeNavigation =
+      new URLSearchParams(window.location.search).get("resume") === "1";
+
+    if (!isReloadNavigation() && !isResumeNavigation) {
       sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
       return;
     }

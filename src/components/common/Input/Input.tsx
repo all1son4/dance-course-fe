@@ -31,6 +31,7 @@ export const Input: FC<TInput> = ({
   inputMask = null,
   id,
   selectOptions,
+  autoComplete,
 }) => {
   const hasError = Boolean(errorMessage);
   const hasValue = String(value).length > 0;
@@ -41,6 +42,7 @@ export const Input: FC<TInput> = ({
   const commonFieldProps = {
     "aria-describedby": errorMessageId,
     "aria-invalid": hasError || undefined,
+    autoComplete,
     disabled,
     id: inputId,
     name,

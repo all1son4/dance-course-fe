@@ -23,6 +23,7 @@ export type PaymentAgreementFieldName =
 export type PaymentAgreementState = Record<PaymentAgreementFieldName, boolean>;
 
 export type PaymentInputConfig = {
+  autoComplete?: string;
   id: PaymentCustomerFieldName;
   labelKey: string;
   layout?: "full" | "half";
@@ -57,12 +58,14 @@ export const INITIAL_AGREEMENTS: PaymentAgreementState = {
 
 export const PAYMENT_INPUTS: PaymentInputConfig[] = [
   {
+    autoComplete: "name",
     id: "fullName",
     labelKey: "inputs.fullName.label",
     name: "fullName",
     placeholderKey: "inputs.fullName.placeholder",
   },
   {
+    autoComplete: "email",
     id: "email",
     labelKey: "inputs.email.label",
     name: "email",
@@ -70,6 +73,9 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     type: "email",
   },
   {
+    // A Telegram handle is not a browser-known identity field; keep autofill
+    // from guessing a username into it.
+    autoComplete: "off",
     id: "nickname",
     labelKey: "inputs.nickname.label",
     name: "nickname",
@@ -77,6 +83,7 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     type: "text",
   },
   {
+    autoComplete: "street-address",
     id: "address",
     labelKey: "inputs.address.label",
     name: "address",
@@ -84,6 +91,7 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     type: "text",
   },
   {
+    autoComplete: "address-level2",
     id: "city",
     labelKey: "inputs.city.label",
     layout: "half",
@@ -92,6 +100,7 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     type: "text",
   },
   {
+    autoComplete: "postal-code",
     id: "postalCode",
     labelKey: "inputs.postalCode.label",
     layout: "half",
@@ -100,6 +109,7 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     type: "text",
   },
   {
+    autoComplete: "country",
     id: "country",
     labelKey: "inputs.country.label",
     name: "country",
