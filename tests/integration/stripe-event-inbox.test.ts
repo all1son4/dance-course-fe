@@ -27,12 +27,18 @@ after(async () => {
   await Promise.all([client.end(), applicationClient.end()]);
 });
 
+// A synthetic event type keeps these repository-level rows invisible to the
+// inbox workers exercised by other test files running in parallel: a pending
+// row typed as a real Stripe event (and dated in the past) gets claimed by
+// their type-filtered workers instead of the event those tests inserted.
+const testEventType = `inbox.repository.${randomUUID()}`;
+
 const createInboxEvent = (
   eventId: string,
   payloadMarker = "original",
 ): VerifiedStripeInboxEvent => ({
   apiVersion: "2026-07-29.basil",
-  eventType: "payment_intent.succeeded",
+  eventType: testEventType,
   livemode: false,
   payload: {
     id: eventId,
@@ -166,7 +172,7 @@ test("promotes a legacy event to verified evidence without replaying it", async 
       WHERE stripe_event_id = ${eventId}
     `;
 
-    assert.equal(stored?.event_type, "payment_intent.succeeded");
+    assert.equal(stored?.event_type, testEventType);
     assert.equal(stored?.marker, "original");
     assert.equal(stored?.processing_status, "processed");
     assert.equal(stored?.provider_payload_verified, true);
