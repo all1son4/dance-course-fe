@@ -1,6 +1,9 @@
 import type Stripe from "stripe";
 
-import { isGoogleSheetsRateLimitError } from "@/lib/google-sheets";
+import {
+  findPaymentRecordByIntentId,
+  isGoogleSheetsRateLimitError,
+} from "@/lib/google-sheets";
 import { hasClosedSalesAtFulfilment } from "@/lib/sales-availability";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
 import {
@@ -15,7 +18,7 @@ import {
 } from "@/lib/telegram/online-group-access";
 import { toUtcIso } from "@/lib/time";
 
-import { buildPurchaseAlertText } from "../purchase-alert";
+import { buildPurchaseAlertText, isEmailDeliveryInFlight } from "../purchase-alert";
 import { shouldRunPurchaseSuccessSideEffects } from "./eligibility";
 import {
   hasFreshFallbackAlertSend,
@@ -27,6 +30,16 @@ import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
 import type { StripeWebhookSyncResult } from "./types";
 
 const pendingPurchaseAlertSyncs = new Map<string, Promise<void>>();
+
+// How long the synchronous alert waits for a concurrent invocation to finish
+// the email/access delivery before reporting whatever state is current.
+const EMAIL_DELIVERY_WAIT_POLL_MS = 4_000;
+const EMAIL_DELIVERY_WAIT_MAX_POLLS = 8;
+
+const waitMs = (delayMs: number): Promise<void> =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
 
 export class TelegramAlertDeliveryUncertainError extends Error {
   readonly retryable = false;
@@ -185,6 +198,33 @@ export const sendPurchaseAlert = async ({
       );
     }
 
+    // The alert is the operator's final report on the purchase, but a
+    // concurrent invocation may still be delivering the email whose status it
+    // renders. Wait briefly for a final state; after the bounded window,
+    // report whatever is current rather than staying silent.
+    for (
+      let pollAttempt = 0;
+      pollAttempt < EMAIL_DELIVERY_WAIT_MAX_POLLS &&
+      isEmailDeliveryInFlight(latestPaymentRecord);
+      pollAttempt += 1
+    ) {
+      await waitMs(EMAIL_DELIVERY_WAIT_POLL_MS);
+
+      try {
+        latestPaymentRecord =
+          (await findPaymentRecordByIntentId(paymentIntentId, {
+            cacheTtlMs: 0,
+            source: "sheets",
+          })) ?? latestPaymentRecord;
+      } catch (error) {
+        if (!isGoogleSheetsRateLimitError(error)) {
+          throw error;
+        }
+
+        break;
+      }
+    }
+
     const alertText = await buildAlertTextForPayment({
       event,
       handledEvent,
@@ -266,6 +306,15 @@ export const deliverPurchaseAlertFromOutbox = async ({
   }
 
   const paymentIntentId = handledEvent.paymentRecord.payment_intent_id;
+
+  // The alert is the operator's final report on the purchase: it must not
+  // race the email/access job whose statuses it renders. While that job is
+  // still running, back off so the outbox redelivers the alert once the
+  // state is final.
+  if (isEmailDeliveryInFlight(handledEvent.paymentRecord)) {
+    throw new Error("purchase_alert_waiting_for_email_delivery");
+  }
+
   const alertText = await buildAlertTextForPayment({
     event,
     handledEvent,

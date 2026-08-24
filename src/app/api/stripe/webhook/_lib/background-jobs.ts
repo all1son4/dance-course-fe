@@ -57,15 +57,20 @@ export const runStripeBackgroundJobs = async ({
     }
   }
 
-  for (let index = 0; index < outboxLimit; index += 1) {
-    const result = await processNextOutboxJob({
-      deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
-      kinds: [...STRIPE_OUTBOX_KINDS],
-    });
-    increment(outbox, result.status);
+  // The admin alert renders the email/access outcome, so the registry order
+  // (email first, alert second) doubles as the delivery order: each kind is
+  // drained fully before the next one starts.
+  for (const kind of STRIPE_OUTBOX_KINDS) {
+    for (let index = 0; index < outboxLimit; index += 1) {
+      const result = await processNextOutboxJob({
+        deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
+        kinds: [kind],
+      });
+      increment(outbox, result.status);
 
-    if (result.status === "empty") {
-      break;
+      if (result.status === "empty") {
+        break;
+      }
     }
   }
 

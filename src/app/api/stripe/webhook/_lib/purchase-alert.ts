@@ -312,6 +312,19 @@ const getSaleRecordingProcessingStatus = (
   };
 };
 
+// One classification for "the email/access job has not finished yet", shared
+// with the alert schedulers so the alert can wait for a final state instead of
+// reporting an in-flight one.
+export const isEmailDeliveryInFlight = (paymentRecord: PaymentSheetRecord): boolean => {
+  const status = paymentRecord.email_delivery_status.trim();
+
+  return (
+    status === "pending" ||
+    status === "sending" ||
+    status.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
+  );
+};
+
 const getEmailProcessingStatus = (
   paymentRecord: PaymentSheetRecord,
 ): PurchaseProcessingStatus => {
@@ -341,11 +354,7 @@ const getEmailProcessingStatus = (
     };
   }
 
-  if (
-    status === "pending" ||
-    status === "sending" ||
-    status.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
-  ) {
+  if (isEmailDeliveryInFlight(paymentRecord)) {
     return {
       detail: "отправка ещё выполняется",
       label: "Email",
