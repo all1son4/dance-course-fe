@@ -1270,6 +1270,21 @@ access remains accounted for.
 
 Status: `IN_PROGRESS` — observation started at `2026-08-24T00:56:17Z`.
 
+The same-day independent check at `2026-08-24T01:12Z` confirmed that the final
+production deployment remains READY on the production aliases and that exactly the
+four CUT runtime variables are present in Production; the Sheets exporter remains
+unset. Pooled and unpooled database health, all 19 migrations, the 12-offer catalog,
+and all 32 invariants passed. The operational snapshot remains at two classified
+superseded Stripe retries with no working or stale leases, dead letters, ready outbox
+jobs, failed access links, manual access tasks, or pending Sheets exports. A fresh
+privacy-safe reconciliation reproduced fingerprint
+`bede6f2b5cd50373b64f30aef0b5cde3c8da2ba1c630077dd4fbd9c4eeb4c02f`:
+all 80 unique Payments still agree and all active access is accounted for. Six
+production browser journeys also passed without creating a real payment or delivery.
+No new natural payment event arrived during this short initial interval, so this is
+additional immediate evidence and does not satisfy the required next-day or elapsed
+observation windows.
+
 After every critical switch, run an immediate smoke/reconciliation check and repeat it
 the next day. Use existing application/provider logs and reconciliation output rather
 than introducing a separate enterprise monitoring platform.
@@ -1280,6 +1295,13 @@ report before disabling the exporter; waiting for a complete calendar month is n
 required. Destructive cleanup may begin no earlier than 30 days after final cutover,
 with zero unexplained differences and valid backup/restore evidence. Extend a window
 when an anomaly appears or traffic is too low to exercise a critical path.
+
+Earliest checkpoints from the final switch are: next-day verification after
+`2026-08-25T00:56:17Z`, seven-day observation after `2026-08-31T00:56:17Z`, legacy
+reader/exporter retirement review after `2026-09-07T00:56:17Z`, and destructive
+cleanup eligibility after `2026-09-23T00:56:17Z`. These are earliest review times,
+not automatic approvals; unexplained anomalies or insufficient natural traffic extend
+the applicable window.
 
 ### Gate G6
 
@@ -1415,3 +1437,4 @@ Status: `TODO`
 | 2026-08-20 | CUT-03 production scope     | `PAUSED`      | Pre-CUT mode restored; no flags; production smoke green       |
 | 2026-08-24 | CUT-03 production cutover   | `DONE`        | Four DB flags; three prod smokes; audit/reconciliation green  |
 | 2026-08-24 | CUT-04 observation          | `IN_PROGRESS` | Natural-traffic verification; two superseded retries tracked  |
+| 2026-08-24 | CUT-04 same-day check       | `DONE`        | Prod READY; 32 invariants and 6 journeys; stable fingerprint  |

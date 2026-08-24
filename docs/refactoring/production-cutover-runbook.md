@@ -236,6 +236,22 @@ for, and the only financial total delta is the documented duplicate Sheet occurr
 `2026-08-24T00:56:17Z`; repeat the aggregate checks the next day and track the two
 classified retry rows without increasing their attempt counters manually.
 
+The same-day independent observation at `2026-08-24T01:12Z` found the final
+production deployment READY on all production aliases. Exactly the four CUT runtime
+variables remain present in Production and the Sheets exporter remains unset. Pooled
+and unpooled health, all 19 migrations, the 12-offer catalog, all 32 invariants, and
+all six safe production browser journeys passed. The queues still contain only the
+two classified superseded Stripe retries, with no outbox work, dead letters, stale
+leases, failed links, manual tasks, or pending Sheets exports. The privacy-safe
+reconciliation reproduced fingerprint
+`bede6f2b5cd50373b64f30aef0b5cde3c8da2ba1c630077dd4fbd9c4eeb4c02f`.
+No natural payment arrived during this short initial interval, so the check does not
+replace the required next-day verification. The earliest elapsed checkpoints are
+`2026-08-25T00:56:17Z` (next day), `2026-08-31T00:56:17Z` (seven days),
+`2026-09-07T00:56:17Z` (legacy reader/exporter review), and
+`2026-09-23T00:56:17Z` (destructive cleanup review); anomalies or insufficient
+natural traffic extend the relevant window.
+
 Operator note: `db:audit:monthly-sales-report` currently includes raw customer samples
 in addition to its aggregate control totals. During observation, do not retain or
 share that raw output; use only the duplicate and count summaries. Removing those
