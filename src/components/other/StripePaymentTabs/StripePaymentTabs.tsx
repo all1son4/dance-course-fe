@@ -14,23 +14,27 @@ import { useEffect, useState } from "react";
 import Button from "@/components/common/Button";
 
 import {
-  cancelUnusedPaymentIntents,
   createElementsOptions,
-  createPaymentContentStyle,
   createPaymentElementOptions,
+  getStripeLocale,
+  getStripePromise,
+} from "./StripePaymentTabs.appearance";
+import {
+  cancelUnusedPaymentIntents,
   createResultPageUrl,
+  PAYMENT_RESULT_PATHS,
+  redirectToResultPage,
+  resolvePaymentCompletion,
+  type ResultPageContext,
+} from "./StripePaymentTabs.completion";
+import {
+  createPaymentContentStyle,
   createStripeBillingDetails,
   createStripeElementsStyle,
   getLoadingStatusTranslationKey,
-  getStripeLocale,
-  getStripePromise,
   isPaymentSubmissionReady,
-  PAYMENT_RESULT_PATHS,
-  redirectToResultPage,
   resolveBillingDetails,
-  resolvePaymentCompletion,
   resolveStripeErrorMessage,
-  type ResultPageContext,
   type StripePaymentFormProps,
 } from "./StripePaymentTabs.helpers";
 import {
