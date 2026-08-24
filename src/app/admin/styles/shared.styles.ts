@@ -61,3 +61,78 @@ export const refinedScrollbar = css`
     background-clip: padding-box;
   }
 `;
+
+/**
+ * The chrome both admin tables share: header band, separators and the collapse
+ * into stacked cards on narrow screens.
+ *
+ * Deliberately left out, because the two tables disagree on them and source
+ * order has to keep working: `min-width`, cell padding, `vertical-align` and the
+ * per-column widths. A table that sets column widths must also reset them in its
+ * own `@media (max-width: 760px)` block - `td:nth-child(n)` outranks the bare
+ * `td` the card layout targets.
+ */
+export const adminTableBase = css`
+  width: 100%;
+  border-spacing: 0;
+  border-collapse: separate;
+  color: rgba(32, 32, 32, 0.88);
+  font-size: 11px;
+  line-height: 1.4;
+
+  th,
+  td {
+    border-bottom: 1px solid rgba(24, 24, 24, 0.07);
+    text-align: left;
+  }
+
+  th {
+    color: rgba(68, 68, 68, 0.58);
+    background: rgba(246, 246, 245, 0.72);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.065em;
+    text-transform: uppercase;
+  }
+
+  th:first-child {
+    border-radius: 10px 0 0;
+  }
+
+  th:last-child {
+    border-radius: 0 10px 0 0;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  @media (max-width: 760px) {
+    thead {
+      display: none;
+    }
+
+    tbody {
+      display: grid;
+      gap: 8px;
+    }
+
+    tbody tr {
+      display: grid;
+      gap: 0;
+      padding: 8px 10px;
+      border: 1px solid rgba(24, 24, 24, 0.07);
+      border-radius: 12px;
+      background: rgba(249, 249, 248, 0.72);
+    }
+
+    td::before {
+      content: attr(data-label);
+      color: rgba(68, 68, 68, 0.56);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.055em;
+      text-transform: uppercase;
+    }
+  }
+`;

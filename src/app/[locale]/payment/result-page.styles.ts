@@ -27,6 +27,7 @@ export const ResultCard = styled.div`
   max-width: 740px;
 
   ${glass({
+    frost: "static",
     radius: "40px",
     hoverEffect: false,
   })}
@@ -36,7 +37,7 @@ export const ResultCard = styled.div`
   }
 
   @media (max-width: 767px) {
-    border-radius: 28px !important;
+    --glass-radius: 28px;
     padding: 24px 20px 20px;
 
     > svg {

@@ -123,8 +123,9 @@ export default function Home() {
         <InteractiveBox>
           <InteractiveHint>{t("hero.hint")}</InteractiveHint>
           <ButtonsBox>
-            <Button buttonText={t("hero.buttons.online")} href="/online" />
-            <Button buttonText={t("hero.buttons.offline")} href="/offline" />
+            {/* Hero sits on the background photo, so these two get real frost. */}
+            <Button buttonText={t("hero.buttons.online")} href="/online" frost="live" />
+            <Button buttonText={t("hero.buttons.offline")} href="/offline" frost="live" />
           </ButtonsBox>
         </InteractiveBox>
       </MainTextBox>
@@ -261,6 +262,9 @@ export default function Home() {
                 <HighlightText>{t("courses.online.items.2.highlight")}</HighlightText>
               </li>
               <li>{t("courses.online.items.3")}</li>
+              <li>
+                <HighlightText>{t("courses.online.items.4")}</HighlightText>
+              </li>
             </CourseList>
           }
           buttonText={commonT("details")}

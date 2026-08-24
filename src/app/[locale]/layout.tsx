@@ -8,6 +8,7 @@ import CookieConsentBanner from "@/components/common/CookieConsent/CookieConsent
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import PageContainer from "@/components/layout/PageContainer";
+import BirthdayPopup from "@/components/other/BirthdayPopup";
 import { routing } from "@/i18n/routing";
 import {
   normalizedSiteUrl,
@@ -118,6 +119,7 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
       </main>
       <Footer />
       <CookieConsentBanner />
+      <BirthdayPopup />
     </NextIntlClientProvider>
   );
 }

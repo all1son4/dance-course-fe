@@ -8,6 +8,8 @@ live Stripe, Telegram, Resend, Google Sheets, or production databases.
 
 - `npm test` runs fast unit and characterization tests through Node's built-in test
   runner and `tsx`.
+- `npm run test:all` prepares the explicitly configured test database and then runs
+  both the unit and PostgreSQL integration suites.
 - `npm run test:integration:setup` applies committed Drizzle migrations to the
   database named by `TEST_DATABASE_URL`.
 - `npm run test:integration` checks real PostgreSQL transaction, constraint, and
@@ -16,6 +18,8 @@ live Stripe, Telegram, Resend, Google Sheets, or production databases.
   disposable database, comparing schema/migration and core-domain row counts.
 - `PLAYWRIGHT_BASE_URL=<deployment-url> npm run test:e2e` runs the small Chromium
   journey suite from `tests/e2e` against a deployed revision.
+- `npm run verify` is the database-free local check; `npm run verify:full` adds the
+  PostgreSQL integration layer and requires a safe `TEST_DATABASE_URL`.
 
 Provider fixtures live in `tests/fixtures`. They record Stripe method calls and replace
 `fetch` for Telegram and Resend without contacting provider APIs. Add deterministic

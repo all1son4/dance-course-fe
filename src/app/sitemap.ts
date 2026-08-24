@@ -14,6 +14,7 @@ const indexableRoutes = [
   "/online/group",
   "/online/first-touch",
   "/online/choreo",
+  "/online/birthday-drop",
   "/offline",
   "/privacy-policy",
   "/cookie-policy",

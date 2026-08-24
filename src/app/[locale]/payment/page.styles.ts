@@ -102,6 +102,7 @@ export const PersonalData = styled.div`
   box-sizing: border-box;
 
   ${glass({
+    frost: "static",
     radius: "60px",
     hoverEffect: false,
   })}
@@ -109,7 +110,7 @@ export const PersonalData = styled.div`
   @media (max-width: 767px) {
     gap: 30px;
     padding: 30px 20px;
-    border-radius: 40px !important;
+    --glass-radius: 40px;
   }
 `;
 
@@ -123,6 +124,47 @@ export const PaymentPreparationError = styled.p`
   font-size: 13px;
   line-height: 1.4;
   font-weight: 500;
+`;
+
+export const SalesClosedNotice = styled.div`
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+  padding: 50px;
+  box-sizing: border-box;
+
+  ${glass({
+    frost: "static",
+    radius: "60px",
+    hoverEffect: false,
+  })}
+
+  @media (max-width: 767px) {
+    gap: 20px;
+    padding: 30px 20px;
+    --glass-radius: 40px;
+  }
+`;
+
+export const SalesClosedTitle = styled.h2`
+  font-weight: 400;
+  font-style: normal;
+  font-size: 28px;
+  line-height: 110%;
+  letter-spacing: 0;
+  margin: 0;
+  color: rgba(0, 0, 0, 1);
+`;
+
+export const SalesClosedDescription = styled.p`
+  margin: 0;
+  font-size: 16px;
+  line-height: 150%;
+  color: rgba(72, 72, 72, 1);
 `;
 
 export const StripeReveal = styled.div<{ $isVisible: boolean }>`

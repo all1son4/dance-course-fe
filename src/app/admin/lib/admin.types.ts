@@ -1,4 +1,29 @@
-export type AdminFeatureId = "invite-links" | "online-group" | "broadcasts" | "reports";
+// The purchases wire shapes are owned by the db layer that produces them;
+// type-only imports are erased at build time, so nothing server-side leaks
+// into the client bundle.
+import type {
+  AdminProductBreakdownEntry,
+  AdminPurchaseListEntry as AdminPurchaseEntry,
+  AdminPurchasesPreviousSummary,
+  AdminPurchasesSummary,
+} from "@/db/admin-sales";
+
+export type {
+  AdminProductBreakdownEntry,
+  AdminPurchaseEntry,
+  AdminPurchasesPreviousSummary,
+  AdminPurchasesSummary,
+};
+
+export type PurchaseOutcome = AdminPurchaseEntry["outcome"];
+
+export type AdminFeatureId =
+  | "sales"
+  | "invite-links"
+  | "online-group"
+  | "broadcasts"
+  | "purchases"
+  | "operations";
 export type GeneratorKind = "choreo" | "first-touch";
 export type LessonLanguage = "en" | "ru";
 export type LinkState = "active" | "used";
@@ -159,11 +184,6 @@ export type OnlineGroupAdminLinksResponse = {
   status?: "not_available" | "partial" | "ready";
 };
 
-export type MonthlySalesReportMonthsResponse = {
-  errorCode?: string;
-  months?: SelectOption[];
-};
-
 export type MonthlySalesReportResponse = {
   deliveredAtUtc?: string | null;
   deliveredTo?: string;
@@ -210,4 +230,122 @@ export type FirstTouchBroadcastResponse = {
     attempted: number;
   };
   stats?: BroadcastStats;
+};
+
+export type OperationsQueueStatus = {
+  deadLetters: number;
+  oldestReadyAgeSeconds: number | null;
+  ready: number;
+  retries: number;
+  staleLeases: number;
+  working: number;
+};
+
+export type OperationsInboxDeadLetter = {
+  attemptCount: number;
+  deadLetteredAt: string;
+  errorCode: string;
+  errorMessage: string;
+  eventType: string;
+  paymentIntentId: string;
+  stripeEventId: string;
+};
+
+export type OperationsOutboxDeadLetter = {
+  attemptCount: number;
+  deadLetteredAt: string;
+  deduplicationKey: string;
+  kind: string;
+  lastErrorCode: string;
+  lastErrorMessage: string;
+  recipient: string;
+};
+
+export type ProblemAccessEntitlement = {
+  customerEmail: string;
+  customerName: string;
+  entitlementId: string;
+  paymentIntentId: string;
+  productTitle: string;
+  status: "link_failed" | "manual_pending";
+  updatedAt: string;
+};
+
+export type OperationsSnapshot = {
+  access: {
+    linkFailed: number;
+    manualPending: number;
+    pending: number;
+  };
+  capturedAt: string;
+  inbox: OperationsQueueStatus;
+  inboxDeadLetters: OperationsInboxDeadLetter[];
+  outbox: OperationsQueueStatus;
+  outboxDeadLetters: OperationsOutboxDeadLetter[];
+  problemEntitlements: ProblemAccessEntitlement[];
+  projection: {
+    unlinkedProcessedEvents: number;
+    unverifiedEvents: number;
+    waitingSheetsExports: number;
+  };
+  reports: Record<string, number>;
+};
+
+export type OperationsSnapshotResponse = Partial<OperationsSnapshot> & {
+  errorCode?: string;
+};
+
+export type OperationsReplayResponse = {
+  errorCode?: string;
+  status?: string;
+};
+
+export type ReissuedAccessLink = {
+  accessKey: string;
+  accessUrl: string;
+  label: string;
+  tokenExpiresAt: string;
+};
+
+export type ReissueAccessResponse = {
+  errorCode?: string;
+  links?: ReissuedAccessLink[];
+  status?: "no_links" | "not_applicable" | "partial" | "ready";
+};
+
+export type AdminPurchasesResponse = {
+  errorCode?: string;
+  months?: SelectOption[];
+  previousSummary?: AdminPurchasesPreviousSummary | null;
+  products?: AdminProductBreakdownEntry[];
+  purchases?: AdminPurchaseEntry[];
+  summary?: AdminPurchasesSummary;
+};
+
+export type ResendPurchaseEmailResponse = {
+  errorCode?: string;
+  status?: "sent" | "skipped";
+};
+
+export type SalesProductOffer = {
+  label: string;
+  offerId: string;
+  price: string;
+};
+
+export type SalesProductEntry = {
+  code: string;
+  hasActiveCampaign: boolean;
+  offers: SalesProductOffer[];
+  productId: string;
+  requiresActiveCampaign: boolean;
+  salesEnabled: boolean;
+  title: string;
+  type: "choreo" | "course";
+};
+
+export type SalesStateResponse = {
+  activeCampaignTitle?: string;
+  errorCode?: string;
+  products?: SalesProductEntry[];
 };

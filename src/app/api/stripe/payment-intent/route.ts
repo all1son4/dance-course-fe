@@ -251,6 +251,16 @@ const getRenewalContextErrorResponse = ({
   return null;
 };
 
+const getSalesAvailabilityErrorResponse = ({
+  product,
+}: PaymentIntentContext): Response | null => {
+  if (!product.salesEnabled) {
+    return jsonErrorNoStore("sales_closed", { status: 409 });
+  }
+
+  return null;
+};
+
 const getOnlineGroupContextErrorResponse = ({
   offer,
   onlineGroupTarget,
@@ -267,7 +277,11 @@ const getOnlineGroupContextErrorResponse = ({
 const getPaymentIntentContextErrorResponse = (
   context: PaymentIntentContext,
 ): Response | null =>
-  getRenewalContextErrorResponse(context) ?? getOnlineGroupContextErrorResponse(context);
+  // Sales availability is checked first so a closed product reports "closed"
+  // instead of a campaign-shaped error that reads like a misconfiguration.
+  getSalesAvailabilityErrorResponse(context) ??
+  getRenewalContextErrorResponse(context) ??
+  getOnlineGroupContextErrorResponse(context);
 
 const getLocalizedCheckout = ({
   checkoutLocale,

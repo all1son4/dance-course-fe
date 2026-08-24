@@ -11,38 +11,38 @@
     "keywords": "Anna Strok, Frame Up Strip, dance classes Warsaw, online dance course, offline dance classes, choreography tutorial, high heels dance",
     "pages": {
       "home": {
-        "title": "Anna Strok — Frame Up Strip Classes in Warsaw & Online",
-        "description": "Learn Frame Up Strip with professional dancer Anna Strok: online courses and regular training, plus offline classes and improvisation practice in Warsaw.",
+        "title": "Frame Up Strip Classes in Warsaw & Online",
+        "description": "Frame Up Strip with Anna Strok: online courses in Telegram with personal feedback and in-person classes in Warsaw. Start from zero or keep growing.",
         "ogImageAlt": "Anna Strok with students during a Frame Up Strip class",
         "keywords": "Anna Strok dance, Frame Up Strip Warsaw, online dance classes, offline dance classes Warsaw, high heels dance lessons"
       },
       "online": {
-        "title": "Online Frame Up Strip Courses",
-        "description": "Train Frame Up Strip online with Anna Strok in Telegram: a six-week Online Group with feedback, the First Touch beginner course and choreography tutorials.",
+        "title": "Online Frame Up Strip Courses in Telegram",
+        "description": "All of Anna Strok's online formats: the First Touch beginner course, Online Group with personal feedback and choreography tutorials. Train from any country.",
         "ogImageAlt": "Online Frame Up Strip courses by Anna Strok",
         "keywords": "online frame up course, first touch dance program, choreography tutorial online, telegram dance classes, Anna Strok online"
       },
       "firstTouch": {
-        "title": "First Touch — Frame Up Strip Beginner Course",
-        "description": "First Touch by Anna Strok: core Frame Up Strip technique, body control, emotion work, and your first choreography in one program.",
+        "title": "First Touch — Frame Up Strip for Beginners",
+        "description": "Frame Up Strip from scratch: technique, footwork, body control and emotion. In 1.5 months you learn your first choreography. Lesson access for four months.",
         "ogImageAlt": "First Touch beginner course by Anna Strok",
         "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
       },
       "onlineGroup": {
-        "title": "Online Group — 6-Week Frame Up Strip Training",
-        "description": "Join Anna Strok's six-week Online Group: weekly Frame Up Strip lessons, personal feedback, a private Telegram chat and optional Inspiration Hub access.",
+        "title": "Online Group — Regular Frame Up Strip Training",
+        "description": "Weekly Frame Up Strip lessons, assignments with personal feedback and a private Telegram chat. Train at home at your own pace and stay in touch.",
         "ogImageAlt": "Anna Strok regular online dance training group",
         "keywords": "online group anna strok, online dance training, frame up online, telegram dance course"
       },
       "choreo": {
         "title": "Frame Up Strip Choreography Tutorials",
-        "description": "Explore Anna Strok's Frame Up Strip choreography tutorials with movement breakdowns, technique and performance guidance. Sales are temporarily closed.",
-        "ogImageAlt": "Frame Up Strip choreography tutorials by Anna Strok",
-        "keywords": "choreography tutorial, still alive choreography, her lies choreography, choreography bundle, frame up dance tutorial, Anna Strok choreography"
+        "description": "Step-by-step breakdowns of original choreographies: technique, delivery and musicality. Replay the lessons as often as you need to build the full routine.",
+        "ogImageAlt": "Anna Strok choreography tutorials",
+        "keywords": "choreography tutorial online, still alive dance, her lies dance, choreography bundle, frame up choreography, anna strok choreography"
       },
       "offline": {
-        "title": "Offline Frame Up Strip Classes in Warsaw",
-        "description": "Explore in-person Frame Up Strip training with Anna Strok in Warsaw, including Impro Room improvisation practice and private class enquiries.",
+        "title": "Frame Up Strip Classes in Warsaw",
+        "description": "Studio training with Anna Strok in Warsaw: Impro Room improvisation practice and private lessons. Hands-on corrections and work on your stage presence.",
         "ogImageAlt": "Offline Frame Up Strip classes in Warsaw",
         "keywords": "frame up strip warsaw, offline dance classes warsaw, high heels dance warsaw, trial dance class, women dance classes"
       },
@@ -57,6 +57,12 @@
         "description": "Cookie policy for Anna Strok website: what storage technologies are used, for what purposes, and how to manage consent.",
         "ogImageAlt": "Anna Strok cookie policy page",
         "keywords": "cookie policy anna strok, cookie consent settings, website cookies, analytics consent"
+      },
+      "birthdayDrop": {
+        "title": "The Birthday Drop “Love me in the morning”",
+        "description": "The “Love me in the morning” choreography breakdown, a playlist, a moodboard and a YouTube link to the 34-questions interview. Lifetime access, pay from any country.",
+        "ogImageAlt": "The Birthday Drop “Love me in the morning” by Anna Strok",
+        "keywords": "birthday drop, love me in the morning, choreography tutorial, frame up dance tutorial, Anna Strok choreography"
       }
     }
   },
@@ -67,7 +73,7 @@
     "menu": {
       "offline": "Offline",
       "online": "Online",
-      "contacts": "Contacts",
+      "contacts": "Contact",
       "ariaLabel": "Primary navigation"
     },
     "language": {
@@ -100,7 +106,7 @@
       "phone": "+48 571 571 214"
     },
     "support": {
-      "title": "Have a question? We are here",
+      "title": "Have a question? We're here to help",
       "button": "Contact support"
     },
     "copyright": "© 2026 Dance Platform. All rights reserved",
@@ -108,7 +114,7 @@
     "cookieSettings": "Cookie settings"
   },
   "Contacts": {
-    "title": "Contacts",
+    "title": "Contact",
     "description": {
       "one": "If you have questions or want to learn more about my classes, reach out in any way that is convenient for you."
     },
@@ -131,7 +137,7 @@
       },
       "3": {
         "question": "Can I join in the middle of a month or course?",
-        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the \"Contacts\" section."
+        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the \"Contact\" section."
       },
       "4": {
         "question": "Is Frame Up right for me if I feel shy or afraid to move?",
@@ -151,7 +157,7 @@
       },
       "8": {
         "question": "Can I attend a trial class?",
-        "answer": "Yes, you can attend a trial class for only 70 PLN in the offline beginner or continuing groups. Registration is available here:",
+        "answer": "Yes, you can attend a trial class for only 70 PLN in the offline beginner or advanced groups. Registration is available here:",
         "linkLabel": "Open registration form"
       },
       "9": {
@@ -259,7 +265,7 @@
         "items": {
           "1": {
             "highlight": "Beginners",
-            "text": "for beginners"
+            "text": "learn from scratch"
           },
           "2": {
             "highlight": "Advanced group",
@@ -284,7 +290,8 @@
             "prefix": "Online Group",
             "highlight": "by Anna Strok"
           },
-          "3": "Choreography tutorials"
+          "3": "Choreography tutorials",
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -331,6 +338,16 @@
         "salesLabel": "Availability",
         "salesValue": "Sales are temporarily closed",
         "button": "Learn more"
+      },
+      "birthdayDrop": {
+        "title": "The Birthday Drop",
+        "description": {
+          "1": "I am turning 34, and I want to celebrate this day together with you.",
+          "2": "So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you."
+        },
+        "salesLabel": "Sales open until 7 September",
+        "salesValue": "Lifetime access!",
+        "button": "Learn more"
       }
     },
     "studio": {
@@ -368,7 +385,7 @@
         "priceSuffix": "/ per month"
       },
       "advanced": {
-        "title": "Continuing group",
+        "title": "Advanced group",
         "description": "For dancers who strive for detail, dynamics and deeper style understanding, and want to improve musicality while working on technique, performance quality and memorizing more advanced choreographies.",
         "schedule": {
           "1": "Monday 19:00-20:30",
@@ -381,7 +398,7 @@
         "title": "Impro Room",
         "description": "Improvisation practice.",
         "note": "This group has no fixed schedule.",
-        "details": "Every month we decide when and where to meet, practice different exercises, explore details and nuances, and build our own dance language.",
+        "details": "Every month we decide when and where to meet, practice different exercises, explore nuances, details and the interplay with music and silence, and build our own dance language.",
         "price": "50 PLN",
         "priceSuffix": "/ per class"
       }
@@ -404,7 +421,8 @@
             "prefix": "Online Group",
             "highlight": "by Anna Strok"
           },
-          "3": "Choreography tutorials"
+          "3": "Choreography tutorials",
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -565,7 +583,9 @@
         }
       }
     },
-    "about": { "title": "What to expect in the Online Group" },
+    "about": {
+      "title": "What to expect in the Online Group"
+    },
     "suggestions": {
       "1": {
         "title": "Regular training with me",
@@ -616,7 +636,7 @@
     },
     "suggestions": {
       "1": {
-        "title": "Choreography tutorials for intermediate and continuing level",
+        "title": "Choreography tutorials for intermediate and advanced levels",
         "text": "Get access to expressive combinations, technique and performance quality."
       },
       "2": {
@@ -649,6 +669,11 @@
     "title": "Checkout",
     "description": "Review your order details and complete payment. After purchase, you will receive access and further instructions.",
     "personalDataTitle": "Customer details",
+    "salesClosed": {
+      "title": "Sales are closed",
+      "description": "Enrolment for this product is closed right now. Message us and we will tell you when the next one opens and help you pick the right format.",
+      "contactButton": "Message on Telegram"
+    },
     "summary": {
       "currencyLabel": "Payment currency",
       "amountLabel": "Payment amount",
@@ -757,13 +782,18 @@
       "renewal": {
         "line1": "We’re preparing your access to the new Online Group.",
         "line2": "The available links will appear below and are also sent to your email."
+      },
+      "birthdayDrop": {
+        "line1": "We’re preparing your personal access to the materials.",
+        "line2": "The link will appear below and is also sent to your email."
       }
     },
     "accessNotice": {
       "firstTouch": "Invite valid for 30 days. Lesson access: 4 months after joining.",
       "choreo": "Invite valid for 30 days. Material access: 2 months after joining.",
       "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
-      "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration Hub access is provided for the duration of the cycle."
+      "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration Hub access is provided for the duration of the cycle.",
+      "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever."
     },
     "telegram": {
       "active": "access is already active",
@@ -811,6 +841,7 @@
     "errors": {
       "missingClientSecret": "Stripe did not return a client secret.",
       "catalogUnavailable": "Sales are temporarily unavailable. Please try again later.",
+      "salesClosed": "Sales for this product are currently closed.",
       "consentEvidenceFailed": "We couldn't save the required consent confirmation. Please try again.",
       "invalidCustomerData": "Please check the customer details and try again.",
       "missingSecretKey": "STRIPE_SECRET_KEY is missing. Add it to .env and restart the server.",
@@ -877,6 +908,19 @@
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
+      }
+    },
+    "choreoBirthdayDrop": {
+      "title": "The Birthday Drop “Love me in the morning”",
+      "checkoutTitle": "The Birthday Drop",
+      "description": {
+        "1": "An online breakdown of the Love me in the morning choreography, put together as a separate drop: The Birthday Drop.",
+        "2": "Inside: the breakdown itself, a playlist, a moodboard and a YouTube link to the “34 questions for my 34th” interview.",
+        "3": "Access to the materials stays forever: come back and repeat at your own pace."
+      },
+      "accessNote": "Lifetime access to the materials through a private Telegram channel.",
+      "offers": {
+        "standard": "Standard access"
       }
     },
     "onlineGroupAnnaStrok": {
@@ -993,6 +1037,49 @@
       "6": {
         "title": "6. Additional information",
         "text": "Detailed information about personal data processing, your rights, and controller details is available in the Privacy Policy."
+      }
+    }
+  },
+  "BirthdayPopup": {
+    "title": "Happy Birthday to me!",
+    "text": "I am turning 34, and I want to celebrate this day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
+    "cta": "Learn more",
+    "close": "Close"
+  },
+  "BirthdayDropPage": {
+    "title": "The Birthday Drop<br></br>“Love me in the morning”",
+    "description": "I am turning 34, and I want to celebrate this day together with you. So I have prepared a tutorial for one of my latest choreographies, and a few more nice bonuses for you. Access to all the materials stays yours forever.",
+    "buyButton": "Buy for {price}",
+    "detailsButton": "Learn more",
+    "aboutTitle": "What awaits you in The Birthday Drop",
+    "suggestions": {
+      "video": {
+        "title": "Choreography breakdown “Love me in the morning”",
+        "text": "You get access to a tutorial for this choreography in two languages: Russian and English."
+      },
+      "playlist": {
+        "title": "Birthday Playlist",
+        "text": "A selection of my own favourite tracks: music tied to me, to my style and to different periods of my work."
+      },
+      "questions": {
+        "title": "34 questions for my 34th",
+        "text": "A YouTube link to an interview with me — a reflection on what I feel, what I have learned, what I have rethought and where I want to go next. Honest, deep and real."
+      },
+      "moodboard": {
+        "title": "An inspiration moodboard for the choreography",
+        "text": "<p>Atmosphere, character, colour, style — everything that helps you feel the choreography before the very first step:</p><list><item>the colour palette;</item><item>clothes and shoes;</item><item>hair and make-up;</item><item>light and location.</item></list>"
+      },
+      "access": {
+        "title": "Access to the materials — forever",
+        "text": "A comfortable format: you have time to go through everything, repeat it and make it yours at your own pace."
+      },
+      "telegram": {
+        "title": "Instant access through private Telegram chats",
+        "text": "No extra platforms — the whole drop lives in one place, right after the payment."
+      },
+      "payment": {
+        "title": "Pay from any country",
+        "text": "<p>You can pay by <strong>Visa / Mastercard</strong>, via <strong>BLIK</strong>, or with <strong>Google/Apple Pay</strong> from any country, including Belarus.</p><p>Available currencies: <strong>PLN</strong> and <strong>EUR</strong>. If your card is in another currency, your bank will automatically convert the amount.</p>"
       }
     }
   }

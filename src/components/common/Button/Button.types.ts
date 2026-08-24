@@ -1,6 +1,12 @@
 import type { ComponentPropsWithoutRef, ElementType } from "react";
 
-export type ButtonVariant = "primary" | "secondary";
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "white";
+/**
+ * `live` turns on the real backdrop blur. Reserve it for buttons that sit on a
+ * photo or video - on the flat page background the blur is invisible and only
+ * costs a backdrop root per button.
+ */
+export type ButtonFrost = "static" | "live";
 export type ButtonSize = "lg" | "sm";
 
 export type ButtonBaseProps = {
@@ -10,6 +16,7 @@ export type ButtonBaseProps = {
   href?: string;
   target?: string;
   size?: "lg" | "sm";
+  frost?: ButtonFrost;
   isLoading?: boolean;
 };
 

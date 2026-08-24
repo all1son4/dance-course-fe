@@ -1,6 +1,7 @@
 import type Stripe from "stripe";
 
 import { isGoogleSheetsRateLimitError } from "@/lib/google-sheets";
+import { hasClosedSalesAtFulfilment } from "@/lib/sales-availability";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
 import {
   getTelegramAlertsBotToken,
@@ -60,6 +61,38 @@ const getOnlineGroupAccessStatesForAlert = async ({
 
     return null;
   }
+};
+
+const buildAlertTextForPayment = async ({
+  event,
+  handledEvent,
+  paymentIntentId,
+  paymentRecord,
+}: {
+  event: Stripe.Event;
+  handledEvent: StripeWebhookSyncResult;
+  paymentIntentId: string;
+  paymentRecord: StripeWebhookSyncResult["paymentRecord"];
+}) => {
+  // Both reads swallow their own failures, so neither can reject the pair.
+  const [onlineGroupAccessStates, hasClosedSales] = await Promise.all([
+    getOnlineGroupAccessStatesForAlert({
+      eventId: handledEvent.eventId,
+      offerId: paymentRecord.offer_id,
+      paymentIntentId,
+    }),
+    hasClosedSalesAtFulfilment(paymentRecord.product_id),
+  ]);
+
+  return buildPurchaseAlertText({
+    eventCreatedAtIso: toUtcIso(event.created * 1000),
+    eventId: handledEvent.eventId,
+    eventType: handledEvent.eventType,
+    hasClosedSales,
+    onlineGroupAccessStates,
+    paymentRecord,
+    processedAtIso: toUtcIso(),
+  });
 };
 
 export const sendPurchaseAlert = async ({
@@ -152,18 +185,11 @@ export const sendPurchaseAlert = async ({
       );
     }
 
-    const onlineGroupAccessStates = await getOnlineGroupAccessStatesForAlert({
-      eventId: handledEvent.eventId,
-      offerId: latestPaymentRecord.offer_id,
+    const alertText = await buildAlertTextForPayment({
+      event,
+      handledEvent,
       paymentIntentId,
-    });
-    const alertText = buildPurchaseAlertText({
-      eventCreatedAtIso: toUtcIso(event.created * 1000),
-      eventId: handledEvent.eventId,
-      eventType: handledEvent.eventType,
-      onlineGroupAccessStates,
       paymentRecord: latestPaymentRecord,
-      processedAtIso: toUtcIso(),
     });
 
     try {
@@ -240,18 +266,11 @@ export const deliverPurchaseAlertFromOutbox = async ({
   }
 
   const paymentIntentId = handledEvent.paymentRecord.payment_intent_id;
-  const onlineGroupAccessStates = await getOnlineGroupAccessStatesForAlert({
-    eventId: handledEvent.eventId,
-    offerId: handledEvent.paymentRecord.offer_id,
+  const alertText = await buildAlertTextForPayment({
+    event,
+    handledEvent,
     paymentIntentId,
-  });
-  const alertText = buildPurchaseAlertText({
-    eventCreatedAtIso: toUtcIso(event.created * 1000),
-    eventId: handledEvent.eventId,
-    eventType: handledEvent.eventType,
-    onlineGroupAccessStates,
     paymentRecord: handledEvent.paymentRecord,
-    processedAtIso: toUtcIso(),
   });
   // Telegram Bot API has no idempotency key for sendMessage. The outbox owns the
   // durable deduplication and this adapter deliberately performs one provider attempt;

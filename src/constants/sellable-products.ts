@@ -5,6 +5,7 @@ export type SellableProductCode =
   | "choreo-still-alive"
   | "choreo-her-lies"
   | "choreo-bundle"
+  | "choreo-birthday-drop"
   | "online-group-anna-strok";
 
 export type SellableProductOfferCode =
@@ -31,10 +32,17 @@ export type SellableProductOffer = {
 export type SellableProduct = {
   accessNote: string;
   accessNoteKey: string;
+  /** Short name for the checkout summary, when the full title is too long. */
+  checkoutTitleKey?: string;
   code: SellableProductCode;
   description: string[];
   descriptionKeys: string[];
   id: string;
+  /**
+   * Whether money may be taken for this product. The database is authoritative;
+   * the value here is the code-level default and never closes sales on its own.
+   */
+  salesEnabled: boolean;
   slug: string;
   title: string;
   titleKey: string;
@@ -49,6 +57,9 @@ export const ONLINE_GROUP_RENEWAL_OFFER_ID =
   "off_online_group_anna_strok_renewal_discount";
 export const ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID =
   "off_online_group_anna_strok_renewal_library_access";
+
+export const BIRTHDAY_DROP_PRODUCT_ID = "prd_choreo_birthday_drop";
+export const BIRTHDAY_DROP_OFFER_ID = "off_choreo_birthday_drop_standard";
 
 export const ONLINE_GROUP_NEW_OFFER_IDS = [
   ONLINE_GROUP_STANDARD_OFFER_ID,
@@ -87,6 +98,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
     descriptionKeys: ["firstTouch.description.1", "firstTouch.description.2"],
     id: "prd_7VnL4kX2mQ8s",
+    salesEnabled: true,
     slug: "first-touch",
     title: 'Курс для начинающих "First Touch"',
     titleKey: "firstTouch.title",
@@ -121,6 +133,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "choreoStillAlive.description.3",
     ],
     id: "prd_2QfH8nW5cK3y",
+    salesEnabled: true,
     slug: "still-alive",
     title: 'Видео-разбор хореографии "Still Alive"',
     titleKey: "choreoStillAlive.title",
@@ -166,6 +179,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "choreoHerLies.description.3",
     ],
     id: "prd_9MwT3aF7rD6n",
+    salesEnabled: true,
     slug: "her-lies",
     title: 'Видео-разбор хореографии "Her Lies"',
     titleKey: "choreoHerLies.title",
@@ -212,6 +226,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "choreoBundle.description.3",
     ],
     id: "prd_choreo_bundle_duo",
+    salesEnabled: true,
     slug: "still-alive-her-lies-bundle",
     title: 'Бандл разборов "Still Alive" + "Her Lies"',
     titleKey: "choreoBundle.title",
@@ -242,6 +257,51 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       },
     ],
   },
+  "choreo-birthday-drop": {
+    accessNote: "Доступ к материалам навсегда, через приватный Telegram-канал.",
+    accessNoteKey: "choreoBirthdayDrop.accessNote",
+    checkoutTitleKey: "choreoBirthdayDrop.checkoutTitle",
+    code: "choreo-birthday-drop",
+    description: [
+      "Онлайн-разбор хореографии Love me in the morning, собранный как отдельный дроп — The Birthday Drop.",
+      "Внутри — разбор связки, плейлист, мудборд и YouTube-ссылка на интервью «34 вопроса к моим 34».",
+      "Доступ к материалам остаётся навсегда: можно возвращаться и повторять в любом темпе.",
+    ],
+    descriptionKeys: [
+      "choreoBirthdayDrop.description.1",
+      "choreoBirthdayDrop.description.2",
+      "choreoBirthdayDrop.description.3",
+    ],
+    id: "prd_choreo_birthday_drop",
+    salesEnabled: true,
+    slug: "birthday-drop",
+    title: 'The Birthday Drop "Love me in the morning"',
+    titleKey: "choreoBirthdayDrop.title",
+    type: "choreo",
+    defaultOfferId: "off_choreo_birthday_drop_standard",
+    offers: [
+      {
+        /**
+         * The `standard` code is what keeps this access perpetual: the timed
+         * Telegram buckets are built from `with-mentor` / `without-mentor`
+         * offers, so this one is never given an expiry and never revoked.
+         */
+        accessWorkflow: "telegram-channel-lifetime",
+        code: "standard",
+        deliveryChannel: "telegram",
+        id: "off_choreo_birthday_drop_standard",
+        label: "Стандартный доступ",
+        labelKey: "choreoBirthdayDrop.offers.standard",
+        prices: {
+          pln: 65,
+          eur: 15,
+        },
+        // Unused for this offer - access never expires - but the field is
+        // required by the catalogue and the database check demands >= 0.
+        telegramAccessDurationDays: 0,
+      },
+    ],
+  },
   "online-group-anna-strok": {
     accessNote:
       "После оплаты мы отправим персональную одноразовую ссылку для входа в Telegram-группу.",
@@ -256,6 +316,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "onlineGroupAnnaStrok.description.2",
     ],
     id: "prd_L9aK3mT7qP2x",
+    salesEnabled: true,
     slug: "online-group-anna-strok",
     title: "Online Group by Anna Strok",
     titleKey: "onlineGroupAnnaStrok.title",

@@ -13,12 +13,13 @@ export const CardContainer = styled.div`
   max-width: 100%;
 
   ${glass({
+    frost: "static",
     radius: "60px",
     hoverEffect: false,
   })}
 
   @media (max-width: 880px) {
-    border-radius: 40px !important;
+    --glass-radius: 40px;
   }
 
   @media (max-width: 450px) {
@@ -70,5 +71,29 @@ export const Text = styled.div`
   strong {
     font-weight: 600;
     color: rgba(0, 0, 0, 1);
+  }
+
+  ul {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* Own marker instead of list-style, so the bullet keeps its distance from the
+     text and hanging indent works on wrapped lines. */
+  li {
+    position: relative;
+    padding-left: 22px;
+  }
+
+  li::before {
+    content: "•";
+    position: absolute;
+    left: 8px;
+    top: 0;
+    line-height: inherit;
   }
 `;

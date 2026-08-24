@@ -9,12 +9,16 @@ platform or expose customer payloads.
 Select the intended database environment explicitly, then run:
 
 ```bash
-DATABASE_ENV=development npm run db:operations:status
+npm run db:status:dev
 ```
 
-For production, use `DATABASE_ENV=production` only from the approved operator
-environment. The JSON contains counts and ages, never recipients, event payloads,
-tokens, customer details, or error messages.
+For production, use `npm run db:status:prod` only from the approved operator
+environment. `db:health:dev|prod`, `db:verify:dev|prod`, and
+`db:catalog:verify:dev|prod` provide the other read-only environment checks. The
+catalog verifier compares deploy-owned products, offers, prices, workflows, and
+access durations while deliberately ignoring the operator-owned sales switch. The
+JSON contains counts and ages, never recipients, event payloads, tokens, customer
+details, or error messages.
 
 The outbox queue counters include only versioned jobs enqueued by the new repository.
 Historical `purchase_side_effects` rows remain reconciliation evidence and are not

@@ -11,38 +11,38 @@
     "keywords": "Anna Strok, Frame Up Strip, taniec Warszawa, kurs tańca online, zajęcia taneczne offline, tutorial choreografii, high heels dance",
     "pages": {
       "home": {
-        "title": "Kursy Frame Up Strip w Warszawie — online i offline",
-        "description": "Ucz się Frame Up Strip z Anną Strok: kursy i regularne treningi online oraz zajęcia stacjonarne i praktyka improwizacji w Warszawie.",
+        "title": "Frame Up Strip w Warszawie i online",
+        "description": "Frame Up Strip z Anną Strok: kursy online w Telegramie z indywidualnym feedbackiem i zajęcia stacjonarne w Warszawie. Zacznij od zera lub rozwijaj się dalej.",
         "ogImageAlt": "Anna Strok i uczestniczki podczas zajęć Frame Up Strip",
         "keywords": "Anna Strok taniec, Frame Up Strip Warszawa, kurs tańca online, zajęcia taneczne Warszawa, high heels dance"
       },
       "online": {
-        "title": "Kursy online Frame Up Strip",
-        "description": "Trenuj Frame Up Strip online z Anną Strok w Telegramie: dołącz do sześciotygodniowej Online Group z feedbackiem lub zacznij od kursu First Touch.",
+        "title": "Kursy Frame Up Strip online w Telegramie",
+        "description": "Wszystkie formaty online Anny Strok: kurs First Touch dla początkujących, Online Group z feedbackiem i samouczki choreografii. Trenuj z dowolnego kraju.",
         "ogImageAlt": "Kursy online Frame Up Strip prowadzone przez Annę Strok",
         "keywords": "kurs frame up online, first touch kurs, tutorial choreografii online, telegram kurs tańca, Anna Strok online"
       },
       "firstTouch": {
-        "title": "First Touch — kurs Frame Up Strip dla początkujących",
-        "description": "First Touch od Anny Strok: podstawy Frame Up Strip, technika, kontrola ciała, emocje i pierwsza choreografia w jednym kursie.",
+        "title": "First Touch — kurs dla początkujących",
+        "description": "Frame Up Strip od zera: technika, praca stóp, plastyka i emocje. W półtora miesiąca nauczysz się pierwszej choreografii. Dostęp do lekcji przez 4 miesiące.",
         "ogImageAlt": "Kurs First Touch dla początkujących",
         "keywords": "First Touch kurs, kurs tańca dla początkujących online, frame up strip podstawy, Anna Strok First Touch"
       },
       "onlineGroup": {
-        "title": "Online Group by Anna Strok — regularne treningi",
-        "description": "Sześciotygodniowa Online Group Anny Strok: cotygodniowe lekcje Frame Up Strip, zadania z indywidualnym feedbackiem, prywatny czat Telegram i opcjonalny Inspiration Hub.",
+        "title": "Online Group — regularne treningi online",
+        "description": "Cotygodniowe lekcje Frame Up Strip, zadania z indywidualnym feedbackiem i prywatny czat na Telegramie. Trenuj w domu we własnym tempie.",
         "ogImageAlt": "Grupa regularnych treningów online Anny Strok",
         "keywords": "online group anna strok, treningi tańca online, frame up online, taniec telegram"
       },
       "choreo": {
-        "title": "Tutoriale choreografii Frame Up Strip",
-        "description": "Szczegółowe tutoriale choreografii Frame Up Strip Anny Strok: struktura ruchu, technika i wyraz sceniczny. Sprzedaż jest tymczasowo zamknięta.",
-        "ogImageAlt": "Tutoriale choreografii Frame Up Strip od Anny Strok",
-        "keywords": "tutorial choreografii online, still alive choreografia, her lies choreografia, bundle choreografii, frame up tutorial, Anna Strok choreografia"
+        "title": "Samouczki choreografii Frame Up Strip",
+        "description": "Krok po kroku rozbiory autorskich choreografii: technika, wyraz i muzykalność. Powtarzaj lekcje tyle razy, ile potrzebujesz, by złożyć cały układ.",
+        "ogImageAlt": "Samouczki choreograficzne Anny Strok",
+        "keywords": "samouczek choreografii online, still alive dance, her lies dance, pakiet choreografii, frame up choreography, anna strok choreography"
       },
       "offline": {
-        "title": "Zajęcia offline Frame Up Strip w Warszawie",
-        "description": "Treningi stacjonarne Frame Up Strip z Anną Strok w Warszawie: praktyka improwizacji w Impro Room i zapisy na zajęcia indywidualne.",
+        "title": "Zajęcia Frame Up Strip w Warszawie",
+        "description": "Treningi w studiu z Anną Strok w Warszawie: praktyka improwizacji w Impro Room i zajęcia indywidualne. Korekty na żywo i praca nad wyrazem scenicznym.",
         "ogImageAlt": "Zajęcia offline Frame Up Strip w Warszawie",
         "keywords": "frame up strip warszawa, zajęcia taneczne warszawa, high heels warszawa, lekcja próbna tańca"
       },
@@ -57,6 +57,12 @@
         "description": "Polityka cookies serwisu Anna Strok: jakie technologie przechowywania są używane, w jakim celu i jak zarządzać zgodą.",
         "ogImageAlt": "Polityka cookies Anna Strok",
         "keywords": "polityka cookies anna strok, zgoda na cookies, ustawienia cookies, pliki cookies serwisu"
+      },
+      "birthdayDrop": {
+        "title": "The Birthday Drop „Love me in the morning”",
+        "description": "Rozbiór choreografii „Love me in the morning”, playlista, moodboard i link do wywiadu „34 pytania” na YouTube. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
+        "ogImageAlt": "The Birthday Drop „Love me in the morning” od Anny Strok",
+        "keywords": "birthday drop, love me in the morning, tutorial choreografii online, frame up tutorial, Anna Strok choreografia"
       }
     }
   },
@@ -100,7 +106,7 @@
       "phone": "+48 571 571 214"
     },
     "support": {
-      "title": "Masz pytanie? Jesteśmy obok",
+      "title": "Masz pytanie? Jesteśmy tu dla Ciebie",
       "button": "Napisz do wsparcia"
     },
     "copyright": "© 2026 Dance Platform. Wszelkie prawa zastrzeżone",
@@ -284,7 +290,8 @@
             "prefix": "Grupa online",
             "highlight": "by Anna Strok"
           },
-          "3": "Samouczki choreograficzne"
+          "3": "Samouczki choreograficzne",
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -321,7 +328,7 @@
         "button": "Więcej o kursie"
       },
       "choreo": {
-        "title": "Samouczki choreograficzne",
+        "title": "Samouczki moich choreografii",
         "description": {
           "1": "Samouczki online moich choreografii.",
           "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
@@ -331,6 +338,16 @@
         "salesLabel": "Dostępność",
         "salesValue": "Sprzedaż jest tymczasowo zamknięta",
         "button": "Więcej o kursie"
+      },
+      "birthdayDrop": {
+        "title": "The Birthday Drop",
+        "description": {
+          "1": "Kończę 34 lata i chcę uczcić ten dzień razem z wami.",
+          "2": "Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
+        },
+        "salesLabel": "Sprzedaż otwarta do 7 września",
+        "salesValue": "Dostęp na zawsze!",
+        "button": "Więcej o dropie"
       }
     },
     "studio": {
@@ -381,7 +398,7 @@
         "title": "Impro Room",
         "description": "Praktyka improwizacji.",
         "note": "W tej grupie nie ma stałego grafiku.",
-        "details": "Co miesiąc ustalamy, kiedy i gdzie się spotykamy, ćwiczymy różne zadania, badamy niuanse i tworzymy własny język ruchu.",
+        "details": "Co miesiąc ustalamy, kiedy i gdzie się spotykamy, ćwiczymy różne zadania, badamy niuanse, detale oraz grę z muzyką i ciszą, tworzymy własny język tańca.",
         "price": "50 PLN",
         "priceSuffix": "/ za zajęcia"
       }
@@ -404,7 +421,8 @@
             "prefix": "Grupa online",
             "highlight": "by Anna Strok"
           },
-          "3": "Samouczki choreograficzne"
+          "3": "Samouczki choreograficzne",
+          "4": "The Birthday Drop"
         }
       }
     }
@@ -565,7 +583,9 @@
         }
       }
     },
-    "about": { "title": "Co czeka Cię w Online Group" },
+    "about": {
+      "title": "Co czeka Cię w Online Group"
+    },
     "suggestions": {
       "1": {
         "title": "Regularne treningi ze mną",
@@ -616,7 +636,7 @@
     },
     "suggestions": {
       "1": {
-        "title": "Samouczki choreograficzne dla poziomu średniego i kontynuującego",
+        "title": "Samouczki choreograficzne dla poziomu średniozaawansowanego i zaawansowanego",
         "text": "Otrzymujesz dostęp do wyrazistych sekwencji, techniki i ekspresji."
       },
       "2": {
@@ -649,10 +669,15 @@
     "title": "Płatność",
     "description": "Sprawdź szczegóły zamówienia i dokończ płatność. Po zakupie otrzymasz dostęp oraz dalsze instrukcje.",
     "personalDataTitle": "Dane kupującego",
+    "salesClosed": {
+      "title": "Sprzedaż zamknięta",
+      "description": "Nabór na ten produkt jest obecnie zamknięty. Napisz do nas — powiemy, kiedy ruszy kolejny, i pomożemy wybrać odpowiedni format.",
+      "contactButton": "Napisz na Telegramie"
+    },
     "summary": {
       "currencyLabel": "Waluta płatności",
       "amountLabel": "Kwota płatności",
-      "offerLabel": "Wariant: {offer}"
+      "offerLabel": "Pakiet: {offer}"
     },
     "renewal": {
       "text": "Potwierdź Telegram, aby odblokować płatność za kontynuację.",
@@ -660,7 +685,7 @@
       "title": "Potwierdź Telegram przed płatnością",
       "description": "Aby przedłużyć ze zniżką, potwierdź konto Telegram: sprawdzimy udział w poprzednim czacie, a po płatności wyślemy osobisty link do nowej grupy.",
       "summaryCard": {
-        "description": "Przedłużenie udziału w grupie online na kolejny cykl w specjalnej cenie.",
+        "description": "Kontynuacja udziału w Online Group na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
         "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
       },
@@ -668,11 +693,11 @@
       "targetChat": "Dostęp po płatności: {title}",
       "buttons": {
         "verify": "Potwierdź Telegram",
-        "verifying": "Sprawdzam...",
+        "verifying": "Sprawdzamy...",
         "verified": "Telegram potwierdzony"
       },
       "status": {
-        "loading": "Przygotowujemy sprawdzenie...",
+        "loading": "Przygotowujemy weryfikację...",
         "ready": "Kliknij niebieską ikonę, aby potwierdzić konto Telegram.",
         "openingTelegram": "Potwierdź logowanie w Telegramie. Po potwierdzeniu spróbujemy automatycznie wrócić do płatności.",
         "checkingMembership": "Sprawdzamy czat...",
@@ -681,7 +706,7 @@
         "verifiedAsWithProfile": "Gotowe: {username}. Dane zostały uzupełnione — sprawdź je.",
         "notMember": "Tego konta Telegram nie znaleziono w starym czacie.",
         "usernameMismatch": "Wpisana nazwa użytkownika nie pasuje do potwierdzonego konta Telegram.",
-        "loadFailed": "Nie udało się załadować sprawdzenia.",
+        "loadFailed": "Nie udało się załadować weryfikacji.",
         "failed": "Nie udało się potwierdzić Telegrama."
       }
     },
@@ -757,13 +782,18 @@
       "renewal": {
         "line1": "Przygotowujemy Twój dostęp do nowej Online Group.",
         "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
+      },
+      "birthdayDrop": {
+        "line1": "Przygotowujemy Twój osobisty dostęp do materiałów.",
+        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       }
     },
     "accessNotice": {
       "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 4 miesiące od dołączenia.",
       "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 2 miesiące od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu."
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
+      "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
@@ -811,6 +841,7 @@
     "errors": {
       "missingClientSecret": "Stripe nie zwrócił client secret.",
       "catalogUnavailable": "Sprzedaż jest tymczasowo niedostępna. Spróbuj ponownie później.",
+      "salesClosed": "Sprzedaż tego produktu jest obecnie zamknięta.",
       "consentEvidenceFailed": "Nie udało się zapisać wymaganego potwierdzenia zgód. Spróbuj ponownie.",
       "invalidCustomerData": "Sprawdź dane klienta i spróbuj ponownie.",
       "missingSecretKey": "Brakuje STRIPE_SECRET_KEY. Dodaj go do .env i uruchom ponownie serwer.",
@@ -879,6 +910,19 @@
         "withMentor": "Z mentorem"
       }
     },
+    "choreoBirthdayDrop": {
+      "title": "The Birthday Drop „Love me in the morning”",
+      "checkoutTitle": "The Birthday Drop",
+      "description": {
+        "1": "Rozbiór choreografii Love me in the morning, przygotowany jako osobny drop: The Birthday Drop.",
+        "2": "W środku: rozbiór kombinacji, playlista, moodboard i link do wywiadu „34 pytania do moich 34” na YouTube.",
+        "3": "Dostęp do materiałów zostaje na zawsze: możesz wracać i powtarzać we własnym tempie."
+      },
+      "accessNote": "Dostęp do materiałów na zawsze, przez prywatny kanał na Telegramie.",
+      "offers": {
+        "standard": "Dostęp standardowy"
+      }
+    },
     "onlineGroupAnnaStrok": {
       "title": "Online Group\nby Anna Strok",
       "description": {
@@ -890,8 +934,8 @@
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",
-        "renewalDiscount": "Przedłużenie Standard",
-        "renewalLibraryAccess": "Przedłużenie Plus"
+        "renewalDiscount": "Kontynuacja Standard",
+        "renewalLibraryAccess": "Kontynuacja Plus"
       }
     }
   },
@@ -993,6 +1037,49 @@
       "6": {
         "title": "6. Dodatkowe informacje",
         "text": "Szczegółowe informacje o przetwarzaniu danych osobowych, Twoich prawach i danych administratora znajdziesz w Polityce prywatności."
+      }
+    }
+  },
+  "BirthdayPopup": {
+    "title": "Happy Birthday to me!",
+    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "cta": "Dowiedz się więcej",
+    "close": "Zamknij"
+  },
+  "BirthdayDropPage": {
+    "title": "The Birthday Drop<br></br>„Love me in the morning”",
+    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "buyButton": "Kup za {price}",
+    "detailsButton": "Dowiedz się więcej",
+    "aboutTitle": "Co czeka Cię w The Birthday Drop",
+    "suggestions": {
+      "video": {
+        "title": "Rozbiór choreografii „Love me in the morning”",
+        "text": "Otrzymujesz dostęp do samouczka tej choreografii w dwóch językach: rosyjskim i angielskim."
+      },
+      "playlist": {
+        "title": "Birthday Playlist",
+        "text": "Wybór moich ulubionych utworów: muzyka związana ze mną, z moim stylem i różnymi okresami twórczości."
+      },
+      "questions": {
+        "title": "34 pytania do moich 34",
+        "text": "Link do wywiadu ze mną na YouTube — refleksja o tym, co czuję, czego się nauczyłam, co przemyślałam na nowo i dokąd chcę iść dalej. Szczerze, głęboko i naprawdę."
+      },
+      "moodboard": {
+        "title": "Moodboard do choreografii",
+        "text": "<p>Atmosfera, charakter, kolor, styl — wszystko, co pomaga poczuć choreografię jeszcze przed pierwszym krokiem:</p><list><item>paleta kolorów;</item><item>ubranie i buty;</item><item>włosy i makijaż;</item><item>światło i lokacja.</item></list>"
+      },
+      "access": {
+        "title": "Dostęp do materiałów — na zawsze",
+        "text": "Wygodny format: zdążysz przejść, powtórzyć i utrwalić wszystko we własnym tempie."
+      },
+      "telegram": {
+        "title": "Natychmiastowe dołączenie przez zamknięte czaty na Telegramie",
+        "text": "Żadnych dodatkowych platform — cała nauka w jednym miejscu, od razu po opłaceniu."
+      },
+      "payment": {
+        "title": "Płatność z dowolnego kraju",
+        "text": "<p>Możesz zapłacić kartą <strong>Visa / Mastercard</strong>, przez <strong>BLIK</strong> lub za pomocą <strong>Google/Apple Pay</strong> z dowolnego kraju, w tym z Białorusi.</p><p>Dostępne waluty: <strong>PLN</strong> i <strong>EUR</strong>. Jeśli Twoja karta jest w innej walucie, bank automatycznie przeliczy płatność.</p>"
       }
     }
   }

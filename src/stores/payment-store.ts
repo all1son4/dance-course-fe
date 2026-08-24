@@ -34,7 +34,7 @@ type StripePaymentIntentIds = Partial<Record<SupportedCheckoutCurrency, string>>
 type StripeIntentErrors = Partial<
   Record<SupportedCheckoutCurrency, StripeIntentErrorCode | null>
 >;
-export type SellableCatalogStatus = "loading" | "ready" | "unavailable";
+export type SellableCatalogStatus = "closed" | "loading" | "ready" | "unavailable";
 type StripeIntentErrorCode =
   | "catalog_unavailable"
   | "consent_evidence_failed"
@@ -47,6 +47,7 @@ type StripeIntentErrorCode =
   | "required_consent_missing"
   | "renewal_campaign_inactive"
   | "renewal_payment_context_mismatch"
+  | "sales_closed"
   | "telegram_renewal_verification_required";
 type StripeIntentResponse = {
   clientSecret?: string;
@@ -192,6 +193,10 @@ export class PaymentStore {
     return this.catalogStatus === "unavailable";
   }
 
+  get isSalesClosed() {
+    return this.catalogStatus === "closed";
+  }
+
   get selectedProduct() {
     return (
       this.getSellableProductById(this.selectedProductId) ??
@@ -263,10 +268,17 @@ export class PaymentStore {
     }
 
     this.sellableProducts = products;
-    this.catalogStatus = "ready";
-
     this.selectedProductId = nextProduct.id;
     this.selectedOfferId = nextOffer.id;
+
+    // A closed product stays in the catalogue so its title and price still render;
+    // only the payment step is withheld.
+    if (!nextProduct.salesEnabled) {
+      this.setSalesClosed();
+      return;
+    }
+
+    this.catalogStatus = "ready";
 
     if (
       previousProductId !== nextProduct.id ||
@@ -279,6 +291,13 @@ export class PaymentStore {
 
   setCatalogUnavailable() {
     this.catalogStatus = "unavailable";
+    this.clearStripeIntentState(true);
+  }
+
+  setSalesClosed() {
+    this.catalogStatus = "closed";
+    // Drops any client secret minted before the switch was flipped, so a tab
+    // left open across the closing cannot confirm a stale PaymentIntent.
     this.clearStripeIntentState(true);
   }
 
@@ -601,6 +620,13 @@ export class PaymentStore {
         [currency]: "",
       };
       this.setStripeIntentError(currency, errorCode);
+
+      // A tab opened before the switch was flipped still believes the catalogue
+      // is ready. The server just said otherwise, so settle into the closed
+      // state instead of leaving a live-looking form behind an error line.
+      if (errorCode === "sales_closed") {
+        this.setSalesClosed();
+      }
     });
   }
 

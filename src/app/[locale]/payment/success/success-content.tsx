@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 
 import Button from "@/components/common/Button";
+import { useCookieConsent } from "@/components/common/CookieConsent";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { recordBirthdayOfferPurchase } from "@/lib/birthday-popup";
 
 import {
   ResultButtonBox,
@@ -90,6 +92,13 @@ export default function SuccessContent({
   title,
 }: SuccessContentProps) {
   const [showUnavailableNote, setShowUnavailableNote] = useState(false);
+  const { canUseFunctionalStorage } = useCookieConsent();
+
+  // This component renders behind the verification guard, so reaching it means
+  // the payment intent really did succeed - the campaign popup can retire.
+  useEffect(() => {
+    recordBirthdayOfferPurchase(offerId, canUseFunctionalStorage);
+  }, [canUseFunctionalStorage, offerId]);
   const [telegramAccessCount, setTelegramAccessCount] = useState(0);
   const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");
   const hasValidTelegramAccessContext = Boolean(

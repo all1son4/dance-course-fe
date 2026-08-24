@@ -10,6 +10,7 @@ import {
 import {
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
+  isLifetimeChannelOfferId,
   isOnlineGroupAccessOfferId,
   isRenewalDiscountOfferId,
 } from "@/lib/telegram/offer-access";
@@ -89,9 +90,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const isWithoutMentorPurchase = selectedOffer?.code === "without-mentor";
   const isRenewalPurchase = isRenewalDiscountOfferId(offerId);
   const isOnlineGroupPurchase = isOnlineGroupAccessOfferId(offerId);
+  const isLifetimeChannelPurchase = isLifetimeChannelOfferId(offerId);
   const isTelegramAccessPurchase =
     isChoreoChannelOfferId(offerId) ||
     isFirstTouchOfferId(offerId) ||
+    isLifetimeChannelPurchase ||
     isOnlineGroupPurchase;
   const successCase = isFirstTouchPurchase
     ? "firstTouch"
@@ -99,20 +102,24 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       ? "renewal"
       : isOnlineGroupPurchase
         ? "onlineGroup"
-        : isWithoutMentorPurchase
-          ? "withoutMentor"
-          : "withMentor";
+        : isLifetimeChannelPurchase
+          ? "birthdayDrop"
+          : isWithoutMentorPurchase
+            ? "withoutMentor"
+            : "withMentor";
   const accessNotice = isFirstTouchPurchase
     ? t("accessNotice.firstTouch")
-    : isChoreoChannelOfferId(offerId)
-      ? t("accessNotice.choreo")
-      : isOnlineGroupPurchase
-        ? t(
-            isOnlineGroupLibraryOfferId(offerId)
-              ? "accessNotice.onlineGroupPlus"
-              : "accessNotice.onlineGroup",
-          )
-        : "";
+    : isLifetimeChannelPurchase
+      ? t("accessNotice.birthdayDrop")
+      : isChoreoChannelOfferId(offerId)
+        ? t("accessNotice.choreo")
+        : isOnlineGroupPurchase
+          ? t(
+              isOnlineGroupLibraryOfferId(offerId)
+                ? "accessNotice.onlineGroupPlus"
+                : "accessNotice.onlineGroup",
+            )
+          : "";
 
   return (
     <ResultContainer>

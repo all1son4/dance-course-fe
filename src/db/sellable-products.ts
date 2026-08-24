@@ -130,12 +130,15 @@ const mapProductFromDatabase = ({
   return {
     accessNote: fallbackProduct?.accessNote ?? productRow.accessNote ?? "",
     accessNoteKey: fallbackProduct?.accessNoteKey ?? productRow.accessNoteKey ?? "",
+    // Presentation-only, so it lives in the catalogue constant rather than a column.
+    checkoutTitleKey: fallbackProduct?.checkoutTitleKey,
     code: (fallbackProduct?.code ?? productRow.code) as SellableProductCode,
     defaultOfferId,
     description: fallbackProduct?.description ?? productRow.description,
     descriptionKeys: fallbackProduct?.descriptionKeys ?? productRow.descriptionKeys,
     id: productRow.externalProductId,
     offers,
+    salesEnabled: productRow.salesEnabled,
     slug: fallbackProduct?.slug ?? productRow.slug,
     title: fallbackProduct?.title ?? productRow.title,
     titleKey: fallbackProduct?.titleKey ?? productRow.titleKey ?? "",
@@ -264,10 +267,32 @@ export const getCheckoutSelectionFromDatabase = async ({
       descriptionKeys: productRow.descriptionKeys,
       id: productRow.externalProductId,
       offers,
+      salesEnabled: productRow.salesEnabled,
       slug: productRow.slug,
       title: productRow.title,
       titleKey: productRow.titleKey ?? "",
       type: productRow.type,
     },
   };
+};
+
+export const setProductSalesEnabled = async ({
+  productId,
+  salesEnabled,
+}: {
+  productId: string;
+  salesEnabled: boolean;
+}) => {
+  const db = getDatabase();
+  const [updatedRow] = await db
+    .update(products)
+    .set({ salesEnabled, updatedAt: new Date() })
+    .where(eq(products.externalProductId, productId.trim()))
+    .returning({
+      externalProductId: products.externalProductId,
+      salesEnabled: products.salesEnabled,
+      updatedAt: products.updatedAt,
+    });
+
+  return updatedRow ?? null;
 };

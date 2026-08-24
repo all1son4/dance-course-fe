@@ -4,6 +4,7 @@ import { glass } from "@/styles/mixins/glass";
 
 import type { StatusTone } from "../lib/admin.types";
 import {
+  adminTableBase,
   focusRing,
   type IconButtonStyleProps,
   iconSpin,
@@ -72,41 +73,13 @@ export const BroadcastAudienceTableWrap = styled.div`
 `;
 
 export const BroadcastAudienceTable = styled.table`
-  width: 100%;
+  ${adminTableBase}
   min-width: 700px;
-  border-spacing: 0;
-  border-collapse: separate;
-  color: rgba(32, 32, 32, 0.88);
-  font-size: 11px;
-  line-height: 1.4;
 
   th,
   td {
     padding: 9px 10px;
-    border-bottom: 1px solid rgba(24, 24, 24, 0.07);
-    text-align: left;
     vertical-align: middle;
-  }
-
-  th {
-    color: rgba(68, 68, 68, 0.58);
-    background: rgba(246, 246, 245, 0.72);
-    font-size: 9px;
-    font-weight: 700;
-    letter-spacing: 0.065em;
-    text-transform: uppercase;
-  }
-
-  th:first-child {
-    border-radius: 10px 0 0;
-  }
-
-  th:last-child {
-    border-radius: 0 10px 0 0;
-  }
-
-  tbody tr:last-child td {
-    border-bottom: 0;
   }
 
   td:nth-child(1) {
@@ -129,24 +102,6 @@ export const BroadcastAudienceTable = styled.table`
   @media (max-width: 760px) {
     min-width: 0;
 
-    thead {
-      display: none;
-    }
-
-    tbody {
-      display: grid;
-      gap: 8px;
-    }
-
-    tbody tr {
-      display: grid;
-      gap: 0;
-      padding: 8px 10px;
-      border: 1px solid rgba(24, 24, 24, 0.07);
-      border-radius: 12px;
-      background: rgba(249, 249, 248, 0.72);
-    }
-
     td,
     td:nth-child(1),
     td:nth-child(2),
@@ -160,15 +115,6 @@ export const BroadcastAudienceTable = styled.table`
       gap: 9px;
       padding: 7px 0;
       border-bottom: 1px solid rgba(24, 24, 24, 0.055);
-    }
-
-    td::before {
-      content: attr(data-label);
-      color: rgba(68, 68, 68, 0.56);
-      font-size: 9px;
-      font-weight: 700;
-      letter-spacing: 0.055em;
-      text-transform: uppercase;
     }
 
     td:last-child {
@@ -279,6 +225,191 @@ export const BroadcastActionButton = styled.button<{ $danger?: boolean }>`
     cursor: not-allowed;
     opacity: 0.5;
   }
+`;
+
+export const SalesWorkspaceLayout = styled.div`
+  margin-top: clamp(14px, 1.7vw, 20px);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+export const SalesTableWrap = styled.div`
+  ${refinedScrollbar}
+  width: 100%;
+  margin-top: 12px;
+  overflow-x: auto;
+`;
+
+export const SalesTable = styled.table`
+  ${adminTableBase}
+  min-width: 640px;
+
+  th,
+  td {
+    padding: 11px 10px;
+    vertical-align: top;
+  }
+
+  td:nth-child(1) {
+    min-width: 190px;
+  }
+
+  td:nth-child(3) {
+    width: 130px;
+  }
+
+  td:last-child {
+    width: 172px;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 760px) {
+    min-width: 0;
+
+    td,
+    td:nth-child(1),
+    td:nth-child(3),
+    td:last-child {
+      width: auto;
+      min-width: 0;
+      max-width: none;
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 9px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(24, 24, 24, 0.055);
+    }
+
+    td:last-child {
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+  }
+`;
+
+export const SalesProductName = styled.span`
+  display: block;
+  color: rgba(24, 24, 24, 0.94);
+  font-size: 12px;
+  font-weight: 600;
+`;
+
+export const SalesProductMeta = styled.span`
+  display: block;
+  margin-top: 2px;
+  color: rgba(66, 66, 66, 0.68);
+  font-size: 10px;
+`;
+
+export const SalesOfferList = styled.ul`
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    color: rgba(48, 48, 48, 0.8);
+    font-size: 10px;
+  }
+
+  li span:last-child {
+    color: rgba(24, 24, 24, 0.9);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+`;
+
+export const SalesStatusBadge = styled.span<{ $state: "blocked" | "closed" | "open" }>`
+  width: fit-content;
+  display: inline-flex;
+  border: 1px solid
+    ${({ $state }) =>
+      $state === "open"
+        ? "rgba(30, 108, 74, 0.18)"
+        : $state === "blocked"
+          ? "rgba(160, 96, 12, 0.2)"
+          : "rgba(176, 24, 33, 0.18)"};
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: ${({ $state }) =>
+    $state === "open"
+      ? "rgba(22, 88, 60, 0.9)"
+      : $state === "blocked"
+        ? "rgba(128, 76, 8, 0.92)"
+        : "rgba(143, 20, 28, 0.9)"};
+  background: ${({ $state }) =>
+    $state === "open"
+      ? "rgba(30, 108, 74, 0.06)"
+      : $state === "blocked"
+        ? "rgba(160, 96, 12, 0.07)"
+        : "rgba(176, 24, 33, 0.06)"};
+  font-size: 9px;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: nowrap;
+`;
+
+export const SalesToggleCell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 9px;
+`;
+
+export const SalesToggle = styled.button<{ $isOn: boolean }>`
+  ${focusRing}
+  position: relative;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid
+    ${({ $isOn }) => ($isOn ? "rgba(30, 108, 74, 0.32)" : "rgba(24, 24, 24, 0.14)")};
+  border-radius: 999px;
+  background: ${({ $isOn }) =>
+    $isOn ? "rgba(30, 108, 74, 0.55)" : "rgba(24, 24, 24, 0.12)"};
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    opacity 0.2s ease;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: ${({ $isOn }) => ($isOn ? "20px" : "2px")};
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+    transition: left 0.2s ease;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+`;
+
+export const SalesToggleLabel = styled.span<{ $isOn: boolean }>`
+  color: ${({ $isOn }) => ($isOn ? "rgba(22, 88, 60, 0.92)" : "rgba(66, 66, 66, 0.72)")};
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+`;
+
+export const SalesToggleHint = styled.p`
+  margin: 7px 0 0;
+  color: rgba(128, 76, 8, 0.9);
+  font-size: 9px;
+  line-height: 1.4;
 `;
 
 export const WorkspacePrimary = styled.div`
@@ -706,6 +837,7 @@ export const CopyButton = styled.div`
 
 export const IconActionButton = styled.button<IconButtonStyleProps>`
   ${glass({
+    frost: "static",
     radius: "999px",
     bgParam: "rgba(255, 255, 255, 0.9)",
     depth: 14,
@@ -776,4 +908,410 @@ export const JournalEmptyState = styled.p`
   line-height: 1.5;
   text-align: center;
   box-sizing: border-box;
+`;
+
+export const WorkspaceStack = styled.div`
+  width: 100%;
+  margin-top: clamp(14px, 1.7vw, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`;
+
+export const AdminDataTable = styled.table`
+  ${adminTableBase}
+  min-width: 680px;
+
+  th,
+  td {
+    padding: 9px 10px;
+    vertical-align: top;
+  }
+
+  @media (max-width: 760px) {
+    min-width: 0;
+
+    td {
+      display: grid;
+      grid-template-columns: 92px minmax(0, 1fr);
+      gap: 9px;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(24, 24, 24, 0.055);
+    }
+
+    td:last-child {
+      grid-template-columns: 1fr;
+      padding-bottom: 0;
+      border-bottom: 0;
+    }
+
+    td:last-child::before {
+      display: none;
+    }
+  }
+`;
+
+export type HealthToneStyleProps = {
+  $tone: "alert" | "ok" | "warn";
+};
+
+const HEALTH_TONE_COLORS = {
+  alert: {
+    background: "rgba(176, 24, 33, 0.055)",
+    border: "rgba(176, 24, 33, 0.18)",
+    text: "rgba(138, 18, 27, 0.94)",
+  },
+  ok: {
+    background: "rgba(24, 112, 58, 0.055)",
+    border: "rgba(24, 112, 58, 0.18)",
+    text: "rgba(21, 88, 44, 0.94)",
+  },
+  warn: {
+    background: "rgba(160, 96, 12, 0.06)",
+    border: "rgba(160, 96, 12, 0.2)",
+    text: "rgba(128, 76, 8, 0.94)",
+  },
+} as const;
+
+export const HealthBanner = styled.section<HealthToneStyleProps>`
+  border-radius: 18px;
+  border: 1px solid ${({ $tone }) => HEALTH_TONE_COLORS[$tone].border};
+  background: ${({ $tone }) => HEALTH_TONE_COLORS[$tone].background};
+  padding: clamp(14px, 1.5vw, 18px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  color: ${({ $tone }) => HEALTH_TONE_COLORS[$tone].text};
+`;
+
+export const HealthBannerBody = styled.div`
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+
+  > svg {
+    width: 21px;
+    height: 21px;
+    flex: 0 0 auto;
+    margin-top: 1px;
+    stroke-width: 2;
+  }
+`;
+
+export const HealthBannerTitle = styled.p`
+  margin: 0;
+  font-size: 14px;
+  font-weight: 680;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+`;
+
+export const HealthBannerText = styled.p`
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.82;
+`;
+
+export const SystemList = styled.ul`
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+`;
+
+export const SystemRow = styled.li`
+  border-bottom: 1px solid rgba(24, 24, 24, 0.06);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+`;
+
+export const SystemRowStatic = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+
+  @media (max-width: 620px) {
+    align-items: flex-start;
+  }
+`;
+
+export const SystemAccordion = styled.details`
+  summary {
+    ${focusRing}
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 2px;
+    list-style: none;
+    cursor: pointer;
+
+    @media (max-width: 620px) {
+      align-items: flex-start;
+    }
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  &[open] summary {
+    padding-bottom: 8px;
+  }
+`;
+
+export const SystemSummaryEnd = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+
+  > svg {
+    width: 15px;
+    height: 15px;
+    color: rgba(70, 70, 70, 0.55);
+    transition: transform 0.18s ease;
+  }
+
+  details[open] & > svg {
+    transform: rotate(90deg);
+  }
+`;
+
+export const SystemBody = styled.div`
+  padding: 0 2px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+export const SystemBodyNote = styled.p`
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px dashed rgba(24, 24, 24, 0.12);
+  border-radius: 11px;
+  background: rgba(248, 248, 247, 0.6);
+  color: rgba(58, 58, 58, 0.78);
+  font-size: 11.5px;
+  line-height: 1.5;
+`;
+
+export const SystemInfo = styled.div`
+  min-width: 0;
+`;
+
+export const SystemName = styled.p`
+  margin: 0;
+  color: rgba(22, 22, 22, 0.94);
+  font-size: 13px;
+  font-weight: 620;
+  line-height: 1.4;
+`;
+
+export const SystemDetail = styled.p`
+  margin: 2px 0 0;
+  overflow-wrap: anywhere;
+  color: rgba(58, 58, 58, 0.72);
+  font-size: 11.5px;
+  line-height: 1.45;
+`;
+
+export const TechDetails = styled.details`
+  margin-top: 10px;
+  border-top: 1px dashed rgba(24, 24, 24, 0.1);
+  padding-top: 10px;
+
+  summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    list-style: none;
+    cursor: pointer;
+    color: rgba(72, 72, 72, 0.66);
+    font-size: 11px;
+    font-weight: 620;
+    letter-spacing: 0.03em;
+
+    svg {
+      width: 13px;
+      height: 13px;
+      transition: transform 0.18s ease;
+    }
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  &[open] summary svg {
+    transform: rotate(90deg);
+  }
+`;
+
+export const TechDetailRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 2px 0;
+  color: rgba(58, 58, 58, 0.74);
+  font-size: 11px;
+  line-height: 1.5;
+
+  > span:last-child {
+    flex-shrink: 0;
+    color: rgba(24, 24, 24, 0.88);
+    font-weight: 600;
+  }
+`;
+
+export const CardEntityName = styled(SalesProductName)`
+  min-width: 0;
+  overflow-wrap: anywhere;
+`;
+
+export const HeroStatRow = styled.div`
+  margin-top: 13px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+
+  @media (max-width: 560px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+export const HeroStat = styled.div`
+  min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid rgba(20, 20, 20, 0.07);
+  border-radius: 14px;
+  background: rgba(246, 246, 245, 0.78);
+`;
+
+export const HeroStatLabel = styled.p`
+  margin: 0 0 4px;
+  color: rgba(72, 72, 72, 0.6);
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+`;
+
+export const HeroStatValue = styled.p`
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: rgba(18, 18, 18, 0.96);
+  font-size: clamp(19px, 2.2vw, 23px);
+  font-weight: 680;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+`;
+
+export const HeroStatMeta = styled.p`
+  margin: 5px 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: rgba(62, 62, 62, 0.68);
+  font-size: 11px;
+  line-height: 1.4;
+`;
+
+export const DeltaChip = styled.span<{ $direction: "down" | "up" }>`
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid
+    ${({ $direction }) =>
+      $direction === "up" ? "rgba(24, 112, 58, 0.2)" : "rgba(176, 24, 33, 0.18)"};
+  background: ${({ $direction }) =>
+    $direction === "up" ? "rgba(24, 112, 58, 0.07)" : "rgba(176, 24, 33, 0.06)"};
+  padding: 2px 7px;
+  color: ${({ $direction }) =>
+    $direction === "up" ? "rgba(21, 88, 44, 0.92)" : "rgba(138, 18, 27, 0.9)"};
+  font-size: 10px;
+  font-weight: 680;
+  line-height: 1.35;
+  white-space: nowrap;
+`;
+
+export const ProductBreakdownList = styled.ul`
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+`;
+
+export const ProductBreakdownRow = styled.li`
+  min-width: 0;
+`;
+
+export const ProductBreakdownHeader = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 5px;
+`;
+
+export const ProductBreakdownName = styled.span`
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: rgba(24, 24, 24, 0.92);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+`;
+
+export const ProductBreakdownNumbers = styled.span`
+  flex-shrink: 0;
+  color: rgba(58, 58, 58, 0.76);
+  font-size: 11px;
+  line-height: 1.4;
+  white-space: nowrap;
+`;
+
+export const ProductShareTrack = styled.div`
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(24, 24, 24, 0.06);
+  overflow: hidden;
+`;
+
+export const ProductShareFill = styled.div<{ $percent: number }>`
+  height: 100%;
+  width: ${({ $percent }) => Math.max(3, Math.min(100, $percent))}%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(124, 0, 2, 0.55), rgba(124, 0, 2, 0.8));
+`;
+
+export const CardControlsRow = styled(FormGrid)`
+  margin-top: 13px;
+`;
+
+export const MonoMeta = styled.span`
+  display: block;
+  margin-top: 2px;
+  overflow-wrap: anywhere;
+  color: rgba(66, 66, 66, 0.72);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  font-size: 10px;
+  line-height: 1.45;
 `;

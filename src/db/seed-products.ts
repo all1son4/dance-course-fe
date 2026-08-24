@@ -25,6 +25,7 @@ const buildProductInsertValues = (product: SellableProductSeed) => ({
   descriptionKeys: product.descriptionKeys,
   externalProductId: product.id,
   isActive: true,
+  salesEnabled: true,
   slug: product.slug,
   title: product.title,
   titleKey: product.titleKey,
@@ -32,6 +33,9 @@ const buildProductInsertValues = (product: SellableProductSeed) => ({
   updatedAt: new Date(),
 });
 
+// `salesEnabled` is deliberately absent from the update branch: it is runtime
+// state owned by the admin sales switch, and re-seeding must never reopen a
+// product that an operator closed.
 const buildProductUpdateValues = (product: SellableProductSeed) => ({
   accessNote: product.accessNote,
   accessNoteKey: product.accessNoteKey,

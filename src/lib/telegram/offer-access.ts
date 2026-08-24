@@ -47,6 +47,20 @@ const ONLINE_GROUP_OFFER_IDS = new Set(
       : [],
   ),
 );
+/**
+ * Offers whose Telegram access never expires. They are declared by workflow
+ * rather than by id, and deliberately stay out of the timed buckets above: the
+ * revocation sweep only looks at choreo-channel and first-touch offers, so an
+ * offer listed here is never given an expiry and never revoked.
+ */
+const LIFETIME_CHANNEL_OFFER_IDS = new Set(
+  SELLABLE_PRODUCTS_LIST.flatMap((product) =>
+    product.offers
+      .filter((offer) => offer.accessWorkflow === "telegram-channel-lifetime")
+      .map((offer) => offer.id),
+  ),
+);
+
 const OFFER_ACCESS_DURATION_DAYS_BY_ID = new Map(
   SELLABLE_PRODUCTS_LIST.flatMap((product) =>
     product.offers.map((offer) => [offer.id, offer.telegramAccessDurationDays] as const),
@@ -88,6 +102,9 @@ export const isRenewalDiscountOfferId = (offerId: string) =>
 
 export const isOnlineGroupAccessOfferId = (offerId: string) =>
   ONLINE_GROUP_OFFER_IDS.has(offerId);
+
+export const isLifetimeChannelOfferId = (offerId: string) =>
+  LIFETIME_CHANNEL_OFFER_IDS.has(offerId);
 
 export const getOfferMetadataById = (offerId: string) =>
   OFFER_METADATA_BY_ID.get(offerId) ?? null;

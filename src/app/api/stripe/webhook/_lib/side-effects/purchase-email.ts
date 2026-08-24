@@ -63,6 +63,10 @@ const getPurchaseSuccessEmailAccessKind = ({
     return "telegram-online-group";
   }
 
+  if (configuredAccessWorkflow === "telegram-channel-lifetime") {
+    return "telegram-channel-lifetime";
+  }
+
   if (isFirstTouchOfferId(offerId)) {
     return "telegram-chat";
   }

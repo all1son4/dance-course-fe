@@ -9,6 +9,7 @@ import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constan
 import {
   buildCheckoutHref,
   SELLABLE_PRODUCTS_LIST,
+  type SellableProduct,
   type SellableProductCode,
   type SellableProductOffer,
 } from "@/constants/sellable-products";
@@ -57,6 +58,9 @@ const CHOREO_PRESENTATIONS = {
   },
   "choreo-bundle": {
     posterSrc: "/images/bundle_poster.webp",
+  },
+  "choreo-birthday-drop": {
+    posterSrc: "/images/love_me_in_the_morning_poster.webp",
   },
 } satisfies Partial<
   Record<SellableProductCode, Pick<ChoreoCardProps, "posterSrc" | "videoSrc">>
@@ -157,11 +161,28 @@ export const getOnlineSuggestions = (
     tRich,
   });
 
-export const getChoreos = (t: Translate): ChoreoCardData[] =>
-  SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo").map((product) => {
+/**
+ * The regular breakdowns are the ones sold with and without a mentor. The
+ * The Birthday Drop is a choreo too, but it has its own section on this page, so it
+ * is deliberately kept out of the catalogue instead of being listed twice.
+ */
+const isRegularChoreoProduct = (product: SellableProduct) =>
+  product.type === "choreo" &&
+  product.offers.some((offer) => offer.code === "without-mentor");
+
+/**
+ * `openProductIds` comes from the admin sales switch: a closed breakdown keeps
+ * its card, its video and its copy, and only loses the buy buttons.
+ */
+export const getChoreos = (
+  t: Translate,
+  openProductIds: ReadonlySet<string>,
+): ChoreoCardData[] =>
+  SELLABLE_PRODUCTS_LIST.filter(isRegularChoreoProduct).map((product) => {
     const presentation = getChoreoPresentation(product.code);
     const title = t(product.titleKey);
     const copy = getChoreoCardCopy(product.code, title, t);
+    const isSaleOpen = openProductIds.has(product.id);
     const withoutMentorOffer = product.offers.find(
       (offer) => offer.code === "without-mentor",
     );
@@ -171,7 +192,15 @@ export const getChoreos = (t: Translate): ChoreoCardData[] =>
       id: product.code,
       ...presentation,
       ...copy,
-      firstButtonOptions: buildChoreoButtonOptions(product.id, t, withoutMentorOffer),
-      secondButtonOptions: buildChoreoButtonOptions(product.id, t, withMentorOffer),
+      firstButtonOptions: buildChoreoButtonOptions(
+        product.id,
+        t,
+        isSaleOpen ? withoutMentorOffer : undefined,
+      ),
+      secondButtonOptions: buildChoreoButtonOptions(
+        product.id,
+        t,
+        isSaleOpen ? withMentorOffer : undefined,
+      ),
     };
   });

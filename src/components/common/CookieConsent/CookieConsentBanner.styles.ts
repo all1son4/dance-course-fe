@@ -24,8 +24,12 @@ export const BannerCard = styled.div`
   ${glass({
     variant: "dialog",
     radius: "60px",
-    bgParam: "rgba(255, 255, 255, 0.8)",
-    frostPx: 14,
+    /* Text-heavy panel that can land over anything (photos, the birthday
+       popup), so it carries a denser fill and a restrained saturation lift -
+       a vivid backdrop must not bleed through into the copy. */
+    bgParam: "rgba(255, 255, 255, 0.9)",
+    frostPx: 16,
+    saturatePercent: 135,
     hoverEffect: false,
   })}
   padding: 40px;
@@ -36,7 +40,7 @@ export const BannerCard = styled.div`
   pointer-events: auto;
 
   @media (max-width: 767px) {
-    border-radius: 40px !important;
+    --glass-radius: 40px;
     padding: 20px;
     padding-bottom: calc(20px + env(safe-area-inset-bottom));
     max-height: calc(
@@ -143,6 +147,7 @@ export const ActionButtonWrap = styled.div`
 
 export const SettingsIconButton = styled.button`
   ${glass({
+    frost: "static",
     variant: "control",
     radius: "999px",
     bgParam: "rgba(255, 255, 255, 0.2)",

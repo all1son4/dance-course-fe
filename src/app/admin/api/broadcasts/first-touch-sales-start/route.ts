@@ -1,3 +1,4 @@
+import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
   deliverFirstTouchSalesStartCampaign,
@@ -12,6 +13,9 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { isProductSaleOpen } from "@/lib/sales-availability";
+
+const FIRST_TOUCH_PRODUCT = SELLABLE_PRODUCTS["first-touch"];
 
 export const runtime = "nodejs";
 
@@ -111,6 +115,12 @@ export async function POST(request: Request) {
   }
 
   try {
+    // The campaign email carries a checkout link. Sending it for a product whose
+    // sales are closed would hand out a link that only ends in an error.
+    if (!(await isProductSaleOpen(FIRST_TOUCH_PRODUCT.id))) {
+      return jsonNoStore({ errorCode: "product_sales_closed" }, { status: 409 });
+    }
+
     const result = await deliverFirstTouchSalesStartCampaign();
     const snapshot = await getEmailCampaignAdminSnapshot(
       FIRST_TOUCH_SALES_START_CAMPAIGN_KEY,

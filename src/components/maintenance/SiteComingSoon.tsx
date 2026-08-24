@@ -86,6 +86,7 @@ const Inner = styled(PageContainer)`
 const Panel = styled.section`
   width: min(720px, 100%);
   ${glass({
+    frost: "static",
     variant: "dialog",
     radius: "60px",
     bgParam: "rgba(255, 255, 255, 0.42)",
@@ -98,7 +99,7 @@ const Panel = styled.section`
   margin: 0 auto;
 
   @media (max-width: 880px) {
-    border-radius: 40px !important;
+    --glass-radius: 40px;
     padding: 30px;
   }
 `;

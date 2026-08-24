@@ -3,12 +3,13 @@ import styled, { css, keyframes } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
-import type { ButtonSize, ButtonVariant } from "./Button.types";
+import type { ButtonFrost, ButtonSize, ButtonVariant } from "./Button.types";
 
 type StyledProps = {
   $variant: ButtonVariant;
   $size: ButtonSize;
   $width: string;
+  $frost: ButtonFrost;
 };
 
 type ControlProps = StyledProps & {
@@ -30,12 +31,15 @@ const sizeStyles = {
   `,
 } satisfies Record<ButtonSize, ReturnType<typeof css>>;
 
-const variantStyles = {
+const buildVariantStyles = (frost: ButtonFrost) => ({
   primary: css`
     ${glass({
       variant: "control",
+      frost,
       radius: "100px",
       bgParam: "rgba(124, 0, 2, 1)",
+      fillPercent: 100,
+      elevation: 1.9,
     })}
     color: rgba(255, 255, 255, 1);
 
@@ -43,16 +47,24 @@ const variantStyles = {
       &:hover {
         ${glass({
           variant: "control",
+          frost,
           radius: "100px",
           bgParam: "rgba(11, 11, 11, 1)",
+          fillPercent: 100,
+          elevation: 1.9,
         })}
       }
     }
   `,
-  secondary: css`
+  /* Solid white face, but it darkens on hover exactly like `secondary`. */
+  white: css`
     ${glass({
       variant: "control",
+      frost,
       radius: "100px",
+      bgParam: "rgba(255, 255, 255, 1)",
+      fillPercent: 100,
+      elevation: 1.9,
     })}
     color: #000000;
 
@@ -60,14 +72,79 @@ const variantStyles = {
       &:hover {
         ${glass({
           variant: "control",
+          frost,
           radius: "100px",
           bgParam: "rgba(11, 11, 11, 1)",
+          fillPercent: 100,
+          elevation: 1.9,
         })}
         color: rgba(255, 255, 255, 1);
       }
     }
   `,
-};
+  secondary: css`
+    ${glass({
+      variant: "control",
+      frost,
+      radius: "100px",
+      elevation: 1.9,
+    })}
+    color: #000000;
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        ${glass({
+          variant: "control",
+          frost,
+          radius: "100px",
+          bgParam: "rgba(11, 11, 11, 1)",
+          fillPercent: 100,
+          elevation: 1.9,
+        })}
+        color: rgba(255, 255, 255, 1);
+      }
+    }
+  `,
+  ghost: css`
+    /* Sits on dark, strongly tinted panels: no saturation boost (it would make
+       the tint glow) and dark-tone fallbacks so the white label stays readable
+       when the backdrop filter is unavailable or transparency is reduced. */
+    ${glass({
+      variant: "control",
+      tone: "dark",
+      frost: "static",
+      radius: "100px",
+      bgParam: "rgba(255, 255, 255, 0.14)",
+      frostPx: 8,
+      saturatePercent: 100,
+      contrastPercent: 100,
+      shadowStrength: 0.7,
+    })}
+    color: rgba(255, 255, 255, 1);
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        ${glass({
+          variant: "control",
+          tone: "dark",
+          frost: "static",
+          radius: "100px",
+          bgParam: "rgba(255, 255, 255, 0.46)",
+          frostPx: 8,
+          saturatePercent: 100,
+          contrastPercent: 100,
+          shadowStrength: 0.7,
+        })}
+        color: rgba(255, 255, 255, 1);
+      }
+    }
+  `,
+});
+
+const variantStyles = {
+  static: buildVariantStyles("static"),
+  live: buildVariantStyles("live"),
+} satisfies Record<ButtonFrost, ReturnType<typeof buildVariantStyles>>;
 
 const controlStyles = css<ControlProps>`
   appearance: none;
@@ -94,7 +171,7 @@ const controlStyles = css<ControlProps>`
   width: 100%;
   max-width: ${({ $width }) => $width};
 
-  ${({ $variant }) => variantStyles[$variant]};
+  ${({ $frost, $variant }) => variantStyles[$frost][$variant]};
 
   /* Re-apply full transition after variant glass styles (glass() also defines transition). */
   transition:

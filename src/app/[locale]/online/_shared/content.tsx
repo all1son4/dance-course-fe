@@ -35,3 +35,26 @@ export const buildOnlineSuggestionCards = ({
     title: t(titleKey),
     text: textResolver === "rich" ? (tRich?.(textKey) ?? t(textKey)) : t(textKey),
   }));
+
+/**
+ * Messages carry their own markup - a line break in a title, an intro paragraph
+ * plus a bulleted list in a card - so the structure stays inside the translation
+ * instead of being hard-coded per locale.
+ */
+type RichTranslator = {
+  rich: (
+    key: string,
+    tags: Record<string, (chunks: ReactNode) => ReactNode>,
+  ) => ReactNode;
+};
+
+export const createRichText =
+  (t: RichTranslator) =>
+  (key: string): ReactNode =>
+    t.rich(key, {
+      br: () => <br />,
+      item: (chunks) => <li>{chunks}</li>,
+      list: (chunks) => <ul>{chunks}</ul>,
+      p: (chunks) => <p>{chunks}</p>,
+      strong: (chunks) => <strong>{chunks}</strong>,
+    });

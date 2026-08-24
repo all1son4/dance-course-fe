@@ -1173,21 +1173,75 @@ the READ phase is closed.
 
 ## Phase CUT: production cutover and observation
 
-Status: `TODO`
+Status: `IN_PROGRESS`
 
 ### CUT-01 — Deploy a DB-compatible rollback release
 
+Status: `DONE`
+
 The release must work without Sheets while still supporting the temporary exporter.
 
+Production revision `3b9efddd2fb04316923ae25d4f7972be4ab84db2` is the fixed
+DB-compatible rollback target. Its candidate passed Quality and preview journeys; the
+merge passed Vercel deployment and production critical journeys. It supports every
+PostgreSQL-only runtime mode and retains the isolated optional `SuccessfulCustomers`
+exporter. Exact evidence and rollback rules are recorded in the
+[`production cutover runbook`](./production-cutover-runbook.md).
+
 ### CUT-02 — Rehearse and prepare cutover
+
+Status: `DONE`
 
 Take backups, run final delta reconciliation, freeze unrelated changes, assign an
 operator, and prepare a written rollback checklist.
 
+A fresh encrypted production DB + Sheets snapshot was captured and restored into
+disposable PostgreSQL 17; two post-backup reconciliation captures were stable and all
+differences are classified; production invariants, report controls, and queues were
+reviewed; the freeze, operator, switch order, and rollback checklist are prepared. The
+owner created the provider-managed Neon snapshot
+`dance_course_prod/main/cut-02-2026-08-19`, retained without expiration. See the
+[`production cutover runbook`](./production-cutover-runbook.md).
+
 ### CUT-03 — Enable domain flags gradually
+
+Status: `IN_PROGRESS`
 
 Monitor errors, inbox/outbox backlog, money totals, access delivery, stale events,
 duplicate effects, and report results after each switch.
+
+Step 1 production preflight passed on 2026-08-20. Production still runs the fixed
+rollback revision `3b9efdd`; all 32 invariants pass; there are no dead letters, stale
+leases, retries, ready outbox jobs, failed links, or manual access tasks. The six ready
+Stripe inbox rows remain the already classified pre-cutover events. A fresh read-only
+reconciliation reproduced the accepted fingerprint
+`55dbae1935b726816bafd4a17b325f3ea60b3c58c1ad67075a153acd848f98b3`
+with no new difference.
+
+The owner subsequently restricted all runtime switching to development. A brief
+production switch sequence performed before that clarification was fully reversed
+before any production Stripe recovery worker ran: all four CUT variables are absent,
+the fixed SHA was rebuilt without them as `dpl_2WVGsyftfUnVegHxHP6Y49NBMWj1`, the
+production alias is READY, the six inbox rows and zero-ready outbox state are
+unchanged, all 32 invariants pass, and
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/32370031013)
+are green. That interval does not complete `CUT-03` or start `CUT-04`.
+
+The development rehearsal is complete on branch-scoped Vercel Preview flags for
+`dev`: Telegram access, business operations, payment events, and side effects use
+`database`, while the Sheets exporter remains unset. Revision `6a536970` Preview
+deployment `dpl_AqsJ8nxrtgqyDkCgVDh29ZdBBVXA` returned HTTP 200, passed all 32
+development invariants and all six
+[critical journeys](https://github.com/all1son4/dance-course-fe/actions/runs/32370407091).
+The bounded test-mode worker processed one inbox row, skipped three, emitted no
+outbox/export delivery, and correctly retained one old `charge.succeeded` fixture on
+retry because its test balance transaction is still pending. The privacy-safe
+post-worker fingerprint is
+`6e374054fc2959d77f3320d40c152cd9fe5b8a2c29cec706464567b4413208c3`.
+
+Production `CUT-03` remains paused until explicit owner authorization. The next
+production action, when authorized, is again the isolated Telegram switch and its
+immediate checks.
 
 ### CUT-04 — Observe
 
@@ -1329,3 +1383,8 @@ Status: `TODO`
 | 2026-08-13 | READ-05 implementation      | `DONE`       | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
 | 2026-08-13 | READ-06 implementation      | `DONE`       | Explicit sources; 105 unit, 48 PG17 and six journeys pass     |
 | 2026-08-13 | Gate G5                     | `PASSED`     | Stable audit, fail-closed, prod CI and six journeys pass      |
+| 2026-08-19 | CUT-01                      | `DONE`       | Fixed rollback release `3b9efdd`; prod CI/smoke green         |
+| 2026-08-19 | CUT-02                      | `DONE`       | Neon + encrypted restore evidence; stable delta; runbook      |
+| 2026-08-20 | CUT-03 preflight            | `DONE`       | Prod SHA/invariants/queues/stable delta verified; no switch   |
+| 2026-08-20 | CUT-03 dev rehearsal        | `DONE`       | Dev-only flags; smoke/audit green; one test retry classified  |
+| 2026-08-20 | CUT-03 production scope     | `PAUSED`     | Pre-CUT mode restored; no flags; production smoke green       |

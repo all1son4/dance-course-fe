@@ -17,7 +17,7 @@ const EMAIL_COPY = {
     backToSite: "Back to website",
     defaultOfferLabel: "Standard access",
     heading: "Thank you, your payment was successful",
-    intro: "We have prepared your course access and receipt details.",
+    intro: "We have prepared your access to the materials and the receipt details.",
     invoiceAttached: "The PDF invoice is attached to this email.",
     limitedAccessValidity:
       "Access to the materials is provided for {days} days from joining.",
@@ -59,6 +59,14 @@ const EMAIL_COPY = {
         mentorNote:
           "For the mentor option, the admin will also contact you separately about feedback.",
       },
+      telegramChannelLifetime: {
+        title: "Access your materials",
+        ready:
+          "Use the button below to open your personal one-use invite link to the private Telegram channel. Access to the materials is yours forever.",
+        pending:
+          "Your personal Telegram channel invite link is being prepared. Access to the materials is yours forever. If the button is missing, contact support and we will send access manually.",
+        cta: "Open Telegram channel",
+      },
       telegramChat: {
         title: "Access your course",
         ready:
@@ -93,7 +101,7 @@ const EMAIL_COPY = {
     backToSite: "Wróć na stronę",
     defaultOfferLabel: "Dostęp standardowy",
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
-    intro: "Przygotowaliśmy dostęp do kursu oraz dane dotyczące rachunku.",
+    intro: "Przygotowaliśmy dostęp do materiałów oraz potwierdzenie płatności.",
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
     limitedAccessValidity:
       "Dostęp do materiałów jest przyznawany na {days} dni od dołączenia.",
@@ -107,12 +115,13 @@ const EMAIL_COPY = {
     offerLabel: "Pakiet",
     paymentSucceededText: "Płatność zakończyła się sukcesem",
     productLabel: "Produkt",
-    receiptLinkCta: "Otwórz paragon Stripe",
-    receiptLinkValidity: "Link do paragonu jest tymczasowy i zwykle działa do 30 dni.",
-    receiptPdfCta: "Pobierz paragon PDF",
+    receiptLinkCta: "Otwórz potwierdzenie Stripe",
+    receiptLinkValidity:
+      "Link do potwierdzenia jest tymczasowy i zwykle działa do 30 dni.",
+    receiptPdfCta: "Pobierz potwierdzenie PDF",
     receiptPending:
-      "Paragon Stripe jest jeszcze przygotowywany. Wyślemy go, gdy tylko będzie dostępny.",
-    receiptTitle: "Rachunek za płatność",
+      "Potwierdzenie płatności Stripe jest jeszcze przygotowywane. Wyślemy je, gdy tylko będzie dostępne.",
+    receiptTitle: "Potwierdzenie płatności",
     siteLabel: "Strona",
     subjectPrefix: "Płatność potwierdzona",
     summaryTitle: "Podsumowanie zakupu",
@@ -134,6 +143,14 @@ const EMAIL_COPY = {
         cta: "Otwórz kanał Telegram",
         mentorNote:
           "W opcji z mentorem administrator skontaktuje się z Tobą osobno w sprawie feedbacku.",
+      },
+      telegramChannelLifetime: {
+        title: "Dostęp do materiałów",
+        ready:
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów zostaje na zawsze.",
+        pending:
+          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów zostaje na zawsze. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        cta: "Otwórz kanał Telegram",
       },
       telegramChat: {
         title: "Dostęp do kursu",
@@ -211,6 +228,14 @@ const EMAIL_COPY = {
         mentorNote:
           "Для тарифа с куратором администратор также отдельно свяжется с вами по поводу обратной связи.",
       },
+      telegramChannelLifetime: {
+        title: "Доступ к материалам",
+        ready:
+          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам остаётся навсегда.",
+        pending:
+          "Личная ссылка-приглашение в Telegram-канал готовится. Доступ к материалам остаётся навсегда. Если кнопки нет, напишите в поддержку — отправим доступ вручную.",
+        cta: "Открыть Telegram-канал",
+      },
       telegramChat: {
         title: "Доступ к курсу",
         ready:
@@ -243,6 +268,7 @@ export type PurchaseSuccessEmailAccessKind =
   | "manual-admin"
   | "support"
   | "telegram-channel"
+  | "telegram-channel-lifetime"
   | "telegram-chat"
   | "telegram-online-group"
   | "telegram-renewal";
@@ -315,6 +341,7 @@ type AccessContent = {
 
 const isTelegramAccessKind = (accessKind: PurchaseSuccessEmailAccessKind): boolean =>
   accessKind === "telegram-channel" ||
+  accessKind === "telegram-channel-lifetime" ||
   accessKind === "telegram-chat" ||
   accessKind === "telegram-online-group" ||
   accessKind === "telegram-renewal";
@@ -356,6 +383,16 @@ const resolveAccessContent = ({
   telegramLink: string | null;
 }): AccessContent => {
   switch (accessKind) {
+    case "telegram-channel-lifetime":
+      return {
+        cta: copy.access.telegramChannelLifetime.cta,
+        description: telegramLink
+          ? copy.access.telegramChannelLifetime.ready
+          : copy.access.telegramChannelLifetime.pending,
+        // A one-off drop has no mentor option to follow up on.
+        mentorFollowupNote: "",
+        title: copy.access.telegramChannelLifetime.title,
+      };
     case "telegram-channel":
       return {
         cta: copy.access.telegramChannel.cta,

@@ -136,6 +136,7 @@ export default function FirstTouch() {
             buttonText={t("hero.programButton")}
             variant="secondary"
             href="#course-program"
+            frost="live"
           />
         </ButtonBox>
       </TextBox>
