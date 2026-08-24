@@ -27,7 +27,6 @@ type Translate = (key: string) => string;
 type RichTranslate = (key: string) => ReactNode;
 
 /** Anchor targets: the hero button and the drop's own call to action link here. */
-export const BIRTHDAY_SECTION_ID = "birthday-special-offer";
 export const BIRTHDAY_ABOUT_SECTION_ID = "birthday-special-offer-about";
 
 /** Reel shown inside the drop block. */

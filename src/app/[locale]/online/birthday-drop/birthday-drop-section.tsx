@@ -15,11 +15,7 @@ import {
   AboutChoreoTitle,
   SpecialWrapper,
 } from "../_shared/section.styles";
-import {
-  BIRTHDAY_ABOUT_SECTION_ID,
-  BIRTHDAY_DROP_VIDEO_SRC,
-  BIRTHDAY_SECTION_ID,
-} from "./constants";
+import { BIRTHDAY_ABOUT_SECTION_ID, BIRTHDAY_DROP_VIDEO_SRC } from "./constants";
 import { getBirthdayDropCheckout, getBirthdaySuggestions } from "./constants";
 import {
   AbsoluteIconBox,
@@ -42,7 +38,7 @@ export default async function BirthdayDropSection() {
 
   return (
     <SpecialWrapper>
-      <BirthdayBlock id={BIRTHDAY_SECTION_ID}>
+      <BirthdayBlock>
         <AbsoluteIconBox>
           <Birthday34Badge />
         </AbsoluteIconBox>

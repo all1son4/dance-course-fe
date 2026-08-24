@@ -13,7 +13,7 @@ export const BIRTHDAY_POPUP_UPDATED_EVENT = "birthday-popup-updated";
 export const BIRTHDAY_POPUP_ENABLED = true;
 
 /** Where the call to action sends the visitor. */
-export const BIRTHDAY_POPUP_CTA_HREF = "/online/birthday-drop#birthday-special-offer";
+export const BIRTHDAY_POPUP_CTA_HREF = "/online/birthday-drop";
 
 /** Route part of the link, used to keep the popup off its own destination. */
 export const BIRTHDAY_POPUP_CTA_PATHNAME = "/online/birthday-drop";
