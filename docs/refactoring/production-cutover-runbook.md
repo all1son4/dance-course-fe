@@ -252,6 +252,28 @@ replace the required next-day verification. The earliest elapsed checkpoints are
 `2026-09-23T00:56:17Z` (destructive cleanup review); anomalies or insufficient
 natural traffic extend the relevant window.
 
+The required next-day checkpoint passed at `2026-08-25T12:08Z` with natural
+production traffic. PostgreSQL accepted 22 post-cutover purchases: 14 succeeded,
+seven failed, and one was canceled. The successful purchases produced 14 invoices
+and 42 side-effect records. A privacy-safe Stripe Live comparison found 113 relevant
+provider events and 113 verified inbox events with identical per-type counts, no
+missing provider event, and no extra database event. No inbox or outbox row is ready,
+working, stale, or dead-lettered. All 13 inbox retry rows ended as `processed` or
+`skipped`, all seven retried outbox deliveries ended as `sent`, and the one historical
+non-outbox failed admin alert is now explicitly `skipped`.
+
+Pooled and unpooled database health, all 19 migrations, the 12-offer catalog, all 32
+invariants, and six safe production browser journeys passed. The PII-safe report
+control has 59 eligible purchases, 59 joined rows, 59 unique sales, and no duplicate
+group. The 80 historical Payments shared with Sheets still match, no Sheet-only
+Payment exists, active access remains accounted for, and the optional
+successful-customer projection is aligned at 79 unique rows. The 22 DB-only Payments
+and 14 DB-only invoices are expected evidence that the disabled legacy writers are no
+longer authoritative. The next-day privacy-safe reconciliation fingerprint is
+`0ac933d5678a4091a390b3b05b3dd9522839d835a771cc4be9b35b650b837cbc`.
+This closes the next-day checkpoint only; `CUT-04` and Gate G6 stay in progress until
+the seven-day observation and owner behavior confirmation.
+
 Operator note: `db:audit:monthly-sales-report` currently includes raw customer samples
 in addition to its aggregate control totals. During observation, do not retain or
 share that raw output; use only the duplicate and count summaries. Removing those

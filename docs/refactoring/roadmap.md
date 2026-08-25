@@ -1285,6 +1285,30 @@ No new natural payment event arrived during this short initial interval, so this
 additional immediate evidence and does not satisfy the required next-day or elapsed
 observation windows.
 
+The required next-day checkpoint passed at `2026-08-25T12:08Z` against natural
+production traffic. Since cutover, PostgreSQL accepted 22 new purchases: 14
+succeeded, seven failed, and one was canceled. The 14 successful purchases produced
+14 invoices and 42 side-effect records. A privacy-safe Stripe Live comparison found
+exactly 113 relevant provider events and 113 verified inbox events with identical
+per-type counts, no missing provider event, and no extra database event. The inbox
+and outbox have no ready, working, stale, or dead-letter rows; all 13 inbox rows with
+historical retries ended as `processed` or `skipped`, and all seven retried outbox
+deliveries ended as `sent`. There are no failed access links, manual access tasks, or
+pending Sheets exports.
+
+Database health, all 19 migrations, the 12-offer catalog, all 32 invariants, and six
+safe production browser journeys passed. The PII-safe report control has 59 eligible
+purchases, 59 joined rows, 59 unique sales, and zero duplicate groups. Historical
+coverage remains stable: all 80 Payment rows shared with Sheets still match field for
+field, no Sheet-only Payment exists, and all active Sheet access remains represented
+in PostgreSQL. The 22 DB-only Payments and 14 DB-only invoices are the expected
+post-cutover divergence because those legacy Sheet writers are no longer
+authoritative; the optional one-way successful-customer projection remains aligned at
+79 unique rows. The new privacy-safe reconciliation fingerprint is
+`0ac933d5678a4091a390b3b05b3dd9522839d835a771cc4be9b35b650b837cbc`.
+This closes only the next-day checkpoint. `CUT-04` and Gate G6 remain `IN_PROGRESS`
+until the seven-day observation window and owner behavior confirmation.
+
 After every critical switch, run an immediate smoke/reconciliation check and repeat it
 the next day. Use existing application/provider logs and reconciliation output rather
 than introducing a separate enterprise monitoring platform.
@@ -1438,3 +1462,4 @@ Status: `TODO`
 | 2026-08-24 | CUT-03 production cutover   | `DONE`        | Four DB flags; three prod smokes; audit/reconciliation green  |
 | 2026-08-24 | CUT-04 observation          | `IN_PROGRESS` | Natural-traffic verification; two superseded retries tracked  |
 | 2026-08-24 | CUT-04 same-day check       | `DONE`        | Prod READY; 32 invariants and 6 journeys; stable fingerprint  |
+| 2026-08-25 | CUT-04 next-day check       | `DONE`        | 22 real purchases; Stripe 113/113; queues/invariants green    |
