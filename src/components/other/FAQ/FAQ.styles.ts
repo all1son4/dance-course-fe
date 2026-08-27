@@ -134,7 +134,7 @@ export const QuestionBox = styled.button<{ $isOpened: boolean }>`
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline: var(--focus-ring);
     outline-offset: 4px;
     border-radius: 8px;
   }

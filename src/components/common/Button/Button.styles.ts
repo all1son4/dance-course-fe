@@ -191,7 +191,7 @@ const controlStyles = css<ControlProps>`
     `}
 
   &:focus-visible {
-    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline: var(--focus-ring);
     outline-offset: 3px;
   }
 

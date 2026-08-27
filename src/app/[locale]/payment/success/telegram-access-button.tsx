@@ -127,7 +127,7 @@ const StatusMeta = styled.span`
   font-size: 11.5px;
   line-height: 140%;
   letter-spacing: 0;
-  color: rgba(16, 16, 16, 0.55);
+  color: rgba(16, 16, 16, 0.68);
 `;
 
 const AccessList = styled.div<{ $multiple: boolean }>`

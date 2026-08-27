@@ -7,6 +7,8 @@ export type DialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title?: ReactNode;
+  /** Keep the title for assistive tech but take it off the screen. */
+  isTitleVisuallyHidden?: boolean;
   description?: ReactNode;
   footer?: ReactNode;
   size?: DialogSize;

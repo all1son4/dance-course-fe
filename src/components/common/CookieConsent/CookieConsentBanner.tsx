@@ -127,7 +127,12 @@ export default function CookieConsentBanner() {
           <BannerHint>{t("banner.defaultNote")}</BannerHint>
         </BannerIntro>
 
-        <InlineSettings $isOpen={isSettingsOpen} aria-hidden={!isSettingsOpen}>
+        {/* Collapsed to 0fr the toggles are invisible but still focusable without `inert`. */}
+        <InlineSettings
+          $isOpen={isSettingsOpen}
+          aria-hidden={!isSettingsOpen}
+          inert={!isSettingsOpen}
+        >
           <InlineSettingsContent $isOpen={isSettingsOpen}>
             <Categories>{CONSENT_CATEGORY_KEYS.map(renderConsentCategory)}</Categories>
           </InlineSettingsContent>

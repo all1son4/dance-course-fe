@@ -47,7 +47,8 @@ export const ResultCard = styled.div`
   }
 `;
 
-export const ResultTitle = styled.p`
+/* Header and footer are hidden on result pages, so this is the page's heading. */
+export const ResultTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 30px;

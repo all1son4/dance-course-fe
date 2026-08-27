@@ -194,6 +194,12 @@ export const PrivacyPolicy = styled(Link)`
   color: rgba(72, 72, 72, 1);
   transition: color 0.2s ease;
 
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       color: #000000;
@@ -224,6 +230,12 @@ export const CookieSettingsButton = styled.button`
   padding: 0;
   color: rgba(72, 72, 72, 1);
   transition: color 0.2s ease;
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {

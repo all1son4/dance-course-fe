@@ -91,7 +91,8 @@
     "details": "Details",
     "playVideo": "Play video",
     "toggleDetails": "Show or hide details",
-    "closeDialog": "Close dialog"
+    "closeDialog": "Close dialog",
+    "skipToContent": "Skip to content"
   },
   "NotFoundPage": {
     "title": "Looks like this page does not exist",

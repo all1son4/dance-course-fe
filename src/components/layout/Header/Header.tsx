@@ -408,7 +408,9 @@ export default function Header() {
           <Right>{renderHeaderInteractiveContent()}</Right>
         ) : (
           <MenuReveal ref={menuRevealRef} $isOpen={menuIsOpen}>
-            <Bottom id={MOBILE_MENU_ID} $isOpen={menuIsOpen}>
+            {/* Closed, the menu is invisible but still in the DOM: `inert` keeps its
+                links out of the Tab order and out of the accessibility tree. */}
+            <Bottom id={MOBILE_MENU_ID} $isOpen={menuIsOpen} inert={!menuIsOpen}>
               <MenuInner>{renderHeaderInteractiveContent()}</MenuInner>
             </Bottom>
           </MenuReveal>

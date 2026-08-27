@@ -167,6 +167,13 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
   ${({ $isCollapsed }) =>
     $isCollapsed
       ? chevronHint("up")

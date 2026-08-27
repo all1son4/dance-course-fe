@@ -372,7 +372,7 @@ export default function CourseSignupDialog({
   const renderDialogContent = () => {
     if (isSuccess) {
       return (
-        <ResultState>
+        <ResultState role="status">
           <ResultIconBox>
             <Success width={128} height={128} />
           </ResultIconBox>
@@ -383,7 +383,7 @@ export default function CourseSignupDialog({
 
     if (isError) {
       return (
-        <ResultState>
+        <ResultState role="alert">
           <ResultText $tone="error">{t("failure.title")}</ResultText>
           <ResultReason>{t(`failure.reasons.${submitFailureReason}`)}</ResultReason>
         </ResultState>
@@ -455,7 +455,10 @@ export default function CourseSignupDialog({
       <Dialog
         open={isOpen}
         onOpenChange={handleOpenChange}
-        title={isResult ? undefined : t("title")}
+        title={t("title")}
+        // The result screens carry their own big message; the title stays for
+        // assistive tech so the dialog keeps its accessible name.
+        isTitleVisuallyHidden={isResult}
         description={renderDialogDescription()}
         closeLabel={t("closeLabel")}
         footer={renderDialogFooter()}

@@ -19,6 +19,12 @@ export const CardLinkContainer = styled(Link)`
   cursor: pointer;
   text-decoration: none !important;
 
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 4px;
+    border-radius: 8px;
+  }
+
   & svg rect {
     transition: fill 0.2s ease;
   }

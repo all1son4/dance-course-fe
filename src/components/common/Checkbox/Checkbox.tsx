@@ -43,7 +43,11 @@ export const Checkbox: FC<TCheckbox> = ({
           <PlaceholderText>{placeholder}</PlaceholderText>
         </Label>
       </Container>
-      {hasError && <ErrorMessage id={errorMessageId}>{errorMessage}</ErrorMessage>}
+      {hasError && (
+        <ErrorMessage id={errorMessageId} role="alert">
+          {errorMessage}
+        </ErrorMessage>
+      )}
     </CheckboxWrapper>
   );
 };

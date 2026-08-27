@@ -1,6 +1,7 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
 import styled, { keyframes } from "styled-components";
 
+import { visuallyHidden } from "@/styles/mixins/a11y";
 import { glass, scrim } from "@/styles/mixins/glass";
 
 import type { DialogSize } from "./Dialog.types";
@@ -111,7 +112,7 @@ export const Content = styled(RadixDialog.Content)<ContentStyleProps>`
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline: var(--focus-ring);
     outline-offset: 4px;
   }
 
@@ -140,6 +141,11 @@ export const Title = styled(RadixDialog.Title)`
   @media (max-width: 520px) {
     font-size: 24px;
   }
+`;
+
+/** Radix names the dialog after its Title, so a state without a visible heading still needs one. */
+export const VisuallyHiddenTitle = styled(RadixDialog.Title)`
+  ${visuallyHidden}
 `;
 
 export const Description = styled(RadixDialog.Description)`
@@ -210,7 +216,7 @@ export const CloseButton = styled(RadixDialog.Close)`
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline: var(--focus-ring);
     outline-offset: 3px;
   }
 

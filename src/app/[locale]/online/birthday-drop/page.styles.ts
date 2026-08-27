@@ -69,7 +69,7 @@ export const BirthdayTextContent = styled.div`
   }
 `;
 
-export const BirthdayTextContentTitle = styled.h2`
+export const BirthdayTextContentTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 36px;

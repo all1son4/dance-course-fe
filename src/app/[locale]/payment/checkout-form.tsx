@@ -217,7 +217,9 @@ export const CheckoutForm = ({
       </Checkboxes>
     </PersonalData>
     {stripeIntentErrorText ? (
-      <PaymentPreparationError>{stripeIntentErrorText}</PaymentPreparationError>
+      <PaymentPreparationError role="alert">
+        {stripeIntentErrorText}
+      </PaymentPreparationError>
     ) : null}
     <StripeReveal
       $isVisible={canRevealStripe}

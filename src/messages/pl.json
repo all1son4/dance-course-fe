@@ -91,7 +91,8 @@
     "details": "Szczegóły",
     "playVideo": "Odtwórz wideo",
     "toggleDetails": "Pokaż lub ukryj szczegóły",
-    "closeDialog": "Zamknij okno"
+    "closeDialog": "Zamknij okno",
+    "skipToContent": "Przejdź do treści"
   },
   "NotFoundPage": {
     "title": "Wygląda na to, że ta strona nie istnieje",

@@ -91,7 +91,8 @@
     "details": "Подробнее",
     "playVideo": "Воспроизвести видео",
     "toggleDetails": "Показать или скрыть детали",
-    "closeDialog": "Закрыть окно"
+    "closeDialog": "Закрыть окно",
+    "skipToContent": "Перейти к содержимому"
   },
   "NotFoundPage": {
     "title": "Кажется, этой страницы не существует",

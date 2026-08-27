@@ -16,6 +16,12 @@
   --motion-slow: 320ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Keyboard focus ring. Only `:focus-visible` uses it, so mouse and touch
+     never see it. Full-opacity brand red clears 3:1 on every background
+     the site uses; the earlier rgba(124, 0, 2, 0.32) sat at 1.7-2.0:1. */
+  --focus-ring-color: rgba(124, 0, 2, 1);
+  --focus-ring: 2px solid var(--focus-ring-color);
 }
 
 @keyframes maintenance-ring-spin {
@@ -76,6 +82,12 @@ body {
 main {
   flex: 1;
   width: 100%;
+}
+
+/* The skip link focuses <main> programmatically (tabindex="-1"); that focus
+   is never keyboard-visible, so no ring. */
+main:focus {
+  outline: none;
 }
 
 /* Media defaults */

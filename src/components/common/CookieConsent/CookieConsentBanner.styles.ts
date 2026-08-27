@@ -153,7 +153,6 @@ export const SettingsIconButton = styled.button`
     bgParam: "rgba(255, 255, 255, 0.2)",
   })}
   border: none;
-  outline: none;
   appearance: none;
   width: 52px;
   height: 52px;
@@ -175,6 +174,11 @@ export const SettingsIconButton = styled.button`
 
   &:active {
     transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
   }
 `;
 

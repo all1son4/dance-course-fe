@@ -54,7 +54,7 @@ export const Track = styled.span`
   }
 
   ${Input}:focus-visible + & {
-    box-shadow: 0 0 0 3px rgba(124, 0, 2, 0.24);
+    box-shadow: 0 0 0 2px var(--focus-ring-color);
   }
 
   ${Input}:disabled + & {

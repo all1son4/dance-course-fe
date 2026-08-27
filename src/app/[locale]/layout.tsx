@@ -8,6 +8,7 @@ import DeferredCookieConsentBanner from "@/components/common/CookieConsent/Defer
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import PageContainer from "@/components/layout/PageContainer";
+import SkipLink, { MAIN_CONTENT_ID } from "@/components/layout/SkipLink";
 import BirthdayPopup from "@/components/other/BirthdayPopup";
 import { routing } from "@/i18n/routing";
 import {
@@ -113,8 +114,10 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <SkipLink />
       <Header />
-      <main lang={locale}>
+      {/* tabIndex={-1} lets the skip link move focus here. */}
+      <main id={MAIN_CONTENT_ID} lang={locale} tabIndex={-1}>
         <PageContainer>{children}</PageContainer>
       </main>
       <Footer />
