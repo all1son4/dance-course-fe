@@ -26,26 +26,19 @@ export default function InteractiveCard({
   buttonRel,
   buttonTarget,
   buttonText,
-  collapseTopRow,
   defaultCollapseTopRow,
   frost = "static",
   isTopRowCollapsible,
-  onCollapseTopRowChange,
   title,
   topRowContent,
 }: InteractiveCardProps) {
   const t = useTranslations("Common");
   const hasTopRow = Boolean(topRowContent);
   const canCollapseTopRow = hasTopRow && Boolean(isTopRowCollapsible);
-  const isCollapseStateControlled = typeof collapseTopRow === "boolean";
   const [isTopRowCollapsedInternal, setIsTopRowCollapsedInternal] = useState<boolean>(
     defaultCollapseTopRow ?? false,
   );
-  const isTopRowCollapsed = canCollapseTopRow
-    ? isCollapseStateControlled
-      ? Boolean(collapseTopRow)
-      : isTopRowCollapsedInternal
-    : Boolean(collapseTopRow);
+  const isTopRowCollapsed = canCollapseTopRow && isTopRowCollapsedInternal;
   const topRowId = useId();
   const buttonLinkProps = buttonHref
     ? {
@@ -59,13 +52,7 @@ export default function InteractiveCard({
       return;
     }
 
-    const nextCollapsedState = !isTopRowCollapsed;
-
-    if (!isCollapseStateControlled) {
-      setIsTopRowCollapsedInternal(nextCollapsedState);
-    }
-
-    onCollapseTopRowChange?.(nextCollapsedState);
+    setIsTopRowCollapsedInternal(!isTopRowCollapsed);
   };
 
   return (

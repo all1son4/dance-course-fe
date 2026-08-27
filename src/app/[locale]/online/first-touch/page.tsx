@@ -23,7 +23,7 @@ import {
 } from "@/lib/seo";
 
 import { buildCourseOffersStructuredData } from "../_shared/structured-data";
-import { getOnlineSuggestions } from "./constants";
+import { getFirstTouchSuggestions } from "./constants";
 import {
   AboutCourseCards,
   AboutCourseSection,
@@ -79,7 +79,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function FirstTouch() {
   const locale = useLocale();
   const t = useTranslations("FirstTouchPage");
-  const onlineSuggestions = getOnlineSuggestions((key) => t(key));
+  const onlineSuggestions = getFirstTouchSuggestions((key) => t(key));
   const defaultOffer = getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT);
   const coursePrice = `${defaultOffer.prices.pln} PLN / ${defaultOffer.prices.eur} €`;
   const courseStructuredData = {

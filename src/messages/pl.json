@@ -478,8 +478,6 @@
         "email": {
           "label": "Email",
           "placeholder": "name@example.com",
-          "requiredError": "Podaj email",
-          "invalidError": "Podaj poprawny email",
           "duplicateError": "Ten email jest już zapisany"
         },
         "consent": {
@@ -530,7 +528,6 @@
       "startDate": "Październik - listopad",
       "priceLabel": "Cena dla nowych uczestników",
       "price": "220 PLN / 50 €",
-      "renewalNote": "Uczestnicy obecnej grupy otrzymują specjalną cenę kontynuacji. Kontynuacja jest dostępna wyłącznie przez indywidualny link.",
       "buyButton": "Kup swoje miejsce",
       "offers": {
         "regular": {
@@ -550,7 +547,6 @@
       "selectButton": "Wybierz pakiet",
       "priceLabel": "Cena",
       "buyButton": "Kup",
-      "registrationButton": "Zapisz się",
       "standard": {
         "title": "Standard",
         "subtitle": "Online Group",
@@ -679,7 +675,6 @@
     },
     "renewal": {
       "text": "Potwierdź Telegram, aby odblokować płatność za kontynuację.",
-      "textVerified": "Telegram potwierdzony. Możesz opłacić kontynuację.",
       "title": "Potwierdź Telegram przed płatnością",
       "description": "Aby przedłużyć ze zniżką, potwierdź konto Telegram: sprawdzimy udział w poprzednim czacie, a po płatności wyślemy osobisty link do nowej grupy.",
       "summaryCard": {
@@ -804,7 +799,6 @@
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
-      "firstTouchLabel": "Materiały kursu First Touch:",
       "inspirationUntil": "Dostęp do Inspiration Hub do",
       "openLink": "Przejdź do Telegrama",
       "openMainGroup": "Otwórz Online Group",

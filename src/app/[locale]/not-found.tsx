@@ -4,6 +4,12 @@ import { getTranslations } from "next-intl/server";
 import Button from "@/components/common/Button";
 import { Logo } from "@/svg";
 
+/*
+ * Deliberately a CSS module, not styled-components: unmatched URLs render
+ * through the root `app/not-found.tsx`, outside the locale layout - no header
+ * (hence the logo below), and the styles styled-components inserts during SSR
+ * for server-only components are dropped on hydration there.
+ */
 import styles from "./not-found.module.css";
 
 export default async function NotFound() {
@@ -23,7 +29,7 @@ export default async function NotFound() {
           style={{ width: "100%", maxWidth: "100%", height: "auto" }}
           priority
         />
-        <p className={styles.errorText}>{t("title")}</p>
+        <h1 className={styles.errorText}>{t("title")}</h1>
         <Button buttonText={t("backHome")} width="300px" href="/" />
       </div>
     </div>

@@ -11,9 +11,5 @@ export type CourseCardProps = {
   buttonTarget?: string;
   /** Marks the button as an anchor the page's sticky CTA mirrors. */
   buttonIsStickyAnchor?: boolean;
-  iconSize?: {
-    width: number;
-    height: number;
-  };
   bgColor?: string;
 };

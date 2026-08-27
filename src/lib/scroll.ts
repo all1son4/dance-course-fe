@@ -1,7 +1,7 @@
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const DEFAULT_ANCHOR_OFFSET_PX = 8;
 
-export const getAnchorScrollBehavior = (): ScrollBehavior => {
+const getAnchorScrollBehavior = (): ScrollBehavior => {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
     return "auto";
   }
@@ -9,7 +9,7 @@ export const getAnchorScrollBehavior = (): ScrollBehavior => {
   return window.matchMedia(REDUCED_MOTION_QUERY).matches ? "auto" : "smooth";
 };
 
-export const normalizeHashTarget = (value: string): string => {
+const normalizeHashTarget = (value: string): string => {
   const hashValue = value.replace(/^#/, "").trim();
 
   if (!hashValue) {

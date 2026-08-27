@@ -18,6 +18,4 @@ export type InteractiveCardProps = {
   buttonRel?: AnchorHTMLAttributes<HTMLAnchorElement>["rel"];
   isTopRowCollapsible?: boolean;
   defaultCollapseTopRow?: boolean;
-  collapseTopRow?: boolean;
-  onCollapseTopRowChange?: (collapsed: boolean) => void;
 };

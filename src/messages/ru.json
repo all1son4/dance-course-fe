@@ -478,8 +478,6 @@
         "email": {
           "label": "Email",
           "placeholder": "name@example.com",
-          "requiredError": "Укажи email",
-          "invalidError": "Укажи корректный email",
           "duplicateError": "Этот email уже записан на рассылку"
         },
         "consent": {
@@ -530,7 +528,6 @@
       "startDate": "Октябрь - Ноябрь",
       "priceLabel": "Стоимость для новых участников",
       "price": "220 PLN / 50 €",
-      "renewalNote": "Для участников текущей онлайн-группы действует специальная цена при продлении. Продление доступно только по персональной ссылке.",
       "buyButton": "Купить своё место",
       "offers": {
         "regular": {
@@ -550,7 +547,6 @@
       "selectButton": "Выбрать тариф",
       "priceLabel": "Стоимость",
       "buyButton": "Купить",
-      "registrationButton": "Записаться",
       "standard": {
         "title": "Standard",
         "subtitle": "Online Group",
@@ -679,7 +675,6 @@
     },
     "renewal": {
       "text": "Подтвердите Telegram, чтобы открыть оплату продления.",
-      "textVerified": "Telegram подтвержден. Можно оплачивать продление.",
       "title": "Подтвердите Telegram перед оплатой",
       "description": "Для продления по скидке подтвердите Telegram: мы проверим участие в прошлом чате, а после оплаты выдадим персональную ссылку в новую группу.",
       "summaryCard": {
@@ -804,7 +799,6 @@
     },
     "telegram": {
       "active": "доступ уже активирован",
-      "firstTouchLabel": "Материалы курса First Touch:",
       "inspirationUntil": "Доступ к Inspiration Hub до",
       "openLink": "Перейти в Telegram",
       "openMainGroup": "Открыть Online Group",

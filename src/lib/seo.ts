@@ -22,11 +22,11 @@ export const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
 export const seoImagePath = "/images/og_default.jpg";
 export const seoImageWidth = 1200;
 export const seoImageHeight = 630;
-export const instagramUrl = INSTAGRAM_PROFILE_URL;
-export const telegramUrl = PERSONAL_TELEGRAM_URL;
+const instagramUrl = INSTAGRAM_PROFILE_URL;
+const telegramUrl = PERSONAL_TELEGRAM_URL;
 export const seoTargetLocale = "en" as const;
 export const seoTargetOpenGraphLocale = "en_US" as const;
-export const websiteStructuredDataId = `${normalizedSiteUrl}/#website`;
+const websiteStructuredDataId = `${normalizedSiteUrl}/#website`;
 export const annaStrokStructuredDataId = `${normalizedSiteUrl}/#anna-strok`;
 
 const getOpenGraphLocale = (locale: string) => {

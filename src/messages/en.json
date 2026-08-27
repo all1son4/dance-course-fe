@@ -478,8 +478,6 @@
         "email": {
           "label": "Email",
           "placeholder": "name@example.com",
-          "requiredError": "Enter your email",
-          "invalidError": "Enter a valid email",
           "duplicateError": "This email is already signed up"
         },
         "consent": {
@@ -530,7 +528,6 @@
       "startDate": "October - November",
       "priceLabel": "Price for new participants",
       "price": "220 PLN / €50",
-      "renewalNote": "Current group participants receive a special renewal price. Renewal is available only through a personal link.",
       "buyButton": "Buy your place",
       "offers": {
         "regular": {
@@ -550,7 +547,6 @@
       "selectButton": "Choose a plan",
       "priceLabel": "Price",
       "buyButton": "Buy",
-      "registrationButton": "Sign up",
       "standard": {
         "title": "Standard",
         "subtitle": "Online Group",
@@ -679,7 +675,6 @@
     },
     "renewal": {
       "text": "Confirm Telegram to unlock renewal payment.",
-      "textVerified": "Telegram confirmed. You can pay for renewal.",
       "title": "Confirm Telegram before payment",
       "description": "To renew with the discount, confirm Telegram: we will check the previous chat membership and send a personal invite to the new group after payment.",
       "summaryCard": {
@@ -804,7 +799,6 @@
     },
     "telegram": {
       "active": "access is already active",
-      "firstTouchLabel": "First Touch course materials:",
       "inspirationUntil": "Inspiration Hub access until",
       "openLink": "Go to Telegram",
       "openMainGroup": "Open Online Group",

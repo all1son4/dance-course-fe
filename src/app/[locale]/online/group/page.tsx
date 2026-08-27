@@ -22,7 +22,7 @@ import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import { buildCourseOffersStructuredData } from "../_shared/structured-data";
 import { ClosedIconBox, ClosedSalesCard } from "../choreo/page.styles";
-import { getOnlineSuggestions } from "./constants";
+import { getGroupSuggestions } from "./constants";
 import {
   AboutCourseCards,
   AboutCourseSection,
@@ -81,7 +81,7 @@ export const dynamic = "force-dynamic";
 export default async function OnlineGroupPage() {
   const locale = await getLocale();
   const t = await getTranslations("OnlineGroupPage");
-  const onlineSuggestions = getOnlineSuggestions((key) => t(key));
+  const onlineSuggestions = getGroupSuggestions((key) => t(key));
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
   const isSaleOpen = await isProductSaleOpen(product.id);
   const purchaseOffers = product.offers.filter(

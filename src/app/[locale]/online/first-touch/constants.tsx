@@ -47,7 +47,7 @@ const FIRST_TOUCH_SUGGESTION_DEFINITIONS = [
   },
 ] satisfies readonly OnlineSuggestionDefinition[];
 
-export const getOnlineSuggestions = (t: Translate): OnlineSuggestionCard[] =>
+export const getFirstTouchSuggestions = (t: Translate): OnlineSuggestionCard[] =>
   buildOnlineSuggestionCards({
     definitions: FIRST_TOUCH_SUGGESTION_DEFINITIONS,
     t,

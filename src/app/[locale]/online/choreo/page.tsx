@@ -19,7 +19,7 @@ import {
   AboutChoreoTitle,
   SpecialWrapper,
 } from "../_shared/section.styles";
-import { getOnlineSuggestions } from "./constants";
+import { getChoreoSuggestions } from "./constants";
 import {
   ClosedIconBox,
   ClosedSalesCard,
@@ -61,7 +61,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function ChoreoPage() {
   const t = useTranslations("ChoreoPage");
-  const onlineSuggestions = getOnlineSuggestions((key) => t(key), createRichText(t));
+  const onlineSuggestions = getChoreoSuggestions((key) => t(key), createRichText(t));
 
   return (
     <>

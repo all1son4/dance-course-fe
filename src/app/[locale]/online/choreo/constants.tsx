@@ -151,7 +151,7 @@ const buildChoreoButtonOptions = (
       }
     : undefined;
 
-export const getOnlineSuggestions = (
+export const getChoreoSuggestions = (
   t: Translate,
   tRich: RichTranslate,
 ): OnlineSuggestionCard[] =>

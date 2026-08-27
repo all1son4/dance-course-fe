@@ -43,7 +43,6 @@ export const TextBox = styled.div`
 
 export const Title = styled.h3`
   font-weight: 600;
-  font-style: semibold;
   font-size: 17px;
   line-height: 110%;
   letter-spacing: 0;
