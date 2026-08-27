@@ -185,7 +185,9 @@
       "hedgehog": "Anonimowy Jeż",
       "owl": "Anonimowa Sowa",
       "capybara": "Anonimowa Kapibara"
-    }
+    },
+    "readMore": "Czytaj w całości",
+    "readLess": "Zwiń"
   },
   "Roadmap": {
     "items": {

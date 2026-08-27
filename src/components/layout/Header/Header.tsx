@@ -7,6 +7,7 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "rea
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { getLocaleCookieName } from "@/lib/cookie-consent";
+import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation-events";
 import {
   getHashTargetFromLocation,
   scrollToHashTarget,
@@ -22,6 +23,8 @@ import {
   Divider,
   HeaderWrap,
   IconBox,
+  MenuInner,
+  MenuReveal,
   MobileMenuBackdrop,
   Pill,
   Right,
@@ -36,6 +39,8 @@ const HASH_SCROLL_RETRY_DELAY_MS = 40;
 const PREFETCH_IDLE_TIMEOUT_MS = 1_200;
 const PREFETCH_FALLBACK_DELAY_MS = 280;
 const CONTACTS_HASH_TARGET_ID = "contacts";
+/** Only if `transitionend` never arrives (e.g. reduced motion makes it ~0ms and it fires early). */
+const MENU_COLLAPSE_FALLBACK_MS = 450;
 // Only the routes the header itself links to. Every page is server-rendered
 // per request, so each prefetch is a full SSR (and, for the product pages, a
 // database round trip) charged to every visitor before they click anything.
@@ -135,6 +140,7 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const previousPathnameRef = useRef(pathname);
+  const menuRevealRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.documentElement.lang = locale;
@@ -276,6 +282,9 @@ export default function Header() {
     setIsLocaleSwitching(true);
     syncLocaleCookie(nextLocale);
     preserveScrollPosition();
+    // `router.refresh()` is neither a click nor a popstate, so the progress
+    // bar would never learn about the 300-800ms server re-render.
+    window.dispatchEvent(new Event(NAVIGATION_PROGRESS_START_EVENT));
     router.refresh();
   };
 
@@ -296,13 +305,43 @@ export default function Header() {
   const onContactsMenuClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
 
-    if (scrollToHashTarget(CONTACTS_HASH_TARGET_ID)) {
+    const scrollToContacts = () => {
+      if (scrollToHashTarget(CONTACTS_HASH_TARGET_ID)) {
+        return;
+      }
+
+      router.push(`/#${CONTACTS_HASH_TARGET_ID}`, {
+        scroll: false,
+      });
+    };
+
+    // The scroll offset is measured from the header's bottom edge. With the
+    // mobile menu open that edge is the bottom of the menu, not the 59px
+    // pill, so the target would land hundreds of pixels too low. Close first
+    // and scroll when the collapse transition has actually finished (with a
+    // timeout fallback in case the transition never fires).
+    const menuReveal = menuRevealRef.current;
+
+    if (isMobileViewport && menuIsOpen && menuReveal) {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        menuReveal.removeEventListener("transitionend", onTransitionEnd);
+        window.clearTimeout(fallbackId);
+        scrollToContacts();
+      };
+      const onTransitionEnd = (transition: TransitionEvent) => {
+        if (transition.target === menuReveal) finish();
+      };
+      const fallbackId = window.setTimeout(finish, MENU_COLLAPSE_FALLBACK_MS);
+
+      menuReveal.addEventListener("transitionend", onTransitionEnd);
+      setMenuIsOpen(false);
       return;
     }
 
-    router.push(`/#${CONTACTS_HASH_TARGET_ID}`, {
-      scroll: false,
-    });
+    scrollToContacts();
   };
 
   const headerInteractiveContent = [
@@ -368,9 +407,11 @@ export default function Header() {
         {!isMobileViewport ? (
           <Right>{renderHeaderInteractiveContent()}</Right>
         ) : (
-          <Bottom id={MOBILE_MENU_ID} $isOpen={menuIsOpen}>
-            {renderHeaderInteractiveContent()}
-          </Bottom>
+          <MenuReveal ref={menuRevealRef} $isOpen={menuIsOpen}>
+            <Bottom id={MOBILE_MENU_ID} $isOpen={menuIsOpen}>
+              <MenuInner>{renderHeaderInteractiveContent()}</MenuInner>
+            </Bottom>
+          </MenuReveal>
         )}
       </Pill>
     </HeaderWrap>

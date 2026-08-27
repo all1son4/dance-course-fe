@@ -185,7 +185,9 @@
       "hedgehog": "Anonymous Hedgehog",
       "owl": "Anonymous Owl",
       "capybara": "Anonymous Capybara"
-    }
+    },
+    "readMore": "Read in full",
+    "readLess": "Show less"
   },
   "Roadmap": {
     "items": {

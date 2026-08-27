@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useEffect, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { BIRTHDAY_POPUP_CTA_HREF } from "@/lib/birthday-popup";
@@ -21,8 +22,24 @@ import { useBirthdayPopup } from "./use-birthday-popup";
 export default function BirthdayPopup() {
   const t = useTranslations("BirthdayPopup");
   const { dismiss, isVisible, onCallToActionClick } = useBirthdayPopup();
+  // Stay mounted through the exit animation; unmount when it finishes.
+  const [isLeaving, setIsLeaving] = useState(false);
+  const wasVisibleRef = useRef(false);
 
-  if (!isVisible) {
+  useEffect(() => {
+    if (isVisible) {
+      wasVisibleRef.current = true;
+      setIsLeaving(false);
+      return;
+    }
+
+    if (wasVisibleRef.current) {
+      wasVisibleRef.current = false;
+      setIsLeaving(true);
+    }
+  }, [isVisible]);
+
+  if (!isVisible && !isLeaving) {
     return null;
   }
 
@@ -31,7 +48,14 @@ export default function BirthdayPopup() {
       role="dialog"
       aria-modal={false}
       aria-labelledby={TITLE_ELEMENT_ID}
-      {...stickyCtaBlockerProps}
+      aria-hidden={isLeaving || undefined}
+      $isLeaving={isLeaving}
+      onAnimationEnd={() => {
+        if (isLeaving) {
+          setIsLeaving(false);
+        }
+      }}
+      {...(isLeaving ? {} : stickyCtaBlockerProps)}
     >
       <CloseButton type="button" aria-label={t("close")} onClick={dismiss} />
       <ArtworkBox aria-hidden>

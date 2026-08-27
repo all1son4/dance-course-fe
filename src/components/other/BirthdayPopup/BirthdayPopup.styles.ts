@@ -1,4 +1,4 @@
-import { keyframes, styled } from "styled-components";
+import { css, keyframes, styled } from "styled-components";
 
 const popupEnter = keyframes`
   from {
@@ -12,7 +12,21 @@ const popupEnter = keyframes`
   }
 `;
 
-export const AbsoluteContainer = styled.div`
+/* Leaving mirrors arriving but shorter and shallower, so a dismiss reads as
+   "tucked away" rather than "cut off". */
+const popupExit = keyframes`
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+`;
+
+export const AbsoluteContainer = styled.div<{ $isLeaving: boolean }>`
   position: fixed;
   right: 30px;
   bottom: 30px;
@@ -27,7 +41,15 @@ export const AbsoluteContainer = styled.div`
   align-items: center;
   color: rgba(255, 255, 255, 1);
   z-index: 1000;
-  animation: ${popupEnter} var(--motion-slow, 320ms) var(--ease-emphasized, ease) both;
+  animation: ${({ $isLeaving }) =>
+    $isLeaving
+      ? css`
+          ${popupExit} var(--motion-fast, 160ms) cubic-bezier(0.4, 0, 1, 1) both
+        `
+      : css`
+          ${popupEnter} var(--motion-slow, 320ms) var(--ease-emphasized, ease) both
+        `};
+  pointer-events: ${({ $isLeaving }) => ($isLeaving ? "none" : "auto")};
   box-sizing: border-box;
   /* Same guard the consent banner uses: on a short viewport the card scrolls
      inside itself instead of running off the top of the screen. */
@@ -72,10 +94,6 @@ export const AbsoluteContainer = styled.div`
       width: 164px;
       height: auto;
     }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
   }
 `;
 

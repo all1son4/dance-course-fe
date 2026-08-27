@@ -122,14 +122,6 @@ export const StickyCtaMotionLayer = styled.div<{
   opacity: 0;
   transform: translateY(6px) scale(0.97);
   ${({ $motion }) => MOTION_ANIMATION[$motion]}
-
-  /* globals.css strips every animation under prefers-reduced-motion, which
-     would also strip the "shown" pose the keyframes hold - so state the pose
-     explicitly here and let the bar simply appear in place. */
-  @media (prefers-reduced-motion: reduce) {
-    opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
-    transform: none;
-  }
 `;
 
 /** The visible pill. Static: one class, generated once at load. */

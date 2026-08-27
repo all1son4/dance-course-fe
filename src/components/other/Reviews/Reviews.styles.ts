@@ -1,6 +1,7 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
+import { chevronHint } from "@/styles/mixins/motion";
 
 export const ReviewsContainer = styled.div`
   box-sizing: border-box;
@@ -79,9 +80,12 @@ export const ReviewsSlider = styled.div`
     min-width: 0;
   }
 
+  /* Only the slide transform animates. The container no longer resizes per
+     slide (no autoHeight): cards share one comfortable height, so nothing
+     below the carousel moves while it plays. */
   & .swiper-wrapper {
     align-items: flex-start;
-    transition-property: transform, height;
+    transition-property: transform;
   }
 
   & .swiper-slide {
@@ -89,6 +93,125 @@ export const ReviewsSlider = styled.div`
     display: flex;
     align-self: flex-start;
     height: auto;
+  }
+
+  /* Dots replace the arrow buttons where those are hidden (<= 880px): the
+     only hint on a phone that there is more than one review. */
+  & .swiper-pagination {
+    position: static;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin-top: 14px;
+    line-height: 0;
+
+    @media (max-width: 880px) {
+      display: flex;
+    }
+  }
+
+  /* Quiet, small dots in the site's muted ink; the active one stretches into
+     a short pill in the brand red. */
+  & .swiper-pagination-bullet {
+    width: 5px;
+    height: 5px;
+    margin: 0;
+    border-radius: 3px;
+    background: rgba(11, 11, 11, 0.16);
+    opacity: 1;
+    transition:
+      width var(--motion-base, 220ms) var(--ease-emphasized, ease),
+      background-color var(--motion-base, 220ms) var(--ease-standard, ease);
+  }
+
+  & .swiper-pagination-bullet-active {
+    width: 14px;
+    background: rgba(124, 0, 2, 0.85);
+  }
+`;
+
+/**
+ * Clamps the review to a fixed number of lines (--review-clamp) and animates
+ * to the measured full height when expanded (set inline by ReviewBody).
+ */
+export const ReviewTextClamp = styled.div<{
+  $isExpanded: boolean;
+  $isClampable: boolean;
+}>`
+  --review-clamp: calc(6 * 17px * 1.5);
+  position: relative;
+  z-index: 1;
+  max-height: var(--review-clamp);
+  overflow: hidden;
+  transition: max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+  /* Fade the last lines out while clamped so the cut does not look like a bug. */
+  mask-image: ${({ $isExpanded, $isClampable }) =>
+    !$isExpanded && $isClampable
+      ? "linear-gradient(to bottom, #000 62%, transparent 100%)"
+      : "none"};
+  -webkit-mask-image: ${({ $isExpanded, $isClampable }) =>
+    !$isExpanded && $isClampable
+      ? "linear-gradient(to bottom, #000 62%, transparent 100%)"
+      : "none"};
+
+  @media (max-width: 450px) {
+    --review-clamp: calc(6 * 15px * 1.5);
+  }
+`;
+
+export const ReadMoreButton = styled.button`
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: -6px 0 0;
+  background: transparent;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+  /* Reads as part of the text; the brand red is reserved for hover. */
+  color: rgba(11, 11, 11, 0.85);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  cursor: pointer;
+  min-height: 32px;
+  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: rgba(124, 0, 2, 1);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+`;
+
+/* The shared chevron hint runs on the inner svg so it stacks with the
+   wrapper's rotation; "down" because it sits inline, above the text it opens. */
+export const ReadMoreChevron = styled.span<{ $isExpanded: boolean }>`
+  display: inline-flex;
+  transform: rotate(${({ $isExpanded }) => ($isExpanded ? "180deg" : "0deg")});
+  transition: transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+
+  & svg {
+    ${({ $isExpanded }) =>
+      $isExpanded
+        ? css`
+            animation: none;
+          `
+        : chevronHint("down")}
+  }
+
+  & svg path {
+    stroke: currentColor;
   }
 `;
 

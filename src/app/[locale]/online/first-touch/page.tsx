@@ -138,11 +138,12 @@ export default function FirstTouch() {
               href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}
               target="_blank"
             /> */}
+          {/* Sits on the flat text column, not on the photo: static frost looks
+              identical and skips a backdrop-filter root. */}
           <Button
             buttonText={t("hero.programButton")}
             variant="secondary"
             href="#course-program"
-            frost="live"
           />
         </ButtonBox>
       </TextBox>

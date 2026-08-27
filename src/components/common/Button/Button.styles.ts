@@ -173,7 +173,9 @@ const controlStyles = css<ControlProps>`
 
   ${({ $frost, $variant }) => variantStyles[$frost][$variant]};
 
-  /* Re-apply full transition after variant glass styles (glass() also defines transition). */
+  /* glass() transitions only background-color/box-shadow on the same tokens;
+     the button adds transform/color/filter/opacity on top, so it restates the
+     whole list after the variant styles. */
   transition:
     transform var(--motion-fast, 160ms) var(--ease-standard, ease),
     color var(--motion-base, 220ms) var(--ease-standard, ease),

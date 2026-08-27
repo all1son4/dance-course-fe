@@ -67,8 +67,11 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
-    gap: 30px;
+    /* The gap lives inside the collapsing menu row (see Bottom), so the
+       closed pill is exactly brand + padding. */
+    gap: 0;
     height: auto;
+    overflow: visible;
 
     ${glass({
       variant: "chrome",
@@ -77,17 +80,23 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
       frostPx: 12,
       hoverEffect: false,
     })}
+  }
+`;
 
-    max-height: ${({ $isOpen }) => ($isOpen ? "420px" : "59px")};
-    overflow: visible;
-    transition: max-height var(--motion-base, 220ms) var(--ease-emphasized, ease);
+/**
+ * Open/close by animating the grid row between 0fr and 1fr. Unlike the old
+ * `max-height: 59px -> 420px` (content was ~230px, so opening "finished" at
+ * half the duration and closing did nothing for the first half), this tracks
+ * the real content height, so the easing is honoured in both directions.
+ */
+export const MenuReveal = styled.div<{ $isOpen: boolean }>`
+  display: grid;
+  width: 100%;
+  grid-template-rows: ${({ $isOpen }) => ($isOpen ? "1fr" : "0fr")};
+  transition: grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease);
 
-    /* Safari often stutters on max-height + backdrop-filter in fixed header */
-    @supports (-webkit-touch-callout: none) {
-      transition: max-height var(--motion-fast, 160ms) var(--ease-emphasized, ease);
-      will-change: max-height;
-      contain: layout style;
-    }
+  & > * {
+    min-height: 0;
   }
 `;
 
@@ -170,10 +179,15 @@ export const IconBox = styled.button<{ $isOpen: boolean }>`
   }
 `;
 
+/*
+ * No padding here on purpose: a grid row at 0fr can shrink its item to zero
+ * content height, but never below the item's own padding. The spacing lives
+ * on MenuInner, which collapses together with the row.
+ */
 export const Bottom = styled.div<{ $isOpen: boolean }>`
   display: none;
   flex-direction: column;
-  padding: 0 0 15px 0;
+  padding: 0;
   width: 100%;
   align-items: flex-start;
   position: relative;
@@ -189,6 +203,15 @@ export const Bottom = styled.div<{ $isOpen: boolean }>`
     will-change: opacity, transform;
     pointer-events: ${({ $isOpen }) => ($isOpen ? "all" : "none")};
   }
+`;
+
+/** Carries the former Pill gap (30px) and Bottom padding (15px). */
+export const MenuInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 30px 0 15px;
 `;
 
 export const Divider = styled.div`

@@ -162,23 +162,13 @@ export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
   padding-top: ${({ $isOpened }) => ($isOpened ? "16px" : "0px")};
   overflow: hidden;
 
+  /* The row animation carries the reveal; the answer itself just fades so the
+     text does not pop in at full strength before the row has opened. */
   & > * {
     overflow: hidden;
     min-height: 0;
-  }
-
-  @supports (-webkit-touch-callout: none) {
-    display: block;
-    max-height: ${({ $isOpened }) => ($isOpened ? "420px" : "0px")};
-    transition:
-      max-height var(--motion-fast, 160ms) var(--ease-emphasized, ease),
-      padding-top var(--motion-fast, 160ms) var(--ease-emphasized, ease);
-    will-change: max-height;
-
-    & > * {
-      opacity: ${({ $isOpened }) => ($isOpened ? 1 : 0)};
-      transition: opacity var(--motion-fast, 160ms) var(--ease-standard, ease);
-    }
+    opacity: ${({ $isOpened }) => ($isOpened ? 1 : 0)};
+    transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
   }
 `;
 

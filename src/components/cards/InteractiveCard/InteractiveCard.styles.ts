@@ -1,6 +1,7 @@
-import { css, keyframes, styled } from "styled-components";
+import { css, styled } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
+import { chevronHint } from "@/styles/mixins/motion";
 
 import type { InteractiveCardFrost } from "./InteractiveCard.types";
 
@@ -146,16 +147,6 @@ export const ButtonBox = styled.div`
   margin: 30px 0 0 0;
 `;
 
-const collapseHintBounce = keyframes`
-  0%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(0, -4px, 0);
-  }
-`;
-
 export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   appearance: none;
   border: 0;
@@ -178,9 +169,7 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
   ${({ $isCollapsed }) =>
     $isCollapsed
-      ? css`
-          animation: ${collapseHintBounce} 1.25s ease-in-out infinite;
-        `
+      ? chevronHint("up")
       : css`
           animation: none;
         `}

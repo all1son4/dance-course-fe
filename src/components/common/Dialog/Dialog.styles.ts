@@ -35,12 +35,41 @@ const contentShow = keyframes`
   }
 `;
 
+/* Radix keeps the elements mounted while a `data-state="closed"` animation
+   runs, so closing gets a real exit instead of an instant unmount. Exits are
+   shorter than entrances on purpose. */
+const overlayHide = keyframes`
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+`;
+
+const contentHide = keyframes`
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate(-50%, -49%) scale(0.98);
+  }
+`;
+
 export const Overlay = styled(RadixDialog.Overlay)`
   position: fixed;
   inset: 0;
   z-index: 1300;
   ${scrim({ blurPx: 8 })}
   animation: ${overlayShow} var(--motion-base, 220ms) var(--ease-standard, ease);
+
+  &[data-state="closed"] {
+    animation: ${overlayHide} var(--motion-fast, 160ms) var(--ease-standard, ease) both;
+  }
 `;
 
 export const Content = styled(RadixDialog.Content)<ContentStyleProps>`
@@ -51,6 +80,10 @@ export const Content = styled(RadixDialog.Content)<ContentStyleProps>`
        show, so it takes a dense fill: frosted, but never letting the backdrop
        compete with the content. */
     bgParam: "rgba(255, 255, 255, 0.94)",
+    /* No backdrop blur of its own: it sits on the scrim, which already blurs
+       the page, and at 94% fill a second blur is invisible - it only cost a
+       stacked backdrop root on every open. */
+    frost: "static",
     fillPercent: 95,
     borderOpacity: 0.94,
     depth: 26,
@@ -72,6 +105,10 @@ export const Content = styled(RadixDialog.Content)<ContentStyleProps>`
   outline: none;
   transform: translate(-50%, -50%);
   animation: ${contentShow} var(--motion-base, 220ms) var(--ease-emphasized, ease);
+
+  &[data-state="closed"] {
+    animation: ${contentHide} var(--motion-fast, 160ms) cubic-bezier(0.4, 0, 1, 1) both;
+  }
 
   &:focus-visible {
     outline: 2px solid rgba(124, 0, 2, 0.32);

@@ -127,13 +127,20 @@ a {
   }
 }
 
-/* Reduce motion */
+/* Reduce motion.
+   Durations collapse to ~0 instead of `animation: none`: removing an animation
+   also discards its fill-mode, so anything whose visible pose is held by
+   keyframes (`animation: … both`) would vanish. Near-zero durations keep the
+   end state and drop the motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    transition: none !important;
-    animation: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
   }
 }

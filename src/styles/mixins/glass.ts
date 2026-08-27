@@ -600,8 +600,8 @@ export const glass = ({
       inset 0 0 0 0.5px rgba(255, 255, 255, ${innerRing});
 
     transition:
-      background-color 0.2s ease,
-      box-shadow 0.2s ease;
+      background-color var(--motion-base, 220ms) var(--ease-standard, ease),
+      box-shadow var(--motion-base, 220ms) var(--ease-standard, ease);
 
     &::before {
       content: "";
@@ -611,7 +611,7 @@ export const glass = ({
       pointer-events: none;
       padding: ${frameInsetPx}px;
       opacity: 0.9;
-      transition: opacity 0.2s ease;
+      transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
       background:
         radial-gradient(
           105% 72% at 14% -8%,
@@ -655,7 +655,7 @@ export const glass = ({
       border-radius: inherit;
       pointer-events: none;
       opacity: ${hasSolidTint ? 0.64 : 0.74};
-      transition: opacity 0.2s ease;
+      transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
       background:
         linear-gradient(
           ${resolvedSparkleAngleDeg + 128}deg,

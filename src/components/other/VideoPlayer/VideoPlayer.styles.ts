@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
@@ -10,6 +10,19 @@ type VideoWrapProps = {
   $buttonSize: string;
   $iconSize: string;
 };
+
+const playIconBreathe = keyframes`
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.55;
+    transform: scale(0.92);
+  }
+`;
 
 export const CenterButton = styled.button<{ $isPlaying: boolean }>`
   ${glass({
@@ -65,10 +78,17 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
     pointer-events: auto;
   }
 
+  /* Disabled only while the player library is still loading: read as
+     "getting ready", not "broken" - full presence, a waiting cursor and a slow
+     breathing icon instead of a greyed-out button. */
   &:disabled {
-    cursor: default;
-    opacity: 0.6;
+    cursor: progress;
+    opacity: 0.9;
     transform: translate(-50%, -50%);
+
+    svg {
+      animation: ${playIconBreathe} 1.4s ease-in-out infinite;
+    }
   }
 
   @media (hover: hover) and (pointer: fine) {

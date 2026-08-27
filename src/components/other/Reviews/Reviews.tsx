@@ -1,23 +1,23 @@
 "use client";
 
 import "swiper/css";
+import "swiper/css/pagination";
 
 import { ArrowBigLeft, ArrowBigRight, SquareUserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import type { Swiper as SwiperInstance } from "swiper";
-import { A11y, Autoplay } from "swiper/modules";
+import { A11y, Autoplay, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import Button from "@/components/common/Button";
 
+import ReviewBody from "./ReviewBody";
 import { REVIEWS } from "./Reviews.constants";
 import {
   NavigationButtonBox,
   ReviewCard,
   ReviewNavigation,
-  ReviewParagraph,
-  ReviewParagraphs,
   ReviewsContainer,
   ReviewsHeader,
   ReviewsSlider,
@@ -60,6 +60,27 @@ export default function Reviews() {
       reducedMotionQuery.removeEventListener("change", syncAutoplayWithMotionPreference);
     };
   }, []);
+
+  // Someone reading a long review in full should not have it swept away.
+  const expandedReviewCountRef = useRef(0);
+
+  const onReviewExpandedChange = (isExpanded: boolean) => {
+    expandedReviewCountRef.current = Math.max(
+      0,
+      expandedReviewCountRef.current + (isExpanded ? 1 : -1),
+    );
+    const swiper = swiperRef.current;
+
+    if (!swiper || swiper.destroyed) {
+      return;
+    }
+
+    if (expandedReviewCountRef.current > 0) {
+      swiper.autoplay.stop();
+    } else if (shouldAutoplayRef.current) {
+      swiper.autoplay.start();
+    }
+  };
 
   const changeSlide = (direction: "previous" | "next") => {
     const swiper = swiperRef.current;
@@ -115,10 +136,10 @@ export default function Reviews() {
 
       <ReviewsSlider>
         <Swiper
-          modules={[A11y, Autoplay]}
+          modules={[A11y, Autoplay, Pagination]}
           slidesPerView={1}
-          autoHeight
           spaceBetween={14}
+          pagination={{ clickable: true }}
           breakpoints={{
             600: {
               slidesPerView: 2,
@@ -136,7 +157,7 @@ export default function Reviews() {
           autoplay={{
             delay: AUTOPLAY_DELAY_MS,
             disableOnInteraction: false,
-            pauseOnMouseEnter: false,
+            pauseOnMouseEnter: true,
           }}
           a11y={{
             enabled: true,
@@ -175,13 +196,12 @@ export default function Reviews() {
                   <ReviewTitle>{t(`authors.${review.author}`)}</ReviewTitle>
                 </ReviewTitleBox>
 
-                <ReviewParagraphs>
-                  {review.text.split(/\n+/).map((paragraph, index) => (
-                    <ReviewParagraph key={`${review.id}-${index}`}>
-                      {paragraph}
-                    </ReviewParagraph>
-                  ))}
-                </ReviewParagraphs>
+                <ReviewBody
+                  paragraphs={review.text.split(/\n+/)}
+                  readMoreLabel={t("readMore")}
+                  readLessLabel={t("readLess")}
+                  onExpandedChange={onReviewExpandedChange}
+                />
               </ReviewCard>
             </SwiperSlide>
           ))}
