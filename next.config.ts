@@ -34,13 +34,27 @@ const contentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+// Public assets are not content-hashed, so they must not be `immutable`:
+// browsers keep them for a day, the edge for a week, and either may serve a
+// stale copy while revalidating. Long enough that a repeat visit never
+// re-downloads the hero photo; short enough that a replaced file lands.
+const publicAssetCacheControl =
+  "public, max-age=86400, s-maxage=604800, stale-while-revalidate=604800";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   compiler: {
-    styledComponents: true,
+    // Readable class names are a dev-time aid; in production they only add
+    // ~14 KB of `page-styles__Foo-sc-…` to every HTML response.
+    styledComponents: { displayName: !isProduction, ssr: true },
   },
   async headers() {
     return [
+      ...["/svg/:path*", "/images/:path*", "/videos/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: publicAssetCacheControl }],
+      })),
       {
         source: "/:path*",
         headers: [
@@ -83,6 +97,12 @@ const nextConfig = {
   images: {
     // Favor faster on-demand transformations on first hit.
     formats: ["image/webp"],
+    // The widest rendered image is ~800 CSS px; the default ladder went up to
+    // 3840w and put eight candidates into every srcset.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    qualities: [75],
+    // Optimized variants are served for 30 days instead of the 4h default.
+    minimumCacheTTL: 2_592_000,
   },
   turbopack: {
     root: path.join(__dirname),

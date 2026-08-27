@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
 import { getTranslations } from "next-intl/server";
 
-import { Contacts, TextContentCard } from "@/components";
+import TextContentCard from "@/components/cards/TextContentCard";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
+import Contacts from "@/components/other/Contacts";
 import {
   buildBreadcrumbStructuredData,
   buildPageMetadata,

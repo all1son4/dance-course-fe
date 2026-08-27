@@ -1,10 +1,10 @@
 import { getTranslations } from "next-intl/server";
 
-import { VideoPlayer } from "@/components";
 import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
 import Contacts from "@/components/other/Contacts";
 import StickyCta from "@/components/other/StickyCta";
+import VideoPlayer from "@/components/other/VideoPlayer";
 import { BIRTHDAY_DROP_PRODUCT_ID } from "@/constants/sellable-products";
 import { isProductSaleOpen } from "@/lib/sales-availability";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";

@@ -36,15 +36,10 @@ const HASH_SCROLL_RETRY_DELAY_MS = 40;
 const PREFETCH_IDLE_TIMEOUT_MS = 1_200;
 const PREFETCH_FALLBACK_DELAY_MS = 280;
 const CONTACTS_HASH_TARGET_ID = "contacts";
-const PREFETCH_ROUTES = [
-  "/",
-  "/online",
-  "/offline",
-  "/online/first-touch",
-  "/online/group",
-  "/online/choreo",
-  "/online/birthday-drop",
-] as const;
+// Only the routes the header itself links to. Every page is server-rendered
+// per request, so each prefetch is a full SSR (and, for the product pages, a
+// database round trip) charged to every visitor before they click anything.
+const PREFETCH_ROUTES = ["/", "/online", "/offline"] as const;
 
 type SupportedLocale = (typeof routing.locales)[number];
 type NavigationConnection = {

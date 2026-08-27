@@ -10,7 +10,9 @@ import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
 
 const manrope = Manrope({
   variable: "--font-manrope",
-  subsets: ["latin"],
+  // Russian is a first-class locale: preload its subset alongside Latin so
+  // RU pages do not get a second, late font swap.
+  subsets: ["latin", "cyrillic"],
   display: "swap",
 });
 

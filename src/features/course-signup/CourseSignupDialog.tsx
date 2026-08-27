@@ -10,7 +10,10 @@ import {
   normalizePaymentCustomerFieldValue,
 } from "@/app/[locale]/payment/payment.constants";
 import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
-import { Button, Checkbox, Dialog, Input } from "@/components";
+import Button from "@/components/common/Button";
+import Checkbox from "@/components/common/Checkbox";
+import Dialog from "@/components/common/Dialog";
+import Input from "@/components/common/Input";
 import StickyCta from "@/components/other/StickyCta";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Success } from "@/svg";

@@ -5,9 +5,12 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Typography */
+  /* `--font-manrope` comes from next/font and carries the metric-matched
+     "Manrope Fallback" face, so text does not reflow when the real font
+     swaps in. Naming "Manrope" directly here would skip that fallback. */
   --font-sans:
-    "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+    var(--font-manrope, "Manrope"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   --motion-fast: 160ms;
   --motion-base: 220ms;
   --motion-slow: 320ms;
@@ -51,7 +54,6 @@ body {
 
 html {
   -webkit-text-size-adjust: 100%;
-  text-rendering: optimizeLegibility;
   scroll-behavior: auto;
   background: var(--bg);
 }
