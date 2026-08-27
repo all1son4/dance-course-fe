@@ -11,6 +11,8 @@ import {
 } from "@/app/[locale]/payment/payment.constants";
 import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
 import { Button, Checkbox, Dialog, Input } from "@/components";
+import StickyCta from "@/components/other/StickyCta";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Success } from "@/svg";
 
 import {
@@ -136,7 +138,10 @@ const buildCourseSignupRequestBody = ({
   socialContact: values.socialContact.trim(),
 });
 
-export default function CourseSignupDialog({ triggerText }: CourseSignupDialogProps) {
+export default function CourseSignupDialog({
+  stickyCta,
+  triggerText,
+}: CourseSignupDialogProps) {
   const locale = useLocale();
   const t = useTranslations("FirstTouchPage.signupDialog");
   const formId = useId();
@@ -429,7 +434,20 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
 
   return (
     <>
-      <Button type="button" buttonText={triggerText} onClick={openDialog} />
+      <Button
+        type="button"
+        buttonText={triggerText}
+        onClick={openDialog}
+        {...stickyCtaAnchorProps}
+      />
+      {stickyCta ? (
+        <StickyCta
+          label={triggerText}
+          onClick={openDialog}
+          title={stickyCta.title}
+          note={stickyCta.note}
+        />
+      ) : null}
 
       <Dialog
         open={isOpen}

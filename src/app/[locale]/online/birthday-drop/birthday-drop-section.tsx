@@ -4,8 +4,10 @@ import { VideoPlayer } from "@/components";
 import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
 import Contacts from "@/components/other/Contacts";
+import StickyCta from "@/components/other/StickyCta";
 import { BIRTHDAY_DROP_PRODUCT_ID } from "@/constants/sellable-products";
 import { isProductSaleOpen } from "@/lib/sales-availability";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Birthday34Badge } from "@/svg";
 
 import { createRichText } from "../_shared/content";
@@ -55,11 +57,22 @@ export default async function BirthdayDropSection() {
           )}
           <BirthdayContentButtons>
             {checkout ? (
-              <Button
-                buttonText={t("buyButton", { price: checkout.price })}
-                href={checkout.href}
-                variant="white"
-              />
+              <>
+                <Button
+                  buttonText={t("buyButton", { price: checkout.price })}
+                  href={checkout.href}
+                  variant="white"
+                  {...stickyCtaAnchorProps}
+                />
+                <StickyCta
+                  label={t("buyButton", { price: checkout.price })}
+                  href={checkout.href}
+                  /* The heading is "The Birthday Drop<br>“Love me…”" with
+                     markup, so plain t() would fail; read it raw and keep
+                     only the first line for the compact bar. */
+                  title={t.raw("title").split("<")[0].trim()}
+                />
+              </>
             ) : null}
             <Button
               buttonText={t("detailsButton")}

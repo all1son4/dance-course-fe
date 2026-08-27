@@ -1,4 +1,5 @@
 import Button from "@/components/common/Button";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import {
   CardContainer,
@@ -14,6 +15,7 @@ import type { CourseCardProps } from "./CourseCard.types";
 export default function CourseCard({
   bgColor,
   buttonHref,
+  buttonIsStickyAnchor = false,
   buttonRel,
   buttonTarget,
   buttonText,
@@ -39,6 +41,7 @@ export default function CourseCard({
             href={buttonHref}
             rel={buttonRel}
             target={buttonTarget}
+            {...(buttonIsStickyAnchor ? stickyCtaAnchorProps : {})}
           />
         )}
       </ContentBox>

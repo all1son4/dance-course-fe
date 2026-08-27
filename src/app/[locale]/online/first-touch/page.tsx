@@ -126,7 +126,13 @@ export default function FirstTouch() {
         </InfoBoxGroup>
 
         <ButtonBox>
-          <CourseSignupDialog triggerText={t("hero.enrollButton")} />
+          <CourseSignupDialog
+            triggerText={t("hero.enrollButton")}
+            stickyCta={{
+              title: t("hero.title").replace(/\s+/gu, " ").trim(),
+              note: coursePrice,
+            }}
+          />
           {/* <Button
               buttonText={t("hero.enrollButton")}
               href={FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL}

@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 
 import Button from "@/components/common/Button";
 import { BIRTHDAY_POPUP_CTA_HREF } from "@/lib/birthday-popup";
+import { stickyCtaBlockerProps } from "@/lib/sticky-cta";
 import { Birthday34Popup } from "@/svg";
 
 import { TITLE_ELEMENT_ID } from "./BirthdayPopup.constants";
@@ -30,6 +31,7 @@ export default function BirthdayPopup() {
       role="dialog"
       aria-modal={false}
       aria-labelledby={TITLE_ELEMENT_ID}
+      {...stickyCtaBlockerProps}
     >
       <CloseButton type="button" aria-label={t("close")} onClick={dismiss} />
       <ArtworkBox aria-hidden>

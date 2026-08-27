@@ -7,6 +7,7 @@ import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
+import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { isProductSaleOpen } from "@/lib/sales-availability";
@@ -17,6 +18,7 @@ import {
   normalizedSiteUrl,
   seoTargetLocale,
 } from "@/lib/seo";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import { buildCourseOffersStructuredData } from "../_shared/structured-data";
 import { ClosedIconBox, ClosedSalesCard } from "../choreo/page.styles";
@@ -131,7 +133,21 @@ export default async function OnlineGroupPage() {
         </InfoBoxGroup>
 
         <ButtonBox>
-          <Button buttonText={t("tariffs.selectButton")} href="#tariffs" />
+          <Button
+            buttonText={t("tariffs.selectButton")}
+            href="#tariffs"
+            {...stickyCtaAnchorProps}
+          />
+          {/* Only while there is something to buy: a floating "choose a plan"
+              pointing at a closed tariff section would be noise. */}
+          {isSaleOpen ? (
+            <StickyCta
+              label={t("tariffs.selectButton")}
+              href="#tariffs"
+              title={t("hero.title").replace(/\s+/gu, " ").trim()}
+              note={t("hero.price")}
+            />
+          ) : null}
         </ButtonBox>
       </TextBox>
 
@@ -218,6 +234,7 @@ export default async function OnlineGroupPage() {
             }
             buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
             buttonRel="nofollow"
+            buttonIsStickyAnchor
             buttonHref={
               isSaleOpen
                 ? buildCheckoutHref({
@@ -254,6 +271,7 @@ export default async function OnlineGroupPage() {
             }
             buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
             buttonRel="nofollow"
+            buttonIsStickyAnchor
             buttonHref={
               isSaleOpen
                 ? buildCheckoutHref({
