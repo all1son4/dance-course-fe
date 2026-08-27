@@ -2,6 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
+import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
@@ -50,11 +51,7 @@ export default async function BirthdayDropSection() {
             {t("description")}
           </BirthdayTextContentDescription>
           {/* Closed sales must read as a state, not as a missing button. */}
-          {!checkout && (
-            <BirthdayTextContentDescription>
-              {t("closedNotice")}
-            </BirthdayTextContentDescription>
-          )}
+          {!checkout && <ClosedSalesNotice text={t("closedNotice")} />}
           <BirthdayContentButtons>
             {checkout ? (
               <>
@@ -67,10 +64,7 @@ export default async function BirthdayDropSection() {
                 <StickyCta
                   label={t("buyButton", { price: checkout.price })}
                   href={checkout.href}
-                  /* The heading is "The Birthday Drop<br>“Love me…”" with
-                     markup, so plain t() would fail; read it raw and keep
-                     only the first line for the compact bar. */
-                  title={t.raw("title").split("<")[0].trim()}
+                  title={t("titleShort")}
                 />
               </>
             ) : null}

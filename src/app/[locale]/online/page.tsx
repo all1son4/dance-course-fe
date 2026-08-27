@@ -14,6 +14,7 @@ import {
   seoTargetLocale,
 } from "@/lib/seo";
 
+import { toPlainTitle } from "./_shared/content";
 import { getOnlineCoursesArray } from "./constants";
 import {
   ContactSection,
@@ -69,7 +70,7 @@ export default function Online() {
     itemListElement: onlineCoursesArray.map((course, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      name: String(course.title).replace(/\s+/gu, " ").trim(),
+      name: toPlainTitle(String(course.title)),
       url: `${normalizedSiteUrl}${course.buttonHref}`,
     })),
   };

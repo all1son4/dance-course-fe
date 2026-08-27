@@ -6,10 +6,15 @@ import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
+import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
-import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import {
+  buildCheckoutHref,
+  formatOfferPrice,
+  SELLABLE_PRODUCTS,
+} from "@/constants/sellable-products";
 import { isProductSaleOpen } from "@/lib/sales-availability";
 import {
   annaStrokStructuredDataId,
@@ -21,7 +26,6 @@ import {
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import { buildCourseOffersStructuredData } from "../_shared/structured-data";
-import { ClosedIconBox, ClosedSalesCard } from "../choreo/page.styles";
 import { getGroupSuggestions } from "./constants";
 import {
   AboutCourseCards,
@@ -89,12 +93,10 @@ export default async function OnlineGroupPage() {
   );
   const standardOffer = product.offers.find((offer) => offer.code === "standard");
   const plusOffer = product.offers.find((offer) => offer.code === "library-access");
-  const formatOfferPrice = (offer: (typeof product.offers)[number]) =>
-    `${offer.prices.pln} PLN / ${offer.prices.eur} €`;
   const courseStructuredData = {
     "@context": "https://schema.org",
     "@type": "Course",
-    name: t("hero.title").replace(/\s+/gu, " ").trim(),
+    name: t("hero.titlePlain"),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
     inLanguage: locale,
     provider: {
@@ -144,8 +146,8 @@ export default async function OnlineGroupPage() {
             <StickyCta
               label={t("tariffs.selectButton")}
               href="#tariffs"
-              title={t("hero.title").replace(/\s+/gu, " ").trim()}
-              note={t("hero.price")}
+              title={t("hero.titlePlain")}
+              note={standardOffer ? formatOfferPrice(standardOffer.prices) : undefined}
             />
           ) : null}
         </ButtonBox>
@@ -197,20 +199,7 @@ export default async function OnlineGroupPage() {
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
       {/* Without this card, closed sales leave the tariff cards buttonless and
           the hero call to action pointing at an empty spot. */}
-      {!isSaleOpen && (
-        <ClosedSalesCard>
-          <ClosedIconBox>
-            <SvgAsset
-              src="/svg/Exclamation.webp"
-              width={57}
-              height={60}
-              sizes="(max-width: 767px) 34px, 57px"
-              unoptimized
-            />
-          </ClosedIconBox>
-          <p>{t("tariffs.closedNotice")}</p>
-        </ClosedSalesCard>
-      )}
+      {!isSaleOpen && <ClosedSalesNotice text={t("tariffs.closedNotice")} />}
       <TariffOptionsBox>
         {standardOffer ? (
           <CourseCard
@@ -228,7 +217,7 @@ export default async function OnlineGroupPage() {
                 </TariffContentList>
                 <DateBox>
                   <From>{t("tariffs.priceLabel")}</From>
-                  <Date>{formatOfferPrice(standardOffer)}</Date>
+                  <Date>{formatOfferPrice(standardOffer.prices)}</Date>
                 </DateBox>
               </TarifContentBox>
             }
@@ -265,7 +254,7 @@ export default async function OnlineGroupPage() {
                 </TariffContentList>
                 <DateBox>
                   <From>{t("tariffs.priceLabel")}</From>
-                  <Date>{formatOfferPrice(plusOffer)}</Date>
+                  <Date>{formatOfferPrice(plusOffer.prices)}</Date>
                 </DateBox>
               </TarifContentBox>
             }
@@ -294,7 +283,7 @@ export default async function OnlineGroupPage() {
             { name: "Home", path: "/" },
             { name: "Online classes", path: "/online" },
             {
-              name: t("hero.title").replace(/\s+/gu, " ").trim(),
+              name: t("hero.titlePlain"),
               path: "/online/group",
             },
           ]),

@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import TextContentCard from "@/components/cards/TextContentCard";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
+import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import {
   buildBreadcrumbStructuredData,
@@ -21,8 +22,6 @@ import {
 } from "../_shared/section.styles";
 import { getChoreoSuggestions } from "./constants";
 import {
-  ClosedIconBox,
-  ClosedSalesCard,
   DateBox,
   Description,
   DescriptionParagraph,
@@ -82,18 +81,7 @@ export default function ChoreoPage() {
 
           <InfoBoxGroup>
             <DateBox>
-              <ClosedSalesCard>
-                <ClosedIconBox>
-                  <SvgAsset
-                    src="/svg/Exclamation.webp"
-                    width={57}
-                    height={60}
-                    sizes="(max-width: 767px) 34px, 57px"
-                    unoptimized
-                  />
-                </ClosedIconBox>
-                <p>{t("hero.closedValue")}</p>
-              </ClosedSalesCard>
+              <ClosedSalesNotice text={t("hero.closedValue")} />
             </DateBox>
           </InfoBoxGroup>
         </TextBox>

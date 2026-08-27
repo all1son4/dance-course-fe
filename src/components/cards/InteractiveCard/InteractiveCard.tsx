@@ -73,7 +73,12 @@ export default function InteractiveCard({
           {bottomRowContent && <BottomInfoRow>{bottomRowContent}</BottomInfoRow>}
           {buttonText && (
             <ButtonBox>
-              <Button buttonText={buttonText} {...buttonLinkProps} />
+              <Button
+                buttonText={buttonText}
+                // Same label on every card; the product name goes to assistive tech.
+                aria-label={`${buttonText} — ${title.replace(/\s+/gu, " ").trim()}`}
+                {...buttonLinkProps}
+              />
             </ButtonBox>
           )}
         </BottomBlock>

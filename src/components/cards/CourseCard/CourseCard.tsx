@@ -37,6 +37,8 @@ export default function CourseCard({
           <Button
             className="courseCardButton"
             buttonText={buttonText}
+            // Every card says "Details"; screen readers get the product too.
+            aria-label={title ? `${buttonText} — ${title}` : undefined}
             width="200px"
             href={buttonHref}
             rel={buttonRel}

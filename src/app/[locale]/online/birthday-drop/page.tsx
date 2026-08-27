@@ -46,12 +46,9 @@ export const dynamic = "force-dynamic";
 export default function BirthdayDropPage() {
   const locale = useLocale();
   const t = useTranslations("BirthdayDropPage");
-  // t.markup keeps the message as a plain string: the title carries a line break
-  // tag, which plain t() refuses to render.
-  const plainTitle = t
-    .markup("title", { br: () => " " })
-    .replace(/\s+/gu, " ")
-    .trim();
+  // `title` carries a <br> for the visual line break; `titlePlain` is the
+  // same heading as one line, for places that cannot render markup.
+  const plainTitle = t("titlePlain");
 
   const birthdayDropStructuredData = {
     "@context": "https://schema.org",

@@ -4,6 +4,7 @@ import {
   BIRTHDAY_DROP_OFFER_ID,
   BIRTHDAY_DROP_PRODUCT_ID,
   buildCheckoutHref,
+  formatOfferPrice,
   getSellableProductById,
   getSellableProductOfferById,
 } from "@/constants/sellable-products";
@@ -96,7 +97,7 @@ export const getBirthdayDropCheckout = () => {
 
   return {
     href: buildCheckoutHref({ offerId: offer.id, productId: product.id }),
-    price: `${offer.prices.pln} PLN / ${offer.prices.eur} €`,
+    price: formatOfferPrice(offer.prices),
   };
 };
 

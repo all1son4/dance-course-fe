@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 
 import { Link } from "@/i18n/navigation";
 import { glass } from "@/styles/mixins/glass";
@@ -446,6 +446,62 @@ export const PriceBox = styled.div`
   @media (max-width: 365px) {
     align-items: flex-start;
   }
+`;
+
+const summaryShimmer = keyframes`
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+`;
+
+/*
+ * Placeholders shown while the catalogue is still loading: the price and the
+ * plan line come from the database, and the static fallback could disagree,
+ * so nothing numeric is painted until the real values arrive. Same shimmer
+ * language as the Stripe skeleton below the form.
+ */
+const summarySkeleton = css`
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: ${summaryShimmer} 1.8s ease-in-out infinite;
+  }
+`;
+
+export const PriceSkeleton = styled.span`
+  ${summarySkeleton}
+  display: block;
+  width: 118px;
+  height: 36px;
+
+  @media (max-width: 920px) {
+    width: 100px;
+    height: 30px;
+  }
+`;
+
+export const SummaryLineSkeleton = styled.span`
+  ${summarySkeleton}
+  display: block;
+  width: 60%;
+  height: 14px;
+  margin-top: 4px;
 `;
 
 export const Price = styled.p`

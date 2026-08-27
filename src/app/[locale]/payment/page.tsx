@@ -489,6 +489,7 @@ const PaymentPage = observer(function PaymentPage() {
       paymentStore.selectedPrice,
       paymentStore.selectedCurrency,
     ),
+    isLoading: paymentStore.catalogStatus === "loading",
     isRenewalCheckout,
     offerSummary: isOnlineGroupCheckout
       ? t("summary.offerLabel", {

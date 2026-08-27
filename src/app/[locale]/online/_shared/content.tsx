@@ -58,3 +58,6 @@ export const createRichText =
       p: (chunks) => <p>{chunks}</p>,
       strong: (chunks) => <strong>{chunks}</strong>,
     });
+
+/** Card titles carry visual line breaks; JSON-LD and labels want one line. */
+export const toPlainTitle = (value: string) => value.replace(/\s+/gu, " ").trim();

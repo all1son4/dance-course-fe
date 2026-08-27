@@ -1,6 +1,7 @@
 "use client";
 
 import * as RadixDialog from "@radix-ui/react-dialog";
+import { useTranslations } from "next-intl";
 
 import {
   Body,
@@ -22,9 +23,11 @@ export default function Dialog({
   description,
   footer,
   size = "md",
-  closeLabel = "Close dialog",
+  closeLabel,
   className,
 }: DialogProps) {
+  const commonT = useTranslations("Common");
+  const resolvedCloseLabel = closeLabel ?? commonT("closeDialog");
   const hasHeader = Boolean(title || description);
 
   return (
@@ -38,7 +41,7 @@ export default function Dialog({
               {description && <Description>{description}</Description>}
             </Header>
           )}
-          <CloseButton aria-label={closeLabel} />
+          <CloseButton aria-label={resolvedCloseLabel} />
           <Body $hasHeader={hasHeader}>{children}</Body>
           {footer && <Footer>{footer}</Footer>}
         </Content>

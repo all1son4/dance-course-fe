@@ -11,6 +11,7 @@ import RoadmapContainer from "@/components/other/ProgramRoadmap";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import {
   DEFAULT_CHECKOUT_PRODUCT,
+  formatOfferPrice,
   getDefaultProductOffer,
 } from "@/constants/sellable-products";
 import CourseSignupDialog from "@/features/course-signup";
@@ -81,7 +82,7 @@ export default function FirstTouch() {
   const t = useTranslations("FirstTouchPage");
   const onlineSuggestions = getFirstTouchSuggestions((key) => t(key));
   const defaultOffer = getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT);
-  const coursePrice = `${defaultOffer.prices.pln} PLN / ${defaultOffer.prices.eur} €`;
+  const coursePrice = formatOfferPrice(defaultOffer.prices);
   const courseStructuredData = {
     "@context": "https://schema.org",
     "@type": "Course",
@@ -129,7 +130,7 @@ export default function FirstTouch() {
           <CourseSignupDialog
             triggerText={t("hero.enrollButton")}
             stickyCta={{
-              title: t("hero.title").replace(/\s+/gu, " ").trim(),
+              title: t("hero.title"),
               note: coursePrice,
             }}
           />

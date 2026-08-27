@@ -63,6 +63,9 @@
         "description": "Rozbiór choreografii „Love me in the morning”, playlista, moodboard i link do wywiadu „34 pytania” na YouTube. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
         "ogImageAlt": "The Birthday Drop „Love me in the morning” od Anny Strok",
         "keywords": "birthday drop, love me in the morning, tutorial choreografii online, frame up tutorial, Anna Strok choreografia"
+      },
+      "payment": {
+        "title": "Bezpieczna płatność"
       }
     }
   },
@@ -87,7 +90,8 @@
   "Common": {
     "details": "Szczegóły",
     "playVideo": "Odtwórz wideo",
-    "toggleDetails": "Pokaż lub ukryj szczegóły"
+    "toggleDetails": "Pokaż lub ukryj szczegóły",
+    "closeDialog": "Zamknij okno"
   },
   "NotFoundPage": {
     "title": "Wygląda na to, że ta strona nie istnieje",
@@ -312,7 +316,7 @@
         },
         "startLabel": "Start kursu",
         "startValue": "Zima 2026-2027 albo po zebraniu pełnej grupy",
-        "button": "Więcej o kursie"
+        "button": "Szczegóły"
       },
       "onlineGroup": {
         "title": "Online Group\nby Anna Strok",
@@ -322,7 +326,7 @@
         },
         "startLabel": "Start kolejnego cyklu",
         "startValue": "Październik - listopad",
-        "button": "Więcej o kursie"
+        "button": "Szczegóły"
       },
       "choreo": {
         "title": "Samouczki moich choreografii",
@@ -334,7 +338,7 @@
         "startValue": "W dowolnym momencie",
         "salesLabel": "Dostępność",
         "salesValue": "Sprzedaż jest tymczasowo zamknięta",
-        "button": "Więcej o kursie"
+        "button": "Szczegóły"
       },
       "birthdayDrop": {
         "title": "The Birthday Drop",
@@ -344,7 +348,7 @@
         },
         "salesLabel": "Sprzedaż otwarta do 7 września",
         "salesValue": "Dostęp na zawsze!",
-        "button": "Więcej o dropie"
+        "button": "Szczegóły"
       }
     },
     "studio": {
@@ -520,6 +524,7 @@
   "OnlineGroupPage": {
     "hero": {
       "title": "Online Group\nby Anna Strok",
+      "titlePlain": "Online Group by Anna Strok",
       "description": {
         "1": "W Online Group trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
         "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
@@ -527,7 +532,6 @@
       "startLabel": "Start kolejnej grupy",
       "startDate": "Październik - listopad",
       "priceLabel": "Cena dla nowych uczestników",
-      "price": "220 PLN / 50 €",
       "buyButton": "Kup swoje miejsce",
       "offers": {
         "regular": {
@@ -1049,6 +1053,8 @@
   },
   "BirthdayDropPage": {
     "title": "The Birthday Drop<br></br>„Love me in the morning”",
+    "titlePlain": "The Birthday Drop „Love me in the morning”",
+    "titleShort": "The Birthday Drop",
     "description": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "buyButton": "Kup za {price}",
     "detailsButton": "Dowiedz się więcej",
