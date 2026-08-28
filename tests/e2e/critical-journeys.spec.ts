@@ -44,7 +44,9 @@ test("Online Group entry follows the authoritative sales switch", async ({ page 
 
   await page.goto("/online/group");
 
-  const purchaseLinks = page.getByRole("link", { name: "Buy", exact: true });
+  // Buy buttons carry the tariff in their accessible name ("Buy — Standard"),
+  // so screen readers can tell the two apart.
+  const purchaseLinks = page.getByRole("link", { name: /^Buy(?: — .+)?$/u });
 
   if (!catalogProduct?.salesEnabled) {
     await expect(purchaseLinks).toHaveCount(0);
