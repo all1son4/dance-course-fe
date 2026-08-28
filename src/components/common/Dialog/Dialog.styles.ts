@@ -1,5 +1,5 @@
 import * as RadixDialog from "@radix-ui/react-dialog";
-import styled, { keyframes } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 
 import { visuallyHidden } from "@/styles/mixins/a11y";
 import { glass, scrim } from "@/styles/mixins/glass";
@@ -21,19 +21,6 @@ const overlayShow = keyframes`
 
   to {
     opacity: 1;
-  }
-`;
-
-/* The blur is switched on in one step once the fade has finished (see Overlay). */
-const overlayBlurIn = keyframes`
-  from {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
-  to {
-    backdrop-filter: blur(var(--dialog-scrim-blur));
-    -webkit-backdrop-filter: blur(var(--dialog-scrim-blur));
   }
 `;
 
@@ -79,51 +66,67 @@ const contentHide = keyframes`
   }
 `;
 
+/* Phones: the dialog is a sheet that slides up from the bottom edge. */
+const sheetShow = keyframes`
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+`;
+
+const sheetHide = keyframes`
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+`;
+
+/* Content swap (form -> result): the old content fades out, the box glides to
+   the new height while the new content fades up into it. */
+export const CONTENT_MORPH_MS = 300;
+const CONTENT_LEAVE_MS = 120;
+
+const contentEnter = keyframes`
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+`;
+
 export const Overlay = styled(RadixDialog.Overlay)`
   position: fixed;
   inset: 0;
   z-index: 1300;
   ${scrim({ blurPx: 8 })}
   /*
-   * The backdrop blur only exists while nothing is moving. A full-viewport
-   * backdrop-filter costs a ~55ms frame in Chromium every time a composited
-   * animation above it ends, and a similar start-up frame in Safari - measured
-   * as a visible stutter at the end of the fade-in and start of the fade-out.
-   * So: fade the tint in without blur, switch the blur on in one step when the
-   * fade is done, and drop it again before the exit fade begins.
+   * The blur is part of the scrim from the first frame to the last. Fading
+   * the tint in first and switching the blur on afterwards (an earlier
+   * attempt to dodge the one long frame Chromium spends when a composited
+   * animation ends over a blurred backdrop) read as the blur "popping" in
+   * after the dialog, and dropping it before the exit fade looked just as
+   * odd. One ~50ms frame at the end of the open is the cheaper price.
    */
-  --dialog-scrim-blur: 8px;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  animation:
-    ${overlayShow} var(--motion-base, 220ms) var(--ease-standard, ease) ${OPEN_SETTLE}
-      both,
-    ${overlayBlurIn} 1ms linear calc(${OPEN_SETTLE} + var(--motion-base, 220ms)) both;
-
-  @media (max-width: 767px) {
-    --dialog-scrim-blur: 6px;
-  }
+  animation: ${overlayShow} var(--motion-base, 220ms) var(--ease-standard, ease)
+    ${OPEN_SETTLE} both;
 
   &[data-state="closed"] {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
     animation: ${overlayHide} var(--motion-fast, 160ms) var(--ease-standard, ease)
       ${CLOSE_SETTLE} both;
-  }
-
-  /* iOS: its compositor blurs cheaply and the desktop "blur after the fade"
-     step reads as the blur switching on late. Keep the classic fade with the
-     blur present throughout, in both directions. */
-  @supports (-webkit-touch-callout: none) {
-    backdrop-filter: blur(var(--dialog-scrim-blur));
-    -webkit-backdrop-filter: blur(var(--dialog-scrim-blur));
-    animation: ${overlayShow} var(--motion-base, 220ms) var(--ease-standard, ease)
-      ${OPEN_SETTLE} both;
-
-    &[data-state="closed"] {
-      backdrop-filter: blur(var(--dialog-scrim-blur));
-      -webkit-backdrop-filter: blur(var(--dialog-scrim-blur));
-    }
   }
 `;
 
@@ -172,12 +175,71 @@ export const Content = styled(RadixDialog.Content)<ContentStyleProps>`
     outline-offset: 4px;
   }
 
+  /* Bottom sheet on phones: full width, pinned to the bottom edge (lifted by
+     --sheet-keyboard-inset while the keyboard is up, see Dialog.tsx), rounded
+     on top only; the glass rim follows through border-radius: inherit. */
   @media (max-width: 520px) {
-    width: min(calc(100vw - 24px), ${({ $size }) => contentWidthBySize[$size]});
-    max-height: min(calc(100dvh - 24px), 720px);
-    padding: 24px;
-    --glass-radius: 24px;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: var(--sheet-keyboard-inset, 0px);
+    width: 100%;
+    max-width: none;
+    max-height: calc(
+      100dvh - 24px - var(--safe-area-top) - var(--sheet-keyboard-inset, 0px)
+    );
+    padding: 14px 20px calc(24px + var(--safe-area-bottom));
+    --glass-radius: 28px;
+    border-radius: var(--glass-radius) var(--glass-radius) 0 0;
+    transform: none;
+    animation: ${sheetShow} var(--motion-slow, 320ms) var(--ease-emphasized, ease)
+      ${OPEN_SETTLE} both;
+    transition: bottom var(--motion-base, 220ms) var(--ease-standard, ease);
+
+    &[data-state="closed"] {
+      animation: ${sheetHide} var(--motion-fast, 160ms) cubic-bezier(0.4, 0, 1, 1)
+        ${CLOSE_SETTLE} both;
+    }
   }
+`;
+
+/** The sheet's drag-handle mark; not rendered on larger screens. */
+export const SheetGrabber = styled.span`
+  display: none;
+
+  @media (max-width: 520px) {
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 14px;
+    border-radius: var(--radius-pill);
+    background: rgba(0, 0, 0, 0.16);
+  }
+`;
+
+/** Height-morphing frame around header, body and footer (see Dialog.tsx). */
+export const MorphBox = styled.div`
+  /* A block formatting context, so children's margins cannot escape the
+     measured height. */
+  display: flow-root;
+`;
+
+export const MorphContent = styled.div<{ $isEntering: boolean }>`
+  transition:
+    opacity ${CONTENT_LEAVE_MS}ms var(--ease-standard, ease),
+    transform ${CONTENT_LEAVE_MS}ms var(--ease-standard, ease);
+
+  &[data-morph="out"] {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+
+  ${({ $isEntering }) =>
+    $isEntering &&
+    css`
+      animation: ${contentEnter} 260ms var(--ease-standard, ease)
+        var(--motion-settle, 40ms) both;
+    `}
 `;
 
 export const Header = styled.div`

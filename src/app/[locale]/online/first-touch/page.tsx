@@ -15,6 +15,7 @@ import {
 import CourseSignupDialog from "@/features/course-signup";
 import PageClientMessages from "@/i18n/PageClientMessages";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
+import { imageFadeProps } from "@/lib/reveal";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -155,6 +156,7 @@ export default function FirstTouch() {
             </CourseProgramButtonBox> */}
       </CourseProgramTextBox>
       <CourseProgramImage
+        {...imageFadeProps}
         src={"/images/first_touch_program_photo.webp"}
         alt={t("program.imageAlt")}
         width={473}

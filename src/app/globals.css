@@ -164,3 +164,42 @@ a {
     transition-delay: 0s !important;
   }
 }
+
+/* Scroll reveal and image fade (components/common/Reveal, ImageFade).
+   The attributes exist only between hydration and the end of the entrance:
+   before JavaScript, under reduced motion and once settled there is nothing
+   here, so nothing is ever left hidden. `:root` in the selector outranks a
+   styled component's own single-class rules. A component can replace the
+   default fade-up with its own choreography on `&&[data-reveal]`. */
+@media (prefers-reduced-motion: no-preference) {
+  :root [data-reveal="pending"] {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+
+  :root [data-reveal="in"] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition:
+      opacity 380ms var(--ease-standard),
+      transform 520ms var(--ease-emphasized);
+    transition-delay: calc(var(--motion-settle) + var(--reveal-delay, 0ms));
+  }
+
+  :root [data-fade="pending"] {
+    opacity: 0;
+  }
+
+  :root [data-fade="in"] {
+    opacity: 1;
+    transition: opacity var(--motion-slow) var(--ease-standard);
+  }
+}
+
+@media print {
+  [data-reveal],
+  [data-fade] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -14,4 +14,12 @@ export type DialogProps = {
   size?: DialogSize;
   closeLabel?: string;
   className?: string;
+  /**
+   * Identifies what the dialog currently shows (e.g. "form" | "success").
+   * When it changes, the new content fades in while the dialog's height
+   * glides from the old content's height to the new one instead of jumping.
+   */
+  contentKey?: string;
+  /** Set for a moment before `contentKey` changes: the current content fades out first. */
+  isContentLeaving?: boolean;
 };

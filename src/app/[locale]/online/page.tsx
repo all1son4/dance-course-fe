@@ -7,6 +7,7 @@ import StructuredData from "@/components/common/StructuredData";
 import Contacts from "@/components/other/Contacts";
 import { HERO_MEDIA } from "@/constants/hero-media";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
+import { imageFadeProps } from "@/lib/reveal";
 import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
 import { toPlainTitle } from "./_shared/content";
@@ -107,6 +108,7 @@ export default function Online() {
           <Button buttonText={t("studio.button")} width="284px" href="/offline" />
         </StudioDanceTextBox>
         <StudioDanceImage
+          {...imageFadeProps}
           src={"/images/online_page_photo.webp"}
           width={502}
           height={628}

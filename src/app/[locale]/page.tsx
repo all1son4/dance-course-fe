@@ -24,6 +24,7 @@ import {
 } from "@/constants/links";
 import PageClientMessages from "@/i18n/PageClientMessages";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
+import { imageFadeProps } from "@/lib/reveal";
 import { buildWebsiteStructuredData } from "@/lib/seo";
 import { Insta, Logo, Quote } from "@/svg";
 
@@ -173,6 +174,7 @@ export default function Home() {
       <AboutMeImageBox>
         <AboutMeImageFrame>
           <StyledImage
+            {...imageFadeProps}
             src={"/images/main_page_second.webp"}
             alt={t("about.imageAlt")}
             fill

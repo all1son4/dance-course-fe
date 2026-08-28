@@ -5,6 +5,7 @@ import { getMessages, getTranslations, setRequestLocale } from "next-intl/server
 import type { ReactNode } from "react";
 
 import DeferredCookieConsentBanner from "@/components/common/CookieConsent/DeferredCookieConsentBanner";
+import { RevealController } from "@/components/common/Reveal";
 import Footer from "@/components/layout/Footer";
 import Header from "@/components/layout/Header";
 import PageContainer from "@/components/layout/PageContainer";
@@ -129,6 +130,7 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
         {/* Sticky CTA portal target; see STICKY_CTA_DOCK_ID. */}
         <div id={STICKY_CTA_DOCK_ID} style={{ display: "contents" }} />
       </main>
+      <RevealController />
       <Footer />
       <DeferredCookieConsentBanner />
       <BirthdayPopup />

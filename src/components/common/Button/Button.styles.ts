@@ -1,6 +1,7 @@
 import Link from "next/link";
-import styled, { css, keyframes } from "styled-components";
+import styled, { css } from "styled-components";
 
+import { Ring } from "@/components/common/Spinner/Spinner.styles";
 import { glass } from "@/styles/mixins/glass";
 
 import type { ButtonFrost, ButtonSize, ButtonVariant } from "./Button.types";
@@ -237,26 +238,16 @@ export const ButtonContent = styled.span`
 
 export const ButtonLabel = styled.span``;
 
-const buttonRingOrbit = keyframes`
-  0% {
-    transform: rotate(0turn) translateX(8px);
-  }
+/* The shared ring (components/common/Spinner), scaled to the button's text. */
+export const ButtonSpinner = styled(Ring)<{ $isLoading?: boolean }>`
+  --spinner-size: 14px;
+  --spinner-stroke: 1.6px;
+  --spinner-dot: 2.6px;
+  --spinner-orbit: 8px;
 
-  100% {
-    transform: rotate(1turn) translateX(8px);
-  }
-`;
-
-export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
   position: absolute;
   left: 0;
   top: calc(50% - 7px);
-  width: 14px;
-  height: 14px;
-  border-radius: var(--radius-pill);
-  border: 1.6px solid color-mix(in srgb, currentColor 26%, transparent);
-  border-top-color: currentColor;
-  animation: maintenance-ring-spin 0.9s linear infinite;
   opacity: ${({ $isLoading }) => ($isLoading ? 1 : 0)};
   transform: translate(${({ $isLoading }) => ($isLoading ? "0px" : "-12px")}, -50%)
     scale(${({ $isLoading }) => ($isLoading ? 1 : 0.86)});
@@ -264,27 +255,6 @@ export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
     opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
     transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
   pointer-events: none;
-
-  &::after {
-    content: "";
-    position: absolute;
-    width: 2.6px;
-    height: 2.6px;
-    border-radius: var(--radius-pill);
-    background: currentColor;
-    top: 50%;
-    left: 50%;
-    transform-origin: center;
-    animation: ${buttonRingOrbit} 1.8s linear infinite;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: maintenance-ring-spin 1.6s linear infinite !important;
-
-    &::after {
-      animation: ${buttonRingOrbit} 2.8s linear infinite !important;
-    }
-  }
 `;
 
 export const ButtonSpinnerSlot = styled.span<{ $isLoading?: boolean }>`

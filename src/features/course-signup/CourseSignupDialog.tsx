@@ -15,6 +15,7 @@ import Checkbox from "@/components/common/Checkbox";
 import Dialog from "@/components/common/Dialog";
 import Input from "@/components/common/Input";
 import StickyCta from "@/components/other/StickyCta";
+import { prefersReducedMotion } from "@/lib/reveal";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Success } from "@/svg";
 
@@ -45,6 +46,8 @@ type CourseSignupErrorResponse = {
 };
 
 const COURSE_SIGNUP_ENDPOINT = "/api/course-signup";
+/** How long the current screen fades before the next one takes its place (see Dialog). */
+const CONTENT_LEAVE_MS = 120;
 const JSON_CONTENT_TYPE = "application/json";
 const INITIAL_SIGNUP_VALUES: CourseSignupFormValues = {
   consentAccepted: false,
@@ -155,6 +158,24 @@ export default function CourseSignupDialog({
     useState<SubmitFailureReason>("unknown");
   const [errors, setErrors] = useState<CourseSignupFormErrors>({});
   const [touchedFields, setTouchedFields] = useState<CourseSignupTouchedFields>({});
+  const [isContentLeaving, setIsContentLeaving] = useState(false);
+
+  // Screen changes (form -> result, result -> form) go through the dialog's
+  // morph: the current screen fades out, then the state switches and the
+  // dialog glides to the new height while the next screen fades in.
+  const switchScreen = async (apply: () => void) => {
+    if (prefersReducedMotion()) {
+      apply();
+      return;
+    }
+
+    setIsContentLeaving(true);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, CONTENT_LEAVE_MS);
+    });
+    apply();
+    setIsContentLeaving(false);
+  };
 
   const validateField = (
     fieldName: keyof CourseSignupFormValues,
@@ -307,16 +328,23 @@ export default function CourseSignupDialog({
           return;
         }
 
-        setSubmitFailureReason(getSubmitFailureReason(data.errorCode, response.status));
-        setSubmitState("error");
+        const failureReason = getSubmitFailureReason(data.errorCode, response.status);
+        await switchScreen(() => {
+          setSubmitFailureReason(failureReason);
+          setSubmitState("error");
+        });
         return;
       }
 
-      setValues(INITIAL_SIGNUP_VALUES);
-      setSubmitState("success");
+      await switchScreen(() => {
+        setValues(INITIAL_SIGNUP_VALUES);
+        setSubmitState("success");
+      });
     } catch {
-      setSubmitFailureReason("network");
-      setSubmitState("error");
+      await switchScreen(() => {
+        setSubmitFailureReason("network");
+        setSubmitState("error");
+      });
     }
   };
 
@@ -352,7 +380,9 @@ export default function CourseSignupDialog({
           type="button"
           buttonText={t("retryButton")}
           onClick={() => {
-            setSubmitState("idle");
+            void switchScreen(() => {
+              setSubmitState("idle");
+            });
           }}
         />
       );
@@ -462,6 +492,8 @@ export default function CourseSignupDialog({
         description={renderDialogDescription()}
         closeLabel={t("closeLabel")}
         footer={renderDialogFooter()}
+        contentKey={isResult ? submitState : "form"}
+        isContentLeaving={isContentLeaving}
       >
         {renderDialogContent()}
       </Dialog>
