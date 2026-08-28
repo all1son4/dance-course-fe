@@ -139,27 +139,3 @@ export const clearNonEssentialClientStorage = () => {
     // Ignore storage cleanup failures.
   }
 };
-
-export const disableVercelAnalytics = () => {
-  if (!isBrowser()) {
-    return;
-  }
-
-  const scripts = document.querySelectorAll<HTMLScriptElement>(
-    'script[src*="/_vercel/insights/script.js"],script[src*="va.vercel-scripts.com"]',
-  );
-
-  scripts.forEach((script) => {
-    script.remove();
-  });
-
-  const win = window as Window & {
-    va?: unknown;
-    vaq?: unknown[];
-    vam?: string;
-  };
-
-  win.va = undefined;
-  win.vaq = [];
-  win.vam = "development";
-};

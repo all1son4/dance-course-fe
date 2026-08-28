@@ -1,5 +1,7 @@
 import type { ComponentPropsWithoutRef, ElementType } from "react";
 
+import type { ButtonAnalyticsMetadata } from "@/lib/mixpanel-analytics";
+
 export type ButtonVariant = "primary" | "secondary" | "ghost" | "white";
 /**
  * `live` turns on the real backdrop blur. Reserve it for buttons that sit on a
@@ -18,6 +20,8 @@ export type ButtonBaseProps = {
   size?: "lg" | "sm";
   frost?: ButtonFrost;
   isLoading?: boolean;
+  /** Stable semantic identifier; labels and URLs are deliberately not captured. */
+  analytics?: ButtonAnalyticsMetadata;
 };
 
 // Polymorphic-ish typing (good enough for Next Link `as={Link}`)

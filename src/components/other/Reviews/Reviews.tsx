@@ -11,6 +11,7 @@ import { A11y, Autoplay, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import Button from "@/components/common/Button";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import ReviewBody from "./ReviewBody";
 import { REVIEWS } from "./Reviews.constants";
@@ -100,6 +101,12 @@ export default function Reviews() {
     if (shouldAutoplayRef.current) {
       swiper.autoplay.start();
     }
+
+    const activeReview = REVIEWS[swiper.realIndex];
+    void trackAnalyticsEvent("review_navigated", {
+      direction: direction === "next" ? "next" : "previous",
+      ...(activeReview ? { review_id: activeReview.id } : {}),
+    });
   };
 
   return (
@@ -197,6 +204,7 @@ export default function Reviews() {
                 </ReviewTitleBox>
 
                 <ReviewBody
+                  analyticsId={review.id}
                   paragraphs={review.text.split(/\n+/)}
                   readMoreLabel={t("readMore")}
                   readLessLabel={t("readLess")}

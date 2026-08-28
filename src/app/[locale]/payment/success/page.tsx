@@ -49,6 +49,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   ]);
   const productId = getParamValue(resolvedSearchParams, "product");
   const offerId = getParamValue(resolvedSearchParams, "offer");
+  const currencyParam = getParamValue(resolvedSearchParams, "currency").toLowerCase();
   const redirectStatus = getParamValue(
     resolvedSearchParams,
     "redirect_status",
@@ -144,9 +145,22 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             dateLocale={locale}
             homeButtonText={t("buttons.home")}
             isTelegramAccessPurchase={isTelegramAccessPurchase}
+            isRenewalPurchase={isRenewalPurchase}
             offerId={offerId}
+            offerCode={selectedOffer.code}
             paymentIntentId={paymentIntentId}
             productId={productId}
+            productCode={selectedProduct.code}
+            purchaseCurrency={
+              currencyParam === "eur" || currencyParam === "pln"
+                ? currencyParam
+                : undefined
+            }
+            purchaseValue={
+              currencyParam === "eur" || currencyParam === "pln"
+                ? selectedOffer.prices[currencyParam]
+                : undefined
+            }
             telegramAccessActiveText={t("telegram.active")}
             telegramContactSupportText={t("telegram.contactSupport")}
             telegramInspirationLinkText={t("telegram.openInspiration")}

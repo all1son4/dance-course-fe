@@ -101,8 +101,18 @@ export default function Home() {
           <InteractiveHint>{t("hero.hint")}</InteractiveHint>
           <ButtonsBox>
             {/* Hero sits on the background photo, so these two get real frost. */}
-            <Button buttonText={t("hero.buttons.online")} href="/online" frost="live" />
-            <Button buttonText={t("hero.buttons.offline")} href="/offline" frost="live" />
+            <Button
+              buttonText={t("hero.buttons.online")}
+              href="/online"
+              frost="live"
+              analytics={{ id: "explore_online", placement: "home_hero" }}
+            />
+            <Button
+              buttonText={t("hero.buttons.offline")}
+              href="/offline"
+              frost="live"
+              analytics={{ id: "explore_offline", placement: "home_hero" }}
+            />
           </ButtonsBox>
         </InteractiveBox>
       </MainTextBox>
@@ -199,6 +209,7 @@ export default function Home() {
       <CourseTitle>{t("courses.title")}</CourseTitle>
       <CourseOptionsBox>
         <CourseCard
+          analyticsId="offline-promo"
           icon={<SvgAsset src="/svg/Map.webp" width={132} height={210} />}
           title={t("courses.offline.title")}
           subtitle={t("courses.offline.subtitle")}

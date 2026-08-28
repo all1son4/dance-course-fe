@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { Chevron } from "@/svg";
 
 import { getQuestionsArray } from "./FAQ.constants";
@@ -23,7 +24,12 @@ export default function FAQ() {
   const questionsArray = getQuestionsArray((key) => t(key));
 
   const onItemClickHandler = (id: number) => {
+    const isExpanded = selectedId !== id;
     setSelectedId((prev) => (prev === id ? null : id));
+    void trackAnalyticsEvent("faq_toggled", {
+      faq_id: id,
+      is_expanded: isExpanded,
+    });
   };
 
   return (

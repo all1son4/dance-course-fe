@@ -138,7 +138,7 @@ const formatOfferButtonText = (t: Translate, offer: SellableProductOffer) =>
   `${t(offer.labelKey)} ${formatOfferPrice(offer.prices)}`;
 
 const buildChoreoButtonOptions = (
-  productId: string,
+  product: SellableProduct,
   t: Translate,
   offer?: SellableProductOffer,
 ): ChoreoCardButtonProps | undefined =>
@@ -146,8 +146,16 @@ const buildChoreoButtonOptions = (
     ? {
         href: buildCheckoutHref({
           offerId: offer.id,
-          productId,
+          productId: product.id,
         }),
+        analytics: {
+          id: "buy_choreo",
+          offer_code: offer.code,
+          offer_id: offer.id,
+          placement: `choreo_card:${product.code}`,
+          product_code: product.code,
+          product_id: product.id,
+        },
         text: formatOfferButtonText(t, offer),
       }
     : undefined;
@@ -191,15 +199,16 @@ export const getChoreos = (
 
     return {
       id: product.code,
+      analyticsId: product.code,
       ...presentation,
       ...copy,
       firstButtonOptions: buildChoreoButtonOptions(
-        product.id,
+        product,
         t,
         isSaleOpen ? withoutMentorOffer : undefined,
       ),
       secondButtonOptions: buildChoreoButtonOptions(
-        product.id,
+        product,
         t,
         isSaleOpen ? withMentorOffer : undefined,
       ),

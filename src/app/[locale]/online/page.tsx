@@ -94,7 +94,12 @@ export default function Online() {
       </ProductHero>
       <CoursesSection>
         {onlineCoursesArray.map(({ id, ...course }) => (
-          <InteractiveCard key={id} {...course} />
+          <InteractiveCard
+            key={id}
+            {...course}
+            analyticsCollection="online_courses"
+            analyticsId={id}
+          />
         ))}
       </CoursesSection>
       <StudioDanceSection>
@@ -105,7 +110,12 @@ export default function Online() {
             <StudioDanceParagraph>{t("studio.paragraphs.2")}</StudioDanceParagraph>
             <StudioDanceParagraph>{t("studio.paragraphs.3")}</StudioDanceParagraph>
           </StudioDanceParagraphs>
-          <Button buttonText={t("studio.button")} width="284px" href="/offline" />
+          <Button
+            buttonText={t("studio.button")}
+            width="284px"
+            href="/offline"
+            analytics={{ id: "online_to_offline", placement: "online_studio" }}
+          />
         </StudioDanceTextBox>
         <StudioDanceImage
           {...imageFadeProps}

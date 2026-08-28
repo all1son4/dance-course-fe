@@ -13,7 +13,9 @@ import {
 import type { CourseCardProps } from "./CourseCard.types";
 
 export default function CourseCard({
+  analyticsId,
   bgColor,
+  buttonAnalytics,
   buttonHref,
   buttonIsStickyAnchor = false,
   buttonRel,
@@ -43,6 +45,12 @@ export default function CourseCard({
             href={buttonHref}
             rel={buttonRel}
             target={buttonTarget}
+            analytics={
+              buttonAnalytics ??
+              (analyticsId
+                ? { id: "course_details", placement: `course_card:${analyticsId}` }
+                : undefined)
+            }
             {...(buttonIsStickyAnchor ? stickyCtaAnchorProps : {})}
           />
         )}

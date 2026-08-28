@@ -16,6 +16,7 @@ import {
   shouldShowBirthdayPopup,
   syncBirthdayPopupStorage,
 } from "@/lib/birthday-popup";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import { EXCLUDED_PATH_PREFIXES } from "./BirthdayPopup.constants";
 
@@ -25,17 +26,6 @@ import { EXCLUDED_PATH_PREFIXES } from "./BirthdayPopup.constants";
  * between sections quickly still reaches the dwell threshold.
  */
 const siteEntryAt = Date.now();
-
-// Loaded on first use only. A static `import { track }` here would put the
-// whole @vercel/analytics module into the shared chunk of every page, which
-// defeats the deferred, consent-gated <Analytics /> mount elsewhere.
-const trackBirthdayEvent = (event: string) => {
-  void import("@vercel/analytics")
-    .then(({ track }) => track(event))
-    .catch(() => {
-      // Analytics is best-effort; never let it surface to the user.
-    });
-};
 
 /**
  * Scoped to one page view: it stops the card from reappearing as the visitor
@@ -144,7 +134,7 @@ export const useBirthdayPopup = () => {
     );
 
     if (canUseAnalytics) {
-      trackBirthdayEvent("birthday_popup_shown");
+      void trackAnalyticsEvent("birthday_popup_shown", {});
     }
   }, [canUseAnalytics, canUseFunctionalStorage, isVisible]);
 
@@ -156,8 +146,9 @@ export const useBirthdayPopup = () => {
       );
 
       if (canUseAnalytics) {
-        trackBirthdayEvent(
+        void trackAnalyticsEvent(
           signal === "clicked" ? "birthday_popup_clicked" : "birthday_popup_dismissed",
+          {},
         );
       }
     },

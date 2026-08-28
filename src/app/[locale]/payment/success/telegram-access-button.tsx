@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
+import { useCookieConsent } from "@/components/common/CookieConsent";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import { StatusCard, StatusMark, StatusSpinner, StatusText } from "../result-page.styles";
 
@@ -97,6 +99,75 @@ const containsUnavailableAccess = (accesses: TelegramAccess[]): boolean =>
     (access) => access.status === "expired" || access.status === "unavailable",
   );
 
+const getAccessAnalyticsResult = ({
+  accesses,
+  accessUrl,
+  isContextValid,
+  statusKind,
+}: {
+  accesses: TelegramAccess[];
+  accessUrl: string;
+  isContextValid: boolean;
+  statusKind: AccessStatusKind;
+}) => {
+  if (!isContextValid) {
+    return {
+      active_access_count: 0,
+      ready_access_count: 0,
+      status: "invalid_context" as const,
+      unavailable_access_count: 0,
+    };
+  }
+
+  if (accessUrl) {
+    return {
+      active_access_count: 0,
+      ready_access_count: 1,
+      status: "ready" as const,
+      unavailable_access_count: 0,
+    };
+  }
+
+  if (accesses.length) {
+    const activeAccessCount = accesses.filter(
+      (access) => access.status === "active",
+    ).length;
+    const readyAccessCount = accesses.filter(
+      (access) => access.status === "ready" && access.accessUrl,
+    ).length;
+    const unavailableAccessCount = accesses.filter(
+      (access) => access.status === "expired" || access.status === "unavailable",
+    ).length;
+    const hasAvailableAccess = activeAccessCount + readyAccessCount > 0;
+    const status =
+      unavailableAccessCount > 0 && hasAvailableAccess
+        ? ("partial" as const)
+        : readyAccessCount > 0
+          ? ("ready" as const)
+          : activeAccessCount > 0
+            ? ("already_active" as const)
+            : ("unavailable" as const);
+
+    return {
+      active_access_count: activeAccessCount,
+      ready_access_count: readyAccessCount,
+      status,
+      unavailable_access_count: unavailableAccessCount,
+    };
+  }
+
+  if (statusKind === "unavailable") {
+    return {
+      active_access_count: 0,
+      ready_access_count: 0,
+      status: "unavailable" as const,
+      unavailable_access_count: 0,
+    };
+  }
+
+  return null;
+};
+
 export default function TelegramAccessButton({
   activeText,
   buttonText,
@@ -112,12 +183,43 @@ export default function TelegramAccessButton({
   supportHref,
   unavailableText,
 }: TelegramAccessButtonProps) {
+  const { canUseAnalytics } = useCookieConsent();
   const [accessUrl, setAccessUrl] = useState("");
   const [accesses, setAccesses] = useState<TelegramAccess[]>([]);
   const [statusKind, setStatusKind] = useState<AccessStatusKind>("pending");
   const [statusText, setStatusText] = useState(pendingText);
   const isContextValid = Boolean(checkoutSessionId && offerId && productId);
   const hasUnavailableAccess = containsUnavailableAccess(accesses);
+  const trackedAccessResultsRef = useRef(new Set<string>());
+  const accessAnalyticsResult = useMemo(
+    () =>
+      getAccessAnalyticsResult({
+        accesses,
+        accessUrl,
+        isContextValid,
+        statusKind,
+      }),
+    [accesses, accessUrl, isContextValid, statusKind],
+  );
+
+  useEffect(() => {
+    if (!canUseAnalytics || !accessAnalyticsResult) {
+      return;
+    }
+
+    const resultKey = JSON.stringify(accessAnalyticsResult);
+
+    if (trackedAccessResultsRef.current.has(resultKey)) {
+      return;
+    }
+
+    trackedAccessResultsRef.current.add(resultKey);
+    void trackAnalyticsEvent("post_purchase_access_result", {
+      ...accessAnalyticsResult,
+      offer_id: offerId,
+      product_id: productId,
+    });
+  }, [accessAnalyticsResult, canUseAnalytics, offerId, productId]);
 
   useEffect(() => {
     onInspirationExpiryChange?.(getInspirationAccessExpiry(accesses));
@@ -273,6 +375,12 @@ export default function TelegramAccessButton({
       href={supportHref}
       target="_blank"
       variant={variant}
+      analytics={{
+        id: "post_purchase_contact_support",
+        offer_id: offerId,
+        placement: "access_result",
+        product_id: productId,
+      }}
     />
   );
 
@@ -284,7 +392,19 @@ export default function TelegramAccessButton({
   );
 
   if (accessUrl) {
-    return <Button buttonText={buttonText} href={accessUrl} target="_blank" />;
+    return (
+      <Button
+        buttonText={buttonText}
+        href={accessUrl}
+        target="_blank"
+        analytics={{
+          id: "post_purchase_access_opened",
+          offer_id: offerId,
+          placement: "legacy_access",
+          product_id: productId,
+        }}
+      />
+    );
   }
 
   if (accesses.length) {
@@ -306,6 +426,12 @@ export default function TelegramAccessButton({
             buttonText={labelOf(access)}
             href={access.accessUrl}
             target="_blank"
+            analytics={{
+              id: "post_purchase_access_opened",
+              offer_id: offerId,
+              placement: access.accessKey,
+              product_id: productId,
+            }}
           />
         ))}
         {otherAccesses.map((access) =>

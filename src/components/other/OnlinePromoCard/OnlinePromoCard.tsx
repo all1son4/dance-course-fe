@@ -21,6 +21,7 @@ export default function OnlinePromoCard({ bgColor, icon }: OnlinePromoCardProps)
 
   return (
     <CourseCard
+      analyticsId="online-promo"
       icon={icon}
       title={t("title")}
       subtitle={t("subtitle")}

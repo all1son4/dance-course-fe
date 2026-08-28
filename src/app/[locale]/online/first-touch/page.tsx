@@ -137,6 +137,7 @@ export default function FirstTouch() {
           buttonText={t("hero.programButton")}
           variant="secondary"
           href="#course-program"
+          analytics={{ id: "view_course_program", placement: "first_touch_hero" }}
         />
       </ButtonBox>
     </ProductHero>
@@ -183,6 +184,7 @@ export default function FirstTouch() {
       <SpecialWrapper $compactAt={1100} $stacked={false}>
         <VideoSection>
           <VideoPlayer
+            analyticsId="first-touch-introduction"
             src={t("hero.introductionVideoSrc")}
             poster="/images/first_touch_poster.webp"
             radius="0px"

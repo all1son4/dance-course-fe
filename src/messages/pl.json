@@ -940,7 +940,7 @@
       },
       "4": {
         "title": "4. Odbiorcy danych / podmioty przetwarzające",
-        "text": "Dane mogą być przekazywane podmiotom wspierającym administratora w świadczeniu usług, w szczególności dostawcom:\n- systemów płatności (Stripe),\n- hostingu / platformy kursowej (Telegram) / narzędzi do udostępniania materiałów,\n- narzędzi e-mail, komunikacji i obsługi klienta (Gmail, Telegram),\n- księgowości (jeśli dotyczy),\n- wsparcia IT.\nDane nie są sprzedawane ani udostępniane osobom trzecim do własnych celów marketingowych. Mogą być również udostępnione organom publicznym wyłącznie, gdy wymagają tego przepisy prawa."
+        "text": "Dane mogą być przekazywane podmiotom wspierającym administratora w świadczeniu usług, w szczególności dostawcom:\n- systemów płatności (Stripe),\n- hostingu / platformy kursowej (Telegram) / narzędzi do udostępniania materiałów,\n- analityki serwisu i produktu z przechowywaniem danych w UE (Mixpanel),\n- narzędzi e-mail, komunikacji i obsługi klienta (Gmail, Telegram),\n- księgowości (jeśli dotyczy),\n- wsparcia IT.\nDane nie są sprzedawane ani udostępniane osobom trzecim do własnych celów marketingowych. Mogą być również udostępnione organom publicznym wyłącznie, gdy wymagają tego przepisy prawa."
       },
       "5": {
         "title": "5. Przekazywanie danych poza EOG",
@@ -960,7 +960,7 @@
       },
       "9": {
         "title": "9. Zautomatyzowane podejmowanie decyzji / profilowanie",
-        "text": "Dane osobowe nie są poddawane zautomatyzowanemu podejmowaniu decyzji ani profilowaniu."
+        "text": "Nie podejmujemy zautomatyzowanych decyzji wywołujących skutki prawne lub podobnie istotne. Za zgodą na analitykę pseudonimowe zdarzenia użycia mogą być segmentowane, aby zrozumieć, jak grupy odwiedzających korzystają z serwisu; segmenty służą wyłącznie ulepszaniu serwisu, treści i procesu zakupu."
       }
     }
   },
@@ -986,7 +986,7 @@
         },
         "analytics": {
           "title": "Analityczne",
-          "description": "Pomagają zrozumieć sposób korzystania z serwisu, aby ulepszać treści i nawigację."
+          "description": "Mierzą wizyty i interakcje oraz umożliwiają nagrania sesji z maskowaniem danych, aby ulepszać treści, nawigację i proces zakupu."
         }
       }
     }
@@ -1002,7 +1002,7 @@
       },
       "2": {
         "title": "2. Jakie kategorie stosujemy",
-        "text": "W serwisie stosujemy następujące technologie przechowywania:\na) Niezbędne (zawsze aktywne):\n- cookie `NEXT_LOCALE` (nasz serwis) do zapamiętania wybranego języka interfejsu, do 12 miesięcy;\n- wpis `cookie-consent:v1` w localStorage (nasz serwis) do zapisania Twojego wyboru cookies, przechowywany do zmiany decyzji albo wyczyszczenia danych przeglądarki;\n- techniczne cookies dostawcy płatności Stripe (np. `__stripe_mid`, `__stripe_sid`) podczas korzystania z formularza płatności.\n- skrypt logowania Telegram (telegram.org) jest ładowany wyłącznie na stronie płatności, gdy potwierdzasz swoje konto Telegram; w ramach tej autoryzacji Telegram może używać własnych cookies w swojej domenie.\nb) Funkcjonalne (na podstawie zgody):\n- `payment-checkout-draft:v1` w sessionStorage do przywracania szkicu płatności, przechowywany do zamknięcia karty lub wyczyszczenia pamięci.\nc) Analityczne (na podstawie zgody):\n- Vercel Analytics (`@vercel/analytics`) do pomiaru ruchu i korzystania z serwisu w formie zagregowanej lub pseudonimizowanej."
+        "text": "W serwisie stosujemy następujące technologie przechowywania:\na) Niezbędne (zawsze aktywne):\n- cookie `NEXT_LOCALE` (nasz serwis) do zapamiętania wybranego języka interfejsu, do 12 miesięcy;\n- wpis `cookie-consent:v1` w localStorage (nasz serwis) do zapisania Twojego wyboru cookies, przechowywany do zmiany decyzji albo wyczyszczenia danych przeglądarki;\n- techniczne cookies dostawcy płatności Stripe (np. `__stripe_mid`, `__stripe_sid`) podczas korzystania z formularza płatności.\n- skrypt logowania Telegram (telegram.org) jest ładowany wyłącznie na stronie płatności, gdy potwierdzasz swoje konto Telegram; w ramach tej autoryzacji Telegram może używać własnych cookies w swojej domenie.\nb) Funkcjonalne (na podstawie zgody):\n- `payment-checkout-draft:v1` w sessionStorage do przywracania szkicu płatności, przechowywany do zamknięcia karty lub wyczyszczenia pamięci.\nc) Analityczne (na podstawie zgody):\n- Mixpanel zapisuje w localStorage pseudonimowy identyfikator przeglądarki i znacznik zgody oraz może tymczasowo używać IndexedDB do nagrań sesji. Mierzy odsłony, źródło ruchu, urządzenie/przeglądarkę, przybliżoną lokalizację, przewijanie i wybrane interakcje produktowe. Nagrania maskują cały tekst i pola formularzy oraz są wyłączone na stronach administracji i płatności. Analityka korzysta z przechowywania danych Mixpanel w UE."
       },
       "3": {
         "title": "3. Podstawa prawna",
@@ -1010,7 +1010,7 @@
       },
       "4": {
         "title": "4. Okres przechowywania",
-        "text": "Okres przechowywania zależy od technologii:\n- `NEXT_LOCALE` — do 12 miesięcy;\n- `cookie-consent:v1` (localStorage) — do zmiany wyboru lub wyczyszczenia danych przeglądarki;\n- `payment-checkout-draft:v1` (sessionStorage) — do zamknięcia karty;\n- cookies Telegram podczas autoryzacji — przez okres określony w polityce Telegram;\n- cookies Stripe i dane Vercel Analytics — przez okresy wynikające z polityk tych dostawców."
+        "text": "Okres przechowywania zależy od technologii:\n- `NEXT_LOCALE` — do 12 miesięcy;\n- `cookie-consent:v1` (localStorage) — do zmiany wyboru lub wyczyszczenia danych przeglądarki;\n- `payment-checkout-draft:v1` (sessionStorage) — do zamknięcia karty;\n- cookies Telegram podczas autoryzacji — przez okres określony w polityce Telegram;\n- cookies Stripe i dane analityczne Mixpanel — przez okresy wynikające z polityk tych dostawców. Wycofanie zgody analitycznej usuwa identyfikator Mixpanel i zatrzymuje przyszłe zbieranie na tym urządzeniu."
       },
       "5": {
         "title": "5. Jak zmienić lub wycofać zgodę",

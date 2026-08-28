@@ -940,7 +940,7 @@
       },
       "4": {
         "title": "4. Data recipients / processors",
-        "text": "Data may be transferred to entities supporting the controller in providing services, in particular:\n- payment system providers (Stripe),\n- hosting / course delivery platform (Telegram) / tools used to provide access to materials,\n- email, communication, and customer support tools (Gmail, Telegram),\n- accounting services (if applicable),\n- IT support.\nData is not sold or shared with third parties for their own marketing purposes. It may also be disclosed to public authorities only where required by law."
+        "text": "Data may be transferred to entities supporting the controller in providing services, in particular:\n- payment system providers (Stripe),\n- hosting / course delivery platform (Telegram) / tools used to provide access to materials,\n- website and product analytics provider with EU data residency (Mixpanel),\n- email, communication, and customer support tools (Gmail, Telegram),\n- accounting services (if applicable),\n- IT support.\nData is not sold or shared with third parties for their own marketing purposes. It may also be disclosed to public authorities only where required by law."
       },
       "5": {
         "title": "5. Transfers of data outside the EEA",
@@ -960,7 +960,7 @@
       },
       "9": {
         "title": "9. Automated decision-making / profiling",
-        "text": "Personal data is not subject to automated decision-making or profiling."
+        "text": "We do not make automated decisions that produce legal or similarly significant effects. With your analytics consent, pseudonymous usage events may be segmented to understand how groups of visitors use the website; these segments are used only to improve the website, content, and purchase flow."
       }
     }
   },
@@ -986,7 +986,7 @@
         },
         "analytics": {
           "title": "Analytics",
-          "description": "Help us understand website usage so we can improve content and navigation."
+          "description": "Measure visits and interactions and enable privacy-masked session recordings so we can improve content, navigation, and purchase flow."
         }
       }
     }
@@ -1002,7 +1002,7 @@
       },
       "2": {
         "title": "2. Categories we use",
-        "text": "The website uses the following storage technologies:\na) Necessary (always active):\n- `NEXT_LOCALE` cookie (our website) to remember the selected interface language, up to 12 months;\n- `cookie-consent:v1` in localStorage (our website) to store your cookie choice, kept until you change the choice or clear browser data;\n- technical Stripe cookies (for example `__stripe_mid`, `__stripe_sid`) when the payment form is used.\n- the Telegram login script (telegram.org) is loaded only on the checkout page when you confirm your Telegram account; during that authorization Telegram may use its own cookies on its domain.\nb) Functional (consent-based):\n- `payment-checkout-draft:v1` in sessionStorage for checkout draft recovery, kept until the tab is closed or storage is cleared.\nc) Analytics (consent-based):\n- Vercel Analytics (`@vercel/analytics`) to measure website usage in an aggregated or pseudonymous form."
+        "text": "The website uses the following storage technologies:\na) Necessary (always active):\n- `NEXT_LOCALE` cookie (our website) to remember the selected interface language, up to 12 months;\n- `cookie-consent:v1` in localStorage (our website) to store your cookie choice, kept until you change the choice or clear browser data;\n- technical Stripe cookies (for example `__stripe_mid`, `__stripe_sid`) when the payment form is used.\n- the Telegram login script (telegram.org) is loaded only on the checkout page when you confirm your Telegram account; during that authorization Telegram may use its own cookies on its domain.\nb) Functional (consent-based):\n- `payment-checkout-draft:v1` in sessionStorage for checkout draft recovery, kept until the tab is closed or storage is cleared.\nc) Analytics (consent-based):\n- Mixpanel stores a pseudonymous browser identifier and consent marker in localStorage and may temporarily use IndexedDB for session replay. It measures page views, traffic source, device/browser, approximate location, scroll and selected product interactions. Session recordings mask all text and form inputs and are disabled on admin and payment pages. Analytics is processed using Mixpanel's EU data residency."
       },
       "3": {
         "title": "3. Legal basis",
@@ -1010,7 +1010,7 @@
       },
       "4": {
         "title": "4. Storage period",
-        "text": "Storage duration depends on the technology:\n- `NEXT_LOCALE` — up to 12 months;\n- `cookie-consent:v1` (localStorage) — until you change your choice or clear browser data;\n- `payment-checkout-draft:v1` (sessionStorage) — until the tab is closed;\n- Telegram cookies during authorization — for the periods defined by Telegram's policy;\n- Stripe cookies and Vercel Analytics data — according to each provider's retention policy."
+        "text": "Storage duration depends on the technology:\n- `NEXT_LOCALE` — up to 12 months;\n- `cookie-consent:v1` (localStorage) — until you change your choice or clear browser data;\n- `payment-checkout-draft:v1` (sessionStorage) — until the tab is closed;\n- Telegram cookies during authorization — for the periods defined by Telegram's policy;\n- Stripe cookies and Mixpanel analytics data — according to each provider's retention policy. Withdrawing analytics consent clears the Mixpanel identifier and stops future collection on this device."
       },
       "5": {
         "title": "5. How to change or withdraw consent",

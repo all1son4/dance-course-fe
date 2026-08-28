@@ -9,6 +9,7 @@ import type { Options as PlyrOptions } from "plyr";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { INSTAGRAM_BASE_URL } from "@/constants/links";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { Play } from "@/svg";
 
 import { CenterButton, PosterOverlay, VideoWrap } from "./VideoPlayer.styles";
@@ -160,6 +161,7 @@ const shouldIgnorePauseShortcut = (
 };
 
 export default function VideoPlayer({
+  analyticsId,
   src,
   type = "video/mp4",
   poster,
@@ -181,6 +183,8 @@ export default function VideoPlayer({
   const embedRef = useRef<HTMLDivElement | null>(null);
   const plyrRef = useRef<PlayerInstance | null>(null);
   const playButtonRef = useRef<HTMLButtonElement | null>(null);
+  const hasTrackedStartRef = useRef(false);
+  const hasTrackedCompletionRef = useRef(false);
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -189,6 +193,7 @@ export default function VideoPlayer({
   const instagramPostUrl = useMemo(() => getInstagramPostUrl(src), [src]);
   const isYoutube = Boolean(youtubeId);
   const isInstagram = Boolean(instagramPostUrl);
+  const videoProvider = isInstagram ? "instagram" : isYoutube ? "youtube" : "native";
   const resolvedPlayLabel = playLabel ?? t("playVideo");
 
   const options = useMemo<PlyrOptions>(
@@ -200,6 +205,8 @@ export default function VideoPlayer({
     setIsReady(false);
     setIsPlaying(false);
     setHasStarted(false);
+    hasTrackedStartRef.current = false;
+    hasTrackedCompletionRef.current = false;
   }, [src]);
 
   useEffect(() => {
@@ -224,16 +231,39 @@ export default function VideoPlayer({
       if (!mounted) return;
       setIsPlaying(true);
       setHasStarted(true);
+
+      if (analyticsId && !hasTrackedStartRef.current) {
+        hasTrackedStartRef.current = true;
+        void trackAnalyticsEvent("video_started", {
+          video_id: analyticsId,
+          video_provider: videoProvider,
+        });
+      }
     };
 
     const handlePause = () => {
       if (!mounted) return;
       setIsPlaying(false);
+
+      if (analyticsId && hasTrackedStartRef.current && !hasTrackedCompletionRef.current) {
+        void trackAnalyticsEvent("video_paused", {
+          video_id: analyticsId,
+          video_provider: videoProvider,
+        });
+      }
     };
 
     const handleEnded = () => {
       if (!mounted) return;
       setIsPlaying(false);
+
+      if (analyticsId && !hasTrackedCompletionRef.current) {
+        hasTrackedCompletionRef.current = true;
+        void trackAnalyticsEvent("video_completed", {
+          video_id: analyticsId,
+          video_provider: videoProvider,
+        });
+      }
     };
 
     let eventTarget: HTMLElement | null = null;
@@ -314,11 +344,18 @@ export default function VideoPlayer({
         plyrRef.current = null;
       }
     };
-  }, [isInstagram, options, src, isYoutube]);
+  }, [analyticsId, isInstagram, options, src, isYoutube, videoProvider]);
 
   const handlePlay = () => {
     if (isInstagram) {
       if (instagramPostUrl) {
+        if (analyticsId && !hasTrackedStartRef.current) {
+          hasTrackedStartRef.current = true;
+          void trackAnalyticsEvent("video_started", {
+            video_id: analyticsId,
+            video_provider: "instagram",
+          });
+        }
         window.open(instagramPostUrl, INSTAGRAM_WINDOW_TARGET, INSTAGRAM_WINDOW_FEATURES);
       }
       playButtonRef.current?.blur();

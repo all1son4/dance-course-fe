@@ -7,6 +7,7 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "rea
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { getLocaleCookieName } from "@/lib/cookie-consent";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation-events";
 import {
   getHashTargetFromLocation,
@@ -278,6 +279,11 @@ export default function Header() {
     if (nextLocale === locale) return;
     if (isLocaleSwitching) return;
 
+    void trackAnalyticsEvent("language_changed", {
+      from_locale: locale,
+      to_locale: nextLocale,
+    });
+
     setMenuIsOpen(false);
     setIsLocaleSwitching(true);
     syncLocaleCookie(nextLocale);
@@ -351,9 +357,18 @@ export default function Header() {
         <TopMenu
           setMenuIsOpen={setMenuIsOpen}
           items={[
-            { label: t("menu.offline"), href: "/offline" },
-            { label: t("menu.online"), href: "/online" },
             {
+              analyticsId: "nav_offline",
+              label: t("menu.offline"),
+              href: "/offline",
+            },
+            {
+              analyticsId: "nav_online",
+              label: t("menu.online"),
+              href: "/online",
+            },
+            {
+              analyticsId: "nav_contacts",
               label: t("menu.contacts"),
               href: "/#contacts",
               onClick: onContactsMenuClick,

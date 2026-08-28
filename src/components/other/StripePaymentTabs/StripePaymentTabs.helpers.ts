@@ -17,13 +17,17 @@ export type StripePaymentFormProps = {
   confirmedText: string;
   confirmPaymentFailedText: string;
   isContentVisible: boolean;
+  isRenewalCheckout?: boolean;
   onPaymentElementReadyChange?: (isReady: boolean) => void;
   paymentIntentId?: string | null;
   payButtonText: string;
   processingText: string;
   resultCurrency?: string | null;
+  resultOfferCode?: string | null;
   resultOfferId?: string | null;
+  resultProductCode?: string | null;
   resultProductId?: string | null;
+  resultValue?: number | null;
 };
 
 export type ResolvedBillingDetails = {
