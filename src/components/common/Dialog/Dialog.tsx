@@ -105,23 +105,43 @@ export default function Dialog({
     lastHeightRef.current = box.offsetHeight;
   });
 
-  // iOS never resizes the layout viewport for the keyboard, only the visual
-  // one, so a sheet pinned to `bottom: 0` would sit behind the keys. Track the
-  // visual viewport and lift the sheet by the covered height.
+  // Phones never resize the layout viewport for the keyboard (iOS always,
+  // Android Chrome since 108), only the visual one - so a sheet pinned to
+  // `bottom: 0` would sit behind the keys. Track the visual viewport, lift the
+  // sheet by the covered height and bring the field being typed into back
+  // into the shortened, scrollable sheet.
   useEffect(() => {
     const viewport = window.visualViewport;
-    const content = contentRef.current;
 
-    if (!open || !viewport || !content || !window.matchMedia(SHEET_MEDIA_QUERY).matches) {
+    if (!open || !viewport || !window.matchMedia(SHEET_MEDIA_QUERY).matches) {
       return;
     }
 
+    let liftedContent: HTMLElement | null = null;
+
     const update = () => {
+      // Read the ref here, not when the effect starts: Radix mounts the
+      // content one render after `open` flips, so at that point it is null.
+      const content = contentRef.current;
+
+      if (!content) {
+        return;
+      }
+
+      liftedContent = content;
       const inset = Math.max(
         0,
-        window.innerHeight - viewport.height - viewport.offsetTop,
+        Math.round(window.innerHeight - viewport.height - viewport.offsetTop),
       );
-      content.style.setProperty(KEYBOARD_INSET_PROPERTY, `${Math.round(inset)}px`);
+      content.style.setProperty(KEYBOARD_INSET_PROPERTY, `${inset}px`);
+
+      const active = document.activeElement;
+
+      if (inset > 0 && active instanceof HTMLElement && content.contains(active)) {
+        window.requestAnimationFrame(() => {
+          active.scrollIntoView({ block: "center", behavior: "smooth" });
+        });
+      }
     };
 
     viewport.addEventListener("resize", update);
@@ -131,7 +151,7 @@ export default function Dialog({
     return () => {
       viewport.removeEventListener("resize", update);
       viewport.removeEventListener("scroll", update);
-      content.style.removeProperty(KEYBOARD_INSET_PROPERTY);
+      liftedContent?.style.removeProperty(KEYBOARD_INSET_PROPERTY);
     };
   }, [open]);
 
