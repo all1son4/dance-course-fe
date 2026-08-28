@@ -13,6 +13,8 @@ export const SpecialWrapper = styled.div`
   padding: 100px;
   border-radius: 100px;
   background: rgba(255, 255, 255, 1);
+  position: relative;
+  z-index: 12;
 
   @media (max-width: 1024px) {
     padding: 50px;

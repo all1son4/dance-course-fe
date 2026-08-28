@@ -10,6 +10,7 @@ export const NoticeCard = styled.div`
   justify-content: center;
   padding: 20px 30px 20px 45px;
   position: relative;
+  z-index: 12;
   max-width: calc(100% - 30px);
   width: fit-content;
   margin: 0 0 0 30px;

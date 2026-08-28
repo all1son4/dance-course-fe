@@ -4,17 +4,19 @@ import { getTranslations } from "next-intl/server";
 
 import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
+import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
-import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import RoadmapContainer from "@/components/other/ProgramRoadmap";
 import VideoPlayer from "@/components/other/VideoPlayer";
+import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   DEFAULT_CHECKOUT_PRODUCT,
   formatOfferPrice,
   getDefaultProductOffer,
 } from "@/constants/sellable-products";
 import CourseSignupDialog from "@/features/course-signup";
+import PageClientMessages from "@/i18n/PageClientMessages";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -151,42 +153,36 @@ export default function FirstTouch() {
 
       <MobileImagesBox>
         <ImageBox id="mobile-only-image-box">
-          <SvgAsset
-            src="/svg/FirstTouchPageBackgroundPhoto.webp"
-            width={660}
-            height={826}
+          <HeroPicture
+            asset={HERO_MEDIA.firstTouch}
+            media="(max-width: 767px)"
             sizes="(max-width: 450px) 100vw, (max-width: 767px) 90vw, 0px"
             priority
-            unoptimized
           />
         </ImageBox>
 
         <IconBox id="mobile-only-icon-box">
-          <SvgAsset
-            src="/svg/FirstTouchTelegram.webp"
-            width={356}
-            height={534}
+          <HeroPicture
+            asset={HERO_MEDIA.firstTouchTelegram}
+            media="(max-width: 767px)"
             sizes="(max-width: 767px) 50vw, 0px"
           />
         </IconBox>
       </MobileImagesBox>
 
       <ImageBox id="desktop-only-image-box">
-        <SvgAsset
-          src="/svg/FirstTouchPageBackgroundPhoto.webp"
-          width={660}
-          height={826}
+        <HeroPicture
+          asset={HERO_MEDIA.firstTouch}
+          media="(min-width: 768px)"
           sizes="(max-width: 767px) 0px, (max-width: 920px) 380px, (max-width: 1100px) 470px, (max-width: 1240px) 500px, 660px"
           priority
-          unoptimized
         />
       </ImageBox>
 
       <IconBox id="desktop-only-icon-box">
-        <SvgAsset
-          src="/svg/FirstTouchTelegram.webp"
-          width={356}
-          height={534}
+        <HeroPicture
+          asset={HERO_MEDIA.firstTouchTelegram}
+          media="(min-width: 768px)"
           sizes="(max-width: 767px) 0px, (max-width: 920px) 210px, (max-width: 1100px) 250px, (max-width: 1240px) 280px, 356px"
         />
       </IconBox>
@@ -217,7 +213,7 @@ export default function FirstTouch() {
   );
 
   return (
-    <>
+    <PageClientMessages namespaces={["FirstTouchPage.signupDialog"]}>
       <StructuredData
         data={[
           buildBreadcrumbStructuredData([
@@ -252,6 +248,6 @@ export default function FirstTouch() {
           <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
         </ContactSection>
       </SpecialWrapper>
-    </>
+    </PageClientMessages>
   );
 }

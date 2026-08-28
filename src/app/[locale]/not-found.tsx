@@ -18,7 +18,7 @@ export default async function NotFound() {
   return (
     <div className={styles.container}>
       <div className={styles.logo}>
-        <Logo width={264} height={49} />
+        <Logo width={264} height={49} inline />
       </div>
       <div className={styles.content}>
         <Image

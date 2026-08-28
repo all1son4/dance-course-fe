@@ -5,12 +5,14 @@ import { getTranslations } from "next-intl/server";
 import ContactCard from "@/components/cards/ContactCard";
 import CourseCard from "@/components/cards/CourseCard";
 import Button from "@/components/common/Button";
+import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import FAQ from "@/components/other/FAQ";
 import { getQuestionsArray } from "@/components/other/FAQ/FAQ.constants";
 import Reviews from "@/components/other/Reviews";
+import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   INSTAGRAM_DIB_GALA_URL,
   INSTAGRAM_PROFILE_HANDLE,
@@ -18,6 +20,7 @@ import {
   INSTAGRAM_STAGE18_URL,
   INSTAGRAM_WORLD_OF_DANCE_POLAND_URL,
 } from "@/constants/links";
+import PageClientMessages from "@/i18n/PageClientMessages";
 import {
   buildPageMetadata,
   buildWebsiteStructuredData,
@@ -105,13 +108,11 @@ export default function Home() {
   const renderIntroductionSection = () => (
     <IntroduceSection>
       <AbsolutePageImage>
-        <SvgAsset
-          src="/svg/MainPageBackgroundPhoto.webp"
-          width={775}
-          height={900}
+        <HeroPicture
+          asset={HERO_MEDIA.home}
+          media="(min-width: 1241px)"
           sizes="(max-width: 1240px) 0px, (max-width: 1440px) 52vw, 775px"
           priority
-          unoptimized
         />
       </AbsolutePageImage>
       <MainTextBox>
@@ -130,14 +131,12 @@ export default function Home() {
         </InteractiveBox>
       </MainTextBox>
       <AbsolutePageLogo>
-        <SvgAsset
-          src="/svg/MainPageBackgroundPhoto.webp"
-          width={775}
-          height={900}
-          className="hero-mobile-bg"
+        <HeroPicture
+          asset={HERO_MEDIA.home}
+          media="(max-width: 1240px)"
           sizes="(max-width: 450px) 100vw, (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
+          className="hero-mobile-bg"
           priority
-          unoptimized
         />
         <div className="hero-brand-logo">
           <Logo width={350} height={77} />
@@ -275,7 +274,7 @@ export default function Home() {
   );
 
   return (
-    <>
+    <PageClientMessages namespaces={["FAQ", "Reviews"]}>
       <StructuredData
         data={[buildWebsiteStructuredData(metadataT("siteName")), faqStructuredData]}
       />
@@ -291,6 +290,6 @@ export default function Home() {
       <ContactSection>
         <Contacts />
       </ContactSection>
-    </>
+    </PageClientMessages>
   );
 }

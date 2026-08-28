@@ -13,7 +13,7 @@ export const IntroduceSection = styled.section`
   padding: 0 25px;
 
   @media (max-width: 1440px) {
-    min-height: 800px;
+    min-height: 770px;
     padding: 0 20px;
   }
 
@@ -45,8 +45,10 @@ export const AbsolutePageImage = styled.div`
   }
 
   @media (max-width: 1440px) {
-    top: -54px;
-    width: 52%;
+    left: 32%;
+    top: unset;
+    bottom: 20px;
+    width: 50%;
     height: auto;
   }
 

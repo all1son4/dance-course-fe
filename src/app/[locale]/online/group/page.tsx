@@ -4,18 +4,18 @@ import { getLocale, getTranslations } from "next-intl/server";
 import CourseCard from "@/components/cards/CourseCard";
 import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
+import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
-import SvgAsset from "@/components/common/SvgAsset";
 import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
+import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   buildCheckoutHref,
   formatOfferPrice,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
-import { isProductSaleOpen } from "@/lib/sales-availability";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -25,6 +25,7 @@ import {
 } from "@/lib/seo";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
+import SaleGate from "../_shared/sale-gate";
 import { buildCourseOffersStructuredData } from "../_shared/structured-data";
 import { getGroupSuggestions } from "./constants";
 import {
@@ -87,7 +88,6 @@ export default async function OnlineGroupPage() {
   const t = await getTranslations("OnlineGroupPage");
   const onlineSuggestions = getGroupSuggestions((key) => t(key));
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
-  const isSaleOpen = await isProductSaleOpen(product.id);
   const purchaseOffers = product.offers.filter(
     (offer) => offer.code === "standard" || offer.code === "library-access",
   );
@@ -142,59 +142,59 @@ export default async function OnlineGroupPage() {
           />
           {/* Only while there is something to buy: a floating "choose a plan"
               pointing at a closed tariff section would be noise. */}
-          {isSaleOpen ? (
-            <StickyCta
-              label={t("tariffs.selectButton")}
-              href="#tariffs"
-              title={t("hero.titlePlain")}
-              note={standardOffer ? formatOfferPrice(standardOffer.prices) : undefined}
-            />
-          ) : null}
+          <SaleGate productId={product.id}>
+            {(isSaleOpen) =>
+              isSaleOpen ? (
+                <StickyCta
+                  label={t("tariffs.selectButton")}
+                  href="#tariffs"
+                  title={t("hero.titlePlain")}
+                  note={
+                    standardOffer ? formatOfferPrice(standardOffer.prices) : undefined
+                  }
+                />
+              ) : null
+            }
+          </SaleGate>
         </ButtonBox>
       </TextBox>
 
       <MobileImagesBox>
         <ImageBox id="mobile-only-image-box">
-          <SvgAsset
-            src="/svg/OnlinePageBackgroundPhoto.webp"
-            width={598}
-            height={846}
+          <HeroPicture
+            asset={HERO_MEDIA.online}
+            media="(max-width: 767px)"
             sizes="(max-width: 767px) 100vw, 0px"
             priority
-            unoptimized
           />
         </ImageBox>
         <IconBox id="mobile-only-icon-box">
-          <SvgAsset
-            src="/svg/OnlineTelegramBig.webp"
-            width={453}
-            height={474}
+          <HeroPicture
+            asset={HERO_MEDIA.onlineTelegram}
+            media="(max-width: 767px)"
             sizes="(max-width: 767px) 65vw, 0px"
           />
         </IconBox>
       </MobileImagesBox>
       <ImageBox id="desktop-only-image-box">
-        <SvgAsset
-          src="/svg/OnlinePageBackgroundPhoto.webp"
-          width={598}
-          height={846}
+        <HeroPicture
+          asset={HERO_MEDIA.online}
+          media="(min-width: 768px)"
           sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
           priority
-          unoptimized
         />
       </ImageBox>
       <IconBox id="desktop-only-icon-box">
-        <SvgAsset
-          src="/svg/OnlineTelegramBig.webp"
-          width={453}
-          height={474}
+        <HeroPicture
+          asset={HERO_MEDIA.onlineTelegram}
+          media="(min-width: 768px)"
           sizes="(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px"
         />
       </IconBox>
     </IntroductionSection>
   );
 
-  const renderTariffSection = () => (
+  const renderTariffSection = (isSaleOpen: boolean) => (
     <TariffSection id="tariffs">
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
       {/* Without this card, closed sales leave the tariff cards buttonless and
@@ -301,7 +301,10 @@ export default async function OnlineGroupPage() {
             radius="0px"
           />
         </VideoSection>
-        {renderTariffSection()}
+        {/* Streams in behind the shell; see SaleGate for why there is no fallback. */}
+        <SaleGate productId={product.id}>
+          {(isSaleOpen) => renderTariffSection(isSaleOpen)}
+        </SaleGate>
         <AboutCourseSection id="course-program">
           <AboutCourseTitle>{t("about.title")}</AboutCourseTitle>
           <AboutCourseCards>

@@ -10,6 +10,7 @@ import Header from "@/components/layout/Header";
 import PageContainer from "@/components/layout/PageContainer";
 import SkipLink, { MAIN_CONTENT_ID } from "@/components/layout/SkipLink";
 import BirthdayPopup from "@/components/other/BirthdayPopup";
+import { GLOBAL_CLIENT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
 import { routing } from "@/i18n/routing";
 import {
   normalizedSiteUrl,
@@ -19,6 +20,7 @@ import {
   seoTargetLocale,
   seoTargetOpenGraphLocale,
 } from "@/lib/seo";
+import { LogoSymbol } from "@/svg";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -110,10 +112,14 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
   }
 
   setRequestLocale(locale);
-  const messages = await getMessages();
+  // Only what the layout's own client components need. Pages whose client
+  // components use more wrap themselves in a provider with their namespaces
+  // (a nested provider replaces, not merges, the messages).
+  const messages = pickMessages(await getMessages(), GLOBAL_CLIENT_NAMESPACES);
 
   return (
     <NextIntlClientProvider messages={messages}>
+      <LogoSymbol />
       <SkipLink />
       <Header />
       {/* tabIndex={-1} lets the skip link move focus here. */}

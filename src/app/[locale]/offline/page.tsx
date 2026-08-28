@@ -4,9 +4,11 @@ import { getTranslations } from "next-intl/server";
 
 import CourseCard from "@/components/cards/CourseCard";
 import InteractiveCard from "@/components/cards/InteractiveCard";
+import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
+import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   buildBreadcrumbStructuredData,
   buildPageMetadata,
@@ -80,39 +82,33 @@ export default function Offline() {
         </TextBox>
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
-            <SvgAsset
-              src="/svg/OfflinePageBackgroundPhoto.webp"
-              width={558}
-              height={738}
+            <HeroPicture
+              asset={HERO_MEDIA.offline}
+              media="(max-width: 767px)"
               sizes="(max-width: 767px) 100vw, 0px"
               priority
-              unoptimized
             />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset
-              src="/svg/WarsawMap.webp"
-              width={379}
-              height={568}
+            <HeroPicture
+              asset={HERO_MEDIA.warsawMap}
+              media="(max-width: 767px)"
               sizes="(max-width: 550px) 58vw, (max-width: 767px) 95vw, 0px"
             />
           </IconBox>
         </MobileImagesBox>
         <ImageBox id="desktop-only-image-box">
-          <SvgAsset
-            src="/svg/OfflinePageBackgroundPhoto.webp"
-            width={558}
-            height={738}
+          <HeroPicture
+            asset={HERO_MEDIA.offline}
+            media="(min-width: 768px)"
             sizes="(max-width: 767px) 0px, (max-width: 880px) 400px, (max-width: 960px) 460px, (max-width: 1240px) 500px, 558px"
             priority
-            unoptimized
           />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset
-            src="/svg/WarsawMap.webp"
-            width={379}
-            height={568}
+          <HeroPicture
+            asset={HERO_MEDIA.warsawMap}
+            media="(min-width: 768px)"
             sizes="(max-width: 767px) 0px, (max-width: 880px) 250px, (max-width: 1100px) 310px, 379px"
           />
         </IconBox>

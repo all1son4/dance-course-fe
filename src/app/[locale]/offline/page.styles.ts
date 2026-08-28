@@ -168,10 +168,9 @@ export const ImageBox = styled.div`
   }
 
   @media (max-width: 1100px) {
-    top: 48px;
     & :is(svg, img) {
       right: 0;
-      max-width: 480px;
+      max-width: 470px;
     }
   }
 
@@ -182,15 +181,16 @@ export const ImageBox = styled.div`
   }
 
   @media (max-width: 880px) {
-    right: 9%;
+    top: 140px;
+    right: 12%;
     & :is(svg, img) {
-      max-width: 400px;
+      max-width: 380px;
     }
   }
 `;
 
 export const IconBox = styled.div`
-  position: absolute;
+  position: absolute !important;
   bottom: 20px;
   right: 4%;
   z-index: 15;
@@ -200,6 +200,7 @@ export const IconBox = styled.div`
   }
 
   @media (max-width: 1240px) {
+    bottom: 84px;
     & :is(svg, img) {
       right: 2%;
       max-width: 330px;
@@ -207,6 +208,7 @@ export const IconBox = styled.div`
   }
 
   @media (max-width: 1100px) {
+    bottom: 64px;
     & :is(svg, img) {
       right: 0;
       max-width: 310px;
@@ -214,7 +216,6 @@ export const IconBox = styled.div`
   }
 
   @media (max-width: 960px) {
-    bottom: 0;
     & :is(svg, img) {
       right: 0;
       max-width: 310px;
@@ -222,10 +223,9 @@ export const IconBox = styled.div`
   }
 
   @media (max-width: 880px) {
-    bottom: -20px;
+    right: 20px;
+    bottom: 60px;
     & :is(svg, img) {
-      top: 20px;
-      right: 0;
       max-width: 250px;
     }
   }

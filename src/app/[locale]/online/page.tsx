@@ -4,9 +4,10 @@ import { getTranslations } from "next-intl/server";
 
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import Button from "@/components/common/Button";
+import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
-import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
+import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   buildBreadcrumbStructuredData,
   buildPageMetadata,
@@ -97,39 +98,33 @@ export default function Online() {
         </TextBox>
         <MobileImagesBox>
           <ImageBox id="mobile-only-image-box">
-            <SvgAsset
-              src="/svg/OnlinePageBackgroundPhoto.webp"
-              width={598}
-              height={846}
+            <HeroPicture
+              asset={HERO_MEDIA.online}
+              media="(max-width: 767px)"
               sizes="(max-width: 767px) 100vw, 0px"
               priority
-              unoptimized
             />
           </ImageBox>
           <IconBox id="mobile-only-icon-box">
-            <SvgAsset
-              src="/svg/OnlineTelegramBig.webp"
-              width={453}
-              height={474}
+            <HeroPicture
+              asset={HERO_MEDIA.onlineTelegram}
+              media="(max-width: 767px)"
               sizes="(max-width: 767px) 65vw, 0px"
             />
           </IconBox>
         </MobileImagesBox>
         <ImageBox id="desktop-only-image-box">
-          <SvgAsset
-            src="/svg/OnlinePageBackgroundPhoto.webp"
-            width={598}
-            height={846}
+          <HeroPicture
+            asset={HERO_MEDIA.online}
+            media="(min-width: 768px)"
             sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
             priority
-            unoptimized
           />
         </ImageBox>
         <IconBox id="desktop-only-icon-box">
-          <SvgAsset
-            src="/svg/OnlineTelegramBig.webp"
-            width={453}
-            height={474}
+          <HeroPicture
+            asset={HERO_MEDIA.onlineTelegram}
+            media="(min-width: 768px)"
             sizes="(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px"
           />
         </IconBox>

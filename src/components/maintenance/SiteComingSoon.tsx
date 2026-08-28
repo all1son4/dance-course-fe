@@ -211,7 +211,7 @@ export default function SiteComingSoon() {
       <Inner>
         <Panel>
           <LogoWrap>
-            <Logo width={320} height={62} />
+            <Logo width={320} height={62} inline />
           </LogoWrap>
           <StatusChip>{copy.status}</StatusChip>
           <Title>{copy.title}</Title>
