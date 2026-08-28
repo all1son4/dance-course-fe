@@ -530,31 +530,6 @@ export const CourseOptionsBox = styled.div`
   }
 `;
 
-export const CourseList = styled.ul`
-  list-style: numeric;
-  padding: 0 0 0 16px;
-  margin: 0;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  color: #000000;
-
-  & li {
-    margin: 0;
-  }
-`;
-
-export const HighlightText = styled.span`
-  font-weight: 600;
-`;
-
 export const FAQSection = styled.section`
   padding: 50px 50px 100px;
   display: flex;
@@ -597,21 +572,5 @@ export const ReviewsSection = styled.section`
 
   @media (max-width: 680px) {
     padding-bottom: 40px;
-  }
-`;
-
-export const ContactSection = styled.section`
-  padding: 0 50px 100px;
-
-  @media (max-width: 1240px) {
-    padding: 0 0 100px;
-  }
-
-  @media (max-width: 1024px) {
-    padding: 0 20px 100px;
-  }
-
-  @media (max-width: 880px) {
-    padding: 0 20px 60px;
   }
 `;

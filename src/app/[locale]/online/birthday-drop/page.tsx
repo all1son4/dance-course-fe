@@ -1,43 +1,16 @@
-import type { Metadata } from "next";
 import { useLocale, useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
 
 import StructuredData from "@/components/common/StructuredData";
-import {
-  buildBreadcrumbStructuredData,
-  buildPageMetadata,
-  normalizedSiteUrl,
-  seoTargetLocale,
-} from "@/lib/seo";
+import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
+import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
 import BirthdayDropSection from "./birthday-drop-section";
 import { BirthdayDropPageSection } from "./page.styles";
 
 const PAGE_PATH = "/online/birthday-drop";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const metadataT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata",
-  });
-  const pageT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata.pages.birthdayDrop",
-  });
-
-  return buildPageMetadata({
-    locale: seoTargetLocale,
-    path: PAGE_PATH,
-    title: pageT("title"),
-    description: pageT("description"),
-    siteName: metadataT("siteName"),
-    ogImageAlt: pageT("ogImageAlt"),
-    keywords: pageT("keywords")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-  });
-}
+export const generateMetadata = () =>
+  buildLocalizedPageMetadata({ pageKey: "birthdayDrop", path: PAGE_PATH });
 
 // The buy button follows the admin sales switch, so this page is rendered per
 // request instead of being prerendered with a stale answer baked in.

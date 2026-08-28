@@ -1,6 +1,6 @@
 import styled from "styled-components";
 
-export const PrivacyPolicySection = styled.section`
+export const LegalSection = styled.section`
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,7 +18,7 @@ export const PrivacyPolicySection = styled.section`
   }
 `;
 
-export const PrivacyPolicyContent = styled.div`
+export const LegalContent = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -37,7 +37,7 @@ export const PrivacyPolicyContent = styled.div`
   }
 `;
 
-export const PrivacyPolicyTitle = styled.h1`
+export const LegalTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 36px;
@@ -52,7 +52,7 @@ export const PrivacyPolicyTitle = styled.h1`
   }
 `;
 
-export const PrivacyPolicyDescription = styled.p`
+export const LegalDescription = styled.p`
   font-weight: 300;
   font-style: normal;
   font-size: 17px;
@@ -67,7 +67,7 @@ export const PrivacyPolicyDescription = styled.p`
   }
 `;
 
-export const PrivacyPolicyEmail = styled.a`
+export const LegalEmail = styled.a`
   color: rgba(72, 72, 72, 1);
   font-weight: 500;
   text-decoration: underline;
@@ -81,7 +81,7 @@ export const PrivacyPolicyEmail = styled.a`
   }
 `;
 
-export const PrivacyPolicyItems = styled.div`
+export const LegalItems = styled.div`
   display: flex;
   flex-direction: column;
   gap: 40px;
@@ -91,14 +91,14 @@ export const PrivacyPolicyItems = styled.div`
   }
 `;
 
-export const PrivacyPolicyItem = styled.div`
+export const LegalItem = styled.div`
   display: flex;
   flex-direction: column;
   gap: 10px;
   width: 100%;
 `;
 
-export const PrivacyPolicyItemTitle = styled.p`
+export const LegalItemTitle = styled.p`
   font-weight: 600;
   font-style: normal;
   font-size: 17px;
@@ -108,7 +108,7 @@ export const PrivacyPolicyItemTitle = styled.p`
   color: rgba(0, 0, 0, 1);
 `;
 
-export const PrivacyPolicyItemText = styled.p`
+export const LegalItemText = styled.p`
   font-weight: 300;
   font-style: normal;
   font-size: 17px;
@@ -119,7 +119,7 @@ export const PrivacyPolicyItemText = styled.p`
   white-space: pre-line;
 `;
 
-export const PrivacyPolicyContactLine = styled.p`
+export const LegalContactLine = styled.p`
   font-weight: 300;
   font-style: normal;
   font-size: 17px;

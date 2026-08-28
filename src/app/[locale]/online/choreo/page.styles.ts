@@ -1,13 +1,15 @@
 import styled from "styled-components";
 
-export const IntroductionSection = styled.section`
-  position: relative;
-  display: flex;
-  align-items: center;
+import {
+  HeroMobileImagesBox,
+  HeroSection,
+  HeroTextBox,
+  HeroTitle,
+} from "../../_shared/hero.styles";
+
+export const IntroductionSection = styled(HeroSection)`
   min-height: 914px;
   padding: 0 25px;
-  box-sizing: border-box;
-  width: 100%;
 
   @media (max-width: 1240px) {
     min-height: 800px;
@@ -25,39 +27,28 @@ export const IntroductionSection = styled.section`
 
   @media (max-width: 767px) {
     min-height: unset;
-    flex-direction: column;
     padding: 100px 20px 0;
-
-    & #desktop-only-image-box,
-    & #desktop-only-icon-box {
-      display: none;
-    }
   }
 `;
 
-export const TextBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+export const TextBox = styled(HeroTextBox)`
   max-width: 540px;
-  position: relative;
-  z-index: 15;
-  padding: 0 0 0 25px;
 
   @media (max-width: 1240px) {
     max-width: 520px;
+  }
 
+  @media (max-width: 1240px) {
     & p {
       max-width: 440px;
     }
   }
 
-  @media (max-width: 1024px) {
-    padding: 0;
+  @media (max-width: 880px) {
+    max-width: 460px;
   }
 
   @media (max-width: 880px) {
-    max-width: 460px;
     & p {
       max-width: 400px;
     }
@@ -65,89 +56,67 @@ export const TextBox = styled.div`
 
   @media (max-width: 767px) {
     max-width: 100%;
+  }
+
+  @media (max-width: 767px) {
     & p {
       max-width: 100%;
     }
   }
 `;
 
-export const MobileImagesBox = styled.div`
+export const MobileImagesBox = styled(HeroMobileImagesBox)`
   position: relative;
-  display: none;
 
   @media (max-width: 767px) {
-    display: flex;
-    width: 100%;
-
     & #mobile-only-image-box {
-      position: relative;
-      display: flex;
-      width: 100%;
       max-width: 100%;
       justify-content: center;
-      top: unset;
-      right: unset;
-      bottom: unset;
       margin: -18% 0 0 0;
-      & :is(svg, img) {
-        width: 100%;
-        height: auto;
-      }
     }
+  }
 
+  @media (max-width: 767px) {
+    & #mobile-only-image-box :is(svg, img) {
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  @media (max-width: 767px) {
     & #mobile-only-icon-box {
-      display: flex;
       justify-content: flex-end;
       align-items: flex-start;
       top: unset;
       right: unset;
       bottom: unset;
-      width: 100%;
       max-width: 100%;
       height: 100%;
       margin: 20px 0 0 0;
-      & :is(svg, img) {
-        top: unset;
-        width: 50%;
-        height: auto;
-      }
+    }
+  }
+
+  @media (max-width: 767px) {
+    & #mobile-only-icon-box :is(svg, img) {
+      top: unset;
+      width: 50%;
+      height: auto;
     }
   }
 `;
 
-export const Title = styled.h1`
-  font-weight: 400;
-  font-style: normal;
+export const Title = styled(HeroTitle)`
   font-size: 55px;
-  line-height: 110%;
-  letter-spacing: 0;
   margin: 0 0 40px;
-  color: rgba(0, 0, 0, 1);
 
   @media (max-width: 920px) {
     font-size: 50px;
     word-wrap: break-word;
   }
+
   @media (max-width: 767px) {
     font-size: 38px;
   }
-`;
-
-export const Description = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0 0 60px 0;
-`;
-
-export const DescriptionParagraph = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(12, 12, 12, 1);
 `;
 
 export const ImageBox = styled.div`
@@ -205,38 +174,6 @@ export const IconBox = styled.div`
   }
 `;
 
-export const DateBox = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-export const InfoBoxGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin: 0 0 30px 0;
-`;
-
-export const From = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(72, 72, 72, 1);
-`;
-
-export const Date = styled.p`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 30px;
-  line-height: 110%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-`;
-
 export const ButtonBox = styled.div`
   display: flex;
   width: 100%;
@@ -269,3 +206,7 @@ export const ChoreoSection = styled.section`
     gap: 24px;
   }
 `;
+
+/* Referenced by the preserved (commented-out) hero markup in page.tsx; the
+   definitions now live in the shared section styles. */
+export { Date, From } from "../_shared/section.styles";

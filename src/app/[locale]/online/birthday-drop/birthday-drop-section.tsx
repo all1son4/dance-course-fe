@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import TextContentCard from "@/components/cards/TextContentCard";
+import IconTextCard from "@/components/cards/IconTextCard";
 import Button from "@/components/common/Button";
 import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
@@ -101,12 +101,12 @@ export default async function BirthdayDropSection() {
         <AboutChoreoTitle>{t("aboutTitle")}</AboutChoreoTitle>
         <AboutChoreoCards>
           {suggestions.map(({ id, ...suggestion }) => (
-            <TextContentCard key={id} {...suggestion} />
+            <IconTextCard key={id} {...suggestion} />
           ))}
         </AboutChoreoCards>
       </AboutChoreoSection>
 
-      <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
+      <Contacts />
     </SpecialWrapper>
   );
 }

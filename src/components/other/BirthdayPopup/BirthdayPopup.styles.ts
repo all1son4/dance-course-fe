@@ -29,7 +29,7 @@ const popupExit = keyframes`
 export const AbsoluteContainer = styled.div<{ $isLeaving: boolean }>`
   position: fixed;
   right: 30px;
-  bottom: 30px;
+  bottom: calc(30px + var(--safe-area-bottom, 0px));
   width: 100%;
   max-width: 800px;
   display: grid;
@@ -81,7 +81,7 @@ export const AbsoluteContainer = styled.div<{ $isLeaving: boolean }>`
     grid-template-columns: 200px 1fr;
     left: 10px;
     right: 10px;
-    bottom: 10px;
+    bottom: calc(10px + var(--safe-area-bottom, 0px));
   }
 
   @media (max-width: 570px) {

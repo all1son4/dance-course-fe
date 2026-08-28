@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  computeStickyCtaLift,
   shouldShowStickyCta,
   STICKY_CTA_ANCHOR_ATTRIBUTE,
   STICKY_CTA_ANCHOR_SELECTOR,
@@ -56,23 +55,6 @@ test("yields to a screen-filling footer, the cookie banner and open dialogs", ()
     false,
   );
   assert.equal(shouldShowStickyCta({ ...visibleCase, isDialogOpen: true }), false);
-});
-
-test("lift keeps the bar a gap above the footer and never goes negative", () => {
-  // Footer still far below the bar: rest.
-  assert.equal(computeStickyCtaLift({ footerTop: 900, gap: 12, restingBottom: 800 }), 0);
-  // Footer top exactly at the gap line: still resting.
-  assert.equal(computeStickyCtaLift({ footerTop: 812, gap: 12, restingBottom: 800 }), 0);
-  // Footer has risen 100px into the bar's zone: lift by the same amount.
-  assert.equal(
-    computeStickyCtaLift({ footerTop: 712, gap: 12, restingBottom: 800 }),
-    100,
-  );
-  // Fractional layout values round to whole pixels.
-  assert.equal(
-    computeStickyCtaLift({ footerTop: 711.6, gap: 12, restingBottom: 800.2 }),
-    101,
-  );
 });
 
 test("anchor and blocker helpers agree on their attribute names", () => {

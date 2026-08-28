@@ -2,8 +2,6 @@ import styled, { css, keyframes } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
-import { STICKY_CTA_LIFT_PROPERTY } from "./useStickyCtaVisibilityState";
-
 /* Sits below the fixed header (50) and well below the cookie banner (1200) and
    dialogs (1300); it hides itself whenever those own the screen anyway. */
 const STICKY_CTA_Z_INDEX = 40;
@@ -67,32 +65,38 @@ const MOTION_ANIMATION: Record<StickyCtaMotion, ReturnType<typeof css>> = {
   `,
 };
 
+/* The bar's bottom edge floats this far above the viewport (12px on phones). */
+const FLOAT_GAP_PX = 16;
+const FLOAT_GAP_MOBILE_PX = 12;
+/* ...and stays this far above the footer once it has ridden up with the content. */
+const FOOTER_GAP_PX = 12;
+
 /**
- * Positioning shell. Its only motion is the footer dock: the lift variable is
- * written per frame by the visibility hook, so it must NOT be transitioned -
- * the bar has to track the footer 1:1 with the scroll, not chase it.
+ * Positioning shell: a 12px-tall sticky strip that lives at the very end of
+ * <main> (through the portal dock) and pulls itself up over the last 12px of
+ * content with a negative margin, so it adds no height. `position: sticky`
+ * keeps it `bottom` px above the viewport edge while <main> is on screen and
+ * lets it scroll away with the content once the footer arrives - the docking
+ * happens in the compositor, frame-perfect on iOS, with no scroll listener.
+ * The card hangs from the strip's top edge (see StickyCtaMotionLayer), so
+ * floating it sits FLOAT_GAP above the screen edge and docked it sits
+ * FOOTER_GAP above the footer.
  */
 export const StickyCtaViewport = styled.div<{ $isVisible: boolean }>`
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(16px + var(--safe-area-bottom, 0px));
+  position: sticky;
+  bottom: calc(${FLOAT_GAP_PX - FOOTER_GAP_PX}px + var(--safe-area-bottom, 0px));
+  height: ${FOOTER_GAP_PX}px;
+  margin-top: -${FOOTER_GAP_PX}px;
+  width: 100%;
   z-index: ${STICKY_CTA_Z_INDEX};
-  display: flex;
-  justify-content: center;
-  padding: 0 16px;
-  box-sizing: border-box;
   pointer-events: none;
-  transform: translate3d(0, calc(-1 * var(${STICKY_CTA_LIFT_PROPERTY}, 0px)), 0);
-  will-change: transform;
   visibility: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
   /* Stay visible exactly as long as the card's exit animation runs. */
   transition: visibility 0s linear
     ${({ $isVisible }) => ($isVisible ? "0s" : EXIT_DURATION)};
 
   @media (max-width: 767px) {
-    bottom: calc(12px + var(--safe-area-bottom, 0px));
-    padding: 0 12px;
+    bottom: calc(${FLOAT_GAP_MOBILE_PX - FOOTER_GAP_PX}px + var(--safe-area-bottom, 0px));
   }
 
   /* A phone in landscape has ~375px of height; the bar would eat a fifth of
@@ -112,9 +116,14 @@ export const StickyCtaMotionLayer = styled.div<{
   $isVisible: boolean;
   $motion: StickyCtaMotion;
 }>`
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: center;
-  width: 100%;
+  padding: 0 16px;
+  box-sizing: border-box;
   pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
   transform-origin: 50% 100%;
   will-change: opacity, transform;
@@ -123,6 +132,10 @@ export const StickyCtaMotionLayer = styled.div<{
   opacity: 0;
   transform: translateY(6px) scale(0.97);
   ${({ $motion }) => MOTION_ANIMATION[$motion]}
+
+  @media (max-width: 767px) {
+    padding: 0 12px;
+  }
 `;
 
 /** The visible pill. Static: one class, generated once at load. */

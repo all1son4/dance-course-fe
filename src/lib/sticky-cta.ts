@@ -19,6 +19,16 @@ export const STICKY_CTA_BLOCKER_ATTRIBUTE = "data-sticky-cta-blocker";
 export const STICKY_CTA_BLOCKER_SELECTOR = `[${STICKY_CTA_BLOCKER_ATTRIBUTE}]`;
 export const stickyCtaBlockerProps = { [STICKY_CTA_BLOCKER_ATTRIBUTE]: "" } as const;
 
+/**
+ * The bar renders (through a portal) into this element, placed by the locale
+ * layout as the last child of <main>. `display: contents`, so the bar's
+ * containing block is <main> itself: with `position: sticky` that is exactly
+ * what makes it float at the bottom of the screen while the page content is
+ * on screen and ride up with the content once the footer arrives - all in the
+ * compositor, without a scroll listener.
+ */
+export const STICKY_CTA_DOCK_ID = "sticky-cta-dock";
+
 export type StickyCtaVisibilityInput = {
   /** Anchors found on the page. Zero anchors means nothing to mirror. */
   anchorCount: number;
@@ -59,19 +69,3 @@ export const shouldShowStickyCta = ({
   !isFooterCoveringViewport &&
   !isDialogOpen &&
   !isCookieBannerVisible;
-
-/**
- * How far (px) the bar has to rise so its bottom edge stays `gap` above the
- * footer's top edge. `restingBottom` is where the bar's bottom edge sits when
- * not lifted; `footerTop` is the footer's current top, both in viewport
- * coordinates. Never negative: below the footer's reach the bar rests.
- */
-export const computeStickyCtaLift = ({
-  footerTop,
-  gap,
-  restingBottom,
-}: {
-  footerTop: number;
-  gap: number;
-  restingBottom: number;
-}): number => Math.max(0, Math.round(restingBottom - (footerTop - gap)));

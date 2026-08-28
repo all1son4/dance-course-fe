@@ -20,6 +20,7 @@ import {
   seoTargetLocale,
   seoTargetOpenGraphLocale,
 } from "@/lib/seo";
+import { STICKY_CTA_DOCK_ID } from "@/lib/sticky-cta";
 import { LogoSymbol } from "@/svg";
 
 export const viewport: Viewport = {
@@ -125,6 +126,8 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
       {/* tabIndex={-1} lets the skip link move focus here. */}
       <main id={MAIN_CONTENT_ID} lang={locale} tabIndex={-1}>
         <PageContainer>{children}</PageContainer>
+        {/* Sticky CTA portal target; see STICKY_CTA_DOCK_ID. */}
+        <div id={STICKY_CTA_DOCK_ID} style={{ display: "contents" }} />
       </main>
       <Footer />
       <DeferredCookieConsentBanner />

@@ -92,7 +92,24 @@
     "playVideo": "Odtwórz wideo",
     "toggleDetails": "Pokaż lub ukryj szczegóły",
     "closeDialog": "Zamknij okno",
-    "skipToContent": "Przejdź do treści"
+    "skipToContent": "Przejdź do treści",
+    "salesClosed": "Sprzedaż jest tymczasowo zamknięta"
+  },
+  "OnlinePromoCard": {
+    "title": "Online",
+    "subtitle": "W Telegramie",
+    "items": {
+      "1": {
+        "prefix": "Kurs dla początkujących",
+        "highlight": "First Touch"
+      },
+      "2": {
+        "prefix": "Grupa online",
+        "highlight": "by Anna Strok"
+      },
+      "3": "Samouczki choreograficzne",
+      "4": "The Birthday Drop"
+    }
   },
   "NotFoundPage": {
     "title": "Wygląda na to, że ta strona nie istnieje",
@@ -279,22 +296,6 @@
           },
           "4": "Zajęcia indywidualne"
         }
-      },
-      "online": {
-        "title": "Online",
-        "subtitle": "W Telegramie",
-        "items": {
-          "1": {
-            "prefix": "Kurs dla początkujących",
-            "highlight": "First Touch"
-          },
-          "2": {
-            "prefix": "Grupa online",
-            "highlight": "by Anna Strok"
-          },
-          "3": "Samouczki choreograficzne",
-          "4": "The Birthday Drop"
-        }
       }
     }
   },
@@ -316,8 +317,7 @@
           "3": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
         },
         "startLabel": "Start kursu",
-        "startValue": "Zima 2026-2027 albo po zebraniu pełnej grupy",
-        "button": "Szczegóły"
+        "startValue": "Zima 2026-2027 albo po zebraniu pełnej grupy"
       },
       "onlineGroup": {
         "title": "Online Group\nby Anna Strok",
@@ -326,8 +326,7 @@
           "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
         },
         "startLabel": "Start kolejnego cyklu",
-        "startValue": "Październik - listopad",
-        "button": "Szczegóły"
+        "startValue": "Październik - listopad"
       },
       "choreo": {
         "title": "Samouczki moich choreografii",
@@ -337,9 +336,7 @@
         },
         "startLabel": "Start",
         "startValue": "W dowolnym momencie",
-        "salesLabel": "Dostępność",
-        "salesValue": "Sprzedaż jest tymczasowo zamknięta",
-        "button": "Szczegóły"
+        "salesLabel": "Dostępność"
       },
       "birthdayDrop": {
         "title": "The Birthday Drop",
@@ -348,8 +345,7 @@
           "2": "Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
         },
         "salesLabel": "Sprzedaż otwarta do 7 września",
-        "salesValue": "Dostęp na zawsze!",
-        "button": "Szczegóły"
+        "salesValue": "Dostęp na zawsze!"
       }
     },
     "studio": {
@@ -410,22 +406,6 @@
       "description": {
         "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia - i to jest normalne. Taniec powinien dawać radość, a nie stres.",
         "2": "Jeśli nie jesteś jeszcze gotowa na offline, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
-      },
-      "card": {
-        "title": "Online",
-        "subtitle": "W Telegramie",
-        "items": {
-          "1": {
-            "prefix": "Kurs dla początkujących",
-            "highlight": "First Touch"
-          },
-          "2": {
-            "prefix": "Grupa online",
-            "highlight": "by Anna Strok"
-          },
-          "3": "Samouczki choreograficzne",
-          "4": "The Birthday Drop"
-        }
       }
     }
   },
@@ -444,7 +424,6 @@
       "buyButton": "Kup za 250 PLN / 50 €",
       "enrollButton": "Zapisz się",
       "programButton": "Program kursu",
-      "playLabel": "Odtwórz wideo",
       "introductionVideoSrc": "/videos/introduction_first_touch_en.mp4"
     },
     "signupDialog": {
@@ -544,8 +523,7 @@
           "description": "Online Group z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
         }
       },
-      "programButton": "Co na Ciebie czeka",
-      "playLabel": "Odtwórz wideo"
+      "programButton": "Co na Ciebie czeka"
     },
     "tariffs": {
       "title": "Pakiety",
@@ -579,8 +557,7 @@
           "9": "Playlisty, moodboardy i filmy dla inspiracji",
           "10": "Przydatne rekomendacje"
         }
-      },
-      "closedNotice": "Sprzedaż jest tymczasowo zamknięta"
+      }
     },
     "about": {
       "title": "Co czeka Cię w Online Group"
@@ -625,7 +602,6 @@
       },
       "startLabel": "Start",
       "startValue": "W dowolnym momencie",
-      "closedValue": "Sprzedaż jest tymczasowo zamknięta",
       "salesLabel": "Dostępność",
       "salesValue": "Sprzedaż jest tymczasowo zamknięta",
       "button": "Wybierz choreografię"
@@ -1026,7 +1002,7 @@
       },
       "2": {
         "title": "2. Jakie kategorie stosujemy",
-        "text": "W serwisie stosujemy następujące technologie przechowywania:\na) Niezbędne (zawsze aktywne):\n- cookie `NEXT_LOCALE` (nasz serwis) do zapamiętania wybranego języka interfejsu, do 12 miesięcy;\n- wpis `cookie-consent:v1` w localStorage (nasz serwis) do zapisania Twojego wyboru cookies, przechowywany do zmiany decyzji albo wyczyszczenia danych przeglądarki;\n- techniczne cookies dostawcy płatności Stripe (np. `__stripe_mid`, `__stripe_sid`) podczas korzystania z formularza płatności.\nb) Funkcjonalne (na podstawie zgody):\n- `payment-checkout-draft:v1` w sessionStorage do przywracania szkicu płatności, przechowywany do zamknięcia karty lub wyczyszczenia pamięci.\nc) Analityczne (na podstawie zgody):\n- Vercel Analytics (`@vercel/analytics`) do pomiaru ruchu i korzystania z serwisu w formie zagregowanej lub pseudonimizowanej."
+        "text": "W serwisie stosujemy następujące technologie przechowywania:\na) Niezbędne (zawsze aktywne):\n- cookie `NEXT_LOCALE` (nasz serwis) do zapamiętania wybranego języka interfejsu, do 12 miesięcy;\n- wpis `cookie-consent:v1` w localStorage (nasz serwis) do zapisania Twojego wyboru cookies, przechowywany do zmiany decyzji albo wyczyszczenia danych przeglądarki;\n- techniczne cookies dostawcy płatności Stripe (np. `__stripe_mid`, `__stripe_sid`) podczas korzystania z formularza płatności.\n- skrypt logowania Telegram (telegram.org) jest ładowany wyłącznie na stronie płatności, gdy potwierdzasz swoje konto Telegram; w ramach tej autoryzacji Telegram może używać własnych cookies w swojej domenie.\nb) Funkcjonalne (na podstawie zgody):\n- `payment-checkout-draft:v1` w sessionStorage do przywracania szkicu płatności, przechowywany do zamknięcia karty lub wyczyszczenia pamięci.\nc) Analityczne (na podstawie zgody):\n- Vercel Analytics (`@vercel/analytics`) do pomiaru ruchu i korzystania z serwisu w formie zagregowanej lub pseudonimizowanej."
       },
       "3": {
         "title": "3. Podstawa prawna",
@@ -1034,7 +1010,7 @@
       },
       "4": {
         "title": "4. Okres przechowywania",
-        "text": "Okres przechowywania zależy od technologii:\n- `NEXT_LOCALE` — do 12 miesięcy;\n- `cookie-consent:v1` (localStorage) — do zmiany wyboru lub wyczyszczenia danych przeglądarki;\n- `payment-checkout-draft:v1` (sessionStorage) — do zamknięcia karty;\n- cookies Stripe i dane Vercel Analytics — przez okresy wynikające z polityk tych dostawców."
+        "text": "Okres przechowywania zależy od technologii:\n- `NEXT_LOCALE` — do 12 miesięcy;\n- `cookie-consent:v1` (localStorage) — do zmiany wyboru lub wyczyszczenia danych przeglądarki;\n- `payment-checkout-draft:v1` (sessionStorage) — do zamknięcia karty;\n- cookies Telegram podczas autoryzacji — przez okres określony w polityce Telegram;\n- cookies Stripe i dane Vercel Analytics — przez okresy wynikające z polityk tych dostawców."
       },
       "5": {
         "title": "5. Jak zmienić lub wycofać zgodę",

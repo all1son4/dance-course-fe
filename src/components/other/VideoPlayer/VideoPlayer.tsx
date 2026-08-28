@@ -110,6 +110,9 @@ const createPlayerOptions = ({
   controls: [],
   clickToPlay: false,
   loadSprite: false,
+  // Plyr would otherwise remember volume/captions in localStorage ("plyr"):
+  // a storage entry the cookie policy does not list and nobody asked for.
+  storage: { enabled: false },
   muted,
   ...(loop ? { loop: { active: true } } : {}),
   ...(isYoutube

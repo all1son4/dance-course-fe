@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 
-import type { TextContentCardProps } from "@/components/cards/TextContentCard";
+import type { IconTextPanelProps } from "@/components/cards/IconTextCard";
 import type { IIconProps } from "@/types/icons";
 
 type Translate = (key: string) => string;
@@ -14,7 +14,7 @@ export type OnlineSuggestionDefinition = {
   textResolver?: "plain" | "rich";
 };
 
-export type OnlineSuggestionCard = TextContentCardProps & {
+export type OnlineSuggestionCard = IconTextPanelProps & {
   id: string;
 };
 

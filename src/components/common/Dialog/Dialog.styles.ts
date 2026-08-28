@@ -110,6 +110,21 @@ export const Overlay = styled(RadixDialog.Overlay)`
     animation: ${overlayHide} var(--motion-fast, 160ms) var(--ease-standard, ease)
       ${CLOSE_SETTLE} both;
   }
+
+  /* iOS: its compositor blurs cheaply and the desktop "blur after the fade"
+     step reads as the blur switching on late. Keep the classic fade with the
+     blur present throughout, in both directions. */
+  @supports (-webkit-touch-callout: none) {
+    backdrop-filter: blur(var(--dialog-scrim-blur));
+    -webkit-backdrop-filter: blur(var(--dialog-scrim-blur));
+    animation: ${overlayShow} var(--motion-base, 220ms) var(--ease-standard, ease)
+      ${OPEN_SETTLE} both;
+
+    &[data-state="closed"] {
+      backdrop-filter: blur(var(--dialog-scrim-blur));
+      -webkit-backdrop-filter: blur(var(--dialog-scrim-blur));
+    }
+  }
 `;
 
 export const Content = styled(RadixDialog.Content)<ContentStyleProps>`

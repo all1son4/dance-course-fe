@@ -112,7 +112,13 @@ export const Menu = styled.div`
   box-sizing: border-box;
   padding: 30px;
 
+  /* Static on purpose: the menu sits inside the header pill, which has its own
+     backdrop-filter and therefore is a backdrop root - a live blur here can
+     only ever "see" the pill's contents and blurs nothing (verified pixel-for-
+     pixel). Static frost paints the identical look without a second animated
+     backdrop layer, which is what iOS dislikes most. */
   ${glass({
+    frost: "static",
     radius: "30px",
     bgParam: "rgba(255, 255, 255, 0.9)",
     hoverEffect: false,

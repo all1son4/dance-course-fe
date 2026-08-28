@@ -1,9 +1,8 @@
 "use client";
 
-import { type RefObject, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
-  computeStickyCtaLift,
   STICKY_CTA_ANCHOR_SELECTOR,
   STICKY_CTA_BLOCKER_SELECTOR,
 } from "@/lib/sticky-cta";
@@ -13,20 +12,18 @@ import {
  * anchor hiding entirely behind it does not count as "in view".
  */
 const HEADER_CLEARANCE_PX = 110;
-/** Breathing room between the docked bar and the footer's top edge. */
-const FOOTER_GAP_PX = 12;
 /**
- * The bar rides up with the footer only this far (share of viewport height);
- * past it the pill would hang mid-screen, so it fades out instead. Desktop
- * footers lift it ~250px of 900 and stay; the tall phone footer pushes past
- * the cap and the bar hands the screen over to the footer.
+ * The bar rides up with the footer (CSS sticky, see StickyCtaViewport) only
+ * this far (share of viewport height); past it the pill would hang
+ * mid-screen, so it fades out instead. Desktop footers lift it ~250px of 900
+ * and stay; the tall phone footer pushes past the cap and the bar hands the
+ * screen over to the footer.
  */
 const FOOTER_LIFT_HIDE_RATIO = 0.4;
+/** Footer visibility is sampled at these shares of its own height. */
+const FOOTER_THRESHOLDS = Array.from({ length: 21 }, (_, index) => index / 20);
 const SCROLL_LOCK_ATTRIBUTE = "data-scroll-locked";
 const OPEN_DIALOG_SELECTOR = '[role="dialog"][data-state="open"]';
-
-/** CSS custom property the viewport element reads for its vertical lift. */
-export const STICKY_CTA_LIFT_PROPERTY = "--sticky-cta-lift";
 
 export type StickyCtaVisibilityState = {
   anchorCount: number;
@@ -52,17 +49,14 @@ const isAnyDialogOpen = (): boolean =>
   document.querySelector(STICKY_CTA_BLOCKER_SELECTOR) !== null;
 
 /**
- * Tracks the on-page CTA anchors, the footer and open dialogs, and docks the
- * bar above the footer as it scrolls in. Anchors and dialogs are purely
- * observer-driven; the footer lift needs a per-frame position, so a passive
- * scroll listener runs only while the footer is actually on screen and writes
- * straight to a CSS variable on `viewportRef` - no React render per frame.
- * Without IntersectionObserver support nothing measures and the bar stays
- * hidden.
+ * Tracks the on-page CTA anchors, the footer and open dialogs. Everything is
+ * observer-driven: the bar's docking above the footer is done by CSS sticky
+ * positioning, so scrolling costs no JavaScript at all; the only footer
+ * question left is "does it cover too much of the screen", answered by an
+ * IntersectionObserver with fine thresholds. Without IntersectionObserver
+ * support nothing measures and the bar stays hidden.
  */
-export const useStickyCtaVisibilityState = (
-  viewportRef: RefObject<HTMLElement | null>,
-): StickyCtaVisibilityState => {
+export const useStickyCtaVisibilityState = (): StickyCtaVisibilityState => {
   const [state, setState] = useState<StickyCtaVisibilityState>(INITIAL_STATE);
 
   useEffect(() => {
@@ -78,8 +72,6 @@ export const useStickyCtaVisibilityState = (
     const anchorsInView = new Set<Element>();
     const passedAnchors = new Set<Element>();
     let isFooterCoveringViewport = false;
-    let currentLift = 0;
-    let pendingFrame = 0;
 
     const commit = () => {
       setState((previous) => {
@@ -108,11 +100,6 @@ export const useStickyCtaVisibilityState = (
       commit();
       return;
     }
-
-    const applyLift = (lift: number) => {
-      currentLift = lift;
-      viewportRef.current?.style.setProperty(STICKY_CTA_LIFT_PROPERTY, `${lift}px`);
-    };
 
     // IntersectionObserver only reports *changes*: an instant jump (anchor
     // link, reduced-motion scroll, a fling on a slow device) can carry an
@@ -153,55 +140,13 @@ export const useStickyCtaVisibilityState = (
 
     window.addEventListener("scroll", schedulePassDetection, { passive: true });
 
-    const syncFooterLift = () => {
-      pendingFrame = 0;
-      const viewport = viewportRef.current;
-
-      if (!footer || !viewport) {
-        return;
-      }
-
-      const footerTop = footer.getBoundingClientRect().top;
-      // The rect already includes the current lift; undo it to get the
-      // resting position the next lift is measured from.
-      const restingBottom = viewport.getBoundingClientRect().bottom + currentLift;
-
-      const lift = computeStickyCtaLift({ footerTop, gap: FOOTER_GAP_PX, restingBottom });
-      applyLift(lift);
-
-      const nextCovering = lift > window.innerHeight * FOOTER_LIFT_HIDE_RATIO;
+    const syncFooterCoverage = (entry: IntersectionObserverEntry) => {
+      const nextCovering =
+        entry.isIntersecting &&
+        entry.intersectionRect.height > window.innerHeight * FOOTER_LIFT_HIDE_RATIO;
 
       if (nextCovering !== isFooterCoveringViewport) {
         isFooterCoveringViewport = nextCovering;
-        commit();
-      }
-    };
-
-    const scheduleFooterLift = () => {
-      if (!pendingFrame) {
-        pendingFrame = window.requestAnimationFrame(syncFooterLift);
-      }
-    };
-
-    const startFooterTracking = () => {
-      window.addEventListener("scroll", scheduleFooterLift, { passive: true });
-      window.addEventListener("resize", scheduleFooterLift);
-      scheduleFooterLift();
-    };
-
-    const stopFooterTracking = () => {
-      window.removeEventListener("scroll", scheduleFooterLift);
-      window.removeEventListener("resize", scheduleFooterLift);
-
-      if (pendingFrame) {
-        window.cancelAnimationFrame(pendingFrame);
-        pendingFrame = 0;
-      }
-
-      applyLift(0);
-
-      if (isFooterCoveringViewport) {
-        isFooterCoveringViewport = false;
         commit();
       }
     };
@@ -210,12 +155,7 @@ export const useStickyCtaVisibilityState = (
       (entries) => {
         for (const entry of entries) {
           if (entry.target === footer) {
-            if (entry.isIntersecting) {
-              startFooterTracking();
-            } else {
-              stopFooterTracking();
-            }
-
+            syncFooterCoverage(entry);
             continue;
           }
 
@@ -246,9 +186,20 @@ export const useStickyCtaVisibilityState = (
       intersectionObserver.observe(anchor);
     }
 
-    if (footer) {
-      intersectionObserver.observe(footer);
-    }
+    // Separate observer: the footer needs the fine thresholds, the anchors only
+    // "any part visible".
+    const footerObserver = footer
+      ? new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              syncFooterCoverage(entry);
+            }
+          },
+          { threshold: FOOTER_THRESHOLDS },
+        )
+      : null;
+
+    footerObserver?.observe(footer as Element);
 
     let dialogCheckFrame = 0;
 
@@ -281,16 +232,16 @@ export const useStickyCtaVisibilityState = (
 
     return () => {
       intersectionObserver.disconnect();
+      footerObserver?.disconnect();
       mutationObserver.disconnect();
 
       if (dialogCheckFrame) {
         window.cancelAnimationFrame(dialogCheckFrame);
       }
 
-      stopFooterTracking();
       stopPassDetection();
     };
-  }, [viewportRef]);
+  }, []);
 
   return state;
 };

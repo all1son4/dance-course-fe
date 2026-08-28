@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 /**
  * Showing is debounced so a quick scroll past a CTA (or through the short
@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent";
-import { shouldShowStickyCta } from "@/lib/sticky-cta";
+import { shouldShowStickyCta, STICKY_CTA_DOCK_ID } from "@/lib/sticky-cta";
 
 import {
   StickyCtaButtonSlot,
@@ -47,16 +47,16 @@ import { useStickyCtaVisibilityState } from "./useStickyCtaVisibilityState";
  * A floating duplicate of a primary CTA that already exists on the page. Mark
  * the on-page button(s) with `stickyCtaAnchorProps`; this bar appears once the
  * reader has scrolled past one of them and none is visible, docks above the
- * footer instead of covering it, and steps aside for the cookie banner and
- * dialogs. It renders through a portal so no ancestor transform or filter can
- * turn `position: fixed` into something else.
+ * footer instead of covering it (CSS sticky inside <main>, see
+ * STICKY_CTA_DOCK_ID), and steps aside for the cookie banner and dialogs. It
+ * renders through a portal so no page-level transform or filter can interfere
+ * with its positioning.
  */
 export default function StickyCta({ href, label, note, onClick, title }: StickyCtaProps) {
-  const viewportRef = useRef<HTMLDivElement>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [hasEverShown, setHasEverShown] = useState(false);
   const { isBannerVisible } = useCookieConsent();
-  const visibilityState = useStickyCtaVisibilityState(viewportRef);
+  const visibilityState = useStickyCtaVisibilityState();
 
   const isVisible = useDelayedShow(
     shouldShowStickyCta({
@@ -75,7 +75,7 @@ export default function StickyCta({ href, label, note, onClick, title }: StickyC
   }, [isVisible]);
 
   useEffect(() => {
-    setPortalTarget(document.body);
+    setPortalTarget(document.getElementById(STICKY_CTA_DOCK_ID) ?? document.body);
   }, []);
 
   if (!portalTarget) {
@@ -85,12 +85,7 @@ export default function StickyCta({ href, label, note, onClick, title }: StickyC
   const hasText = Boolean(title || note);
 
   return createPortal(
-    <StickyCtaViewport
-      ref={viewportRef}
-      $isVisible={isVisible}
-      aria-hidden={!isVisible}
-      inert={!isVisible}
-    >
+    <StickyCtaViewport $isVisible={isVisible} aria-hidden={!isVisible} inert={!isVisible}>
       <StickyCtaMotionLayer $isVisible={isVisible} $motion={motion}>
         <StickyCtaCard role="region" aria-label={title ?? label}>
           {hasText && (

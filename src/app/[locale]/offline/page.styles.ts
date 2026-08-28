@@ -1,13 +1,15 @@
 import styled from "styled-components";
 
-export const IntroductionSection = styled.section`
-  position: relative;
-  display: flex;
-  align-items: center;
+import {
+  HeroMobileImagesBox,
+  HeroSection,
+  HeroTextBox,
+  HeroTitle,
+} from "../_shared/hero.styles";
+
+export const IntroductionSection = styled(HeroSection)`
   min-height: 760px;
   padding: 0 25px;
-  box-sizing: border-box;
-  width: 100%;
 
   @media (max-width: 1240px) {
     padding: 0 20px;
@@ -23,24 +25,12 @@ export const IntroductionSection = styled.section`
 
   @media (max-width: 767px) {
     min-height: unset;
-    flex-direction: column;
     padding: 100px 20px 0;
-
-    & #desktop-only-image-box,
-    & #desktop-only-icon-box {
-      display: none;
-    }
   }
 `;
 
-export const TextBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+export const TextBox = styled(HeroTextBox)`
   max-width: 450px;
-  position: relative;
-  z-index: 15;
-  padding: 0 0 0 25px;
 
   & p:last-of-type {
     font-weight: 300;
@@ -52,7 +42,6 @@ export const TextBox = styled.div`
   }
 
   @media (max-width: 1024px) {
-    padding: 0;
     max-width: 420px;
   }
 
@@ -61,77 +50,73 @@ export const TextBox = styled.div`
   }
 `;
 
-export const MobileImagesBox = styled.div`
-  display: none;
+export const MobileImagesBox = styled(HeroMobileImagesBox)`
   position: relative;
 
   @media (max-width: 767px) {
-    display: flex;
-    width: 100%;
-
     & #mobile-only-image-box {
-      position: relative;
-      display: flex;
-      width: 100%;
       justify-content: center;
-      top: unset;
-      right: unset;
-      bottom: unset;
       margin: 10px 0 0 0;
-      & :is(svg, img) {
-        margin: 0 0 0 1%;
-        width: 100%;
-        height: auto;
-      }
     }
+  }
 
+  @media (max-width: 767px) {
+    & #mobile-only-image-box :is(svg, img) {
+      margin: 0 0 0 1%;
+      width: 100%;
+      height: auto;
+    }
+  }
+
+  @media (max-width: 767px) {
     & #mobile-only-icon-box {
-      display: flex;
       justify-content: center;
       align-items: center;
       top: unset;
       right: unset;
       bottom: unset;
-      width: 100%;
       height: 100%;
+    }
+  }
 
-      & :is(svg, img) {
-        top: unset;
-        margin: 0 -50% 0 0;
-        width: 95%;
-        height: auto;
-      }
+  @media (max-width: 767px) {
+    & #mobile-only-icon-box :is(svg, img) {
+      top: unset;
+      margin: 0 -50% 0 0;
+      width: 95%;
+      height: auto;
     }
   }
 
   @media (max-width: 550px) {
     & #mobile-only-image-box {
       margin: 0;
-
-      & :is(svg, img) {
-        margin: 0 0 0 -50px;
-      }
     }
+  }
 
+  @media (max-width: 550px) {
+    & #mobile-only-image-box :is(svg, img) {
+      margin: 0 0 0 -50px;
+    }
+  }
+
+  @media (max-width: 550px) {
     & #mobile-only-icon-box {
       justify-content: flex-end;
+    }
+  }
 
-      & :is(svg, img) {
-        margin: 0;
-        width: 58%;
-      }
+  @media (max-width: 550px) {
+    & #mobile-only-icon-box :is(svg, img) {
+      margin: 0;
+      width: 58%;
     }
   }
 `;
 
-export const Title = styled.h1`
-  font-weight: 400;
-  font-style: normal;
+export const Title = styled(HeroTitle)`
   font-size: 55px;
-  line-height: 110%;
-  letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
 
   @media (max-width: 767px) {
     font-size: 38px;
@@ -343,31 +328,6 @@ export const PromoteOnlineSection = styled.section`
   }
 `;
 
-export const CourseList = styled.ul`
-  list-style: numeric;
-  padding: 0 0 0 16px;
-  margin: 0;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  color: #000000;
-
-  & li {
-    margin: 0;
-  }
-`;
-
-export const HighlightText = styled.span`
-  font-weight: 600;
-`;
-
 export const TextBlock = styled.div`
   display: flex;
   flex-direction: column;
@@ -436,23 +396,4 @@ export const Paragraph = styled.p`
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 1);
-`;
-
-export const ContactSection = styled.section`
-  display: flex;
-  padding: 50px 100px 100px;
-  margin: 0 0 100px 0;
-  box-sizing: border-box;
-  background: rgba(255, 255, 255, 1);
-  border-radius: 0 0 100px 100px;
-
-  @media (max-width: 1100px) {
-    padding: 50px;
-  }
-
-  @media (max-width: 880px) {
-    padding: 0 20px 40px;
-    margin: 0 0 60px 0;
-    border-radius: 0 0 40px 40px;
-  }
 `;
