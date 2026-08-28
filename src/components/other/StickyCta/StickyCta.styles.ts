@@ -142,7 +142,7 @@ export const StickyCtaMotionLayer = styled.div<{
 export const StickyCtaCard = styled.div`
   ${glass({
     variant: "dialog",
-    radius: "100px",
+    radius: "var(--radius-slab)",
     /* Dense fill like the cookie banner, but `static` frost: no backdrop
        blur. The pill floats over text and cards, where the blur is barely
        visible, and it moves every frame while docking against the footer -
@@ -176,7 +176,7 @@ export const StickyCtaText = styled.div`
 `;
 
 export const StickyCtaTitle = styled.span`
-  font-size: 15px;
+  font-size: var(--text-small);
   font-weight: 600;
   line-height: 1.2;
   color: rgba(11, 11, 11, 1);
@@ -196,7 +196,7 @@ export const StickyCtaTitle = styled.span`
 `;
 
 export const StickyCtaNote = styled.span`
-  font-size: 13px;
+  font-size: var(--text-caption);
   line-height: 1.2;
   color: rgba(11, 11, 11, 0.68);
   white-space: nowrap;

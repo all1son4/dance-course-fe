@@ -19,13 +19,13 @@ type ControlProps = StyledProps & {
 const sizeStyles = {
   lg: css`
     min-height: 56px;
-    font-size: 20px;
+    font-size: var(--text-lead);
     font-weight: 400;
     box-sizing: border-box;
   `,
   sm: css`
     min-height: 44px;
-    font-size: 16px;
+    font-size: var(--text-body-sm);
     font-weight: 400;
     box-sizing: border-box;
   `,
@@ -36,19 +36,19 @@ const buildVariantStyles = (frost: ButtonFrost) => ({
     ${glass({
       variant: "control",
       frost,
-      radius: "100px",
+      radius: "var(--radius-slab)",
       bgParam: "rgba(124, 0, 2, 1)",
       fillPercent: 100,
       elevation: 1.9,
     })}
-    color: rgba(255, 255, 255, 1);
+    color: var(--ink-inverse);
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         ${glass({
           variant: "control",
           frost,
-          radius: "100px",
+          radius: "var(--radius-slab)",
           bgParam: "rgba(11, 11, 11, 1)",
           fillPercent: 100,
           elevation: 1.9,
@@ -61,24 +61,24 @@ const buildVariantStyles = (frost: ButtonFrost) => ({
     ${glass({
       variant: "control",
       frost,
-      radius: "100px",
+      radius: "var(--radius-slab)",
       bgParam: "rgba(255, 255, 255, 1)",
       fillPercent: 100,
       elevation: 1.9,
     })}
-    color: #000000;
+    color: var(--ink);
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         ${glass({
           variant: "control",
           frost,
-          radius: "100px",
+          radius: "var(--radius-slab)",
           bgParam: "rgba(11, 11, 11, 1)",
           fillPercent: 100,
           elevation: 1.9,
         })}
-        color: rgba(255, 255, 255, 1);
+        color: var(--ink-inverse);
       }
     }
   `,
@@ -86,22 +86,22 @@ const buildVariantStyles = (frost: ButtonFrost) => ({
     ${glass({
       variant: "control",
       frost,
-      radius: "100px",
+      radius: "var(--radius-slab)",
       elevation: 1.9,
     })}
-    color: #000000;
+    color: var(--ink);
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
         ${glass({
           variant: "control",
           frost,
-          radius: "100px",
+          radius: "var(--radius-slab)",
           bgParam: "rgba(11, 11, 11, 1)",
           fillPercent: 100,
           elevation: 1.9,
         })}
-        color: rgba(255, 255, 255, 1);
+        color: var(--ink-inverse);
       }
     }
   `,
@@ -113,14 +113,14 @@ const buildVariantStyles = (frost: ButtonFrost) => ({
       variant: "control",
       tone: "dark",
       frost: "static",
-      radius: "100px",
+      radius: "var(--radius-slab)",
       bgParam: "rgba(255, 255, 255, 0.14)",
       frostPx: 8,
       saturatePercent: 100,
       contrastPercent: 100,
       shadowStrength: 0.7,
     })}
-    color: rgba(255, 255, 255, 1);
+    color: var(--ink-inverse);
 
     @media (hover: hover) and (pointer: fine) {
       &:hover {
@@ -128,14 +128,14 @@ const buildVariantStyles = (frost: ButtonFrost) => ({
           variant: "control",
           tone: "dark",
           frost: "static",
-          radius: "100px",
+          radius: "var(--radius-slab)",
           bgParam: "rgba(255, 255, 255, 0.46)",
           frostPx: 8,
           saturatePercent: 100,
           contrastPercent: 100,
           shadowStrength: 0.7,
         })}
-        color: rgba(255, 255, 255, 1);
+        color: var(--ink-inverse);
       }
     }
   `,
@@ -253,7 +253,7 @@ export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
   top: calc(50% - 7px);
   width: 14px;
   height: 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1.6px solid color-mix(in srgb, currentColor 26%, transparent);
   border-top-color: currentColor;
   animation: maintenance-ring-spin 0.9s linear infinite;
@@ -270,7 +270,7 @@ export const ButtonSpinner = styled.span<{ $isLoading?: boolean }>`
     position: absolute;
     width: 2.6px;
     height: 2.6px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: currentColor;
     top: 50%;
     left: 50%;

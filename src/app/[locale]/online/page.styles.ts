@@ -53,20 +53,20 @@ export const TextBox = styled(HeroTextBox)`
 `;
 
 export const Title = styled(HeroTitle)`
-  font-size: 55px;
+  font-size: var(--text-display);
   margin: 0;
 
   & p {
     font-weight: 300;
     font-style: normal;
-    font-size: 17px;
-    line-height: 150%;
+    font-size: var(--text-body);
+    line-height: 1.5;
     letter-spacing: 0;
-    color: rgba(72, 72, 72, 1);
+    color: var(--ink-muted);
   }
 
   @media (max-width: 920px) {
-    font-size: 40px;
+    font-size: var(--text-h2);
   }
 
   @media (max-width: 767px) {
@@ -226,7 +226,7 @@ export const StudioDanceSection = styled.section`
   padding: 100px 100px 0;
   box-sizing: border-box;
   border-radius: 100px 100px 0 0;
-  background: rgba(255, 255, 255, 1);
+  background: var(--surface);
 
   @media (max-width: 1100px) {
     padding: 50px 50px 0;
@@ -260,14 +260,14 @@ export const StudioDanceTextBox = styled.div`
 export const StudioDanceTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+  font-size: var(--text-display);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0 0 40px 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 880px) {
-    font-size: 40px;
+    font-size: var(--text-h2);
   }
 `;
 
@@ -281,15 +281,15 @@ export const StudioDanceParagraphs = styled.div`
 export const StudioDanceParagraph = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;
 
 export const StudioDanceImage = styled(Image)`
-  border-radius: 100px;
+  border-radius: var(--radius-slab);
   display: flex;
   width: 100%;
   height: 100%;
@@ -309,6 +309,6 @@ export const StudioDanceImage = styled(Image)`
   }
 
   @media (max-width: 767px) {
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
   }
 `;

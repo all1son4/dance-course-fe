@@ -1,3 +1,5 @@
+@import "../styles/tokens.css";
+
 :root {
   /* Design tokens */
   --bg: linear-gradient(90deg, #e9eaee 27.02%, #9b9fa0 85.72%);

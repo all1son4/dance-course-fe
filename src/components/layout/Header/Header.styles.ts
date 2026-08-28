@@ -5,7 +5,7 @@ import { glass } from "@/styles/mixins/glass";
 
 export const HeaderWrap = styled.header`
   position: fixed;
-  top: calc(20px + var(--safe-area-top));
+  top: calc(var(--header-top) + var(--safe-area-top));
   left: 0;
   right: 0;
   z-index: 50;
@@ -44,7 +44,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
   margin: 0 auto;
   position: relative;
   z-index: 2;
-  height: 84px;
+  height: var(--header-height);
 
   display: flex;
   justify-content: space-between;
@@ -53,7 +53,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
 
   ${glass({
     variant: "chrome",
-    radius: "100px",
+    radius: "var(--radius-slab)",
     bgParam: "rgba(255, 255, 255, 0.4)",
     frostPx: 12,
     hoverEffect: false,
@@ -75,7 +75,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
 
     ${glass({
       variant: "chrome",
-      radius: "40px",
+      radius: "var(--radius-panel)",
       bgParam: "rgba(255, 255, 255, 0.4)",
       frostPx: 12,
       hoverEffect: false,

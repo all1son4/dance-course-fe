@@ -34,7 +34,7 @@ export const CardContainer = styled.div<{
   ${({ $frost }) => frostStyles[$frost]}
 
   @media (max-width: 880px) {
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
@@ -57,14 +57,14 @@ export const TitleBlock = styled.div`
 export const Title = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 110%;
+  font-size: var(--text-h3);
+  line-height: 1.1;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   white-space: pre-line;
 
   @media (max-width: 880px) {
-    font-size: 28px;
+    font-size: var(--text-card);
   }
 `;
 

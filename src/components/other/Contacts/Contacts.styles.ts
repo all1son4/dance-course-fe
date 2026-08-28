@@ -1,5 +1,6 @@
 import { css, styled } from "styled-components";
 
+import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
 import { glass } from "@/styles/mixins/glass";
 
 export const Container = styled.div<{ $bgColor?: string }>`
@@ -13,7 +14,7 @@ export const Container = styled.div<{ $bgColor?: string }>`
     glass({
       frost: "static",
       variant: "surface",
-      radius: "100px",
+      radius: "var(--radius-slab)",
       bgParam: $bgColor ?? "rgba(255, 255, 255, 0.5)",
       hoverEffect: false,
     })}
@@ -29,7 +30,7 @@ export const Container = styled.div<{ $bgColor?: string }>`
   @media (max-width: 880px) {
     padding: 30px;
     gap: 40px;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 
   @media (max-width: 680px) {
@@ -46,18 +47,9 @@ export const TextBox = styled.div`
   max-width: 620px;
 `;
 
-export const Title = styled.h2`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+export const Title = styled(SectionTitleBase)`
   letter-spacing: 0;
-  margin: 0;
-  color: #000000;
-
-  @media (max-width: 880px) {
-    font-size: 40px;
-  }
+  color: var(--ink);
 `;
 
 export const ParagraphsBox = styled.div`
@@ -69,8 +61,8 @@ export const ParagraphsBox = styled.div`
 export const Paragraph = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
   color: rgba(12, 12, 12, 1);
@@ -122,7 +114,7 @@ const SECTION_LAYOUTS: Record<Exclude<ContactsLayout, "bare">, ReturnType<typeof
     padding: 150px 100px 100px;
     margin: -1px 0 100px 0;
     box-sizing: border-box;
-    background: rgba(255, 255, 255, 1);
+    background: var(--surface);
     border-radius: 0 0 100px 100px;
 
     @media (max-width: 1100px) {
@@ -140,7 +132,7 @@ const SECTION_LAYOUTS: Record<Exclude<ContactsLayout, "bare">, ReturnType<typeof
     padding: 50px 100px 100px;
     margin: 0 0 100px 0;
     box-sizing: border-box;
-    background: rgba(255, 255, 255, 1);
+    background: var(--surface);
     border-radius: 0 0 100px 100px;
 
     @media (max-width: 1100px) {

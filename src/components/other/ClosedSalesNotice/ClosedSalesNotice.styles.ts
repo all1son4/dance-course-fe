@@ -35,14 +35,14 @@ export const NoticeCard = styled.div`
 export const NoticeText = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 20px;
-  line-height: 150%;
+  font-size: var(--text-lead);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(124, 0, 2, 1);
+  color: var(--brand);
 
   @media (max-width: 767px) {
-    font-size: 17px;
+    font-size: var(--text-body);
   }
 `;
 

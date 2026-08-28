@@ -43,9 +43,9 @@ export const HeroTextBox = styled.div`
 export const HeroTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
-  line-height: 110%;
+  line-height: 1.1;
   letter-spacing: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const HeroMobileImagesBox = styled.div`

@@ -127,7 +127,7 @@ export const MobileImagesBox = styled(HeroMobileImagesBox)`
 `;
 
 export const Title = styled(HeroTitle)`
-  font-size: 55px;
+  font-size: var(--text-display);
   margin: 0 0 40px;
 
   @media (max-width: 920px) {
@@ -143,10 +143,10 @@ export const Title = styled(HeroTitle)`
 export const Subtitle = styled.p`
   font-weight: 600;
   font-style: normal;
-  font-size: 17px;
-  line-height: 110%;
+  font-size: var(--text-body);
+  line-height: 1.1;
   letter-spacing: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   margin: 0 0 20px 0;
 `;
 
@@ -217,11 +217,11 @@ export const IconBox = styled.div`
 export const StartNote = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 15px;
-  line-height: 150%;
+  font-size: var(--text-small);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 10px 0 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;
 
 export const ButtonBox = styled.div`
@@ -302,24 +302,24 @@ export const CourseProgramTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
   font-size: 50px;
-  line-height: 110%;
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0 0 80px 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 920px) {
     margin: 0 0 36px 0;
   }
 
   @media (max-width: 880px) {
-    font-size: 40px;
+    font-size: var(--text-h2);
   }
 `;
 
 export const CourseProgramImage = styled(Image)`
   width: 100%;
   max-width: 473px;
-  border-radius: 100px;
+  border-radius: var(--radius-slab);
   height: fit-content;
 
   @media (max-width: 1240px) {
@@ -332,7 +332,7 @@ export const CourseProgramImage = styled(Image)`
   }
 
   @media (max-width: 767px) {
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
   }
 `;
 

@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
+
 import {
   HeroMobileImagesBox,
   HeroSection,
@@ -105,7 +107,7 @@ export const MobileImagesBox = styled(HeroMobileImagesBox)`
 `;
 
 export const Title = styled(HeroTitle)`
-  font-size: 55px;
+  font-size: var(--text-display);
   margin: 0 0 40px;
   white-space: pre-line;
   max-width: 420px;
@@ -226,18 +228,9 @@ export const TariffSection = styled.section`
   }
 `;
 
-export const TariffTitle = styled.h2`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+export const TariffTitle = styled(SectionTitleBase)`
   letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-
-  @media (max-width: 880px) {
-    font-size: 40px;
-  }
+  color: var(--ink);
 `;
 
 export const TariffOptionsBox = styled.div`
@@ -289,7 +282,7 @@ export const TariffOptionsBox = styled.div`
 
   @media (max-width: 880px) {
     & .courseCardContainer {
-      border-radius: 40px;
+      border-radius: var(--radius-panel);
     }
   }
 
@@ -300,7 +293,7 @@ export const TariffOptionsBox = styled.div`
     }
 
     & .courseCardTitle {
-      font-size: 28px;
+      font-size: var(--text-card);
     }
 
     & .courseCardButton {
@@ -331,10 +324,10 @@ export const TariffContentList = styled.ul`
 
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
-  color: #000000;
+  color: var(--ink);
 
   & li {
     margin: 0;
@@ -349,8 +342,8 @@ export const TariffContentList = styled.ul`
   @media (max-width: 550px) {
     gap: 8px;
     padding-left: 20px;
-    font-size: 16px;
-    line-height: 145%;
+    font-size: var(--text-body-sm);
+    line-height: 1.45;
   }
 `;
 

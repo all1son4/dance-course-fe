@@ -20,16 +20,16 @@ const inputFieldStyles = css<InputFieldStyleProps>`
   width: 100%;
   box-sizing: border-box;
   padding: 14px 20px;
-  border-radius: 16px;
+  border-radius: var(--radius-control);
   border: 1px solid
     ${({ $hasError }) => ($hasError ? "rgba(213, 0, 4, 1)" : "rgba(72, 72, 72, 0.6)")};
   background: transparent;
-  color: rgba(0, 0, 0, 1);
-  caret-color: rgba(124, 0, 2, 1);
+  color: var(--ink);
+  caret-color: var(--brand);
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   outline: none;
   transition:
@@ -86,11 +86,11 @@ export const InputBox = styled.div`
 export const Label = styled.label`
   display: flex;
   margin: 0 0 4px;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
 `;
 
@@ -120,13 +120,13 @@ export const SelectField = styled.select<SelectFieldStyleProps>`
   background-size: 12px 8px;
 
   & option {
-    color: rgba(0, 0, 0, 1);
+    color: var(--ink);
   }
 `;
 
 export const ErrorMessage = styled.p`
   margin: 6px 0 0 2px;
-  color: rgba(213, 0, 4, 1);
+  color: var(--danger);
   font-weight: 500;
   font-size: 12px;
   line-height: 1.35;

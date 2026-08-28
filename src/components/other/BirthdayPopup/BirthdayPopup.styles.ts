@@ -36,10 +36,10 @@ export const AbsoluteContainer = styled.div<{ $isLeaving: boolean }>`
   grid-template-columns: 255px 1fr;
   padding: 40px;
   background: linear-gradient(97.32deg, #4c151c 6.97%, #7c0002 100.63%);
-  border-radius: 40px;
+  border-radius: var(--radius-panel);
   gap: 40px;
   align-items: center;
-  color: rgba(255, 255, 255, 1);
+  color: var(--ink-inverse);
   z-index: 1000;
   animation: ${({ $isLeaving }) =>
     $isLeaving
@@ -112,7 +112,7 @@ export const CloseButton = styled.button`
   width: 44px;
   height: 44px;
   padding: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: transparent;
   color: rgba(255, 255, 255, 0.9);
@@ -133,7 +133,7 @@ export const CloseButton = styled.button`
     position: absolute;
     width: 18px;
     height: 1.5px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: currentColor;
   }
 
@@ -147,7 +147,7 @@ export const CloseButton = styled.button`
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: rgba(255, 255, 255, 1);
+      color: var(--ink-inverse);
       border-color: rgba(255, 255, 255, 0.7);
       background: rgba(255, 255, 255, 0.12);
     }
@@ -174,22 +174,22 @@ export const ContentBox = styled.div`
 export const Title = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 110%;
+  font-size: var(--text-h3);
+  line-height: 1.1;
   margin: 0;
-  color: rgba(255, 255, 255, 1);
+  color: var(--ink-inverse);
   padding: 0 50px 0 0;
 
   @media (max-width: 767px) {
-    font-size: 30px;
+    font-size: var(--text-fact);
   }
 `;
 
 export const PopupText = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   margin: 0;
   color: rgba(255, 255, 255, 0.88);
 `;

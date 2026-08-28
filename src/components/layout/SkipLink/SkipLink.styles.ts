@@ -8,7 +8,7 @@ export const SkipLinkAnchor = styled.a`
      show through. */
   ${glass({
     frost: "static",
-    radius: "999px",
+    radius: "var(--radius-pill)",
     hoverEffect: false,
     bgParam: "rgba(255, 255, 255, 0.96)",
   })}
@@ -22,7 +22,7 @@ export const SkipLinkAnchor = styled.a`
   max-width: calc(100vw - 24px);
   padding: 12px 18px;
   color: rgba(11, 11, 11, 1);
-  font-size: 15px;
+  font-size: var(--text-small);
   font-weight: 500;
   line-height: 1.2;
   white-space: nowrap;

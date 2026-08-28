@@ -1,5 +1,6 @@
 import styled, { css } from "styled-components";
 
+import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
 import { glass } from "@/styles/mixins/glass";
 import { chevronHint } from "@/styles/mixins/motion";
 
@@ -24,17 +25,8 @@ export const ReviewsHeader = styled.div`
   gap: 24px;
 `;
 
-export const Title = styled.h2`
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-  font-size: 55px;
-  font-style: normal;
-  font-weight: 400;
-  line-height: 110%;
-
-  @media (max-width: 880px) {
-    font-size: 40px;
-  }
+export const Title = styled(SectionTitleBase)`
+  color: var(--ink);
 `;
 
 export const ReviewNavigation = styled.nav`
@@ -175,7 +167,7 @@ export const ReadMoreButton = styled.button`
   z-index: 1;
   /* Reads as part of the text; the brand red is reserved for hover. */
   color: rgba(11, 11, 11, 0.85);
-  font-size: 15px;
+  font-size: var(--text-small);
   font-weight: 400;
   line-height: 1.4;
   cursor: pointer;
@@ -184,7 +176,7 @@ export const ReadMoreButton = styled.button`
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: rgba(124, 0, 2, 1);
+      color: var(--brand);
     }
   }
 
@@ -219,7 +211,7 @@ export const ReadMoreChevron = styled.span<{ $isExpanded: boolean }>`
 export const ReviewCard = styled.article`
   ${glass({
     frost: "static",
-    radius: "60px",
+    radius: "var(--radius-card)",
     bgParam: "rgba(228, 228, 228, 0.4)",
     shadowStrength: 0.1,
     hoverEffect: false,
@@ -236,7 +228,7 @@ export const ReviewCard = styled.article`
 
   @media (max-width: 767px) {
     padding: 30px;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
@@ -257,15 +249,15 @@ export const ReviewTitleBox = styled.div`
 
 export const ReviewTitle = styled.p`
   margin: 0;
-  color: rgba(0, 0, 0, 1);
-  font-size: 20px;
+  color: var(--ink);
+  font-size: var(--text-lead);
   font-style: normal;
   font-weight: 300;
   letter-spacing: 0;
-  line-height: 150%;
+  line-height: 1.5;
 
   @media (max-width: 450px) {
-    font-size: 17px;
+    font-size: var(--text-body);
   }
 `;
 
@@ -279,18 +271,18 @@ export const ReviewParagraphs = styled.div`
 
 export const ReviewParagraph = styled.p`
   margin: 0 0 14px;
-  color: rgba(0, 0, 0, 1);
-  font-size: 17px;
+  color: var(--ink);
+  font-size: var(--text-body);
   font-style: normal;
   font-weight: 300;
   letter-spacing: 0;
-  line-height: 150%;
+  line-height: 1.5;
 
   &:last-of-type {
     margin-bottom: 0;
   }
 
   @media (max-width: 450px) {
-    font-size: 15px;
+    font-size: var(--text-small);
   }
 `;

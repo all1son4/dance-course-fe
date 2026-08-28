@@ -106,7 +106,7 @@ export const MobileImagesBox = styled(HeroMobileImagesBox)`
 `;
 
 export const Title = styled(HeroTitle)`
-  font-size: 55px;
+  font-size: var(--text-display);
   margin: 0 0 40px;
 
   @media (max-width: 920px) {

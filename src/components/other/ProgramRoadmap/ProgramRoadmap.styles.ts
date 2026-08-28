@@ -46,19 +46,19 @@ export const IconBox = styled.div`
 export const ItemTitle = styled.p`
   font-weight: 600;
   font-style: normal;
-  font-size: 17px;
-  line-height: 110%;
+  font-size: var(--text-body);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const ItemDescription = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;

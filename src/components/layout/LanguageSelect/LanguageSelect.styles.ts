@@ -60,12 +60,12 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       & span {
-        color: rgba(124, 0, 2, 1);
+        color: var(--brand);
       }
 
       & > svg {
         & path {
-          stroke: rgba(124, 0, 2, 1);
+          stroke: var(--brand);
         }
       }
     }
@@ -91,14 +91,14 @@ export const Flag = styled.span`
 export const TriggerLabel = styled.span`
   font-weight: 500;
   font-style: normal;
-  font-size: 15px;
+  font-size: var(--text-small);
   position: relative;
 
-  line-height: 110%;
+  line-height: 1.1;
   letter-spacing: 0;
 
   @media (max-width: 767px) {
-    font-size: 17px;
+    font-size: var(--text-body);
   }
 `;
 
@@ -116,11 +116,17 @@ export const Menu = styled.div`
      backdrop-filter and therefore is a backdrop root - a live blur here can
      only ever "see" the pill's contents and blurs nothing (verified pixel-for-
      pixel). Static frost paints the identical look without a second animated
-     backdrop layer, which is what iOS dislikes most. */
+     backdrop layer, which is what iOS dislikes most.
+     Nearly opaque: the list drops out of the pill straight over the page (a
+     review card on phones, the hero photo on desktop) with nothing blurring
+     that backdrop, and at the mixin's default ~48% white fill the options
+     faded into whatever sat behind them. */
   ${glass({
     frost: "static",
     radius: "30px",
-    bgParam: "rgba(255, 255, 255, 0.9)",
+    bgParam: "rgba(255, 255, 255, 0.94)",
+    fillPercent: 100,
+    elevation: 1.6,
     hoverEffect: false,
   })}
 
@@ -153,15 +159,15 @@ export const Item = styled.button<{ $selected?: boolean }>`
 
   font-weight: 500;
   font-style: normal;
-  font-size: 15px;
+  font-size: var(--text-small);
 
   @media (max-width: 767px) {
-    font-size: 17px;
+    font-size: var(--text-body);
   }
 
-  line-height: 110%;
+  line-height: 1.1;
   letter-spacing: 0;
-  color: #000000;
+  color: var(--ink);
   transition: opacity 0.2s ease;
 
   opacity: ${(props) => (props.$selected ? 0.4 : 1)};
@@ -206,9 +212,9 @@ export const Item = styled.button<{ $selected?: boolean }>`
 `;
 
 export const ItemLabel = styled.span`
-  font-size: 15px;
+  font-size: var(--text-small);
 
   @media (max-width: 767px) {
-    font-size: 17px;
+    font-size: var(--text-body);
   }
 `;

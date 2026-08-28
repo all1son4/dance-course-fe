@@ -11,10 +11,10 @@ export const CourseList = styled.ul`
 
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
-  color: #000000;
+  color: var(--ink);
 
   & li {
     margin: 0;

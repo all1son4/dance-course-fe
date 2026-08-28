@@ -26,8 +26,8 @@ export const Label = styled.label`
   user-select: none;
 
   & > input:checked + div {
-    border-color: rgba(0, 0, 0, 1);
-    background: rgba(0, 0, 0, 1);
+    border-color: var(--ink);
+    background: var(--ink);
   }
 
   &:has(input:disabled) {
@@ -37,17 +37,17 @@ export const Label = styled.label`
 
   @media (hover: hover) and (pointer: fine) {
     &:hover > input:not(:checked):not(:disabled) + div {
-      border-color: rgba(0, 0, 0, 1);
+      border-color: var(--ink);
     }
   }
 
   & > input:focus-visible + div {
-    border-color: rgba(0, 0, 0, 1);
+    border-color: var(--ink);
     box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
   }
 
   & > input[aria-invalid="true"]:not(:checked) + div {
-    border-color: rgba(213, 0, 4, 1);
+    border-color: var(--danger);
   }
 `;
 
@@ -89,11 +89,11 @@ export const Mark = styled.div<MarkStyleProps>`
 
 export const PlaceholderText = styled.span`
   display: inline-block;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 400;
   font-style: normal;
   font-size: 14px;
-  line-height: 120%;
+  line-height: 1.2;
   letter-spacing: 0;
   position: relative;
   z-index: 2;
@@ -101,7 +101,7 @@ export const PlaceholderText = styled.span`
 
 export const ErrorMessage = styled.p`
   margin: 6px 0 0 31px;
-  color: rgba(213, 0, 4, 1);
+  color: var(--danger);
   font-weight: 500;
   font-size: 12px;
   line-height: 1.35;

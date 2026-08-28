@@ -15,14 +15,14 @@ export const SignupForm = styled.form`
 
   & label {
     margin-bottom: 3px;
-    font-size: 15px;
+    font-size: var(--text-small);
     line-height: 1.35;
   }
 
   & input {
     padding: 10px 16px;
     border-radius: 14px;
-    font-size: 16px;
+    font-size: var(--text-body-sm);
   }
 `;
 
@@ -57,19 +57,19 @@ export const ResultText = styled.p<{ $tone: "error" | "success" }>`
   max-width: 560px;
 
   @media (max-width: 520px) {
-    font-size: 20px;
+    font-size: var(--text-lead);
   }
 `;
 
 export const ResultReason = styled.p`
   margin: -12px 0 0;
-  color: rgba(213, 0, 4, 1);
-  font-size: 17px;
+  color: var(--danger);
+  font-size: var(--text-body);
   font-weight: 300;
   line-height: 1.5;
   max-width: 520px;
 
   @media (max-width: 520px) {
-    font-size: 16px;
+    font-size: var(--text-body-sm);
   }
 `;

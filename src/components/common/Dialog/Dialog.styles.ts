@@ -156,7 +156,7 @@ export const Content = styled(RadixDialog.Content)<ContentStyleProps>`
   max-height: min(calc(100dvh - 32px), 720px);
   overflow: auto;
   padding: 32px;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   outline: none;
   transform: translate(-50%, -50%);
   animation: ${contentShow} var(--motion-base, 220ms) var(--ease-emphasized, ease)
@@ -188,8 +188,8 @@ export const Header = styled.div`
 
 export const Title = styled(RadixDialog.Title)`
   margin: 0;
-  color: rgba(0, 0, 0, 1);
-  font-size: 28px;
+  color: var(--ink);
+  font-size: var(--text-card);
   font-weight: 500;
   line-height: 1.16;
   letter-spacing: 0;
@@ -206,8 +206,8 @@ export const VisuallyHiddenTitle = styled(RadixDialog.Title)`
 
 export const Description = styled(RadixDialog.Description)`
   margin: 0;
-  color: rgba(72, 72, 72, 1);
-  font-size: 16px;
+  color: var(--ink-muted);
+  font-size: var(--text-body-sm);
   font-weight: 300;
   line-height: 1.5;
   letter-spacing: 0;
@@ -252,7 +252,7 @@ export const CloseButton = styled(RadixDialog.Close)`
     position: absolute;
     width: 24px;
     height: 2px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: currentColor;
   }
 
@@ -266,7 +266,7 @@ export const CloseButton = styled(RadixDialog.Close)`
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: rgba(124, 0, 2, 1);
+      color: var(--brand);
       transform: scale(1.14);
     }
   }

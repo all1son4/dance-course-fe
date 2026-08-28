@@ -28,7 +28,7 @@ export const ResultCard = styled.div`
 
   ${glass({
     frost: "static",
-    radius: "40px",
+    radius: "var(--radius-panel)",
     hoverEffect: false,
   })}
 
@@ -51,15 +51,15 @@ export const ResultCard = styled.div`
 export const ResultTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
-  font-size: 30px;
-  line-height: 110%;
+  font-size: var(--text-fact);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 40px 0 20px;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 767px) {
     font-size: 25px;
-    line-height: 115%;
+    line-height: 1.15;
     margin: 22px 0 12px;
   }
 `;
@@ -73,15 +73,15 @@ export const ResultParagraphs = styled.div`
 export const ResultParagraph = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 767px) {
     font-size: 15.5px;
-    line-height: 145%;
+    line-height: 1.45;
   }
 `;
 
@@ -106,7 +106,7 @@ export const ResultButtonBox = styled.div`
       max-width: 100%;
       min-height: 48px;
       padding: 10px 20px;
-      font-size: 16px;
+      font-size: var(--text-body-sm);
     }
   }
 `;

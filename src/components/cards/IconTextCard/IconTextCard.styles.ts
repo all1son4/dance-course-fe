@@ -24,12 +24,12 @@ export const PanelCard = styled.div`
 
   ${glass({
     frost: "static",
-    radius: "60px",
+    radius: "var(--radius-card)",
     hoverEffect: false,
   })}
 
   @media (max-width: 880px) {
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 
   @media (max-width: 450px) {
@@ -53,21 +53,21 @@ export const PanelTextBox = styled.div`
 
 export const PanelTitle = styled.h3`
   font-weight: 600;
-  font-size: 17px;
-  line-height: 110%;
+  font-size: var(--text-body);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const PanelText = styled.div`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 
   p {
     margin: 0;
@@ -79,7 +79,7 @@ export const PanelText = styled.div`
 
   strong {
     font-weight: 600;
-    color: rgba(0, 0, 0, 1);
+    color: var(--ink);
   }
 
   ul {
@@ -139,7 +139,7 @@ export const ContactCardLink = styled(Link)`
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       & svg rect {
-        fill: rgba(0, 0, 0, 1);
+        fill: var(--ink);
       }
     }
   }
@@ -158,20 +158,20 @@ export const ContactBlockText = styled.div`
 export const ContactTitle = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 13px;
-  line-height: 110%;
+  font-size: var(--text-caption);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(124, 0, 2, 1);
+  color: var(--brand);
 `;
 
 export const ContactText = styled.p`
   font-family: Manrope;
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: #000000;
+  color: var(--ink);
 `;

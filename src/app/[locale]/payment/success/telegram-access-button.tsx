@@ -101,7 +101,7 @@ const Dots = styled.span`
 const Dot = styled.span<{ $delayMs: number }>`
   width: 5px;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(124, 0, 2, 0.82);
   animation: ${pulse} 1.05s ease-in-out infinite;
   animation-delay: ${({ $delayMs }) => `${$delayMs}ms`};
@@ -110,7 +110,7 @@ const Dot = styled.span<{ $delayMs: number }>`
 const StatusText = styled.p`
   font-weight: 300;
   font-size: 14.5px;
-  line-height: 140%;
+  line-height: 1.4;
   letter-spacing: 0;
   margin: 0;
   color: rgba(16, 16, 16, 0.88);
@@ -125,7 +125,7 @@ const StatusTextBox = styled.div`
 const StatusMeta = styled.span`
   font-weight: 500;
   font-size: 11.5px;
-  line-height: 140%;
+  line-height: 1.4;
   letter-spacing: 0;
   color: rgba(16, 16, 16, 0.68);
 `;

@@ -7,7 +7,7 @@ export const CardContainer = styled.div<{ $bgColor?: string }>`
     glass({
       frost: "static",
       variant: "surface",
-      radius: "100px",
+      radius: "var(--radius-slab)",
       bgParam: $bgColor ?? "rgba(255, 255, 255, 0.4)",
       hoverEffect: false,
     })}
@@ -38,8 +38,8 @@ export const TitleBox = styled.div`
 export const Title = styled.h3`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 110%;
+  font-size: var(--text-h3);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
 `;
@@ -47,8 +47,8 @@ export const Title = styled.h3`
 export const Subtitle = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
 `;

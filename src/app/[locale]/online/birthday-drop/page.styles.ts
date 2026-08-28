@@ -22,7 +22,7 @@ export const BirthdayBlock = styled.div`
   padding: 40px 80px;
   gap: 80px;
   position: relative;
-  border-radius: 60px;
+  border-radius: var(--radius-card);
   margin: 0 0 150px 0;
 
   @media (max-width: 1440px) {
@@ -37,7 +37,7 @@ export const BirthdayBlock = styled.div`
     padding: 40px 20px;
     gap: 40px;
     margin: 0 0 40px 0;
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
   }
 
   @media (max-width: 767px) {
@@ -72,13 +72,13 @@ export const BirthdayTextContent = styled.div`
 export const BirthdayTextContentTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 110%;
+  font-size: var(--text-h3);
+  line-height: 1.1;
   margin: 0;
-  color: rgba(255, 255, 255, 1);
+  color: var(--ink-inverse);
 
   @media (max-width: 767px) {
-    font-size: 30px;
+    font-size: var(--text-fact);
     padding: 0 100px 0 0;
   }
 `;
@@ -86,10 +86,10 @@ export const BirthdayTextContentTitle = styled.h1`
 export const BirthdayTextContentDescription = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   margin: 0;
-  color: rgba(255, 255, 255, 1);
+  color: var(--ink-inverse);
 `;
 
 export const BirthdayContentButtons = styled.div`
@@ -115,7 +115,7 @@ export const BirthdayVideoContent = styled.div`
   overflow: hidden;
 
   @media (max-width: 880px) {
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
   }
 
   @media (max-width: 767px) {

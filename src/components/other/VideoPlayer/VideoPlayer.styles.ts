@@ -27,7 +27,7 @@ const playIconBreathe = keyframes`
 export const CenterButton = styled.button<{ $isPlaying: boolean }>`
   ${glass({
     variant: "control",
-    radius: "100px",
+    radius: "var(--radius-slab)",
     bgParam: "rgba(255, 255, 255, 0.3)",
     frostPx: 10,
     depth: 45,
@@ -140,7 +140,7 @@ export const VideoWrap = styled.div<VideoWrapProps>`
     width: 100%;
     height: 100%;
     display: block;
-    background: #000;
+    background: var(--ink);
     border-radius: ${({ $radius }) => $radius};
   }
 

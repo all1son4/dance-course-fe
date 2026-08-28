@@ -58,11 +58,11 @@ export const TextBox = styled.div`
 export const PaymentTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+  font-size: var(--text-display);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 767px) {
     font-size: 50px;
@@ -72,14 +72,14 @@ export const PaymentTitle = styled.h1`
 export const PaymentDescription = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   margin: 0;
 
   @media (max-width: 767px) {
-    font-size: 15px;
+    font-size: var(--text-small);
   }
 `;
 
@@ -103,14 +103,14 @@ export const PersonalData = styled.div`
 
   ${glass({
     frost: "static",
-    radius: "60px",
+    radius: "var(--radius-card)",
     hoverEffect: false,
   })}
 
   @media (max-width: 767px) {
     gap: 30px;
     padding: 30px 20px;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
@@ -121,7 +121,7 @@ export const PaymentPreparationError = styled.p`
   border-radius: 12px;
   background: rgba(176, 24, 33, 0.05);
   color: rgba(176, 24, 33, 1);
-  font-size: 13px;
+  font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 500;
 `;
@@ -139,32 +139,32 @@ export const SalesClosedNotice = styled.div`
 
   ${glass({
     frost: "static",
-    radius: "60px",
+    radius: "var(--radius-card)",
     hoverEffect: false,
   })}
 
   @media (max-width: 767px) {
     gap: 20px;
     padding: 30px 20px;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
 export const SalesClosedTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
-  line-height: 110%;
+  font-size: var(--text-card);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const SalesClosedDescription = styled.p`
   margin: 0;
-  font-size: 16px;
-  line-height: 150%;
-  color: rgba(72, 72, 72, 1);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+  color: var(--ink-muted);
 `;
 
 export const StripeReveal = styled.div<{ $isVisible: boolean }>`
@@ -235,7 +235,7 @@ export const TelegramVerifyButton = styled.button<{ $isVerified: boolean }>`
   border: 1px solid
     ${({ $isVerified }) =>
       $isVerified ? "rgba(24, 112, 58, 0.36)" : "rgba(42, 171, 238, 0.34)"};
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: ${({ $isVerified }) =>
     $isVerified ? "rgba(24, 112, 58, 1)" : "rgba(42, 171, 238, 1)"};
   color: #ffffff;
@@ -298,11 +298,11 @@ export const TelegramInputStatus = styled.p<{
 export const PersonalDataTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
-  line-height: 110%;
+  font-size: var(--text-card);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const Inputs = styled.div`
@@ -388,11 +388,11 @@ export const SummaryBoxParahraphs = styled.div`
   & p {
     font-weight: 300;
     font-style: normal;
-    font-size: 17px;
-    line-height: 150%;
+    font-size: var(--text-body);
+    line-height: 1.5;
     letter-spacing: 0;
     margin: 0;
-    color: rgba(72, 72, 72, 1);
+    color: var(--ink-muted);
   }
 `;
 
@@ -422,7 +422,7 @@ export const CurrencyBox = styled.div`
 
     & [role="radio"] {
       padding: 0 18px;
-      font-size: 15px;
+      font-size: var(--text-small);
     }
   }
 `;
@@ -430,11 +430,11 @@ export const CurrencyBox = styled.div`
 export const MoneyTitle = styled.p`
   font-weight: 500;
   font-style: normal;
-  font-size: 15px;
-  line-height: 110%;
+  font-size: var(--text-small);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;
 
 export const PriceBox = styled.div`
@@ -507,44 +507,44 @@ export const SummaryLineSkeleton = styled.span`
 export const Price = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 100%;
+  font-size: var(--text-h3);
+  line-height: 1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 920px) {
-    font-size: 30px;
+    font-size: var(--text-fact);
   }
 
   @media (max-width: 767px) {
-    font-size: 28px;
+    font-size: var(--text-card);
   }
 `;
 
 export const AdditionalNotification = styled.div`
   font-weight: 600;
   font-style: normal;
-  font-size: 17px;
-  line-height: 140%;
+  font-size: var(--text-body);
+  line-height: 1.4;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 
   @media (max-width: 767px) {
-    font-size: 15px;
+    font-size: var(--text-small);
   }
 `;
 
 export const AgreementLink = styled(Link)`
   text-decoration: underline;
   text-underline-offset: 2px;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   transition: color 0.2s ease;
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: #000000;
+      color: var(--ink);
     }
   }
 `;

@@ -7,7 +7,7 @@ export const Nav = styled.nav`
   align-items: center;
   gap: 40px;
   justify-content: center;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 1024px) {
     gap: 20px;
@@ -20,7 +20,7 @@ export const Nav = styled.nav`
 `;
 
 export const NavLink = styled(Link)<{ $selected: boolean }>`
-  font-size: 16px;
+  font-size: var(--text-body-sm);
   text-decoration: none;
   padding: 6px 0;
   display: inline-flex;
@@ -29,9 +29,9 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   box-sizing: border-box;
   font-weight: 500;
   font-style: normal;
-  font-size: 15px;
+  font-size: var(--text-small);
 
-  line-height: 110%;
+  line-height: 1.1;
   letter-spacing: 0;
 
   transition: color 0.2s ease;

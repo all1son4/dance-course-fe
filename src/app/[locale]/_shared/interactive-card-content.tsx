@@ -14,8 +14,8 @@ export const ContentStack = styled.div<StackProps>`
 export const DetailText = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
   color: rgba(50, 49, 52, 1);
@@ -24,21 +24,21 @@ export const DetailText = styled.p`
 export const DetailStrongText = styled.p`
   font-weight: 600;
   font-style: normal;
-  font-size: 17px;
-  line-height: 110%;
+  font-size: var(--text-body);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const DetailValueText = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 30px;
-  line-height: 110%;
+  font-size: var(--text-fact);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const InfoSection = styled.div`
@@ -69,9 +69,9 @@ export const PriceRow = styled.div`
 export const PriceFrequency = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 16px;
-  line-height: 150%;
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;

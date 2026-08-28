@@ -24,15 +24,15 @@ export const LegalContent = styled.div`
   width: 100%;
   padding: 100px;
   box-sizing: border-box;
-  border-radius: 100px;
-  background: rgba(255, 255, 255, 1);
+  border-radius: var(--radius-slab);
+  background: var(--surface);
 
   @media (max-width: 1100px) {
     padding: 50px;
   }
 
   @media (max-width: 880px) {
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
     padding: 40px 20px;
   }
 `;
@@ -40,14 +40,14 @@ export const LegalContent = styled.div`
 export const LegalTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 110%;
+  font-size: var(--text-h3);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0 0 40px;
-  color: #000000;
+  color: var(--ink);
 
   @media (max-width: 880px) {
-    font-size: 28px;
+    font-size: var(--text-card);
     margin: 0 0 30px;
   }
 `;
@@ -55,11 +55,11 @@ export const LegalTitle = styled.h1`
 export const LegalDescription = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0 0 40px;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   white-space: pre-line;
 
   @media (max-width: 880px) {
@@ -68,7 +68,7 @@ export const LegalDescription = styled.p`
 `;
 
 export const LegalEmail = styled.a`
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -101,31 +101,31 @@ export const LegalItem = styled.div`
 export const LegalItemTitle = styled.p`
   font-weight: 600;
   font-style: normal;
-  font-size: 17px;
-  line-height: 130%;
+  font-size: var(--text-body);
+  line-height: 1.3;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const LegalItemText = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   white-space: pre-line;
 `;
 
 export const LegalContactLine = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 32px 0 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   white-space: pre-line;
 `;

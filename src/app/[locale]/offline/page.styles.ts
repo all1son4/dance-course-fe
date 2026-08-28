@@ -35,10 +35,10 @@ export const TextBox = styled(HeroTextBox)`
   & p:last-of-type {
     font-weight: 300;
     font-style: normal;
-    font-size: 17px;
-    line-height: 150%;
+    font-size: var(--text-body);
+    line-height: 1.5;
     letter-spacing: 0;
-    color: rgba(72, 72, 72, 1);
+    color: var(--ink-muted);
   }
 
   @media (max-width: 1024px) {
@@ -115,7 +115,7 @@ export const MobileImagesBox = styled(HeroMobileImagesBox)`
 `;
 
 export const Title = styled(HeroTitle)`
-  font-size: 55px;
+  font-size: var(--text-display);
   margin: 0;
 
   @media (max-width: 767px) {
@@ -263,7 +263,7 @@ export const PromoteOnlineSection = styled.section`
   gap: 80px;
   box-sizing: border-box;
   position: relative;
-  background: rgba(255, 255, 255, 1);
+  background: var(--surface);
   border-radius: 100px 100px 0 0;
 
   & .courseCardContainer {
@@ -304,7 +304,7 @@ export const PromoteOnlineSection = styled.section`
     align-items: center;
     border-radius: 40px 40px 0 0;
     & .courseCardContainer {
-      border-radius: 40px;
+      border-radius: var(--radius-panel);
     }
   }
 
@@ -315,7 +315,7 @@ export const PromoteOnlineSection = styled.section`
     }
 
     & .courseCardTitle {
-      font-size: 28px;
+      font-size: var(--text-card);
     }
     & .courseCardButton {
       max-width: 100%;
@@ -370,15 +370,15 @@ export const CardBlock = styled.div`
 export const PromoteTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+  font-size: var(--text-display);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   word-wrap: break-word;
 
   @media (max-width: 880px) {
-    font-size: 40px;
+    font-size: var(--text-h2);
   }
 `;
 
@@ -391,9 +391,9 @@ export const Paragraphs = styled.div`
 export const Paragraph = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;

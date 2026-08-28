@@ -48,14 +48,14 @@ const AccessDetails = styled.div`
 const AccessDetail = styled.p`
   font-weight: 300;
   font-size: 14.5px;
-  line-height: 145%;
+  line-height: 1.45;
   letter-spacing: 0;
   margin: 0;
   color: rgba(0, 0, 0, 0.68);
 
   @media (max-width: 767px) {
     font-size: 13.5px;
-    line-height: 140%;
+    line-height: 1.4;
   }
 `;
 
