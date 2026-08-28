@@ -121,7 +121,9 @@ export const Menu = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-  animation: ${menuShow} var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+  /* Settle pause: the live-glass layer is built before the menu starts to move. */
+  animation: ${menuShow} var(--motion-slow, 320ms) var(--ease-emphasized, ease)
+    calc(1.5 * var(--motion-settle, 40ms)) both;
   will-change: opacity, transform;
 
   @media (max-width: 767px) {

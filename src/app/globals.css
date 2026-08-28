@@ -16,6 +16,12 @@
   --motion-slow: 320ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* One or two frames of stillness before a reveal or entrance starts to
+     move. Safari spends the first frame after a big style change on style
+     recalculation and layer setup while the animation clock already runs,
+     so without this the first visible frame is already ~half way through
+     (measured 45-60% jumps in WebKit, 25-30% with the settle). */
+  --motion-settle: 40ms;
 
   /* Keyboard focus ring. Only `:focus-visible` uses it, so mouse and touch
      never see it. Full-opacity brand red clears 3:1 on every background

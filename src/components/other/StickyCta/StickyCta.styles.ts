@@ -56,7 +56,8 @@ const stickyCtaExit = keyframes`
 
 const MOTION_ANIMATION: Record<StickyCtaMotion, ReturnType<typeof css>> = {
   enter: css`
-    animation: ${stickyCtaEnter} ${ENTER_DURATION} ${ENTER_EASING} both;
+    animation: ${stickyCtaEnter} ${ENTER_DURATION} ${ENTER_EASING}
+      var(--motion-settle, 40ms) both;
   `,
   exit: css`
     animation: ${stickyCtaExit} ${EXIT_DURATION} ${EXIT_EASING} both;

@@ -94,6 +94,7 @@ export const MenuReveal = styled.div<{ $isOpen: boolean }>`
   width: 100%;
   grid-template-rows: ${({ $isOpen }) => ($isOpen ? "1fr" : "0fr")};
   transition: grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
 
   & > * {
     min-height: 0;
@@ -200,6 +201,7 @@ export const Bottom = styled.div<{ $isOpen: boolean }>`
     transition:
       opacity var(--motion-base, 220ms) var(--ease-standard, ease),
       transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+    transition-delay: var(--motion-settle, 40ms);
     will-change: opacity, transform;
     pointer-events: ${({ $isOpen }) => ($isOpen ? "all" : "none")};
   }

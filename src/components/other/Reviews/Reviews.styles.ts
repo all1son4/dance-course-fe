@@ -145,6 +145,7 @@ export const ReviewTextClamp = styled.div<{
   max-height: var(--review-clamp);
   overflow: hidden;
   transition: max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   /* Fade the last lines out while clamped so the cut does not look like a bug. */
   mask-image: ${({ $isExpanded, $isClampable }) =>
     !$isExpanded && $isClampable

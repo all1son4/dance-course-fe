@@ -47,7 +47,8 @@ export const AbsoluteContainer = styled.div<{ $isLeaving: boolean }>`
           ${popupExit} var(--motion-fast, 160ms) cubic-bezier(0.4, 0, 1, 1) both
         `
       : css`
-          ${popupEnter} var(--motion-slow, 320ms) var(--ease-emphasized, ease) both
+          ${popupEnter} var(--motion-slow, 320ms) var(--ease-emphasized, ease)
+            calc(1.5 * var(--motion-settle, 40ms)) both
         `};
   pointer-events: ${({ $isLeaving }) => ($isLeaving ? "none" : "auto")};
   box-sizing: border-box;

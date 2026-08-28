@@ -24,6 +24,24 @@ const overlayShow = keyframes`
   }
 `;
 
+/* The blur is switched on in one step once the fade has finished (see Overlay). */
+const overlayBlurIn = keyframes`
+  from {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  to {
+    backdrop-filter: blur(var(--dialog-scrim-blur));
+    -webkit-backdrop-filter: blur(var(--dialog-scrim-blur));
+  }
+`;
+
+/* Entrances wait two frames, exits one and a half: the browser builds the
+   layers and injected styles during the pause instead of during the motion. */
+const OPEN_SETTLE = "calc(2 * var(--motion-settle, 40ms))";
+const CLOSE_SETTLE = "calc(1.5 * var(--motion-settle, 40ms))";
+
 const contentShow = keyframes`
   from {
     opacity: 0;
@@ -66,10 +84,31 @@ export const Overlay = styled(RadixDialog.Overlay)`
   inset: 0;
   z-index: 1300;
   ${scrim({ blurPx: 8 })}
-  animation: ${overlayShow} var(--motion-base, 220ms) var(--ease-standard, ease);
+  /*
+   * The backdrop blur only exists while nothing is moving. A full-viewport
+   * backdrop-filter costs a ~55ms frame in Chromium every time a composited
+   * animation above it ends, and a similar start-up frame in Safari - measured
+   * as a visible stutter at the end of the fade-in and start of the fade-out.
+   * So: fade the tint in without blur, switch the blur on in one step when the
+   * fade is done, and drop it again before the exit fade begins.
+   */
+  --dialog-scrim-blur: 8px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  animation:
+    ${overlayShow} var(--motion-base, 220ms) var(--ease-standard, ease) ${OPEN_SETTLE}
+      both,
+    ${overlayBlurIn} 1ms linear calc(${OPEN_SETTLE} + var(--motion-base, 220ms)) both;
+
+  @media (max-width: 767px) {
+    --dialog-scrim-blur: 6px;
+  }
 
   &[data-state="closed"] {
-    animation: ${overlayHide} var(--motion-fast, 160ms) var(--ease-standard, ease) both;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    animation: ${overlayHide} var(--motion-fast, 160ms) var(--ease-standard, ease)
+      ${CLOSE_SETTLE} both;
   }
 `;
 
@@ -105,10 +144,12 @@ export const Content = styled(RadixDialog.Content)<ContentStyleProps>`
   color: rgba(0, 0, 0, 1);
   outline: none;
   transform: translate(-50%, -50%);
-  animation: ${contentShow} var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  animation: ${contentShow} var(--motion-base, 220ms) var(--ease-emphasized, ease)
+    ${OPEN_SETTLE} both;
 
   &[data-state="closed"] {
-    animation: ${contentHide} var(--motion-fast, 160ms) cubic-bezier(0.4, 0, 1, 1) both;
+    animation: ${contentHide} var(--motion-fast, 160ms) cubic-bezier(0.4, 0, 1, 1)
+      ${CLOSE_SETTLE} both;
   }
 
   &:focus-visible {

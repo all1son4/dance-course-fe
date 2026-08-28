@@ -159,6 +159,7 @@ export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
   transition:
     grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease),
     padding-top var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   padding-top: ${({ $isOpened }) => ($isOpened ? "16px" : "0px")};
   overflow: hidden;
 
@@ -169,6 +170,7 @@ export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
     min-height: 0;
     opacity: ${({ $isOpened }) => ($isOpened ? 1 : 0)};
     transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+    transition-delay: var(--motion-settle, 40ms);
   }
 `;
 

@@ -100,6 +100,7 @@ export const TopInfoRow = styled.div<{ $isCollapsed?: boolean }>`
     max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     opacity var(--motion-base, 220ms) var(--ease-standard, ease),
     transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   pointer-events: ${({ $isCollapsed }) => ($isCollapsed ? "none" : "auto")};
 
   @media (prefers-reduced-motion: reduce) {
@@ -130,6 +131,7 @@ export const Divider = styled.div<{ $isCollapsed?: boolean }>`
     height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     margin var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+  transition-delay: var(--motion-settle, 40ms);
   overflow: hidden;
 
   @media (max-width: 880px) {

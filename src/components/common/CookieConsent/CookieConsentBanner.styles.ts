@@ -188,6 +188,7 @@ export const InlineSettings = styled.div<{ $isOpen?: boolean }>`
   transition:
     grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease),
     padding-top var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   min-height: 0;
   overflow: clip;
   pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
@@ -207,6 +208,7 @@ export const InlineSettingsContent = styled.div<{ $isOpen?: boolean }>`
   transition:
     opacity var(--motion-base, 220ms) var(--ease-standard, ease),
     transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   will-change: opacity, transform;
 
   @media (max-width: 767px) {
