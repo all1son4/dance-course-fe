@@ -15,6 +15,7 @@ import Checkbox from "@/components/common/Checkbox";
 import Dialog from "@/components/common/Dialog";
 import Input from "@/components/common/Input";
 import StickyCta from "@/components/other/StickyCta";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { prefersReducedMotion } from "@/lib/reveal";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Success } from "@/svg";
@@ -49,6 +50,7 @@ const COURSE_SIGNUP_ENDPOINT = "/api/course-signup";
 /** How long the current screen fades before the next one takes its place (see Dialog). */
 const CONTENT_LEAVE_MS = 120;
 const JSON_CONTENT_TYPE = "application/json";
+const SIGNUP_COURSE_ID = "first-touch";
 const INITIAL_SIGNUP_VALUES: CourseSignupFormValues = {
   consentAccepted: false,
   email: "",
@@ -259,9 +261,13 @@ export default function CourseSignupDialog({
     }
   };
 
-  const openDialog = () => {
+  const openDialog = (placement: "inline" | "sticky") => {
     resetDialogFeedback();
     setIsOpen(true);
+    void trackAnalyticsEvent("signup_dialog_opened", {
+      course_id: SIGNUP_COURSE_ID,
+      placement,
+    });
   };
 
   const handleConsentChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -294,8 +300,16 @@ export default function CourseSignupDialog({
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
+      void trackAnalyticsEvent("signup_validation_failed", {
+        course_id: SIGNUP_COURSE_ID,
+        invalid_fields: Object.keys(nextErrors),
+      });
       return;
     }
+
+    void trackAnalyticsEvent("signup_submitted", {
+      course_id: SIGNUP_COURSE_ID,
+    });
 
     setSubmitState("submitting");
     setSubmitFailureReason("unknown");
@@ -320,6 +334,10 @@ export default function CourseSignupDialog({
           .catch(() => ({}))) as CourseSignupErrorResponse;
 
         if (data.errorCode === "duplicate_email") {
+          void trackAnalyticsEvent("signup_failed", {
+            course_id: SIGNUP_COURSE_ID,
+            reason: "duplicate_email",
+          });
           setErrors((currentErrors) => ({
             ...currentErrors,
             email: t("fields.email.duplicateError"),
@@ -329,6 +347,10 @@ export default function CourseSignupDialog({
         }
 
         const failureReason = getSubmitFailureReason(data.errorCode, response.status);
+        void trackAnalyticsEvent("signup_failed", {
+          course_id: SIGNUP_COURSE_ID,
+          reason: failureReason,
+        });
         await switchScreen(() => {
           setSubmitFailureReason(failureReason);
           setSubmitState("error");
@@ -340,7 +362,14 @@ export default function CourseSignupDialog({
         setValues(INITIAL_SIGNUP_VALUES);
         setSubmitState("success");
       });
+      void trackAnalyticsEvent("signup_succeeded", {
+        course_id: SIGNUP_COURSE_ID,
+      });
     } catch {
+      void trackAnalyticsEvent("signup_failed", {
+        course_id: SIGNUP_COURSE_ID,
+        reason: "network",
+      });
       await switchScreen(() => {
         setSubmitFailureReason("network");
         setSubmitState("error");
@@ -470,13 +499,13 @@ export default function CourseSignupDialog({
       <Button
         type="button"
         buttonText={triggerText}
-        onClick={openDialog}
+        onClick={() => openDialog("inline")}
         {...stickyCtaAnchorProps}
       />
       {stickyCta ? (
         <StickyCta
           label={triggerText}
-          onClick={openDialog}
+          onClick={() => openDialog("sticky")}
           title={stickyCta.title}
           note={stickyCta.note}
         />

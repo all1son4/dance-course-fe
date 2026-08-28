@@ -3,7 +3,7 @@
 import { observer } from "mobx-react-lite";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
@@ -29,6 +29,7 @@ import {
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 import { StoreProvider, usePaymentStore } from "@/stores";
 import type { PaymentCheckoutDraft } from "@/stores/payment-store";
@@ -74,7 +75,7 @@ import { useTelegramRenewal } from "./use-telegram-renewal";
 
 const PaymentPage = observer(function PaymentPage() {
   const paymentStore = usePaymentStore();
-  const { canUseFunctionalStorage } = useCookieConsent();
+  const { canUseAnalytics, canUseFunctionalStorage } = useCookieConsent();
   const locale = useLocale();
   const t = useTranslations("PaymentPage");
   const stripeT = useTranslations("StripePaymentTabs");
@@ -84,6 +85,11 @@ const PaymentPage = observer(function PaymentPage() {
   );
   const [searchKey, setSearchKey] = useState("");
   const hasHydratedCheckoutDraftRef = useRef(false);
+  const lastTrackedCheckoutRef = useRef<string | null>(null);
+  const lastTrackedBlockedStateRef = useRef<string | null>(null);
+  const lastTrackedPaymentRevealRef = useRef<string | null>(null);
+  const trackedCompletedFieldsRef = useRef(new Set<string>());
+  const trackedStartedFieldsRef = useRef(new Set<string>());
   const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
   // The drop ships one Telegram channel with both languages inside, so a
   // language choice on its checkout would be meaningless noise.
@@ -149,6 +155,27 @@ const PaymentPage = observer(function PaymentPage() {
         Boolean(requestedOfferId) &&
         !requestedProduct?.offers.some((offer) => offer.id === requestedOfferId)));
   const canRevealStripe = paymentStore.canShowStripe && isRenewalVerified;
+  const analyticsCommerceProperties = useMemo(
+    () =>
+      ({
+        currency: paymentStore.selectedCurrency,
+        is_renewal: isRenewalCheckout,
+        offer_code: paymentStore.selectedOffer.code,
+        offer_id: paymentStore.selectedOffer.id,
+        product_code: paymentStore.selectedProduct.code,
+        product_id: paymentStore.selectedProduct.id,
+        value: paymentStore.selectedPrice,
+      }) as const,
+    [
+      isRenewalCheckout,
+      paymentStore.selectedCurrency,
+      paymentStore.selectedOffer.code,
+      paymentStore.selectedOffer.id,
+      paymentStore.selectedPrice,
+      paymentStore.selectedProduct.code,
+      paymentStore.selectedProduct.id,
+    ],
+  );
   const stripeIntentErrorText = paymentStore.isCatalogUnavailable
     ? stripeT("errors.catalogUnavailable")
     : paymentStore.stripeIntentError
@@ -241,6 +268,96 @@ const PaymentPage = observer(function PaymentPage() {
     });
     paymentStore.setRenewalCampaignSlug(searchParams.get("renewal"));
   }, [paymentStore, searchKey]);
+
+  useEffect(() => {
+    if (
+      !canUseAnalytics ||
+      paymentStore.catalogStatus !== "ready" ||
+      isStaleCheckoutLink ||
+      isRenewalUnavailable
+    ) {
+      return;
+    }
+
+    const checkoutKey = [
+      paymentStore.selectedProduct.id,
+      paymentStore.selectedOffer.id,
+      paymentStore.selectedCurrency,
+      isRenewalCheckout ? "renewal" : "new",
+    ].join(":");
+
+    if (lastTrackedCheckoutRef.current === checkoutKey) {
+      return;
+    }
+
+    lastTrackedCheckoutRef.current = checkoutKey;
+    void trackAnalyticsEvent("checkout_viewed", analyticsCommerceProperties);
+  }, [
+    analyticsCommerceProperties,
+    canUseAnalytics,
+    isRenewalCheckout,
+    isRenewalUnavailable,
+    isStaleCheckoutLink,
+    paymentStore.catalogStatus,
+    paymentStore.selectedCurrency,
+    paymentStore.selectedOffer.id,
+    paymentStore.selectedProduct.id,
+  ]);
+
+  useEffect(() => {
+    const reason = paymentStore.isSalesClosed
+      ? "sales_closed"
+      : isRenewalUnavailable
+        ? "renewal_unavailable"
+        : isStaleCheckoutLink
+          ? "stale_link"
+          : paymentStore.isCatalogUnavailable
+            ? "catalog_unavailable"
+            : null;
+
+    if (!canUseAnalytics || !reason || lastTrackedBlockedStateRef.current === reason) {
+      return;
+    }
+
+    lastTrackedBlockedStateRef.current = reason;
+    void trackAnalyticsEvent("checkout_blocked", {
+      ...analyticsCommerceProperties,
+      reason,
+    });
+  }, [
+    analyticsCommerceProperties,
+    canUseAnalytics,
+    isRenewalUnavailable,
+    isStaleCheckoutLink,
+    paymentStore.isCatalogUnavailable,
+    paymentStore.isSalesClosed,
+  ]);
+
+  useEffect(() => {
+    if (!canUseAnalytics || !canRevealStripe) {
+      return;
+    }
+
+    const revealKey = [
+      paymentStore.selectedProduct.id,
+      paymentStore.selectedOffer.id,
+      paymentStore.selectedCurrency,
+    ].join(":");
+
+    if (lastTrackedPaymentRevealRef.current === revealKey) {
+      return;
+    }
+
+    lastTrackedPaymentRevealRef.current = revealKey;
+    void trackAnalyticsEvent("payment_form_revealed", analyticsCommerceProperties);
+  }, [
+    analyticsCommerceProperties,
+    canUseAnalytics,
+    canRevealStripe,
+    paymentStore.selectedCurrency,
+    paymentStore.selectedOffer.id,
+    paymentStore.selectedProduct.id,
+  ]);
 
   // Reaching checkout for the campaign offer counts as "thinking about it": the
   // birthday popup observes the reaction cooldown even if the payment is dropped.
@@ -399,8 +516,53 @@ const PaymentPage = observer(function PaymentPage() {
     );
   };
 
+  const getCheckoutFieldInteractionKey = (fieldName: PaymentCustomerFieldName) =>
+    [
+      paymentStore.selectedProduct.id,
+      paymentStore.selectedOffer.id,
+      paymentStore.selectedCurrency,
+      isRenewalCheckout ? "renewal" : "new",
+      fieldName,
+    ].join(":");
+
+  const handleInputFocus = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (!canUseAnalytics) {
+      return;
+    }
+
+    const fieldName = event.currentTarget.name as PaymentCustomerFieldName;
+    const interactionKey = getCheckoutFieldInteractionKey(fieldName);
+
+    if (trackedStartedFieldsRef.current.has(interactionKey)) {
+      return;
+    }
+
+    trackedStartedFieldsRef.current.add(interactionKey);
+    void trackAnalyticsEvent("checkout_field_started", {
+      ...analyticsCommerceProperties,
+      field_name: fieldName,
+    });
+  };
+
   const handleInputBlur = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
-    paymentStore.touchCustomerField(event.target.name as PaymentCustomerFieldName);
+    const fieldName = event.currentTarget.name as PaymentCustomerFieldName;
+    paymentStore.touchCustomerField(fieldName);
+
+    if (!canUseAnalytics || !event.currentTarget.value.trim()) {
+      return;
+    }
+
+    const interactionKey = getCheckoutFieldInteractionKey(fieldName);
+
+    if (trackedCompletedFieldsRef.current.has(interactionKey)) {
+      return;
+    }
+
+    trackedCompletedFieldsRef.current.add(interactionKey);
+    void trackAnalyticsEvent("checkout_field_completed", {
+      ...analyticsCommerceProperties,
+      field_name: fieldName,
+    });
   };
 
   const handleAgreementChange = (
@@ -408,15 +570,54 @@ const PaymentPage = observer(function PaymentPage() {
     event: ChangeEvent<HTMLInputElement>,
   ) => {
     paymentStore.setAgreement(fieldName, event.target.checked);
+
+    if (canUseAnalytics) {
+      void trackAnalyticsEvent("checkout_agreement_changed", {
+        ...analyticsCommerceProperties,
+        agreement_name: fieldName,
+        is_accepted: event.target.checked,
+      });
+    }
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    void trackAnalyticsEvent("checkout_form_submitted", analyticsCommerceProperties);
     paymentStore.validateCustomerForm();
+
+    const invalidFields = Object.keys(paymentStore.customerErrors);
+    const invalidAgreements = Object.entries(paymentStore.agreements)
+      .filter(([, isAccepted]) => !isAccepted)
+      .map(([agreement]) => agreement);
+    const renewalVerificationRequired = !isRenewalVerified;
+
+    if (
+      invalidFields.length > 0 ||
+      invalidAgreements.length > 0 ||
+      renewalVerificationRequired
+    ) {
+      void trackAnalyticsEvent("checkout_validation_failed", {
+        ...analyticsCommerceProperties,
+        invalid_agreements: invalidAgreements,
+        invalid_fields: invalidFields,
+        renewal_verification_required: renewalVerificationRequired,
+      });
+    }
   };
 
   const handleCurrencyChange = (value: SupportedCheckoutCurrency) => {
+    const previousCurrency = paymentStore.selectedCurrency;
     paymentStore.setSelectedCurrency(value);
+
+    if (previousCurrency !== value) {
+      void trackAnalyticsEvent("currency_changed", {
+        ...analyticsCommerceProperties,
+        currency: value,
+        from_currency: previousCurrency,
+        to_currency: value,
+        value: paymentStore.selectedPrice,
+      });
+    }
   };
 
   const getInputSelectOptions = (fieldName: PaymentCustomerFieldName) => {
@@ -514,7 +715,11 @@ const PaymentPage = observer(function PaymentPage() {
       paymentStore.stripePaymentIntentIds?.[paymentStore.selectedCurrency] ?? "",
     resultCurrency: paymentStore.selectedCurrency,
     resultOfferId: paymentStore.selectedOfferId,
+    resultOfferCode: paymentStore.selectedOffer.code,
     resultProductId: paymentStore.selectedProductId,
+    resultProductCode: paymentStore.selectedProduct.code,
+    resultValue: paymentStore.selectedPrice,
+    isRenewalCheckout,
   };
 
   return (
@@ -550,6 +755,11 @@ const PaymentPage = observer(function PaymentPage() {
               buttonText={t("salesClosed.contactButton")}
               href={SUPPORT_TELEGRAM_URL}
               target="_blank"
+              analytics={{
+                id: "checkout_contact_support",
+                placement: "sales_closed",
+                ...analyticsCommerceProperties,
+              }}
             />
           </SalesClosedNotice>
         ) : isRenewalUnavailable ? (
@@ -563,13 +773,23 @@ const PaymentPage = observer(function PaymentPage() {
               buttonText={t("salesClosed.contactButton")}
               href={SUPPORT_TELEGRAM_URL}
               target="_blank"
+              analytics={{
+                id: "checkout_contact_support",
+                placement: "renewal_unavailable",
+                ...analyticsCommerceProperties,
+              }}
             />
           </SalesClosedNotice>
         ) : isStaleCheckoutLink ? (
           <SalesClosedNotice>
             <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
             <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
-            <Button size="sm" buttonText={t("staleLink.catalogButton")} href="/online" />
+            <Button
+              size="sm"
+              buttonText={t("staleLink.catalogButton")}
+              href="/online"
+              analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
+            />
           </SalesClosedNotice>
         ) : (
           <CheckoutForm
@@ -581,6 +801,7 @@ const PaymentPage = observer(function PaymentPage() {
             onAgreementChange={handleAgreementChange}
             onInputBlur={handleInputBlur}
             onInputChange={handleInputChange}
+            onInputFocus={handleInputFocus}
             onSubmit={handleSubmit}
             onVerify={verifyTelegramRenewal}
             personalDataTitle={t("personalDataTitle")}

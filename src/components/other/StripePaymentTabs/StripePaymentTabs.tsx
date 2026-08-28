@@ -12,6 +12,7 @@ import type { ReactElement } from "react";
 import { useEffect, useState } from "react";
 
 import Button from "@/components/common/Button";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import {
   createElementsOptions,
@@ -130,13 +131,17 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
     confirmedText,
     confirmPaymentFailedText,
     isContentVisible,
+    isRenewalCheckout,
     onPaymentElementReadyChange,
     paymentIntentId,
     payButtonText,
     processingText,
     resultCurrency,
+    resultOfferCode,
     resultOfferId,
+    resultProductCode,
     resultProductId,
+    resultValue,
   } = props;
   const stripe = useStripe();
   const elements = useElements();
@@ -161,6 +166,17 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
     resultOfferId,
     resultProductId,
   };
+  const analyticsCurrency: "eur" | "pln" | undefined =
+    resultCurrency === "eur" || resultCurrency === "pln" ? resultCurrency : undefined;
+  const analyticsCommerceProperties = {
+    ...(analyticsCurrency ? { currency: analyticsCurrency } : {}),
+    is_renewal: Boolean(isRenewalCheckout),
+    ...(resultOfferCode ? { offer_code: resultOfferCode } : {}),
+    ...(resultOfferId ? { offer_id: resultOfferId } : {}),
+    ...(resultProductCode ? { product_code: resultProductCode } : {}),
+    ...(resultProductId ? { product_id: resultProductId } : {}),
+    ...(typeof resultValue === "number" ? { value: resultValue } : {}),
+  } as const;
 
   const handlePaymentElementLoading = (): void => {
     setIsPaymentElementReady(false);
@@ -187,6 +203,7 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
     setIsSubmitting(true);
     setSubmitError(null);
     setSubmitSuccess(null);
+    void trackAnalyticsEvent("payment_attempted", analyticsCommerceProperties);
 
     let shouldKeepSubmitting = false;
 
@@ -207,6 +224,10 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
       });
 
       if (error) {
+        void trackAnalyticsEvent("payment_failed", {
+          ...analyticsCommerceProperties,
+          failure_stage: "confirmation",
+        });
         setSubmitError(
           resolveStripeErrorMessage(error.message, confirmPaymentFailedText),
         );
@@ -240,6 +261,10 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
         completion.paymentIntentId,
       );
     } catch {
+      void trackAnalyticsEvent("payment_failed", {
+        ...analyticsCommerceProperties,
+        failure_stage: "exception",
+      });
       setSubmitError(confirmPaymentFailedText);
     } finally {
       if (!shouldKeepSubmitting) {
@@ -329,10 +354,14 @@ export const StripePaymentTabs = ({
   billingPostalCode,
   checkoutSessionId,
   clientSecret,
+  isRenewalCheckout,
   paymentIntentId,
   resultCurrency,
+  resultOfferCode,
   resultOfferId,
+  resultProductCode,
   resultProductId,
+  resultValue,
   publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
 }: StripePaymentTabsProps) => {
   const locale = useLocale();
@@ -411,13 +440,17 @@ export const StripePaymentTabs = ({
               checkoutSessionId,
               confirmedText: t("status.confirmed"),
               confirmPaymentFailedText: t("errors.confirmPaymentFailed"),
+              isRenewalCheckout,
               onPaymentElementReadyChange: handlePaymentElementReadyChange,
               paymentIntentId,
               payButtonText: t("button.pay"),
               processingText: t("button.processing"),
               resultCurrency,
+              resultOfferCode,
               resultOfferId,
+              resultProductCode,
               resultProductId,
+              resultValue,
             }}
             publishableKey={publishableKey}
             stripeLocale={stripeLocale}

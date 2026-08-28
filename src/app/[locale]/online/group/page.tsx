@@ -131,6 +131,7 @@ export default async function OnlineGroupPage() {
         <Button
           buttonText={t("tariffs.selectButton")}
           href="#tariffs"
+          analytics={{ id: "select_tariff", placement: "online_group_hero" }}
           {...stickyCtaAnchorProps}
         />
         {/* Only while there is something to buy: a floating "choose a plan"
@@ -139,6 +140,7 @@ export default async function OnlineGroupPage() {
           {(isSaleOpen) =>
             isSaleOpen ? (
               <StickyCta
+                analytics={{ id: "select_tariff", placement: "online_group_sticky" }}
                 label={t("tariffs.selectButton")}
                 href="#tariffs"
                 title={t("hero.titlePlain")}
@@ -160,6 +162,7 @@ export default async function OnlineGroupPage() {
       <TariffOptionsBox>
         {standardOffer ? (
           <CourseCard
+            analyticsId={`${product.code}:${standardOffer.code}`}
             title={t("tariffs.standard.title")}
             subtitle={t("tariffs.standard.subtitle")}
             cardContent={
@@ -179,6 +182,14 @@ export default async function OnlineGroupPage() {
               </TarifContentBox>
             }
             buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
+            buttonAnalytics={{
+              id: "buy_online_group",
+              offer_code: standardOffer.code,
+              offer_id: standardOffer.id,
+              placement: "tariff_standard",
+              product_code: product.code,
+              product_id: product.id,
+            }}
             buttonRel="nofollow"
             buttonIsStickyAnchor
             buttonHref={
@@ -193,6 +204,7 @@ export default async function OnlineGroupPage() {
         ) : null}
         {plusOffer ? (
           <CourseCard
+            analyticsId={`${product.code}:${plusOffer.code}`}
             title={t("tariffs.plus.title")}
             subtitle={t("tariffs.plus.subtitle")}
             cardContent={
@@ -216,6 +228,14 @@ export default async function OnlineGroupPage() {
               </TarifContentBox>
             }
             buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
+            buttonAnalytics={{
+              id: "buy_online_group",
+              offer_code: plusOffer.code,
+              offer_id: plusOffer.id,
+              placement: "tariff_plus",
+              product_code: product.code,
+              product_id: product.id,
+            }}
             buttonRel="nofollow"
             buttonIsStickyAnchor
             buttonHref={
@@ -252,6 +272,7 @@ export default async function OnlineGroupPage() {
       <SpecialWrapper $compactAt={1100} $stacked={false}>
         <VideoSection>
           <VideoPlayer
+            analyticsId="online-group-example"
             src="/videos/online_example.mp4"
             poster="/images/online_example_poster.webp"
             radius="0px"

@@ -71,7 +71,12 @@ export default function Offline() {
       </ProductHero>
       <CoursesSection>
         {offlineCoursesArray.map(({ id, ...course }) => (
-          <InteractiveCard key={id} {...course} />
+          <InteractiveCard
+            key={id}
+            {...course}
+            analyticsCollection="offline_courses"
+            analyticsId={id}
+          />
         ))}
       </CoursesSection>
       <PromoteOnlineSection>

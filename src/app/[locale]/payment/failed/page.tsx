@@ -2,6 +2,10 @@ import { getTranslations } from "next-intl/server";
 
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import {
+  getSellableProductById,
+  getSellableProductOfferById,
+} from "@/constants/sellable-products";
 import { Failed } from "@/svg";
 
 import {
@@ -37,6 +41,15 @@ const getParamValue = (searchParams: FailedPageSearchParams, key: string): strin
 export default async function FailedPage({ searchParams }: FailedPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
   const t = await getTranslations("PaymentFailedPage");
+  const productId = getParamValue(resolvedSearchParams, "product");
+  const offerId = getParamValue(resolvedSearchParams, "offer");
+  const currencyParam = getParamValue(resolvedSearchParams, "currency").toLowerCase();
+  const currency =
+    currencyParam === "eur" || currencyParam === "pln" ? currencyParam : undefined;
+  const selectedProduct = getSellableProductById(productId);
+  const selectedOffer = selectedProduct
+    ? getSellableProductOfferById(selectedProduct, offerId)
+    : undefined;
   const contextParams = new URLSearchParams();
 
   CHECKOUT_CONTEXT_KEYS.forEach((key) => {
@@ -56,7 +69,14 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
   return (
     <ResultContainer>
       <ResultCard>
-        <FailedPageGuard />
+        <FailedPageGuard
+          currency={currency}
+          offerCode={selectedOffer?.code}
+          offerId={selectedOffer?.id}
+          productCode={selectedProduct?.code}
+          productId={selectedProduct?.id}
+          value={currency && selectedOffer ? selectedOffer.prices[currency] : undefined}
+        />
         <Failed />
         <ResultTitle>{t("title")}</ResultTitle>
         <ResultParagraphs>
@@ -64,12 +84,23 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
           <ResultParagraph>{t("description.line2")}</ResultParagraph>
         </ResultParagraphs>
         <ResultActions>
-          <Button buttonText={t("buttons.backToPayment")} href={paymentPath} />
+          <Button
+            buttonText={t("buttons.backToPayment")}
+            href={paymentPath}
+            analytics={{
+              id: "payment_retry",
+              placement: "failed_result",
+              ...(currency ? { currency } : {}),
+              ...(selectedOffer ? { offer_id: selectedOffer.id } : {}),
+              ...(selectedProduct ? { product_id: selectedProduct.id } : {}),
+            }}
+          />
           <Button
             buttonText={t("buttons.contactSupport")}
             href={SUPPORT_TELEGRAM_URL}
             target="_blank"
             variant="secondary"
+            analytics={{ id: "payment_contact_support", placement: "failed_result" }}
           />
         </ResultActions>
       </ResultCard>

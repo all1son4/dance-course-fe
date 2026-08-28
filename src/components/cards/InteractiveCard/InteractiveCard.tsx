@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import Button from "@/components/common/Button";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { Chevron } from "@/svg";
 
 import {
@@ -21,6 +22,8 @@ import {
 import type { InteractiveCardProps } from "./InteractiveCard.types";
 
 export default function InteractiveCard({
+  analyticsCollection,
+  analyticsId,
   bottomRowContent,
   buttonHref,
   buttonRel,
@@ -52,7 +55,16 @@ export default function InteractiveCard({
       return;
     }
 
-    setIsTopRowCollapsedInternal(!isTopRowCollapsed);
+    const nextIsCollapsed = !isTopRowCollapsed;
+    setIsTopRowCollapsedInternal(nextIsCollapsed);
+
+    if (analyticsId && analyticsCollection) {
+      void trackAnalyticsEvent("card_details_toggled", {
+        card_id: analyticsId,
+        collection: analyticsCollection,
+        is_expanded: !nextIsCollapsed,
+      });
+    }
   };
 
   return (
@@ -75,6 +87,14 @@ export default function InteractiveCard({
             <ButtonBox>
               <Button
                 buttonText={buttonText}
+                analytics={
+                  analyticsId
+                    ? {
+                        id: "course_details",
+                        placement: `${analyticsCollection ?? "course"}:${analyticsId}`,
+                      }
+                    : undefined
+                }
                 // Same label on every card; the product name goes to assistive tech.
                 aria-label={`${buttonText} — ${title.replace(/\s+/gu, " ").trim()}`}
                 {...buttonLinkProps}

@@ -54,6 +54,7 @@ type CheckoutInputProps = {
   isRenewalVerified: boolean;
   onBlur: (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onFocus: (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onVerify: () => void | Promise<void>;
   renewalClientId: string;
   renewalNonce: string;
@@ -69,6 +70,7 @@ const CheckoutInput = ({
   isRenewalVerified,
   onBlur,
   onChange,
+  onFocus,
   onVerify,
   renewalClientId,
   renewalNonce,
@@ -92,6 +94,7 @@ const CheckoutInput = ({
       })}
       onBlur={onBlur}
       onChange={onChange}
+      onFocus={onFocus}
       placeholder={field.placeholder}
       selectOptions={field.selectOptions}
       type={field.type}
@@ -147,6 +150,7 @@ export type CheckoutFormProps = {
   ) => void;
   onInputBlur: (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onInputChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onInputFocus: (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onVerify: () => void | Promise<void>;
   personalDataTitle: string;
@@ -169,6 +173,7 @@ export const CheckoutForm = ({
   onAgreementChange,
   onInputBlur,
   onInputChange,
+  onInputFocus,
   onSubmit,
   onVerify,
   personalDataTitle,
@@ -193,6 +198,7 @@ export const CheckoutForm = ({
             isRenewalVerified={isRenewalVerified}
             onBlur={onInputBlur}
             onChange={onInputChange}
+            onFocus={onInputFocus}
             onVerify={onVerify}
             renewalClientId={renewalClientId}
             renewalNonce={renewalNonce}

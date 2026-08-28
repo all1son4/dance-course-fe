@@ -9,8 +9,12 @@ export type StripePaymentTabsProps = {
   checkoutSessionId?: string | null;
   clientSecret?: string | null;
   paymentIntentId?: string | null;
+  isRenewalCheckout?: boolean;
   resultCurrency?: string | null;
+  resultOfferCode?: string | null;
   resultOfferId?: string | null;
+  resultProductCode?: string | null;
   resultProductId?: string | null;
+  resultValue?: number | null;
   publishableKey?: string;
 };

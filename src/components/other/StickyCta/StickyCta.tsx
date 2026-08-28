@@ -52,7 +52,14 @@ import { useStickyCtaVisibilityState } from "./useStickyCtaVisibilityState";
  * renders through a portal so no page-level transform or filter can interfere
  * with its positioning.
  */
-export default function StickyCta({ href, label, note, onClick, title }: StickyCtaProps) {
+export default function StickyCta({
+  analytics,
+  href,
+  label,
+  note,
+  onClick,
+  title,
+}: StickyCtaProps) {
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
   const [hasEverShown, setHasEverShown] = useState(false);
   const { isBannerVisible } = useCookieConsent();
@@ -96,7 +103,13 @@ export default function StickyCta({ href, label, note, onClick, title }: StickyC
           )}
           <StickyCtaButtonSlot>
             {href ? (
-              <Button buttonText={label} size="sm" width="auto" href={href} />
+              <Button
+                buttonText={label}
+                size="sm"
+                width="auto"
+                href={href}
+                analytics={analytics}
+              />
             ) : (
               <Button
                 buttonText={label}
@@ -104,6 +117,7 @@ export default function StickyCta({ href, label, note, onClick, title }: StickyC
                 width="auto"
                 type="button"
                 onClick={onClick}
+                analytics={analytics}
               />
             )}
           </StickyCtaButtonSlot>

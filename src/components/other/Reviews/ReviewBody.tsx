@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { Chevron } from "@/svg";
 
 import {
@@ -16,6 +17,7 @@ import {
 const CLAMP_SLACK_PX = 8;
 
 type ReviewBodyProps = {
+  analyticsId: number;
   paragraphs: string[];
   readMoreLabel: string;
   readLessLabel: string;
@@ -29,6 +31,7 @@ type ReviewBodyProps = {
  * real size instead of guessing with a large max-height.
  */
 export default function ReviewBody({
+  analyticsId,
   onExpandedChange,
   paragraphs,
   readLessLabel,
@@ -86,6 +89,10 @@ export default function ReviewBody({
     const next = !isExpanded;
     setIsExpanded(next);
     onExpandedChange?.(next);
+    void trackAnalyticsEvent("review_toggled", {
+      is_expanded: next,
+      review_id: analyticsId,
+    });
   };
 
   return (

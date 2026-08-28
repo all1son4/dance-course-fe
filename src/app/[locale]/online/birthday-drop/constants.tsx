@@ -97,6 +97,7 @@ export const getBirthdayDropCheckout = () => {
 
   return {
     href: buildCheckoutHref({ offerId: offer.id, productId: product.id }),
+    offerId: offer.id,
     price: formatOfferPrice(offer.prices),
   };
 };

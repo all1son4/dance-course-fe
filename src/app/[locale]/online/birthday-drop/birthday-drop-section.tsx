@@ -67,9 +67,21 @@ export default async function BirthdayDropSection() {
                         buttonText={t("buyButton", { price: checkout.price })}
                         href={checkout.href}
                         variant="white"
+                        analytics={{
+                          id: "buy_birthday_drop",
+                          offer_id: checkout.offerId,
+                          placement: "birthday_drop_hero",
+                          product_id: BIRTHDAY_DROP_PRODUCT_ID,
+                        }}
                         {...stickyCtaAnchorProps}
                       />
                       <StickyCta
+                        analytics={{
+                          id: "buy_birthday_drop",
+                          offer_id: checkout.offerId,
+                          placement: "birthday_drop_sticky",
+                          product_id: BIRTHDAY_DROP_PRODUCT_ID,
+                        }}
                         label={t("buyButton", { price: checkout.price })}
                         href={checkout.href}
                         title={t("titleShort")}
@@ -84,11 +96,13 @@ export default async function BirthdayDropSection() {
               variant="ghost"
               width="180px"
               href={`#${BIRTHDAY_ABOUT_SECTION_ID}`}
+              analytics={{ id: "birthday_drop_details", placement: "hero" }}
             />
           </BirthdayContentButtons>
         </BirthdayTextContent>
         <BirthdayVideoContent>
           <VideoPlayer
+            analyticsId="birthday-drop-preview"
             src={BIRTHDAY_DROP_VIDEO_SRC}
             poster="/images/love_me_in_the_morning_poster.webp"
             radius="0px"

@@ -16,6 +16,7 @@ import {
 import type { ChoreoCardProps } from "./ChoreoCard.types";
 
 export default function ChoreoCard({
+  analyticsId,
   firstButtonOptions,
   icon,
   posterSrc,
@@ -31,6 +32,7 @@ export default function ChoreoCard({
       <CardSurface $isSpecialOffer={specialOffer}>
         {videoSrc && (
           <VideoPlayer
+            analyticsId={analyticsId}
             src={videoSrc}
             poster={posterSrc}
             iconSize="40px"
@@ -63,6 +65,7 @@ export default function ChoreoCard({
                 buttonText={firstButtonOptions.text}
                 href={firstButtonOptions.href}
                 rel="nofollow"
+                analytics={firstButtonOptions.analytics}
               />
             )}
             {secondButtonOptions?.text && (
@@ -70,6 +73,7 @@ export default function ChoreoCard({
                 buttonText={secondButtonOptions.text}
                 href={secondButtonOptions.href}
                 rel="nofollow"
+                analytics={secondButtonOptions.analytics}
               />
             )}
           </ButtonBox>

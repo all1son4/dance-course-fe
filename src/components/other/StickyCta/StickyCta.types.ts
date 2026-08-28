@@ -1,4 +1,7 @@
+import type { ButtonAnalyticsMetadata } from "@/lib/mixpanel-analytics";
+
 export type StickyCtaProps = {
+  analytics?: ButtonAnalyticsMetadata;
   /** Button text; mirrors the on-page CTA it duplicates. */
   label: string;
   /** Link target (hash or route). Mutually exclusive with `onClick`. */

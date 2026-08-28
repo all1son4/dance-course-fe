@@ -16,6 +16,7 @@ export type TInput = {
   type?: HTMLInputTypeAttribute;
   onChange: (event: ChangeEvent<InputElement>) => void;
   onBlur?: FocusEventHandler<InputElement>;
+  onFocus?: FocusEventHandler<InputElement>;
   value: string | number;
   placeholder?: string;
   label?: string;

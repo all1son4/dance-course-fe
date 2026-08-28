@@ -6,6 +6,7 @@ import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { recordBirthdayOfferPurchase } from "@/lib/birthday-popup";
+import { trackAnalyticsEventOncePerSession } from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 
 import {
@@ -25,9 +26,14 @@ type SuccessContentProps = {
   descriptionLine2: string;
   homeButtonText: string;
   isTelegramAccessPurchase: boolean;
+  isRenewalPurchase: boolean;
+  offerCode: string;
   offerId: string;
   paymentIntentId: string;
   productId: string;
+  productCode: string;
+  purchaseCurrency?: "eur" | "pln";
+  purchaseValue?: number;
   telegramAccessActiveText: string;
   telegramContactSupportText: string;
   telegramInspirationLinkText: string;
@@ -47,9 +53,14 @@ export default function SuccessContent({
   descriptionLine2,
   homeButtonText,
   isTelegramAccessPurchase,
+  isRenewalPurchase,
+  offerCode,
   offerId,
   paymentIntentId,
   productId,
+  productCode,
+  purchaseCurrency,
+  purchaseValue,
   telegramAccessActiveText,
   telegramContactSupportText,
   telegramInspirationLinkText,
@@ -60,7 +71,7 @@ export default function SuccessContent({
   telegramUnavailableText,
   title,
 }: SuccessContentProps) {
-  const { canUseFunctionalStorage } = useCookieConsent();
+  const { canUseAnalytics, canUseFunctionalStorage } = useCookieConsent();
 
   // This component renders behind the verification guard, so reaching it means
   // the payment intent really did succeed - the campaign popup can retire and
@@ -75,6 +86,36 @@ export default function SuccessContent({
       // Strict storage policies must not break the success page.
     }
   }, [canUseFunctionalStorage, offerId]);
+
+  useEffect(() => {
+    if (!canUseAnalytics) {
+      return;
+    }
+
+    void trackAnalyticsEventOncePerSession(
+      "purchase_completed",
+      {
+        ...(purchaseCurrency ? { currency: purchaseCurrency } : {}),
+        is_renewal: isRenewalPurchase,
+        offer_code: offerCode,
+        offer_id: offerId,
+        product_code: productCode,
+        product_id: productId,
+        ...(typeof purchaseValue === "number" ? { value: purchaseValue } : {}),
+      },
+      paymentIntentId,
+    );
+  }, [
+    canUseAnalytics,
+    isRenewalPurchase,
+    offerCode,
+    offerId,
+    paymentIntentId,
+    productCode,
+    productId,
+    purchaseCurrency,
+    purchaseValue,
+  ]);
   const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");
   // Russian long dates already end in "г." - no second full stop after those.
   const formattedInspirationExpiry = inspirationAccessExpiresAt

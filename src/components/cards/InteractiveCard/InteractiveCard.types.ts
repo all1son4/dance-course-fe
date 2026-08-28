@@ -8,6 +8,8 @@ import type { AnchorHTMLAttributes, HTMLAttributeAnchorTarget, ReactNode } from 
 export type InteractiveCardFrost = "static" | "live";
 
 export type InteractiveCardProps = {
+  analyticsCollection?: "offline_courses" | "online_courses";
+  analyticsId?: string;
   title: string;
   frost?: InteractiveCardFrost;
   topRowContent?: ReactNode;

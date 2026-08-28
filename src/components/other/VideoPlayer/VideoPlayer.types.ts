@@ -1,4 +1,6 @@
 export type TVideoPlayerProps = {
+  /** Stable content identifier; the media URL itself is never sent to analytics. */
+  analyticsId?: string;
   src: string;
   type?: string;
   poster?: string;

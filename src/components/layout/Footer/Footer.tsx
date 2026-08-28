@@ -78,6 +78,7 @@ export default function Footer() {
             size="sm"
             href={SUPPORT_TELEGRAM_URL}
             target="_blank"
+            analytics={{ id: "contact_support", placement: "footer" }}
           />
         </SupportBlock>
       </TopRow>
