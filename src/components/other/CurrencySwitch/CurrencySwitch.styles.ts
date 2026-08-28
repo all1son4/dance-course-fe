@@ -24,7 +24,7 @@ export const Root = styled.div<{ $value: CurrencySwitchValue; $width: string }>`
     bottom: 0px;
     left: 0px;
     width: 50%;
-    background: rgba(0, 0, 0, 1);
+    background: var(--ink);
     transform: translateX(${({ $value }) => ($value === "eur" ? "100%" : "0")});
     border-radius: ${({ $value }) =>
       $value === "eur" ? "0 20px 20px 0" : "20px 0 0 20px"};
@@ -44,15 +44,15 @@ export const OptionButton = styled.button<{ $isActive: boolean }>`
   padding: 0 24px;
   font-weight: 600;
   font-style: normal;
-  font-size: 17px;
-  line-height: 100%;
+  font-size: var(--text-body);
+  line-height: 1;
   letter-spacing: 0;
   color: ${({ $isActive }) =>
     $isActive ? "rgba(255, 255, 255, 1)" : "rgba(0, 0, 0, 1)"};
   transition: color 0.18s ease;
 
   &:focus-visible {
-    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline: var(--focus-ring);
     outline-offset: -2px;
     border-radius: 18px;
   }

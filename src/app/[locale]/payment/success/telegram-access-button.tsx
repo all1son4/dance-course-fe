@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styled, { keyframes } from "styled-components";
 
 import Button from "@/components/common/Button";
+
+import { StatusCard, StatusMark, StatusSpinner, StatusText } from "../result-page.styles";
 
 type TelegramAccessButtonProps = {
   activeText: string;
@@ -11,9 +12,7 @@ type TelegramAccessButtonProps = {
   checkoutSessionId: string;
   inspirationButtonText: string;
   mainButtonText: string;
-  onAccessCountChange?: (count: number) => void;
   onInspirationExpiryChange?: (expiresAt: string) => void;
-  onUnavailableChange?: (isUnavailable: boolean) => void;
   offerId: string;
   paymentIntentId: string;
   pendingText: string;
@@ -57,106 +56,6 @@ const ACCESS_LINK_REQUEST_TIMEOUT_MS = 8_000;
 const SERVER_RETRY_AFTER_MAX_MS = 30_000;
 const MILLISECONDS_PER_SECOND = 1_000;
 
-const pulse = keyframes`
-  0% {
-    opacity: 0.24;
-    transform: translateY(0);
-  }
-
-  40% {
-    opacity: 1;
-    transform: translateY(-1px);
-  }
-
-  100% {
-    opacity: 0.24;
-    transform: translateY(0);
-  }
-`;
-
-const StatusBox = styled.div<{ $kind: AccessStatusKind }>`
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 12px 16px;
-  border-radius: 18px;
-  min-height: 56px;
-  background: ${({ $kind }) =>
-    $kind === "pending" ? "rgba(124, 0, 2, 0.06)" : "rgba(0, 0, 0, 0.035)"};
-  border: 1px solid
-    ${({ $kind }) =>
-      $kind === "pending" ? "rgba(124, 0, 2, 0.18)" : "rgba(0, 0, 0, 0.12)"};
-
-  @media (max-width: 767px) {
-    width: 100%;
-  }
-`;
-
-const Dots = styled.span`
-  display: inline-flex;
-  gap: 4px;
-  min-width: 28px;
-`;
-
-const Dot = styled.span<{ $delayMs: number }>`
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  background: rgba(124, 0, 2, 0.82);
-  animation: ${pulse} 1.05s ease-in-out infinite;
-  animation-delay: ${({ $delayMs }) => `${$delayMs}ms`};
-`;
-
-const StatusText = styled.p`
-  font-weight: 300;
-  font-size: 14.5px;
-  line-height: 140%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(16, 16, 16, 0.88);
-`;
-
-const StatusTextBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-`;
-
-const StatusMeta = styled.span`
-  font-weight: 500;
-  font-size: 11.5px;
-  line-height: 140%;
-  letter-spacing: 0;
-  color: rgba(16, 16, 16, 0.55);
-`;
-
-const AccessList = styled.div<{ $multiple: boolean }>`
-  display: flex;
-  flex-direction: row;
-  gap: 10px;
-  width: ${({ $multiple }) => ($multiple ? "100%" : "auto")};
-  flex: ${({ $multiple }) => ($multiple ? "1 0 100%" : "1 1 280px")};
-
-  @media (max-width: 767px) {
-    flex-direction: column;
-    width: 100%;
-    flex-basis: 100%;
-  }
-`;
-
-const AccessItem = styled.div`
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-width: 0;
-`;
-
-const SupportAction = styled.div`
-  display: flex;
-  flex: 1 0 100%;
-  width: 100%;
-`;
-
 const getRetryDelayMs = (attempt: number): number =>
   Math.min(RETRY_BASE_DELAY_MS + attempt * RETRY_DELAY_INCREMENT_MS, RETRY_MAX_DELAY_MS);
 
@@ -189,9 +88,6 @@ const isHardAccessLinkFailure = (responseStatus: number, errorCode: string): boo
   errorCode === "payment_access_denied" ||
   errorCode === "payment_context_mismatch";
 
-const getReportedAccessCount = (accessCount: number, accessUrl: string): number =>
-  accessCount || (accessUrl ? 1 : 0);
-
 const getInspirationAccessExpiry = (accesses: TelegramAccess[]): string =>
   accesses.find((access) => access.accessKey === "inspiration-hub")?.accessExpiresAt ??
   "";
@@ -201,18 +97,13 @@ const containsUnavailableAccess = (accesses: TelegramAccess[]): boolean =>
     (access) => access.status === "expired" || access.status === "unavailable",
   );
 
-const containsUsableAccess = (accesses: TelegramAccess[]): boolean =>
-  accesses.some((access) => access.status === "ready" || access.status === "active");
-
 export default function TelegramAccessButton({
   activeText,
   buttonText,
   checkoutSessionId,
   inspirationButtonText,
   mainButtonText,
-  onAccessCountChange,
   onInspirationExpiryChange,
-  onUnavailableChange,
   offerId,
   paymentIntentId,
   pendingText,
@@ -223,35 +114,14 @@ export default function TelegramAccessButton({
 }: TelegramAccessButtonProps) {
   const [accessUrl, setAccessUrl] = useState("");
   const [accesses, setAccesses] = useState<TelegramAccess[]>([]);
-  const [attemptCount, setAttemptCount] = useState(0);
   const [statusKind, setStatusKind] = useState<AccessStatusKind>("pending");
   const [statusText, setStatusText] = useState(pendingText);
   const isContextValid = Boolean(checkoutSessionId && offerId && productId);
   const hasUnavailableAccess = containsUnavailableAccess(accesses);
 
   useEffect(() => {
-    onAccessCountChange?.(getReportedAccessCount(accesses.length, accessUrl));
-  }, [accessUrl, accesses.length, onAccessCountChange]);
-
-  useEffect(() => {
     onInspirationExpiryChange?.(getInspirationAccessExpiry(accesses));
   }, [accesses, onInspirationExpiryChange]);
-
-  useEffect(() => {
-    onUnavailableChange?.(
-      hasUnavailableAccess ||
-        (!accessUrl &&
-          !containsUsableAccess(accesses) &&
-          (!isContextValid || statusKind === "unavailable")),
-    );
-  }, [
-    accessUrl,
-    accesses,
-    hasUnavailableAccess,
-    isContextValid,
-    onUnavailableChange,
-    statusKind,
-  ]);
 
   useEffect(() => {
     if (!isContextValid) {
@@ -270,11 +140,10 @@ export default function TelegramAccessButton({
       pendingTimeouts.add(timeoutId);
     };
 
-    const markAttemptAsPending = (attempt: number): void => {
+    const markAttemptAsPending = (): void => {
       if (!isDisposed) {
         setStatusKind("pending");
         setStatusText(pendingText);
-        setAttemptCount(Math.min(attempt + 1, MAX_RETRY_ATTEMPTS));
       }
     };
 
@@ -284,7 +153,7 @@ export default function TelegramAccessButton({
     };
 
     const requestAccessLink = async (attempt: number): Promise<void> => {
-      markAttemptAsPending(attempt);
+      markAttemptAsPending();
 
       const requestController = new AbortController();
       activeAbortController = requestController;
@@ -347,13 +216,11 @@ export default function TelegramAccessButton({
 
         if (data.status === "ready" && data.accessUrl) {
           setAccessUrl(data.accessUrl);
-          setAttemptCount(0);
           return;
         }
 
         if (data.status === "ready" && data.accesses?.length) {
           setAccesses(data.accesses);
-          setAttemptCount(0);
           return;
         }
 
@@ -400,78 +267,71 @@ export default function TelegramAccessButton({
     unavailableText,
   ]);
 
-  const renderSupportButton = () => (
-    <Button buttonText={supportButtonText} href={supportHref} target="_blank" />
+  const renderSupportButton = (variant: "primary" | "secondary") => (
+    <Button
+      buttonText={supportButtonText}
+      href={supportHref}
+      target="_blank"
+      variant={variant}
+    />
   );
 
-  const renderAccessItem = (access: TelegramAccess) => {
-    const label =
-      access.accessKey === "inspiration-hub" ? inspirationButtonText : mainButtonText;
-
-    if (access.status === "ready" && access.accessUrl) {
-      return (
-        <AccessItem key={access.accessKey}>
-          <Button buttonText={label} href={access.accessUrl} target="_blank" />
-        </AccessItem>
-      );
-    }
-
-    return (
-      <StatusBox key={access.accessKey} $kind="unavailable" role="status">
-        <StatusText>
-          {label}: {access.status === "active" ? activeText : unavailableText}
-        </StatusText>
-      </StatusBox>
-    );
-  };
+  const renderNotice = (key: string, text: string) => (
+    <StatusCard key={key} $kind="notice" role="status">
+      <StatusMark aria-hidden />
+      <StatusText>{text}</StatusText>
+    </StatusCard>
+  );
 
   if (accessUrl) {
     return <Button buttonText={buttonText} href={accessUrl} target="_blank" />;
   }
 
   if (accesses.length) {
+    // Ready links first (all of them in red - they are the point of the
+    // page), then whatever could not be opened, then the way to support if
+    // anything is off - every piece as wide as the card's action column.
+    const readyAccesses = accesses.filter(
+      (access) => access.status === "ready" && access.accessUrl,
+    );
+    const otherAccesses = accesses.filter((access) => !readyAccesses.includes(access));
+    const labelOf = (access: TelegramAccess) =>
+      access.accessKey === "inspiration-hub" ? inspirationButtonText : mainButtonText;
+
     return (
-      <AccessList $multiple={accesses.length > 1}>
-        {accesses.map(renderAccessItem)}
-        {hasUnavailableAccess ? (
-          <SupportAction>
-            <Button
-              buttonText={supportButtonText}
-              href={supportHref}
-              target="_blank"
-              variant="secondary"
-            />
-          </SupportAction>
-        ) : null}
-      </AccessList>
+      <>
+        {readyAccesses.map((access) => (
+          <Button
+            key={access.accessKey}
+            buttonText={labelOf(access)}
+            href={access.accessUrl}
+            target="_blank"
+          />
+        ))}
+        {otherAccesses.map((access) =>
+          renderNotice(
+            access.accessKey,
+            `${labelOf(access)}: ${access.status === "active" ? activeText : unavailableText}`,
+          ),
+        )}
+        {hasUnavailableAccess ? renderSupportButton("secondary") : null}
+      </>
     );
   }
 
-  if (!isContextValid) {
-    return renderSupportButton();
-  }
-
-  if (statusKind === "unavailable") {
-    return renderSupportButton();
+  if (!isContextValid || statusKind === "unavailable") {
+    return (
+      <>
+        {renderNotice("unavailable", unavailableText)}
+        {renderSupportButton("primary")}
+      </>
+    );
   }
 
   return (
-    <StatusBox $kind={statusKind} role="status" aria-live="polite" aria-atomic="true">
-      {statusKind === "pending" ? (
-        <Dots aria-hidden>
-          <Dot $delayMs={0} />
-          <Dot $delayMs={120} />
-          <Dot $delayMs={240} />
-        </Dots>
-      ) : null}
-      <StatusTextBox>
-        <StatusText>{statusText}</StatusText>
-        {attemptCount > 0 ? (
-          <StatusMeta>
-            {Math.min(attemptCount, MAX_RETRY_ATTEMPTS)}/{MAX_RETRY_ATTEMPTS}
-          </StatusMeta>
-        ) : null}
-      </StatusTextBox>
-    </StatusBox>
+    <StatusCard $kind="progress" role="status" aria-live="polite" aria-atomic="true">
+      <StatusSpinner />
+      <StatusText>{statusText}</StatusText>
+    </StatusCard>
   );
 }

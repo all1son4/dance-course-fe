@@ -11,7 +11,10 @@ type InteractiveCourseCard = InteractiveCardProps & {
   id: string;
 };
 
-export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => [
+export const getOnlineCoursesArray = (
+  t: Translate,
+  commonT: Translate,
+): InteractiveCourseCard[] => [
   {
     id: "birthday-drop",
     title: t("cards.birthdayDrop.title"),
@@ -27,7 +30,7 @@ export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => 
         <DetailValueText>{t("cards.birthdayDrop.salesValue")}</DetailValueText>
       </ContentStack>
     ),
-    buttonText: t("cards.birthdayDrop.button"),
+    buttonText: commonT("details"),
     buttonHref: "/online/birthday-drop",
   },
   {
@@ -45,7 +48,7 @@ export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => 
         <DetailValueText>{t("cards.onlineGroup.startValue")}</DetailValueText>
       </ContentStack>
     ),
-    buttonText: t("cards.onlineGroup.button"),
+    buttonText: commonT("details"),
     buttonHref: "/online/group",
   },
   {
@@ -60,10 +63,10 @@ export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => 
     bottomRowContent: (
       <ContentStack>
         <DetailText>{t("cards.choreo.salesLabel")}</DetailText>
-        <DetailValueText>{t("cards.choreo.salesValue")}</DetailValueText>
+        <DetailValueText>{commonT("salesClosed")}</DetailValueText>
       </ContentStack>
     ),
-    buttonText: t("cards.choreo.button"),
+    buttonText: commonT("details"),
     buttonHref: "/online/choreo",
   },
   {
@@ -82,7 +85,7 @@ export const getOnlineCoursesArray = (t: Translate): InteractiveCourseCard[] => 
         <DetailValueText>{t("cards.firstTouch.startValue")}</DetailValueText>
       </ContentStack>
     ),
-    buttonText: t("cards.firstTouch.button"),
+    buttonText: commonT("details"),
     buttonHref: "/online/first-touch",
   },
 ];

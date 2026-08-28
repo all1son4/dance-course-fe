@@ -71,22 +71,22 @@ export const Contact = styled.div`
   & p {
     font-weight: 400;
     font-style: normal;
-    font-size: 13px;
-    line-height: 110%;
+    font-size: var(--text-caption);
+    line-height: 1.1;
     letter-spacing: 0;
     margin: 0;
-    color: rgba(72, 72, 72, 1);
+    color: var(--ink-muted);
   }
 `;
 
 export const AddressItem = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 13px;
-  line-height: 110%;
+  font-size: var(--text-caption);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;
 
 export const InfoBlock = styled.div`
@@ -130,18 +130,18 @@ export const SupportBlock = styled.div`
 export const SupportText = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 20px;
-  line-height: 110%;
+  font-size: var(--text-lead);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: #000000;
+  color: var(--ink);
 
   @media (max-width: 920px) {
-    font-size: 16px;
+    font-size: var(--text-body-sm);
   }
 
   @media (max-width: 767px) {
-    font-size: 20px;
+    font-size: var(--text-lead);
   }
 
   @media (max-width: 600px) {
@@ -175,28 +175,34 @@ export const BottomRow = styled.div`
 export const CopyRight = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 13px;
-  line-height: 110%;
+  font-size: var(--text-caption);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;
 
 export const PrivacyPolicy = styled(Link)`
   font-weight: 400;
   font-style: normal;
-  font-size: 13px;
-  line-height: 110%;
+  font-size: var(--text-caption);
+  line-height: 1.1;
   letter-spacing: 0;
   text-decoration: underline;
   text-underline-offset: 2px;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   transition: color 0.2s ease;
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: #000000;
+      color: var(--ink);
     }
   }
 `;
@@ -211,8 +217,8 @@ export const BottomLinks = styled.div`
 export const CookieSettingsButton = styled.button`
   font-weight: 400;
   font-style: normal;
-  font-size: 13px;
-  line-height: 110%;
+  font-size: var(--text-caption);
+  line-height: 1.1;
   letter-spacing: 0;
   background: transparent;
   border: none;
@@ -222,12 +228,18 @@ export const CookieSettingsButton = styled.button`
   text-underline-offset: 2px;
   margin: 0;
   padding: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   transition: color 0.2s ease;
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: #000000;
+      color: var(--ink);
     }
   }
 `;

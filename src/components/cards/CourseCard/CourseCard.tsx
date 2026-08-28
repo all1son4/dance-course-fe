@@ -1,4 +1,5 @@
 import Button from "@/components/common/Button";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import {
   CardContainer,
@@ -14,6 +15,7 @@ import type { CourseCardProps } from "./CourseCard.types";
 export default function CourseCard({
   bgColor,
   buttonHref,
+  buttonIsStickyAnchor = false,
   buttonRel,
   buttonTarget,
   buttonText,
@@ -35,10 +37,13 @@ export default function CourseCard({
           <Button
             className="courseCardButton"
             buttonText={buttonText}
+            // Every card says "Details"; screen readers get the product too.
+            aria-label={title ? `${buttonText} — ${title}` : undefined}
             width="200px"
             href={buttonHref}
             rel={buttonRel}
             target={buttonTarget}
+            {...(buttonIsStickyAnchor ? stickyCtaAnchorProps : {})}
           />
         )}
       </ContentBox>

@@ -7,7 +7,13 @@ import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-inten
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 
-import { ResultButtonBox, ResultParagraph } from "../result-page.styles";
+import {
+  ResultActions,
+  StatusCard,
+  StatusMark,
+  StatusSpinner,
+  StatusText,
+} from "../result-page.styles";
 import { resolveSuccessPageOutcomeAction } from "./success-outcome";
 
 const STATUS_CHECK_MAX_ATTEMPTS = 4;
@@ -164,26 +170,32 @@ export default function SuccessRedirectGuard({
     return <>{children}</>;
   }
 
+  const isUnavailable = verificationState === "unavailable";
+
   return (
     <>
-      <ResultParagraph
-        role={verificationState === "unavailable" ? "alert" : "status"}
+      <StatusCard
+        $kind={isUnavailable ? "notice" : "progress"}
+        role={isUnavailable ? "alert" : "status"}
         aria-atomic="true"
-        aria-live={verificationState === "unavailable" ? "assertive" : "polite"}
+        aria-live={isUnavailable ? "assertive" : "polite"}
       >
-        {verificationState === "checking"
-          ? checkingText
-          : verificationState === "pending"
-            ? pendingText
-            : unavailableText}
-      </ResultParagraph>
+        {isUnavailable ? <StatusMark aria-hidden /> : <StatusSpinner />}
+        <StatusText>
+          {verificationState === "checking"
+            ? checkingText
+            : verificationState === "pending"
+              ? pendingText
+              : unavailableText}
+        </StatusText>
+      </StatusCard>
       {/* Header and footer are hidden on result pages, so the settled
           non-success states carry their own minimal way out. A processing
           payment only needs patience and a way home; the support button
           appears once the status truly could not be confirmed. */}
       {verificationState !== "checking" && (
-        <ResultButtonBox>
-          {verificationState === "unavailable" && (
+        <ResultActions>
+          {isUnavailable && (
             <Button
               buttonText={supportButtonText}
               href={SUPPORT_TELEGRAM_URL}
@@ -191,7 +203,7 @@ export default function SuccessRedirectGuard({
             />
           )}
           <Button buttonText={homeButtonText} href="/" variant="secondary" />
-        </ResultButtonBox>
+        </ResultActions>
       )}
     </>
   );

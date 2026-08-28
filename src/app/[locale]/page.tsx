@@ -1,16 +1,20 @@
-import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
 
-import ContactCard from "@/components/cards/ContactCard";
 import CourseCard from "@/components/cards/CourseCard";
+import IconTextCard from "@/components/cards/IconTextCard";
 import Button from "@/components/common/Button";
+import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
 import FAQ from "@/components/other/FAQ";
 import { getQuestionsArray } from "@/components/other/FAQ/FAQ.constants";
+import OnlinePromoCard, {
+  CourseList,
+  HighlightText,
+} from "@/components/other/OnlinePromoCard";
 import Reviews from "@/components/other/Reviews";
+import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   INSTAGRAM_DIB_GALA_URL,
   INSTAGRAM_PROFILE_HANDLE,
@@ -18,11 +22,10 @@ import {
   INSTAGRAM_STAGE18_URL,
   INSTAGRAM_WORLD_OF_DANCE_POLAND_URL,
 } from "@/constants/links";
-import {
-  buildPageMetadata,
-  buildWebsiteStructuredData,
-  seoTargetLocale,
-} from "@/lib/seo";
+import PageClientMessages from "@/i18n/PageClientMessages";
+import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
+import { imageFadeProps } from "@/lib/reveal";
+import { buildWebsiteStructuredData } from "@/lib/seo";
 import { Insta, Logo, Quote } from "@/svg";
 
 import {
@@ -37,8 +40,6 @@ import {
   AbsolutePageImage,
   AbsolutePageLogo,
   ButtonsBox,
-  ContactSection,
-  CourseList,
   CourseOptionsBox,
   CourseSection,
   CourseTitle,
@@ -46,7 +47,6 @@ import {
   DescriptionText,
   DescriptionTitle,
   FAQSection,
-  HighlightText,
   IconPositionWrap,
   ImageDescriptionBox,
   ImageDescriptionCard,
@@ -59,29 +59,8 @@ import {
   StyledImage,
 } from "./page.styles";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const metadataT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata",
-  });
-  const pageT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata.pages.home",
-  });
-
-  return buildPageMetadata({
-    locale: seoTargetLocale,
-    path: "/",
-    title: pageT("title"),
-    description: pageT("description"),
-    siteName: metadataT("siteName"),
-    ogImageAlt: pageT("ogImageAlt"),
-    keywords: pageT("keywords")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-  });
-}
+export const generateMetadata = () =>
+  buildLocalizedPageMetadata({ pageKey: "home", path: "/" });
 
 export default function Home() {
   const t = useTranslations("HomePage");
@@ -105,13 +84,11 @@ export default function Home() {
   const renderIntroductionSection = () => (
     <IntroduceSection>
       <AbsolutePageImage>
-        <SvgAsset
-          src="/svg/MainPageBackgroundPhoto.webp"
-          width={775}
-          height={900}
+        <HeroPicture
+          asset={HERO_MEDIA.home}
+          media="(min-width: 1241px)"
           sizes="(max-width: 1240px) 0px, (max-width: 1440px) 52vw, 775px"
           priority
-          unoptimized
         />
       </AbsolutePageImage>
       <MainTextBox>
@@ -130,14 +107,12 @@ export default function Home() {
         </InteractiveBox>
       </MainTextBox>
       <AbsolutePageLogo>
-        <SvgAsset
-          src="/svg/MainPageBackgroundPhoto.webp"
-          width={775}
-          height={900}
-          className="hero-mobile-bg"
+        <HeroPicture
+          asset={HERO_MEDIA.home}
+          media="(max-width: 1240px)"
           sizes="(max-width: 450px) 100vw, (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
+          className="hero-mobile-bg"
           priority
-          unoptimized
         />
         <div className="hero-brand-logo">
           <Logo width={350} height={77} />
@@ -150,7 +125,8 @@ export default function Home() {
     <AboutMeSection>
       <AboutMeTextBox>
         <AboutMeTitle>{t("about.title")}</AboutMeTitle>
-        <ContactCard
+        <IconTextCard
+          variant="contact"
           icon={<Insta />}
           title={t("about.instagram")}
           text={INSTAGRAM_PROFILE_HANDLE}
@@ -198,6 +174,7 @@ export default function Home() {
       <AboutMeImageBox>
         <AboutMeImageFrame>
           <StyledImage
+            {...imageFadeProps}
             src={"/images/main_page_second.webp"}
             alt={t("about.imageAlt")}
             fill
@@ -245,37 +222,15 @@ export default function Home() {
           buttonText={commonT("details")}
           buttonHref="/offline"
         />
-        <CourseCard
+        <OnlinePromoCard
           icon={<SvgAsset src="/svg/TelegramGlass.webp" width={169} height={190} />}
-          title={t("courses.online.title")}
-          subtitle={t("courses.online.subtitle")}
-          cardContent={
-            <CourseList>
-              <li>
-                {t("courses.online.items.1.prefix")}{" "}
-                <HighlightText>
-                  &quot;{t("courses.online.items.1.highlight")}&quot;
-                </HighlightText>
-              </li>
-              <li>
-                {t("courses.online.items.2.prefix")}{" "}
-                <HighlightText>{t("courses.online.items.2.highlight")}</HighlightText>
-              </li>
-              <li>{t("courses.online.items.3")}</li>
-              <li>
-                <HighlightText>{t("courses.online.items.4")}</HighlightText>
-              </li>
-            </CourseList>
-          }
-          buttonText={commonT("details")}
-          buttonHref="/online"
         />
       </CourseOptionsBox>
     </CourseSection>
   );
 
   return (
-    <>
+    <PageClientMessages namespaces={["FAQ", "Reviews"]}>
       <StructuredData
         data={[buildWebsiteStructuredData(metadataT("siteName")), faqStructuredData]}
       />
@@ -288,9 +243,7 @@ export default function Home() {
       <ReviewsSection>
         <Reviews />
       </ReviewsSection>
-      <ContactSection>
-        <Contacts />
-      </ContactSection>
-    </>
+      <Contacts layout="inset" />
+    </PageClientMessages>
   );
 }

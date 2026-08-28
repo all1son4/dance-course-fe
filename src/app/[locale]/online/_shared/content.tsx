@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 
-import type { TextContentCardProps } from "@/components/cards/TextContentCard";
+import type { IconTextPanelProps } from "@/components/cards/IconTextCard";
 import type { IIconProps } from "@/types/icons";
 
 type Translate = (key: string) => string;
@@ -14,7 +14,7 @@ export type OnlineSuggestionDefinition = {
   textResolver?: "plain" | "rich";
 };
 
-export type OnlineSuggestionCard = TextContentCardProps & {
+export type OnlineSuggestionCard = IconTextPanelProps & {
   id: string;
 };
 
@@ -58,3 +58,6 @@ export const createRichText =
       p: (chunks) => <p>{chunks}</p>,
       strong: (chunks) => <strong>{chunks}</strong>,
     });
+
+/** Card titles carry visual line breaks; JSON-LD and labels want one line. */
+export const toPlainTitle = (value: string) => value.replace(/\s+/gu, " ").trim();

@@ -1,14 +1,16 @@
 import Image from "next/image";
 import styled from "styled-components";
 
-export const IntroductionSection = styled.section`
-  position: relative;
-  display: flex;
-  align-items: center;
+import {
+  HeroMobileImagesBox,
+  HeroSection,
+  HeroTextBox,
+  HeroTitle,
+} from "../_shared/hero.styles";
+
+export const IntroductionSection = styled(HeroSection)`
   min-height: 814px;
   padding: 0 25px;
-  box-sizing: border-box;
-  width: 100%;
 
   @media (max-width: 1240px) {
     padding: 0 20px;
@@ -31,23 +33,11 @@ export const IntroductionSection = styled.section`
   @media (max-width: 767px) {
     padding: 100px 20px 0;
     min-height: unset;
-    flex-direction: column;
-
-    & #desktop-only-image-box,
-    & #desktop-only-icon-box {
-      display: none;
-    }
   }
 `;
 
-export const TextBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+export const TextBox = styled(HeroTextBox)`
   max-width: 450px;
-  position: relative;
-  z-index: 15;
-  padding: 0 0 0 25px;
 
   @media (max-width: 1140px) {
     max-width: 400px;
@@ -55,7 +45,6 @@ export const TextBox = styled.div`
 
   @media (max-width: 1024px) {
     max-width: 400px;
-    padding: 0;
   }
 
   @media (max-width: 767px) {
@@ -63,26 +52,21 @@ export const TextBox = styled.div`
   }
 `;
 
-export const Title = styled.h1`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
-  letter-spacing: 0;
+export const Title = styled(HeroTitle)`
+  font-size: var(--text-display);
   margin: 0;
-  color: rgba(0, 0, 0, 1);
 
   & p {
     font-weight: 300;
     font-style: normal;
-    font-size: 17px;
-    line-height: 150%;
+    font-size: var(--text-body);
+    line-height: 1.5;
     letter-spacing: 0;
-    color: rgba(72, 72, 72, 1);
+    color: var(--ink-muted);
   }
 
   @media (max-width: 920px) {
-    font-size: 40px;
+    font-size: var(--text-h2);
   }
 
   @media (max-width: 767px) {
@@ -99,16 +83,6 @@ export const Description = styled.div`
   flex-direction: column;
   gap: 10px;
   margin: 0;
-`;
-
-export const DescriptionParagraph = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(12, 12, 12, 1);
 `;
 
 export const ImageBox = styled.div`
@@ -166,48 +140,42 @@ export const IconBox = styled.div`
   }
 `;
 
-export const MobileImagesBox = styled.div`
-  display: none;
+export const MobileImagesBox = styled(HeroMobileImagesBox)`
+  @media (max-width: 767px) {
+    position: relative;
+  }
 
   @media (max-width: 767px) {
-    display: flex;
-    position: relative;
-    width: 100%;
-
     & #mobile-only-image-box {
-      position: relative;
-      display: flex;
       justify-content: flex-start;
-      top: unset;
-      right: unset;
-      bottom: unset;
-      width: 100%;
       margin: clamp(-150px, -24vw, -80px) 0 0 0;
-
-      & :is(svg, img) {
-        margin: 0 0 0 clamp(-100px, -14vw, -60px);
-        width: 100%;
-      }
     }
+  }
 
+  @media (max-width: 767px) {
+    & #mobile-only-image-box :is(svg, img) {
+      margin: 0 0 0 clamp(-100px, -14vw, -60px);
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 767px) {
     & #mobile-only-icon-box {
-      display: flex;
       justify-content: flex-end;
       top: 10%;
       right: 0;
-      width: 100%;
+    }
+  }
 
-      & :is(svg, img) {
-        width: 65%;
-      }
+  @media (max-width: 767px) {
+    & #mobile-only-icon-box :is(svg, img) {
+      width: 65%;
     }
   }
 
   @media (max-width: 550px) {
-    & #mobile-only-icon-box {
-      & :is(svg, img) {
-        width: 62%;
-      }
+    & #mobile-only-icon-box :is(svg, img) {
+      width: 62%;
     }
   }
 
@@ -258,7 +226,7 @@ export const StudioDanceSection = styled.section`
   padding: 100px 100px 0;
   box-sizing: border-box;
   border-radius: 100px 100px 0 0;
-  background: rgba(255, 255, 255, 1);
+  background: var(--surface);
 
   @media (max-width: 1100px) {
     padding: 50px 50px 0;
@@ -292,14 +260,14 @@ export const StudioDanceTextBox = styled.div`
 export const StudioDanceTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+  font-size: var(--text-display);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0 0 40px 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 880px) {
-    font-size: 40px;
+    font-size: var(--text-h2);
   }
 `;
 
@@ -313,15 +281,15 @@ export const StudioDanceParagraphs = styled.div`
 export const StudioDanceParagraph = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;
 
 export const StudioDanceImage = styled(Image)`
-  border-radius: 100px;
+  border-radius: var(--radius-slab);
   display: flex;
   width: 100%;
   height: 100%;
@@ -341,25 +309,6 @@ export const StudioDanceImage = styled(Image)`
   }
 
   @media (max-width: 767px) {
-    border-radius: 40px;
-  }
-`;
-
-export const ContactSection = styled.section`
-  display: flex;
-  padding: 150px 100px 100px;
-  margin: -1px 0 100px 0;
-  box-sizing: border-box;
-  background: rgba(255, 255, 255, 1);
-  border-radius: 0 0 100px 100px;
-
-  @media (max-width: 1100px) {
-    padding: 150px 50px 50px;
-  }
-
-  @media (max-width: 880px) {
-    padding: 40px 20px;
-    border-radius: 0 0 40px 40px;
-    margin: -1px 0 60px 0;
+    border-radius: var(--radius-panel);
   }
 `;

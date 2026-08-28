@@ -5,7 +5,7 @@ import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { Failed } from "@/svg";
 
 import {
-  ResultButtonBox,
+  ResultActions,
   ResultCard,
   ResultContainer,
   ResultParagraph,
@@ -62,16 +62,16 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
         <ResultParagraphs>
           <ResultParagraph>{t("description.line1")}</ResultParagraph>
           <ResultParagraph>{t("description.line2")}</ResultParagraph>
-          <ResultButtonBox>
-            <Button buttonText={t("buttons.backToPayment")} href={paymentPath} />
-            <Button
-              buttonText={t("buttons.contactSupport")}
-              href={SUPPORT_TELEGRAM_URL}
-              target="_blank"
-              variant="secondary"
-            />
-          </ResultButtonBox>
         </ResultParagraphs>
+        <ResultActions>
+          <Button buttonText={t("buttons.backToPayment")} href={paymentPath} />
+          <Button
+            buttonText={t("buttons.contactSupport")}
+            href={SUPPORT_TELEGRAM_URL}
+            target="_blank"
+            variant="secondary"
+          />
+        </ResultActions>
       </ResultCard>
     </ResultContainer>
   );

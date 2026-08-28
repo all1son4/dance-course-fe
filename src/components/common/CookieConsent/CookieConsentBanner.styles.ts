@@ -23,7 +23,7 @@ export const BannerViewport = styled.div`
 export const BannerCard = styled.div`
   ${glass({
     variant: "dialog",
-    radius: "60px",
+    radius: "var(--radius-card)",
     /* Text-heavy panel that can land over anything (photos, the birthday
        popup), so it carries a denser fill and a restrained saturation lift -
        a vivid backdrop must not bleed through into the copy. */
@@ -40,7 +40,7 @@ export const BannerCard = styled.div`
   pointer-events: auto;
 
   @media (max-width: 767px) {
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
     padding: 20px;
     padding-bottom: calc(20px + env(safe-area-inset-bottom));
     max-height: calc(
@@ -73,15 +73,15 @@ export const BannerIntro = styled.div`
 
 export const BannerTitle = styled.h2`
   margin: 0;
-  color: #000000;
+  color: var(--ink);
   font-weight: 600;
-  font-size: 20px;
+  font-size: var(--text-lead);
   line-height: 1.2;
 `;
 
 export const BannerDescription = styled.p`
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 400;
   font-size: 14px;
   line-height: 1.45;
@@ -89,21 +89,21 @@ export const BannerDescription = styled.p`
 
 export const BannerHint = styled.p`
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 500;
-  font-size: 13px;
+  font-size: var(--text-caption);
   line-height: 1.4;
 `;
 
 export const BannerLink = styled(Link)`
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   text-decoration: underline;
   text-underline-offset: 2px;
   transition: color 0.2s ease;
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: rgba(124, 0, 2, 1);
+      color: var(--brand);
     }
   }
 `;
@@ -149,11 +149,10 @@ export const SettingsIconButton = styled.button`
   ${glass({
     frost: "static",
     variant: "control",
-    radius: "999px",
+    radius: "var(--radius-pill)",
     bgParam: "rgba(255, 255, 255, 0.2)",
   })}
   border: none;
-  outline: none;
   appearance: none;
   width: 52px;
   height: 52px;
@@ -169,12 +168,17 @@ export const SettingsIconButton = styled.button`
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: rgba(124, 0, 2, 1);
+      color: var(--brand);
     }
   }
 
   &:active {
     transform: scale(0.96);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
   }
 `;
 
@@ -184,6 +188,7 @@ export const InlineSettings = styled.div<{ $isOpen?: boolean }>`
   transition:
     grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease),
     padding-top var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   min-height: 0;
   overflow: clip;
   pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
@@ -203,6 +208,7 @@ export const InlineSettingsContent = styled.div<{ $isOpen?: boolean }>`
   transition:
     opacity var(--motion-base, 220ms) var(--ease-standard, ease),
     transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   will-change: opacity, transform;
 
   @media (max-width: 767px) {
@@ -258,24 +264,24 @@ export const CategoryInfo = styled.div`
 
 export const CategoryTitle = styled.p`
   margin: 0;
-  color: #000000;
+  color: var(--ink);
   font-weight: 600;
-  font-size: 15px;
+  font-size: var(--text-small);
   line-height: 1.25;
 `;
 
 export const CategoryDescription = styled.p`
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 400;
-  font-size: 13px;
+  font-size: var(--text-caption);
   line-height: 1.4;
 `;
 
 export const StaticTag = styled.span`
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 500;
-  font-size: 13px;
+  font-size: var(--text-caption);
   line-height: 1.2;
   white-space: nowrap;
   position: absolute;

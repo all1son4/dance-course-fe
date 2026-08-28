@@ -5,7 +5,7 @@ import { glass } from "@/styles/mixins/glass";
 
 export const HeaderWrap = styled.header`
   position: fixed;
-  top: calc(20px + var(--safe-area-top));
+  top: calc(var(--header-top) + var(--safe-area-top));
   left: 0;
   right: 0;
   z-index: 50;
@@ -44,7 +44,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
   margin: 0 auto;
   position: relative;
   z-index: 2;
-  height: 84px;
+  height: var(--header-height);
 
   display: flex;
   justify-content: space-between;
@@ -53,7 +53,7 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
 
   ${glass({
     variant: "chrome",
-    radius: "100px",
+    radius: "var(--radius-slab)",
     bgParam: "rgba(255, 255, 255, 0.4)",
     frostPx: 12,
     hoverEffect: false,
@@ -67,27 +67,37 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
     flex-direction: column;
     align-items: flex-start;
     justify-content: flex-start;
-    gap: 30px;
+    /* The gap lives inside the collapsing menu row (see Bottom), so the
+       closed pill is exactly brand + padding. */
+    gap: 0;
     height: auto;
+    overflow: visible;
 
     ${glass({
       variant: "chrome",
-      radius: "40px",
+      radius: "var(--radius-panel)",
       bgParam: "rgba(255, 255, 255, 0.4)",
       frostPx: 12,
       hoverEffect: false,
     })}
+  }
+`;
 
-    max-height: ${({ $isOpen }) => ($isOpen ? "420px" : "59px")};
-    overflow: visible;
-    transition: max-height var(--motion-base, 220ms) var(--ease-emphasized, ease);
+/**
+ * Open/close by animating the grid row between 0fr and 1fr. Unlike the old
+ * `max-height: 59px -> 420px` (content was ~230px, so opening "finished" at
+ * half the duration and closing did nothing for the first half), this tracks
+ * the real content height, so the easing is honoured in both directions.
+ */
+export const MenuReveal = styled.div<{ $isOpen: boolean }>`
+  display: grid;
+  width: 100%;
+  grid-template-rows: ${({ $isOpen }) => ($isOpen ? "1fr" : "0fr")};
+  transition: grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
 
-    /* Safari often stutters on max-height + backdrop-filter in fixed header */
-    @supports (-webkit-touch-callout: none) {
-      transition: max-height var(--motion-fast, 160ms) var(--ease-emphasized, ease);
-      will-change: max-height;
-      contain: layout style;
-    }
+  & > * {
+    min-height: 0;
   }
 `;
 
@@ -164,16 +174,21 @@ export const IconBox = styled.button<{ $isOpen: boolean }>`
   `}
 
   &:focus-visible {
-    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline: var(--focus-ring);
     outline-offset: 3px;
     border-radius: 10px;
   }
 `;
 
+/*
+ * No padding here on purpose: a grid row at 0fr can shrink its item to zero
+ * content height, but never below the item's own padding. The spacing lives
+ * on MenuInner, which collapses together with the row.
+ */
 export const Bottom = styled.div<{ $isOpen: boolean }>`
   display: none;
   flex-direction: column;
-  padding: 0 0 15px 0;
+  padding: 0;
   width: 100%;
   align-items: flex-start;
   position: relative;
@@ -186,9 +201,19 @@ export const Bottom = styled.div<{ $isOpen: boolean }>`
     transition:
       opacity var(--motion-base, 220ms) var(--ease-standard, ease),
       transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+    transition-delay: var(--motion-settle, 40ms);
     will-change: opacity, transform;
     pointer-events: ${({ $isOpen }) => ($isOpen ? "all" : "none")};
   }
+`;
+
+/** Carries the former Pill gap (30px) and Bottom padding (15px). */
+export const MenuInner = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 30px 0 15px;
 `;
 
 export const Divider = styled.div`

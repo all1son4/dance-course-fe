@@ -9,9 +9,7 @@ export type CourseCardProps = {
   buttonHref?: string;
   buttonRel?: string;
   buttonTarget?: string;
-  iconSize?: {
-    width: number;
-    height: number;
-  };
+  /** Marks the button as an anchor the page's sticky CTA mirrors. */
+  buttonIsStickyAnchor?: boolean;
   bgColor?: string;
 };

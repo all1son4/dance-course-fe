@@ -39,7 +39,9 @@ export default function SvgAsset({
       loading={priority ? undefined : loading}
       sizes={sizes}
       placeholder="empty"
-      decoding={priority ? "sync" : "async"}
+      // Even the LCP hero decodes off the main thread: a sync decode of a
+      // 300-400 KB photo blocks everything else on the page from painting.
+      decoding="async"
       fetchPriority={priority ? "high" : "auto"}
       quality={quality}
       style={{ backgroundColor: "transparent" }}

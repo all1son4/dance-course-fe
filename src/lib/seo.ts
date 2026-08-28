@@ -17,14 +17,16 @@ export const siteUrl =
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000");
 export const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
-export const seoImagePath = "/images/seo_photo.jpg";
-export const seoImageWidth = 1952;
-export const seoImageHeight = 2928;
-export const instagramUrl = INSTAGRAM_PROFILE_URL;
-export const telegramUrl = PERSONAL_TELEGRAM_URL;
+// 1200x630 (1.91:1) is what Telegram, WhatsApp, Facebook and X expect for a
+// large-image preview; the portrait photo sits on a blurred fill of itself.
+export const seoImagePath = "/images/og_default.jpg";
+export const seoImageWidth = 1200;
+export const seoImageHeight = 630;
+const instagramUrl = INSTAGRAM_PROFILE_URL;
+const telegramUrl = PERSONAL_TELEGRAM_URL;
 export const seoTargetLocale = "en" as const;
 export const seoTargetOpenGraphLocale = "en_US" as const;
-export const websiteStructuredDataId = `${normalizedSiteUrl}/#website`;
+const websiteStructuredDataId = `${normalizedSiteUrl}/#website`;
 export const annaStrokStructuredDataId = `${normalizedSiteUrl}/#anna-strok`;
 
 const getOpenGraphLocale = (locale: string) => {

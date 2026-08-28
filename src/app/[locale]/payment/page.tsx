@@ -30,7 +30,7 @@ import {
 } from "@/lib/birthday-popup";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
-import { usePaymentStore } from "@/stores";
+import { StoreProvider, usePaymentStore } from "@/stores";
 import type { PaymentCheckoutDraft } from "@/stores/payment-store";
 
 import { CheckoutForm } from "./checkout-form";
@@ -489,6 +489,7 @@ const PaymentPage = observer(function PaymentPage() {
       paymentStore.selectedPrice,
       paymentStore.selectedCurrency,
     ),
+    isLoading: paymentStore.catalogStatus === "loading",
     isRenewalCheckout,
     offerSummary: isOnlineGroupCheckout
       ? t("summary.offerLabel", {
@@ -603,4 +604,10 @@ const PaymentPage = observer(function PaymentPage() {
   );
 });
 
-export default PaymentPage;
+export default function PaymentRoute() {
+  return (
+    <StoreProvider>
+      <PaymentPage />
+    </StoreProvider>
+  );
+}

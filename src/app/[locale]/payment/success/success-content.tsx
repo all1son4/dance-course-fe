@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import styled from "styled-components";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent";
@@ -10,7 +9,8 @@ import { recordBirthdayOfferPurchase } from "@/lib/birthday-popup";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 
 import {
-  ResultButtonBox,
+  ResultActions,
+  ResultMeta,
   ResultParagraph,
   ResultParagraphs,
   ResultTitle,
@@ -39,38 +39,6 @@ type SuccessContentProps = {
   title: string;
 };
 
-const AccessDetails = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-`;
-
-const AccessDetail = styled.p`
-  font-weight: 300;
-  font-size: 14.5px;
-  line-height: 145%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 0.68);
-
-  @media (max-width: 767px) {
-    font-size: 13.5px;
-    line-height: 140%;
-  }
-`;
-
-const HomeButtonSlot = styled.div<{ $fullRow: boolean }>`
-  display: flex;
-  justify-content: center;
-  width: ${({ $fullRow }) => ($fullRow ? "100%" : "auto")};
-  flex: ${({ $fullRow }) => ($fullRow ? "1 0 100%" : "0 1 280px")};
-
-  @media (max-width: 767px) {
-    width: 100%;
-    flex-basis: 100%;
-  }
-`;
-
 export default function SuccessContent({
   accessNotice,
   checkoutSessionId,
@@ -92,7 +60,6 @@ export default function SuccessContent({
   telegramUnavailableText,
   title,
 }: SuccessContentProps) {
-  const [showUnavailableNote, setShowUnavailableNote] = useState(false);
   const { canUseFunctionalStorage } = useCookieConsent();
 
   // This component renders behind the verification guard, so reaching it means
@@ -108,22 +75,16 @@ export default function SuccessContent({
       // Strict storage policies must not break the success page.
     }
   }, [canUseFunctionalStorage, offerId]);
-  const [telegramAccessCount, setTelegramAccessCount] = useState(0);
   const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");
-  const hasValidTelegramAccessContext = Boolean(
-    checkoutSessionId && offerId && productId,
-  );
-  const isTelegramAccessPending =
-    isTelegramAccessPurchase &&
-    hasValidTelegramAccessContext &&
-    telegramAccessCount === 0 &&
-    !showUnavailableNote;
-  const homeButtonUsesFullRow = isTelegramAccessPending || telegramAccessCount > 1;
-  const inspirationAccessExpiryText = inspirationAccessExpiresAt
-    ? `${telegramInspirationUntilLabel} ${new Intl.DateTimeFormat(dateLocale, {
+  // Russian long dates already end in "г." - no second full stop after those.
+  const formattedInspirationExpiry = inspirationAccessExpiresAt
+    ? new Intl.DateTimeFormat(dateLocale, {
         dateStyle: "long",
         timeZone: "Europe/Warsaw",
-      }).format(new Date(inspirationAccessExpiresAt))}.`
+      }).format(new Date(inspirationAccessExpiresAt))
+    : "";
+  const inspirationAccessExpiryText = formattedInspirationExpiry
+    ? `${telegramInspirationUntilLabel} ${formattedInspirationExpiry}${formattedInspirationExpiry.endsWith(".") ? "" : "."}`
     : "";
   return (
     <>
@@ -131,19 +92,12 @@ export default function SuccessContent({
       <ResultParagraphs>
         {descriptionLine1 ? <ResultParagraph>{descriptionLine1}</ResultParagraph> : null}
         {descriptionLine2 ? <ResultParagraph>{descriptionLine2}</ResultParagraph> : null}
-        {accessNotice || inspirationAccessExpiryText ? (
-          <AccessDetails>
-            {accessNotice ? <AccessDetail>{accessNotice}</AccessDetail> : null}
-            {inspirationAccessExpiryText ? (
-              <AccessDetail>{inspirationAccessExpiryText}</AccessDetail>
-            ) : null}
-          </AccessDetails>
-        ) : null}
-        {isTelegramAccessPurchase && showUnavailableNote ? (
-          <ResultParagraph>{telegramUnavailableText}</ResultParagraph>
+        {accessNotice ? <ResultMeta>{accessNotice}</ResultMeta> : null}
+        {inspirationAccessExpiryText ? (
+          <ResultMeta>{inspirationAccessExpiryText}</ResultMeta>
         ) : null}
       </ResultParagraphs>
-      <ResultButtonBox>
+      <ResultActions>
         {isTelegramAccessPurchase ? (
           <TelegramAccessButton
             activeText={telegramAccessActiveText}
@@ -158,21 +112,11 @@ export default function SuccessContent({
             supportButtonText={telegramContactSupportText}
             supportHref={SUPPORT_TELEGRAM_URL}
             unavailableText={telegramUnavailableText}
-            onAccessCountChange={setTelegramAccessCount}
             onInspirationExpiryChange={setInspirationAccessExpiresAt}
-            onUnavailableChange={setShowUnavailableNote}
           />
         ) : null}
-
-        <HomeButtonSlot $fullRow={homeButtonUsesFullRow}>
-          <Button
-            buttonText={homeButtonText}
-            href="/"
-            variant="secondary"
-            width={homeButtonUsesFullRow ? "100%" : "280px"}
-          />
-        </HomeButtonSlot>
-      </ResultButtonBox>
+        <Button buttonText={homeButtonText} href="/" variant="secondary" />
+      </ResultActions>
     </>
   );
 }

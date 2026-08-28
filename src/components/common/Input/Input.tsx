@@ -81,8 +81,12 @@ export const Input: FC<TInput> = ({
         )}
         {!label && !hasValue && placeholder && <Placeholder text={placeholder} />}
       </InputWrapper>
-      {hasError && variant === "primary" && (
-        <ErrorMessage id={errorMessageId}>{errorMessage}</ErrorMessage>
+      {/* Rendered for every variant: the field always points at this id via
+          aria-describedby. `role="alert"` announces it as it appears. */}
+      {hasError && (
+        <ErrorMessage id={errorMessageId} role="alert">
+          {errorMessage}
+        </ErrorMessage>
       )}
     </InputBox>
   );

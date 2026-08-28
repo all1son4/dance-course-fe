@@ -8,6 +8,7 @@ import SvgAsset from "@/components/common/SvgAsset";
 import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constants/links";
 import {
   buildCheckoutHref,
+  formatOfferPrice,
   SELLABLE_PRODUCTS_LIST,
   type SellableProduct,
   type SellableProductCode,
@@ -134,7 +135,7 @@ const CHOREO_SUGGESTION_DEFINITIONS = [
 ] satisfies readonly OnlineSuggestionDefinition[];
 
 const formatOfferButtonText = (t: Translate, offer: SellableProductOffer) =>
-  `${t(offer.labelKey)} ${offer.prices.pln} PLN / ${offer.prices.eur} €`;
+  `${t(offer.labelKey)} ${formatOfferPrice(offer.prices)}`;
 
 const buildChoreoButtonOptions = (
   productId: string,
@@ -151,7 +152,7 @@ const buildChoreoButtonOptions = (
       }
     : undefined;
 
-export const getOnlineSuggestions = (
+export const getChoreoSuggestions = (
   t: Translate,
   tRich: RichTranslate,
 ): OnlineSuggestionCard[] =>

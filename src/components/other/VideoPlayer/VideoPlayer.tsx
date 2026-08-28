@@ -1,5 +1,9 @@
 "use client";
 
+// Plyr's stylesheet travels with the player, so only pages that actually
+// render a video pay for it (it used to be imported by the /online layout).
+import "@/styles/vendor/plyr.css";
+
 import { useTranslations } from "next-intl";
 import type { Options as PlyrOptions } from "plyr";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -106,6 +110,9 @@ const createPlayerOptions = ({
   controls: [],
   clickToPlay: false,
   loadSprite: false,
+  // Plyr would otherwise remember volume/captions in localStorage ("plyr"):
+  // a storage entry the cookie policy does not list and nobody asked for.
+  storage: { enabled: false },
   muted,
   ...(loop ? { loop: { active: true } } : {}),
   ...(isYoutube

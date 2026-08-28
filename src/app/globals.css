@@ -1,3 +1,5 @@
+@import "../styles/tokens.css";
+
 :root {
   /* Design tokens */
   --bg: linear-gradient(90deg, #e9eaee 27.02%, #9b9fa0 85.72%);
@@ -5,14 +7,29 @@
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Typography */
+  /* `--font-manrope` comes from next/font and carries the metric-matched
+     "Manrope Fallback" face, so text does not reflow when the real font
+     swaps in. Naming "Manrope" directly here would skip that fallback. */
   --font-sans:
-    "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+    var(--font-manrope, "Manrope"), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
   --motion-fast: 160ms;
   --motion-base: 220ms;
   --motion-slow: 320ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* One or two frames of stillness before a reveal or entrance starts to
+     move. Safari spends the first frame after a big style change on style
+     recalculation and layer setup while the animation clock already runs,
+     so without this the first visible frame is already ~half way through
+     (measured 45-60% jumps in WebKit, 25-30% with the settle). */
+  --motion-settle: 40ms;
+
+  /* Keyboard focus ring. Only `:focus-visible` uses it, so mouse and touch
+     never see it. Full-opacity brand red clears 3:1 on every background
+     the site uses; the earlier rgba(124, 0, 2, 0.32) sat at 1.7-2.0:1. */
+  --focus-ring-color: rgba(124, 0, 2, 1);
+  --focus-ring: 2px solid var(--focus-ring-color);
 }
 
 @keyframes maintenance-ring-spin {
@@ -51,7 +68,6 @@ body {
 
 html {
   -webkit-text-size-adjust: 100%;
-  text-rendering: optimizeLegibility;
   scroll-behavior: auto;
   background: var(--bg);
 }
@@ -74,6 +90,12 @@ body {
 main {
   flex: 1;
   width: 100%;
+}
+
+/* The skip link focuses <main> programmatically (tabindex="-1"); that focus
+   is never keyboard-visible, so no ring. */
+main:focus {
+  outline: none;
 }
 
 /* Media defaults */
@@ -125,13 +147,59 @@ a {
   }
 }
 
-/* Reduce motion */
+/* Reduce motion.
+   Durations collapse to ~0 instead of `animation: none`: removing an animation
+   also discards its fill-mode, so anything whose visible pose is held by
+   keyframes (`animation: … both`) would vanish. Near-zero durations keep the
+   end state and drop the motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     scroll-behavior: auto !important;
-    transition: none !important;
-    animation: none !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* Scroll reveal and image fade (components/common/Reveal, ImageFade).
+   The attributes exist only between hydration and the end of the entrance:
+   before JavaScript, under reduced motion and once settled there is nothing
+   here, so nothing is ever left hidden. `:root` in the selector outranks a
+   styled component's own single-class rules. A component can replace the
+   default fade-up with its own choreography on `&&[data-reveal]`. */
+@media (prefers-reduced-motion: no-preference) {
+  :root [data-reveal="pending"] {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+
+  :root [data-reveal="in"] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    transition:
+      opacity 380ms var(--ease-standard),
+      transform 520ms var(--ease-emphasized);
+    transition-delay: calc(var(--motion-settle) + var(--reveal-delay, 0ms));
+  }
+
+  :root [data-fade="pending"] {
+    opacity: 0;
+  }
+
+  :root [data-fade="in"] {
+    opacity: 1;
+    transition: opacity var(--motion-slow) var(--ease-standard);
+  }
+}
+
+@media print {
+  [data-reveal],
+  [data-fade] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

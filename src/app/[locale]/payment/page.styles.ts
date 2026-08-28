@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 
 import { Link } from "@/i18n/navigation";
 import { glass } from "@/styles/mixins/glass";
@@ -58,11 +58,11 @@ export const TextBox = styled.div`
 export const PaymentTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+  font-size: var(--text-display);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 767px) {
     font-size: 50px;
@@ -72,14 +72,14 @@ export const PaymentTitle = styled.h1`
 export const PaymentDescription = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   margin: 0;
 
   @media (max-width: 767px) {
-    font-size: 15px;
+    font-size: var(--text-small);
   }
 `;
 
@@ -103,14 +103,14 @@ export const PersonalData = styled.div`
 
   ${glass({
     frost: "static",
-    radius: "60px",
+    radius: "var(--radius-card)",
     hoverEffect: false,
   })}
 
   @media (max-width: 767px) {
     gap: 30px;
     padding: 30px 20px;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
@@ -121,7 +121,7 @@ export const PaymentPreparationError = styled.p`
   border-radius: 12px;
   background: rgba(176, 24, 33, 0.05);
   color: rgba(176, 24, 33, 1);
-  font-size: 13px;
+  font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 500;
 `;
@@ -139,32 +139,32 @@ export const SalesClosedNotice = styled.div`
 
   ${glass({
     frost: "static",
-    radius: "60px",
+    radius: "var(--radius-card)",
     hoverEffect: false,
   })}
 
   @media (max-width: 767px) {
     gap: 20px;
     padding: 30px 20px;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
 export const SalesClosedTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
-  line-height: 110%;
+  font-size: var(--text-card);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const SalesClosedDescription = styled.p`
   margin: 0;
-  font-size: 16px;
-  line-height: 150%;
-  color: rgba(72, 72, 72, 1);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+  color: var(--ink-muted);
 `;
 
 export const StripeReveal = styled.div<{ $isVisible: boolean }>`
@@ -235,7 +235,7 @@ export const TelegramVerifyButton = styled.button<{ $isVerified: boolean }>`
   border: 1px solid
     ${({ $isVerified }) =>
       $isVerified ? "rgba(24, 112, 58, 0.36)" : "rgba(42, 171, 238, 0.34)"};
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: ${({ $isVerified }) =>
     $isVerified ? "rgba(24, 112, 58, 1)" : "rgba(42, 171, 238, 1)"};
   color: #ffffff;
@@ -298,11 +298,11 @@ export const TelegramInputStatus = styled.p<{
 export const PersonalDataTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
-  line-height: 110%;
+  font-size: var(--text-card);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 `;
 
 export const Inputs = styled.div`
@@ -388,11 +388,11 @@ export const SummaryBoxParahraphs = styled.div`
   & p {
     font-weight: 300;
     font-style: normal;
-    font-size: 17px;
-    line-height: 150%;
+    font-size: var(--text-body);
+    line-height: 1.5;
     letter-spacing: 0;
     margin: 0;
-    color: rgba(72, 72, 72, 1);
+    color: var(--ink-muted);
   }
 `;
 
@@ -422,7 +422,7 @@ export const CurrencyBox = styled.div`
 
     & [role="radio"] {
       padding: 0 18px;
-      font-size: 15px;
+      font-size: var(--text-small);
     }
   }
 `;
@@ -430,11 +430,11 @@ export const CurrencyBox = styled.div`
 export const MoneyTitle = styled.p`
   font-weight: 500;
   font-style: normal;
-  font-size: 15px;
-  line-height: 110%;
+  font-size: var(--text-small);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 `;
 
 export const PriceBox = styled.div`
@@ -448,47 +448,103 @@ export const PriceBox = styled.div`
   }
 `;
 
+const summaryShimmer = keyframes`
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+`;
+
+/*
+ * Placeholders shown while the catalogue is still loading: the price and the
+ * plan line come from the database, and the static fallback could disagree,
+ * so nothing numeric is painted until the real values arrive. Same shimmer
+ * language as the Stripe skeleton below the form.
+ */
+const summarySkeleton = css`
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.55) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: ${summaryShimmer} 1.8s ease-in-out infinite;
+  }
+`;
+
+export const PriceSkeleton = styled.span`
+  ${summarySkeleton}
+  display: block;
+  width: 118px;
+  height: 36px;
+
+  @media (max-width: 920px) {
+    width: 100px;
+    height: 30px;
+  }
+`;
+
+export const SummaryLineSkeleton = styled.span`
+  ${summarySkeleton}
+  display: block;
+  width: 60%;
+  height: 14px;
+  margin-top: 4px;
+`;
+
 export const Price = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 100%;
+  font-size: var(--text-h3);
+  line-height: 1;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 920px) {
-    font-size: 30px;
+    font-size: var(--text-fact);
   }
 
   @media (max-width: 767px) {
-    font-size: 28px;
+    font-size: var(--text-card);
   }
 `;
 
 export const AdditionalNotification = styled.div`
   font-weight: 600;
   font-style: normal;
-  font-size: 17px;
-  line-height: 140%;
+  font-size: var(--text-body);
+  line-height: 1.4;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
 
   @media (max-width: 767px) {
-    font-size: 15px;
+    font-size: var(--text-small);
   }
 `;
 
 export const AgreementLink = styled(Link)`
   text-decoration: underline;
   text-underline-offset: 2px;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   transition: color 0.2s ease;
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      color: #000000;
+      color: var(--ink);
     }
   }
 `;

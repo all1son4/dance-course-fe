@@ -1,6 +1,7 @@
 import Image from "next/image";
 import styled from "styled-components";
 
+import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
 import { glass } from "@/styles/mixins/glass";
 
 export const IntroduceSection = styled.section`
@@ -13,7 +14,7 @@ export const IntroduceSection = styled.section`
   padding: 0 25px;
 
   @media (max-width: 1440px) {
-    min-height: 800px;
+    min-height: 770px;
     padding: 0 20px;
   }
 
@@ -45,8 +46,10 @@ export const AbsolutePageImage = styled.div`
   }
 
   @media (max-width: 1440px) {
-    top: -54px;
-    width: 52%;
+    left: 32%;
+    top: unset;
+    bottom: 20px;
+    width: 50%;
     height: auto;
   }
 
@@ -137,10 +140,10 @@ export const MainTitle = styled.h1`
   font-weight: 400;
   font-style: normal;
   font-size: 90px;
-  line-height: 130%;
+  line-height: 1.3;
   letter-spacing: 0;
   margin: 0 0 20px 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 920px) {
     font-size: 50px;
@@ -166,20 +169,20 @@ export const DescriptionBox = styled.div`
 
 export const DescriptionTitle = styled.p`
   font-weight: 600;
-  font-size: 17px;
-  line-height: 110%;
+  font-size: var(--text-body);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
-  color: #000000;
+  color: var(--ink);
 `;
 
 export const DescriptionText = styled.p`
   font-weight: 300;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: #000000;
+  color: var(--ink);
   padding: 0;
 `;
 
@@ -191,11 +194,11 @@ export const InteractiveBox = styled.div`
 
 export const InteractiveHint = styled.p`
   font-weight: 300;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: #000000;
+  color: var(--ink);
   padding: 0;
 `;
 
@@ -213,8 +216,8 @@ export const AboutMeSection = styled.section`
   display: flex;
   justify-content: space-between;
   padding: 100px;
-  background: rgba(255, 255, 255, 1);
-  border-radius: 100px;
+  background: var(--surface);
+  border-radius: var(--radius-slab);
   gap: 20px;
 
   @media (max-width: 1100px) {
@@ -224,7 +227,7 @@ export const AboutMeSection = styled.section`
   @media (max-width: 880px) {
     padding: 40px 20px;
     flex-direction: column;
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
     gap: 40px;
   }
 `;
@@ -251,14 +254,14 @@ export const AboutMeTextBox = styled.div`
 export const AboutMeTitle = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+  font-size: var(--text-display);
+  line-height: 1.1;
   letter-spacing: 0;
   margin: 0 0 40px 0;
-  color: #000000;
+  color: var(--ink);
 
   @media (max-width: 880px) {
-    font-size: 40px;
+    font-size: var(--text-h2);
     margin: 0 0 30px 0;
   }
 `;
@@ -276,11 +279,11 @@ export const AboutMeParagraphs = styled.div`
 export const AboutMeParagraph = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
   margin: 0 0 14px 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   &:last-of-type {
     margin: 0;
@@ -298,10 +301,10 @@ export const AboutMeList = styled.ul`
 
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
-  color: #000000;
+  color: var(--ink);
 
   & > li {
     & a {
@@ -311,7 +314,7 @@ export const AboutMeList = styled.ul`
 
       @media (hover: hover) and (pointer: fine) {
         &:hover {
-          color: rgba(124, 0, 2, 1);
+          color: var(--brand);
         }
       }
     }
@@ -334,11 +337,11 @@ export const AboutMeImageFrame = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 560 / 635;
-  border-radius: 100px;
+  border-radius: var(--radius-slab);
   overflow: hidden;
 
   @media (max-width: 767px) {
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
   }
 `;
 
@@ -346,11 +349,11 @@ export const StyledImage = styled(Image)`
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 100px;
+  border-radius: var(--radius-slab);
   object-fit: cover;
 
   @media (max-width: 767px) {
-    border-radius: 40px;
+    border-radius: var(--radius-panel);
   }
 `;
 
@@ -410,7 +413,7 @@ export const ImageDescriptionCard = styled.div`
   margin: -86px 0 0 -98px;
 
   ${glass({
-    radius: "100px",
+    radius: "var(--radius-slab)",
     bgParam: "rgba(228, 228, 228, 0.4)",
     frostPx: 14,
     depth: 36,
@@ -424,13 +427,13 @@ export const ImageDescriptionCard = styled.div`
   @media (max-width: 767px) {
     padding: 30px;
     margin: -200px 0 0 0;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 
   @media (max-width: 450px) {
     margin: -160px 0 0 0;
     & p {
-      font-size: 15px;
+      font-size: var(--text-small);
     }
   }
 `;
@@ -456,18 +459,9 @@ export const CourseSection = styled.section`
   }
 `;
 
-export const CourseTitle = styled.h2`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+export const CourseTitle = styled(SectionTitleBase)`
   letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-
-  @media (max-width: 880px) {
-    font-size: 40px;
-  }
+  color: var(--ink);
 `;
 
 export const CourseOptionsBox = styled.div`
@@ -504,7 +498,7 @@ export const CourseOptionsBox = styled.div`
 
   @media (max-width: 880px) {
     & .courseCardContainer {
-      border-radius: 40px;
+      border-radius: var(--radius-panel);
     }
   }
 
@@ -515,7 +509,7 @@ export const CourseOptionsBox = styled.div`
     }
 
     & .courseCardTitle {
-      font-size: 28px;
+      font-size: var(--text-card);
     }
     & .courseCardButton {
       max-width: 100%;
@@ -526,31 +520,6 @@ export const CourseOptionsBox = styled.div`
     flex-direction: column;
     gap: 40px;
   }
-`;
-
-export const CourseList = styled.ul`
-  list-style: numeric;
-  padding: 0 0 0 16px;
-  margin: 0;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  color: #000000;
-
-  & li {
-    margin: 0;
-  }
-`;
-
-export const HighlightText = styled.span`
-  font-weight: 600;
 `;
 
 export const FAQSection = styled.section`
@@ -595,21 +564,5 @@ export const ReviewsSection = styled.section`
 
   @media (max-width: 680px) {
     padding-bottom: 40px;
-  }
-`;
-
-export const ContactSection = styled.section`
-  padding: 0 50px 100px;
-
-  @media (max-width: 1240px) {
-    padding: 0 0 100px;
-  }
-
-  @media (max-width: 1024px) {
-    padding: 0 20px 100px;
-  }
-
-  @media (max-width: 880px) {
-    padding: 0 20px 60px;
   }
 `;

@@ -1,6 +1,7 @@
-import { css, keyframes, styled } from "styled-components";
+import { css, styled } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
+import { chevronHint } from "@/styles/mixins/motion";
 
 import type { InteractiveCardFrost } from "./InteractiveCard.types";
 
@@ -33,7 +34,7 @@ export const CardContainer = styled.div<{
   ${({ $frost }) => frostStyles[$frost]}
 
   @media (max-width: 880px) {
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
@@ -56,14 +57,14 @@ export const TitleBlock = styled.div`
 export const Title = styled.h2`
   font-weight: 400;
   font-style: normal;
-  font-size: 36px;
-  line-height: 110%;
+  font-size: var(--text-h3);
+  line-height: 1.1;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   white-space: pre-line;
 
   @media (max-width: 880px) {
-    font-size: 28px;
+    font-size: var(--text-card);
   }
 `;
 
@@ -99,6 +100,7 @@ export const TopInfoRow = styled.div<{ $isCollapsed?: boolean }>`
     max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     opacity var(--motion-base, 220ms) var(--ease-standard, ease),
     transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   pointer-events: ${({ $isCollapsed }) => ($isCollapsed ? "none" : "auto")};
 
   @media (prefers-reduced-motion: reduce) {
@@ -129,6 +131,7 @@ export const Divider = styled.div<{ $isCollapsed?: boolean }>`
     height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     margin var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+  transition-delay: var(--motion-settle, 40ms);
   overflow: hidden;
 
   @media (max-width: 880px) {
@@ -144,16 +147,6 @@ export const ButtonBox = styled.div`
   width: 100%;
   display: flex;
   margin: 30px 0 0 0;
-`;
-
-const collapseHintBounce = keyframes`
-  0%, 100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(0, -4px, 0);
-  }
 `;
 
 export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
@@ -176,11 +169,16 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+
   ${({ $isCollapsed }) =>
     $isCollapsed
-      ? css`
-          animation: ${collapseHintBounce} 1.25s ease-in-out infinite;
-        `
+      ? chevronHint("up")
       : css`
           animation: none;
         `}

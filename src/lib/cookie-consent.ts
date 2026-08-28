@@ -92,7 +92,7 @@ export const hasCookieConsentFor = (
   category: OptionalConsentCategory,
 ) => consent?.[category] === true;
 
-export const notifyCookieConsentUpdated = (consent: CookieConsentRecord) => {
+const notifyCookieConsentUpdated = (consent: CookieConsentRecord) => {
   if (!isBrowser()) {
     return;
   }

@@ -1,13 +1,17 @@
 import styled from "styled-components";
 
-export const IntroductionSection = styled.section`
-  position: relative;
-  display: flex;
-  align-items: center;
+import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
+
+import {
+  HeroMobileImagesBox,
+  HeroSection,
+  HeroTextBox,
+  HeroTitle,
+} from "../../_shared/hero.styles";
+
+export const IntroductionSection = styled(HeroSection)`
   min-height: 860px;
   padding: 0 25px;
-  box-sizing: border-box;
-  width: 100%;
 
   @media (max-width: 1240px) {
     min-height: 800px;
@@ -20,31 +24,18 @@ export const IntroductionSection = styled.section`
 
   @media (max-width: 767px) {
     min-height: unset;
-    flex-direction: column;
     padding: 100px 20px 0;
-
-    & #desktop-only-image-box,
-    & #desktop-only-icon-box {
-      display: none;
-    }
   }
 `;
 
-export const TextBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
+export const TextBox = styled(HeroTextBox)`
   max-width: 620px;
-  position: relative;
-  z-index: 15;
-  padding: 0 0 0 25px;
 
   @media (max-width: 1240px) {
     max-width: 540px;
   }
 
   @media (max-width: 1024px) {
-    padding: 0;
     & p {
       max-width: 520px;
     }
@@ -58,40 +49,36 @@ export const TextBox = styled.div`
 
   @media (max-width: 767px) {
     max-width: 100%;
+  }
+
+  @media (max-width: 767px) {
     & p {
       max-width: 100%;
     }
   }
 `;
 
-export const MobileImagesBox = styled.div`
-  display: none;
+export const MobileImagesBox = styled(HeroMobileImagesBox)`
   position: relative;
 
   @media (max-width: 767px) {
-    display: flex;
-    width: 100%;
-
     & #mobile-only-image-box {
-      position: relative;
-      display: flex;
-      width: 100%;
       max-width: 100%;
       justify-content: center;
-      top: unset;
-      right: unset;
-      bottom: unset;
       margin: clamp(-100px, -15vw, -60px) 0 0 clamp(-60px, -9vw, -20px);
-      & :is(svg, img) {
-        max-width: 100%;
-        width: 90%;
-        height: 100%;
-      }
     }
+  }
 
+  @media (max-width: 767px) {
+    & #mobile-only-image-box :is(svg, img) {
+      max-width: 100%;
+      width: 90%;
+      height: 100%;
+    }
+  }
+
+  @media (max-width: 767px) {
     & #mobile-only-icon-box {
-      display: flex;
-      width: 100%;
       max-width: 100%;
       justify-content: flex-end;
       align-items: flex-start;
@@ -99,35 +86,30 @@ export const MobileImagesBox = styled.div`
       right: 6%;
       bottom: unset;
       margin: 20px 0 0 0;
-      & :is(svg, img) {
-        max-width: 100%;
-        width: 50%;
-        height: fit-content;
-      }
+    }
+  }
+
+  @media (max-width: 767px) {
+    & #mobile-only-icon-box :is(svg, img) {
+      max-width: 100%;
+      width: 50%;
+      height: fit-content;
     }
   }
 
   @media (max-width: 570px) {
-    & #mobile-only-icon-box {
-      & :is(svg, img) {
-        max-width: 100%;
-        width: 48%;
-        top: 4%;
-      }
+    & #mobile-only-icon-box :is(svg, img) {
+      max-width: 100%;
+      width: 48%;
+      top: 4%;
     }
   }
 `;
 
-export const Title = styled.h1`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
-  letter-spacing: 0;
+export const Title = styled(HeroTitle)`
+  font-size: var(--text-display);
   margin: 0 0 40px;
-  color: rgba(0, 0, 0, 1);
   white-space: pre-line;
-
   max-width: 420px;
 
   @media (max-width: 920px) {
@@ -138,23 +120,6 @@ export const Title = styled.h1`
     margin: 0 0 30px;
     font-size: 38px;
   }
-`;
-
-export const Description = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0 0 60px 0;
-`;
-
-export const DescriptionParagraph = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(12, 12, 12, 1);
 `;
 
 export const ImageBox = styled.div`
@@ -184,7 +149,7 @@ export const ImageBox = styled.div`
   }
 
   @media (max-width: 920px) {
-    max-width: 520px;
+    max-width: 510px;
     right: 0;
     bottom: -10px;
   }
@@ -221,41 +186,9 @@ export const IconBox = styled.div`
   }
 
   @media (max-width: 920px) {
-    max-width: 270px;
-    top: 230px;
+    max-width: 250px;
+    top: 250px;
   }
-`;
-
-export const DateBox = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-export const InfoBoxGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin: 0 0 30px 0;
-`;
-
-export const From = styled.p`
-  font-weight: 300;
-  font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(72, 72, 72, 1);
-`;
-
-export const Date = styled.p`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 30px;
-  line-height: 110%;
-  letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
 `;
 
 export const ButtonBox = styled.div`
@@ -278,51 +211,6 @@ export const ButtonBox = styled.div`
   }
 `;
 
-export const SpecialWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  margin: 0 0 100px 0;
-  padding: 100px;
-  border-radius: 100px;
-  background: rgba(255, 255, 255, 1);
-
-  @media (max-width: 1100px) {
-    padding: 50px;
-  }
-
-  @media (max-width: 880px) {
-    padding: 40px 20px;
-    border-radius: 40px;
-    margin: 0 0 60px 0;
-  }
-`;
-
-export const VideoSection = styled.section`
-  display: flex;
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 100px;
-  overflow: hidden;
-  position: relative;
-
-  @media (max-width: 880px) {
-    border-radius: 40px;
-  }
-
-  @media (max-width: 650px) {
-    & button {
-      width: 55px;
-      height: 55px;
-    }
-
-    & button svg {
-      width: 32px;
-      height: 32px;
-    }
-  }
-`;
-
 export const TariffSection = styled.section`
   padding: 100px 0px 0px;
   box-sizing: border-box;
@@ -340,18 +228,9 @@ export const TariffSection = styled.section`
   }
 `;
 
-export const TariffTitle = styled.h2`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
+export const TariffTitle = styled(SectionTitleBase)`
   letter-spacing: 0;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
-
-  @media (max-width: 880px) {
-    font-size: 40px;
-  }
+  color: var(--ink);
 `;
 
 export const TariffOptionsBox = styled.div`
@@ -403,7 +282,7 @@ export const TariffOptionsBox = styled.div`
 
   @media (max-width: 880px) {
     & .courseCardContainer {
-      border-radius: 40px;
+      border-radius: var(--radius-panel);
     }
   }
 
@@ -414,7 +293,7 @@ export const TariffOptionsBox = styled.div`
     }
 
     & .courseCardTitle {
-      font-size: 28px;
+      font-size: var(--text-card);
     }
 
     & .courseCardButton {
@@ -445,10 +324,10 @@ export const TariffContentList = styled.ul`
 
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
-  color: #000000;
+  color: var(--ink);
 
   & li {
     margin: 0;
@@ -463,8 +342,8 @@ export const TariffContentList = styled.ul`
   @media (max-width: 550px) {
     gap: 8px;
     padding-left: 20px;
-    font-size: 16px;
-    line-height: 145%;
+    font-size: var(--text-body-sm);
+    line-height: 1.45;
   }
 `;
 
@@ -480,51 +359,6 @@ export const AboutCourseSection = styled.section`
     flex-direction: column;
     gap: 30px;
   }
-
-  @media (max-width: 880px) {
-    padding: 40px 0 0 0;
-  }
-`;
-
-export const AboutCourseCards = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  max-width: 600px;
-  width: 100%;
-
-  @media (max-width: 920px) {
-    max-width: 100%;
-  }
-`;
-
-export const AboutCourseTitle = styled.h2`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
-  letter-spacing: 0;
-  margin: 0;
-  max-width: 420px;
-  position: sticky;
-  top: calc(116px + var(--safe-area-top));
-  align-self: start;
-
-  @media (max-width: 920px) {
-    max-width: 100%;
-    position: static;
-    top: auto;
-  }
-
-  @media (max-width: 880px) {
-    font-size: 40px;
-  }
-`;
-
-export const ContactSection = styled.section`
-  display: flex;
-  padding: 150px 0 0 0;
-  box-sizing: border-box;
 
   @media (max-width: 880px) {
     padding: 40px 0 0 0;

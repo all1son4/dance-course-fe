@@ -1,6 +1,5 @@
 export const DEFAULT_SITE_HOME_URL = "https://annastrok.com";
 
-export const SUPPORT_TELEGRAM_HANDLE = "@annastroksupport";
 export const SUPPORT_TELEGRAM_URL = "https://t.me/annastroksupport";
 
 export const PERSONAL_TELEGRAM_HANDLE = "@annastrok_dance";

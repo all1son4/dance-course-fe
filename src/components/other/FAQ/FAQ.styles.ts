@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
+
 export const FAQContainer = styled.div`
   display: grid;
   grid-template-columns: 400px 1fr;
@@ -21,23 +23,14 @@ export const FAQContainer = styled.div`
   }
 `;
 
-export const Title = styled.h2`
-  font-weight: 400;
-  font-style: normal;
-  font-size: 55px;
-  line-height: 110%;
-  margin: 0;
-  color: rgba(0, 0, 0, 1);
+export const Title = styled(SectionTitleBase)`
+  color: var(--ink);
   position: sticky;
-  top: calc(116px + var(--safe-area-top));
+  top: calc(var(--header-clearance) + var(--safe-area-top));
   align-self: start;
 
   @media (max-width: 767px) {
     top: calc(84px + var(--safe-area-top));
-  }
-
-  @media (max-width: 880px) {
-    font-size: 40px;
   }
 
   @media (max-width: 680px) {
@@ -134,7 +127,7 @@ export const QuestionBox = styled.button<{ $isOpened: boolean }>`
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(124, 0, 2, 0.32);
+    outline: var(--focus-ring);
     outline-offset: 4px;
     border-radius: 8px;
   }
@@ -143,13 +136,13 @@ export const QuestionBox = styled.button<{ $isOpened: boolean }>`
 export const Question = styled.p`
   font-weight: 400;
   font-style: normal;
-  font-size: 20px;
-  line-height: 110%;
+  font-size: var(--text-lead);
+  line-height: 1.1;
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
 
   @media (max-width: 880px) {
-    font-size: 17px;
+    font-size: var(--text-body);
   }
 `;
 
@@ -159,38 +152,30 @@ export const AnswerWrap = styled.div<{ $isOpened: boolean }>`
   transition:
     grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease),
     padding-top var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  transition-delay: var(--motion-settle, 40ms);
   padding-top: ${({ $isOpened }) => ($isOpened ? "16px" : "0px")};
   overflow: hidden;
 
+  /* The row animation carries the reveal; the answer itself just fades so the
+     text does not pop in at full strength before the row has opened. */
   & > * {
     overflow: hidden;
     min-height: 0;
-  }
-
-  @supports (-webkit-touch-callout: none) {
-    display: block;
-    max-height: ${({ $isOpened }) => ($isOpened ? "420px" : "0px")};
-    transition:
-      max-height var(--motion-fast, 160ms) var(--ease-emphasized, ease),
-      padding-top var(--motion-fast, 160ms) var(--ease-emphasized, ease);
-    will-change: max-height;
-
-    & > * {
-      opacity: ${({ $isOpened }) => ($isOpened ? 1 : 0)};
-      transition: opacity var(--motion-fast, 160ms) var(--ease-standard, ease);
-    }
+    opacity: ${({ $isOpened }) => ($isOpened ? 1 : 0)};
+    transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+    transition-delay: var(--motion-settle, 40ms);
   }
 `;
 
 export const Answer = styled.p`
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   margin: 0;
   color: rgba(56, 56, 56, 1);
 
   @media (max-width: 880px) {
-    font-size: 15px;
+    font-size: var(--text-small);
   }
 `;

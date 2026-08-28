@@ -32,7 +32,7 @@ export const CardSurface = styled.div<CardSurfaceProps>`
 
   ${glass({
     frost: "static",
-    radius: "40px",
+    radius: "var(--radius-panel)",
     hoverEffect: false,
   })}
 
@@ -106,23 +106,23 @@ export const CardText = styled.div`
 
 export const CardTitle = styled.p`
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   font-weight: 400;
-  font-size: 30px;
-  line-height: 110%;
+  font-size: var(--text-fact);
+  line-height: 1.1;
   letter-spacing: 0;
 
   @media (max-width: 880px) {
-    font-size: 28px;
+    font-size: var(--text-card);
   }
 `;
 
 export const CardSubtitle = styled.p`
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   font-weight: 400;
-  font-size: 20px;
-  line-height: 120%;
+  font-size: var(--text-lead);
+  line-height: 1.2;
   letter-spacing: 0;
 `;
 

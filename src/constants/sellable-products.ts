@@ -414,10 +414,24 @@ export const getProductPrice = (
   return offer.prices[currency];
 };
 
-export const formatCheckoutPrice = (
-  amount: number,
-  currency: SupportedCheckoutCurrency,
-) => `${amount} ${currency.toUpperCase()}`;
+const CURRENCY_SUFFIX: Record<SupportedCheckoutCurrency, string> = {
+  pln: "PLN",
+  eur: "€",
+};
+
+/**
+ * The one way a price is written anywhere on the site - product pages, the
+ * sticky bar, checkout, admin: "220 PLN", "50 €". The no-break space keeps
+ * the amount and its currency on one line.
+ */
+export const formatPrice = (amount: number, currency: SupportedCheckoutCurrency) =>
+  `${amount} ${CURRENCY_SUFFIX[currency]}`;
+
+/** Both currencies of an offer: "220 PLN / 50 €". */
+export const formatOfferPrice = (prices: Record<SupportedCheckoutCurrency, number>) =>
+  `${formatPrice(prices.pln, "pln")} / ${formatPrice(prices.eur, "eur")}`;
+
+export const formatCheckoutPrice = formatPrice;
 
 export const buildCheckoutHref = ({ offerId, productId }: CheckoutHrefOptions) => {
   const searchParams = new URLSearchParams({

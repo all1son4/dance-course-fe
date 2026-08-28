@@ -10,7 +10,13 @@ import {
   normalizePaymentCustomerFieldValue,
 } from "@/app/[locale]/payment/payment.constants";
 import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
-import { Button, Checkbox, Dialog, Input } from "@/components";
+import Button from "@/components/common/Button";
+import Checkbox from "@/components/common/Checkbox";
+import Dialog from "@/components/common/Dialog";
+import Input from "@/components/common/Input";
+import StickyCta from "@/components/other/StickyCta";
+import { prefersReducedMotion } from "@/lib/reveal";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Success } from "@/svg";
 
 import {
@@ -40,6 +46,8 @@ type CourseSignupErrorResponse = {
 };
 
 const COURSE_SIGNUP_ENDPOINT = "/api/course-signup";
+/** How long the current screen fades before the next one takes its place (see Dialog). */
+const CONTENT_LEAVE_MS = 120;
 const JSON_CONTENT_TYPE = "application/json";
 const INITIAL_SIGNUP_VALUES: CourseSignupFormValues = {
   consentAccepted: false,
@@ -136,7 +144,10 @@ const buildCourseSignupRequestBody = ({
   socialContact: values.socialContact.trim(),
 });
 
-export default function CourseSignupDialog({ triggerText }: CourseSignupDialogProps) {
+export default function CourseSignupDialog({
+  stickyCta,
+  triggerText,
+}: CourseSignupDialogProps) {
   const locale = useLocale();
   const t = useTranslations("FirstTouchPage.signupDialog");
   const formId = useId();
@@ -147,6 +158,24 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
     useState<SubmitFailureReason>("unknown");
   const [errors, setErrors] = useState<CourseSignupFormErrors>({});
   const [touchedFields, setTouchedFields] = useState<CourseSignupTouchedFields>({});
+  const [isContentLeaving, setIsContentLeaving] = useState(false);
+
+  // Screen changes (form -> result, result -> form) go through the dialog's
+  // morph: the current screen fades out, then the state switches and the
+  // dialog glides to the new height while the next screen fades in.
+  const switchScreen = async (apply: () => void) => {
+    if (prefersReducedMotion()) {
+      apply();
+      return;
+    }
+
+    setIsContentLeaving(true);
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, CONTENT_LEAVE_MS);
+    });
+    apply();
+    setIsContentLeaving(false);
+  };
 
   const validateField = (
     fieldName: keyof CourseSignupFormValues,
@@ -299,16 +328,23 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
           return;
         }
 
-        setSubmitFailureReason(getSubmitFailureReason(data.errorCode, response.status));
-        setSubmitState("error");
+        const failureReason = getSubmitFailureReason(data.errorCode, response.status);
+        await switchScreen(() => {
+          setSubmitFailureReason(failureReason);
+          setSubmitState("error");
+        });
         return;
       }
 
-      setValues(INITIAL_SIGNUP_VALUES);
-      setSubmitState("success");
+      await switchScreen(() => {
+        setValues(INITIAL_SIGNUP_VALUES);
+        setSubmitState("success");
+      });
     } catch {
-      setSubmitFailureReason("network");
-      setSubmitState("error");
+      await switchScreen(() => {
+        setSubmitFailureReason("network");
+        setSubmitState("error");
+      });
     }
   };
 
@@ -344,7 +380,9 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
           type="button"
           buttonText={t("retryButton")}
           onClick={() => {
-            setSubmitState("idle");
+            void switchScreen(() => {
+              setSubmitState("idle");
+            });
           }}
         />
       );
@@ -364,7 +402,7 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
   const renderDialogContent = () => {
     if (isSuccess) {
       return (
-        <ResultState>
+        <ResultState role="status">
           <ResultIconBox>
             <Success width={128} height={128} />
           </ResultIconBox>
@@ -375,7 +413,7 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
 
     if (isError) {
       return (
-        <ResultState>
+        <ResultState role="alert">
           <ResultText $tone="error">{t("failure.title")}</ResultText>
           <ResultReason>{t(`failure.reasons.${submitFailureReason}`)}</ResultReason>
         </ResultState>
@@ -429,15 +467,33 @@ export default function CourseSignupDialog({ triggerText }: CourseSignupDialogPr
 
   return (
     <>
-      <Button type="button" buttonText={triggerText} onClick={openDialog} />
+      <Button
+        type="button"
+        buttonText={triggerText}
+        onClick={openDialog}
+        {...stickyCtaAnchorProps}
+      />
+      {stickyCta ? (
+        <StickyCta
+          label={triggerText}
+          onClick={openDialog}
+          title={stickyCta.title}
+          note={stickyCta.note}
+        />
+      ) : null}
 
       <Dialog
         open={isOpen}
         onOpenChange={handleOpenChange}
-        title={isResult ? undefined : t("title")}
+        title={t("title")}
+        // The result screens carry their own big message; the title stays for
+        // assistive tech so the dialog keeps its accessible name.
+        isTitleVisuallyHidden={isResult}
         description={renderDialogDescription()}
         closeLabel={t("closeLabel")}
         footer={renderDialogFooter()}
+        contentKey={isResult ? submitState : "form"}
+        isContentLeaving={isContentLeaving}
       >
         {renderDialogContent()}
       </Dialog>

@@ -16,5 +16,12 @@ export const PlaceholderBox = styled.p`
   letter-spacing: 0;
   color: rgba(72, 72, 72, 1);
   opacity: 0.8;
-  transition: all 0.2s ease;
+  /* Only what the floating label actually changes; transition: all also
+     animated layout properties on every restyle. */
+  transition:
+    transform var(--motion-base, 220ms) var(--ease-emphasized, ease),
+    top var(--motion-base, 220ms) var(--ease-emphasized, ease),
+    font-size var(--motion-base, 220ms) var(--ease-emphasized, ease),
+    opacity var(--motion-base, 220ms) var(--ease-standard, ease),
+    color var(--motion-base, 220ms) var(--ease-standard, ease);
 `;

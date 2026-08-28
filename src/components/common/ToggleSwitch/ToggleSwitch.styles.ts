@@ -24,7 +24,7 @@ export const Track = styled.span`
   width: 44px;
   height: 26px;
   border: 1px solid rgba(0, 0, 0, 0.14);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(0, 0, 0, 0.08);
   transition:
     background-color 0.2s ease,
@@ -38,7 +38,7 @@ export const Track = styled.span`
     left: 2px;
     width: 20px;
     height: 20px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
     transition: transform 0.2s ease;
@@ -54,7 +54,7 @@ export const Track = styled.span`
   }
 
   ${Input}:focus-visible + & {
-    box-shadow: 0 0 0 3px rgba(124, 0, 2, 0.24);
+    box-shadow: 0 0 0 2px var(--focus-ring-color);
   }
 
   ${Input}:disabled + & {

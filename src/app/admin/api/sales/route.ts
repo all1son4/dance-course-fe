@@ -1,3 +1,5 @@
+import { revalidateTag } from "next/cache";
+
 import {
   formatCheckoutPrice,
   SELLABLE_PRODUCTS,
@@ -15,6 +17,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { CATALOG_CACHE_TAG } from "@/lib/sales-availability";
 
 export const runtime = "nodejs";
 
@@ -149,6 +152,11 @@ export async function POST(request: Request) {
     if (!updatedRow) {
       return jsonNoStore({ errorCode: "product_not_found" }, { status: 404 });
     }
+
+    // The storefront reads the switch through a cached copy; expire it now so
+    // the next page view already reflects the change (`expire: 0` is the
+    // documented form for route handlers that need immediate effect).
+    revalidateTag(CATALOG_CACHE_TAG, { expire: 0 });
 
     console.warn("Product sales switch changed", {
       productId,

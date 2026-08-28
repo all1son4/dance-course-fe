@@ -1,43 +1,49 @@
-import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import CourseCard from "@/components/cards/CourseCard";
-import TextContentCard from "@/components/cards/TextContentCard";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
-import SvgAsset from "@/components/common/SvgAsset";
+import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
+import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
-import { buildCheckoutHref, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
-import { isProductSaleOpen } from "@/lib/sales-availability";
+import { HERO_MEDIA } from "@/constants/hero-media";
+import {
+  buildCheckoutHref,
+  formatOfferPrice,
+  SELLABLE_PRODUCTS,
+} from "@/constants/sellable-products";
+import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
-  buildPageMetadata,
   normalizedSiteUrl,
-  seoTargetLocale,
 } from "@/lib/seo";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
-import { buildCourseOffersStructuredData } from "../_shared/structured-data";
-import { ClosedIconBox, ClosedSalesCard } from "../choreo/page.styles";
-import { getOnlineSuggestions } from "./constants";
+import ProductFact from "../_shared/product-fact";
+import ProductHero from "../_shared/product-hero";
+import SaleGate from "../_shared/sale-gate";
 import {
   AboutCourseCards,
-  AboutCourseSection,
   AboutCourseTitle,
-  ButtonBox,
-  ContactSection,
-  Date,
-  DateBox,
   Description,
   DescriptionParagraph,
-  From,
+  InfoBoxGroup,
+  SpecialWrapper,
+  VideoSection,
+} from "../_shared/section.styles";
+import { buildCourseOffersStructuredData } from "../_shared/structured-data";
+import SuggestionGrid from "../_shared/suggestion-grid";
+import { getGroupSuggestions } from "./constants";
+import {
+  AboutCourseSection,
+  ButtonBox,
   IconBox,
   ImageBox,
-  InfoBoxGroup,
   IntroductionSection,
   MobileImagesBox,
-  SpecialWrapper,
   TarifContentBox,
   TariffContentList,
   TariffOptionsBox,
@@ -45,32 +51,10 @@ import {
   TariffTitle,
   TextBox,
   Title,
-  VideoSection,
 } from "./page.styles";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const metadataT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata",
-  });
-  const pageT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata.pages.onlineGroup",
-  });
-
-  return buildPageMetadata({
-    locale: seoTargetLocale,
-    path: "/online/group",
-    title: pageT("title"),
-    description: pageT("description"),
-    siteName: metadataT("siteName"),
-    ogImageAlt: pageT("ogImageAlt"),
-    keywords: pageT("keywords")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-  });
-}
+export const generateMetadata = () =>
+  buildLocalizedPageMetadata({ pageKey: "onlineGroup", path: "/online/group" });
 
 // The buy buttons follow the admin sales switch, so this page is rendered per
 // request instead of being prerendered with a stale answer baked in.
@@ -79,20 +63,18 @@ export const dynamic = "force-dynamic";
 export default async function OnlineGroupPage() {
   const locale = await getLocale();
   const t = await getTranslations("OnlineGroupPage");
-  const onlineSuggestions = getOnlineSuggestions((key) => t(key));
+  const commonT = await getTranslations("Common");
+  const onlineSuggestions = getGroupSuggestions((key) => t(key));
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
-  const isSaleOpen = await isProductSaleOpen(product.id);
   const purchaseOffers = product.offers.filter(
     (offer) => offer.code === "standard" || offer.code === "library-access",
   );
   const standardOffer = product.offers.find((offer) => offer.code === "standard");
   const plusOffer = product.offers.find((offer) => offer.code === "library-access");
-  const formatOfferPrice = (offer: (typeof product.offers)[number]) =>
-    `${offer.prices.pln} PLN / ${offer.prices.eur} €`;
   const courseStructuredData = {
     "@context": "https://schema.org",
     "@type": "Course",
-    name: t("hero.title").replace(/\s+/gu, " ").trim(),
+    name: t("hero.titlePlain"),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
     inLanguage: locale,
     provider: {
@@ -115,86 +97,66 @@ export default async function OnlineGroupPage() {
   };
 
   const renderIntroductionSection = () => (
-    <IntroductionSection>
-      <TextBox>
-        <Title>{t("hero.title")}</Title>
-        <Description>
-          <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
-          <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
-        </Description>
-
-        <InfoBoxGroup>
-          <DateBox>
-            <From>{t("hero.startLabel")}</From>
-            <Date>{t("hero.startDate")}</Date>
-          </DateBox>
-        </InfoBoxGroup>
-
-        <ButtonBox>
-          <Button buttonText={t("tariffs.selectButton")} href="#tariffs" />
-        </ButtonBox>
-      </TextBox>
-
-      <MobileImagesBox>
-        <ImageBox id="mobile-only-image-box">
-          <SvgAsset
-            src="/svg/OnlinePageBackgroundPhoto.webp"
-            width={598}
-            height={846}
-            sizes="(max-width: 767px) 100vw, 0px"
-            priority
-            unoptimized
-          />
-        </ImageBox>
-        <IconBox id="mobile-only-icon-box">
-          <SvgAsset
-            src="/svg/OnlineTelegramBig.webp"
-            width={453}
-            height={474}
-            sizes="(max-width: 767px) 65vw, 0px"
-          />
-        </IconBox>
-      </MobileImagesBox>
-      <ImageBox id="desktop-only-image-box">
-        <SvgAsset
-          src="/svg/OnlinePageBackgroundPhoto.webp"
-          width={598}
-          height={846}
-          sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
-          priority
-          unoptimized
+    <ProductHero
+      components={{ Section: IntroductionSection, TextBox }}
+      media={
+        <HeroMedia
+          boxes={{ MobileImagesBox, ImageBox, IconBox }}
+          photo={{
+            asset: HERO_MEDIA.online,
+            mobileSizes: "(max-width: 767px) 100vw, 0px",
+            desktopSizes:
+              "(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px",
+          }}
+          icon={{
+            asset: HERO_MEDIA.onlineTelegram,
+            mobileSizes: "(max-width: 767px) 65vw, 0px",
+            desktopSizes:
+              "(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px",
+          }}
         />
-      </ImageBox>
-      <IconBox id="desktop-only-icon-box">
-        <SvgAsset
-          src="/svg/OnlineTelegramBig.webp"
-          width={453}
-          height={474}
-          sizes="(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px"
+      }
+    >
+      <Title>{t("hero.title")}</Title>
+      <Description>
+        <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+        <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
+      </Description>
+
+      <InfoBoxGroup>
+        <ProductFact label={t("hero.startLabel")} value={t("hero.startDate")} />
+      </InfoBoxGroup>
+
+      <ButtonBox>
+        <Button
+          buttonText={t("tariffs.selectButton")}
+          href="#tariffs"
+          {...stickyCtaAnchorProps}
         />
-      </IconBox>
-    </IntroductionSection>
+        {/* Only while there is something to buy: a floating "choose a plan"
+              pointing at a closed tariff section would be noise. */}
+        <SaleGate productId={product.id}>
+          {(isSaleOpen) =>
+            isSaleOpen ? (
+              <StickyCta
+                label={t("tariffs.selectButton")}
+                href="#tariffs"
+                title={t("hero.titlePlain")}
+                note={standardOffer ? formatOfferPrice(standardOffer.prices) : undefined}
+              />
+            ) : null
+          }
+        </SaleGate>
+      </ButtonBox>
+    </ProductHero>
   );
 
-  const renderTariffSection = () => (
+  const renderTariffSection = (isSaleOpen: boolean) => (
     <TariffSection id="tariffs">
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
       {/* Without this card, closed sales leave the tariff cards buttonless and
           the hero call to action pointing at an empty spot. */}
-      {!isSaleOpen && (
-        <ClosedSalesCard>
-          <ClosedIconBox>
-            <SvgAsset
-              src="/svg/Exclamation.webp"
-              width={57}
-              height={60}
-              sizes="(max-width: 767px) 34px, 57px"
-              unoptimized
-            />
-          </ClosedIconBox>
-          <p>{t("tariffs.closedNotice")}</p>
-        </ClosedSalesCard>
-      )}
+      {!isSaleOpen && <ClosedSalesNotice text={commonT("salesClosed")} />}
       <TariffOptionsBox>
         {standardOffer ? (
           <CourseCard
@@ -210,14 +172,15 @@ export default async function OnlineGroupPage() {
                   <li>{t("tariffs.standard.features.5")}</li>
                   <li>{t("tariffs.standard.features.6")}</li>
                 </TariffContentList>
-                <DateBox>
-                  <From>{t("tariffs.priceLabel")}</From>
-                  <Date>{formatOfferPrice(standardOffer)}</Date>
-                </DateBox>
+                <ProductFact
+                  label={t("tariffs.priceLabel")}
+                  value={formatOfferPrice(standardOffer.prices)}
+                />
               </TarifContentBox>
             }
             buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
             buttonRel="nofollow"
+            buttonIsStickyAnchor
             buttonHref={
               isSaleOpen
                 ? buildCheckoutHref({
@@ -246,14 +209,15 @@ export default async function OnlineGroupPage() {
                   <li>{t("tariffs.plus.features.9")}</li>
                   <li>{t("tariffs.plus.features.10")}</li>
                 </TariffContentList>
-                <DateBox>
-                  <From>{t("tariffs.priceLabel")}</From>
-                  <Date>{formatOfferPrice(plusOffer)}</Date>
-                </DateBox>
+                <ProductFact
+                  label={t("tariffs.priceLabel")}
+                  value={formatOfferPrice(plusOffer.prices)}
+                />
               </TarifContentBox>
             }
             buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
             buttonRel="nofollow"
+            buttonIsStickyAnchor
             buttonHref={
               isSaleOpen
                 ? buildCheckoutHref({
@@ -276,7 +240,7 @@ export default async function OnlineGroupPage() {
             { name: "Home", path: "/" },
             { name: "Online classes", path: "/online" },
             {
-              name: t("hero.title").replace(/\s+/gu, " ").trim(),
+              name: t("hero.titlePlain"),
               path: "/online/group",
             },
           ]),
@@ -285,27 +249,29 @@ export default async function OnlineGroupPage() {
       />
       {renderIntroductionSection()}
 
-      <SpecialWrapper>
+      <SpecialWrapper $compactAt={1100} $stacked={false}>
         <VideoSection>
           <VideoPlayer
             src="/videos/online_example.mp4"
-            playLabel={t("hero.playLabel")}
             poster="/images/online_example_poster.webp"
             radius="0px"
           />
         </VideoSection>
-        {renderTariffSection()}
-        <AboutCourseSection id="course-program">
-          <AboutCourseTitle>{t("about.title")}</AboutCourseTitle>
-          <AboutCourseCards>
-            {onlineSuggestions.map(({ id, ...suggestion }) => (
-              <TextContentCard key={id} {...suggestion} />
-            ))}
-          </AboutCourseCards>
-        </AboutCourseSection>
-        <ContactSection>
-          <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
-        </ContactSection>
+        {/* Streams in behind the shell; see SaleGate for why there is no fallback. */}
+        <SaleGate productId={product.id}>
+          {(isSaleOpen) => renderTariffSection(isSaleOpen)}
+        </SaleGate>
+        <SuggestionGrid
+          components={{
+            Section: AboutCourseSection,
+            Title: AboutCourseTitle,
+            Cards: AboutCourseCards,
+          }}
+          id="course-program"
+          title={t("about.title")}
+          items={onlineSuggestions}
+        />
+        <Contacts layout="spaced" />
       </SpecialWrapper>
     </>
   );

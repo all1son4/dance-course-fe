@@ -61,7 +61,7 @@ const ONLINE_GROUP_SUGGESTION_DEFINITIONS = [
   },
 ] satisfies readonly OnlineSuggestionDefinition[];
 
-export const getOnlineSuggestions = (t: Translate): OnlineSuggestionCard[] =>
+export const getGroupSuggestions = (t: Translate): OnlineSuggestionCard[] =>
   buildOnlineSuggestionCards({
     definitions: ONLINE_GROUP_SUGGESTION_DEFINITIONS,
     t,

@@ -1,6 +1,5 @@
 "use client";
 
-import { track } from "@vercel/analytics";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useCookieConsent } from "@/components/common/CookieConsent";
@@ -26,6 +25,17 @@ import { EXCLUDED_PATH_PREFIXES } from "./BirthdayPopup.constants";
  * between sections quickly still reaches the dwell threshold.
  */
 const siteEntryAt = Date.now();
+
+// Loaded on first use only. A static `import { track }` here would put the
+// whole @vercel/analytics module into the shared chunk of every page, which
+// defeats the deferred, consent-gated <Analytics /> mount elsewhere.
+const trackBirthdayEvent = (event: string) => {
+  void import("@vercel/analytics")
+    .then(({ track }) => track(event))
+    .catch(() => {
+      // Analytics is best-effort; never let it surface to the user.
+    });
+};
 
 /**
  * Scoped to one page view: it stops the card from reappearing as the visitor
@@ -134,7 +144,7 @@ export const useBirthdayPopup = () => {
     );
 
     if (canUseAnalytics) {
-      track("birthday_popup_shown");
+      trackBirthdayEvent("birthday_popup_shown");
     }
   }, [canUseAnalytics, canUseFunctionalStorage, isVisible]);
 
@@ -146,7 +156,7 @@ export const useBirthdayPopup = () => {
       );
 
       if (canUseAnalytics) {
-        track(
+        trackBirthdayEvent(
           signal === "clicked" ? "birthday_popup_clicked" : "birthday_popup_dismissed",
         );
       }

@@ -14,14 +14,14 @@ export const Card = styled.div`
 
   ${glass({
     frost: "static",
-    radius: "60px",
+    radius: "var(--radius-card)",
     hoverEffect: false,
   })}
 
   @media (max-width: 767px) {
     padding: 30px 20px;
     gap: 20px;
-    --glass-radius: 40px;
+    --glass-radius: var(--radius-panel);
   }
 `;
 
@@ -33,25 +33,25 @@ export const Header = styled.div`
 
 export const Title = styled.h3`
   margin: 0;
-  color: rgba(0, 0, 0, 1);
+  color: var(--ink);
   font-weight: 400;
   font-style: normal;
-  font-size: 28px;
-  line-height: 110%;
+  font-size: var(--text-card);
+  line-height: 1.1;
   letter-spacing: 0;
 `;
 
 export const Description = styled.p`
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 300;
   font-style: normal;
-  font-size: 17px;
-  line-height: 150%;
+  font-size: var(--text-body);
+  line-height: 1.5;
   letter-spacing: 0;
 
   @media (max-width: 767px) {
-    font-size: 15px;
+    font-size: var(--text-small);
   }
 `;
 
@@ -71,17 +71,17 @@ export const PaymentElementShell = styled.div`
 
 export const StatusText = styled.p`
   margin: 0;
-  color: rgba(72, 72, 72, 1);
+  color: var(--ink-muted);
   font-weight: 300;
   font-style: normal;
   font-size: 14px;
-  line-height: 140%;
+  line-height: 1.4;
   letter-spacing: 0;
   max-width: 580px;
 `;
 
 export const ErrorText = styled(StatusText)`
-  color: rgba(213, 0, 4, 1);
+  color: var(--danger);
 `;
 
 export const Actions = styled.div`
@@ -142,7 +142,7 @@ export const LoadingTabs = styled.div`
 export const LoadingTab = styled.div<{ $isActive?: boolean }>`
   position: relative;
   height: 54px;
-  border-radius: 16px;
+  border-radius: var(--radius-control);
   border: 1px solid
     ${({ $isActive }) => ($isActive ? "rgba(0, 0, 0, 0.7)" : "rgba(72, 72, 72, 0.14)")};
   background: transparent;
@@ -172,7 +172,7 @@ export const LoadingField = styled.div<{ $short?: boolean }>`
   position: relative;
   width: ${({ $short }) => ($short ? "48%" : "100%")};
   height: 54px;
-  border-radius: 16px;
+  border-radius: var(--radius-control);
   background: transparent;
   border: 1px solid rgba(72, 72, 72, 0.12);
   overflow: hidden;
@@ -223,7 +223,7 @@ export const LoadingFooter = styled.div`
 export const LoadingPulse = styled.span`
   width: 10px;
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(124, 0, 2, 0.9);
   animation: ${pulse} 1.35s ease-in-out infinite;
 
@@ -235,7 +235,7 @@ export const LoadingPulse = styled.span`
 export const LoadingAction = styled.div`
   width: 240px;
   min-height: 56px;
-  border-radius: 100px;
+  border-radius: var(--radius-slab);
   border: 1px solid rgba(72, 72, 72, 0.2);
   background: transparent;
   position: relative;

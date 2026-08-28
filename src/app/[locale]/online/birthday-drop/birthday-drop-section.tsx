@@ -1,14 +1,17 @@
 import { getTranslations } from "next-intl/server";
 
-import { VideoPlayer } from "@/components";
-import TextContentCard from "@/components/cards/TextContentCard";
+import IconTextCard from "@/components/cards/IconTextCard";
 import Button from "@/components/common/Button";
+import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
+import StickyCta from "@/components/other/StickyCta";
+import VideoPlayer from "@/components/other/VideoPlayer";
 import { BIRTHDAY_DROP_PRODUCT_ID } from "@/constants/sellable-products";
-import { isProductSaleOpen } from "@/lib/sales-availability";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Birthday34Badge } from "@/svg";
 
 import { createRichText } from "../_shared/content";
+import SaleGate from "../_shared/sale-gate";
 import {
   AboutChoreoCards,
   AboutChoreoSection,
@@ -31,9 +34,7 @@ import {
 export default async function BirthdayDropSection() {
   const t = await getTranslations("BirthdayDropPage");
   const richText = createRichText(t);
-  const checkout = (await isProductSaleOpen(BIRTHDAY_DROP_PRODUCT_ID))
-    ? getBirthdayDropCheckout()
-    : null;
+  const checkout = getBirthdayDropCheckout();
   const suggestions = getBirthdaySuggestions((key) => t(key), richText);
 
   return (
@@ -47,19 +48,36 @@ export default async function BirthdayDropSection() {
           <BirthdayTextContentDescription>
             {t("description")}
           </BirthdayTextContentDescription>
-          {/* Closed sales must read as a state, not as a missing button. */}
-          {!checkout && (
-            <BirthdayTextContentDescription>
-              {t("closedNotice")}
-            </BirthdayTextContentDescription>
-          )}
+          {/* Closed sales must read as a state, not as a missing button. The
+              notice and the buy button follow the admin sales switch and stream
+              in behind the shell (see SaleGate); the row itself, with the
+              details button, is static so the hero keeps its height. */}
+          <SaleGate productId={BIRTHDAY_DROP_PRODUCT_ID}>
+            {(isSaleOpen) =>
+              !isSaleOpen ? <ClosedSalesNotice text={t("closedNotice")} /> : null
+            }
+          </SaleGate>
           <BirthdayContentButtons>
             {checkout ? (
-              <Button
-                buttonText={t("buyButton", { price: checkout.price })}
-                href={checkout.href}
-                variant="white"
-              />
+              <SaleGate productId={BIRTHDAY_DROP_PRODUCT_ID}>
+                {(isSaleOpen) =>
+                  isSaleOpen ? (
+                    <>
+                      <Button
+                        buttonText={t("buyButton", { price: checkout.price })}
+                        href={checkout.href}
+                        variant="white"
+                        {...stickyCtaAnchorProps}
+                      />
+                      <StickyCta
+                        label={t("buyButton", { price: checkout.price })}
+                        href={checkout.href}
+                        title={t("titleShort")}
+                      />
+                    </>
+                  ) : null
+                }
+              </SaleGate>
             ) : null}
             <Button
               buttonText={t("detailsButton")}
@@ -83,12 +101,12 @@ export default async function BirthdayDropSection() {
         <AboutChoreoTitle>{t("aboutTitle")}</AboutChoreoTitle>
         <AboutChoreoCards>
           {suggestions.map(({ id, ...suggestion }) => (
-            <TextContentCard key={id} {...suggestion} />
+            <IconTextCard key={id} {...suggestion} />
           ))}
         </AboutChoreoCards>
       </AboutChoreoSection>
 
-      <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
+      <Contacts />
     </SpecialWrapper>
   );
 }

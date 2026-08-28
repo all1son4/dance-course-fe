@@ -1,25 +1,22 @@
-import type { Metadata } from "next";
 import { useTranslations } from "next-intl";
-import { getTranslations } from "next-intl/server";
 
+import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
-import SvgAsset from "@/components/common/SvgAsset";
 import Contacts from "@/components/other/Contacts";
-import {
-  buildBreadcrumbStructuredData,
-  buildPageMetadata,
-  normalizedSiteUrl,
-  seoTargetLocale,
-} from "@/lib/seo";
+import { HERO_MEDIA } from "@/constants/hero-media";
+import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
+import { imageFadeProps } from "@/lib/reveal";
+import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
+import { toPlainTitle } from "./_shared/content";
+import ProductHero from "./_shared/product-hero";
+import { DescriptionParagraph } from "./_shared/section.styles";
 import { getOnlineCoursesArray } from "./constants";
 import {
-  ContactSection,
   CoursesSection,
   Description,
-  DescriptionParagraph,
   IconBox,
   ImageBox,
   IntroductionSection,
@@ -35,33 +32,16 @@ import {
   Title,
 } from "./page.styles";
 
-export async function generateMetadata(): Promise<Metadata> {
-  const metadataT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata",
-  });
-  const pageT = await getTranslations({
-    locale: seoTargetLocale,
-    namespace: "Metadata.pages.online",
-  });
-
-  return buildPageMetadata({
-    locale: seoTargetLocale,
-    path: "/online",
-    title: pageT("title"),
-    description: pageT("description"),
-    siteName: metadataT("siteName"),
-    ogImageAlt: pageT("ogImageAlt"),
-    keywords: pageT("keywords")
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-  });
-}
+export const generateMetadata = () =>
+  buildLocalizedPageMetadata({ pageKey: "online", path: "/online" });
 
 export default function Online() {
   const t = useTranslations("OnlinePage");
-  const onlineCoursesArray = getOnlineCoursesArray((key) => t(key));
+  const commonT = useTranslations("Common");
+  const onlineCoursesArray = getOnlineCoursesArray(
+    (key) => t(key),
+    (key) => commonT(key),
+  );
   const onlineCoursesStructuredData = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -69,7 +49,7 @@ export default function Online() {
     itemListElement: onlineCoursesArray.map((course, index) => ({
       "@type": "ListItem",
       position: index + 1,
-      name: String(course.title).replace(/\s+/gu, " ").trim(),
+      name: toPlainTitle(String(course.title)),
       url: `${normalizedSiteUrl}${course.buttonHref}`,
     })),
   };
@@ -85,54 +65,33 @@ export default function Online() {
           onlineCoursesStructuredData,
         ]}
       />
-      <IntroductionSection>
-        <TextBox>
-          <Title>{t("hero.title")}</Title>
-          <Location>{t("hero.location")}</Location>
-          <Description>
-            <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
-            <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
-          </Description>
-        </TextBox>
-        <MobileImagesBox>
-          <ImageBox id="mobile-only-image-box">
-            <SvgAsset
-              src="/svg/OnlinePageBackgroundPhoto.webp"
-              width={598}
-              height={846}
-              sizes="(max-width: 767px) 100vw, 0px"
-              priority
-              unoptimized
-            />
-          </ImageBox>
-          <IconBox id="mobile-only-icon-box">
-            <SvgAsset
-              src="/svg/OnlineTelegramBig.webp"
-              width={453}
-              height={474}
-              sizes="(max-width: 767px) 65vw, 0px"
-            />
-          </IconBox>
-        </MobileImagesBox>
-        <ImageBox id="desktop-only-image-box">
-          <SvgAsset
-            src="/svg/OnlinePageBackgroundPhoto.webp"
-            width={598}
-            height={846}
-            sizes="(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px"
-            priority
-            unoptimized
+      <ProductHero
+        components={{ Section: IntroductionSection, TextBox }}
+        media={
+          <HeroMedia
+            boxes={{ MobileImagesBox, ImageBox, IconBox }}
+            photo={{
+              asset: HERO_MEDIA.online,
+              mobileSizes: "(max-width: 767px) 100vw, 0px",
+              desktopSizes:
+                "(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px",
+            }}
+            icon={{
+              asset: HERO_MEDIA.onlineTelegram,
+              mobileSizes: "(max-width: 767px) 65vw, 0px",
+              desktopSizes:
+                "(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px",
+            }}
           />
-        </ImageBox>
-        <IconBox id="desktop-only-icon-box">
-          <SvgAsset
-            src="/svg/OnlineTelegramBig.webp"
-            width={453}
-            height={474}
-            sizes="(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px"
-          />
-        </IconBox>
-      </IntroductionSection>
+        }
+      >
+        <Title>{t("hero.title")}</Title>
+        <Location>{t("hero.location")}</Location>
+        <Description>
+          <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+          <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
+        </Description>
+      </ProductHero>
       <CoursesSection>
         {onlineCoursesArray.map(({ id, ...course }) => (
           <InteractiveCard key={id} {...course} />
@@ -149,6 +108,7 @@ export default function Online() {
           <Button buttonText={t("studio.button")} width="284px" href="/offline" />
         </StudioDanceTextBox>
         <StudioDanceImage
+          {...imageFadeProps}
           src={"/images/online_page_photo.webp"}
           width={502}
           height={628}
@@ -156,9 +116,7 @@ export default function Online() {
           sizes="(max-width: 880px) 100vw, 502px"
         />
       </StudioDanceSection>
-      <ContactSection>
-        <Contacts bgColor="rgba(200, 204, 210, 0.4)" />
-      </ContactSection>
+      <Contacts layout="slab" />
     </>
   );
 }

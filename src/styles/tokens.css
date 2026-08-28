@@ -1,0 +1,40 @@
+/*
+ * Design tokens. Values are the ones the site already used verbatim - the
+ * tokens name them, they do not change them. Motion, focus-ring and safe-area
+ * tokens live next to the reset in globals.css.
+ */
+:root {
+  /* Colour */
+  --ink: rgba(0, 0, 0, 1);
+  --ink-muted: rgba(72, 72, 72, 1);
+  --ink-inverse: rgba(255, 255, 255, 1);
+  --brand: rgba(124, 0, 2, 1);
+  --danger: rgba(213, 0, 4, 1);
+  --success: rgba(24, 112, 58, 1);
+  --surface: rgba(255, 255, 255, 1);
+
+  /* Type scale (px on purpose: the layout is tuned per breakpoint in px) */
+  --text-caption: 13px;
+  --text-small: 15px;
+  --text-body-sm: 16px;
+  --text-body: 17px;
+  --text-lead: 20px;
+  --text-card: 28px;
+  --text-fact: 30px;
+  --text-h3: 36px;
+  --text-h2: 40px;
+  --text-display: 55px;
+
+  /* Radii */
+  --radius-slab: 100px;
+  --radius-card: 60px;
+  --radius-panel: 40px;
+  --radius-control: 16px;
+  --radius-pill: 999px;
+
+  /* Fixed header geometry: content that must clear it (sticky section
+     titles) reads --header-clearance = top offset + pill height + 12px. */
+  --header-top: 20px;
+  --header-height: 84px;
+  --header-clearance: 116px;
+}

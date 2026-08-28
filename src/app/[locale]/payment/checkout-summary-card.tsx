@@ -8,8 +8,10 @@ import {
   MoneyTitle,
   Price,
   PriceBox,
+  PriceSkeleton,
   SummaryBottomContent,
   SummaryBoxParahraphs,
+  SummaryLineSkeleton,
   SummaryTopContent,
 } from "./page.styles";
 
@@ -22,6 +24,8 @@ export type CheckoutSummaryCardProps = {
     text: string;
   }>;
   formattedPrice: string;
+  /** Catalogue still loading: price and plan line show placeholders. */
+  isLoading?: boolean;
   isMobile?: boolean;
   isRenewalCheckout: boolean;
   offerSummary: string | null;
@@ -37,6 +41,7 @@ export const CheckoutSummaryCard = ({
   currencyLabel,
   descriptionParagraphs,
   formattedPrice,
+  isLoading = false,
   isMobile = false,
   isRenewalCheckout,
   offerSummary,
@@ -55,7 +60,11 @@ export const CheckoutSummaryCard = ({
             <p key={paragraph.key}>{paragraph.text}</p>
           ))
         )}
-        {offerSummary ? <p>{offerSummary}</p> : null}
+        {isLoading ? (
+          <SummaryLineSkeleton aria-hidden />
+        ) : offerSummary ? (
+          <p>{offerSummary}</p>
+        ) : null}
       </SummaryBoxParahraphs>
       <AdditionalNotification>{accessNote}</AdditionalNotification>
     </SummaryTopContent>
@@ -72,7 +81,13 @@ export const CheckoutSummaryCard = ({
       </CurrencyBox>
       <PriceBox>
         <MoneyTitle>{amountLabel}</MoneyTitle>
-        <Price>{formattedPrice}</Price>
+        {isLoading ? (
+          <Price aria-busy="true">
+            <PriceSkeleton aria-hidden />
+          </Price>
+        ) : (
+          <Price>{formattedPrice}</Price>
+        )}
       </PriceBox>
     </SummaryBottomContent>
   );
