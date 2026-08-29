@@ -1,14 +1,20 @@
 import { routing } from "@/i18n/routing";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 
-export const COOKIE_CONSENT_STORAGE_KEY = "cookie-consent:v1";
+/**
+ * Bumped from v1 on 2026-08-28: the Analytics category grew from aggregated
+ * Vercel Analytics to Mixpanel with a browser identifier and masked session
+ * replay, so earlier choices no longer cover it and everyone is asked again.
+ */
+export const COOKIE_CONSENT_STORAGE_KEY = "cookie-consent:v2";
+const LEGACY_COOKIE_CONSENT_STORAGE_KEYS = ["cookie-consent:v1"];
 export const COOKIE_CONSENT_UPDATED_EVENT = "cookie-consent-updated";
 export const COOKIE_CONSENT_OPEN_SETTINGS_EVENT = "cookie-consent-open-settings";
 
 export type CookieConsentSource = "accept_all" | "reject_all" | "custom";
 
 export type CookieConsentRecord = {
-  version: 1;
+  version: 2;
   functional: boolean;
   analytics: boolean;
   updatedAt: string;
@@ -27,7 +33,7 @@ const isCookieConsentRecord = (value: unknown): value is CookieConsentRecord => 
   const candidate = value as Partial<CookieConsentRecord>;
 
   return (
-    candidate.version === 1 &&
+    candidate.version === 2 &&
     typeof candidate.functional === "boolean" &&
     typeof candidate.analytics === "boolean" &&
     typeof candidate.updatedAt === "string" &&
@@ -43,6 +49,10 @@ export const getStoredCookieConsent = (): CookieConsentRecord | null => {
   }
 
   try {
+    LEGACY_COOKIE_CONSENT_STORAGE_KEYS.forEach((legacyKey) => {
+      window.localStorage.removeItem(legacyKey);
+    });
+
     const rawValue = window.localStorage.getItem(COOKIE_CONSENT_STORAGE_KEY);
 
     if (!rawValue) {
@@ -58,7 +68,7 @@ export const getStoredCookieConsent = (): CookieConsentRecord | null => {
 };
 
 export const createAcceptedCookieConsent = (): CookieConsentRecord => ({
-  version: 1,
+  version: 2,
   functional: true,
   analytics: true,
   updatedAt: new Date().toISOString(),
@@ -66,7 +76,7 @@ export const createAcceptedCookieConsent = (): CookieConsentRecord => ({
 });
 
 export const createRejectedCookieConsent = (): CookieConsentRecord => ({
-  version: 1,
+  version: 2,
   functional: false,
   analytics: false,
   updatedAt: new Date().toISOString(),
@@ -80,7 +90,7 @@ export const createCustomCookieConsent = ({
   functional: boolean;
   analytics: boolean;
 }): CookieConsentRecord => ({
-  version: 1,
+  version: 2,
   functional,
   analytics,
   updatedAt: new Date().toISOString(),
