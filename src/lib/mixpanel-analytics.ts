@@ -7,6 +7,19 @@ export const MIXPANEL_EU_API_HOST = "https://api-eu.mixpanel.com";
 export const MIXPANEL_EU_APP_HOST = "https://eu.mixpanel.com";
 
 const MIXPANEL_PROJECT_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN?.trim() ?? "";
+const MIXPANEL_RELEASE_ID = process.env.NEXT_PUBLIC_APP_RELEASE_ID?.trim() ?? "";
+
+const UTM_PROPERTY_NAMES = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+] as const;
+const MAX_ATTRIBUTION_VALUE_LENGTH = 120;
+const MAX_DIAGNOSTIC_TOKEN_LENGTH = 80;
+const SAFE_ATTRIBUTION_VALUE_PATTERN = /^[\p{L}\p{N} ._+~-]+$/u;
+const SAFE_DIAGNOSTIC_TOKEN_PATTERN = /^[A-Za-z0-9._:-]+$/u;
 
 const PRIVATE_URL_PROPERTIES = [
   "$current_url",
@@ -55,6 +68,14 @@ type CtaEventProperties = CommerceEventProperties & {
   placement?: string;
 };
 
+type ApiErrorCategory = "client" | "network" | "server";
+type ApiHttpMethod = "DELETE" | "GET" | "PATCH" | "POST" | "PUT";
+type AppErrorCategory = "chunk_load" | "network" | "resource" | "runtime";
+type AppErrorSource = "resource" | "unhandled_rejection" | "window";
+
+type UtmPropertyName = (typeof UTM_PROPERTY_NAMES)[number];
+export type MixpanelAttributionProperties = Partial<Record<UtmPropertyName, string>>;
+
 export const WEB_VITAL_NAMES = ["CLS", "FCP", "INP", "LCP", "TTFB"] as const;
 
 export type WebVitalName = (typeof WEB_VITAL_NAMES)[number];
@@ -68,6 +89,21 @@ type WebVitalMeasurement = {
 };
 
 export type AnalyticsEventProperties = {
+  api_error: {
+    api_endpoint: string;
+    error_category: ApiErrorCategory;
+    error_code: string;
+    failure_stage: string;
+    http_method: ApiHttpMethod;
+    http_status?: number;
+  };
+  app_error: {
+    error_category: AppErrorCategory;
+    error_code: string;
+    error_name: string;
+    error_source: AppErrorSource;
+    is_unhandled: true;
+  };
   birthday_popup_clicked: Record<string, never>;
   birthday_popup_dismissed: Record<string, never>;
   birthday_popup_shown: Record<string, never>;
@@ -182,6 +218,20 @@ export type ButtonAnalyticsMetadata = CommerceEventProperties & {
   placement?: string;
 };
 
+export type ApiErrorInput = {
+  endpoint: string;
+  errorCode?: string;
+  failureStage: string;
+  method: ApiHttpMethod;
+  status?: number;
+};
+
+export type AppErrorInput = {
+  errorName?: string;
+  message?: string;
+  source: AppErrorSource;
+};
+
 const hasRouteSegment = (pathname: string, segment: string) =>
   new RegExp(`(?:^|/)${segment}(?:/|$)`, "u").test(pathname);
 
@@ -201,6 +251,51 @@ export const shouldRecordMixpanelPath = (pathname: string) =>
 export const shouldRecordMixpanelLocation = (pathname: string, search: string) =>
   shouldRecordMixpanelPath(pathname) && search.length === 0;
 
+const sanitizeAttributionValue = (value: string | null) => {
+  const normalizedValue = value?.trim() ?? "";
+
+  if (
+    !normalizedValue ||
+    normalizedValue.length > MAX_ATTRIBUTION_VALUE_LENGTH ||
+    normalizedValue.includes("@") ||
+    !SAFE_ATTRIBUTION_VALUE_PATTERN.test(normalizedValue)
+  ) {
+    return null;
+  }
+
+  return normalizedValue;
+};
+
+/** Keeps campaign attribution useful without retaining arbitrary query parameters. */
+export const getMixpanelAttributionProperties = (
+  search: string,
+): MixpanelAttributionProperties => {
+  const searchParams = new URLSearchParams(search);
+
+  return UTM_PROPERTY_NAMES.reduce<MixpanelAttributionProperties>(
+    (properties, propertyName) => {
+      const value = sanitizeAttributionValue(searchParams.get(propertyName));
+
+      if (value) {
+        properties[propertyName] = value;
+      }
+
+      return properties;
+    },
+    {},
+  );
+};
+
+export const getInitialMixpanelAttributionProperties = (
+  properties: MixpanelAttributionProperties,
+) =>
+  Object.fromEntries(
+    Object.entries(properties).map(([propertyName, value]) => [
+      `initial_${propertyName}`,
+      value,
+    ]),
+  );
+
 export const getMixpanelPageProperties = (pathname: string, localeHint?: string) => {
   const localeSegment = pathname.split("/").filter(Boolean)[0];
   const localeFromPath = routing.locales.find((candidate) => candidate === localeSegment);
@@ -210,6 +305,119 @@ export const getMixpanelPageProperties = (pathname: string, localeHint?: string)
   return {
     page_path: pathname,
     ...(locale ? { locale } : {}),
+    ...(MIXPANEL_RELEASE_ID ? { release_id: MIXPANEL_RELEASE_ID } : {}),
+  };
+};
+
+const sanitizeDiagnosticToken = (value: string | undefined, fallback: string) => {
+  const normalizedValue = value?.trim() ?? "";
+
+  if (
+    !normalizedValue ||
+    normalizedValue.length > MAX_DIAGNOSTIC_TOKEN_LENGTH ||
+    !SAFE_DIAGNOSTIC_TOKEN_PATTERN.test(normalizedValue)
+  ) {
+    return fallback;
+  }
+
+  return normalizedValue;
+};
+
+const getSafeApiEndpoint = (endpoint: string) => {
+  try {
+    const baseUrl = "https://analytics.invalid";
+    const url = new URL(endpoint, baseUrl);
+
+    if (url.origin !== baseUrl) {
+      return null;
+    }
+
+    const { pathname } = url;
+
+    return pathname.startsWith("/api/") ? pathname : null;
+  } catch {
+    return null;
+  }
+};
+
+export const getApiErrorAnalyticsProperties = ({
+  endpoint,
+  errorCode,
+  failureStage,
+  method,
+  status,
+}: ApiErrorInput): AnalyticsEventProperties["api_error"] | null => {
+  const apiEndpoint = getSafeApiEndpoint(endpoint);
+
+  if (!apiEndpoint) {
+    return null;
+  }
+
+  const httpStatus =
+    typeof status === "number" &&
+    Number.isInteger(status) &&
+    status >= 400 &&
+    status <= 599
+      ? status
+      : undefined;
+  const errorCategory: ApiErrorCategory = httpStatus
+    ? httpStatus < 500
+      ? "client"
+      : "server"
+    : "network";
+
+  return {
+    api_endpoint: apiEndpoint,
+    error_category: errorCategory,
+    error_code: sanitizeDiagnosticToken(
+      errorCode,
+      httpStatus ? `http_${httpStatus}` : "network_error",
+    ),
+    failure_stage: sanitizeDiagnosticToken(failureStage, "unknown"),
+    http_method: method,
+    ...(httpStatus ? { http_status: httpStatus } : {}),
+  };
+};
+
+export const getAppErrorAnalyticsProperties = ({
+  errorName,
+  message,
+  source,
+}: AppErrorInput): AnalyticsEventProperties["app_error"] => {
+  const normalizedMessage = message?.toLowerCase() ?? "";
+  const isChunkLoadError =
+    normalizedMessage.includes("chunkloaderror") ||
+    normalizedMessage.includes("loading chunk") ||
+    normalizedMessage.includes("dynamically imported module");
+  const isNetworkError =
+    normalizedMessage.includes("failed to fetch") ||
+    normalizedMessage.includes("networkerror") ||
+    normalizedMessage.includes("load failed");
+  const errorCategory: AppErrorCategory =
+    source === "resource"
+      ? "resource"
+      : isChunkLoadError
+        ? "chunk_load"
+        : isNetworkError
+          ? "network"
+          : "runtime";
+  const errorCode =
+    errorCategory === "chunk_load"
+      ? "chunk_load_error"
+      : errorCategory === "network"
+        ? "network_error"
+        : errorCategory === "resource"
+          ? "resource_load_error"
+          : source === "unhandled_rejection"
+            ? "unhandled_rejection"
+            : "runtime_error";
+
+  return {
+    error_category: errorCategory,
+    error_code: errorCode,
+    error_name: sanitizeDiagnosticToken(errorName, "UnknownError"),
+    error_source: source,
+    is_unhandled: true,
   };
 };
 
@@ -479,4 +687,28 @@ export const trackAnalyticsEventOncePerSession = async <
   }
 
   await trackAnalyticsEvent(eventName, properties);
+};
+
+export const trackApiError = async (input: ApiErrorInput) => {
+  const properties = getApiErrorAnalyticsProperties(input);
+
+  if (!properties) {
+    return;
+  }
+
+  await trackAnalyticsEventOncePerSession(
+    "api_error",
+    properties,
+    JSON.stringify(properties),
+  );
+};
+
+export const trackUnhandledAppError = async (input: AppErrorInput) => {
+  const properties = getAppErrorAnalyticsProperties(input);
+
+  await trackAnalyticsEventOncePerSession(
+    "app_error",
+    properties,
+    JSON.stringify(properties),
+  );
 };

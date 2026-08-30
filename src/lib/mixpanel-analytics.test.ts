@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  getApiErrorAnalyticsProperties,
+  getAppErrorAnalyticsProperties,
+  getInitialMixpanelAttributionProperties,
+  getMixpanelAttributionProperties,
   getMixpanelPageProperties,
   getWebVitalAnalyticsProperties,
   MIXPANEL_BROWSER_CONFIG,
@@ -10,6 +14,78 @@ import {
   shouldRecordMixpanelPath,
   shouldTrackMixpanelPath,
 } from "./mixpanel-analytics";
+
+test("keeps only bounded, non-identifying UTM attribution", () => {
+  const properties = getMixpanelAttributionProperties(
+    "?utm_source=instagram&utm_medium=paid_social&utm_campaign=summer+launch&utm_content=hero&utm_term=dance+course&gclid=private&utm_source_override=nope",
+  );
+
+  assert.deepEqual(properties, {
+    utm_campaign: "summer launch",
+    utm_content: "hero",
+    utm_medium: "paid_social",
+    utm_source: "instagram",
+    utm_term: "dance course",
+  });
+  assert.deepEqual(getInitialMixpanelAttributionProperties(properties), {
+    initial_utm_campaign: "summer launch",
+    initial_utm_content: "hero",
+    initial_utm_medium: "paid_social",
+    initial_utm_source: "instagram",
+    initial_utm_term: "dance course",
+  });
+  assert.deepEqual(
+    getMixpanelAttributionProperties(
+      `?utm_source=${encodeURIComponent("person@example.com")}&utm_campaign=${"x".repeat(121)}&utm_content=https%3A%2F%2Fexample.com%2Fprivate`,
+    ),
+    {},
+  );
+});
+
+test("normalizes API failures without queries or arbitrary error text", () => {
+  assert.deepEqual(
+    getApiErrorAnalyticsProperties({
+      endpoint: "/api/stripe/payment-intent?checkout=private",
+      errorCode: "payment_intent_failed",
+      failureStage: "intent_creation",
+      method: "POST",
+      status: 503,
+    }),
+    {
+      api_endpoint: "/api/stripe/payment-intent",
+      error_category: "server",
+      error_code: "payment_intent_failed",
+      failure_stage: "intent_creation",
+      http_method: "POST",
+      http_status: 503,
+    },
+  );
+  assert.equal(
+    getApiErrorAnalyticsProperties({
+      endpoint: "https://example.com/api/private",
+      failureStage: "load",
+      method: "GET",
+    }),
+    null,
+  );
+});
+
+test("classifies app errors without retaining messages", () => {
+  assert.deepEqual(
+    getAppErrorAnalyticsProperties({
+      errorName: "ChunkLoadError",
+      message: "Loading chunk 42 failed for private customer context",
+      source: "window",
+    }),
+    {
+      error_category: "chunk_load",
+      error_code: "chunk_load_error",
+      error_name: "ChunkLoadError",
+      error_source: "window",
+      is_unhandled: true,
+    },
+  );
+});
 
 test("uses the EU endpoint and removes full URL/referrer properties", () => {
   assert.equal(MIXPANEL_BROWSER_CONFIG.api_host, MIXPANEL_EU_API_HOST);

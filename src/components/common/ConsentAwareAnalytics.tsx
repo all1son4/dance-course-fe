@@ -7,6 +7,8 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   disableMixpanel,
   enableMixpanel,
+  getInitialMixpanelAttributionProperties,
+  getMixpanelAttributionProperties,
   getMixpanelPageProperties,
   getWebVitalAnalyticsProperties,
   isMixpanelConfigured,
@@ -122,6 +124,17 @@ export default function ConsentAwareAnalytics() {
         const localeHint =
           document.querySelector<HTMLElement>("main[lang]")?.lang ||
           document.documentElement.lang;
+        const attributionProperties = getMixpanelAttributionProperties(
+          window.location.search,
+        );
+
+        if (Object.keys(attributionProperties).length > 0) {
+          mixpanel.register(attributionProperties);
+          mixpanel.register_once(
+            getInitialMixpanelAttributionProperties(attributionProperties),
+          );
+        }
+
         mixpanel.track_pageview(getMixpanelPageProperties(pathname, localeHint));
         lastTrackedPathRef.current = pathname;
       } catch (error) {

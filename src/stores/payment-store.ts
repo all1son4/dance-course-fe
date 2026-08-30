@@ -26,6 +26,7 @@ import {
   type SellableProduct,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import { trackApiError } from "@/lib/mixpanel-analytics";
 
 type PaymentCustomerErrors = Partial<Record<PaymentCustomerFieldName, string>>;
 type PaymentCustomerTouched = Partial<Record<PaymentCustomerFieldName, boolean>>;
@@ -467,6 +468,8 @@ export class PaymentStore {
     this.pendingStripeCurrencies.add(resolvedCurrency);
     this.setStripeIntentError(resolvedCurrency, null);
 
+    let finalHttpStatus: number | undefined;
+
     try {
       let data: StripeIntentResponse | null = null;
       let lastErrorCode: StripeIntentErrorCode = "payment_intent_request_failed";
@@ -481,6 +484,7 @@ export class PaymentStore {
         }, PAYMENT_INTENT_REQUEST_TIMEOUT_MS);
 
         try {
+          finalHttpStatus = undefined;
           const response = await fetch(
             "/api/stripe/payment-intent",
             this.getStripePaymentIntentRequestOptions(
@@ -488,6 +492,7 @@ export class PaymentStore {
               requestController.signal,
             ),
           );
+          finalHttpStatus = response.ok ? undefined : response.status;
           const responseData = (await response.json()) as StripeIntentResponse;
 
           if (!response.ok) {
@@ -544,6 +549,13 @@ export class PaymentStore {
         return;
       }
 
+      void trackApiError({
+        endpoint: "/api/stripe/payment-intent",
+        errorCode: getStripeIntentErrorCode(error),
+        failureStage: "intent_creation",
+        method: "POST",
+        status: finalHttpStatus,
+      });
       this.storeFailedStripePaymentIntent(resolvedCurrency, error);
     } finally {
       this.pendingStripeCurrencies.delete(resolvedCurrency);

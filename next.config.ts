@@ -6,6 +6,11 @@ const isProduction = process.env.NODE_ENV === "production";
 const vercelLiveSource = "https://vercel.live";
 const mixpanelRecorderSource = "https://cdn.mxpnl.com";
 const mixpanelEuApiSource = "https://api-eu.mixpanel.com";
+const publicReleaseId =
+  process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
+  process.env.NEXT_PUBLIC_APP_VERSION?.trim() ||
+  process.env.npm_package_version?.trim() ||
+  "";
 const scriptSources = [
   "'self'",
   "'unsafe-inline'",
@@ -44,6 +49,9 @@ const publicAssetCacheControl =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  env: {
+    NEXT_PUBLIC_APP_RELEASE_ID: publicReleaseId,
+  },
   compiler: {
     // Readable class names are a dev-time aid; in production they only add
     // ~14 KB of `page-styles__Foo-sc-…` to every HTML response.

@@ -29,7 +29,7 @@ import {
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
-import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { trackAnalyticsEvent, trackApiError } from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 import { StoreProvider, usePaymentStore } from "@/stores";
 import type { PaymentCheckoutDraft } from "@/stores/payment-store";
@@ -204,6 +204,13 @@ const PaymentPage = observer(function PaymentPage() {
     })
       .then(async (response) => {
         if (!response.ok) {
+          void trackApiError({
+            endpoint: PAYMENT_API_ENDPOINTS.catalog,
+            errorCode: "catalog_unavailable",
+            failureStage: "catalog_load",
+            method: "GET",
+            status: response.status,
+          });
           paymentStore.setCatalogUnavailable();
           return null;
         }
@@ -214,6 +221,12 @@ const PaymentPage = observer(function PaymentPage() {
         if (data?.products?.length) {
           paymentStore.setSellableProducts(data.products);
         } else if (data) {
+          void trackApiError({
+            endpoint: PAYMENT_API_ENDPOINTS.catalog,
+            errorCode: "invalid_catalog_response",
+            failureStage: "catalog_load",
+            method: "GET",
+          });
           paymentStore.setCatalogUnavailable();
         }
       })
@@ -223,6 +236,11 @@ const PaymentPage = observer(function PaymentPage() {
         }
 
         console.warn("Failed to load sellable products catalog", error);
+        void trackApiError({
+          endpoint: PAYMENT_API_ENDPOINTS.catalog,
+          failureStage: "catalog_load",
+          method: "GET",
+        });
         paymentStore.setCatalogUnavailable();
       });
 
