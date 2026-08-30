@@ -1,5 +1,6 @@
 import type { PaymentIntent } from "@stripe/stripe-js";
 
+import { trackApiError } from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 
 import type { StripePaymentFormProps } from "./StripePaymentTabs.helpers";
@@ -87,6 +88,8 @@ const getConfirmedStatus = async (
   paymentIntentId: string,
   checkoutSessionId: string,
 ): Promise<PaymentIntentStatusResponse> => {
+  let finalHttpStatus: number | undefined;
+
   for (let attempt = 0; attempt < PAYMENT_STATUS_MAX_ATTEMPTS; attempt += 1) {
     const requestController = new AbortController();
     const timeoutId = window.setTimeout(() => {
@@ -94,6 +97,7 @@ const getConfirmedStatus = async (
     }, PAYMENT_STATUS_REQUEST_TIMEOUT_MS);
 
     try {
+      finalHttpStatus = undefined;
       const response = await fetch(PAYMENT_API_ENDPOINTS.getIntentStatus, {
         method: "POST",
         headers: {
@@ -110,6 +114,8 @@ const getConfirmedStatus = async (
       if (response.ok) {
         return (await response.json()) as PaymentIntentStatusResponse;
       }
+
+      finalHttpStatus = response.status;
 
       if (
         hasRemainingStatusAttempt(attempt) &&
@@ -135,6 +141,13 @@ const getConfirmedStatus = async (
         continue;
       }
 
+      void trackApiError({
+        endpoint: PAYMENT_API_ENDPOINTS.getIntentStatus,
+        errorCode: PAYMENT_STATUS_REQUEST_ERROR,
+        failureStage: "payment_status_confirmation",
+        method: "POST",
+        status: finalHttpStatus,
+      });
       throw new Error(PAYMENT_STATUS_REQUEST_ERROR);
     } finally {
       window.clearTimeout(timeoutId);

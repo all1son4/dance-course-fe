@@ -15,7 +15,7 @@ import Checkbox from "@/components/common/Checkbox";
 import Dialog from "@/components/common/Dialog";
 import Input from "@/components/common/Input";
 import StickyCta from "@/components/other/StickyCta";
-import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { trackAnalyticsEvent, trackApiError } from "@/lib/mixpanel-analytics";
 import { prefersReducedMotion } from "@/lib/reveal";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Success } from "@/svg";
@@ -333,6 +333,14 @@ export default function CourseSignupDialog({
           .json()
           .catch(() => ({}))) as CourseSignupErrorResponse;
 
+        void trackApiError({
+          endpoint: COURSE_SIGNUP_ENDPOINT,
+          errorCode: data.errorCode,
+          failureStage: "signup_submission",
+          method: "POST",
+          status: response.status,
+        });
+
         if (data.errorCode === "duplicate_email") {
           void trackAnalyticsEvent("signup_failed", {
             course_id: SIGNUP_COURSE_ID,
@@ -366,6 +374,11 @@ export default function CourseSignupDialog({
         course_id: SIGNUP_COURSE_ID,
       });
     } catch {
+      void trackApiError({
+        endpoint: COURSE_SIGNUP_ENDPOINT,
+        failureStage: "signup_submission",
+        method: "POST",
+      });
       void trackAnalyticsEvent("signup_failed", {
         course_id: SIGNUP_COURSE_ID,
         reason: "network",
