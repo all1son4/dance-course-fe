@@ -1,6 +1,11 @@
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import { PURCHASES_LIST_LIMIT } from "@/app/admin/lib/admin.constants";
+import {
+  ACCOUNTING_TIME_ZONE,
+  getAccountingMonthRange,
+  getPreviousAccountingMonthValue,
+} from "@/lib/accounting-month";
 import { formatMinorAmount } from "@/lib/minor-amount";
 
 import { getDatabase } from "./client";
@@ -47,51 +52,16 @@ export type AdminProductBreakdownEntry = {
   salesCount: number;
 };
 
-const getUtcMonthRange = (monthValue: string) => {
-  const match = /^(\d{4})-(\d{2})$/.exec(monthValue);
-
-  if (!match) {
-    return null;
-  }
-
-  const year = Number(match[1]);
-  const month = Number(match[2]);
-
-  if (month < 1 || month > 12) {
-    return null;
-  }
-
-  return {
-    end: new Date(Date.UTC(year, month, 1)),
-    start: new Date(Date.UTC(year, month - 1, 1)),
-  };
-};
-
-const getPreviousMonthValue = (monthValue: string) => {
-  const range = getUtcMonthRange(monthValue);
-
-  if (!range) {
-    return null;
-  }
-
-  const previousMonthStart = new Date(
-    Date.UTC(range.start.getUTCFullYear(), range.start.getUTCMonth() - 1, 1),
-  );
-
-  return `${previousMonthStart.getUTCFullYear()}-${String(
-    previousMonthStart.getUTCMonth() + 1,
-  ).padStart(2, "0")}`;
-};
-
 const escapeLikePattern = (value: string) => value.replaceAll(/([%_\\])/g, "\\$1");
 
 // The moment a purchase counts as "sold": settlement time for succeeded
 // payments, first-seen time while the payment is still in flight or failed.
 const soldAtColumn = sql<Date>`COALESCE(${purchases.succeededAt}, ${purchases.createdAt})`;
 
-// Dates compared against a raw SQL expression must be bound as ISO strings
-// with an explicit cast: the driver cannot infer a parameter type from the
-// expression and refuses to serialize a Date object.
+// These are the same half-open Europe/Warsaw accounting ranges used by the
+// monthly report. Dates compared against a raw SQL expression must be bound as
+// ISO strings with an explicit cast: the driver cannot infer a parameter type
+// from the expression and refuses to serialize a Date object.
 const soldAtWithinRange = (monthRange: { end: Date; start: Date }) => [
   sql`${soldAtColumn} >= ${monthRange.start.toISOString()}::timestamptz`,
   sql`${soldAtColumn} < ${monthRange.end.toISOString()}::timestamptz`,
@@ -108,7 +78,7 @@ const succeededInMonthFilter = (monthRange: { end: Date; start: Date }) =>
 // expression as the summary and the list, so the dropdown never offers a month
 // the screen would render as empty.
 export const listAdminSalesMonths = async (): Promise<string[]> => {
-  const monthColumn = sql<string>`to_char(date_trunc('month', COALESCE(${purchases.succeededAt}, ${purchases.createdAt}) AT TIME ZONE 'UTC'), 'YYYY-MM')`;
+  const monthColumn = sql<string>`to_char(date_trunc('month', COALESCE(${purchases.succeededAt}, ${purchases.createdAt}) AT TIME ZONE ${ACCOUNTING_TIME_ZONE}), 'YYYY-MM')`;
   const rows = await getDatabase()
     .selectDistinct({ monthValue: monthColumn })
     .from(purchases)
@@ -131,10 +101,10 @@ export const getAdminPurchasesOverview = async ({
   summary: AdminPurchasesSummary;
 }> => {
   const db = getDatabase();
-  const monthRange = getUtcMonthRange(monthValue);
-  const previousMonthValue = getPreviousMonthValue(monthValue);
+  const monthRange = getAccountingMonthRange(monthValue);
+  const previousMonthValue = getPreviousAccountingMonthValue(monthValue);
   const previousMonthRange = previousMonthValue
-    ? getUtcMonthRange(previousMonthValue)
+    ? getAccountingMonthRange(previousMonthValue)
     : null;
   const normalizedSearch = searchQuery.trim();
   const likePattern = normalizedSearch ? `%${escapeLikePattern(normalizedSearch)}%` : "";

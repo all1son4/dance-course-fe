@@ -7,6 +7,16 @@ import { getDatabase } from "@/db/client";
 import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import { invoices, purchases, stripeEvents } from "@/db/schema";
 import {
+  ACCOUNTING_TIME_ZONE,
+  getAccountingCalendarDateValue,
+  getAccountingDateTimeValue,
+  getAccountingMonthRange,
+  getAccountingMonthValue,
+  getPreviousAccountingMonthValue,
+  isFirstAccountingCalendarDay,
+  parseAccountingMonthValue,
+} from "@/lib/accounting-month";
+import {
   enqueueMonthlyReportDelivery,
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
@@ -82,18 +92,8 @@ export const getMonthlySalesReportRuntime = (
 
 const usesDatabaseJobs = () => getMonthlySalesReportRuntime() === "database";
 
-const pad2 = (value: number) => String(value).padStart(2, "0");
-
-export const getUtcMonthValue = (date: Date) =>
-  `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}`;
-
 const capitalizeFirstLetter = (value: string) =>
   `${value[0]?.toUpperCase() ?? ""}${value.slice(1)}`;
-
-const toUtcDateIso = (date: Date) =>
-  [date.getUTCFullYear(), pad2(date.getUTCMonth() + 1), pad2(date.getUTCDate())].join(
-    "-",
-  );
 
 const formatAmount = (amountMinor: string, currency: string) => {
   const parsedAmountMinor = Number.parseInt(amountMinor, 10);
@@ -108,25 +108,7 @@ const formatAmount = (amountMinor: string, currency: string) => {
   return `${majorAmount} ${normalizedCurrency}`;
 };
 
-export const parseReportMonth = (reportMonth: string) => {
-  const match = /^(\d{4})-(\d{2})$/u.exec(reportMonth.trim());
-
-  if (!match) {
-    return null;
-  }
-
-  const year = Number.parseInt(match[1], 10);
-  const month = Number.parseInt(match[2], 10);
-
-  if (month < 1 || month > 12) {
-    return null;
-  }
-
-  return {
-    month,
-    year,
-  };
-};
+export const parseReportMonth = parseAccountingMonthValue;
 
 export const formatReportMonthLabel = (monthValue: string) => {
   const parsedReportMonth = parseReportMonth(monthValue);
@@ -137,7 +119,7 @@ export const formatReportMonthLabel = (monthValue: string) => {
 
   const formatter = new Intl.DateTimeFormat("ru-RU", {
     month: "long",
-    timeZone: "UTC",
+    timeZone: ACCOUNTING_TIME_ZONE,
     year: "numeric",
   });
   const date = new Date(
@@ -161,32 +143,39 @@ const getMonthlySalesReportPeriod = ({
     throw new Error("invalid_monthly_sales_report_month");
   }
 
-  const selectedYear = parsedReportMonth?.year ?? referenceDate.getUTCFullYear();
-  const selectedMonth = parsedReportMonth?.month ?? referenceDate.getUTCMonth() + 1;
-  const selectedMonthValue = `${selectedYear}-${pad2(selectedMonth)}`;
-  const currentMonthValue = getUtcMonthValue(referenceDate);
+  const currentMonthValue = getAccountingMonthValue(referenceDate);
+  const selectedMonthValue = parsedReportMonth
+    ? `${parsedReportMonth.year}-${String(parsedReportMonth.month).padStart(2, "0")}`
+    : currentMonthValue;
 
   if (selectedMonthValue > currentMonthValue) {
     throw new Error("future_monthly_sales_report_month");
   }
 
-  const startDate = new Date(Date.UTC(selectedYear, selectedMonth - 1, 1, 0, 0, 0, 0));
+  const monthRange = getAccountingMonthRange(selectedMonthValue);
+
+  if (!monthRange) {
+    throw new Error("invalid_monthly_sales_report_month");
+  }
+
   const endDate =
+    selectedMonthValue === currentMonthValue ? referenceDate : monthRange.end;
+  const endDateValue =
     selectedMonthValue === currentMonthValue
-      ? referenceDate
-      : new Date(Date.UTC(selectedYear, selectedMonth, 1, 0, 0, 0, 0));
+      ? getAccountingCalendarDateValue(referenceDate)
+      : monthRange.endDateValue;
 
   return {
     endUtcIso: endDate.toISOString(),
-    key: `${MONTHLY_SALES_REPORT_FAMILY}:${toUtcDateIso(startDate)}:${toUtcDateIso(endDate)}`,
+    key: `${MONTHLY_SALES_REPORT_FAMILY}:${monthRange.startDateValue}:${endDateValue}`,
     month: selectedMonthValue,
-    startUtcIso: startDate.toISOString(),
+    startUtcIso: monthRange.start.toISOString(),
   } satisfies MonthlySalesReportPeriod;
 };
 
 const buildCsv = (rows: string[][]) => {
   const headerRow = [
-    "Дата продажи",
+    `Дата продажи (${ACCOUNTING_TIME_ZONE})`,
     "Номер инвойса",
     "ФИО / Email",
     "Страна покупки",
@@ -235,9 +224,17 @@ const formatCustomerIdentity = ({
   customerFullName: string;
 }) => [customerFullName.trim(), customerEmail.trim()].filter(Boolean).join(" / ");
 
+const formatAccountingSaleTimestamp = (saleTimestampIso: string) => {
+  const saleDate = new Date(saleTimestampIso);
+
+  return Number.isNaN(saleDate.getTime())
+    ? saleTimestampIso
+    : getAccountingDateTimeValue(saleDate);
+};
+
 const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) =>
   saleRecords.map((saleRecord) => [
-    saleRecord.saleTimestampIso,
+    formatAccountingSaleTimestamp(saleRecord.saleTimestampIso),
     saleRecord.invoiceNumber.trim(),
     formatCustomerIdentity(saleRecord),
     saleRecord.customerCountry.trim(),
@@ -323,7 +320,7 @@ const formatReportPeriodLabel = ({
   const formatter = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
     month: "long",
-    timeZone: "UTC",
+    timeZone: ACCOUNTING_TIME_ZONE,
     year: "numeric",
   });
   const startDate = new Date(startUtcIso);
@@ -423,19 +420,17 @@ const buildMonthlySalesReportRunRecord = ({
   csvSha256,
   deliveredAtUtc,
   deliveredTo,
-  endUtcIso,
   generatedAtUtc,
+  period,
   rowCount,
-  startUtcIso,
   status,
 }: {
   csvSha256: string;
   deliveredAtUtc: string;
   deliveredTo: string;
-  endUtcIso: string;
   generatedAtUtc: string;
+  period: MonthlySalesReportPeriod;
   rowCount: number;
-  startUtcIso: string;
   status: "sent" | "skipped" | "failed";
 }): MonthlySalesReportRunSheetRecord => ({
   csv_sha256: csvSha256,
@@ -443,10 +438,10 @@ const buildMonthlySalesReportRunRecord = ({
   delivered_to: deliveredTo,
   delivery_status: status,
   generated_at_utc: generatedAtUtc,
-  period_end_utc: endUtcIso,
-  period_start_utc: startUtcIso,
+  period_end_utc: period.endUtcIso,
+  period_start_utc: period.startUtcIso,
   report_family: MONTHLY_SALES_REPORT_FAMILY,
-  report_key: `${MONTHLY_SALES_REPORT_FAMILY}:${startUtcIso.slice(0, 10)}:${endUtcIso.slice(0, 10)}`,
+  report_key: period.key,
   row_count: String(rowCount),
 });
 
@@ -580,17 +575,23 @@ const buildSentMonthlySalesReportResult = ({
 export const getScheduledMonthlySalesReportPeriod = (
   date: Date,
 ): MonthlySalesReportPeriod | null => {
-  if (Number.isNaN(date.getTime()) || date.getUTCDate() !== 1) {
+  if (Number.isNaN(date.getTime())) {
     return null;
   }
 
-  const previousMonth = new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1, 0, 0, 0, 0),
-  );
+  if (!isFirstAccountingCalendarDay(date)) {
+    return null;
+  }
+
+  const previousMonth = getPreviousAccountingMonthValue(getAccountingMonthValue(date));
+
+  if (!previousMonth) {
+    throw new Error("invalid_previous_accounting_month");
+  }
 
   return getMonthlySalesReportPeriod({
     referenceDate: date,
-    reportMonth: getUtcMonthValue(previousMonth),
+    reportMonth: previousMonth,
   });
 };
 
@@ -713,7 +714,7 @@ export const listAvailableMonthlySalesReportMonths = async (
             return "";
           }
 
-          return getUtcMonthValue(saleDate);
+          return getAccountingMonthValue(saleDate);
         })
         .filter(Boolean),
     ),
@@ -800,10 +801,9 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
           csvSha256: sha256,
           deliveredAtUtc: "",
           deliveredTo: reportRecipient,
-          endUtcIso: period.endUtcIso,
           generatedAtUtc,
+          period,
           rowCount,
-          startUtcIso: period.startUtcIso,
           status: "skipped",
         }),
       );
@@ -901,10 +901,9 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
         csvSha256: sha256,
         deliveredAtUtc: referenceDate.toISOString(),
         deliveredTo: reportRecipient,
-        endUtcIso: period.endUtcIso,
         generatedAtUtc,
+        period,
         rowCount,
-        startUtcIso: period.startUtcIso,
         status: "sent",
       }),
     );
@@ -924,10 +923,9 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
         csvSha256: sha256,
         deliveredAtUtc: "",
         deliveredTo: reportRecipient,
-        endUtcIso: period.endUtcIso,
         generatedAtUtc,
+        period,
         rowCount,
-        startUtcIso: period.startUtcIso,
         status: "failed",
       }),
     );

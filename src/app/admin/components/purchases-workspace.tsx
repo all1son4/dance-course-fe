@@ -2,6 +2,7 @@ import { LoaderCircle, Mail, RefreshCw } from "lucide-react";
 
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
+import { ACCOUNTING_TIME_ZONE } from "@/lib/accounting-month";
 import { formatMinorDelta } from "@/lib/minor-amount";
 
 import { PURCHASES_LIST_LIMIT } from "../lib/admin.constants";
@@ -415,7 +416,9 @@ export const PurchasesWorkspace = ({
 
                   return (
                     <tr key={purchase.paymentIntentId}>
-                      <td data-label="Дата">{formatDateTime(purchase.soldAtIso)}</td>
+                      <td data-label="Дата">
+                        {formatDateTime(purchase.soldAtIso, ACCOUNTING_TIME_ZONE)}
+                      </td>
                       <td data-label="Покупатель">
                         <span>
                           <SalesProductName>

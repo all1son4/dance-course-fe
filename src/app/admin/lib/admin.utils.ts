@@ -9,7 +9,7 @@ import type {
   OnlineGroupAdminAccessState,
 } from "./admin.types";
 
-export const formatDateTime = (value: string) => {
+export const formatDateTime = (value: string, timeZone = "UTC") => {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -22,7 +22,7 @@ export const formatDateTime = (value: string) => {
     hour12: false,
     minute: "2-digit",
     month: "2-digit",
-    timeZone: "UTC",
+    timeZone,
     timeZoneName: "short",
     year: "numeric",
   }).format(date);

@@ -1322,10 +1322,14 @@ maintenance sent the August report on August 31 instead of after the month close
 The recorded run ended at `2026-08-31T03:11:34.644Z`, contained 28 rows, and used the
 partial-period key `monthly_sales:2026-08-01:2026-08-31`. The cause was the cron route
 using a last-day-of-month predicate together with the current timestamp as the report
-period end. The correction schedules the previous completed UTC month only on the
-first UTC day of the new month; its August key is
+period end. The correction schedules the previous completed `Europe/Warsaw`
+accounting month only on the first local day of the new month; its August key is
 `monthly_sales:2026-08-01:2026-09-01`, so the premature run cannot suppress the
-complete report. Gate G6 remains `IN_PROGRESS` until that fix is deployed and the
+complete report. The canonical August interval is half-open in `Europe/Warsaw`:
+`[2026-08-01 00:00, 2026-09-01 00:00)`, equivalent to
+`[2026-07-31T22:00:00.000Z, 2026-08-31T22:00:00.000Z)` in UTC; consequently no
+September 1 Warsaw sale can enter the August result. Gate G6 remains `IN_PROGRESS`
+until that fix is deployed and the
 complete scheduled report is verified against control SQL. The incident extends only
 the report-specific observation needed for this gate; no destructive or DROP work
 starts meanwhile.
