@@ -286,9 +286,16 @@ August monthly report was sent prematurely on August 31. The persisted run ended
 `2026-08-31T03:11:34.644Z`, contained 28 rows, and has key
 `monthly_sales:2026-08-01:2026-08-31`. Daily maintenance incorrectly combined a
 last-day-of-month trigger with a partial current-month end timestamp. Deploy the
-calendar correction before the next cron: on the first UTC day of a new month it must
-request the previous completed month, producing the distinct August key
-`monthly_sales:2026-08-01:2026-09-01`. Preserve the premature run as incident evidence.
+calendar correction before the next cron: on the first `Europe/Warsaw` day of a new
+month it must request the previous completed local accounting month, producing the
+distinct August key
+`monthly_sales:2026-08-01:2026-09-01`. For August 2026 this means the half-open
+`Europe/Warsaw` interval `[2026-08-01 00:00, 2026-09-01 00:00)`, stored and queried as
+UTC instants `[2026-07-31T22:00:00.000Z, 2026-08-31T22:00:00.000Z)`. A sale at or
+after `2026-09-01 00:00 Europe/Warsaw` therefore belongs to September and must not
+appear in the August report. The report CSV and the purchases workspace display sale
+timestamps in the same `Europe/Warsaw` accounting timezone. Preserve the premature
+run as incident evidence.
 After the corrected scheduled delivery, compare its row count with the same bounded
 control SQL and repeat the queue/invariant checks before closing `CUT-04` and G6.
 

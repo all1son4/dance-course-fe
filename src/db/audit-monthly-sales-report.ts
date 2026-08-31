@@ -1,5 +1,7 @@
 import postgres from "postgres";
 
+import { ACCOUNTING_TIME_ZONE } from "@/lib/accounting-month";
+
 import { getRequiredDatabaseUrlFromEnv } from "./env";
 import { loadDatabaseEnvConfig } from "./load-env";
 
@@ -135,7 +137,7 @@ const loadMonthlySalesReportAuditRows = () =>
     `,
     client<MonthCountRow[]>`
       select
-        to_char(se.stripe_created_at at time zone 'UTC', 'YYYY-MM') as month,
+        to_char(se.stripe_created_at at time zone ${ACCOUNTING_TIME_ZONE}, 'YYYY-MM') as month,
         count(distinct p.payment_intent_id)::int as sale_count
       from purchases p
       inner join stripe_events se

@@ -1,11 +1,8 @@
 import { getAdminPurchasesOverview, listAdminSalesMonths } from "@/db/admin-sales";
+import { getAccountingMonthValue } from "@/lib/accounting-month";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonNoStore } from "@/lib/http-security";
-import {
-  formatReportMonthLabel,
-  getUtcMonthValue,
-  parseReportMonth,
-} from "@/lib/monthly-sales-report";
+import { formatReportMonthLabel, parseReportMonth } from "@/lib/monthly-sales-report";
 
 export const runtime = "nodejs";
 
@@ -23,7 +20,7 @@ export async function GET(request: Request) {
       0,
       MAX_SEARCH_LENGTH,
     );
-    const currentMonthValue = getUtcMonthValue(new Date());
+    const currentMonthValue = getAccountingMonthValue(new Date());
     // Same validation the report pipeline applies: syntactically a month and
     // not in the future; anything else falls back to the current month.
     const monthValue =

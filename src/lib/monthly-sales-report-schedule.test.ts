@@ -6,9 +6,9 @@ import {
   getScheduledMonthlySalesReportPeriod,
 } from "@/lib/monthly-sales-report";
 
-test("does not schedule a monthly report before the UTC month is complete", () => {
+test("does not schedule a monthly report before the Warsaw month is complete", () => {
   assert.equal(
-    getScheduledMonthlySalesReportPeriod(new Date("2026-08-31T03:00:00.000Z")),
+    getScheduledMonthlySalesReportPeriod(new Date("2026-08-31T21:59:59.999Z")),
     null,
   );
   assert.equal(
@@ -17,27 +17,64 @@ test("does not schedule a monthly report before the UTC month is complete", () =
   );
 });
 
-test("schedules the complete previous UTC month on the first day", () => {
+test("schedules the complete previous Warsaw month on the first local day", () => {
   assert.deepEqual(
-    getScheduledMonthlySalesReportPeriod(new Date("2026-09-01T03:00:00.000Z")),
+    getScheduledMonthlySalesReportPeriod(new Date("2026-08-31T22:30:00.000Z")),
     {
-      endUtcIso: "2026-09-01T00:00:00.000Z",
+      endUtcIso: "2026-08-31T22:00:00.000Z",
       key: "monthly_sales:2026-08-01:2026-09-01",
       month: "2026-08",
-      startUtcIso: "2026-08-01T00:00:00.000Z",
+      startUtcIso: "2026-07-31T22:00:00.000Z",
     },
   );
 });
 
-test("schedules December correctly across the UTC year boundary", () => {
+test("schedules December correctly across the Warsaw year boundary", () => {
   assert.deepEqual(
     getScheduledMonthlySalesReportPeriod(new Date("2027-01-01T03:00:00.000Z")),
     {
-      endUtcIso: "2027-01-01T00:00:00.000Z",
+      endUtcIso: "2026-12-31T23:00:00.000Z",
       key: "monthly_sales:2026-12-01:2027-01-01",
       month: "2026-12",
-      startUtcIso: "2026-12-01T00:00:00.000Z",
+      startUtcIso: "2026-11-30T23:00:00.000Z",
     },
+  );
+});
+
+test("uses DST-aware Warsaw boundaries for spring and autumn months", () => {
+  assert.deepEqual(
+    getScheduledMonthlySalesReportPeriod(new Date("2026-04-01T03:00:00.000Z")),
+    {
+      endUtcIso: "2026-03-31T22:00:00.000Z",
+      key: "monthly_sales:2026-03-01:2026-04-01",
+      month: "2026-03",
+      startUtcIso: "2026-02-28T23:00:00.000Z",
+    },
+  );
+  assert.deepEqual(
+    getScheduledMonthlySalesReportPeriod(new Date("2026-11-01T03:00:00.000Z")),
+    {
+      endUtcIso: "2026-10-31T23:00:00.000Z",
+      key: "monthly_sales:2026-10-01:2026-11-01",
+      month: "2026-10",
+      startUtcIso: "2026-09-30T22:00:00.000Z",
+    },
+  );
+});
+
+test("excludes every sale from September by Warsaw calendar time", () => {
+  const augustPeriod = getScheduledMonthlySalesReportPeriod(
+    new Date("2026-09-01T03:00:00.000Z"),
+  );
+
+  assert.ok(augustPeriod);
+  assert.equal(
+    new Date("2026-08-31T21:59:59.999Z") < new Date(augustPeriod.endUtcIso),
+    true,
+  );
+  assert.equal(
+    new Date("2026-08-31T22:00:00.000Z") < new Date(augustPeriod.endUtcIso),
+    false,
   );
 });
 
