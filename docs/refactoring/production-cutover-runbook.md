@@ -274,6 +274,24 @@ longer authoritative. The next-day privacy-safe reconciliation fingerprint is
 This closes the next-day checkpoint only; `CUT-04` and Gate G6 stay in progress until
 the seven-day observation and owner behavior confirmation.
 
+The seven-day automated checkpoint ran after `2026-08-31T00:56:17Z`. Stripe Live and
+the verified production inbox matched at 118/118 relevant events with no missing or
+extra event. Production database health, the catalog, all 32 invariants, queues,
+active-access coverage, the latest 28/28 report control, and the current production
+CI/smoke were green. Shared historical Payments still matched 80/80 with no Sheet-only
+Payment; the 23 DB-only Payments were the expected post-cutover records.
+
+Do not close Gate G6 from those automated results alone. The owner reported that the
+August monthly report was sent prematurely on August 31. The persisted run ended at
+`2026-08-31T03:11:34.644Z`, contained 28 rows, and has key
+`monthly_sales:2026-08-01:2026-08-31`. Daily maintenance incorrectly combined a
+last-day-of-month trigger with a partial current-month end timestamp. Deploy the
+calendar correction before the next cron: on the first UTC day of a new month it must
+request the previous completed month, producing the distinct August key
+`monthly_sales:2026-08-01:2026-09-01`. Preserve the premature run as incident evidence.
+After the corrected scheduled delivery, compare its row count with the same bounded
+control SQL and repeat the queue/invariant checks before closing `CUT-04` and G6.
+
 Operator note: `db:audit:monthly-sales-report` currently includes raw customer samples
 in addition to its aggregate control totals. During observation, do not retain or
 share that raw output; use only the duplicate and count summaries. Removing those
