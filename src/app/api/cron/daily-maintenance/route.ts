@@ -5,7 +5,7 @@ import { runBusinessOperationOutboxJobs } from "@/lib/business-operation-outbox"
 import { jsonNoStore } from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
-  isLastDayOfMonthUtc,
+  getScheduledMonthlySalesReportPeriod,
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
 import { runSheetsExportOutboxJobs } from "@/lib/sheets-export-outbox";
@@ -71,10 +71,13 @@ export async function GET(request: Request) {
       error instanceof Error ? error.message : "revoke_expired_access_failed";
   }
 
-  if (isLastDayOfMonthUtc(now)) {
+  const scheduledMonthlySalesReportPeriod = getScheduledMonthlySalesReportPeriod(now);
+
+  if (scheduledMonthlySalesReportPeriod) {
     try {
       const result = await generateAndDeliverMonthlySalesReport({
         referenceDate: now,
+        reportMonth: scheduledMonthlySalesReportPeriod.month,
       });
 
       monthlySalesReportResult = toMonthlySalesReportDeliveryResponse(result);

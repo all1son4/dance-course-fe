@@ -577,11 +577,22 @@ const buildSentMonthlySalesReportResult = ({
   status: "sent" as const,
 });
 
-export const isLastDayOfMonthUtc = (date: Date) =>
-  date.getUTCDate() ===
-  new Date(
-    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0, 0, 0, 0, 0),
-  ).getUTCDate();
+export const getScheduledMonthlySalesReportPeriod = (
+  date: Date,
+): MonthlySalesReportPeriod | null => {
+  if (Number.isNaN(date.getTime()) || date.getUTCDate() !== 1) {
+    return null;
+  }
+
+  const previousMonth = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth() - 1, 1, 0, 0, 0, 0),
+  );
+
+  return getMonthlySalesReportPeriod({
+    referenceDate: date,
+    reportMonth: getUtcMonthValue(previousMonth),
+  });
+};
 
 export const getMonthlySalesReportPeriodForNow = (date: Date = new Date()) =>
   getMonthlySalesReportPeriod({

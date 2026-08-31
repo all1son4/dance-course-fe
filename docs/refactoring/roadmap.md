@@ -1309,6 +1309,27 @@ authoritative; the optional one-way successful-customer projection remains align
 This closes only the next-day checkpoint. `CUT-04` and Gate G6 remain `IN_PROGRESS`
 until the seven-day observation window and owner behavior confirmation.
 
+The seven-day automated checkpoint ran after `2026-08-31T00:56:17Z`. Production
+health, the 12-offer catalog, all 32 invariants, queues, access coverage, the latest
+report control, and the current production CI/smoke remained green. Stripe Live and
+the verified production inbox matched at 118/118 relevant post-cutover events with no
+missing or extra event. The 80 Payments shared with Sheets still matched field for
+field, no Sheet-only Payment existed, and the 23 DB-only Payments were the expected
+14 succeeded, eight failed, and one canceled post-cutover records.
+
+The owner reported one real behavior defect before approving Gate G6: daily
+maintenance sent the August report on August 31 instead of after the month closed.
+The recorded run ended at `2026-08-31T03:11:34.644Z`, contained 28 rows, and used the
+partial-period key `monthly_sales:2026-08-01:2026-08-31`. The cause was the cron route
+using a last-day-of-month predicate together with the current timestamp as the report
+period end. The correction schedules the previous completed UTC month only on the
+first UTC day of the new month; its August key is
+`monthly_sales:2026-08-01:2026-09-01`, so the premature run cannot suppress the
+complete report. Gate G6 remains `IN_PROGRESS` until that fix is deployed and the
+complete scheduled report is verified against control SQL. The incident extends only
+the report-specific observation needed for this gate; no destructive or DROP work
+starts meanwhile.
+
 After every critical switch, run an immediate smoke/reconciliation check and repeat it
 the next day. Use existing application/provider logs and reconciliation output rather
 than introducing a separate enterprise monitoring platform.
@@ -1463,3 +1484,4 @@ Status: `TODO`
 | 2026-08-24 | CUT-04 observation          | `IN_PROGRESS` | Natural-traffic verification; two superseded retries tracked  |
 | 2026-08-24 | CUT-04 same-day check       | `DONE`        | Prod READY; 32 invariants and 6 journeys; stable fingerprint  |
 | 2026-08-25 | CUT-04 next-day check       | `DONE`        | 22 real purchases; Stripe 113/113; queues/invariants green    |
+| 2026-08-31 | CUT-04 seven-day checkpoint | `IN_PROGRESS` | Automated checks green; early monthly report fix pending      |
