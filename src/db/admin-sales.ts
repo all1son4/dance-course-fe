@@ -78,7 +78,13 @@ const succeededInMonthFilter = (monthRange: { end: Date; start: Date }) =>
 // expression as the summary and the list, so the dropdown never offers a month
 // the screen would render as empty.
 export const listAdminSalesMonths = async (): Promise<string[]> => {
-  const monthColumn = sql<string>`to_char(date_trunc('month', COALESCE(${purchases.succeededAt}, ${purchases.createdAt}) AT TIME ZONE ${ACCOUNTING_TIME_ZONE}), 'YYYY-MM')`;
+  // Keep one SQL expression for DISTINCT and ORDER BY. Without an alias Drizzle
+  // binds the timezone twice, and PostgreSQL no longer considers the ORDER BY
+  // expression identical to the selected DISTINCT expression.
+  const monthColumn =
+    sql<string>`to_char(date_trunc('month', COALESCE(${purchases.succeededAt}, ${purchases.createdAt}) AT TIME ZONE ${ACCOUNTING_TIME_ZONE}), 'YYYY-MM')`.as(
+      "accounting_month",
+    );
   const rows = await getDatabase()
     .selectDistinct({ monthValue: monthColumn })
     .from(purchases)
