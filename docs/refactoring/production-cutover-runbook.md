@@ -338,6 +338,11 @@ share that raw output; use only the duplicate and count summaries. Removing thos
 samples from routine operator output is tracked by the existing `HARD-02` PII-safe
 logging item.
 
+The numbered flag sequence below is retained as the historical `CUT-03` execution
+record. On the `DROP-01` development branch, `DB_TELEGRAM_ACCESS_MODE` is retired and
+Telegram access persistence is PostgreSQL-only; do not replay step 2 after that
+release reaches an environment.
+
 For each step, make one environment change, wait for the production deployment, run
 the named checks, and stop on an unexplained result.
 

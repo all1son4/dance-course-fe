@@ -12,7 +12,6 @@ test("defaults every domain to the behavior-preserving legacy mode", () => {
     paymentEvents: "legacy",
     sheetsExport: "legacy",
     sideEffects: "legacy",
-    telegramAccess: "legacy",
   });
 });
 
@@ -36,9 +35,9 @@ test("reads each domain independently", () => {
 test("rejects invalid values instead of silently falling back", () => {
   assert.throws(
     () =>
-      getDomainPersistenceMode("telegramAccess", {
-        DB_TELEGRAM_ACCESS_MODE: "automatic-fallback",
+      getDomainPersistenceMode("businessOperations", {
+        DB_BUSINESS_OPERATIONS_MODE: "automatic-fallback",
       }),
-    /DB_TELEGRAM_ACCESS_MODE must be one of/u,
+    /DB_BUSINESS_OPERATIONS_MODE must be one of/u,
   );
 });

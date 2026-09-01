@@ -7,7 +7,6 @@ export const DOMAIN_PERSISTENCE_ENV = {
   paymentEvents: "DB_PAYMENT_EVENTS_MODE",
   sideEffects: "DB_SIDE_EFFECTS_MODE",
   sheetsExport: "DB_SHEETS_EXPORT_MODE",
-  telegramAccess: "DB_TELEGRAM_ACCESS_MODE",
 } as const;
 
 export type PersistenceDomain = keyof typeof DOMAIN_PERSISTENCE_ENV;

@@ -13,7 +13,6 @@ import {
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,
   findTelegramUserBindingsByTelegramUserIdAndChatId,
-  isTelegramAccessPersistenceRateLimitError,
   type PaymentSheetRecord,
   persistTelegramPaymentAccess,
   upsertTelegramAccessTokenRecord,
@@ -756,19 +755,10 @@ const trySyncExistingTelegramBinding = async ({
       paymentRecord,
     });
   } catch (syncError) {
-    if (isTelegramAccessPersistenceRateLimitError(syncError)) {
-      console.warn(
-        "Skipped optional Telegram binding sync due to Google Sheets rate limit",
-        {
-          paymentIntentId: paymentRecord.payment_intent_id,
-        },
-      );
-    } else {
-      console.error("Failed to sync Telegram binding by existing active record", {
-        error: syncError,
-        paymentIntentId: paymentRecord.payment_intent_id,
-      });
-    }
+    console.error("Failed to sync Telegram binding by existing active record", {
+      error: syncError,
+      paymentIntentId: paymentRecord.payment_intent_id,
+    });
   }
 };
 
@@ -784,10 +774,6 @@ const persistTelegramAccessLinkFailure = async ({
   paymentRecord: PaymentSheetRecord;
 }): Promise<TelegramAccessLinkResult> => {
   telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
-
-  if (isTelegramAccessPersistenceRateLimitError(error)) {
-    throw error;
-  }
 
   console.error("Failed to create Telegram invite link", {
     chatId: normalizedChatId,

@@ -60,20 +60,17 @@ const restoreEnvironmentVariable = (name: string, value: string | undefined) => 
 };
 
 const configureDatabaseOnlyTelegramAccess = (context: TestContext) => {
-  const previousMode = process.env.DB_TELEGRAM_ACCESS_MODE;
   const previousBotUsername = process.env.TELEGRAM_BOT_USERNAME;
   const previousGooglePrivateKey = process.env.GOOGLE_PRIVATE_KEY;
   const previousGoogleEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const previousGoogleSheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
 
-  process.env.DB_TELEGRAM_ACCESS_MODE = "database";
   process.env.TELEGRAM_BOT_USERNAME = "write04_fixture_bot";
   delete process.env.GOOGLE_PRIVATE_KEY;
   delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   delete process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
 
   context.after(() => {
-    restoreEnvironmentVariable("DB_TELEGRAM_ACCESS_MODE", previousMode);
     restoreEnvironmentVariable("TELEGRAM_BOT_USERNAME", previousBotUsername);
     restoreEnvironmentVariable("GOOGLE_PRIVATE_KEY", previousGooglePrivateKey);
     restoreEnvironmentVariable("GOOGLE_SERVICE_ACCOUNT_EMAIL", previousGoogleEmail);

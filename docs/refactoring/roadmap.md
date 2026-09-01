@@ -1410,10 +1410,14 @@ removed; admin history and the payment access-link route also no longer have
 Google-specific error branches. Existing admin fresh/stale caching, authentication,
 request rate limiting, response shapes, payment-intent precedence,
 successful-checkout fallback, Telegram lookup keys and collection semantics, and
-database failure behavior remain unchanged. Telegram writes and claims remain behind
-their existing persistence boundary for the next slice. The temporary
-SuccessfulCustomers exporter and offline snapshot/backfill/reconciliation tools are
-outside these slices and remain available through their documented windows.
+database failure behavior remain unchanged. Telegram token, binding, entitlement,
+identity-reuse, membership, and revocation writes plus atomic token claims now also
+use PostgreSQL unconditionally. The retired `DB_TELEGRAM_ACCESS_MODE` selector,
+Google-specific rate-limit branches, and the obsolete admin-grant dependency on that
+flag are removed. Online Group renewal verification remains isolated and unchanged.
+The temporary SuccessfulCustomers exporter and offline
+snapshot/backfill/reconciliation tools are outside these slices and remain available
+through their documented windows.
 
 ### DROP-02 — Disable the transitional exporter after the rollback window
 
@@ -1539,4 +1543,4 @@ Status: `TODO`
 | 2026-08-31 | CUT-04 seven-day checkpoint | `DONE`        | Automated checks green; report incident isolated and fixed    |
 | 2026-09-01 | Corrected August report     | `DONE`        | 28/28 rows; exact CSV hash; first-attempt provider acceptance |
 | 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete        |
-| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | User-facing runtime reads are PostgreSQL-only                 |
+| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime reads and Telegram access writes are PostgreSQL-only  |

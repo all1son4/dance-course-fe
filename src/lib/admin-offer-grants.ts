@@ -116,13 +116,6 @@ export const createAdminOfferGrant = async (
   command: Omit<CreateAdminOfferGrantCommand, "enqueueSuccessfulCustomerExport">,
 ) => {
   if (usesDatabase()) {
-    if (
-      command.accessWorkflow === "admin-offer-link" &&
-      getDomainPersistenceMode("telegramAccess") !== "database"
-    ) {
-      throw new Error("admin_offer_grant_telegram_database_mode_required");
-    }
-
     return createAdminOfferGrantInDatabase({
       ...command,
       enqueueSuccessfulCustomerExport: shouldExportAdminOfferGrantToSheets(),

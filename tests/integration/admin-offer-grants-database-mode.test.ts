@@ -37,14 +37,12 @@ const restoreEnvironmentVariable = (name: string, value: string | undefined) => 
 const configureDatabaseOnlyAdminOffers = (context: TestContext) => {
   const previousBusinessMode = process.env.DB_BUSINESS_OPERATIONS_MODE;
   const previousExportMode = process.env.DB_SHEETS_EXPORT_MODE;
-  const previousTelegramMode = process.env.DB_TELEGRAM_ACCESS_MODE;
   const previousGooglePrivateKey = process.env.GOOGLE_PRIVATE_KEY;
   const previousGoogleEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const previousGoogleSheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
 
   process.env.DB_BUSINESS_OPERATIONS_MODE = "database";
   process.env.DB_SHEETS_EXPORT_MODE = "legacy";
-  process.env.DB_TELEGRAM_ACCESS_MODE = "database";
   delete process.env.GOOGLE_PRIVATE_KEY;
   delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   delete process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
@@ -52,7 +50,6 @@ const configureDatabaseOnlyAdminOffers = (context: TestContext) => {
   context.after(() => {
     restoreEnvironmentVariable("DB_BUSINESS_OPERATIONS_MODE", previousBusinessMode);
     restoreEnvironmentVariable("DB_SHEETS_EXPORT_MODE", previousExportMode);
-    restoreEnvironmentVariable("DB_TELEGRAM_ACCESS_MODE", previousTelegramMode);
     restoreEnvironmentVariable("GOOGLE_PRIVATE_KEY", previousGooglePrivateKey);
     restoreEnvironmentVariable("GOOGLE_SERVICE_ACCOUNT_EMAIL", previousGoogleEmail);
     restoreEnvironmentVariable("GOOGLE_SHEETS_SPREADSHEET_ID", previousGoogleSheetId);
@@ -293,7 +290,6 @@ test("creates a DB-native Online Group grant with the export retired", async (t)
 
   configureDatabaseOnlyAdminOffers(t);
   process.env.DB_SHEETS_EXPORT_MODE = "database";
-  process.env.DB_TELEGRAM_ACCESS_MODE = "legacy";
 
   try {
     const [product] = await client<{ id: string }[]>`

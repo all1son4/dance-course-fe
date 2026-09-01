@@ -1,24 +1,14 @@
-import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import {
   claimTelegramAccessTokenRecordInDatabase,
   upsertTelegramAccessTokenRecordToDatabase,
   upsertTelegramUserBindingRecordToDatabase,
 } from "@/db/sheet-records";
 import { updateTelegramAccessInDatabase } from "@/db/telegram-access";
-import {
-  claimTelegramAccessTokenRecord as claimLegacyTelegramAccessTokenRecord,
-  isGoogleSheetsRateLimitError,
-  upsertPaymentRecord as upsertLegacyPaymentRecord,
-  upsertTelegramAccessTokenRecord as upsertLegacyTelegramAccessTokenRecord,
-  upsertTelegramUserBindingRecord as upsertLegacyTelegramUserBindingRecord,
-} from "@/lib/google-sheets";
 import type {
   PaymentSheetRecord,
   TelegramAccessTokenSheetRecord,
   TelegramUserBindingSheetRecord,
 } from "@/lib/google-sheets-schema";
-
-export type TelegramAccessRuntime = "database" | "legacy";
 
 type AccessStatus =
   | "activated"
@@ -47,6 +37,20 @@ export type TelegramPaymentAccessPatch = Partial<
     | "updated_at"
   >
 >;
+
+export type TelegramAccessPersistenceDependencies = {
+  claimToken: typeof claimTelegramAccessTokenRecordInDatabase;
+  updatePaymentAccess: typeof updateTelegramAccessInDatabase;
+  upsertBinding: typeof upsertTelegramUserBindingRecordToDatabase;
+  upsertToken: typeof upsertTelegramAccessTokenRecordToDatabase;
+};
+
+const defaultDependencies: TelegramAccessPersistenceDependencies = {
+  claimToken: claimTelegramAccessTokenRecordInDatabase,
+  updatePaymentAccess: updateTelegramAccessInDatabase,
+  upsertBinding: upsertTelegramUserBindingRecordToDatabase,
+  upsertToken: upsertTelegramAccessTokenRecordToDatabase,
+};
 
 const trimOrNull = (value: string | null | undefined) => value?.trim() || null;
 
@@ -122,53 +126,30 @@ const getExternalTargetType = (paymentRecord: PaymentSheetRecord) => {
   return null;
 };
 
-export const getTelegramAccessRuntime = (
-  environment: Readonly<Record<string, string | undefined>> = process.env,
-): TelegramAccessRuntime =>
-  getDomainPersistenceMode("telegramAccess", environment) === "database"
-    ? "database"
-    : "legacy";
-
-const usesDatabase = () => getTelegramAccessRuntime() === "database";
-
-export const isTelegramAccessPersistenceRateLimitError = (error: unknown) =>
-  !usesDatabase() && isGoogleSheetsRateLimitError(error);
-
 export const upsertTelegramAccessTokenRecord = (
   record: TelegramAccessTokenSheetRecord,
-) =>
-  usesDatabase()
-    ? upsertTelegramAccessTokenRecordToDatabase(record)
-    : upsertLegacyTelegramAccessTokenRecord(record);
+  dependencies: TelegramAccessPersistenceDependencies = defaultDependencies,
+) => dependencies.upsertToken(record);
 
 export const claimTelegramAccessTokenRecord = (
   claim: Parameters<typeof claimTelegramAccessTokenRecordInDatabase>[0],
-) =>
-  usesDatabase()
-    ? claimTelegramAccessTokenRecordInDatabase(claim)
-    : claimLegacyTelegramAccessTokenRecord(claim);
+  dependencies: TelegramAccessPersistenceDependencies = defaultDependencies,
+) => dependencies.claimToken(claim);
 
 export const upsertTelegramUserBindingRecord = (
   record: TelegramUserBindingSheetRecord,
-) =>
-  usesDatabase()
-    ? upsertTelegramUserBindingRecordToDatabase(record)
-    : upsertLegacyTelegramUserBindingRecord(record);
+  dependencies: TelegramAccessPersistenceDependencies = defaultDependencies,
+) => dependencies.upsertBinding(record);
 
 export const persistTelegramPaymentAccess = async ({
+  dependencies = defaultDependencies,
   patch,
   paymentRecord,
 }: {
+  dependencies?: TelegramAccessPersistenceDependencies;
   patch: TelegramPaymentAccessPatch;
   paymentRecord: PaymentSheetRecord;
 }) => {
-  if (!usesDatabase()) {
-    return upsertLegacyPaymentRecord({
-      ...paymentRecord,
-      ...patch,
-    });
-  }
-
   const updatedAtValue = patch.updated_at?.trim() || new Date().toISOString();
   const updatedAtTimestamp = Date.parse(updatedAtValue);
 
@@ -176,7 +157,7 @@ export const persistTelegramPaymentAccess = async ({
     throw new Error("telegram_access_invalid_updated_at");
   }
 
-  const paymentProjection = await updateTelegramAccessInDatabase({
+  const paymentProjection = await dependencies.updatePaymentAccess({
     accessWorkflow: trimOrNull(paymentRecord.access_workflow),
     ...(patch.telegram_token_id === undefined
       ? {}
