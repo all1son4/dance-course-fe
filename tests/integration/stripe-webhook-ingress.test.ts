@@ -26,6 +26,12 @@ const client = postgres(databaseUrl, {
 const applicationClient = getDatabaseClient();
 let POST: (request: Request) => Promise<Response>;
 
+const clearGoogleSheetsConfiguration = () => {
+  delete process.env.GOOGLE_PRIVATE_KEY;
+  delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+  delete process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+};
+
 before(async () => {
   clearGoogleSheetsConfiguration();
   ({ POST } = await import("@/app/api/stripe/webhook/route"));
@@ -34,12 +40,6 @@ before(async () => {
 after(async () => {
   await Promise.all([client.end(), applicationClient.end()]);
 });
-
-const clearGoogleSheetsConfiguration = () => {
-  delete process.env.GOOGLE_PRIVATE_KEY;
-  delete process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  delete process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
-};
 
 const createEvent = ({
   eventId,
