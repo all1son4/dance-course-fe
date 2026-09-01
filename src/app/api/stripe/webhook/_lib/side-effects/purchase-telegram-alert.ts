@@ -1,9 +1,5 @@
 import type Stripe from "stripe";
 
-import {
-  findPaymentRecordByIntentId,
-  isGoogleSheetsRateLimitError,
-} from "@/lib/google-sheets";
 import { hasClosedSalesAtFulfilment } from "@/lib/sales-availability";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
 import {
@@ -20,26 +16,8 @@ import { toUtcIso } from "@/lib/time";
 
 import { buildPurchaseAlertText, isEmailDeliveryInFlight } from "../purchase-alert";
 import { shouldRunPurchaseSuccessSideEffects } from "./eligibility";
-import {
-  hasFreshFallbackAlertSend,
-  markFallbackAlertSent,
-  tryAcquirePaymentProcessingLease,
-  tryUpdatePurchaseAlertStatus,
-} from "./payment-status-lease";
 import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
 import type { StripeWebhookSyncResult } from "./types";
-
-const pendingPurchaseAlertSyncs = new Map<string, Promise<void>>();
-
-// How long the synchronous alert waits for a concurrent invocation to finish
-// the email/access delivery before reporting whatever state is current.
-const EMAIL_DELIVERY_WAIT_POLL_MS = 4_000;
-const EMAIL_DELIVERY_WAIT_MAX_POLLS = 8;
-
-const waitMs = (delayMs: number): Promise<void> =>
-  new Promise<void>((resolve) => {
-    setTimeout(resolve, delayMs);
-  });
 
 export class TelegramAlertDeliveryUncertainError extends Error {
   readonly retryable = false;
@@ -106,176 +84,6 @@ const buildAlertTextForPayment = async ({
     paymentRecord,
     processedAtIso: toUtcIso(),
   });
-};
-
-export const sendPurchaseAlert = async ({
-  event,
-  handledEvent,
-}: {
-  event: Stripe.Event;
-  handledEvent: StripeWebhookSyncResult;
-}) => {
-  if (
-    !shouldRunPurchaseSuccessSideEffects(event) ||
-    handledEvent.skipped ||
-    handledEvent.paymentRecord.outcome !== "succeeded"
-  ) {
-    return;
-  }
-
-  if (!shouldSendPurchaseSideEffectForEnvironment(event)) {
-    console.warn(
-      "Skipping purchase Telegram alert for Stripe test-mode event in non-production",
-      {
-        eventId: handledEvent.eventId,
-        paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
-      },
-    );
-    return;
-  }
-
-  if (!isTelegramAlertsConfigured()) {
-    console.warn("Telegram alerts are not configured for purchase alerts", {
-      eventId: handledEvent.eventId,
-      paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
-    });
-    return;
-  }
-
-  const alertsChatId = getTelegramAlertsChatId();
-  const alertsBotToken = getTelegramAlertsBotToken();
-
-  if (!alertsChatId || !alertsBotToken) {
-    return;
-  }
-
-  const paymentIntentId = handledEvent.paymentRecord.payment_intent_id;
-  const pendingSync = pendingPurchaseAlertSyncs.get(paymentIntentId);
-
-  if (pendingSync) {
-    await pendingSync;
-    return;
-  }
-
-  const alertSyncPromise = (async () => {
-    let latestPaymentRecord = handledEvent.paymentRecord;
-    let shouldPersistAlertStatus = true;
-
-    try {
-      const alertLease = await tryAcquirePaymentProcessingLease({
-        completedStatuses: new Set(["sent"]),
-        fallbackPaymentRecord: handledEvent.paymentRecord,
-        paymentIntentId,
-        statusField: "with_mentor_alert_status",
-        updatedAtField: "with_mentor_alert_updated_at",
-      });
-
-      if (!alertLease.acquired) {
-        return;
-      }
-
-      latestPaymentRecord = alertLease.paymentRecord;
-    } catch (error) {
-      if (!isGoogleSheetsRateLimitError(error)) {
-        throw error;
-      }
-
-      if (hasFreshFallbackAlertSend(paymentIntentId)) {
-        console.warn("Skipping fallback purchase alert duplicate during Sheets backoff", {
-          eventId: handledEvent.eventId,
-          paymentIntentId,
-        });
-        return;
-      }
-
-      shouldPersistAlertStatus = false;
-      console.warn(
-        "Google Sheets is rate limited, sending purchase alert without lease",
-        {
-          eventId: handledEvent.eventId,
-          paymentIntentId,
-        },
-      );
-    }
-
-    // The alert is the operator's final report on the purchase, but a
-    // concurrent invocation may still be delivering the email whose status it
-    // renders. Wait briefly for a final state; after the bounded window,
-    // report whatever is current rather than staying silent.
-    for (
-      let pollAttempt = 0;
-      pollAttempt < EMAIL_DELIVERY_WAIT_MAX_POLLS &&
-      isEmailDeliveryInFlight(latestPaymentRecord);
-      pollAttempt += 1
-    ) {
-      await waitMs(EMAIL_DELIVERY_WAIT_POLL_MS);
-
-      try {
-        latestPaymentRecord =
-          (await findPaymentRecordByIntentId(paymentIntentId, {
-            cacheTtlMs: 0,
-            source: "sheets",
-          })) ?? latestPaymentRecord;
-      } catch (error) {
-        if (!isGoogleSheetsRateLimitError(error)) {
-          throw error;
-        }
-
-        break;
-      }
-    }
-
-    const alertText = await buildAlertTextForPayment({
-      event,
-      handledEvent,
-      paymentIntentId,
-      paymentRecord: latestPaymentRecord,
-    });
-
-    try {
-      await sendTelegramMessage({
-        botToken: alertsBotToken,
-        chatId: alertsChatId,
-        disableWebPagePreview: true,
-        parseMode: "HTML",
-        text: alertText,
-      });
-
-      console.warn("Sent purchase alert to Telegram group", {
-        eventId: handledEvent.eventId,
-        paymentIntentId,
-      });
-
-      if (shouldPersistAlertStatus) {
-        await tryUpdatePurchaseAlertStatus({
-          paymentRecord: latestPaymentRecord,
-          status: "sent",
-        });
-      } else {
-        markFallbackAlertSent(paymentIntentId);
-      }
-    } catch (error) {
-      console.error("Failed to send purchase alert", {
-        error,
-        eventId: handledEvent.eventId,
-        paymentIntentId,
-      });
-
-      if (shouldPersistAlertStatus) {
-        await tryUpdatePurchaseAlertStatus({
-          paymentRecord: latestPaymentRecord,
-          status: "failed",
-        });
-      }
-
-      throw error;
-    }
-  })().finally(() => {
-    pendingPurchaseAlertSyncs.delete(paymentIntentId);
-  });
-
-  pendingPurchaseAlertSyncs.set(paymentIntentId, alertSyncPromise);
-  await alertSyncPromise;
 };
 
 export const deliverPurchaseAlertFromOutbox = async ({

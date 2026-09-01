@@ -1403,7 +1403,7 @@ no DROP change may reach production before the legacy reader/exporter review aft
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
-Status: `IN_PROGRESS` — the development slices permanently route admin invite-link
+Status: `DONE (development)` — the development slices permanently route admin invite-link
 history, invoice, monthly-report, campaign, payment-access, and Telegram token/binding
 reads through PostgreSQL. Their legacy/shadow selectors and shadow comparators are
 removed; admin history and the payment access-link route also no longer have
@@ -1422,9 +1422,19 @@ delivery branches, Google-specific route errors, and shared
 `DB_BUSINESS_OPERATIONS_MODE` selector are removed. Daily maintenance always recovers
 the business outbox. User-visible validation, duplicate handling, response shapes,
 invoice format, report period, and campaign behavior remain unchanged.
+Stripe webhooks now always acknowledge only after durable PostgreSQL inbox persistence;
+their projection and purchase email/Telegram delivery always run through the existing
+atomic database projection and transactional outbox. The synchronous Sheets processor,
+Sheet-backed payment/delivery leases, direct notification branches, Google-specific
+webhook errors, and paired `DB_PAYMENT_EVENTS_MODE`/`DB_SIDE_EFFECTS_MODE` selector
+are removed. Successful payment-status polling and daily maintenance continue to
+schedule bounded recovery. Event mapping, supported-event policy, settlement updates,
+notification eligibility, invoice generation, access preparation, provider
+idempotency, and response semantics of the active database path remain unchanged.
 The temporary SuccessfulCustomers exporter and offline
 snapshot/backfill/reconciliation tools are outside these slices and remain available
-through their documented windows.
+through their documented windows. This development-only cleanup must not reach
+production before the `2026-09-07T00:56:17Z` retirement review.
 
 ### DROP-02 — Disable the transitional exporter after the rollback window
 
@@ -1551,3 +1561,4 @@ Status: `TODO`
 | 2026-09-01 | Corrected August report     | `DONE`        | 28/28 rows; exact CSV hash; first-attempt provider acceptance |
 | 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete        |
 | 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime and business writes are PostgreSQL-only               |
+| 2026-09-01 | DROP-01 implementation      | `DONE (DEV)`  | Runtime Google dependency isolated to exporter and tools      |

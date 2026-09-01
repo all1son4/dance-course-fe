@@ -34,21 +34,15 @@ Investigate when any of these conditions persists beyond a normal worker interva
 - access `linkFailed` or `manualPending` grows without an explained operator task;
 - report status totals differ from the expected scheduled runs.
 
-The asynchronous Stripe path is enabled only when both variables have the same
-database value:
+After the `DROP-01` release, Stripe webhook ingestion and purchase delivery always use
+the PostgreSQL inbox, atomic projection, and transactional outbox. The retired
+`DB_PAYMENT_EVENTS_MODE` and `DB_SIDE_EFFECTS_MODE` selectors have no runtime effect;
+remove them from environment configuration after that release reaches the target
+environment. Do not roll back to a revision that can restore Sheets as a payment
+authority or side-effect lease store.
 
-```bash
-DB_PAYMENT_EVENTS_MODE=database
-DB_SIDE_EFFECTS_MODE=database
-```
-
-An unset pair keeps the legacy synchronous behavior. A mixed pair fails closed rather
-than accepting an event into a partially migrated runtime. Change both variables in
-one deployment and verify that no old revision is still receiving webhooks before
-interpreting queue age.
-
-In database mode, an immediate bounded worker run is scheduled after the webhook
-response. Successful payment-status polling also schedules recovery. The existing
+An immediate bounded worker run is scheduled after the webhook response. Successful
+payment-status polling also schedules recovery. The existing
 daily maintenance request runs a final bounded recovery pass after its established
 access and report tasks. The daily pass is a safety net, not the normal latency path;
 the project intentionally does not require a higher-frequency Vercel cron plan.

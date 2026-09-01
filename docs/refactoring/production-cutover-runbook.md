@@ -339,10 +339,11 @@ samples from routine operator output is tracked by the existing `HARD-02` PII-sa
 logging item.
 
 The numbered flag sequence below is retained as the historical `CUT-03` execution
-record. On the `DROP-01` development branch, `DB_TELEGRAM_ACCESS_MODE` and
-`DB_BUSINESS_OPERATIONS_MODE` are retired: Telegram access and the four business
-operation families are PostgreSQL-only. Do not replay steps 2–3 after that release
-reaches an environment.
+record. On the `DROP-01` development branch, `DB_TELEGRAM_ACCESS_MODE`,
+`DB_BUSINESS_OPERATIONS_MODE`, `DB_PAYMENT_EVENTS_MODE`, and
+`DB_SIDE_EFFECTS_MODE` are retired: Telegram access, the four business-operation
+families, Stripe ingestion/projection, and purchase side effects are PostgreSQL-only.
+Do not replay steps 2–4 after that release reaches an environment.
 
 For each step, make one environment change, wait for the production deployment, run
 the named checks, and stop on an unexplained result.
@@ -374,9 +375,10 @@ Repeat each critical smoke/reconciliation check the next day as required by `CUT
    the fixed DB-compatible rollback revision
    `3b9efddd2fb04316923ae25d4f7972be4ab84db2`, or deploy a forward fix. Never restore
    Google Sheets as an authoritative write source.
-4. Keep `DB_PAYMENT_EVENTS_MODE` and `DB_SIDE_EFFECTS_MODE` equal during every deploy.
-   Keep the exporter setting unchanged unless its own later retirement procedure is
-   being executed.
+4. On revisions before `DROP-01`, keep `DB_PAYMENT_EVENTS_MODE` and
+   `DB_SIDE_EFFECTS_MODE` equal. On and after `DROP-01`, both selectors are retired
+   and must not be used as a rollback mechanism. Keep the exporter setting unchanged
+   unless its own later retirement procedure is being executed.
 5. Do not replay or edit verified Stripe payloads. Replay only an explained
    failed/dead-letter durable key using the exact confirmation in
    [`db-operations-runbook.md`](./db-operations-runbook.md).

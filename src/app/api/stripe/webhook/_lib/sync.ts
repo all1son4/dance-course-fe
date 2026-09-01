@@ -1,14 +1,8 @@
 import type Stripe from "stripe";
 
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
-import {
-  appendStripeEventRecord,
-  appendSuccessfulCustomerRecord,
-  findPaymentRecordByIntentId,
-  findStripeEventRecordByEventId,
-  type PaymentSheetRecord,
-  upsertPaymentRecord,
-} from "@/lib/google-sheets";
+import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
+import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 import { toUtcIso } from "@/lib/time";
 
@@ -25,14 +19,6 @@ const SUPPORTED_PAYMENT_INTENT_EVENT_TYPES = new Set([
   "payment_intent.succeeded",
 ]);
 const SUPPORTED_CHECKOUT_SESSION_EVENT_TYPES = new Set(["checkout.session.completed"]);
-const SUCCESSFUL_CUSTOMER_LOG_EVENT_TYPE = "payment_intent.succeeded";
-const SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX = "pending:";
-const SUCCESSFUL_CUSTOMER_LOG_SENT_STATUS = "sent";
-const SUCCESSFUL_CUSTOMER_LOG_LEASE_TTL_MS = 2 * 60 * 1000;
-const SUCCESSFUL_CUSTOMER_LOG_WAIT_RETRIES = 4;
-const SUCCESSFUL_CUSTOMER_LOG_WAIT_DELAY_MS = 500;
-const pendingStripeWebhookSyncs = new Map<string, Promise<StripePaymentWebhookResult>>();
-const pendingStripePaymentIntentSyncs = new Map<string, Promise<void>>();
 const WITH_MENTOR_OFFER_IDS = new Set(
   SELLABLE_PRODUCTS_LIST.flatMap((product) =>
     product.offers
@@ -191,30 +177,6 @@ type CreatePaymentSheetRecordInput = {
   timestamp: string;
 };
 
-const getPurchaseItemLabel = (paymentRecord: PaymentSheetRecord) => {
-  const productTitle = paymentRecord.product_title.trim();
-  const offerLabel = paymentRecord.offer_label.trim();
-
-  if (productTitle && offerLabel) {
-    return `${productTitle} — ${offerLabel}`;
-  }
-
-  if (productTitle) {
-    return productTitle;
-  }
-
-  return offerLabel;
-};
-
-const getCustomerFullAddress = (paymentRecord: PaymentSheetRecord) =>
-  [
-    paymentRecord.customer_address.trim(),
-    paymentRecord.customer_city.trim(),
-    paymentRecord.customer_postal_code.trim(),
-  ]
-    .filter(Boolean)
-    .join(", ");
-
 const buildPurchaseItemLabel = (productTitle: string, offerLabel: string) => {
   const normalizedProductTitle = productTitle.trim();
   const normalizedOfferLabel = offerLabel.trim();
@@ -229,11 +191,6 @@ const buildPurchaseItemLabel = (productTitle: string, offerLabel: string) => {
 const trimString = (value: string | null | undefined) => value?.trim() ?? "";
 
 const emptyIfNull = (value: string | null | undefined): string => value ?? "";
-
-const sleep = (delayMs: number) =>
-  new Promise((resolve) => {
-    setTimeout(resolve, delayMs);
-  });
 
 const normalizeStripeLookupKey = (value: string | null | undefined) =>
   trimString(value)
@@ -264,28 +221,6 @@ const getMetadataValue = (
     if (sourceValue) {
       return sourceValue;
     }
-  }
-
-  return "";
-};
-
-const getCheckoutSessionPaymentIntentId = (session: Stripe.Checkout.Session) => {
-  if (typeof session.payment_intent === "string") {
-    return session.payment_intent;
-  }
-
-  return session.payment_intent?.id ?? "";
-};
-
-const getEventPaymentIntentId = (event: Stripe.Event) => {
-  if (SUPPORTED_PAYMENT_INTENT_EVENT_TYPES.has(event.type)) {
-    return (event.data.object as Stripe.PaymentIntent).id ?? "";
-  }
-
-  if (SUPPORTED_CHECKOUT_SESSION_EVENT_TYPES.has(event.type)) {
-    return getCheckoutSessionPaymentIntentId(
-      event.data.object as Stripe.Checkout.Session,
-    );
   }
 
   return "";
@@ -883,264 +818,6 @@ export const shouldIgnoreStripeCheckoutSessionEvent = (event: Stripe.Event): boo
   return checkoutSession.mode !== "payment" || !checkoutSession.payment_intent;
 };
 
-const withPaymentIntentSyncLock = async <T>(
-  paymentIntentId: string,
-  task: () => Promise<T>,
-) => {
-  const normalizedPaymentIntentId = paymentIntentId.trim();
-
-  if (!normalizedPaymentIntentId) {
-    return task();
-  }
-
-  const previousSync = pendingStripePaymentIntentSyncs.get(normalizedPaymentIntentId);
-  const previousSyncSafe = previousSync ?? Promise.resolve();
-  let releaseLock!: () => void;
-  const lockReleasePromise = new Promise<void>((resolve) => {
-    releaseLock = resolve;
-  });
-  // Stripe can deliver several status events for one PaymentIntent almost at once.
-  // Queue writes per intent so Google Sheets keeps a single coherent row.
-  const lockQueueEntry = previousSyncSafe.then(() => lockReleasePromise);
-
-  pendingStripePaymentIntentSyncs.set(normalizedPaymentIntentId, lockQueueEntry);
-
-  await previousSyncSafe;
-
-  try {
-    return await task();
-  } finally {
-    releaseLock();
-
-    if (
-      pendingStripePaymentIntentSyncs.get(normalizedPaymentIntentId) === lockQueueEntry
-    ) {
-      pendingStripePaymentIntentSyncs.delete(normalizedPaymentIntentId);
-    }
-  }
-};
-
-// Payment Links can deliver Checkout Session and PaymentIntent webhooks close
-// together, sometimes on different serverless instances. Store a short-lived
-// lease in Payments so SuccessfulCustomers is written once per PaymentIntent.
-const getSuccessfulCustomerLogLeaseStatus = (eventId: string) =>
-  `${SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX}${Date.now()}:${eventId}`;
-
-const getSuccessfulCustomerLogLeaseTimestamp = (status: string) => {
-  if (!status.startsWith(SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX)) {
-    return 0;
-  }
-
-  const timestamp = Number(
-    status.slice(SUCCESSFUL_CUSTOMER_LOG_PENDING_PREFIX.length).split(":")[0],
-  );
-
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
-const isFreshSuccessfulCustomerLogLease = (status: string) => {
-  const timestamp = getSuccessfulCustomerLogLeaseTimestamp(status);
-
-  return timestamp > 0 && timestamp + SUCCESSFUL_CUSTOMER_LOG_LEASE_TTL_MS > Date.now();
-};
-
-const hasCompletedSuccessfulCustomerLog = (paymentRecord: PaymentSheetRecord) =>
-  paymentRecord.successful_customer_log_status.trim() ===
-    SUCCESSFUL_CUSTOMER_LOG_SENT_STATUS ||
-  Boolean(paymentRecord.successful_customer_logged_at.trim());
-
-const getFreshPaymentRecord = async (fallbackPaymentRecord: PaymentSheetRecord) =>
-  (await findPaymentRecordByIntentId(fallbackPaymentRecord.payment_intent_id, {
-    cacheTtlMs: 0,
-    source: "sheets",
-  })) ?? fallbackPaymentRecord;
-
-const waitForSuccessfulCustomerLogLease = async (paymentRecord: PaymentSheetRecord) => {
-  let latestPaymentRecord = paymentRecord;
-
-  for (let attempt = 0; attempt < SUCCESSFUL_CUSTOMER_LOG_WAIT_RETRIES; attempt += 1) {
-    await sleep(SUCCESSFUL_CUSTOMER_LOG_WAIT_DELAY_MS);
-
-    latestPaymentRecord = await getFreshPaymentRecord(latestPaymentRecord);
-
-    if (hasCompletedSuccessfulCustomerLog(latestPaymentRecord)) {
-      return {
-        completed: true,
-        paymentRecord: latestPaymentRecord,
-      };
-    }
-
-    if (
-      !isFreshSuccessfulCustomerLogLease(
-        latestPaymentRecord.successful_customer_log_status.trim(),
-      )
-    ) {
-      return {
-        completed: false,
-        paymentRecord: latestPaymentRecord,
-      };
-    }
-  }
-
-  return {
-    completed: false,
-    paymentRecord: latestPaymentRecord,
-  };
-};
-
-const tryAcquireSuccessfulCustomerLogLease = async ({
-  event,
-  paymentRecord,
-}: {
-  event: Stripe.Event;
-  paymentRecord: PaymentSheetRecord;
-}) => {
-  let latestPaymentRecord = await getFreshPaymentRecord(paymentRecord);
-
-  if (hasCompletedSuccessfulCustomerLog(latestPaymentRecord)) {
-    return {
-      acquired: false,
-      paymentRecord: latestPaymentRecord,
-    };
-  }
-
-  const currentStatus = latestPaymentRecord.successful_customer_log_status.trim();
-
-  if (isFreshSuccessfulCustomerLogLease(currentStatus)) {
-    const leaseResult = await waitForSuccessfulCustomerLogLease(latestPaymentRecord);
-
-    if (leaseResult.completed) {
-      return {
-        acquired: false,
-        paymentRecord: leaseResult.paymentRecord,
-      };
-    }
-
-    throw new Error("successful_customer_log_in_progress");
-  }
-
-  const leaseStatus = getSuccessfulCustomerLogLeaseStatus(event.id);
-  const now = toUtcIso();
-
-  await upsertPaymentRecord({
-    ...latestPaymentRecord,
-    successful_customer_log_status: leaseStatus,
-    updated_at: now,
-  });
-
-  latestPaymentRecord = await getFreshPaymentRecord(latestPaymentRecord);
-
-  if (hasCompletedSuccessfulCustomerLog(latestPaymentRecord)) {
-    return {
-      acquired: false,
-      paymentRecord: latestPaymentRecord,
-    };
-  }
-
-  if (latestPaymentRecord.successful_customer_log_status.trim() === leaseStatus) {
-    return {
-      acquired: true,
-      paymentRecord: latestPaymentRecord,
-    };
-  }
-
-  const leaseResult = await waitForSuccessfulCustomerLogLease(latestPaymentRecord);
-
-  if (leaseResult.completed) {
-    return {
-      acquired: false,
-      paymentRecord: leaseResult.paymentRecord,
-    };
-  }
-
-  throw new Error("successful_customer_log_in_progress");
-};
-
-const appendSuccessfulCustomerRecordOnce = async ({
-  event,
-  paymentRecord,
-}: {
-  event: Stripe.Event;
-  paymentRecord: PaymentSheetRecord;
-}) => {
-  if (
-    event.type !== SUCCESSFUL_CUSTOMER_LOG_EVENT_TYPE ||
-    paymentRecord.outcome !== "succeeded"
-  ) {
-    return paymentRecord;
-  }
-
-  const lease = await tryAcquireSuccessfulCustomerLogLease({
-    event,
-    paymentRecord,
-  });
-
-  if (!lease.acquired) {
-    return lease.paymentRecord;
-  }
-
-  try {
-    await appendSuccessfulCustomerRecord({
-      payment_intent_id: lease.paymentRecord.payment_intent_id,
-      customer_country: lease.paymentRecord.customer_country,
-      customer_email: lease.paymentRecord.customer_email,
-      customer_full_address: getCustomerFullAddress(lease.paymentRecord),
-      customer_full_name: lease.paymentRecord.customer_full_name,
-      customer_nickname: lease.paymentRecord.customer_nickname,
-      purchase_item: getPurchaseItemLabel(lease.paymentRecord),
-      product_id: lease.paymentRecord.product_id,
-      product_title: lease.paymentRecord.product_title,
-      offer_id: lease.paymentRecord.offer_id,
-      offer_label: lease.paymentRecord.offer_label,
-    });
-  } catch (error) {
-    await upsertPaymentRecord({
-      ...lease.paymentRecord,
-      successful_customer_log_status: "failed",
-      updated_at: toUtcIso(),
-    });
-
-    throw error;
-  }
-
-  const loggedAt = toUtcIso();
-
-  return upsertPaymentRecord({
-    ...lease.paymentRecord,
-    successful_customer_logged_at: loggedAt,
-    successful_customer_log_status: SUCCESSFUL_CUSTOMER_LOG_SENT_STATUS,
-    updated_at: loggedAt,
-  });
-};
-
-export const syncStripePaymentEventToGoogleSheets = async (
-  event: Stripe.Event,
-): Promise<StripePaymentWebhookResult> => {
-  const pendingSync = pendingStripeWebhookSyncs.get(event.id);
-
-  if (pendingSync) {
-    // Same event id, same in-flight work. Return the original result but mark this
-    // invocation as duplicate for observability in the route response.
-    const result = await pendingSync;
-
-    return {
-      ...result,
-      duplicate: true,
-    };
-  }
-
-  const paymentIntentId = getEventPaymentIntentId(event);
-  const syncPromise = withPaymentIntentSyncLock(paymentIntentId, () =>
-    syncStripePaymentEventToGoogleSheetsInternal(event),
-  ).finally(() => {
-    pendingStripeWebhookSyncs.delete(event.id);
-  });
-
-  pendingStripeWebhookSyncs.set(event.id, syncPromise);
-
-  return syncPromise;
-};
-
 export const prepareStripePaymentEventForDatabase = async (
   event: Stripe.Event,
 ): Promise<StripePaymentWebhookResult> => {
@@ -1150,10 +827,9 @@ export const prepareStripePaymentEventForDatabase = async (
     throw new Error(`Stripe event ${event.id} does not include a PaymentIntent.`);
   }
 
-  const existingPaymentRecord = await findPaymentRecordByIntentId(paymentIntent.id, {
-    cacheTtlMs: 0,
-    source: "database",
-  });
+  const existingPaymentRecord = await findPaymentRecordByIntentIdFromDatabase(
+    paymentIntent.id,
+  );
   const sourceContext = await getPaymentSourceContext(event, paymentIntent);
   const paymentRecord = mapPaymentIntentToPaymentRecord(
     event,
@@ -1169,88 +845,5 @@ export const prepareStripePaymentEventForDatabase = async (
     paymentRecord,
     received: true,
     skipped: event.type === "payment_intent.canceled" && !existingPaymentRecord,
-  };
-};
-
-const syncStripePaymentEventToGoogleSheetsInternal = async (
-  event: Stripe.Event,
-): Promise<StripePaymentWebhookResult> => {
-  const paymentIntent = await getPaymentIntentForEvent(event);
-
-  if (!paymentIntent) {
-    throw new Error(`Stripe event ${event.id} does not include a PaymentIntent.`);
-  }
-
-  const [existingEvent, existingPaymentRecord] = await Promise.all([
-    findStripeEventRecordByEventId(event.id, {
-      source: "sheets",
-    }),
-    findPaymentRecordByIntentId(paymentIntent.id, {
-      cacheTtlMs: 0,
-      source: "sheets",
-    }),
-  ]);
-  const sourceContext = await getPaymentSourceContext(event, paymentIntent);
-  const paymentRecord = mapPaymentIntentToPaymentRecord(
-    event,
-    paymentIntent,
-    existingPaymentRecord,
-    sourceContext,
-  );
-
-  if (existingEvent) {
-    return {
-      duplicate: true,
-      eventId: event.id,
-      eventType: event.type,
-      paymentRecord,
-      received: true,
-      skipped: false,
-    };
-  }
-
-  if (event.type === "payment_intent.canceled" && !existingPaymentRecord) {
-    // Ignore auto-canceled unused intents in Payments sheet.
-    await appendStripeEventRecord({
-      event_id: event.id,
-      event_type: event.type,
-      outcome: paymentRecord.outcome,
-      payment_intent_id: paymentRecord.payment_intent_id,
-      processed_at: toUtcIso(),
-      status: paymentRecord.status,
-    });
-
-    return {
-      duplicate: false,
-      eventId: event.id,
-      eventType: event.type,
-      paymentRecord,
-      received: true,
-      skipped: true,
-    };
-  }
-
-  let savedPaymentRecord = await upsertPaymentRecord(paymentRecord);
-  savedPaymentRecord = await appendSuccessfulCustomerRecordOnce({
-    event,
-    paymentRecord: savedPaymentRecord,
-  });
-
-  await appendStripeEventRecord({
-    event_id: event.id,
-    event_type: event.type,
-    outcome: savedPaymentRecord.outcome,
-    payment_intent_id: savedPaymentRecord.payment_intent_id,
-    processed_at: toUtcIso(),
-    status: savedPaymentRecord.status,
-  });
-
-  return {
-    duplicate: false,
-    eventId: event.id,
-    eventType: event.type,
-    paymentRecord: savedPaymentRecord,
-    received: true,
-    skipped: false,
   };
 };

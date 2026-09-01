@@ -1,8 +1,6 @@
-import { type syncStripePaymentEventToGoogleSheets } from "../sync";
+import type { StripePaymentWebhookResult } from "../sync";
 
-export type StripeWebhookSyncResult = Awaited<
-  ReturnType<typeof syncStripePaymentEventToGoogleSheets>
->;
+export type StripeWebhookSyncResult = StripePaymentWebhookResult;
 
 export type StripeReceiptData = {
   receiptKind: "pdf" | "receipt" | null;
