@@ -2,7 +2,6 @@ import {
   normalizeCheckoutSessionId,
   normalizePaymentIntentId,
 } from "@/app/api/stripe/payment-intent/lib";
-import { GoogleSheetsError, isGoogleSheetsRateLimitError } from "@/lib/google-sheets";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -111,36 +110,6 @@ const resolveTelegramAccessResponse = async (
 };
 
 const createAccessLinkErrorResponse = (error: unknown): AccessLinkResponse => {
-  if (isGoogleSheetsRateLimitError(error)) {
-    console.warn("Google Sheets rate limit reached while resolving Telegram access link");
-
-    return jsonNoStore(
-      {
-        status: "pending",
-      },
-      {
-        headers: {
-          "Retry-After": "20",
-        },
-      },
-    );
-  }
-
-  if (error instanceof GoogleSheetsError) {
-    console.error("Failed to resolve Telegram access link in Google Sheets", {
-      details: error.details,
-      errorCode: error.code,
-      status: error.status,
-    });
-
-    return jsonNoStore(
-      {
-        errorCode: "telegram_access_link_failed",
-      },
-      { status: 500 },
-    );
-  }
-
   console.error("Failed to resolve Telegram access link", error);
 
   return jsonNoStore(
