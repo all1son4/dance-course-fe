@@ -237,10 +237,9 @@ test("creates and reads one atomic admin grant and export job without Google cre
         AND effect.kind = 'successful_customer_export'
       WHERE purchase.payment_intent_id = ${paymentIntentId}
     `;
-    const history = await listAdminInviteLinkHistoryRecords(
-      { accessWorkflow: "admin-offer-link" },
-      { environment: { DB_BUSINESS_OPERATIONS_MODE: "database" } },
-    );
+    const history = await listAdminInviteLinkHistoryRecords({
+      accessWorkflow: "admin-offer-link",
+    });
     const historyRecord = history.find((record) => record.accessUrl === accessUrl);
 
     assert.equal(results.length, 8);

@@ -75,7 +75,7 @@ fallback.
 | Successful customers                     | `W/M/X/C`               | Stripe success sync and manual admin invite                                                                                                                                                                                                  | Derivable query over succeeded purchases; temporary export through the outbox if still required | Remove the separate runtime side effect at full Sheets retirement                           |
 | Telegram access tokens                   | `R/W/M/F/C`             | [`telegram/access.ts`](../../src/lib/telegram/access.ts), admin history, maintenance                                                                                                                                                         | Telegram access repository with atomic issue, claim, revoke, and hash lookup commands           | Remove after token operations and history use PostgreSQL transactions and projections       |
 | Telegram user bindings                   | `R/W/M/F/C`             | [`telegram/access.ts`](../../src/lib/telegram/access.ts), maintenance                                                                                                                                                                        | Binding and entitlement repositories with explicit identity rules                               | Remove after the existing behavior contract is covered and PostgreSQL operations are atomic |
-| Admin invite history                     | `R/F`                   | [`admin/api/invite-links/history/route.ts`](../../src/app/admin/api/invite-links/history/route.ts)                                                                                                                                           | Paginated SQL read model joining purchases, tokens, and entitlements                            | Remove the in-memory composite loader after the read-model cutover                          |
+| Admin invite history                     | `T`                     | PostgreSQL-only read boundary plus the temporary Sheet-shaped compatibility DTO                                                                                                                                                              | Paginated SQL read model joining purchases, tokens, and entitlements                            | Runtime dependency removed in `DROP-01`; DTO moves in `DROP-04`                             |
 | Invoice numbering                        | `R/W/M/F/C`             | [`invoices/invoice-numbering.ts`](../../src/lib/invoices/invoice-numbering.ts)                                                                                                                                                               | Transactional database counter or advisory lock plus unique invoice constraints                 | Replace before disabling payment-record fallback                                            |
 | Purchase email and alert leases          | `R/W/M/F/C`             | [`payment-status-lease.ts`](../../src/app/api/stripe/webhook/_lib/side-effects/payment-status-lease.ts)                                                                                                                                      | `purchase_side_effects` with a unique purchase/kind key and atomic lease updates                | Replace with the outbox/lease slice                                                         |
 | Monthly reports                          | `R/W/M/F/C`             | [`monthly-sales-report.ts`](../../src/lib/monthly-sales-report.ts)                                                                                                                                                                           | `monthly_report_runs` repository and idempotent outbox delivery                                 | Remove synchronous mirror after repository cutover                                          |
@@ -100,7 +100,7 @@ removes the legacy boundary.
 
 | Component                                                                                                         | Imported surface                                                                             | Class           | Planned exit                                |
 | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------- | ------------------------------------------- |
-| [`admin/invite-links/history`](../../src/app/admin/api/invite-links/history/route.ts)                             | `findAdminInviteLinkHistorySourceRecords`, Google errors/rate limits                         | `R/F/E`         | `READ-05`, `DROP-01`                        |
+| [`admin/invite-links/history`](../../src/app/admin/api/invite-links/history/route.ts)                             | PostgreSQL-only history reader; no Google facade or error dependency                         | —               | Runtime dependency removed in `DROP-01`     |
 | [`admin/invite-links`](../../src/app/admin/api/invite-links/route.ts)                                             | explicit grant boundary; DB mode writes PostgreSQL and an optional one-way export job        | `W/M/X/E/T`     | `READ-05`, `WRITE-07`, `DROP-01`            |
 | [`admin/online-group-invite-links`](../../src/app/admin/api/online-group-invite-links/route.ts)                   | explicit grant boundary; DB mode writes PostgreSQL and an optional one-way export job        | `W/M/X/E/T`     | `WRITE-07`, `DROP-01`                       |
 | [`course-signup`](../../src/app/api/course-signup/route.ts)                                                       | Google errors/rate limits propagated by the campaign repository                              | `E`             | `WRITE-06`, `READ-04`, `DROP-01`            |
@@ -147,8 +147,9 @@ whole runtime:
 
 1. Legacy Stripe synchronization and payment side-effect leases explicitly read and
    synchronously update Sheets; the database inbox/outbox path does not.
-2. Payment, Telegram, invoice, report, campaign, and admin-history read boundaries
-   retain explicit Sheets adapters for `legacy` and `shadow` until `CUT-03`.
+2. Payment, Telegram, invoice, report, and campaign read boundaries retain explicit
+   Sheets adapters for `legacy` and `shadow`; the admin-history adapter was removed in
+   the first `DROP-01` development slice.
 3. Business routes retain Google configuration, error, and rate-limit handling for
    those non-database modes.
 4. The optional successful-customer exporter, reconciliation tools, snapshots, and
@@ -237,3 +238,16 @@ the legacy path stored them before the Google API call. For WRITE-07 versioned j
 
 This order describes storage and reliability work only. It does not change checkout,
 payment-result, Telegram, renewal, access, or administrative user journeys.
+
+## DROP-01 progress
+
+The first development-only slice on 2026-09-01 removes Google Sheets from admin
+invite-link history. The route now calls the PostgreSQL repository unconditionally;
+the legacy/shadow selector, shadow comparator, and Google-specific error/rate-limit
+handling are gone. The route still keeps its authentication, request rate limit,
+fresh cache, stale-on-database-failure behavior, response contract, and generic
+failure response. The compatibility record type remains until `DROP-04`.
+
+This cleanup is prepared and tested on `dev` only. The transitional exporter and
+offline recovery/reconciliation readers remain intact, and no DROP code is eligible
+for production before `2026-09-07T00:56:17Z`.

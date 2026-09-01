@@ -49,9 +49,8 @@ import {
 } from "./transactional-outbox";
 
 // This is the database-facing composition root for the domains introduced during
-// the DB phase. Runtime routes choose a domain mode separately. Payment and Telegram
-// reads deliberately retain flattened compatibility projections during the staged
-// cutover; provider access stays outside this boundary.
+// the DB phase. Runtime provider access stays outside this boundary. Some payment and
+// Telegram callers still retain flattened compatibility projections until DROP-04.
 export const domainRepositories = Object.freeze({
   adminInviteLinkHistory: Object.freeze({
     list: listAdminInviteLinkHistoryRecordsFromDatabase,
