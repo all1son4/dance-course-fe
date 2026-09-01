@@ -1436,7 +1436,40 @@ snapshot/backfill/reconciliation tools are outside these slices and remain avail
 through their documented windows. This development-only cleanup must not reach
 production before the `2026-09-07T00:56:17Z` retirement review.
 
+The exact development tree is `e722797` (implementation `999386d` plus its
+integration-fixture ordering correction). It passed local format/lint/typecheck,
+180 unit tests, and the production build; CI
+[run 33542382224](https://github.com/all1son4/dance-course-fe/actions/runs/33542382224)
+passed all 50 PostgreSQL integration tests, logical backup/restore rehearsal, and the
+same build. Vercel Preview smoke
+[run 33542430908](https://github.com/all1son4/dance-course-fe/actions/runs/33542430908)
+passed. The development database is healthy with no schema/catalog drift, no ready or
+working inbox/outbox jobs, no stale leases or dead letters, no waiting Sheet exports,
+and all 32 invariants passing. Its one historical inbox retry and imported
+unlinked/unverified evidence remain the previously classified development fixtures.
+
 ### DROP-02 — Disable the transitional exporter after the rollback window
+
+Status: `READY_FOR_REVIEW` — the isolated exporter already has a tested retirement
+switch: `DB_SHEETS_EXPORT_MODE=database` stops enqueueing new jobs and marks an
+already queued versioned export `skipped` before loading customer data or calling
+Google. The 2026-09-01 development preflight found zero waiting Sheet exports and no
+ready, working, stale, or dead-letter outbox jobs.
+
+Do not apply the switch before `2026-09-07T00:56:17Z`. At or after that review time:
+
+1. repeat production health, schema, catalog, queue, invariant, and classified
+   reconciliation checks;
+2. confirm there is still no unexplained anomaly and no waiting Sheet export;
+3. set only `DB_SHEETS_EXPORT_MODE=database`, wait for the deployment, and run the
+   six critical journeys plus queue/invariant checks;
+4. confirm a new eligible purchase or controlled non-production projection creates
+   no export job and no Google API attempt;
+5. repeat the read-only production check the next day before marking `DROP-02` done.
+
+Rollback before any post-switch purchase is an environment revert. After a canonical
+purchase has been accepted without an export, keep PostgreSQL authoritative and use a
+forward fix; never reconstruct authority from the stale worksheet.
 
 ### DROP-03 — Revoke service-account credentials and archive Sheets securely
 
@@ -1562,3 +1595,4 @@ Status: `TODO`
 | 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete        |
 | 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime and business writes are PostgreSQL-only               |
 | 2026-09-01 | DROP-01 implementation      | `DONE (DEV)`  | Runtime Google dependency isolated to exporter and tools      |
+| 2026-09-01 | DROP-02 preflight           | `READY`       | Switch tested; dev exports/queues clean; date gate remains    |
