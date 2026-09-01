@@ -1173,7 +1173,8 @@ the READ phase is closed.
 
 ## Phase CUT: production cutover and observation
 
-Status: `IN_PROGRESS`
+Status: `DONE` — Gate G6 passed on 2026-09-01 after the corrected natural monthly
+report and final production reconciliation were verified.
 
 ### CUT-01 — Deploy a DB-compatible rollback release
 
@@ -1268,7 +1269,8 @@ access remains accounted for.
 
 ### CUT-04 — Observe
 
-Status: `IN_PROGRESS` — observation started at `2026-08-24T00:56:17Z`.
+Status: `DONE` — observation ran from `2026-08-24T00:56:17Z` through the
+corrected natural monthly-report execution on 2026-09-01.
 
 The same-day independent check at `2026-08-24T01:12Z` confirmed that the final
 production deployment remains READY on the production aliases and that exactly the
@@ -1328,11 +1330,36 @@ accounting month only on the first local day of the new month; its August key is
 complete report. The canonical August interval is half-open in `Europe/Warsaw`:
 `[2026-08-01 00:00, 2026-09-01 00:00)`, equivalent to
 `[2026-07-31T22:00:00.000Z, 2026-08-31T22:00:00.000Z)` in UTC; consequently no
-September 1 Warsaw sale can enter the August result. Gate G6 remains `IN_PROGRESS`
-until that fix is deployed and the
-complete scheduled report is verified against control SQL. The incident extends only
-the report-specific observation needed for this gate; no destructive or DROP work
-starts meanwhile.
+September 1 Warsaw sale can enter the August result.
+
+The correction was deployed in PR 45. The first natural run after the completed
+month executed at `2026-09-01T03:07:22.436Z` (`05:07` in `Europe/Warsaw`) with the
+expected key `monthly_sales:2026-08-01:2026-09-01` and exact UTC interval
+`[2026-07-31T22:00:00.000Z, 2026-08-31T22:00:00.000Z)`. Its 28 CSV rows matched 28
+unique bounded sales, with no duplicate group; regenerating the CSV produced the
+same SHA-256
+`cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
+The durable Resend job was accepted on its first attempt at
+`2026-09-01T03:07:26.189Z`, retained an external message ID, and has no error code.
+The production Resend key is intentionally send-only, so the automated audit cannot
+read a later mailbox-delivery event and does not claim one.
+
+The accounting-timezone release also exposed a PostgreSQL `42P10` error in the admin
+sales overview: the same parameterized month expression appeared independently in
+`SELECT DISTINCT` and `ORDER BY`. PR 46 fixed it by ordering on the selected month
+alias and added the production-shape integration regression test. Production CI and
+smoke then passed on the hotfix revision.
+
+Final pooled and unpooled health, all 19 migrations, the 12-offer catalog, all 32
+invariants, queues, and access failure checks passed. Reconciliation captured at
+`2026-09-01T07:08:50Z` has fingerprint
+`a88542b80a0d0763462673f6ae2722481de712decf0201e5f4af44a69080fd2d`.
+All 80 shared unique Payments and all shared customer snapshots match with no
+Sheet-only Payment; all active Sheet access remains represented in PostgreSQL. The
+24 DB-only Payments, 14 DB-only invoices, two DB-only report runs, newer entitlement
+states, one historical skipped admin alert, and the single legacy duplicate Sheet
+occurrence are expected post-cutover or previously classified differences. No
+unexplained financial or access difference remains. This closes `CUT-04`.
 
 After every critical switch, run an immediate smoke/reconciliation check and repeat it
 the next day. Use existing application/provider logs and reconciliation output rather
@@ -1354,12 +1381,19 @@ the applicable window.
 
 ### Gate G6
 
-- Financial differences remain zero.
-- All active access is accounted for.
-- Dead-letter queues are empty or every item is explained.
-- Critical paths make no Google Sheets calls.
-- Reports match control SQL queries.
-- The owner confirms that user behavior remains unchanged.
+Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
+
+- [x] Canonical shared financial rows have zero differences; expected post-cutover
+      DB-only rows and the known legacy Sheet duplicate remain explicitly classified.
+- [x] All active legacy access is accounted for in PostgreSQL.
+- [x] Dead-letter, ready, working, and stale queues are empty; historical retries are
+      terminal and explained.
+- [x] Critical runtime paths use PostgreSQL and the Sheets exporter remains disabled.
+- [x] The corrected completed-month report matches bounded control SQL and regenerated
+      CSV content exactly.
+- [x] The owner accepted automated production verification and reported no other
+      user-visible regression; the one observed accounting incident and its admin
+      follow-up regression were corrected and rechecked.
 
 ## Phase DROP: remove dual-write and Google Sheets
 
@@ -1426,66 +1460,68 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                        | Status        | Evidence                                                      |
-| ---------- | --------------------------- | ------------- | ------------------------------------------------------------- |
-| 2026-07-30 | Repository-wide audit       | `DONE`        | Audit discussion and local checks                             |
-| 2026-07-30 | Roadmap v1.3                | `DONE`        | This document                                                 |
-| 2026-07-30 | BASE-01                     | `DONE`        | ADR-001 accepted                                              |
-| 2026-07-30 | BASE-02                     | `DONE`        | Current behavior contract recorded                            |
-| 2026-07-30 | BASE-03                     | `DONE`        | Seven Sheets and all dependency classes inventoried           |
-| 2026-07-30 | BASE-05 Telegram scope      | `DONE`        | ADR-002 accepted                                              |
-| 2026-07-30 | BASE-04 tooling             | `DONE`        | Read-only command and privacy fixture tests                   |
-| 2026-07-30 | BASE-04 capture             | `SUPERSEDED`  | Initial blocked attempt; replaced by the completed capture    |
-| 2026-07-30 | BASE-05 decision draft      | `DONE`        | Defaults prepared before owner confirmation                   |
-| 2026-07-30 | BASE-05 owner decisions     | `DONE`        | Owner accepted all four migration decisions                   |
-| 2026-08-06 | BASE-04 capture             | `DONE`        | Stable dev/prod fingerprints; differences classified          |
-| 2026-08-06 | Gate G0                     | `PASSED`      | Behavior, dependency, data, and decision baselines accepted   |
-| 2026-08-06 | Gate G0 formal audit        | `DONE`        | All 26 Sheets components classified; documents reconciled     |
-| 2026-08-06 | SAFE-01                     | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality`   |
-| 2026-08-06 | SAFE-02                     | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed    |
-| 2026-08-07 | SAFE-03                     | `DONE`        | Migration-free release; dev/prod no-op controls passed        |
-| 2026-08-08 | SAFE-04                     | `DONE`        | Atomic terminal outcomes; race and deployed smoke tests pass  |
-| 2026-08-08 | SAFE-05                     | `DONE`        | Atomic claims, DB invariant, and eight-way race test passed   |
-| 2026-08-08 | SAFE-06                     | `DONE`        | Reuse characterized at accepted decision boundary             |
-| 2026-08-08 | SAFE-07                     | `DONE`        | DB-authorized catalog; remote CI and four browser tests pass  |
-| 2026-08-08 | SAFE-08                     | `DONE`        | Versioned consent evidence; CI, PostgreSQL, 5 browser tests   |
-| 2026-08-08 | SAFE-09                     | `DONE`        | Formula-safe CSV; CI and five deployed browser tests pass     |
-| 2026-08-08 | SAFE-10                     | `DONE`        | Verified result gate; CI and six browser tests pass           |
-| 2026-08-09 | SAFE-11                     | `DONE`        | Zero production advisories; CI and six browser tests pass     |
-| 2026-08-09 | Gate G1                     | `PASSED`      | SAFE-01 through SAFE-11 acceptance criteria verified          |
-| 2026-08-09 | Roadmap current-state audit | `DONE`        | Remaining phases reconciled with current code and schema      |
-| 2026-08-09 | DB-01                       | `DONE`        | PostgreSQL domain and transaction ownership recorded          |
-| 2026-08-09 | DB-02 development           | `DONE`        | Preflight, CI, dev migration, audit, and smoke passed         |
-| 2026-08-09 | DB-03 development           | `DONE`        | Inbox migration, CI, dev apply, audit, and smoke passed       |
-| 2026-08-11 | DATA-01                     | `DONE`        | Dev/prod encrypted captures and PG17 restores passed          |
-| 2026-08-11 | DATA-02 implementation      | `DONE`        | Snapshot validation, atomic checkpoints, resume tests pass    |
-| 2026-08-11 | DATA-02 development         | `DONE`        | Migration, pause/resume/replay, invariants, smoke passed      |
-| 2026-08-11 | DATA-02 production backfill | `DONE`        | 258 rows accounted; replay no-op; plaintext removed           |
-| 2026-08-11 | DATA-02 counter invariant   | `DONE`        | Dev/prod migration and zero-violation audits passed           |
-| 2026-08-11 | DATA-03                     | `DONE`        | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass  |
-| 2026-08-11 | DATA-04                     | `DONE`        | Every production/backfill conflict classified; no data write  |
-| 2026-08-11 | Gate G3                     | `PASSED`      | Stable finance/access/invoice/replay evidence; 32 audits pass |
-| 2026-08-11 | WRITE-01                    | `DONE`        | Pre-ack inbox gate; CI, PG17 and deployed dev smoke pass      |
-| 2026-08-11 | WRITE-02 implementation     | `DONE`        | Async inbox worker; CI, PG17 and deployed dev smoke pass      |
-| 2026-08-11 | WRITE-03 implementation     | `DONE`        | Durable delivery; CI, PG17 and deployed dev smoke pass        |
-| 2026-08-13 | WRITE-04 implementation     | `DONE`        | DB-only path; CI, PG17 and deployed dev smoke pass            |
-| 2026-08-13 | WRITE-05 implementation     | `DONE`        | Atomic grants; CI, PG17 and deployed dev smoke pass           |
-| 2026-08-13 | WRITE-06 implementation     | `DONE`        | Durable jobs; CI, PG17, dev migration and smoke pass          |
-| 2026-08-13 | WRITE-07 implementation     | `DONE`        | Isolated allowlisted export; blocked-provider tests pass      |
-| 2026-08-13 | Gate G4                     | `PASSED`      | DB write paths survive blocked Sheets; dev queues clean       |
-| 2026-08-13 | READ-02 implementation      | `DONE`        | DB-only reads; 78 unit, 48 PG17 and six journeys pass         |
-| 2026-08-13 | READ-03 implementation      | `DONE`        | DB-only reads; 87 unit, 48 PG17 and six journeys pass         |
-| 2026-08-13 | READ-04 implementation      | `DONE`        | DB-only reads; 94 unit, 48 PG17 and six journeys pass         |
-| 2026-08-13 | READ-05 implementation      | `DONE`        | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
-| 2026-08-13 | READ-06 implementation      | `DONE`        | Explicit sources; 105 unit, 48 PG17 and six journeys pass     |
-| 2026-08-13 | Gate G5                     | `PASSED`      | Stable audit, fail-closed, prod CI and six journeys pass      |
-| 2026-08-19 | CUT-01                      | `DONE`        | Fixed rollback release `3b9efdd`; prod CI/smoke green         |
-| 2026-08-19 | CUT-02                      | `DONE`        | Neon + encrypted restore evidence; stable delta; runbook      |
-| 2026-08-20 | CUT-03 preflight            | `DONE`        | Prod SHA/invariants/queues/stable delta verified; no switch   |
-| 2026-08-20 | CUT-03 dev rehearsal        | `DONE`        | Dev-only flags; smoke/audit green; one test retry classified  |
-| 2026-08-20 | CUT-03 production scope     | `PAUSED`      | Pre-CUT mode restored; no flags; production smoke green       |
-| 2026-08-24 | CUT-03 production cutover   | `DONE`        | Four DB flags; three prod smokes; audit/reconciliation green  |
-| 2026-08-24 | CUT-04 observation          | `IN_PROGRESS` | Natural-traffic verification; two superseded retries tracked  |
-| 2026-08-24 | CUT-04 same-day check       | `DONE`        | Prod READY; 32 invariants and 6 journeys; stable fingerprint  |
-| 2026-08-25 | CUT-04 next-day check       | `DONE`        | 22 real purchases; Stripe 113/113; queues/invariants green    |
-| 2026-08-31 | CUT-04 seven-day checkpoint | `IN_PROGRESS` | Automated checks green; early monthly report fix pending      |
+| Date       | Item                        | Status       | Evidence                                                      |
+| ---------- | --------------------------- | ------------ | ------------------------------------------------------------- |
+| 2026-07-30 | Repository-wide audit       | `DONE`       | Audit discussion and local checks                             |
+| 2026-07-30 | Roadmap v1.3                | `DONE`       | This document                                                 |
+| 2026-07-30 | BASE-01                     | `DONE`       | ADR-001 accepted                                              |
+| 2026-07-30 | BASE-02                     | `DONE`       | Current behavior contract recorded                            |
+| 2026-07-30 | BASE-03                     | `DONE`       | Seven Sheets and all dependency classes inventoried           |
+| 2026-07-30 | BASE-05 Telegram scope      | `DONE`       | ADR-002 accepted                                              |
+| 2026-07-30 | BASE-04 tooling             | `DONE`       | Read-only command and privacy fixture tests                   |
+| 2026-07-30 | BASE-04 capture             | `SUPERSEDED` | Initial blocked attempt; replaced by the completed capture    |
+| 2026-07-30 | BASE-05 decision draft      | `DONE`       | Defaults prepared before owner confirmation                   |
+| 2026-07-30 | BASE-05 owner decisions     | `DONE`       | Owner accepted all four migration decisions                   |
+| 2026-08-06 | BASE-04 capture             | `DONE`       | Stable dev/prod fingerprints; differences classified          |
+| 2026-08-06 | Gate G0                     | `PASSED`     | Behavior, dependency, data, and decision baselines accepted   |
+| 2026-08-06 | Gate G0 formal audit        | `DONE`       | All 26 Sheets components classified; documents reconciled     |
+| 2026-08-06 | SAFE-01                     | `DONE`       | Clean/local and remote CI passed; `main` requires `Quality`   |
+| 2026-08-06 | SAFE-02                     | `DONE`       | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed    |
+| 2026-08-07 | SAFE-03                     | `DONE`       | Migration-free release; dev/prod no-op controls passed        |
+| 2026-08-08 | SAFE-04                     | `DONE`       | Atomic terminal outcomes; race and deployed smoke tests pass  |
+| 2026-08-08 | SAFE-05                     | `DONE`       | Atomic claims, DB invariant, and eight-way race test passed   |
+| 2026-08-08 | SAFE-06                     | `DONE`       | Reuse characterized at accepted decision boundary             |
+| 2026-08-08 | SAFE-07                     | `DONE`       | DB-authorized catalog; remote CI and four browser tests pass  |
+| 2026-08-08 | SAFE-08                     | `DONE`       | Versioned consent evidence; CI, PostgreSQL, 5 browser tests   |
+| 2026-08-08 | SAFE-09                     | `DONE`       | Formula-safe CSV; CI and five deployed browser tests pass     |
+| 2026-08-08 | SAFE-10                     | `DONE`       | Verified result gate; CI and six browser tests pass           |
+| 2026-08-09 | SAFE-11                     | `DONE`       | Zero production advisories; CI and six browser tests pass     |
+| 2026-08-09 | Gate G1                     | `PASSED`     | SAFE-01 through SAFE-11 acceptance criteria verified          |
+| 2026-08-09 | Roadmap current-state audit | `DONE`       | Remaining phases reconciled with current code and schema      |
+| 2026-08-09 | DB-01                       | `DONE`       | PostgreSQL domain and transaction ownership recorded          |
+| 2026-08-09 | DB-02 development           | `DONE`       | Preflight, CI, dev migration, audit, and smoke passed         |
+| 2026-08-09 | DB-03 development           | `DONE`       | Inbox migration, CI, dev apply, audit, and smoke passed       |
+| 2026-08-11 | DATA-01                     | `DONE`       | Dev/prod encrypted captures and PG17 restores passed          |
+| 2026-08-11 | DATA-02 implementation      | `DONE`       | Snapshot validation, atomic checkpoints, resume tests pass    |
+| 2026-08-11 | DATA-02 development         | `DONE`       | Migration, pause/resume/replay, invariants, smoke passed      |
+| 2026-08-11 | DATA-02 production backfill | `DONE`       | 258 rows accounted; replay no-op; plaintext removed           |
+| 2026-08-11 | DATA-02 counter invariant   | `DONE`       | Dev/prod migration and zero-violation audits passed           |
+| 2026-08-11 | DATA-03                     | `DONE`       | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass  |
+| 2026-08-11 | DATA-04                     | `DONE`       | Every production/backfill conflict classified; no data write  |
+| 2026-08-11 | Gate G3                     | `PASSED`     | Stable finance/access/invoice/replay evidence; 32 audits pass |
+| 2026-08-11 | WRITE-01                    | `DONE`       | Pre-ack inbox gate; CI, PG17 and deployed dev smoke pass      |
+| 2026-08-11 | WRITE-02 implementation     | `DONE`       | Async inbox worker; CI, PG17 and deployed dev smoke pass      |
+| 2026-08-11 | WRITE-03 implementation     | `DONE`       | Durable delivery; CI, PG17 and deployed dev smoke pass        |
+| 2026-08-13 | WRITE-04 implementation     | `DONE`       | DB-only path; CI, PG17 and deployed dev smoke pass            |
+| 2026-08-13 | WRITE-05 implementation     | `DONE`       | Atomic grants; CI, PG17 and deployed dev smoke pass           |
+| 2026-08-13 | WRITE-06 implementation     | `DONE`       | Durable jobs; CI, PG17, dev migration and smoke pass          |
+| 2026-08-13 | WRITE-07 implementation     | `DONE`       | Isolated allowlisted export; blocked-provider tests pass      |
+| 2026-08-13 | Gate G4                     | `PASSED`     | DB write paths survive blocked Sheets; dev queues clean       |
+| 2026-08-13 | READ-02 implementation      | `DONE`       | DB-only reads; 78 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-03 implementation      | `DONE`       | DB-only reads; 87 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-04 implementation      | `DONE`       | DB-only reads; 94 unit, 48 PG17 and six journeys pass         |
+| 2026-08-13 | READ-05 implementation      | `DONE`       | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
+| 2026-08-13 | READ-06 implementation      | `DONE`       | Explicit sources; 105 unit, 48 PG17 and six journeys pass     |
+| 2026-08-13 | Gate G5                     | `PASSED`     | Stable audit, fail-closed, prod CI and six journeys pass      |
+| 2026-08-19 | CUT-01                      | `DONE`       | Fixed rollback release `3b9efdd`; prod CI/smoke green         |
+| 2026-08-19 | CUT-02                      | `DONE`       | Neon + encrypted restore evidence; stable delta; runbook      |
+| 2026-08-20 | CUT-03 preflight            | `DONE`       | Prod SHA/invariants/queues/stable delta verified; no switch   |
+| 2026-08-20 | CUT-03 dev rehearsal        | `DONE`       | Dev-only flags; smoke/audit green; one test retry classified  |
+| 2026-08-20 | CUT-03 production scope     | `PAUSED`     | Pre-CUT mode restored; no flags; production smoke green       |
+| 2026-08-24 | CUT-03 production cutover   | `DONE`       | Four DB flags; three prod smokes; audit/reconciliation green  |
+| 2026-08-24 | CUT-04 observation          | `DONE`       | Natural traffic through corrected Sep 1 report verified       |
+| 2026-08-24 | CUT-04 same-day check       | `DONE`       | Prod READY; 32 invariants and 6 journeys; stable fingerprint  |
+| 2026-08-25 | CUT-04 next-day check       | `DONE`       | 22 real purchases; Stripe 113/113; queues/invariants green    |
+| 2026-08-31 | CUT-04 seven-day checkpoint | `DONE`       | Automated checks green; report incident isolated and fixed    |
+| 2026-09-01 | Corrected August report     | `DONE`       | 28/28 rows; exact CSV hash; first-attempt provider acceptance |
+| 2026-09-01 | Gate G6                     | `PASSED`     | CUT observation and classified reconciliation complete        |
