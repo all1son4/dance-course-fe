@@ -29,10 +29,6 @@ process.env.DATABASE_ENV = "development";
 process.env.DATABASE_DEV_DATABASE_URL = databaseUrl;
 process.env.RESEND_API_KEY = "re_write06_fixture";
 
-const databaseReadOptions = {
-  environment: { DB_BUSINESS_OPERATIONS_MODE: "database" },
-} as const;
-
 const client = postgres(databaseUrl, {
   max: 8,
   prepare: false,
@@ -108,11 +104,8 @@ test("allocates and hydrates one invoice for a payment intent concurrently", asy
         allocateInvoiceForPaymentIntent({ issuedAt, paymentIntentId }),
       ),
     );
-    const readRecord = await findInvoicePaymentRecordByIntentId(
-      paymentIntentId,
-      databaseReadOptions,
-    );
-    const readRecords = await listInvoicePaymentRecords(databaseReadOptions);
+    const readRecord = await findInvoicePaymentRecordByIntentId(paymentIntentId);
+    const readRecords = await listInvoicePaymentRecords();
     const [stored] = await client<
       {
         amountMinor: number;
@@ -205,11 +198,8 @@ test("campaign jobs retry with one Resend idempotency key and persist final stat
         ON effect.deduplication_key = ${deduplicationKey}
       WHERE lead.lead_id = ${leadId}
     `;
-    const readLead = await findEmailCampaignLeadRecord(
-      { campaignKey, email },
-      databaseReadOptions,
-    );
-    const readLeads = await listEmailCampaignLeadReadRecords(databaseReadOptions);
+    const readLead = await findEmailCampaignLeadRecord({ campaignKey, email });
+    const readLeads = await listEmailCampaignLeadReadRecords();
 
     assert.equal(second.status, "sent");
     assert.equal(calls.length, 2);
@@ -328,7 +318,7 @@ test("monthly report jobs persist delivery and never resend a completed job", as
       FROM monthly_report_runs
       WHERE report_key = ${reportKey}
     `;
-    const readRun = await findMonthlyReportRunRecord(reportKey, databaseReadOptions);
+    const readRun = await findMonthlyReportRunRecord(reportKey);
 
     assert.equal(first.status, "sent");
     assert.equal(second.status, "empty");
