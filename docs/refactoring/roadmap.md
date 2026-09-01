@@ -1404,14 +1404,16 @@ no DROP change may reach production before the legacy reader/exporter review aft
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
 Status: `IN_PROGRESS` — the development slices permanently route admin invite-link
-history, invoice, monthly-report, campaign, and payment-access reads through
-PostgreSQL. Their legacy/shadow selectors and shadow comparators are removed; admin
-history and the payment access-link route also no longer have Google-specific error
-branches. Existing admin fresh/stale caching, authentication, request rate limiting,
-response shapes, payment-intent precedence, successful-checkout fallback, and
-database failure behavior remain unchanged. The temporary SuccessfulCustomers
-exporter and offline snapshot/backfill/reconciliation tools are outside these slices
-and remain available through their documented windows.
+history, invoice, monthly-report, campaign, payment-access, and Telegram token/binding
+reads through PostgreSQL. Their legacy/shadow selectors and shadow comparators are
+removed; admin history and the payment access-link route also no longer have
+Google-specific error branches. Existing admin fresh/stale caching, authentication,
+request rate limiting, response shapes, payment-intent precedence,
+successful-checkout fallback, Telegram lookup keys and collection semantics, and
+database failure behavior remain unchanged. Telegram writes and claims remain behind
+their existing persistence boundary for the next slice. The temporary
+SuccessfulCustomers exporter and offline snapshot/backfill/reconciliation tools are
+outside these slices and remain available through their documented windows.
 
 ### DROP-02 — Disable the transitional exporter after the rollback window
 
@@ -1537,4 +1539,4 @@ Status: `TODO`
 | 2026-08-31 | CUT-04 seven-day checkpoint | `DONE`        | Automated checks green; report incident isolated and fixed    |
 | 2026-09-01 | Corrected August report     | `DONE`        | 28/28 rows; exact CSV hash; first-attempt provider acceptance |
 | 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete        |
-| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | More runtime reads are PostgreSQL-only                        |
+| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | User-facing runtime reads are PostgreSQL-only                 |
