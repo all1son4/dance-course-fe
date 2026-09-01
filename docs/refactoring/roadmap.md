@@ -1415,6 +1415,13 @@ identity-reuse, membership, and revocation writes plus atomic token claims now a
 use PostgreSQL unconditionally. The retired `DB_TELEGRAM_ACCESS_MODE` selector,
 Google-specific rate-limit branches, and the obsolete admin-grant dependency on that
 flag are removed. Online Group renewal verification remains isolated and unchanged.
+Admin grants, invoice allocation, monthly-report recording/delivery, and campaign
+signup, exclusion, and delivery now also use PostgreSQL unconditionally. Their
+synchronous Sheet mirrors, in-memory Sheet-backed invoice coordination, direct Resend
+delivery branches, Google-specific route errors, and shared
+`DB_BUSINESS_OPERATIONS_MODE` selector are removed. Daily maintenance always recovers
+the business outbox. User-visible validation, duplicate handling, response shapes,
+invoice format, report period, and campaign behavior remain unchanged.
 The temporary SuccessfulCustomers exporter and offline
 snapshot/backfill/reconciliation tools are outside these slices and remain available
 through their documented windows.
@@ -1543,4 +1550,4 @@ Status: `TODO`
 | 2026-08-31 | CUT-04 seven-day checkpoint | `DONE`        | Automated checks green; report incident isolated and fixed    |
 | 2026-09-01 | Corrected August report     | `DONE`        | 28/28 rows; exact CSV hash; first-attempt provider acceptance |
 | 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete        |
-| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime reads and Telegram access writes are PostgreSQL-only  |
+| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime and business writes are PostgreSQL-only               |

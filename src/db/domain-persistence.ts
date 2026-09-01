@@ -3,7 +3,6 @@ export const DOMAIN_PERSISTENCE_MODES = ["legacy", "shadow", "database"] as cons
 export type DomainPersistenceMode = (typeof DOMAIN_PERSISTENCE_MODES)[number];
 
 export const DOMAIN_PERSISTENCE_ENV = {
-  businessOperations: "DB_BUSINESS_OPERATIONS_MODE",
   paymentEvents: "DB_PAYMENT_EVENTS_MODE",
   sideEffects: "DB_SIDE_EFFECTS_MODE",
   sheetsExport: "DB_SHEETS_EXPORT_MODE",

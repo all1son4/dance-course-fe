@@ -8,7 +8,6 @@ import {
 
 test("defaults every domain to the behavior-preserving legacy mode", () => {
   assert.deepEqual(getDomainPersistenceConfiguration({}), {
-    businessOperations: "legacy",
     paymentEvents: "legacy",
     sheetsExport: "legacy",
     sideEffects: "legacy",
@@ -35,9 +34,9 @@ test("reads each domain independently", () => {
 test("rejects invalid values instead of silently falling back", () => {
   assert.throws(
     () =>
-      getDomainPersistenceMode("businessOperations", {
-        DB_BUSINESS_OPERATIONS_MODE: "automatic-fallback",
+      getDomainPersistenceMode("paymentEvents", {
+        DB_PAYMENT_EVENTS_MODE: "automatic-fallback",
       }),
-    /DB_BUSINESS_OPERATIONS_MODE must be one of/u,
+    /DB_PAYMENT_EVENTS_MODE must be one of/u,
   );
 });

@@ -16,23 +16,12 @@ import {
   excludeEmailCampaignLeadInDatabase,
   getCampaignEmailDeliveryDeduplicationKey,
 } from "@/db/business-operation-jobs";
-import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import {
   enqueueCampaignEmailDelivery,
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
-import {
-  findEmailCampaignLeadRecord,
-  listEmailCampaignLeadReadRecords,
-} from "@/lib/business-operation-read-runtime";
-import { sendResendEmail } from "@/lib/email/resend";
-import {
-  type EmailCampaignLeadSheetRecord,
-  GoogleSheetsError,
-  isGoogleSheetsRateLimitError,
-  upsertEmailCampaignLeadRecord,
-} from "@/lib/google-sheets";
-import { toUtcIso } from "@/lib/time";
+import { listEmailCampaignLeadReadRecords } from "@/lib/business-operation-read-runtime";
+import type { EmailCampaignLeadSheetRecord } from "@/lib/google-sheets-schema";
 
 export const FIRST_TOUCH_SALES_START_CAMPAIGN_KEY = "first_touch_sales_start";
 
@@ -111,30 +100,6 @@ const pendingEmailCampaignLeadCreates = new Map<
 >();
 let pendingFirstTouchSalesStartCampaignDelivery: Promise<EmailCampaignDeliveryResult> | null =
   null;
-
-export const getEmailCampaignRuntime = (
-  environment: Readonly<Record<string, string | undefined>> = process.env,
-) =>
-  getDomainPersistenceMode("businessOperations", environment) === "database"
-    ? ("database" as const)
-    : ("legacy" as const);
-
-const usesDatabaseJobs = () => getEmailCampaignRuntime() === "database";
-
-export const isEmailCampaignPersistenceRateLimitError = (error: unknown) =>
-  !usesDatabaseJobs() && isGoogleSheetsRateLimitError(error);
-
-export const getEmailCampaignPersistenceErrorDetails = (error: unknown) => {
-  if (usesDatabaseJobs() || !(error instanceof GoogleSheetsError)) {
-    return null;
-  }
-
-  return {
-    details: error.details,
-    errorCode: error.code,
-    status: error.status,
-  };
-};
 
 export const normalizeEmailCampaignEmail = (value: string) =>
   value.trim().toLowerCase().slice(0, 254);
@@ -417,61 +382,19 @@ const createEmailCampaignLeadInternal = async ({
   socialContact,
 }: CreateEmailCampaignLeadInput): Promise<CreateEmailCampaignLeadResult> => {
   const normalizedEmail = normalizeEmailCampaignEmail(email);
-
-  if (usesDatabaseJobs()) {
-    const result = await createEmailCampaignLeadInDatabase({
-      campaignKey,
-      createdAt: new Date(),
-      email: normalizedEmail,
-      fullName,
-      leadId: createLeadId({ campaignKey, email: normalizedEmail }),
-      locale,
-      socialContact,
-    });
-
-    return {
-      duplicate: !result.created,
-      lead: mapEmailCampaignLeadFromDatabase(result.lead),
-    };
-  }
-
-  const existingLead = await findEmailCampaignLeadRecord({
+  const result = await createEmailCampaignLeadInDatabase({
     campaignKey,
     email: normalizedEmail,
+    createdAt: new Date(),
+    fullName,
+    leadId: createLeadId({ campaignKey, email: normalizedEmail }),
+    locale,
+    socialContact,
   });
 
-  if (existingLead) {
-    return {
-      duplicate: true,
-      lead: existingLead,
-    };
-  }
-
-  const now = toUtcIso();
-  const rows = await listEmailCampaignLeadReadRecords();
-  const isGloballyBlocked = getGloballyBlockedEmails(rows).has(normalizedEmail);
-  const lead: EmailCampaignLeadSheetRecord = {
-    campaign_key: campaignKey.trim(),
-    created_at: now,
-    email: normalizedEmail,
-    email_send_attempts: "0",
-    email_send_status: isGloballyBlocked ? "blocked" : "pending",
-    email_sent_at: "",
-    full_name: fullName.trim().slice(0, 120),
-    last_email_error: "",
-    lead_id: createLeadId({
-      campaignKey,
-      email: normalizedEmail,
-    }),
-    locale: locale.trim().slice(0, 20),
-    social_contact: socialContact.trim().slice(0, 160),
-  };
-
-  await upsertEmailCampaignLeadRecord(lead);
-
   return {
-    duplicate: false,
-    lead,
+    duplicate: !result.created,
+    lead: mapEmailCampaignLeadFromDatabase(result.lead),
   };
 };
 
@@ -526,52 +449,19 @@ export const excludeEmailCampaignLead = async ({
     return { status: "delivery_in_progress" };
   }
 
-  if (usesDatabaseJobs()) {
-    const result = await excludeEmailCampaignLeadInDatabase({
-      campaignKey,
-      leadId,
-      scope,
-    });
-
-    if (result.status !== "excluded") {
-      return result;
-    }
-
-    return {
-      scope,
-      snapshot: await getEmailCampaignAdminSnapshot(campaignKey),
-      status: "excluded",
-    };
-  }
-
-  const normalizedCampaignKey = campaignKey.trim();
-  const normalizedLeadId = leadId.trim();
-  const rows = await listEmailCampaignLeadReadRecords();
-  const lead = rows.find(
-    (row) =>
-      row.lead_id.trim() === normalizedLeadId &&
-      row.campaign_key.trim() === normalizedCampaignKey,
-  );
-
-  if (!lead) {
-    return { status: "not_found" };
-  }
-
-  const currentStatus = lead.email_send_status.trim();
-
-  if (currentStatus !== "pending" && currentStatus !== "failed") {
-    return { status: "not_actionable" };
-  }
-
-  await upsertEmailCampaignLeadRecord({
-    ...lead,
-    email_send_status: scope === "global" ? "blocked" : "excluded",
-    last_email_error: "",
+  const result = await excludeEmailCampaignLeadInDatabase({
+    campaignKey,
+    leadId,
+    scope,
   });
+
+  if (result.status !== "excluded") {
+    return result;
+  }
 
   return {
     scope,
-    snapshot: await getEmailCampaignAdminSnapshot(normalizedCampaignKey),
+    snapshot: await getEmailCampaignAdminSnapshot(campaignKey),
     status: "excluded",
   };
 };
@@ -589,71 +479,32 @@ const deliverFirstTouchSalesStartCampaignInternal =
     );
     let attempted = 0;
 
-    if (usesDatabaseJobs()) {
-      const deliveryKeys: string[] = [];
-
-      for (const lead of deliverableRows) {
-        const deduplicationKey = getCampaignEmailDeliveryDeduplicationKey({
-          campaignKey: lead.campaign_key,
-          leadId: lead.lead_id,
-        });
-        const emailPayload = buildFirstTouchSalesStartEmail(lead);
-
-        await enqueueCampaignEmailDelivery({
-          campaignKey: lead.campaign_key,
-          deduplicationKey,
-          email: {
-            html: emailPayload.html,
-            subject: emailPayload.subject,
-            text: emailPayload.text,
-            to: lead.email,
-          },
-          leadId: lead.lead_id,
-        });
-        deliveryKeys.push(deduplicationKey);
-      }
-
-      for (const deduplicationKey of deliveryKeys) {
-        attempted += 1;
-        await processBusinessOperationOutboxJob(deduplicationKey);
-      }
-
-      return {
-        ...(await getEmailCampaignStats(FIRST_TOUCH_SALES_START_CAMPAIGN_KEY)),
-        attempted,
-      };
-    }
+    const deliveryKeys: string[] = [];
 
     for (const lead of deliverableRows) {
-      attempted += 1;
-      const attempts = Number.parseInt(lead.email_send_attempts, 10) || 0;
-      const now = toUtcIso();
+      const deduplicationKey = getCampaignEmailDeliveryDeduplicationKey({
+        campaignKey: lead.campaign_key,
+        leadId: lead.lead_id,
+      });
+      const emailPayload = buildFirstTouchSalesStartEmail(lead);
 
-      try {
-        const emailPayload = buildFirstTouchSalesStartEmail(lead);
-        await sendResendEmail({
+      await enqueueCampaignEmailDelivery({
+        campaignKey: lead.campaign_key,
+        deduplicationKey,
+        email: {
           html: emailPayload.html,
           subject: emailPayload.subject,
           text: emailPayload.text,
           to: lead.email,
-        });
+        },
+        leadId: lead.lead_id,
+      });
+      deliveryKeys.push(deduplicationKey);
+    }
 
-        await upsertEmailCampaignLeadRecord({
-          ...lead,
-          email_send_attempts: String(attempts + 1),
-          email_send_status: "sent",
-          email_sent_at: now,
-          last_email_error: "",
-        });
-      } catch (error) {
-        await upsertEmailCampaignLeadRecord({
-          ...lead,
-          email_send_attempts: String(attempts + 1),
-          email_send_status: "failed",
-          last_email_error:
-            error instanceof Error ? error.message.slice(0, 500) : "unknown_error",
-        });
-      }
+    for (const deduplicationKey of deliveryKeys) {
+      attempted += 1;
+      await processBusinessOperationOutboxJob(deduplicationKey);
     }
 
     return {

@@ -9,10 +9,7 @@ import { listRecentAdminOnlineGroupAccessGrants } from "@/db/admin-online-group-
 import { getActiveOnlineGroupTargetByOfferId } from "@/db/online-group-campaigns";
 import { listActiveTelegramChats } from "@/db/renewal-campaigns";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import {
-  createAdminOfferGrant,
-  isAdminOfferGrantPersistenceRateLimitError,
-} from "@/lib/admin-offer-grants";
+import { createAdminOfferGrant } from "@/lib/admin-offer-grants";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonNoStore,
@@ -279,13 +276,6 @@ export async function POST(request: Request) {
       status,
     });
   } catch (error) {
-    if (isAdminOfferGrantPersistenceRateLimitError(error)) {
-      return jsonNoStore(
-        { errorCode: "rate_limited" },
-        { headers: { "Retry-After": "20" }, status: 429 },
-      );
-    }
-
     console.error("Failed to generate admin Online Group invite links", error);
 
     return jsonNoStore(

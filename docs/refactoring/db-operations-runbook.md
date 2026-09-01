@@ -82,16 +82,13 @@ non-production start-token plus timed join/leave journey. Rollback is only to a
 release that understands the PostgreSQL access rows; never restore authority to a
 stale Sheet mirror.
 
-## Business-operation write mode
+## Business-operation persistence
 
-Admin grants, invoice allocation, monthly-report delivery, and campaign signup and
-delivery switch together with:
-
-```bash
-DB_BUSINESS_OPERATIONS_MODE=database
-```
-
-An unset value or `shadow` retains the synchronous legacy paths. In `database` mode:
+After the `DROP-01` release, admin grants, invoice allocation, monthly-report
+delivery, and campaign signup, exclusion, and delivery always use PostgreSQL. The
+shared `DB_BUSINESS_OPERATIONS_MODE` selector is retired and has no runtime effect;
+remove it from environment configuration after that release reaches the target
+environment. The permanent guarantees are:
 
 - admin grants create the technical zero-value purchase, primary entitlement, and at
   most one transitional `SuccessfulCustomers` export job atomically;
@@ -100,9 +97,9 @@ An unset value or `shadow` retains the synchronous legacy paths. In `database` m
 - campaign leads use the unique campaign/email key, and every recipient is claimed
   and delivered by its own durable Resend job.
 
-Google failure no longer fails these database operations. Ordinary admin links now
-use the unconditional PostgreSQL Telegram persistence boundary; no separate Telegram
-mode flag or deployment ordering is required. Online Group access remains DB-native.
+Google failure cannot fail these operations. Ordinary admin links use the
+unconditional PostgreSQL Telegram persistence boundary, and Online Group access
+remains DB-native.
 
 The admin report and broadcast buttons still wait for their bounded delivery attempts
 and return the existing result shapes. The daily maintenance request additionally
@@ -130,11 +127,10 @@ versioned export is marked `skipped` without loading customer data or calling Go
 This value is reserved for the later export-retirement step; do not use it as an
 admin-write cutover switch.
 
-At `CUT-03`, verify one ordinary and one Online Group admin grant, one invoice, one
-report, one signup plus broadcast, their views after the corresponding READ cutover,
-and no duplicate invoice, campaign email, report email, entitlement, or export rows.
-A rollback must use a DB-compatible release and must not treat the stale Sheet
-projection as authoritative.
+After deployment, verify one ordinary and one Online Group admin grant, one invoice,
+one report, one signup plus broadcast, and no duplicate invoice, campaign email,
+report email, entitlement, or export rows. A rollback must use a DB-compatible release
+and must not treat the stale Sheet projection as authoritative.
 
 ## Retry and replay rules
 
