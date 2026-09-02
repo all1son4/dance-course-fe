@@ -87,6 +87,7 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
           <Button
             buttonText={t("buttons.backToPayment")}
             href={paymentPath}
+            prefetch={false}
             analytics={{
               id: "payment_retry",
               placement: "failed_result",

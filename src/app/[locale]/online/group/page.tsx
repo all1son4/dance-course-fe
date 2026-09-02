@@ -15,6 +15,7 @@ import {
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
+import { getProductSaleState } from "@/lib/sales-availability";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -24,7 +25,6 @@ import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import ProductFact from "../_shared/product-fact";
 import ProductHero from "../_shared/product-hero";
-import SaleGate from "../_shared/sale-gate";
 import {
   AboutCourseCards,
   AboutCourseTitle,
@@ -61,11 +61,14 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function OnlineGroupPage() {
-  const locale = await getLocale();
-  const t = await getTranslations("OnlineGroupPage");
-  const commonT = await getTranslations("Common");
-  const onlineSuggestions = getGroupSuggestions((key) => t(key));
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
+  const [locale, t, commonT, saleState] = await Promise.all([
+    getLocale(),
+    getTranslations("OnlineGroupPage"),
+    getTranslations("Common"),
+    getProductSaleState(product.id),
+  ]);
+  const onlineSuggestions = getGroupSuggestions((key) => t(key));
   const purchaseOffers = product.offers.filter(
     (offer) => offer.code === "standard" || offer.code === "library-access",
   );
@@ -134,31 +137,29 @@ export default async function OnlineGroupPage() {
           analytics={{ id: "select_tariff", placement: "online_group_hero" }}
           {...stickyCtaAnchorProps}
         />
-        {/* Only while there is something to buy: a floating "choose a plan"
-              pointing at a closed tariff section would be noise. */}
-        <SaleGate productId={product.id}>
-          {(isSaleOpen) =>
-            isSaleOpen ? (
-              <StickyCta
-                analytics={{ id: "select_tariff", placement: "online_group_sticky" }}
-                label={t("tariffs.selectButton")}
-                href="#tariffs"
-                title={t("hero.titlePlain")}
-                note={standardOffer ? formatOfferPrice(standardOffer.prices) : undefined}
-              />
-            ) : null
-          }
-        </SaleGate>
+        {saleState === "open" ? (
+          <StickyCta
+            analytics={{ id: "select_tariff", placement: "online_group_sticky" }}
+            label={t("tariffs.selectButton")}
+            href="#tariffs"
+            title={t("hero.titlePlain")}
+            note={standardOffer ? formatOfferPrice(standardOffer.prices) : undefined}
+          />
+        ) : null}
       </ButtonBox>
     </ProductHero>
   );
 
-  const renderTariffSection = (isSaleOpen: boolean) => (
+  const renderTariffSection = () => (
     <TariffSection id="tariffs">
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
-      {/* Without this card, closed sales leave the tariff cards buttonless and
-          the hero call to action pointing at an empty spot. */}
-      {!isSaleOpen && <ClosedSalesNotice text={commonT("salesClosed")} />}
+      {saleState === "open" ? null : (
+        <ClosedSalesNotice
+          text={
+            saleState === "closed" ? commonT("salesClosed") : commonT("salesUnavailable")
+          }
+        />
+      )}
       <TariffOptionsBox>
         {standardOffer ? (
           <CourseCard
@@ -181,7 +182,7 @@ export default async function OnlineGroupPage() {
                 />
               </TarifContentBox>
             }
-            buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
+            buttonText={saleState === "open" ? t("tariffs.buyButton") : undefined}
             buttonAnalytics={{
               id: "buy_online_group",
               offer_code: standardOffer.code,
@@ -190,10 +191,11 @@ export default async function OnlineGroupPage() {
               product_code: product.code,
               product_id: product.id,
             }}
+            buttonPrefetch={false}
             buttonRel="nofollow"
             buttonIsStickyAnchor
             buttonHref={
-              isSaleOpen
+              saleState === "open"
                 ? buildCheckoutHref({
                     offerId: standardOffer.id,
                     productId: product.id,
@@ -227,7 +229,7 @@ export default async function OnlineGroupPage() {
                 />
               </TarifContentBox>
             }
-            buttonText={isSaleOpen ? t("tariffs.buyButton") : undefined}
+            buttonText={saleState === "open" ? t("tariffs.buyButton") : undefined}
             buttonAnalytics={{
               id: "buy_online_group",
               offer_code: plusOffer.code,
@@ -236,10 +238,11 @@ export default async function OnlineGroupPage() {
               product_code: product.code,
               product_id: product.id,
             }}
+            buttonPrefetch={false}
             buttonRel="nofollow"
             buttonIsStickyAnchor
             buttonHref={
-              isSaleOpen
+              saleState === "open"
                 ? buildCheckoutHref({
                     offerId: plusOffer.id,
                     productId: product.id,
@@ -278,10 +281,7 @@ export default async function OnlineGroupPage() {
             radius="0px"
           />
         </VideoSection>
-        {/* Streams in behind the shell; see SaleGate for why there is no fallback. */}
-        <SaleGate productId={product.id}>
-          {(isSaleOpen) => renderTariffSection(isSaleOpen)}
-        </SaleGate>
+        {renderTariffSection()}
         <SuggestionGrid
           components={{
             Section: AboutCourseSection,

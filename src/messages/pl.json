@@ -93,7 +93,8 @@
     "toggleDetails": "Pokaż lub ukryj szczegóły",
     "closeDialog": "Zamknij okno",
     "skipToContent": "Przejdź do treści",
-    "salesClosed": "Sprzedaż jest tymczasowo zamknięta"
+    "salesClosed": "Sprzedaż jest tymczasowo zamknięta",
+    "salesUnavailable": "Informacje o sprzedaży są chwilowo niedostępne. Spróbuj ponownie za moment."
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -648,6 +649,10 @@
       "title": "Sprzedaż zamknięta",
       "description": "Nabór na ten produkt jest obecnie zamknięty. Napisz do nas — powiemy, kiedy ruszy kolejny, i pomożemy wybrać odpowiedni format.",
       "contactButton": "Napisz na Telegramie"
+    },
+    "catalogUnavailable": {
+      "title": "Płatność jest chwilowo niedostępna",
+      "description": "Nie udało się bezpiecznie potwierdzić produktu i aktualnej ceny. Spróbuj ponownie za chwilę lub napisz do nas."
     },
     "summary": {
       "currencyLabel": "Waluta płatności",

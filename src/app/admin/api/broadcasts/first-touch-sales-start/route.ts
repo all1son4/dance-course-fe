@@ -13,7 +13,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
-import { isProductSaleOpen } from "@/lib/sales-availability";
+import { getProductSaleState } from "@/lib/sales-availability";
 
 const FIRST_TOUCH_PRODUCT = SELLABLE_PRODUCTS["first-touch"];
 
@@ -117,7 +117,13 @@ export async function POST(request: Request) {
   try {
     // The campaign email carries a checkout link. Sending it for a product whose
     // sales are closed would hand out a link that only ends in an error.
-    if (!(await isProductSaleOpen(FIRST_TOUCH_PRODUCT.id))) {
+    const saleState = await getProductSaleState(FIRST_TOUCH_PRODUCT.id);
+
+    if (saleState === "unavailable") {
+      return jsonNoStore({ errorCode: "sales_state_unavailable" }, { status: 503 });
+    }
+
+    if (saleState === "closed") {
       return jsonNoStore({ errorCode: "product_sales_closed" }, { status: 409 });
     }
 

@@ -67,6 +67,14 @@ export type PaymentCheckoutDraft = {
   validationLocale: PaymentValidationLocale;
 };
 
+export type PaymentStoreInitialization = {
+  currency: SupportedCheckoutCurrency;
+  offerId?: string | null;
+  productId?: string | null;
+  renewalCampaignSlug?: string | null;
+  sellableProducts: SellableProduct[] | null;
+};
+
 const createCheckoutSessionId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -151,7 +159,7 @@ export class PaymentStore {
   sellableProducts: SellableProduct[] = SELLABLE_PRODUCTS_LIST;
   renewalCampaignSlug = "";
 
-  constructor() {
+  constructor(initialization?: PaymentStoreInitialization) {
     // Request helpers remain outside MobX instrumentation so decomposition does
     // not introduce action boundaries around the existing async control flow.
     makeAutoObservable<
@@ -173,6 +181,24 @@ export class PaymentStore {
       },
       { autoBind: true },
     );
+
+    if (initialization) {
+      // Select against the local catalogue first; applying the authoritative
+      // rows afterwards derives ready/closed/unavailable for that exact link
+      // before the first server render and client hydration.
+      this.configureCheckoutSelection({
+        offerId: initialization.offerId,
+        productId: initialization.productId,
+      });
+      this.initializeCheckoutCurrency(initialization.currency);
+      this.setRenewalCampaignSlug(initialization.renewalCampaignSlug);
+
+      if (initialization.sellableProducts) {
+        this.setSellableProducts(initialization.sellableProducts);
+      } else {
+        this.setCatalogUnavailable();
+      }
+    }
   }
 
   get areAllAgreementsAccepted() {
@@ -332,6 +358,9 @@ export class PaymentStore {
 
     this.customerErrors = {};
     this.touchedFields = {};
+    if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
+      this.catalogStatus = nextProduct.salesEnabled ? "ready" : "closed";
+    }
     this.clearStripeIntentState(false);
   }
 
@@ -359,6 +388,9 @@ export class PaymentStore {
 
     this.selectedProductId = nextProduct.id;
     this.selectedOfferId = nextOffer.id;
+    if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
+      this.catalogStatus = nextProduct.salesEnabled ? "ready" : "closed";
+    }
     this.clearStripeIntentState(true);
   }
 
