@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 
-import type { SellableProduct } from "@/constants/sellable-products";
 import type { usePaymentStore } from "@/stores";
 
 import {
@@ -17,7 +16,6 @@ export const POST_VERIFICATION_FOCUS_DELAY_MS = 120;
 const LEGACY_NAVIGATION_TYPE_RELOAD = 1;
 export const TELEGRAM_USERNAME_PATTERN = /^@[A-Za-z0-9_]{1,32}$/;
 export const PAYMENT_API_ENDPOINTS = {
-  catalog: "/api/catalog/sellable-products",
   telegramRenewal: "/api/telegram/renewal",
 } as const;
 const RENEWAL_PROFILE_FIELDS = [
@@ -72,10 +70,6 @@ export type CheckoutAgreement = {
   placeholder: ReactNode;
 };
 
-export type SellableProductsCatalogResponse = {
-  errorCode?: "catalog_unavailable";
-  products?: SellableProduct[];
-};
 export type RenewalCampaignResponse = {
   campaign?: {
     offerId: string;

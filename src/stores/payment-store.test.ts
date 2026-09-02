@@ -146,6 +146,49 @@ test("server initialization keeps an unavailable catalog distinct from closed sa
   assert.equal(store.isSalesClosed, false);
 });
 
+test("a link to a product the catalogue no longer sells falls back to the default selection", () => {
+  const removed = SELLABLE_PRODUCTS_LIST.find(
+    (product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id,
+  );
+  assert.ok(removed);
+  const catalog = cloneCatalog().filter((product) => product.id !== removed.id);
+
+  const store = new PaymentStore({
+    currency: "eur",
+    offerId: removed.defaultOfferId,
+    productId: removed.id,
+    sellableProducts: catalog,
+  });
+
+  // The requested product is gone but the catalogue is authoritative, so the
+  // stale-link notice (driven by the missing id) applies - not "unavailable".
+  assert.equal(store.hasAuthoritativeCatalog, true);
+  assert.equal(store.isCatalogUnavailable, false);
+  assert.equal(store.selectedProductId, DEFAULT_CHECKOUT_PRODUCT.id);
+  assert.equal(
+    store.sellableProducts.some((product) => product.id === removed.id),
+    false,
+  );
+});
+
+test("a renewal checkout whose target left the catalogue stays unavailable", () => {
+  const removed = SELLABLE_PRODUCTS_LIST.find(
+    (product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id,
+  );
+  assert.ok(removed);
+  const catalog = cloneCatalog().filter((product) => product.id !== removed.id);
+
+  const store = new PaymentStore({
+    currency: "eur",
+    offerId: removed.defaultOfferId,
+    productId: removed.id,
+    renewalCampaignSlug: "renewal-link",
+    sellableProducts: catalog,
+  });
+
+  assert.equal(store.catalogStatus, "unavailable");
+});
+
 test("a price change during catalog refresh invalidates minted intents", () => {
   const store = new PaymentStore();
   store.setSellableProducts(cloneCatalog());

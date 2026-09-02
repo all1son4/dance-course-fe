@@ -48,6 +48,7 @@ import {
   PaymentDescription,
   PaymentSection,
   PaymentTitle,
+  SalesClosedActions,
   SalesClosedDescription,
   SalesClosedNotice,
   SalesClosedTitle,
@@ -85,6 +86,7 @@ const PaymentPage = observer(function PaymentPage({
   const { canUseAnalytics, canUseFunctionalStorage } = useCookieConsent();
   const locale = useLocale();
   const t = useTranslations("PaymentPage");
+  const commonT = useTranslations("Common");
   const stripeT = useTranslations("StripePaymentTabs");
   const productT = useTranslations("SellableProducts");
   const [countryOptions, setCountryOptions] = useState<CountryOption[]>(
@@ -147,15 +149,15 @@ const PaymentPage = observer(function PaymentPage({
   const isRenewalVerified = !isRenewalCheckout || renewalStatus === "verified";
 
   // A stale or mistyped link must not silently sell the default product: when
-  // the requested product or offer is missing from the ready catalogue, the
-  // form gives way to an honest notice pointing at the current offerings.
+  // the requested product or offer is missing from the authoritative catalogue,
+  // the form gives way to an honest notice pointing at the current offerings.
   const requestedProductId = new URLSearchParams(searchKey).get("product") ?? "";
   const requestedOfferId = new URLSearchParams(searchKey).get("offer") ?? "";
   const requestedProduct = requestedProductId
     ? paymentStore.sellableProducts.find((product) => product.id === requestedProductId)
     : undefined;
   const isStaleCheckoutLink =
-    paymentStore.catalogStatus === "ready" &&
+    paymentStore.hasAuthoritativeCatalog &&
     !isRenewalCheckout &&
     ((Boolean(requestedProductId) && !requestedProduct) ||
       (Boolean(requestedProduct) &&
@@ -277,14 +279,16 @@ const PaymentPage = observer(function PaymentPage({
   ]);
 
   useEffect(() => {
-    const reason = paymentStore.isSalesClosed
-      ? "sales_closed"
-      : isRenewalUnavailable
-        ? "renewal_unavailable"
-        : isStaleCheckoutLink
-          ? "stale_link"
-          : paymentStore.isCatalogUnavailable
-            ? "catalog_unavailable"
+    // Mirrors the notice priority in the render below, so the tracked reason is
+    // the notice the visitor actually saw.
+    const reason = paymentStore.isCatalogUnavailable
+      ? "catalog_unavailable"
+      : isStaleCheckoutLink
+        ? "stale_link"
+        : paymentStore.isSalesClosed
+          ? "sales_closed"
+          : isRenewalUnavailable
+            ? "renewal_unavailable"
             : null;
 
     if (!canUseAnalytics || !reason || lastTrackedBlockedStateRef.current === reason) {
@@ -724,16 +728,44 @@ const PaymentPage = observer(function PaymentPage({
             <SalesClosedDescription>
               {t("catalogUnavailable.description")}
             </SalesClosedDescription>
+            <SalesClosedActions>
+              {/* The copy promises a retry helps, so the retry is one click - a
+                  full reload re-runs the authoritative server catalogue read. */}
+              <Button
+                size="sm"
+                buttonText={commonT("tryAgain")}
+                analytics={{
+                  id: "checkout_retry_catalog",
+                  placement: "catalog_unavailable",
+                  ...analyticsCommerceProperties,
+                }}
+                onClick={() => window.location.reload()}
+              />
+              <Button
+                size="sm"
+                variant="secondary"
+                buttonText={t("salesClosed.contactButton")}
+                href={SUPPORT_TELEGRAM_URL}
+                target="_blank"
+                analytics={{
+                  id: "checkout_contact_support",
+                  placement: "catalog_unavailable",
+                  ...analyticsCommerceProperties,
+                }}
+              />
+            </SalesClosedActions>
+          </SalesClosedNotice>
+        ) : isStaleCheckoutLink ? (
+          // Before the closed-sales notice: when the link itself is dead, "sales
+          // are closed" would be about the fallback product, not the one asked for.
+          <SalesClosedNotice>
+            <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
+            <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
             <Button
               size="sm"
-              buttonText={t("salesClosed.contactButton")}
-              href={SUPPORT_TELEGRAM_URL}
-              target="_blank"
-              analytics={{
-                id: "checkout_contact_support",
-                placement: "catalog_unavailable",
-                ...analyticsCommerceProperties,
-              }}
+              buttonText={t("staleLink.catalogButton")}
+              href="/online"
+              analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
             />
           </SalesClosedNotice>
         ) : paymentStore.isSalesClosed ? (
@@ -770,17 +802,6 @@ const PaymentPage = observer(function PaymentPage({
                 placement: "renewal_unavailable",
                 ...analyticsCommerceProperties,
               }}
-            />
-          </SalesClosedNotice>
-        ) : isStaleCheckoutLink ? (
-          <SalesClosedNotice>
-            <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
-            <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
-            <Button
-              size="sm"
-              buttonText={t("staleLink.catalogButton")}
-              href="/online"
-              analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
             />
           </SalesClosedNotice>
         ) : (

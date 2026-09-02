@@ -39,21 +39,30 @@ const serializeSearchParams = (
 // after hydration and briefly exposed stale static catalogue data.
 export const dynamic = "force-dynamic";
 
-export default async function PaymentPage({ searchParams }: PaymentPageProps) {
-  const [locale, resolvedSearchParams] = await Promise.all([getLocale(), searchParams]);
-  let sellableProducts: SellableProduct[] | null = null;
-
+const loadAuthoritativeCheckoutCatalog = async (): Promise<SellableProduct[] | null> => {
   try {
     const products = await getSellableProductsWithDatabaseCommercialData();
 
     if (products.length > 0) {
-      sellableProducts = products;
-    } else {
-      console.error("Authoritative sellable product catalog is empty in checkout");
+      return products;
     }
+
+    console.error("Authoritative sellable product catalog is empty in checkout");
   } catch (error) {
     console.error("Failed to load authoritative checkout catalog", { error });
   }
+
+  return null;
+};
+
+export default async function PaymentPage({ searchParams }: PaymentPageProps) {
+  // The catalogue read does not depend on locale or the query string, so the
+  // database round trip overlaps them instead of queueing behind them.
+  const [locale, resolvedSearchParams, sellableProducts] = await Promise.all([
+    getLocale(),
+    searchParams,
+    loadAuthoritativeCheckoutCatalog(),
+  ]);
 
   const currencyParam = firstSearchParam(resolvedSearchParams.currency);
   const currency = currencyParam
