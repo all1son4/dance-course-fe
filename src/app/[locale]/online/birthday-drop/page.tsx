@@ -1,9 +1,7 @@
 import { getLocale, getTranslations } from "next-intl/server";
 
 import StructuredData from "@/components/common/StructuredData";
-import { BIRTHDAY_DROP_PRODUCT_ID } from "@/constants/sellable-products";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
-import { getProductSaleState } from "@/lib/sales-availability";
 import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
 import BirthdayDropSection from "./birthday-drop-section";
@@ -19,10 +17,9 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function BirthdayDropPage() {
-  const [locale, t, saleState] = await Promise.all([
+  const [locale, t] = await Promise.all([
     getLocale(),
     getTranslations("BirthdayDropPage"),
-    getProductSaleState(BIRTHDAY_DROP_PRODUCT_ID),
   ]);
   // `title` carries a <br> for the visual line break; `titlePlain` is the
   // same heading as one line, for places that cannot render markup.
@@ -56,7 +53,7 @@ export default async function BirthdayDropPage() {
       />
 
       <BirthdayDropPageSection>
-        <BirthdayDropSection saleState={saleState} />
+        <BirthdayDropSection />
       </BirthdayDropPageSection>
     </>
   );

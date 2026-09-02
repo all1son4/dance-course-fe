@@ -1,9 +1,26 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
-import {
-  SELLABLE_PRODUCTS,
-  SELLABLE_PRODUCTS_LIST,
-} from "../../src/constants/sellable-products";
+import { SELLABLE_PRODUCTS } from "../../src/constants/sellable-products";
+
+/**
+ * The checkout receives its catalogue with the server render, so these specs
+ * cannot stub a client fetch to pin the sales state anymore. Instead they read
+ * the deployment's authoritative state from the catalog API (kept alive for
+ * exactly this) and assert the UI that state must produce. A deployment whose
+ * database is down fails the read - and the run - which is what a smoke test
+ * of a broken deployment should do.
+ */
+const readAuthoritativeCatalog = async (page: Page) => {
+  const catalogResponse = await page.request.get("/api/catalog/sellable-products");
+
+  expect(catalogResponse.ok()).toBe(true);
+
+  const catalog = (await catalogResponse.json()) as {
+    products: Array<{ id: string; salesEnabled: boolean }>;
+  };
+
+  return catalog.products;
+};
 
 test("First Touch entry remains a lead dialog instead of direct checkout", async ({
   page,
@@ -31,14 +48,8 @@ test("Online Group entry follows the authoritative sales switch", async ({ page 
     .filter((offer) => offer.code === "standard" || offer.code === "library-access")
     .map((offer) => offer.id)
     .sort();
-  const catalogResponse = await page.request.get("/api/catalog/sellable-products");
-
-  expect(catalogResponse.ok()).toBe(true);
-
-  const catalog = (await catalogResponse.json()) as {
-    products: Array<{ id: string; salesEnabled: boolean }>;
-  };
-  const catalogProduct = catalog.products.find((item) => item.id === product.id);
+  const catalogProducts = await readAuthoritativeCatalog(page);
+  const catalogProduct = catalogProducts.find((item) => item.id === product.id);
 
   expect(catalogProduct).toBeDefined();
 
@@ -49,6 +60,13 @@ test("Online Group entry follows the authoritative sales switch", async ({ page 
   const purchaseLinks = page.getByRole("link", { name: /^Buy(?: — .+)?$/u });
 
   if (!catalogProduct?.salesEnabled) {
+    // The notice streams in behind the shell; once it is visible the sales
+    // state has resolved and the absence of buy links is meaningful.
+    await expect(
+      page.getByText(
+        /Sales are temporarily closed|Sales information is temporarily unavailable/,
+      ),
+    ).toBeVisible();
     await expect(purchaseLinks).toHaveCount(0);
     await expect(page.locator('a[href*="/payment?"]')).toHaveCount(0);
     return;
@@ -75,19 +93,22 @@ test("ordinary checkout has four fresh agreements and no Telegram verification",
 }) => {
   const product = SELLABLE_PRODUCTS["first-touch"];
   const offer = product.offers[0];
+  const catalogProducts = await readAuthoritativeCatalog(page);
+  const authoritativeProduct = catalogProducts.find((item) => item.id === product.id);
 
-  await page.route("**/api/catalog/sellable-products", async (route) => {
-    await route.fulfill({
-      body: JSON.stringify({
-        products: SELLABLE_PRODUCTS_LIST,
-      }),
-      contentType: "application/json",
-      status: 200,
-    });
-  });
+  expect(authoritativeProduct).toBeDefined();
+
   await page.goto(`/payment?product=${product.id}&offer=${offer.id}`);
 
   await expect(page.getByRole("heading", { level: 1, name: "Checkout" })).toBeVisible();
+
+  if (!authoritativeProduct?.salesEnabled) {
+    // Closed sales must render as an explicit state on the checkout too.
+    await expect(page.getByText("Sales are closed")).toBeVisible();
+    await expect(page.locator('form input[type="checkbox"]')).toHaveCount(0);
+    return;
+  }
+
   await expect(page.getByRole("button", { name: "Confirm Telegram" })).toHaveCount(0);
 
   const agreements = page.locator('form input[type="checkbox"]');
@@ -163,10 +184,11 @@ test("success result stays pending until Stripe confirms success", async ({ page
 
   await expect(page.getByText("Payment successful")).toHaveCount(0);
   await expect(
-    page.getByText(
-      "Your payment is still processing. Refresh this page in a moment and do not pay again.",
-    ),
+    page.getByText("Your payment is still processing — please do not pay again", {
+      exact: false,
+    }),
   ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check again" })).toBeVisible();
   expect(statusRequestCount).toBe(4);
 });
 
@@ -175,21 +197,20 @@ test("checkout sends all four accepted agreements with the existing customer fie
 }) => {
   const product = SELLABLE_PRODUCTS["first-touch"];
   const offer = product.offers[0];
+  const catalogProducts = await readAuthoritativeCatalog(page);
+  const authoritativeProduct = catalogProducts.find((item) => item.id === product.id);
+
+  test.skip(
+    !authoritativeProduct?.salesEnabled,
+    "First Touch sales are closed on this deployment, so its checkout form cannot be exercised",
+  );
+
   let resolvePaymentIntentBody!: (body: Record<string, unknown>) => void;
   const paymentIntentBody = new Promise<Record<string, unknown>>((resolve) => {
     resolvePaymentIntentBody = resolve;
   });
   let hasCapturedPaymentIntent = false;
 
-  await page.route("**/api/catalog/sellable-products", async (route) => {
-    await route.fulfill({
-      body: JSON.stringify({
-        products: SELLABLE_PRODUCTS_LIST,
-      }),
-      contentType: "application/json",
-      status: 200,
-    });
-  });
   await page.route("**/api/stripe/payment-intent", async (route) => {
     if (!hasCapturedPaymentIntent) {
       hasCapturedPaymentIntent = true;
@@ -244,26 +265,37 @@ test("checkout sends all four accepted agreements with the existing customer fie
   ).toBeVisible();
 });
 
-test("checkout fails closed with an explicit message when catalog is unavailable", async ({
-  page,
-}) => {
+test("checkout never renders a dead end", async ({ page }) => {
   const product = SELLABLE_PRODUCTS["first-touch"];
   const offer = product.offers[0];
 
-  await page.route("**/api/catalog/sellable-products", async (route) => {
-    await route.fulfill({
-      body: JSON.stringify({
-        errorCode: "catalog_unavailable",
-      }),
-      contentType: "application/json",
-      status: 503,
-    });
-  });
   await page.goto(`/payment?product=${product.id}&offer=${offer.id}`);
 
-  await expect(
-    page.getByText("Sales are temporarily unavailable. Please try again later."),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Checkout" })).toBeVisible();
+
+  // Whatever state the deployment is in - catalogue readable or not, sales
+  // open or closed - the visitor must see either the form or an explicit
+  // notice, never a blank interactive area.
+  const checkoutForm = page.locator("form");
+  const blockedNotice = page.getByText(
+    /Checkout is temporarily unavailable|Sales are closed|This link is out of date/,
+  );
+
+  await expect(checkoutForm.or(blockedNotice).first()).toBeVisible();
+
+  if (!(await checkoutForm.count())) {
+    await expect(page.locator("#payment-element")).toHaveCount(0);
+  }
+});
+
+test("a checkout link to an unknown product shows the stale-link notice", async ({
+  page,
+}) => {
+  await page.goto("/payment?product=product-that-never-existed");
+
+  await expect(page.getByText("This link is out of date")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Browse courses" })).toBeVisible();
+  await expect(page.locator('form input[type="checkbox"]')).toHaveCount(0);
   await expect(page.locator("#payment-element")).toHaveCount(0);
 });
 

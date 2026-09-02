@@ -228,6 +228,15 @@ export class PaymentStore {
     return this.catalogStatus === "closed";
   }
 
+  /**
+   * True once authoritative catalogue rows are applied - whether the selected
+   * product is open or closed. Stale-link detection needs this rather than
+   * "ready": a closed catalogue still answers which links are dead.
+   */
+  get hasAuthoritativeCatalog() {
+    return this.catalogStatus === "ready" || this.catalogStatus === "closed";
+  }
+
   get selectedProduct() {
     return (
       this.getSellableProductById(this.selectedProductId) ??
@@ -287,15 +296,33 @@ export class PaymentStore {
     const previousProductId = this.selectedProduct.id;
     const previousOfferId = this.selectedOffer.id;
     const previousPrice = this.selectedPrice;
-    const nextProduct =
+    let nextProduct =
       products.find((product) => product.id === this.selectedProductId) ?? null;
-    const nextOffer = nextProduct
+    let nextOffer = nextProduct
       ? this.getSellableProductOfferById(nextProduct, this.selectedOfferId)
       : null;
 
     if (!nextProduct || !nextOffer) {
-      this.setCatalogUnavailable();
-      return;
+      // A link can point at a product the authoritative catalogue no longer
+      // sells. The catalogue itself is fine, so restore the default selection
+      // and let the stale-link notice explain; "unavailable" would promise
+      // that retrying helps when it cannot. A renewal checkout must keep its
+      // exact target, so it still degrades to unavailable.
+      const fallbackProduct = this.renewalCampaignSlug
+        ? null
+        : (products.find((product) => product.id === DEFAULT_CHECKOUT_PRODUCT.id) ??
+          null);
+      const fallbackOffer = fallbackProduct
+        ? getDefaultProductOffer(fallbackProduct)
+        : null;
+
+      if (!fallbackProduct || !fallbackOffer) {
+        this.setCatalogUnavailable();
+        return;
+      }
+
+      nextProduct = fallbackProduct;
+      nextOffer = fallbackOffer;
     }
 
     this.sellableProducts = products;

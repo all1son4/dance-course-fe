@@ -133,6 +133,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           paymentIntentId={paymentIntentId}
           paymentPath={paymentPath}
           pendingText={t("verification.pending")}
+          refreshButtonText={t("verification.refreshButton")}
           supportButtonText={t("telegram.contactSupport")}
           unavailableText={t("verification.unavailable")}
         >

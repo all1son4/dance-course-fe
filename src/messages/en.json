@@ -94,7 +94,14 @@
     "closeDialog": "Close dialog",
     "skipToContent": "Skip to content",
     "salesClosed": "Sales are temporarily closed",
-    "salesUnavailable": "Sales information is temporarily unavailable. Please try again shortly."
+    "salesUnavailable": "Sales information is temporarily unavailable. Please try again shortly.",
+    "tryAgain": "Try again",
+    "errorPage": {
+      "title": "Something went wrong",
+      "description": "An unexpected error kept this page from loading. Trying again usually fixes it.",
+      "retryButton": "Try again",
+      "backHome": "Back to home"
+    }
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -747,7 +754,8 @@
     "title": "Payment successful",
     "verification": {
       "checking": "Checking your payment status...",
-      "pending": "Your payment is still processing. Refresh this page in a moment and do not pay again.",
+      "pending": "Your payment is still processing — please do not pay again. As soon as it is confirmed, your access links will appear here and will also be sent to your email.",
+      "refreshButton": "Check again",
       "unavailable": "We couldn't confirm the payment status. Refresh this page or contact support, and do not pay again."
     },
     "description": {
@@ -1071,6 +1079,6 @@
         "text": "<p>You can pay by <strong>Visa / Mastercard</strong>, via <strong>BLIK</strong>, or with <strong>Google/Apple Pay</strong> from any country, including Belarus.</p><p>Available currencies: <strong>PLN</strong> and <strong>EUR</strong>. If your card is in another currency, your bank will automatically convert the amount.</p>"
       }
     },
-    "closedNotice": "Sales are temporarily closed."
+    "closedNotice": "Sales are temporarily closed"
   }
 }
