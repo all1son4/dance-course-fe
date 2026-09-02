@@ -6,6 +6,7 @@ export type StickyCtaProps = {
   label: string;
   /** Link target (hash or route). Mutually exclusive with `onClick`. */
   href?: string;
+  prefetch?: boolean;
   /** Click handler for dialog-style CTAs. Ignored when `href` is set. */
   onClick?: () => void;
   /** Short product name shown next to the button. */

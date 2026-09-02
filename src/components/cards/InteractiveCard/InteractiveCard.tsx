@@ -26,6 +26,7 @@ export default function InteractiveCard({
   analyticsId,
   bottomRowContent,
   buttonHref,
+  buttonPrefetch,
   buttonRel,
   buttonTarget,
   buttonText,
@@ -46,6 +47,7 @@ export default function InteractiveCard({
   const buttonLinkProps = buttonHref
     ? {
         href: buttonHref,
+        prefetch: buttonPrefetch,
         target: buttonTarget,
         rel: buttonRel,
       }

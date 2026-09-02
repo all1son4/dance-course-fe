@@ -1,33 +1,25 @@
 "use client";
 
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 
+import type { PaymentStoreInitialization } from "./payment-store";
 import { RootStore } from "./root-store";
 
 const StoreContext = createContext<RootStore | null>(null);
-let storeSingleton: RootStore | null = null;
 
-const isCompatibleStore = (store: RootStore) =>
-  typeof store.paymentStore.getStripeClientSecret === "function" &&
-  typeof store.paymentStore.getStripeIntentError === "function" &&
-  typeof store.paymentStore.getStripePaymentIntentId === "function";
+export function StoreProvider({
+  children,
+  paymentInitialization,
+}: {
+  children: ReactNode;
+  paymentInitialization?: PaymentStoreInitialization;
+}) {
+  // One provider mount is one checkout session. This also makes the server HTML
+  // and hydration start from the same authoritative catalogue snapshot instead
+  // of reusing a browser-global store left by an earlier visit.
+  const [store] = useState(() => new RootStore(paymentInitialization));
 
-const getRootStore = () => {
-  // On the server this module is shared by every concurrent request, so the
-  // singleton must stay browser-only: each server render gets its own store.
-  if (typeof window === "undefined") {
-    return new RootStore();
-  }
-
-  if (!storeSingleton || !isCompatibleStore(storeSingleton)) {
-    storeSingleton = new RootStore();
-  }
-
-  return storeSingleton;
-};
-
-export function StoreProvider({ children }: { children: ReactNode }) {
-  return <StoreContext.Provider value={getRootStore()}>{children}</StoreContext.Provider>;
+  return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }
 
 export function useStore() {

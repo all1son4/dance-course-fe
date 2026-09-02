@@ -18,6 +18,7 @@ export default function CourseCard({
   buttonAnalytics,
   buttonHref,
   buttonIsStickyAnchor = false,
+  buttonPrefetch,
   buttonRel,
   buttonTarget,
   buttonText,
@@ -43,6 +44,7 @@ export default function CourseCard({
             aria-label={title ? `${buttonText} — ${title}` : undefined}
             width="200px"
             href={buttonHref}
+            prefetch={buttonPrefetch}
             rel={buttonRel}
             target={buttonTarget}
             analytics={

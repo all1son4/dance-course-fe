@@ -93,7 +93,15 @@
     "toggleDetails": "Pokaż lub ukryj szczegóły",
     "closeDialog": "Zamknij okno",
     "skipToContent": "Przejdź do treści",
-    "salesClosed": "Sprzedaż jest tymczasowo zamknięta"
+    "salesClosed": "Sprzedaż jest tymczasowo zamknięta",
+    "salesUnavailable": "Informacje o sprzedaży są chwilowo niedostępne. Spróbuj ponownie za moment.",
+    "tryAgain": "Spróbuj ponownie",
+    "errorPage": {
+      "title": "Coś poszło nie tak",
+      "description": "Nieoczekiwany błąd uniemożliwił wczytanie strony. Zwykle pomaga spróbować ponownie.",
+      "retryButton": "Spróbuj ponownie",
+      "backHome": "Wróć na stronę główną"
+    }
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -649,6 +657,10 @@
       "description": "Nabór na ten produkt jest obecnie zamknięty. Napisz do nas — powiemy, kiedy ruszy kolejny, i pomożemy wybrać odpowiedni format.",
       "contactButton": "Napisz na Telegramie"
     },
+    "catalogUnavailable": {
+      "title": "Płatność jest chwilowo niedostępna",
+      "description": "Nie udało się bezpiecznie potwierdzić produktu i aktualnej ceny. Spróbuj ponownie za chwilę lub napisz do nas."
+    },
     "summary": {
       "currencyLabel": "Waluta płatności",
       "amountLabel": "Kwota płatności",
@@ -742,7 +754,8 @@
     "title": "Płatność zakończona pomyślnie",
     "verification": {
       "checking": "Sprawdzamy status płatności...",
-      "pending": "Płatność jest nadal przetwarzana. Odśwież tę stronę za chwilę i nie płać ponownie.",
+      "pending": "Płatność jest jeszcze przetwarzana — nie płać ponownie. Gdy tylko zostanie potwierdzona, linki dostępu pojawią się tutaj i wyślemy je również na Twój e-mail.",
+      "refreshButton": "Sprawdź ponownie",
       "unavailable": "Nie udało się potwierdzić statusu płatności. Odśwież stronę lub skontaktuj się ze wsparciem i nie płać ponownie."
     },
     "description": {
@@ -1066,6 +1079,6 @@
         "text": "<p>Możesz zapłacić kartą <strong>Visa / Mastercard</strong>, przez <strong>BLIK</strong> lub za pomocą <strong>Google/Apple Pay</strong> z dowolnego kraju, w tym z Białorusi.</p><p>Dostępne waluty: <strong>PLN</strong> i <strong>EUR</strong>. Jeśli Twoja karta jest w innej walucie, bank automatycznie przeliczy płatność.</p>"
       }
     },
-    "closedNotice": "Sprzedaż jest tymczasowo zamknięta."
+    "closedNotice": "Sprzedaż jest tymczasowo zamknięta"
   }
 }

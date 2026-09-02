@@ -29,6 +29,7 @@ type SuccessRedirectGuardProps = {
   paymentIntentId: string;
   paymentPath: string;
   pendingText: string;
+  refreshButtonText: string;
   supportButtonText: string;
   unavailableText: string;
 };
@@ -44,6 +45,7 @@ export default function SuccessRedirectGuard({
   paymentIntentId,
   paymentPath,
   pendingText,
+  refreshButtonText,
   supportButtonText,
   unavailableText,
 }: SuccessRedirectGuardProps) {
@@ -191,10 +193,18 @@ export default function SuccessRedirectGuard({
       </StatusCard>
       {/* Header and footer are hidden on result pages, so the settled
           non-success states carry their own minimal way out. A processing
-          payment only needs patience and a way home; the support button
-          appears once the status truly could not be confirmed. */}
+          payment gets a one-click status re-check (the copy asks to check
+          again, so checking again must not require finding the reload
+          button); the support button appears once the status truly could not
+          be confirmed. */}
       {verificationState !== "checking" && (
         <ResultActions>
+          {verificationState === "pending" && (
+            <Button
+              buttonText={refreshButtonText}
+              onClick={() => window.location.reload()}
+            />
+          )}
           {isUnavailable && (
             <Button
               buttonText={supportButtonText}

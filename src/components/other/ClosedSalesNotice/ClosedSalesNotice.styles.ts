@@ -1,64 +1,65 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
-/* The exclamation badge hangs off the card's left edge, so the card leaves
-   room for it on that side (margin + extra padding). */
-export const NoticeCard = styled.div`
-  display: flex;
+export type ClosedSalesNoticeTone = "dark" | "light";
+
+/* A quiet status line, deliberately smaller than the buttons around it so it
+   never reads as a disabled call to action. The grid keeps the card hugging
+   its text: the icon sits left, the text wraps in place, and the optional
+   action lands under the text instead of stretching the row. */
+export const NoticeCard = styled.div<{ $tone: ClosedSalesNoticeTone }>`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  justify-content: center;
-  padding: 20px 30px 20px 45px;
-  position: relative;
-  z-index: 12;
-  max-width: calc(100% - 30px);
+  column-gap: 12px;
+  row-gap: 12px;
   width: fit-content;
-  margin: 0 0 0 30px;
+  max-width: 100%;
+  padding: 10px 18px 10px 12px;
   box-sizing: border-box;
 
-  ${glass({
-    frost: "static",
-    variant: "surface",
-    radius: "20px",
-    frostPx: 10,
-    depth: 28,
-    hoverEffect: false,
-  })}
-
-  @media (max-width: 767px) {
-    padding: 12px 16px 12px 24px;
-    max-width: calc(100% - 18px);
-    margin: 0 0 0 18px;
-  }
+  ${({ $tone }) =>
+    $tone === "dark"
+      ? css`
+          background: rgba(255, 255, 255, 0.12);
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 16px;
+        `
+      : css`
+          ${glass({
+            frost: "static",
+            variant: "surface",
+            radius: "16px",
+            frostPx: 10,
+            depth: 28,
+            hoverEffect: false,
+          })}
+        `}
 `;
 
-export const NoticeText = styled.p`
+export const NoticeText = styled.p<{ $tone: ClosedSalesNoticeTone }>`
   font-weight: 400;
   font-style: normal;
-  font-size: var(--text-lead);
-  line-height: 1.5;
+  font-size: var(--text-body);
+  line-height: 1.45;
   letter-spacing: 0;
   margin: 0;
-  color: var(--brand);
-
-  @media (max-width: 767px) {
-    font-size: var(--text-body);
-  }
+  color: ${({ $tone }) =>
+    $tone === "dark" ? "rgba(255, 255, 255, 0.94)" : "var(--brand)"};
 `;
 
 export const NoticeIconBox = styled.div`
-  position: absolute;
-  top: 50%;
-  left: -30px;
   display: flex;
-  transform: translateY(-50%);
+  flex: none;
 
-  @media (max-width: 767px) {
-    left: -18px;
-
-    & :is(svg, img) {
-      width: 34px;
-      height: 36px;
-    }
+  & :is(svg, img) {
+    width: 30px;
+    height: 32px;
   }
+`;
+
+export const NoticeActionBox = styled.div`
+  grid-column: 2;
+  justify-self: start;
 `;

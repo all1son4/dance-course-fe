@@ -64,6 +64,7 @@ export default function ChoreoCard({
               <Button
                 buttonText={firstButtonOptions.text}
                 href={firstButtonOptions.href}
+                prefetch={false}
                 rel="nofollow"
                 analytics={firstButtonOptions.analytics}
               />
@@ -72,6 +73,7 @@ export default function ChoreoCard({
               <Button
                 buttonText={secondButtonOptions.text}
                 href={secondButtonOptions.href}
+                prefetch={false}
                 rel="nofollow"
                 analytics={secondButtonOptions.analytics}
               />

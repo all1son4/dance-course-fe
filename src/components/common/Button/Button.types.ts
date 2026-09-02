@@ -16,6 +16,7 @@ export type ButtonBaseProps = {
   width?: string;
   buttonText?: string;
   href?: string;
+  prefetch?: boolean;
   target?: string;
   size?: "lg" | "sm";
   frost?: ButtonFrost;

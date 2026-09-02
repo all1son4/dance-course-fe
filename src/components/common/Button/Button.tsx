@@ -56,6 +56,7 @@ export default function Button<T extends ElementType = "button">({
   size = "lg",
   frost = "static",
   href = "",
+  prefetch,
   target = SELF_TARGET,
   isLoading = false,
   analytics,
@@ -196,6 +197,7 @@ export default function Button<T extends ElementType = "button">({
         $width={width}
         $isLoading={isButtonLoading}
         href={href}
+        prefetch={prefetch}
         scroll={shouldDisableAutoScroll ? false : undefined}
         rel={linkRel}
         target={target}

@@ -32,6 +32,7 @@ export const getOnlineCoursesArray = (
     ),
     buttonText: commonT("details"),
     buttonHref: "/online/birthday-drop",
+    buttonPrefetch: false,
   },
   {
     id: "online-group",
@@ -50,6 +51,7 @@ export const getOnlineCoursesArray = (
     ),
     buttonText: commonT("details"),
     buttonHref: "/online/group",
+    buttonPrefetch: false,
   },
   {
     id: "choreo",

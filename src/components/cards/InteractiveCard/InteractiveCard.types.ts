@@ -16,6 +16,7 @@ export type InteractiveCardProps = {
   bottomRowContent?: ReactNode;
   buttonText?: string;
   buttonHref?: string;
+  buttonPrefetch?: boolean;
   buttonTarget?: HTMLAttributeAnchorTarget;
   buttonRel?: AnchorHTMLAttributes<HTMLAnchorElement>["rel"];
   isTopRowCollapsible?: boolean;
