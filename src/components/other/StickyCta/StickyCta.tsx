@@ -58,6 +58,7 @@ export default function StickyCta({
   label,
   note,
   onClick,
+  prefetch,
   title,
 }: StickyCtaProps) {
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
@@ -108,6 +109,7 @@ export default function StickyCta({
                 size="sm"
                 width="auto"
                 href={href}
+                prefetch={prefetch}
                 analytics={analytics}
               />
             ) : (

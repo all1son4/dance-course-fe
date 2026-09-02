@@ -1,9 +1,9 @@
-import { PaymentStore } from "./payment-store";
+import { PaymentStore, type PaymentStoreInitialization } from "./payment-store";
 
 export class RootStore {
   paymentStore: PaymentStore;
 
-  constructor() {
-    this.paymentStore = new PaymentStore();
+  constructor(paymentInitialization?: PaymentStoreInitialization) {
+    this.paymentStore = new PaymentStore(paymentInitialization);
   }
 }

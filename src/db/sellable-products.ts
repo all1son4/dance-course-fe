@@ -10,6 +10,7 @@ import type {
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 
 import { getDatabase } from "./client";
+import { retryTransientDatabaseRead } from "./database-read-retry";
 import { offerPrices, productOffers, products } from "./schema";
 
 type CheckoutSelectionFromDatabaseInput = {
@@ -146,7 +147,7 @@ const mapProductFromDatabase = ({
   };
 };
 
-export const getSellableProductsWithDatabaseCommercialData = async () => {
+const loadSellableProductsWithDatabaseCommercialData = async () => {
   const db = getDatabase();
   const [productRows, offerRows, priceRows] = await Promise.all([
     db.select().from(products),
@@ -174,7 +175,26 @@ export const getSellableProductsWithDatabaseCommercialData = async () => {
     });
 };
 
-export const getCheckoutSelectionFromDatabase = async ({
+const logCatalogReadRetry = ({
+  attempt,
+  errorCode,
+}: {
+  attempt: number;
+  error: unknown;
+  errorCode: string | null;
+}) => {
+  console.warn("Retrying transient sellable catalogue read", {
+    attempt,
+    errorCode,
+  });
+};
+
+export const getSellableProductsWithDatabaseCommercialData = async () =>
+  retryTransientDatabaseRead(loadSellableProductsWithDatabaseCommercialData, {
+    onRetry: logCatalogReadRetry,
+  });
+
+const loadCheckoutSelectionFromDatabase = async ({
   currency,
   offerId,
   productId,
@@ -275,6 +295,13 @@ export const getCheckoutSelectionFromDatabase = async ({
     },
   };
 };
+
+export const getCheckoutSelectionFromDatabase = async (
+  input: CheckoutSelectionFromDatabaseInput,
+) =>
+  retryTransientDatabaseRead(() => loadCheckoutSelectionFromDatabase(input), {
+    onRetry: logCatalogReadRetry,
+  });
 
 export const setProductSalesEnabled = async ({
   productId,

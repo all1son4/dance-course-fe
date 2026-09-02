@@ -114,6 +114,38 @@ test("a product with disabled sales closes the checkout instead of erroring", ()
   assert.equal(store.isSalesClosed, true);
 });
 
+test("server initialization renders the requested checkout in its final state", () => {
+  const catalog = cloneCatalog();
+  const selected = catalog.find((product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id);
+  assert.ok(selected);
+  selected.salesEnabled = false;
+
+  const store = new PaymentStore({
+    currency: "eur",
+    offerId: selected.defaultOfferId,
+    productId: selected.id,
+    renewalCampaignSlug: "renewal-link",
+    sellableProducts: catalog,
+  });
+
+  assert.equal(store.selectedProductId, selected.id);
+  assert.equal(store.selectedOfferId, selected.defaultOfferId);
+  assert.equal(store.selectedCurrency, "eur");
+  assert.equal(store.renewalCampaignSlug, "renewal-link");
+  assert.equal(store.catalogStatus, "closed");
+});
+
+test("server initialization keeps an unavailable catalog distinct from closed sales", () => {
+  const store = new PaymentStore({
+    currency: "pln",
+    sellableProducts: null,
+  });
+
+  assert.equal(store.catalogStatus, "unavailable");
+  assert.equal(store.isCatalogUnavailable, true);
+  assert.equal(store.isSalesClosed, false);
+});
+
 test("a price change during catalog refresh invalidates minted intents", () => {
   const store = new PaymentStore();
   store.setSellableProducts(cloneCatalog());
@@ -165,6 +197,25 @@ test("switching products clears intent state and bumps the revision", () => {
   assert.equal(store.selectedProductId, otherProduct.id);
   assert.deepEqual(store.stripeClientSecrets, {});
   assert.ok(store.stripeIntentStateRevision > revisionBefore);
+});
+
+test("switching checkout links updates the visible sales state synchronously", () => {
+  const catalog = cloneCatalog();
+  const closedProduct = catalog.find(
+    (product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id,
+  );
+  assert.ok(closedProduct);
+  closedProduct.salesEnabled = false;
+  const store = new PaymentStore({
+    currency: "pln",
+    sellableProducts: catalog,
+  });
+
+  store.configureCheckoutSelection({ productId: closedProduct.id });
+  assert.equal(store.catalogStatus, "closed");
+
+  store.configureCheckoutSelection({ productId: DEFAULT_CHECKOUT_PRODUCT.id });
+  assert.equal(store.catalogStatus, "ready");
 });
 
 test("canShowStripe requires a ready catalog, consents, and valid data", () => {

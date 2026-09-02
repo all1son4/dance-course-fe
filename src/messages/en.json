@@ -93,7 +93,8 @@
     "toggleDetails": "Show or hide details",
     "closeDialog": "Close dialog",
     "skipToContent": "Skip to content",
-    "salesClosed": "Sales are temporarily closed"
+    "salesClosed": "Sales are temporarily closed",
+    "salesUnavailable": "Sales information is temporarily unavailable. Please try again shortly."
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -648,6 +649,10 @@
       "title": "Sales are closed",
       "description": "Enrolment for this product is closed right now. Message us and we will tell you when the next one opens and help you pick the right format.",
       "contactButton": "Message on Telegram"
+    },
+    "catalogUnavailable": {
+      "title": "Checkout is temporarily unavailable",
+      "description": "We could not safely confirm the current product and price. Please try again shortly or message us for help."
     },
     "summary": {
       "currencyLabel": "Payment currency",
