@@ -66,6 +66,7 @@ export default function BirthdayPopup() {
         <Button
           buttonText={t("cta")}
           href={BIRTHDAY_POPUP_CTA_HREF}
+          prefetch={false}
           variant="ghost"
           size="sm"
           width="180px"

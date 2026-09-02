@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import IconTextCard from "@/components/cards/IconTextCard";
 import Button from "@/components/common/Button";
 import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
+import RefreshButton from "@/components/other/ClosedSalesNotice/RefreshButton";
 import Contacts from "@/components/other/Contacts";
 import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
@@ -11,7 +12,7 @@ import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Birthday34Badge } from "@/svg";
 
 import { createRichText } from "../_shared/content";
-import SaleGate from "../_shared/sale-gate";
+import SaleStateGate from "../_shared/sale-state-gate";
 import {
   AboutChoreoCards,
   AboutChoreoSection,
@@ -32,7 +33,10 @@ import {
 
 /** The offer itself, then what it includes, then contacts. */
 export default async function BirthdayDropSection() {
-  const t = await getTranslations("BirthdayDropPage");
+  const [t, commonT] = await Promise.all([
+    getTranslations("BirthdayDropPage"),
+    getTranslations("Common"),
+  ]);
   const richText = createRichText(t);
   const checkout = getBirthdayDropCheckout();
   const suggestions = getBirthdaySuggestions((key) => t(key), richText);
@@ -50,22 +54,41 @@ export default async function BirthdayDropSection() {
           </BirthdayTextContentDescription>
           {/* Closed sales must read as a state, not as a missing button. The
               notice and the buy button follow the admin sales switch and stream
-              in behind the shell (see SaleGate); the row itself, with the
+              in behind the shell (see SaleStateGate); the row itself, with the
               details button, is static so the hero keeps its height. */}
-          <SaleGate productId={BIRTHDAY_DROP_PRODUCT_ID}>
-            {(isSaleOpen) =>
-              !isSaleOpen ? <ClosedSalesNotice text={t("closedNotice")} /> : null
+          <SaleStateGate productId={BIRTHDAY_DROP_PRODUCT_ID}>
+            {(saleState) =>
+              saleState === "open" ? null : (
+                <ClosedSalesNotice
+                  tone="dark"
+                  text={
+                    saleState === "closed"
+                      ? t("closedNotice")
+                      : commonT("salesUnavailable")
+                  }
+                  action={
+                    saleState === "unavailable" ? (
+                      <RefreshButton
+                        label={commonT("tryAgain")}
+                        placement="birthday_drop_hero"
+                        tone="dark"
+                      />
+                    ) : undefined
+                  }
+                />
+              )
             }
-          </SaleGate>
+          </SaleStateGate>
           <BirthdayContentButtons>
             {checkout ? (
-              <SaleGate productId={BIRTHDAY_DROP_PRODUCT_ID}>
-                {(isSaleOpen) =>
-                  isSaleOpen ? (
+              <SaleStateGate productId={BIRTHDAY_DROP_PRODUCT_ID}>
+                {(saleState) =>
+                  saleState === "open" ? (
                     <>
                       <Button
                         buttonText={t("buyButton", { price: checkout.price })}
                         href={checkout.href}
+                        prefetch={false}
                         variant="white"
                         analytics={{
                           id: "buy_birthday_drop",
@@ -84,12 +107,13 @@ export default async function BirthdayDropSection() {
                         }}
                         label={t("buyButton", { price: checkout.price })}
                         href={checkout.href}
+                        prefetch={false}
                         title={t("titleShort")}
                       />
                     </>
                   ) : null
                 }
-              </SaleGate>
+              </SaleStateGate>
             ) : null}
             <Button
               buttonText={t("detailsButton")}

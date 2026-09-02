@@ -126,6 +126,12 @@ export const PaymentPreparationError = styled.p`
   font-weight: 500;
 `;
 
+export const SalesClosedActions = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+`;
+
 export const SalesClosedNotice = styled.div`
   position: relative;
   z-index: 2;

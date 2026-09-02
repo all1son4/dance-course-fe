@@ -11,6 +11,7 @@ export type CourseCardProps = {
   buttonText?: string;
   buttonHref?: string;
   buttonAnalytics?: ButtonAnalyticsMetadata;
+  buttonPrefetch?: boolean;
   buttonRel?: string;
   buttonTarget?: string;
   /** Marks the button as an anchor the page's sticky CTA mirrors. */

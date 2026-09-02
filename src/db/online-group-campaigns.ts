@@ -6,6 +6,7 @@ import {
 } from "@/constants/sellable-products";
 
 import { getDatabase } from "./client";
+import { retryTransientDatabaseRead } from "./database-read-retry";
 import {
   accessEntitlements,
   onlineGroupCampaigns,
@@ -333,7 +334,7 @@ export const saveOnlineGroupSettings = async ({
   };
 };
 
-export const getActiveOnlineGroupCampaign = async () => {
+const loadActiveOnlineGroupCampaign = async () => {
   const [campaign] = await getDatabase()
     .select()
     .from(onlineGroupCampaigns)
@@ -342,6 +343,16 @@ export const getActiveOnlineGroupCampaign = async () => {
 
   return campaign ?? null;
 };
+
+export const getActiveOnlineGroupCampaign = async () =>
+  retryTransientDatabaseRead(loadActiveOnlineGroupCampaign, {
+    onRetry: ({ attempt, errorCode }) => {
+      console.warn("Retrying transient active Online Group campaign read", {
+        attempt,
+        errorCode,
+      });
+    },
+  });
 
 export const getActiveOnlineGroupTargetByOfferId = async (offerId: string) => {
   if (!(ONLINE_GROUP_NEW_OFFER_IDS as readonly string[]).includes(offerId)) {

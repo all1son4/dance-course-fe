@@ -114,6 +114,81 @@ test("a product with disabled sales closes the checkout instead of erroring", ()
   assert.equal(store.isSalesClosed, true);
 });
 
+test("server initialization renders the requested checkout in its final state", () => {
+  const catalog = cloneCatalog();
+  const selected = catalog.find((product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id);
+  assert.ok(selected);
+  selected.salesEnabled = false;
+
+  const store = new PaymentStore({
+    currency: "eur",
+    offerId: selected.defaultOfferId,
+    productId: selected.id,
+    renewalCampaignSlug: "renewal-link",
+    sellableProducts: catalog,
+  });
+
+  assert.equal(store.selectedProductId, selected.id);
+  assert.equal(store.selectedOfferId, selected.defaultOfferId);
+  assert.equal(store.selectedCurrency, "eur");
+  assert.equal(store.renewalCampaignSlug, "renewal-link");
+  assert.equal(store.catalogStatus, "closed");
+});
+
+test("server initialization keeps an unavailable catalog distinct from closed sales", () => {
+  const store = new PaymentStore({
+    currency: "pln",
+    sellableProducts: null,
+  });
+
+  assert.equal(store.catalogStatus, "unavailable");
+  assert.equal(store.isCatalogUnavailable, true);
+  assert.equal(store.isSalesClosed, false);
+});
+
+test("a link to a product the catalogue no longer sells falls back to the default selection", () => {
+  const removed = SELLABLE_PRODUCTS_LIST.find(
+    (product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id,
+  );
+  assert.ok(removed);
+  const catalog = cloneCatalog().filter((product) => product.id !== removed.id);
+
+  const store = new PaymentStore({
+    currency: "eur",
+    offerId: removed.defaultOfferId,
+    productId: removed.id,
+    sellableProducts: catalog,
+  });
+
+  // The requested product is gone but the catalogue is authoritative, so the
+  // stale-link notice (driven by the missing id) applies - not "unavailable".
+  assert.equal(store.hasAuthoritativeCatalog, true);
+  assert.equal(store.isCatalogUnavailable, false);
+  assert.equal(store.selectedProductId, DEFAULT_CHECKOUT_PRODUCT.id);
+  assert.equal(
+    store.sellableProducts.some((product) => product.id === removed.id),
+    false,
+  );
+});
+
+test("a renewal checkout whose target left the catalogue stays unavailable", () => {
+  const removed = SELLABLE_PRODUCTS_LIST.find(
+    (product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id,
+  );
+  assert.ok(removed);
+  const catalog = cloneCatalog().filter((product) => product.id !== removed.id);
+
+  const store = new PaymentStore({
+    currency: "eur",
+    offerId: removed.defaultOfferId,
+    productId: removed.id,
+    renewalCampaignSlug: "renewal-link",
+    sellableProducts: catalog,
+  });
+
+  assert.equal(store.catalogStatus, "unavailable");
+});
+
 test("a price change during catalog refresh invalidates minted intents", () => {
   const store = new PaymentStore();
   store.setSellableProducts(cloneCatalog());
@@ -165,6 +240,25 @@ test("switching products clears intent state and bumps the revision", () => {
   assert.equal(store.selectedProductId, otherProduct.id);
   assert.deepEqual(store.stripeClientSecrets, {});
   assert.ok(store.stripeIntentStateRevision > revisionBefore);
+});
+
+test("switching checkout links updates the visible sales state synchronously", () => {
+  const catalog = cloneCatalog();
+  const closedProduct = catalog.find(
+    (product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id,
+  );
+  assert.ok(closedProduct);
+  closedProduct.salesEnabled = false;
+  const store = new PaymentStore({
+    currency: "pln",
+    sellableProducts: catalog,
+  });
+
+  store.configureCheckoutSelection({ productId: closedProduct.id });
+  assert.equal(store.catalogStatus, "closed");
+
+  store.configureCheckoutSelection({ productId: DEFAULT_CHECKOUT_PRODUCT.id });
+  assert.equal(store.catalogStatus, "ready");
 });
 
 test("canShowStripe requires a ready catalog, consents, and valid data", () => {

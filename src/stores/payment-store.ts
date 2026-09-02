@@ -67,6 +67,14 @@ export type PaymentCheckoutDraft = {
   validationLocale: PaymentValidationLocale;
 };
 
+export type PaymentStoreInitialization = {
+  currency: SupportedCheckoutCurrency;
+  offerId?: string | null;
+  productId?: string | null;
+  renewalCampaignSlug?: string | null;
+  sellableProducts: SellableProduct[] | null;
+};
+
 const createCheckoutSessionId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -151,7 +159,7 @@ export class PaymentStore {
   sellableProducts: SellableProduct[] = SELLABLE_PRODUCTS_LIST;
   renewalCampaignSlug = "";
 
-  constructor() {
+  constructor(initialization?: PaymentStoreInitialization) {
     // Request helpers remain outside MobX instrumentation so decomposition does
     // not introduce action boundaries around the existing async control flow.
     makeAutoObservable<
@@ -173,6 +181,24 @@ export class PaymentStore {
       },
       { autoBind: true },
     );
+
+    if (initialization) {
+      // Select against the local catalogue first; applying the authoritative
+      // rows afterwards derives ready/closed/unavailable for that exact link
+      // before the first server render and client hydration.
+      this.configureCheckoutSelection({
+        offerId: initialization.offerId,
+        productId: initialization.productId,
+      });
+      this.initializeCheckoutCurrency(initialization.currency);
+      this.setRenewalCampaignSlug(initialization.renewalCampaignSlug);
+
+      if (initialization.sellableProducts) {
+        this.setSellableProducts(initialization.sellableProducts);
+      } else {
+        this.setCatalogUnavailable();
+      }
+    }
   }
 
   get areAllAgreementsAccepted() {
@@ -200,6 +226,15 @@ export class PaymentStore {
 
   get isSalesClosed() {
     return this.catalogStatus === "closed";
+  }
+
+  /**
+   * True once authoritative catalogue rows are applied - whether the selected
+   * product is open or closed. Stale-link detection needs this rather than
+   * "ready": a closed catalogue still answers which links are dead.
+   */
+  get hasAuthoritativeCatalog() {
+    return this.catalogStatus === "ready" || this.catalogStatus === "closed";
   }
 
   get selectedProduct() {
@@ -261,15 +296,33 @@ export class PaymentStore {
     const previousProductId = this.selectedProduct.id;
     const previousOfferId = this.selectedOffer.id;
     const previousPrice = this.selectedPrice;
-    const nextProduct =
+    let nextProduct =
       products.find((product) => product.id === this.selectedProductId) ?? null;
-    const nextOffer = nextProduct
+    let nextOffer = nextProduct
       ? this.getSellableProductOfferById(nextProduct, this.selectedOfferId)
       : null;
 
     if (!nextProduct || !nextOffer) {
-      this.setCatalogUnavailable();
-      return;
+      // A link can point at a product the authoritative catalogue no longer
+      // sells. The catalogue itself is fine, so restore the default selection
+      // and let the stale-link notice explain; "unavailable" would promise
+      // that retrying helps when it cannot. A renewal checkout must keep its
+      // exact target, so it still degrades to unavailable.
+      const fallbackProduct = this.renewalCampaignSlug
+        ? null
+        : (products.find((product) => product.id === DEFAULT_CHECKOUT_PRODUCT.id) ??
+          null);
+      const fallbackOffer = fallbackProduct
+        ? getDefaultProductOffer(fallbackProduct)
+        : null;
+
+      if (!fallbackProduct || !fallbackOffer) {
+        this.setCatalogUnavailable();
+        return;
+      }
+
+      nextProduct = fallbackProduct;
+      nextOffer = fallbackOffer;
     }
 
     this.sellableProducts = products;
@@ -332,6 +385,9 @@ export class PaymentStore {
 
     this.customerErrors = {};
     this.touchedFields = {};
+    if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
+      this.catalogStatus = nextProduct.salesEnabled ? "ready" : "closed";
+    }
     this.clearStripeIntentState(false);
   }
 
@@ -359,6 +415,9 @@ export class PaymentStore {
 
     this.selectedProductId = nextProduct.id;
     this.selectedOfferId = nextOffer.id;
+    if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
+      this.catalogStatus = nextProduct.salesEnabled ? "ready" : "closed";
+    }
     this.clearStripeIntentState(true);
   }
 

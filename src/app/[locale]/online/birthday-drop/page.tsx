@@ -1,4 +1,4 @@
-import { useLocale, useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import StructuredData from "@/components/common/StructuredData";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
@@ -16,9 +16,11 @@ export const generateMetadata = () =>
 // request instead of being prerendered with a stale answer baked in.
 export const dynamic = "force-dynamic";
 
-export default function BirthdayDropPage() {
-  const locale = useLocale();
-  const t = useTranslations("BirthdayDropPage");
+export default async function BirthdayDropPage() {
+  const [locale, t] = await Promise.all([
+    getLocale(),
+    getTranslations("BirthdayDropPage"),
+  ]);
   // `title` carries a <br> for the visual line break; `titlePlain` is the
   // same heading as one line, for places that cannot render markup.
   const plainTitle = t("titlePlain");

@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
 
@@ -12,6 +13,13 @@ type CatalogSalesState = {
   open: ReadonlySet<string>;
 };
 
+type CatalogSalesReadResult = {
+  available: boolean;
+  state: CatalogSalesState;
+};
+
+export type ProductSaleState = "closed" | "open" | "unavailable";
+
 type SerializableCatalogSalesState = {
   known: string[];
   open: string[];
@@ -21,24 +29,19 @@ type SerializableCatalogSalesState = {
  * One read of the authoritative catalogue, split into the two questions its
  * callers ask: which products exist at all, and which of them may be paid for.
  *
- * A failed read yields two empty sets, which is exactly what each gate below
- * needs it to mean.
+ * Errors deliberately escape this function. It is wrapped in Next's persistent
+ * cache below, and turning a transient database failure into an empty result
+ * here would poison that shared cache with a false "sales closed" answer.
  */
 const readCatalogSalesState = async (): Promise<SerializableCatalogSalesState> => {
-  try {
-    const catalogProducts = await getSellableProductsWithDatabaseCommercialData();
+  const catalogProducts = await getSellableProductsWithDatabaseCommercialData();
 
-    return {
-      known: catalogProducts.map((product) => product.id),
-      open: catalogProducts
-        .filter((product) => product.salesEnabled)
-        .map((product) => product.id),
-    };
-  } catch (error) {
-    console.error("Failed to read the sales state from the catalogue", { error });
-
-    return { known: [], open: [] };
-  }
+  return {
+    known: catalogProducts.map((product) => product.id),
+    open: catalogProducts
+      .filter((product) => product.salesEnabled)
+      .map((product) => product.id),
+  };
 };
 
 const toCatalogSalesState = (
@@ -56,12 +59,41 @@ const toCatalogSalesState = (
  */
 const readCatalogSalesStateCached = unstable_cache(
   readCatalogSalesState,
-  ["catalog-sales-state"],
+  // Versioned so deployment cannot reuse an empty value written by the old
+  // implementation when a database connection timed out.
+  ["catalog-sales-state-v2"],
   { revalidate: CATALOG_CACHE_REVALIDATE_SECONDS, tags: [CATALOG_CACHE_TAG] },
 );
 
-const loadCatalogSalesState = async (): Promise<CatalogSalesState> =>
-  toCatalogSalesState(await readCatalogSalesState());
+const readCatalogSalesStateFailClosed = async (
+  read: () => Promise<SerializableCatalogSalesState>,
+): Promise<CatalogSalesReadResult> => {
+  try {
+    return {
+      available: true,
+      state: toCatalogSalesState(await read()),
+    };
+  } catch (error) {
+    console.error("Failed to read the sales state from the catalogue", { error });
+
+    return {
+      available: false,
+      state: toCatalogSalesState({ known: [], open: [] }),
+    };
+  }
+};
+
+/**
+ * React memoization deduplicates the repeated gates in one render without
+ * carrying a failed result into later requests. Only successful database reads
+ * reach Next's persistent cache above.
+ */
+const loadStorefrontCatalogSalesState = cache(() =>
+  readCatalogSalesStateFailClosed(readCatalogSalesStateCached),
+);
+
+const loadCatalogSalesState = async (): Promise<CatalogSalesReadResult> =>
+  readCatalogSalesStateFailClosed(readCatalogSalesState);
 
 /**
  * Storefront gate for buy buttons. Fails closed: when the catalogue cannot be
@@ -69,10 +101,22 @@ const loadCatalogSalesState = async (): Promise<CatalogSalesState> =>
  * button would only lead to an error.
  */
 export const getOpenSaleProductIds = async () =>
-  toCatalogSalesState(await readCatalogSalesStateCached()).open;
+  (await loadStorefrontCatalogSalesState()).state.open;
+
+export const getProductSaleState = async (
+  productId: string,
+): Promise<ProductSaleState> => {
+  const { available, state } = await loadStorefrontCatalogSalesState();
+
+  if (!available) {
+    return "unavailable";
+  }
+
+  return state.open.has(productId) ? "open" : "closed";
+};
 
 export const isProductSaleOpen = async (productId: string) =>
-  (await getOpenSaleProductIds()).has(productId);
+  (await getProductSaleState(productId)) === "open";
 
 /**
  * Fulfilment backstop. A payment can still settle for a product whose sales were
@@ -84,7 +128,8 @@ export const isProductSaleOpen = async (productId: string) =>
  * purchase.
  */
 export const hasClosedSalesAtFulfilment = async (productId: string) => {
-  const { known, open } = await loadCatalogSalesState();
+  const { state } = await loadCatalogSalesState();
+  const { known, open } = state;
 
   return known.has(productId) && !open.has(productId);
 };
