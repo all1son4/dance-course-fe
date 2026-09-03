@@ -19,12 +19,7 @@ export type StripeInboxReceipt = {
   duplicate: boolean;
   id: string;
   processingStatus:
-    | "pending"
-    | "processing"
-    | "processed"
-    | "skipped"
-    | "failed"
-    | "dead_letter";
+    "pending" | "processing" | "processed" | "skipped" | "failed" | "dead_letter";
 };
 
 export type StripeInboxReadModel = {

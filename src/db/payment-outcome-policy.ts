@@ -1,11 +1,7 @@
 import { type SQL, sql, type SQLWrapper } from "drizzle-orm";
 
 export type PaymentOutcome =
-  | "succeeded"
-  | "processing"
-  | "requires_action"
-  | "failed"
-  | "canceled";
+  "succeeded" | "processing" | "requires_action" | "failed" | "canceled";
 
 export const isPaymentOutcomeTransitionAllowed = (
   currentOutcome: PaymentOutcome,

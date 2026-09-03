@@ -10,8 +10,7 @@ import { toUtcIso } from "@/lib/time";
 
 type PaymentStatusField = "email_delivery_status" | "with_mentor_alert_status";
 type PaymentStatusUpdatedField =
-  | "email_delivery_updated_at"
-  | "with_mentor_alert_updated_at";
+  "email_delivery_updated_at" | "with_mentor_alert_updated_at";
 
 const PAYMENT_PROCESSING_STATUS_PREFIX = "sending:";
 const PAYMENT_PROCESSING_LEASE_TTL_MS = 2 * 60 * 1000;

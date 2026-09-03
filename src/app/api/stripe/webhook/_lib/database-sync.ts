@@ -556,9 +556,7 @@ export const createStripePaymentProjectionCommand = ({
     trim(paymentRecord.checkout_currency) ||
     "pln") as "pln" | "eur";
   const checkoutCurrency = nullIfEmpty(paymentRecord.checkout_currency) as
-    | "pln"
-    | "eur"
-    | null;
+    "pln" | "eur" | null;
   return {
     access: {
       accessKey: "primary",

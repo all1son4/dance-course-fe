@@ -1,10 +1,7 @@
 import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-intent/lib";
 
 export type SuccessPageOutcomeAction =
-  | "redirect_failed"
-  | "show_pending"
-  | "show_success"
-  | "verification_unavailable";
+  "redirect_failed" | "show_pending" | "show_success" | "verification_unavailable";
 
 export const resolveSuccessPageOutcomeAction = (
   outcome: ManagedPaymentIntentOutcome | null | undefined,

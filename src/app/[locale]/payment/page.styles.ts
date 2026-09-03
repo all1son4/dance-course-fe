@@ -202,13 +202,7 @@ export const StripeReveal = styled.div<{ $isVisible: boolean }>`
 
 export const TelegramInputControl = styled.div<{
   $status:
-    | "error"
-    | "idle"
-    | "loading"
-    | "not_member"
-    | "ready"
-    | "verified"
-    | "verifying";
+    "error" | "idle" | "loading" | "not_member" | "ready" | "verified" | "verifying";
 }>`
   position: relative;
 

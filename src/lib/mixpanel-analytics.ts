@@ -173,12 +173,7 @@ export type AnalyticsEventProperties = {
   signup_failed: {
     course_id: string;
     reason:
-      | "duplicate_email"
-      | "network"
-      | "rateLimited"
-      | "server"
-      | "unknown"
-      | "validation";
+      "duplicate_email" | "network" | "rateLimited" | "server" | "unknown" | "validation";
   };
   signup_submitted: {
     course_id: string;

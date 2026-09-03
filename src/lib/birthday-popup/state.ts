@@ -108,11 +108,7 @@ export const shouldShowBirthdayPopup = (
 };
 
 type BirthdayPopupSignal =
-  | "seen"
-  | "dismissed"
-  | "clicked"
-  | "checkout_started"
-  | "purchased";
+  "seen" | "dismissed" | "clicked" | "checkout_started" | "purchased";
 
 export const applyBirthdayPopupSignal = (
   state: BirthdayPopupState,

@@ -35,11 +35,7 @@ import type {
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 type SubmitFailureReason =
-  | "network"
-  | "rateLimited"
-  | "server"
-  | "unknown"
-  | "validation";
+  "network" | "rateLimited" | "server" | "unknown" | "validation";
 type CourseSignupFormErrors = Partial<Record<keyof CourseSignupFormValues, string>>;
 type CourseSignupTouchedFields = Partial<Record<keyof CourseSignupFormValues, boolean>>;
 type CourseSignupErrorResponse = {

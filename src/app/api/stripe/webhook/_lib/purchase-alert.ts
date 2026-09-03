@@ -169,11 +169,7 @@ const getAccessWorkflowLabel = (workflow: string) => {
 };
 
 type PurchaseProcessingState =
-  | "attention"
-  | "error"
-  | "not-applicable"
-  | "pending"
-  | "success";
+  "attention" | "error" | "not-applicable" | "pending" | "success";
 
 type PurchaseProcessingStatus = {
   detail?: string;
