@@ -117,10 +117,15 @@ export default function Home() {
         </InteractiveBox>
       </MainTextBox>
       <AbsolutePageLogo>
+        {/* The 450px entry subtracts the section's side paddings: the browser
+            rounds the srcset target up, and an honest 100vw put a 412px
+            viewport at exactly 721 physical px — one pixel past the w720
+            variant, silently upgrading every phone to w960 (+64 KiB on the
+            LCP element). */}
         <HeroPicture
           asset={HERO_MEDIA.home}
           media="(max-width: 1240px)"
-          sizes="(max-width: 450px) 100vw, (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
+          sizes="(max-width: 450px) calc(100vw - 40px), (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
           className="hero-mobile-bg"
           priority
         />

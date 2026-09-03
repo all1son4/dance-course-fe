@@ -19,7 +19,10 @@ export default function SvgAsset({
   className,
   priority = false,
   loading = "lazy",
-  sizes = "100vw",
+  // These assets never render wider than their intrinsic `width` (icons sit
+  // in fixed boxes), yet the previous 100vw default told the browser to fetch
+  // a viewport-sized variant — w750 for a 169px icon.
+  sizes,
   unoptimized = false,
   quality,
 }: SvgAssetProps) {
@@ -37,7 +40,7 @@ export default function SvgAsset({
       className={className}
       priority={priority}
       loading={priority ? undefined : loading}
-      sizes={sizes}
+      sizes={sizes ?? `${width}px`}
       placeholder="empty"
       // Even the LCP hero decodes off the main thread: a sync decode of a
       // 300-400 KB photo blocks everything else on the page from painting.
