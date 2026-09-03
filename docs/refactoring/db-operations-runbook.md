@@ -34,21 +34,15 @@ Investigate when any of these conditions persists beyond a normal worker interva
 - access `linkFailed` or `manualPending` grows without an explained operator task;
 - report status totals differ from the expected scheduled runs.
 
-The asynchronous Stripe path is enabled only when both variables have the same
-database value:
+After the `DROP-01` release, Stripe webhook ingestion and purchase delivery always use
+the PostgreSQL inbox, atomic projection, and transactional outbox. The retired
+`DB_PAYMENT_EVENTS_MODE` and `DB_SIDE_EFFECTS_MODE` selectors have no runtime effect;
+remove them from environment configuration after that release reaches the target
+environment. Do not roll back to a revision that can restore Sheets as a payment
+authority or side-effect lease store.
 
-```bash
-DB_PAYMENT_EVENTS_MODE=database
-DB_SIDE_EFFECTS_MODE=database
-```
-
-An unset pair keeps the legacy synchronous behavior. A mixed pair fails closed rather
-than accepting an event into a partially migrated runtime. Change both variables in
-one deployment and verify that no old revision is still receiving webhooks before
-interpreting queue age.
-
-In database mode, an immediate bounded worker run is scheduled after the webhook
-response. Successful payment-status polling also schedules recovery. The existing
+An immediate bounded worker run is scheduled after the webhook response. Successful
+payment-status polling also schedules recovery. The existing
 daily maintenance request runs a final bounded recovery pass after its established
 access and report tasks. The daily pass is a safety net, not the normal latency path;
 the project intentionally does not require a higher-frequency Vercel cron plan.
@@ -67,37 +61,28 @@ Use `DATABASE_ENV=production` and `DB_JOBS_RUN_CONFIRM=production` only from the
 approved production operator environment. Output is aggregate and contains no event
 payloads, recipients, tokens, or provider error messages.
 
-## Telegram access write mode
+## Telegram access persistence
 
-Timed channel access and legacy bot-start access switch together with:
+After the `DROP-01` release, timed channel and legacy bot-start access always use
+PostgreSQL for token, binding, entitlement, membership, identity-reuse, revocation,
+and atomic claim operations. `DB_TELEGRAM_ACCESS_MODE` is retired and has no runtime
+effect; remove it from environment configuration after that release reaches the
+target environment.
 
-```bash
-DB_TELEGRAM_ACCESS_MODE=database
-```
+Online Group access remains on its independent DB-native implementation. Telegram
+verification remains exclusive to the Online Group renewal flow. After a deployment,
+verify access `linkFailed`, pending/manual totals, application errors, and one known
+non-production start-token plus timed join/leave journey. Rollback is only to a
+release that understands the PostgreSQL access rows; never restore authority to a
+stale Sheet mirror.
 
-An unset value or `shadow` retains the current synchronous legacy mirror. `database`
-makes the access engine fail closed on PostgreSQL errors and removes automatic Sheets
-fallback from token, binding, entitlement, membership, identity-reuse, and revocation
-operations. Online Group access is already DB-native and is not switched by this flag.
-Its Telegram verification remains exclusive to the renewal flow.
+## Business-operation persistence
 
-Do not enable this variable independently during a normal deploy. It is a controlled
-`CUT-03` action after the final backup/reconciliation checklist. Immediately after a
-switch, verify access `linkFailed`, pending/manual totals, application errors, and one
-known non-production start-token plus timed join/leave journey. Once DB-only access
-writes have begun, rollback is only to a release that understands the PostgreSQL
-access rows; never restore authority to a stale Sheet mirror.
-
-## Business-operation write mode
-
-Admin grants, invoice allocation, monthly-report delivery, and campaign signup and
-delivery switch together with:
-
-```bash
-DB_BUSINESS_OPERATIONS_MODE=database
-```
-
-An unset value or `shadow` retains the synchronous legacy paths. In `database` mode:
+After the `DROP-01` release, admin grants, invoice allocation, monthly-report
+delivery, and campaign signup, exclusion, and delivery always use PostgreSQL. The
+shared `DB_BUSINESS_OPERATIONS_MODE` selector is retired and has no runtime effect;
+remove it from environment configuration after that release reaches the target
+environment. The permanent guarantees are:
 
 - admin grants create the technical zero-value purchase, primary entitlement, and at
   most one transitional `SuccessfulCustomers` export job atomically;
@@ -106,9 +91,9 @@ An unset value or `shadow` retains the synchronous legacy paths. In `database` m
 - campaign leads use the unique campaign/email key, and every recipient is claimed
   and delivered by its own durable Resend job.
 
-Google failure no longer fails these database operations. Ordinary admin links also require
-`DB_TELEGRAM_ACCESS_MODE=database`; enable Telegram access first so their downstream
-token write cannot return to the legacy facade. Online Group access remains DB-native.
+Google failure cannot fail these operations. Ordinary admin links use the
+unconditional PostgreSQL Telegram persistence boundary, and Online Group access
+remains DB-native.
 
 The admin report and broadcast buttons still wait for their bounded delivery attempts
 and return the existing result shapes. The daily maintenance request additionally
@@ -136,11 +121,10 @@ versioned export is marked `skipped` without loading customer data or calling Go
 This value is reserved for the later export-retirement step; do not use it as an
 admin-write cutover switch.
 
-At `CUT-03`, verify one ordinary and one Online Group admin grant, one invoice, one
-report, one signup plus broadcast, their views after the corresponding READ cutover,
-and no duplicate invoice, campaign email, report email, entitlement, or export rows.
-A rollback must use a DB-compatible release and must not treat the stale Sheet
-projection as authoritative.
+After deployment, verify one ordinary and one Online Group admin grant, one invoice,
+one report, one signup plus broadcast, and no duplicate invoice, campaign email,
+report email, entitlement, or export rows. A rollback must use a DB-compatible release
+and must not treat the stale Sheet projection as authoritative.
 
 ## Retry and replay rules
 

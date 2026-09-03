@@ -1,148 +1,35 @@
-import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import { allocateInvoiceForPaymentIntent } from "@/db/invoice-repository";
-import {
-  findInvoicePaymentRecordByIntentId,
-  listInvoicePaymentRecords,
-} from "@/lib/business-operation-read-runtime";
-import { type PaymentSheetRecord, upsertPaymentRecord } from "@/lib/google-sheets";
-import { toUtcIso } from "@/lib/time";
-
-const INVOICE_NUMBER_PREFIX = "FV";
-const INVOICE_SEQUENCE_PADDING = 3;
+import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
 
 const pendingInvoiceNumberAssignments = new Map<string, Promise<PaymentSheetRecord>>();
-let invoiceNumberAssignmentQueue = Promise.resolve();
-
-export const getInvoiceNumberingRuntime = (
-  environment: Readonly<Record<string, string | undefined>> = process.env,
-) =>
-  getDomainPersistenceMode("businessOperations", environment) === "database"
-    ? ("database" as const)
-    : ("legacy" as const);
-
-const pad2 = (value: number) => String(value).padStart(2, "0");
-
-const getInvoiceMonthParts = (issuedAt: Date) => {
-  const normalizedDate = Number.isNaN(issuedAt.getTime()) ? new Date() : issuedAt;
-
-  return {
-    month: pad2(normalizedDate.getUTCMonth() + 1),
-    year: String(normalizedDate.getUTCFullYear()),
-  };
-};
-
-const getInvoiceMonthPrefix = (issuedAt: Date) => {
-  const { month, year } = getInvoiceMonthParts(issuedAt);
-
-  return `${INVOICE_NUMBER_PREFIX}/${year}/${month}/`;
-};
-
-const parseInvoiceSequence = (invoiceNumber: string, invoiceMonthPrefix: string) => {
-  const normalizedInvoiceNumber = invoiceNumber.trim();
-
-  if (!normalizedInvoiceNumber.startsWith(invoiceMonthPrefix)) {
-    return null;
-  }
-
-  const sequence = Number.parseInt(
-    normalizedInvoiceNumber.slice(invoiceMonthPrefix.length),
-    10,
-  );
-
-  return Number.isFinite(sequence) && sequence > 0 ? sequence : null;
-};
-
-const buildInvoiceNumber = (issuedAt: Date, sequence: number) =>
-  `${getInvoiceMonthPrefix(issuedAt)}${String(sequence).padStart(
-    INVOICE_SEQUENCE_PADDING,
-    "0",
-  )}`;
-
-const findNextInvoiceSequence = async (issuedAt: Date) => {
-  const invoiceMonthPrefix = getInvoiceMonthPrefix(issuedAt);
-  const paymentRecords = await listInvoicePaymentRecords();
-  const maxSequence = paymentRecords.reduce((currentMaxSequence, paymentRecord) => {
-    const sequence = parseInvoiceSequence(
-      paymentRecord.invoice_number,
-      invoiceMonthPrefix,
-    );
-
-    return sequence === null
-      ? currentMaxSequence
-      : Math.max(currentMaxSequence, sequence);
-  }, 0);
-
-  return maxSequence + 1;
-};
-
-const withInvoiceNumberAssignmentLock = async <T>(task: () => Promise<T>) => {
-  const previousQueue = invoiceNumberAssignmentQueue;
-  let releaseLock!: () => void;
-  const lockReleasePromise = new Promise<void>((resolve) => {
-    releaseLock = resolve;
-  });
-
-  invoiceNumberAssignmentQueue = previousQueue.then(() => lockReleasePromise);
-  const queueEntry = invoiceNumberAssignmentQueue;
-
-  await previousQueue;
-
-  try {
-    return await task();
-  } finally {
-    releaseLock();
-
-    if (invoiceNumberAssignmentQueue === queueEntry) {
-      invoiceNumberAssignmentQueue = Promise.resolve();
-    }
-  }
-};
 
 const ensureInvoiceNumberForPaymentInternal = async ({
+  allocateForPaymentIntent,
   issuedAt,
   paymentRecord,
 }: {
+  allocateForPaymentIntent: typeof allocateInvoiceForPaymentIntent;
   issuedAt: Date;
   paymentRecord: PaymentSheetRecord;
 }) => {
-  if (getInvoiceNumberingRuntime() === "database") {
-    return allocateInvoiceForPaymentIntent({
-      issuedAt,
-      paymentIntentId: paymentRecord.payment_intent_id,
-    });
-  }
-
-  const latestPaymentRecord =
-    (await findInvoicePaymentRecordByIntentId(paymentRecord.payment_intent_id)) ??
-    paymentRecord;
-  const existingInvoiceNumber = latestPaymentRecord.invoice_number.trim();
-
-  if (existingInvoiceNumber) {
-    return latestPaymentRecord;
-  }
-
-  const invoiceNumber = buildInvoiceNumber(
+  return allocateForPaymentIntent({
     issuedAt,
-    await findNextInvoiceSequence(issuedAt),
-  );
-  const invoiceIssuedAt =
-    latestPaymentRecord.invoice_issued_at.trim() || toUtcIso(issuedAt);
-
-  return upsertPaymentRecord({
-    ...latestPaymentRecord,
-    invoice_issued_at: invoiceIssuedAt,
-    invoice_number: invoiceNumber,
-    updated_at: invoiceIssuedAt,
+    paymentIntentId: paymentRecord.payment_intent_id,
   });
 };
 
-export const ensureInvoiceNumberForPayment = async ({
-  issuedAt,
-  paymentRecord,
-}: {
-  issuedAt: Date;
-  paymentRecord: PaymentSheetRecord;
-}) => {
+export const ensureInvoiceNumberForPayment = async (
+  {
+    issuedAt,
+    paymentRecord,
+  }: {
+    issuedAt: Date;
+    paymentRecord: PaymentSheetRecord;
+  },
+  dependencies: {
+    allocateForPaymentIntent?: typeof allocateInvoiceForPaymentIntent;
+  } = {},
+) => {
   const paymentIntentId = paymentRecord.payment_intent_id.trim();
   const pendingAssignment = pendingInvoiceNumberAssignments.get(paymentIntentId);
 
@@ -150,16 +37,12 @@ export const ensureInvoiceNumberForPayment = async ({
     return pendingAssignment;
   }
 
-  const assignment = () =>
-    ensureInvoiceNumberForPaymentInternal({
-      issuedAt,
-      paymentRecord,
-    });
-  const assignmentPromise = (
-    getInvoiceNumberingRuntime() === "database"
-      ? assignment()
-      : withInvoiceNumberAssignmentLock(assignment)
-  ).finally(() => {
+  const assignmentPromise = ensureInvoiceNumberForPaymentInternal({
+    allocateForPaymentIntent:
+      dependencies.allocateForPaymentIntent ?? allocateInvoiceForPaymentIntent,
+    issuedAt,
+    paymentRecord,
+  }).finally(() => {
     pendingInvoiceNumberAssignments.delete(paymentIntentId);
   });
 

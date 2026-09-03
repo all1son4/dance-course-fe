@@ -1,8 +1,4 @@
-import {
-  getAdminInviteLinkHistoryProviderErrorDetails,
-  isAdminInviteLinkHistoryRateLimitError,
-  listAdminInviteLinkHistoryRecords,
-} from "@/lib/admin-invite-link-history-read-runtime";
+import { listAdminInviteLinkHistoryRecords } from "@/lib/admin-invite-link-history-read-runtime";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonNoStore } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
@@ -171,27 +167,6 @@ export async function GET(request: Request) {
       items,
     });
   } catch (error) {
-    if (isAdminInviteLinkHistoryRateLimitError(error)) {
-      if (historyCacheEntry && hasUsableStaleHistoryCache(historyCacheEntry)) {
-        return jsonNoStore({
-          items: historyCacheEntry.items,
-          stale: true,
-        });
-      }
-
-      return jsonNoStore(
-        {
-          errorCode: "rate_limited",
-        },
-        {
-          headers: {
-            "Retry-After": "20",
-          },
-          status: 429,
-        },
-      );
-    }
-
     if (historyCacheEntry && hasUsableStaleHistoryCache(historyCacheEntry)) {
       return jsonNoStore({
         items: historyCacheEntry.items,
@@ -199,18 +174,9 @@ export async function GET(request: Request) {
       });
     }
 
-    const providerErrorDetails = getAdminInviteLinkHistoryProviderErrorDetails(error);
-
-    if (providerErrorDetails) {
-      console.error(
-        "Failed to fetch admin invite-link history from legacy provider",
-        providerErrorDetails,
-      );
-    } else {
-      console.error("Failed to fetch admin invite-link history", {
-        errorName: error instanceof Error ? error.name : "UnknownError",
-      });
-    }
+    console.error("Failed to fetch admin invite-link history", {
+      errorName: error instanceof Error ? error.name : "UnknownError",
+    });
 
     return jsonNoStore(
       {

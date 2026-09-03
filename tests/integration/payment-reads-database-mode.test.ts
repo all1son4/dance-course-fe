@@ -121,17 +121,14 @@ test("reads payments and Stripe event state from PostgreSQL without Google crede
 
     const latestCheckoutRecord = await findPaymentAccessRecord({
       checkoutSessionId,
-      environment: { DB_PAYMENT_EVENTS_MODE: "database" },
       paymentIntentId: `pi_read02_missing_${suffix}`,
     });
     const directIntentRecord = await findPaymentAccessRecord({
       checkoutSessionId,
-      environment: { DB_PAYMENT_EVENTS_MODE: "database" },
       paymentIntentId: paymentIntentIds[0],
     });
     const missingRecord = await findPaymentAccessRecord({
       checkoutSessionId: `cs_read02_missing_${suffix}`,
-      environment: { DB_PAYMENT_EVENTS_MODE: "database" },
       paymentIntentId: `pi_read02_missing_${suffix}`,
     });
     const stripeEvent = await domainRepositories.stripeInbox.findReadModel(eventId);

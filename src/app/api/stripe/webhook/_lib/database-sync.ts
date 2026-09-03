@@ -2,17 +2,9 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import { getDatabase } from "@/db/client";
-import {
-  type PaymentProjectionCommand,
-  projectPaymentStateInTransaction,
-} from "@/db/payment-projection";
-import { purchases, purchaseSideEffects, stripeEvents } from "@/db/schema";
-import {
-  findPaymentRecordByIntentId,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets";
-
-import type { StripeWebhookSyncResult } from "./side-effects/types";
+import { type PaymentProjectionCommand } from "@/db/payment-projection";
+import { purchases } from "@/db/schema";
+import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
 
 export type StripeSettlementSnapshot = {
   settlementAmountMinor: number | null;
@@ -123,31 +115,6 @@ const normalizeAccessStatus = (
 
   if (!paymentRecord.delivery_channel.trim() && !paymentRecord.access_workflow.trim()) {
     return "not_required";
-  }
-
-  return "pending";
-};
-
-const normalizeSideEffectStatus = (
-  value: string,
-): "pending" | "sending" | "sent" | "skipped" | "failed" | null => {
-  const normalizedValue = trim(value);
-
-  if (!normalizedValue) {
-    return null;
-  }
-
-  if (normalizedValue.startsWith("sending:")) {
-    return "sending";
-  }
-
-  if (
-    normalizedValue === "pending" ||
-    normalizedValue === "sent" ||
-    normalizedValue === "skipped" ||
-    normalizedValue === "failed"
-  ) {
-    return normalizedValue;
   }
 
   return "pending";
@@ -364,148 +331,6 @@ const getStripeSettlementSnapshot = async ({
   }
 };
 
-const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
-  const fallbackUpdatedAt = parseRequiredDate(
-    paymentRecord.updated_at || paymentRecord.first_seen_at,
-  );
-  const emailStatus = normalizeSideEffectStatus(paymentRecord.email_delivery_status);
-  const alertStatus = normalizeSideEffectStatus(paymentRecord.with_mentor_alert_status);
-  const successfulCustomerStatus =
-    normalizeSideEffectStatus(paymentRecord.successful_customer_log_status) ??
-    (paymentRecord.successful_customer_logged_at.trim() ? "sent" : null);
-
-  return [
-    emailStatus
-      ? {
-          kind: "purchase_success_email" as const,
-          provider: "resend" as const,
-          status: emailStatus,
-          updatedAt:
-            parseDate(paymentRecord.email_delivery_updated_at) ?? fallbackUpdatedAt,
-        }
-      : null,
-    alertStatus
-      ? {
-          kind: "admin_telegram_alert" as const,
-          provider: "telegram" as const,
-          status: alertStatus,
-          updatedAt:
-            parseDate(paymentRecord.with_mentor_alert_updated_at) ?? fallbackUpdatedAt,
-        }
-      : null,
-    successfulCustomerStatus
-      ? {
-          kind: "successful_customer_export" as const,
-          provider: null,
-          status: successfulCustomerStatus,
-          updatedAt:
-            parseDate(paymentRecord.successful_customer_logged_at) ?? fallbackUpdatedAt,
-        }
-      : null,
-  ].filter((sideEffect) => sideEffect !== null);
-};
-
-const getFreshPaymentRecord = async (handledEvent: StripeWebhookSyncResult) => {
-  if (handledEvent.skipped) {
-    return handledEvent.paymentRecord;
-  }
-
-  try {
-    return (
-      (await findPaymentRecordByIntentId(handledEvent.paymentRecord.payment_intent_id, {
-        cacheTtlMs: 0,
-        source: "sheets",
-      })) ?? handledEvent.paymentRecord
-    );
-  } catch (error) {
-    console.warn("Failed to refresh payment record before database sync", {
-      error,
-      eventId: handledEvent.eventId,
-      paymentIntentId: handledEvent.paymentRecord.payment_intent_id,
-    });
-
-    return handledEvent.paymentRecord;
-  }
-};
-
-const upsertPurchaseSideEffects = async ({
-  paymentRecord,
-  purchaseId,
-  tx,
-}: {
-  paymentRecord: PaymentSheetRecord;
-  purchaseId: string;
-  tx: DatabaseTransaction;
-}): Promise<void> => {
-  for (const sideEffect of getPaymentSideEffects(paymentRecord)) {
-    const sideEffectValues = {
-      failedAt: sideEffect.status === "failed" ? sideEffect.updatedAt : null,
-      provider: sideEffect.provider,
-      sentAt: sideEffect.status === "sent" ? sideEffect.updatedAt : null,
-      status: sideEffect.status,
-      updatedAt: sideEffect.updatedAt,
-    };
-
-    await tx
-      .insert(purchaseSideEffects)
-      .values({
-        ...sideEffectValues,
-        kind: sideEffect.kind,
-        purchaseId,
-      })
-      .onConflictDoUpdate({
-        set: sideEffectValues,
-        target: [purchaseSideEffects.purchaseId, purchaseSideEffects.kind],
-      });
-  }
-};
-
-const upsertStripeEvent = async ({
-  event,
-  handledEvent,
-  now,
-  paymentIntentId,
-  paymentRecord,
-  purchaseId,
-  tx,
-}: {
-  event: Stripe.Event;
-  handledEvent: StripeWebhookSyncResult;
-  now: Date;
-  paymentIntentId: string;
-  paymentRecord: PaymentSheetRecord;
-  purchaseId: string | null;
-  tx: DatabaseTransaction;
-}): Promise<void> => {
-  const eventUpdateValues = {
-    apiVersion: event.api_version ?? null,
-    eventType: event.type,
-    livemode: event.livemode,
-    outcomeSnapshot: nullIfEmpty(paymentRecord.outcome),
-    paymentIntentId,
-    paymentStatusSnapshot: nullIfEmpty(paymentRecord.status),
-    payload: event as unknown as Record<string, unknown>,
-    processedAt: now,
-    processingStatus: handledEvent.skipped
-      ? ("skipped" as const)
-      : ("processed" as const),
-    purchaseId,
-    stripeCreatedAt: new Date(event.created * 1000),
-    updatedAt: now,
-  };
-
-  await tx
-    .insert(stripeEvents)
-    .values({
-      ...eventUpdateValues,
-      stripeEventId: event.id,
-    })
-    .onConflictDoUpdate({
-      set: eventUpdateValues,
-      target: stripeEvents.stripeEventId,
-    });
-};
-
 export const getPurchaseSettlementSnapshot = async ({
   paymentIntentId,
   paymentRecord,
@@ -651,101 +476,6 @@ export const createStripePaymentProjectionCommand = ({
   };
 };
 
-const syncPurchase = async ({
-  event,
-  now,
-  paymentIntentId,
-  paymentRecord,
-  settlementSnapshot,
-  tx,
-}: {
-  event: Stripe.Event;
-  now: Date;
-  paymentIntentId: string;
-  paymentRecord: PaymentSheetRecord;
-  settlementSnapshot: StripeSettlementSnapshot;
-  tx: DatabaseTransaction;
-}): Promise<string> => {
-  const command = createStripePaymentProjectionCommand({
-    event,
-    now,
-    paymentIntentId,
-    paymentRecord,
-    settlementSnapshot,
-  });
-  const projection = await projectPaymentStateInTransaction({ command, transaction: tx });
-
-  if (projection.paymentStateAccepted) {
-    await upsertPurchaseSideEffects({
-      paymentRecord,
-      purchaseId: projection.purchaseId,
-      tx,
-    });
-  }
-
-  return projection.purchaseId;
-};
-
-export const syncStripeWebhookEventToDatabase = async ({
-  event,
-  handledEvent,
-  stripe,
-}: {
-  event: Stripe.Event;
-  handledEvent: StripeWebhookSyncResult;
-  stripe: Stripe;
-}) => {
-  const db = getDatabase();
-  const now = new Date();
-  const paymentRecord = await getFreshPaymentRecord(handledEvent);
-  const paymentIntentId = paymentRecord.payment_intent_id.trim();
-
-  if (!paymentIntentId) {
-    throw new Error(`Stripe event ${event.id} has no payment_intent_id.`);
-  }
-
-  // Provider I/O is completed before opening the projection transaction. This keeps
-  // the atomic database write short even when Stripe is slow or temporarily degraded.
-  const settlementSnapshot = handledEvent.skipped
-    ? null
-    : await getPurchaseSettlementSnapshot({
-        paymentIntentId,
-        paymentRecord,
-        stripe,
-      });
-
-  // The purchase projections and Stripe event receipt must commit together so retries
-  // can never observe a partially synchronized webhook.
-  await db.transaction(async (tx) => {
-    let purchaseId: string | null = null;
-
-    if (!handledEvent.skipped) {
-      if (!settlementSnapshot) {
-        throw new Error(`Stripe event ${event.id} has no settlement snapshot.`);
-      }
-
-      purchaseId = await syncPurchase({
-        event,
-        now,
-        paymentIntentId,
-        paymentRecord,
-        settlementSnapshot,
-        tx,
-      });
-    }
-
-    await upsertStripeEvent({
-      event,
-      handledEvent,
-      now,
-      paymentIntentId,
-      paymentRecord,
-      purchaseId,
-      tx,
-    });
-  });
-};
-
 export type PreparedStripeChargeSettlement = {
   paymentIntentId: string;
   settlementSnapshot: StripeSettlementSnapshot;
@@ -840,18 +570,4 @@ export const applyPreparedStripeChargeSettlement = async ({
     status: updatedPurchase ? ("updated" as const) : ("purchase_not_found" as const),
     stripeBalanceTransactionId: prepared.stripeBalanceTransactionId,
   };
-};
-
-export const syncStripeChargeSettlementToDatabase = async ({
-  event,
-  stripe,
-}: {
-  event: Stripe.Event;
-  stripe: Stripe;
-}) => {
-  const prepared = await prepareStripeChargeSettlement({ event, stripe });
-
-  return getDatabase().transaction((transaction) =>
-    applyPreparedStripeChargeSettlement({ prepared, transaction }),
-  );
 };

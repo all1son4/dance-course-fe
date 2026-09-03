@@ -281,7 +281,7 @@ active-access coverage, the latest 28/28 report control, and the current product
 CI/smoke were green. Shared historical Payments still matched 80/80 with no Sheet-only
 Payment; the 23 DB-only Payments were the expected post-cutover records.
 
-Do not close Gate G6 from those automated results alone. The owner reported that the
+Gate G6 was not closed from those automated results alone. The owner reported that the
 August monthly report was sent prematurely on August 31. The persisted run ended at
 `2026-08-31T03:11:34.644Z`, contained 28 rows, and has key
 `monthly_sales:2026-08-01:2026-08-31`. Daily maintenance incorrectly combined a
@@ -299,11 +299,51 @@ run as incident evidence.
 After the corrected scheduled delivery, compare its row count with the same bounded
 control SQL and repeat the queue/invariant checks before closing `CUT-04` and G6.
 
+### `CUT-04` and Gate G6 closure — 2026-09-01
+
+The deployed correction ran naturally after the August accounting month closed. The
+persisted run has key `monthly_sales:2026-08-01:2026-09-01`, generated at
+`2026-09-01T03:07:22.436Z`, and uses the exact UTC interval
+`[2026-07-31T22:00:00.000Z, 2026-08-31T22:00:00.000Z)`. Its 28 rows matched 28
+unique sales in the same bounded control query, with zero duplicate groups. An
+independent CSV regeneration produced the same SHA-256:
+`cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
+The monthly-report outbox delivery was accepted by Resend at
+`2026-09-01T03:07:26.189Z` on attempt one, retained an external message ID, and has no
+error. The least-privilege production Resend key permits sending but not reading a
+later delivery event, so this evidence establishes provider acceptance rather than a
+mailbox-open or mailbox-delivery claim.
+
+The timezone release briefly broke the production admin sales overview with
+PostgreSQL `42P10`: two independently bound copies of the accounting-month expression
+made `SELECT DISTINCT` and `ORDER BY` disagree. PR 46 orders by the selected month
+alias and adds an integration regression test using the production query shape. The
+hotfix production CI and smoke passed.
+
+The closure pass confirmed pooled and unpooled database health, all 19 migrations,
+the 12-offer catalog, all 32 invariants, and no ready, working, stale, or dead-letter
+inbox/outbox work. There are no failed access links, manual access tasks, or pending
+Sheets exports. The final privacy-safe reconciliation fingerprint is
+`a88542b80a0d0763462673f6ae2722481de712decf0201e5f4af44a69080fd2d`.
+All 80 shared unique Payments and shared customer snapshots match, no Sheet-only
+Payment exists, and all active Sheet access is represented in PostgreSQL. The 24
+DB-only Payments, 14 DB-only invoices, two DB-only report runs, newer entitlement
+states, one historical skipped admin alert, and one known duplicate Sheet occurrence
+are expected post-cutover or previously classified differences. There is no
+unexplained finance or access drift. `CUT-04` is complete and Gate G6 passed.
+
 Operator note: `db:audit:monthly-sales-report` currently includes raw customer samples
 in addition to its aggregate control totals. During observation, do not retain or
 share that raw output; use only the duplicate and count summaries. Removing those
 samples from routine operator output is tracked by the existing `HARD-02` PII-safe
 logging item.
+
+The numbered flag sequence below is retained as the historical `CUT-03` execution
+record. On the `DROP-01` development branch, `DB_TELEGRAM_ACCESS_MODE`,
+`DB_BUSINESS_OPERATIONS_MODE`, `DB_PAYMENT_EVENTS_MODE`, and
+`DB_SIDE_EFFECTS_MODE` are retired: Telegram access, the four business-operation
+families, Stripe ingestion/projection, and purchase side effects are PostgreSQL-only.
+Do not replay steps 2–4 after that release reaches an environment.
 
 For each step, make one environment change, wait for the production deployment, run
 the named checks, and stop on an unexplained result.
@@ -335,9 +375,10 @@ Repeat each critical smoke/reconciliation check the next day as required by `CUT
    the fixed DB-compatible rollback revision
    `3b9efddd2fb04316923ae25d4f7972be4ab84db2`, or deploy a forward fix. Never restore
    Google Sheets as an authoritative write source.
-4. Keep `DB_PAYMENT_EVENTS_MODE` and `DB_SIDE_EFFECTS_MODE` equal during every deploy.
-   Keep the exporter setting unchanged unless its own later retirement procedure is
-   being executed.
+4. On revisions before `DROP-01`, keep `DB_PAYMENT_EVENTS_MODE` and
+   `DB_SIDE_EFFECTS_MODE` equal. On and after `DROP-01`, both selectors are retired
+   and must not be used as a rollback mechanism. Keep the exporter setting unchanged
+   unless its own later retirement procedure is being executed.
 5. Do not replay or edit verified Stripe payloads. Replay only an explained
    failed/dead-letter durable key using the exact confirmation in
    [`db-operations-runbook.md`](./db-operations-runbook.md).

@@ -1,8 +1,6 @@
 import {
   createEmailCampaignLead,
   FIRST_TOUCH_SALES_START_CAMPAIGN_KEY,
-  getEmailCampaignPersistenceErrorDetails,
-  isEmailCampaignPersistenceRateLimitError,
   isValidEmailCampaignEmail,
   normalizeEmailCampaignEmail,
 } from "@/lib/email-campaigns";
@@ -96,26 +94,6 @@ export async function POST(request: Request) {
       status: "registered",
     });
   } catch (error) {
-    if (isEmailCampaignPersistenceRateLimitError(error)) {
-      return jsonErrorNoStore("rate_limited", {
-        headers: {
-          "Retry-After": "20",
-        },
-        status: 429,
-      });
-    }
-
-    const persistenceErrorDetails = getEmailCampaignPersistenceErrorDetails(error);
-
-    if (persistenceErrorDetails) {
-      console.error(
-        "Failed to store course signup lead in legacy persistence",
-        persistenceErrorDetails,
-      );
-
-      return jsonErrorNoStore("course_signup_failed", { status: 500 });
-    }
-
     console.error("Failed to store course signup lead", error);
 
     return jsonErrorNoStore("course_signup_failed", { status: 500 });

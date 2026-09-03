@@ -1,6 +1,4 @@
 import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
-import { getStripeWriteRuntime } from "@/app/api/stripe/webhook/_lib/write-runtime";
-import { getDomainPersistenceMode } from "@/db/domain-persistence";
 import { runBusinessOperationOutboxJobs } from "@/lib/business-operation-outbox";
 import { jsonNoStore } from "@/lib/http-security";
 import {
@@ -89,9 +87,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    if (getDomainPersistenceMode("businessOperations") === "database") {
-      businessJobsResult = await runBusinessOperationOutboxJobs();
-    }
+    businessJobsResult = await runBusinessOperationOutboxJobs();
   } catch (error) {
     console.error("Daily maintenance: business outbox recovery failed", {
       errorName: error instanceof Error ? error.name : "UnknownError",
@@ -102,12 +98,10 @@ export async function GET(request: Request) {
   // Payment recovery runs after the established maintenance journeys, so a queue or
   // provider slowdown cannot prevent access revocation or the monthly report.
   try {
-    if (getStripeWriteRuntime() === "database") {
-      paymentJobsResult = await runStripeBackgroundJobs({
-        inboxLimit: 8,
-        outboxLimit: 16,
-      });
-    }
+    paymentJobsResult = await runStripeBackgroundJobs({
+      inboxLimit: 8,
+      outboxLimit: 16,
+    });
   } catch (error) {
     console.error("Daily maintenance: Stripe background recovery failed", {
       errorName: error instanceof Error ? error.name : "UnknownError",

@@ -1173,7 +1173,8 @@ the READ phase is closed.
 
 ## Phase CUT: production cutover and observation
 
-Status: `IN_PROGRESS`
+Status: `DONE` — Gate G6 passed on 2026-09-01 after the corrected natural monthly
+report and final production reconciliation were verified.
 
 ### CUT-01 — Deploy a DB-compatible rollback release
 
@@ -1268,7 +1269,8 @@ access remains accounted for.
 
 ### CUT-04 — Observe
 
-Status: `IN_PROGRESS` — observation started at `2026-08-24T00:56:17Z`.
+Status: `DONE` — observation ran from `2026-08-24T00:56:17Z` through the
+corrected natural monthly-report execution on 2026-09-01.
 
 The same-day independent check at `2026-08-24T01:12Z` confirmed that the final
 production deployment remains READY on the production aliases and that exactly the
@@ -1328,11 +1330,36 @@ accounting month only on the first local day of the new month; its August key is
 complete report. The canonical August interval is half-open in `Europe/Warsaw`:
 `[2026-08-01 00:00, 2026-09-01 00:00)`, equivalent to
 `[2026-07-31T22:00:00.000Z, 2026-08-31T22:00:00.000Z)` in UTC; consequently no
-September 1 Warsaw sale can enter the August result. Gate G6 remains `IN_PROGRESS`
-until that fix is deployed and the
-complete scheduled report is verified against control SQL. The incident extends only
-the report-specific observation needed for this gate; no destructive or DROP work
-starts meanwhile.
+September 1 Warsaw sale can enter the August result.
+
+The correction was deployed in PR 45. The first natural run after the completed
+month executed at `2026-09-01T03:07:22.436Z` (`05:07` in `Europe/Warsaw`) with the
+expected key `monthly_sales:2026-08-01:2026-09-01` and exact UTC interval
+`[2026-07-31T22:00:00.000Z, 2026-08-31T22:00:00.000Z)`. Its 28 CSV rows matched 28
+unique bounded sales, with no duplicate group; regenerating the CSV produced the
+same SHA-256
+`cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
+The durable Resend job was accepted on its first attempt at
+`2026-09-01T03:07:26.189Z`, retained an external message ID, and has no error code.
+The production Resend key is intentionally send-only, so the automated audit cannot
+read a later mailbox-delivery event and does not claim one.
+
+The accounting-timezone release also exposed a PostgreSQL `42P10` error in the admin
+sales overview: the same parameterized month expression appeared independently in
+`SELECT DISTINCT` and `ORDER BY`. PR 46 fixed it by ordering on the selected month
+alias and added the production-shape integration regression test. Production CI and
+smoke then passed on the hotfix revision.
+
+Final pooled and unpooled health, all 19 migrations, the 12-offer catalog, all 32
+invariants, queues, and access failure checks passed. Reconciliation captured at
+`2026-09-01T07:08:50Z` has fingerprint
+`a88542b80a0d0763462673f6ae2722481de712decf0201e5f4af44a69080fd2d`.
+All 80 shared unique Payments and all shared customer snapshots match with no
+Sheet-only Payment; all active Sheet access remains represented in PostgreSQL. The
+24 DB-only Payments, 14 DB-only invoices, two DB-only report runs, newer entitlement
+states, one historical skipped admin alert, and the single legacy duplicate Sheet
+occurrence are expected post-cutover or previously classified differences. No
+unexplained financial or access difference remains. This closes `CUT-04`.
 
 After every critical switch, run an immediate smoke/reconciliation check and repeat it
 the next day. Use existing application/provider logs and reconciliation output rather
@@ -1354,20 +1381,95 @@ the applicable window.
 
 ### Gate G6
 
-- Financial differences remain zero.
-- All active access is accounted for.
-- Dead-letter queues are empty or every item is explained.
-- Critical paths make no Google Sheets calls.
-- Reports match control SQL queries.
-- The owner confirms that user behavior remains unchanged.
+Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
+
+- [x] Canonical shared financial rows have zero differences; expected post-cutover
+      DB-only rows and the known legacy Sheet duplicate remain explicitly classified.
+- [x] All active legacy access is accounted for in PostgreSQL.
+- [x] Dead-letter, ready, working, and stale queues are empty; historical retries are
+      terminal and explained.
+- [x] Critical runtime paths use PostgreSQL and the Sheets exporter remains disabled.
+- [x] The corrected completed-month report matches bounded control SQL and regenerated
+      CSV content exactly.
+- [x] The owner accepted automated production verification and reported no other
+      user-visible regression; the one observed accounting incident and its admin
+      follow-up regression were corrected and rechecked.
 
 ## Phase DROP: remove dual-write and Google Sheets
 
-Status: `TODO`
+Status: `IN_PROGRESS` — development-only cleanup preparation started on 2026-09-01;
+no DROP change may reach production before the legacy reader/exporter review after
+`2026-09-07T00:56:17Z`.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
+Status: `DONE (development)` — the development slices permanently route admin invite-link
+history, invoice, monthly-report, campaign, payment-access, and Telegram token/binding
+reads through PostgreSQL. Their legacy/shadow selectors and shadow comparators are
+removed; admin history and the payment access-link route also no longer have
+Google-specific error branches. Existing admin fresh/stale caching, authentication,
+request rate limiting, response shapes, payment-intent precedence,
+successful-checkout fallback, Telegram lookup keys and collection semantics, and
+database failure behavior remain unchanged. Telegram token, binding, entitlement,
+identity-reuse, membership, and revocation writes plus atomic token claims now also
+use PostgreSQL unconditionally. The retired `DB_TELEGRAM_ACCESS_MODE` selector,
+Google-specific rate-limit branches, and the obsolete admin-grant dependency on that
+flag are removed. Online Group renewal verification remains isolated and unchanged.
+Admin grants, invoice allocation, monthly-report recording/delivery, and campaign
+signup, exclusion, and delivery now also use PostgreSQL unconditionally. Their
+synchronous Sheet mirrors, in-memory Sheet-backed invoice coordination, direct Resend
+delivery branches, Google-specific route errors, and shared
+`DB_BUSINESS_OPERATIONS_MODE` selector are removed. Daily maintenance always recovers
+the business outbox. User-visible validation, duplicate handling, response shapes,
+invoice format, report period, and campaign behavior remain unchanged.
+Stripe webhooks now always acknowledge only after durable PostgreSQL inbox persistence;
+their projection and purchase email/Telegram delivery always run through the existing
+atomic database projection and transactional outbox. The synchronous Sheets processor,
+Sheet-backed payment/delivery leases, direct notification branches, Google-specific
+webhook errors, and paired `DB_PAYMENT_EVENTS_MODE`/`DB_SIDE_EFFECTS_MODE` selector
+are removed. Successful payment-status polling and daily maintenance continue to
+schedule bounded recovery. Event mapping, supported-event policy, settlement updates,
+notification eligibility, invoice generation, access preparation, provider
+idempotency, and response semantics of the active database path remain unchanged.
+The temporary SuccessfulCustomers exporter and offline
+snapshot/backfill/reconciliation tools are outside these slices and remain available
+through their documented windows. This development-only cleanup must not reach
+production before the `2026-09-07T00:56:17Z` retirement review.
+
+The exact development tree is `e722797` (implementation `999386d` plus its
+integration-fixture ordering correction). It passed local format/lint/typecheck,
+180 unit tests, and the production build; CI
+[run 33542382224](https://github.com/all1son4/dance-course-fe/actions/runs/33542382224)
+passed all 50 PostgreSQL integration tests, logical backup/restore rehearsal, and the
+same build. Vercel Preview smoke
+[run 33542430908](https://github.com/all1son4/dance-course-fe/actions/runs/33542430908)
+passed. The development database is healthy with no schema/catalog drift, no ready or
+working inbox/outbox jobs, no stale leases or dead letters, no waiting Sheet exports,
+and all 32 invariants passing. Its one historical inbox retry and imported
+unlinked/unverified evidence remain the previously classified development fixtures.
+
 ### DROP-02 — Disable the transitional exporter after the rollback window
+
+Status: `READY_FOR_REVIEW` — the isolated exporter already has a tested retirement
+switch: `DB_SHEETS_EXPORT_MODE=database` stops enqueueing new jobs and marks an
+already queued versioned export `skipped` before loading customer data or calling
+Google. The 2026-09-01 development preflight found zero waiting Sheet exports and no
+ready, working, stale, or dead-letter outbox jobs.
+
+Do not apply the switch before `2026-09-07T00:56:17Z`. At or after that review time:
+
+1. repeat production health, schema, catalog, queue, invariant, and classified
+   reconciliation checks;
+2. confirm there is still no unexplained anomaly and no waiting Sheet export;
+3. set only `DB_SHEETS_EXPORT_MODE=database`, wait for the deployment, and run the
+   six critical journeys plus queue/invariant checks;
+4. confirm a new eligible purchase or controlled non-production projection creates
+   no export job and no Google API attempt;
+5. repeat the read-only production check the next day before marking `DROP-02` done.
+
+Rollback before any post-switch purchase is an environment revert. After a canonical
+purchase has been accepted without an export, keep PostgreSQL authoritative and use a
+forward fix; never reconstruct authority from the stale worksheet.
 
 ### DROP-03 — Revoke service-account credentials and archive Sheets securely
 
@@ -1485,7 +1587,12 @@ Status: `TODO`
 | 2026-08-20 | CUT-03 dev rehearsal        | `DONE`        | Dev-only flags; smoke/audit green; one test retry classified  |
 | 2026-08-20 | CUT-03 production scope     | `PAUSED`      | Pre-CUT mode restored; no flags; production smoke green       |
 | 2026-08-24 | CUT-03 production cutover   | `DONE`        | Four DB flags; three prod smokes; audit/reconciliation green  |
-| 2026-08-24 | CUT-04 observation          | `IN_PROGRESS` | Natural-traffic verification; two superseded retries tracked  |
+| 2026-08-24 | CUT-04 observation          | `DONE`        | Natural traffic through corrected Sep 1 report verified       |
 | 2026-08-24 | CUT-04 same-day check       | `DONE`        | Prod READY; 32 invariants and 6 journeys; stable fingerprint  |
 | 2026-08-25 | CUT-04 next-day check       | `DONE`        | 22 real purchases; Stripe 113/113; queues/invariants green    |
-| 2026-08-31 | CUT-04 seven-day checkpoint | `IN_PROGRESS` | Automated checks green; early monthly report fix pending      |
+| 2026-08-31 | CUT-04 seven-day checkpoint | `DONE`        | Automated checks green; report incident isolated and fixed    |
+| 2026-09-01 | Corrected August report     | `DONE`        | 28/28 rows; exact CSV hash; first-attempt provider acceptance |
+| 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete        |
+| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime and business writes are PostgreSQL-only               |
+| 2026-09-01 | DROP-01 implementation      | `DONE (DEV)`  | Runtime Google dependency isolated to exporter and tools      |
+| 2026-09-01 | DROP-02 preflight           | `READY`       | Switch tested; dev exports/queues clean; date gate remains    |

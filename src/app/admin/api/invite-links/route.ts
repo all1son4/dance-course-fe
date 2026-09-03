@@ -9,10 +9,7 @@ import {
   type SellableProductOffer,
 } from "@/constants/sellable-products";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import {
-  createAdminOfferGrant,
-  isAdminOfferGrantPersistenceRateLimitError,
-} from "@/lib/admin-offer-grants";
+import { createAdminOfferGrant } from "@/lib/admin-offer-grants";
 import {
   hasJsonContentType,
   isPayloadTooLarge,
@@ -264,22 +261,6 @@ export async function POST(request: Request) {
       tokenExpiresAt: accessLink.tokenExpiresAt,
     });
   } catch (error) {
-    if (isAdminOfferGrantPersistenceRateLimitError(error)) {
-      console.warn("Google Sheets rate limit reached while generating admin invite link");
-
-      return jsonNoStore(
-        {
-          errorCode: "rate_limited",
-        },
-        {
-          headers: {
-            "Retry-After": "20",
-          },
-          status: 429,
-        },
-      );
-    }
-
     console.error("Failed to generate admin invite link", error);
 
     return jsonNoStore(

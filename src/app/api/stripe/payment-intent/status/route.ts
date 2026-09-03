@@ -7,7 +7,6 @@ import {
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 
 import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
-import { getStripeWriteRuntime } from "../../webhook/_lib/write-runtime";
 import {
   getCheckoutOwnedPaymentIntent,
   getManagedPaymentIntentSnapshot,
@@ -78,9 +77,7 @@ export async function POST(request: Request) {
 
     if (snapshot.outcome === "succeeded") {
       try {
-        if (getStripeWriteRuntime() === "database") {
-          scheduleStripeBackgroundJobs();
-        }
+        scheduleStripeBackgroundJobs();
       } catch (error) {
         console.error("Failed to schedule payment background recovery", {
           errorName: error instanceof Error ? error.name : "UnknownError",
