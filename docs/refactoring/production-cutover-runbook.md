@@ -338,8 +338,32 @@ share that raw output; use only the duplicate and count summaries. Removing thos
 samples from routine operator output is tracked by the existing `HARD-02` PII-safe
 logging item.
 
+### DROP-01 accelerated production release — 2026-09-03
+
+The owner explicitly shortened the original September 7 hold while keeping the DROP
+sequence staged. Before release, production database health, all 19 migrations, the
+12-offer catalog, all 32 invariants, queue state, classified reconciliation, and the
+privacy-safe accounting control passed. The accounting control retained 28 August
+sales, separated the one September sale, and found no duplicate succeeded event.
+
+PR [52](https://github.com/all1son4/dance-course-fe/pull/52) released `DROP-01` as
+merge commit `b4be69c8198e89174a65d1afe73dcfc2a757d708`. Production CI
+[run 33800300748](https://github.com/all1son4/dance-course-fe/actions/runs/33800300748)
+and deployment smoke
+[run 33800356020](https://github.com/all1son4/dance-course-fe/actions/runs/33800356020)
+passed. Immediate read-only checks reproduced reconciliation fingerprint
+`d751d5f4487f2fc34d52c4f19da136a534a5fe82a94276f973e3fee31510c2f9`,
+with zero Sheet-only payments/events/access, zero matched financial-row differences,
+`81/81` SuccessfulCustomers, zero waiting exports, clean actionable queues, and all
+32 invariants passing.
+
+`DB_SHEETS_EXPORT_MODE` and Google credentials were deliberately left unchanged.
+The earliest accelerated `DROP-02` review is 24 hours after the successful production
+smoke: `2026-09-04T20:08:20Z` (`22:08:20` Europe/Warsaw). Do not combine exporter
+retirement or credential revocation with this release.
+
 The numbered flag sequence below is retained as the historical `CUT-03` execution
-record. On the `DROP-01` development branch, `DB_TELEGRAM_ACCESS_MODE`,
+record. Since the `DROP-01` production release, `DB_TELEGRAM_ACCESS_MODE`,
 `DB_BUSINESS_OPERATIONS_MODE`, `DB_PAYMENT_EVENTS_MODE`, and
 `DB_SIDE_EFFECTS_MODE` are retired: Telegram access, the four business-operation
 families, Stripe ingestion/projection, and purchase side effects are PostgreSQL-only.

@@ -1397,13 +1397,14 @@ Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
 
 ## Phase DROP: remove dual-write and Google Sheets
 
-Status: `IN_PROGRESS` — development-only cleanup preparation started on 2026-09-01;
-no DROP change may reach production before the legacy reader/exporter review after
-`2026-09-07T00:56:17Z`.
+Status: `IN_PROGRESS` — cleanup preparation started on 2026-09-01. On 2026-09-03 the
+owner explicitly shortened the original `2026-09-07T00:56:17Z` hold after a fresh
+green production preflight. `DROP-01` is in production; the exporter and credentials
+remain unchanged during a new minimum 24-hour observation step.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
-Status: `DONE (development)` — the development slices permanently route admin invite-link
+Status: `DONE (production)` — the released slices permanently route admin invite-link
 history, invoice, monthly-report, campaign, payment-access, and Telegram token/binding
 reads through PostgreSQL. Their legacy/shadow selectors and shadow comparators are
 removed; admin history and the payment access-link route also no longer have
@@ -1433,8 +1434,7 @@ notification eligibility, invoice generation, access preparation, provider
 idempotency, and response semantics of the active database path remain unchanged.
 The temporary SuccessfulCustomers exporter and offline
 snapshot/backfill/reconciliation tools are outside these slices and remain available
-through their documented windows. This development-only cleanup must not reach
-production before the `2026-09-07T00:56:17Z` retirement review.
+through their documented windows.
 
 The exact development tree is `e722797` (implementation `999386d` plus its
 integration-fixture ordering correction). It passed local format/lint/typecheck,
@@ -1448,15 +1448,33 @@ working inbox/outbox jobs, no stale leases or dead letters, no waiting Sheet exp
 and all 32 invariants passing. Its one historical inbox retry and imported
 unlinked/unverified evidence remain the previously classified development fixtures.
 
+The owner approved an accelerated, still staged release on 2026-09-03. The fresh
+production preflight passed health, all 19 migrations, the 12-offer catalog, 32
+invariants, queue checks, the classified reconciliation, and a privacy-safe accounting
+audit with 28 August sales, one September sale, and no duplicate succeeded event. PR
+[52](https://github.com/all1son4/dance-course-fe/pull/52) released merge commit
+`b4be69c`; production CI
+[run 33800300748](https://github.com/all1son4/dance-course-fe/actions/runs/33800300748)
+and Vercel smoke
+[run 33800356020](https://github.com/all1son4/dance-course-fe/actions/runs/33800356020)
+passed. The immediate post-release checks reproduced reconciliation fingerprint
+`d751d5f4487f2fc34d52c4f19da136a534a5fe82a94276f973e3fee31510c2f9`:
+zero Sheet-only or matched payment/event/customer differences, `81/81`
+SuccessfulCustomers, all active Sheet access represented in PostgreSQL, zero waiting
+exports, clean ready/working/stale/dead-letter queues, and all 32 invariants passing.
+
 ### DROP-02 — Disable the transitional exporter after the rollback window
 
-Status: `READY_FOR_REVIEW` — the isolated exporter already has a tested retirement
+Status: `OBSERVING` — the isolated exporter already has a tested retirement
 switch: `DB_SHEETS_EXPORT_MODE=database` stops enqueueing new jobs and marks an
 already queued versioned export `skipped` before loading customer data or calling
 Google. The 2026-09-01 development preflight found zero waiting Sheet exports and no
-ready, working, stale, or dead-letter outbox jobs.
+ready, working, stale, or dead-letter outbox jobs. It remained unchanged during the
+2026-09-03 `DROP-01` release.
 
-Do not apply the switch before `2026-09-07T00:56:17Z`. At or after that review time:
+The owner explicitly replaced the original September 7 hold with a minimum 24-hour
+post-release observation. Do not apply the switch before
+`2026-09-04T20:08:20Z` (`22:08:20` Europe/Warsaw). At or after that review time:
 
 1. repeat production health, schema, catalog, queue, invariant, and classified
    reconciliation checks;
@@ -1596,3 +1614,5 @@ Status: `TODO`
 | 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime and business writes are PostgreSQL-only               |
 | 2026-09-01 | DROP-01 implementation      | `DONE (DEV)`  | Runtime Google dependency isolated to exporter and tools      |
 | 2026-09-01 | DROP-02 preflight           | `READY`       | Switch tested; dev exports/queues clean; date gate remains    |
+| 2026-09-03 | DROP-01 early release       | `DONE`        | Owner waiver; prod CI/smoke/reconciliation/invariants green   |
+| 2026-09-03 | DROP-02 observation         | `IN_PROGRESS` | Exporter unchanged; review after 2026-09-04T20:08:20Z         |
