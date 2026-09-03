@@ -6,11 +6,7 @@ const stripeSecretKey = process.env.STRIPE_SECRET_KEY ?? "";
 let stripeServer: Stripe | null = null;
 
 export type ManagedPaymentIntentOutcome =
-  | "succeeded"
-  | "processing"
-  | "requires_action"
-  | "failed"
-  | "canceled";
+  "succeeded" | "processing" | "requires_action" | "failed" | "canceled";
 export type CheckoutLocale = "ru" | "en" | "pl";
 export type CheckoutLessonLanguage = "ru" | "en";
 

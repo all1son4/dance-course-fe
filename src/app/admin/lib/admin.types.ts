@@ -18,12 +18,7 @@ export type {
 export type PurchaseOutcome = AdminPurchaseEntry["outcome"];
 
 export type AdminFeatureId =
-  | "sales"
-  | "invite-links"
-  | "online-group"
-  | "broadcasts"
-  | "purchases"
-  | "operations";
+  "sales" | "invite-links" | "online-group" | "broadcasts" | "purchases" | "operations";
 export type GeneratorKind = "choreo" | "first-touch";
 export type LessonLanguage = "en" | "ru";
 export type LinkState = "active" | "used";
@@ -96,13 +91,7 @@ export type OnlineGroupCampaignEntry = {
 
 export type OnlineGroupAdminAccessMode = "plus" | "standard";
 export type OnlineGroupAdminAccessState =
-  | "expired"
-  | "failed"
-  | "issued"
-  | "left"
-  | "pending"
-  | "revoked"
-  | "used";
+  "expired" | "failed" | "issued" | "left" | "pending" | "revoked" | "used";
 
 export type OnlineGroupAdminAccess = {
   accessExpiresAt: string;

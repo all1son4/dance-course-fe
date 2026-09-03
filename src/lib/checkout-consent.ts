@@ -47,8 +47,7 @@ const CHECKOUT_LOCALES = new Set<CheckoutLocale>(["ru", "en", "pl"]);
 const CHECKOUT_CURRENCIES = new Set<SupportedCheckoutCurrency>(["pln", "eur"]);
 
 type CheckoutRequestValidationErrorCode =
-  | "invalid_customer_data"
-  | "required_consent_missing";
+  "invalid_customer_data" | "required_consent_missing";
 
 export type CheckoutConsentEvidence = {
   acceptedAt: Date;

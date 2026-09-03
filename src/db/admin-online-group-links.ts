@@ -15,13 +15,7 @@ import {
 } from "./schema";
 
 export type AdminOnlineGroupAccessState =
-  | "expired"
-  | "failed"
-  | "issued"
-  | "left"
-  | "pending"
-  | "revoked"
-  | "used";
+  "expired" | "failed" | "issued" | "left" | "pending" | "revoked" | "used";
 
 export type AdminOnlineGroupAccessGrant = {
   accessMode: "plus" | "standard";
