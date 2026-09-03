@@ -530,9 +530,7 @@ const getPaymentSideEffects = (
 ) => {
   const sideEffects: Array<{
     kind:
-      | "purchase_success_email"
-      | "admin_telegram_alert"
-      | "successful_customer_export";
+      "purchase_success_email" | "admin_telegram_alert" | "successful_customer_export";
     provider: "resend" | "telegram" | null;
     status: "pending" | "sending" | "sent" | "skipped" | "failed";
     updatedAt: Date;

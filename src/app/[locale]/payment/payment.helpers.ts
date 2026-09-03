@@ -43,13 +43,7 @@ export const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
 } as const;
 
 export type RenewalStatus =
-  | "error"
-  | "idle"
-  | "loading"
-  | "not_member"
-  | "ready"
-  | "verified"
-  | "verifying";
+  "error" | "idle" | "loading" | "not_member" | "ready" | "verified" | "verifying";
 export type RenewalStatusTone = "error" | "info" | "success";
 export type SelectOption = {
   label: string;

@@ -107,8 +107,8 @@ test("routes token, claim, and binding writes only to PostgreSQL commands", asyn
 test("maps payment access patches to the PostgreSQL entitlement command", async () => {
   const paymentRecord = createPaymentRecord();
   let capturedCommand:
-    | Parameters<TelegramAccessPersistenceDependencies["updatePaymentAccess"]>[0]
-    | null = null;
+    Parameters<TelegramAccessPersistenceDependencies["updatePaymentAccess"]>[0] | null =
+    null;
   const dependencies = createDependencies({
     updatePaymentAccess: async (command) => {
       capturedCommand = command;
