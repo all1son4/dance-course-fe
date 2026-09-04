@@ -108,7 +108,8 @@ const PaymentActions = ({
       </ErrorText>
     ) : null}
     <Button
-      buttonText={isSubmitting ? processingText : payButtonText}
+      buttonText={payButtonText}
+      loadingText={processingText}
       disabled={isDisabled}
       isLoading={isSubmitting}
       onClick={onPayment}

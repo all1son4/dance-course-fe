@@ -144,6 +144,56 @@ test("Birthday Drop entry carries the sales switch in its first render", async (
   await expect(purchaseLinks).toHaveAttribute("href", checkoutHref);
 });
 
+test("a loading buy button never moves the UI around it", async ({ page }) => {
+  const product = SELLABLE_PRODUCTS["choreo-birthday-drop"];
+  const catalogProducts = await readAuthoritativeCatalog(page);
+  const catalogProduct = catalogProducts.find((item) => item.id === product.id);
+
+  test.skip(
+    !catalogProduct?.salesEnabled,
+    "Birthday Drop sales are closed on this deployment, so there is no buy button to load",
+  );
+
+  await page.goto("/online/birthday-drop");
+
+  // Hold the checkout navigation back so the loading ring stays on screen.
+  await page.route("**/payment**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await route.continue().catch(() => undefined);
+  });
+
+  const buyButton = page.getByRole("link", { name: /^Buy for / });
+  const label = buyButton.locator("span > span").first();
+  const learnMore = page.getByRole("link", { name: "Learn more" });
+  const boxOf = async (locator: typeof buyButton) => {
+    const box = await locator.boundingBox();
+
+    return box && [box.x, box.y, box.width, box.height].map(Math.round);
+  };
+  const before = {
+    button: await boxOf(buyButton),
+    label: await boxOf(label),
+    learnMore: await boxOf(learnMore),
+  };
+
+  await buyButton.click({ noWaitAfter: true });
+
+  // The ring opens into the button's own padding: the label glides a few
+  // pixels left, while the button and everything around it stay put.
+  await expect(buyButton).toHaveAttribute("aria-busy", "true");
+  await page.waitForTimeout(600);
+
+  const after = { button: await boxOf(buyButton), label: await boxOf(label) };
+
+  expect(after.button).toEqual(before.button);
+  expect(await boxOf(learnMore)).toEqual(before.learnMore);
+  expect(after.label?.[1]).toEqual(before.label?.[1]);
+  expect(after.label?.[3]).toEqual(before.label?.[3]);
+  expect(
+    Math.abs((after.label?.[0] ?? 0) - (before.label?.[0] ?? 0)),
+  ).toBeLessThanOrEqual(14);
+});
+
 test("ordinary checkout has four fresh agreements and no Telegram verification", async ({
   page,
 }) => {
