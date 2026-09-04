@@ -15,12 +15,16 @@ async function SaleStateGateResolver({ productId, children }: SaleStateGateProps
  * Streams the parts of a product page that depend on the admin sales switch.
  *
  * Awaiting the catalogue at the top of a page holds back the whole document -
- * including the hero image preload in <head> - for the length of a database
- * round trip. Behind a Suspense boundary the shell goes out immediately and
- * the sale-dependent fragments arrive a moment later (with the catalogue cache
- * warm they resolve in the same flush and nothing is visible at all). Several
- * gates on one page share a single catalogue read: the sales state loader is
- * memoized per request.
+ * including the hero image preload in <head> - for the length of the read.
+ * Behind a Suspense boundary the shell goes out immediately and the
+ * sale-dependent fragments follow. On Vercel that read is a network hop to the
+ * data cache, so the fragments always land after the shell has painted
+ * (measured 150-300ms, including React's batched reveal). That is fine below
+ * the first viewport - the group tariffs, a sticky bar that only shows on
+ * scroll - but a buy button in the first viewport must be resolved before
+ * rendering instead: streamed, the birthday drop's button read as missing and
+ * shoved "Learn more" aside when it arrived. Several gates on one page share a
+ * single catalogue read: the sales state loader is memoized per request.
  *
  * Children receive the tri-state answer, so "the admin closed sales" and "the
  * catalogue could not be read" render as different notices.

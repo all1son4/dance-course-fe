@@ -1,6 +1,9 @@
 import { expect, type Page, test } from "@playwright/test";
 
-import { SELLABLE_PRODUCTS } from "../../src/constants/sellable-products";
+import {
+  buildCheckoutHref,
+  SELLABLE_PRODUCTS,
+} from "../../src/constants/sellable-products";
 
 /**
  * The checkout receives its catalogue with the server render, so these specs
@@ -86,6 +89,59 @@ test("Online Group entry follows the authoritative sales switch", async ({ page 
   );
 
   assertCheckoutContexts(checkoutContexts, product.id, expectedOfferIds);
+});
+
+test("Birthday Drop entry carries the sales switch in its first render", async ({
+  page,
+}) => {
+  const product = SELLABLE_PRODUCTS["choreo-birthday-drop"];
+  const catalogProducts = await readAuthoritativeCatalog(page);
+  const catalogProduct = catalogProducts.find((item) => item.id === product.id);
+
+  expect(catalogProduct).toBeDefined();
+
+  // The buy button sits in the first viewport, so this page resolves the sales
+  // switch before rendering instead of streaming it in: the served HTML must
+  // already carry the answer ahead of any streamed chunk. A button that lands
+  // late reads as missing and pushes its neighbour aside when it arrives.
+  const response = await page.request.get("/online/birthday-drop");
+
+  expect(response.ok()).toBe(true);
+
+  // Scripts carry the RSC payload with every translation in it, so only the
+  // markup outside them says what was actually rendered.
+  const shell = (await response.text())
+    .split('<div hidden id="S:')[0]
+    .replace(/<script[\s\S]*?<\/script>/g, "");
+  const closedNotice =
+    /Sales are temporarily closed|Sales information is temporarily unavailable/;
+
+  await page.goto("/online/birthday-drop");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: /The Birthday Drop/ }),
+  ).toBeVisible();
+
+  // The sticky duplicate of this button is inert until the reader scrolls
+  // past the hero, so the accessible link is the hero button alone.
+  const purchaseLinks = page.getByRole("link", { name: /^Buy for / });
+
+  if (!catalogProduct?.salesEnabled) {
+    expect(shell).toMatch(closedNotice);
+    await expect(page.getByText(closedNotice)).toBeVisible();
+    await expect(purchaseLinks).toHaveCount(0);
+    await expect(page.locator('a[href*="/payment?"]')).toHaveCount(0);
+    return;
+  }
+
+  const checkoutHref = buildCheckoutHref({
+    offerId: product.defaultOfferId,
+    productId: product.id,
+  });
+
+  expect(shell).toContain(checkoutHref.replace("&", "&amp;"));
+  await expect(purchaseLinks).toHaveCount(1);
+  await expect(purchaseLinks).toHaveAttribute("href", checkoutHref);
 });
 
 test("ordinary checkout has four fresh agreements and no Telegram verification", async ({

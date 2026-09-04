@@ -169,6 +169,7 @@ export default function VideoPlayer({
   className,
   maxWidth = "100%",
   width = "100%",
+  height = "auto",
   aspectRatio = "2 / 1",
   radius = "100px",
   buttonSize = "95px",
@@ -440,6 +441,7 @@ export default function VideoPlayer({
       onClickCapture={handleWrapClickCapture}
       $maxWidth={maxWidth}
       $width={width}
+      $height={height}
       $aspectRatio={aspectRatio}
       $radius={radius}
       $buttonSize={buttonSize}
