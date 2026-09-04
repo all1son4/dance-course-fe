@@ -28,10 +28,9 @@ import {
   ButtonLabel,
   ButtonLinkWrapper,
   ButtonSpinner,
-  ButtonSpinnerSlot,
   StyledButton,
 } from "./Button.styles";
-import type { ButtonProps } from "./Button.types";
+import type { ButtonProps, ButtonSize } from "./Button.types";
 import { useHashLinkClick } from "./useHashLinkClick";
 import { useMeaningfulImpression } from "./useMeaningfulImpression";
 import { useRouteLoadingState } from "./useRouteLoadingState";
@@ -40,12 +39,14 @@ type LinkClickHandler = NonNullable<AnchorHTMLAttributes<HTMLAnchorElement>["onC
 
 const DEFAULT_BUTTON_TYPE = "button";
 
-const renderButtonContent = (content: ReactNode, isButtonLoading: boolean) => (
+const renderButtonContent = (
+  content: ReactNode,
+  isButtonLoading: boolean,
+  size: ButtonSize,
+) => (
   <ButtonContent>
     <ButtonLabel>{content}</ButtonLabel>
-    <ButtonSpinnerSlot $isLoading={isButtonLoading}>
-      <ButtonSpinner aria-hidden $isLoading={isButtonLoading} />
-    </ButtonSpinnerSlot>
+    <ButtonSpinner aria-hidden $isLoading={isButtonLoading} $size={size} />
   </ButtonContent>
 );
 
@@ -142,7 +143,11 @@ export default function Button<T extends ElementType = "button">({
     onLinkClick: handleLinkClick,
   });
 
-  const buttonContent = renderButtonContent(children ?? buttonText, isButtonLoading);
+  const buttonContent = renderButtonContent(
+    children ?? buttonText,
+    isButtonLoading,
+    size,
+  );
 
   if (href && isInDocumentHashHref(href, target)) {
     return (

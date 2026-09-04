@@ -144,6 +144,49 @@ test("Birthday Drop entry carries the sales switch in its first render", async (
   await expect(purchaseLinks).toHaveAttribute("href", checkoutHref);
 });
 
+test("a loading buy button keeps its label and neighbours still", async ({ page }) => {
+  const product = SELLABLE_PRODUCTS["choreo-birthday-drop"];
+  const catalogProducts = await readAuthoritativeCatalog(page);
+  const catalogProduct = catalogProducts.find((item) => item.id === product.id);
+
+  test.skip(
+    !catalogProduct?.salesEnabled,
+    "Birthday Drop sales are closed on this deployment, so there is no buy button to load",
+  );
+
+  await page.goto("/online/birthday-drop");
+
+  // Hold the checkout navigation back so the loading ring stays on screen.
+  await page.route("**/payment**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await route.continue().catch(() => undefined);
+  });
+
+  const buyButton = page.getByRole("link", { name: /^Buy for / });
+  const label = buyButton.locator("span > span").first();
+  const learnMore = page.getByRole("link", { name: "Learn more" });
+  const boxOf = async (locator: typeof buyButton) => {
+    const box = await locator.boundingBox();
+
+    return box && [box.x, box.y, box.width, box.height].map(Math.round);
+  };
+  const before = {
+    button: await boxOf(buyButton),
+    label: await boxOf(label),
+    learnMore: await boxOf(learnMore),
+  };
+
+  await buyButton.click({ noWaitAfter: true });
+
+  // The ring takes no layout space: once it is in, nothing has moved.
+  await expect(buyButton).toHaveAttribute("aria-busy", "true");
+  await page.waitForTimeout(400);
+
+  expect(await boxOf(buyButton)).toEqual(before.button);
+  expect(await boxOf(label)).toEqual(before.label);
+  expect(await boxOf(learnMore)).toEqual(before.learnMore);
+});
+
 test("ordinary checkout has four fresh agreements and no Telegram verification", async ({
   page,
 }) => {
