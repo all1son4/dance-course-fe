@@ -8,6 +8,8 @@ export type TVideoPlayerProps = {
   className?: string;
   maxWidth?: string;
   width?: string;
+  /** Outer box height; "auto" leaves it to `aspectRatio`. */
+  height?: string;
   aspectRatio?: string;
   radius?: string;
   buttonSize?: string;
