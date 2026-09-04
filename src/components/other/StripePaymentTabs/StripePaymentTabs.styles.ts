@@ -84,6 +84,23 @@ export const ErrorText = styled(StatusText)`
   color: var(--danger);
 `;
 
+/* Both labels share one grid cell, so the button is as wide as the longer of
+   the two from the start and only their opacity changes when the payment is
+   submitted: no re-centering, no width change, no jump. */
+export const PaymentButtonLabel = styled.span`
+  display: inline-grid;
+  justify-items: center;
+
+  & > span {
+    grid-area: 1 / 1;
+    transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+  }
+
+  & > span[aria-hidden="true"] {
+    opacity: 0;
+  }
+`;
+
 export const Actions = styled.div`
   display: flex;
   flex-direction: column;
