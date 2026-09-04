@@ -5,6 +5,7 @@ import { glass } from "@/styles/mixins/glass";
 type VideoWrapProps = {
   $maxWidth: string;
   $width: string;
+  $height: string;
   $aspectRatio: string;
   $radius: string;
   $buttonSize: string;
@@ -100,7 +101,10 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
 
 export const VideoWrap = styled.div<VideoWrapProps>`
   width: ${({ $width }) => $width};
-  height: auto;
+  /* "auto" leaves the height to the aspect ratio; a percentage fills a taller
+     parent instead - Chromium stretches a flex item past its ratio on its own,
+     WebKit does not. */
+  height: ${({ $height }) => $height};
   max-width: ${({ $maxWidth }) => $maxWidth};
   position: relative;
   margin: 0 auto;
