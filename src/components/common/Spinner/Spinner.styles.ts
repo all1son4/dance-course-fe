@@ -44,6 +44,9 @@ export const Ring = styled.span`
     background: currentColor;
     top: 50%;
     left: 50%;
+    /* Pull the dot's own centre onto the ring's centre before it orbits;
+       positioned by its corner, the orbit would sit half a dot off-centre. */
+    margin: calc(var(--spinner-dot) / -2) 0 0 calc(var(--spinner-dot) / -2);
     transform-origin: center;
     animation: ${orbit} 1.8s linear infinite;
   }
