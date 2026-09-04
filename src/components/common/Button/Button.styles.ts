@@ -228,6 +228,13 @@ export const StyledButton = styled.button<ControlProps>`
   ${controlStyles}
 `;
 
+/*
+ * Loading keeps the label and adds the ring beside it, softly. The ring lives
+ * in a slot that opens from 0 to its width over the emphasized curve: in a
+ * button with room to spare the centred label glides a few pixels left; a
+ * button sized to its content grows by the same amount, just as smoothly.
+ * Nothing changes in one frame, and the button's height never changes.
+ */
 export const ButtonContent = styled.span`
   position: relative;
   display: inline-flex;
@@ -236,38 +243,79 @@ export const ButtonContent = styled.span`
   min-height: 1em;
 `;
 
-export const ButtonLabel = styled.span``;
+/* One grid cell for the label and its optional loading text, so a longer
+   "Processing..." never widens the button when it takes over. */
+export const ButtonLabel = styled.span`
+  display: inline-grid;
+  place-items: center;
+`;
 
-/* The shared ring (components/common/Spinner), scaled to the button's text. */
-export const ButtonSpinner = styled(Ring)<{ $isLoading?: boolean }>`
-  --spinner-size: 14px;
-  --spinner-stroke: 1.6px;
-  --spinner-dot: 2.6px;
-  --spinner-orbit: 8px;
+export const ButtonLabelText = styled.span<{ $isHidden?: boolean }>`
+  grid-area: 1 / 1;
+  opacity: ${({ $isHidden }) => ($isHidden ? 0 : 1)};
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+`;
 
-  position: absolute;
-  left: 0;
-  top: calc(50% - 7px);
-  opacity: ${({ $isLoading }) => ($isLoading ? 1 : 0)};
-  transform: translate(${({ $isLoading }) => ($isLoading ? "0px" : "-12px")}, -50%)
-    scale(${({ $isLoading }) => ($isLoading ? 1 : 0.86)});
+/* Ring geometry per button size. The Ring declares its own 20px defaults on
+   the element, so these must be set on the ring itself (below), not inherited
+   from the slot; the slot only needs the size for its width and height. */
+/* The dot rides on the ring's own track (orbit = radius minus half the
+   stroke): at this size a satellite outside the ring reads as a stray speck. */
+const ringBySize = {
+  lg: { size: "14px", stroke: "1.6px", dot: "2.8px", orbit: "6.2px" },
+  sm: { size: "12px", stroke: "1.5px", dot: "2.5px", orbit: "5.25px" },
+} satisfies Record<
+  ButtonSize,
+  { size: string; stroke: string; dot: string; orbit: string }
+>;
+
+export const ButtonSpinnerSlot = styled.span<{ $isLoading?: boolean; $size: ButtonSize }>`
+  --spinner-gap: 12px;
+
+  position: relative;
+  flex: 0 0 auto;
+  width: ${({ $isLoading, $size }) => ($isLoading ? ringBySize[$size].size : "0px")};
+  height: ${({ $size }) => ringBySize[$size].size};
+  margin-left: ${({ $isLoading }) => ($isLoading ? "var(--spinner-gap)" : "0px")};
   transition:
-    opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
-    transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+    width var(--motion-slow, 320ms) var(--ease-emphasized, ease),
+    margin-left var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+
+  @media (max-width: 520px) {
+    --spinner-gap: 8px;
+  }
+`;
+
+/* The ring's own spin animation owns its transform, so the entrance (fade,
+   slide from the label, scale up) is played by this holder around it. It
+   starts a beat after the slot begins to open, so the ring arrives into space
+   that is already there. */
+export const ButtonSpinnerHolder = styled.span<{ $isLoading?: boolean }>`
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: ${({ $isLoading }) => ($isLoading ? 1 : 0)};
+  transform: ${({ $isLoading }) => ($isLoading ? "none" : "translateX(-6px) scale(0.8)")};
+  transition:
+    opacity var(--motion-base, 220ms) var(--ease-standard, ease)
+      ${({ $isLoading }) => ($isLoading ? "80ms" : "0ms")},
+    transform var(--motion-slow, 320ms) var(--ease-emphasized, ease)
+      ${({ $isLoading }) => ($isLoading ? "80ms" : "0ms")};
   pointer-events: none;
 `;
 
-export const ButtonSpinnerSlot = styled.span<{ $isLoading?: boolean }>`
-  position: relative;
-  width: ${({ $isLoading }) => ($isLoading ? "14px" : "0px")};
-  height: 14px;
-  margin-left: ${({ $isLoading }) => ($isLoading ? "12px" : "0px")};
-  transition:
-    width var(--motion-fast, 160ms) var(--ease-standard, ease),
-    margin-left var(--motion-fast, 160ms) var(--ease-standard, ease);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  overflow: visible;
-  flex: 0 0 auto;
+/* The shared ring (components/common/Spinner) at the button's size. */
+export const ButtonSpinner = styled(Ring)<{ $size: ButtonSize }>`
+  ${({ $size }) => {
+    const ring = ringBySize[$size];
+
+    return css`
+      --spinner-size: ${ring.size};
+      --spinner-stroke: ${ring.stroke};
+      --spinner-dot: ${ring.dot};
+      --spinner-orbit: ${ring.orbit};
+    `;
+  }};
 `;

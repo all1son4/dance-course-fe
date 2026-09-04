@@ -21,6 +21,8 @@ export type ButtonBaseProps = {
   size?: "lg" | "sm";
   frost?: ButtonFrost;
   isLoading?: boolean;
+  /** Replaces the label while loading ("Processing..."); the ring shows either way. */
+  loadingText?: string;
   /** Stable semantic identifier; labels and URLs are deliberately not captured. */
   analytics?: ButtonAnalyticsMetadata;
 };

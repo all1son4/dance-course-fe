@@ -26,12 +26,14 @@ import {
   ButtonAnchorWrapper,
   ButtonContent,
   ButtonLabel,
+  ButtonLabelText,
   ButtonLinkWrapper,
   ButtonSpinner,
+  ButtonSpinnerHolder,
   ButtonSpinnerSlot,
   StyledButton,
 } from "./Button.styles";
-import type { ButtonProps } from "./Button.types";
+import type { ButtonProps, ButtonSize } from "./Button.types";
 import { useHashLinkClick } from "./useHashLinkClick";
 import { useMeaningfulImpression } from "./useMeaningfulImpression";
 import { useRouteLoadingState } from "./useRouteLoadingState";
@@ -40,14 +42,40 @@ type LinkClickHandler = NonNullable<AnchorHTMLAttributes<HTMLAnchorElement>["onC
 
 const DEFAULT_BUTTON_TYPE = "button";
 
-const renderButtonContent = (content: ReactNode, isButtonLoading: boolean) => (
-  <ButtonContent>
-    <ButtonLabel>{content}</ButtonLabel>
-    <ButtonSpinnerSlot $isLoading={isButtonLoading}>
-      <ButtonSpinner aria-hidden $isLoading={isButtonLoading} />
-    </ButtonSpinnerSlot>
-  </ButtonContent>
-);
+const renderButtonContent = (
+  content: ReactNode,
+  isButtonLoading: boolean,
+  size: ButtonSize,
+  loadingText?: string,
+) => {
+  const showsLoadingText = Boolean(loadingText) && isButtonLoading;
+
+  return (
+    <ButtonContent>
+      <ButtonLabel>
+        <ButtonLabelText
+          $isHidden={showsLoadingText}
+          aria-hidden={showsLoadingText || undefined}
+        >
+          {content}
+        </ButtonLabelText>
+        {loadingText ? (
+          <ButtonLabelText
+            $isHidden={!showsLoadingText}
+            aria-hidden={!showsLoadingText || undefined}
+          >
+            {loadingText}
+          </ButtonLabelText>
+        ) : null}
+      </ButtonLabel>
+      <ButtonSpinnerSlot $isLoading={isButtonLoading} $size={size}>
+        <ButtonSpinnerHolder $isLoading={isButtonLoading}>
+          <ButtonSpinner aria-hidden $size={size} />
+        </ButtonSpinnerHolder>
+      </ButtonSpinnerSlot>
+    </ButtonContent>
+  );
+};
 
 export default function Button<T extends ElementType = "button">({
   variant = "primary",
@@ -59,6 +87,7 @@ export default function Button<T extends ElementType = "button">({
   prefetch,
   target = SELF_TARGET,
   isLoading = false,
+  loadingText,
   analytics,
   children,
   ...rest
@@ -142,7 +171,12 @@ export default function Button<T extends ElementType = "button">({
     onLinkClick: handleLinkClick,
   });
 
-  const buttonContent = renderButtonContent(children ?? buttonText, isButtonLoading);
+  const buttonContent = renderButtonContent(
+    children ?? buttonText,
+    isButtonLoading,
+    size,
+    loadingText,
+  );
 
   if (href && isInDocumentHashHref(href, target)) {
     return (
