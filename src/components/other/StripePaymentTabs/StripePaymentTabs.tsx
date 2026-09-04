@@ -52,7 +52,6 @@ import {
   LoadingState,
   LoadingTab,
   LoadingTabs,
-  PaymentButtonLabel,
   PaymentElementShell,
   StatusText,
   Title,
@@ -109,17 +108,13 @@ const PaymentActions = ({
       </ErrorText>
     ) : null}
     <Button
+      buttonText={isSubmitting ? processingText : payButtonText}
       disabled={isDisabled}
       isLoading={isSubmitting}
       onClick={onPayment}
       type="button"
       width={PAYMENT_BUTTON_WIDTH}
-    >
-      <PaymentButtonLabel>
-        <span aria-hidden={isSubmitting || undefined}>{payButtonText}</span>
-        <span aria-hidden={!isSubmitting || undefined}>{processingText}</span>
-      </PaymentButtonLabel>
-    </Button>
+    />
   </Actions>
 );
 
