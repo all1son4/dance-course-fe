@@ -238,53 +238,36 @@ export const ButtonContent = styled.span`
 
 export const ButtonLabel = styled.span``;
 
-/* The ring scales with the button's text, and once more under 520px, where
-   the side padding it lives in shrinks from 40px to 24px. */
-const spinnerSizeStyles = {
-  lg: css`
-    --spinner-size: 14px;
-    --spinner-orbit: 8px;
-
-    @media (max-width: 520px) {
-      --spinner-size: 12px;
-      --spinner-orbit: 7px;
-    }
-  `,
-  sm: css`
-    --spinner-size: 12px;
-    --spinner-orbit: 7px;
-
-    @media (max-width: 520px) {
-      --spinner-size: 10px;
-      --spinner-orbit: 6px;
-    }
-  `,
-} satisfies Record<ButtonSize, ReturnType<typeof css>>;
-
-/*
- * The shared ring (components/common/Spinner), scaled to the button's text.
- * It is absolutely positioned just after the label, inside the button's side
- * padding, so it takes no layout space: neither the label nor the button moves
- * when loading starts, the ring only fades and slides in.
- */
-export const ButtonSpinner = styled(Ring)<{ $isLoading?: boolean; $size: ButtonSize }>`
+/* The shared ring (components/common/Spinner), scaled to the button's text. */
+export const ButtonSpinner = styled(Ring)<{ $isLoading?: boolean }>`
+  --spinner-size: 14px;
   --spinner-stroke: 1.6px;
   --spinner-dot: 2.6px;
-  --spinner-gap: 12px;
-  ${({ $size }) => spinnerSizeStyles[$size]};
+  --spinner-orbit: 8px;
 
   position: absolute;
-  left: calc(100% + var(--spinner-gap));
-  top: 50%;
+  left: 0;
+  top: calc(50% - 7px);
   opacity: ${({ $isLoading }) => ($isLoading ? 1 : 0)};
-  transform: translate(${({ $isLoading }) => ($isLoading ? "0px" : "-8px")}, -50%)
+  transform: translate(${({ $isLoading }) => ($isLoading ? "0px" : "-12px")}, -50%)
     scale(${({ $isLoading }) => ($isLoading ? 1 : 0.86)});
   transition:
     opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
     transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
   pointer-events: none;
+`;
 
-  @media (max-width: 520px) {
-    --spinner-gap: 6px;
-  }
+export const ButtonSpinnerSlot = styled.span<{ $isLoading?: boolean }>`
+  position: relative;
+  width: ${({ $isLoading }) => ($isLoading ? "14px" : "0px")};
+  height: 14px;
+  margin-left: ${({ $isLoading }) => ($isLoading ? "12px" : "0px")};
+  transition:
+    width var(--motion-fast, 160ms) var(--ease-standard, ease),
+    margin-left var(--motion-fast, 160ms) var(--ease-standard, ease);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+  flex: 0 0 auto;
 `;
