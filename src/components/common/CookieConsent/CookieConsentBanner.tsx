@@ -119,7 +119,7 @@ export default function CookieConsentBanner() {
   };
 
   return (
-    <BannerViewport data-print-hidden="">
+    <BannerViewport data-print-hidden="" data-scroll-lock-offset="">
       <BannerCard role="dialog" aria-live="polite" aria-label={t("banner.title")}>
         <BannerIntro>
           <BannerTitle>{t("banner.title")}</BannerTitle>
