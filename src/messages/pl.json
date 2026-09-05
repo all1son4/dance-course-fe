@@ -751,7 +751,8 @@
     },
     "successVerification": {
       "preparing": "Prawie gotowe — potwierdzamy płatność i przygotowujemy dostęp. Może to potrwać jeszcze kilka sekund…"
-    }
+    },
+    "paymentLockedHint": "Formularz płatności pojawi się tutaj, gdy dane zostaną uzupełnione, a zgody zaznaczone."
   },
   "PaymentSuccessPage": {
     "title": "Płatność zakończona pomyślnie",
@@ -853,7 +854,8 @@
       "telegramRenewalVerificationRequired": "Najpierw potwierdź Telegram dla tej kontynuacji.",
       "renewalCampaignInactive": "Ten link kontynuacji nie jest już aktywny. Użyj aktualnego linku z grupy.",
       "renewalPaymentContextMismatch": "Ten link kontynuacji nie pasuje do wybranego produktu.",
-      "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie."
+      "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie.",
+      "paymentFormBlocked": "Nie udało się wczytać formularza płatności. Może go blokować rozszerzenie lub sieć - wyłącz blokowanie albo otwórz stronę w innej przeglądarce."
     }
   },
   "CurrencySwitch": {

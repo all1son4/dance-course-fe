@@ -22,6 +22,8 @@ const STATUS_CHECK_RETRY_DELAY_MS = 1_000;
 const STATUS_REQUEST_TIMEOUT_MS = 8_000;
 /** A check that runs this long gets a reassurance instead of the same spinner. */
 const STATUS_REASSURANCE_DELAY_MS = 5_000;
+/** And this long: the buyer also gets something to press, rather than waiting. */
+const STATUS_ACTIONS_DELAY_MS = 12_000;
 /** How long the status card fades before the confirmed content takes its place. */
 const STATUS_LEAVE_MS = 160;
 
@@ -32,7 +34,6 @@ type SuccessRedirectGuardProps = {
   failedPath: string;
   homeButtonText: string;
   paymentIntentId: string;
-  paymentPath: string;
   pendingText: string;
   preparingText: string;
   refreshButtonText: string;
@@ -49,7 +50,6 @@ export default function SuccessRedirectGuard({
   failedPath,
   homeButtonText,
   paymentIntentId,
-  paymentPath,
   pendingText,
   preparingText,
   refreshButtonText,
@@ -60,6 +60,7 @@ export default function SuccessRedirectGuard({
   const [verificationState, setVerificationState] =
     useState<VerificationState>("checking");
   const [isCheckingLong, setIsCheckingLong] = useState(false);
+  const [isCheckingSlow, setIsCheckingSlow] = useState(false);
   const [isStatusLeaving, setIsStatusLeaving] = useState(false);
 
   // The checks can take a while (four attempts, each with its own timeout).
@@ -71,12 +72,18 @@ export default function SuccessRedirectGuard({
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
+    const reassuranceId = window.setTimeout(() => {
       setIsCheckingLong(true);
     }, STATUS_REASSURANCE_DELAY_MS);
+    // Past this point the wait is long enough that the buyer should have
+    // something to press rather than only a spinner to watch.
+    const actionsId = window.setTimeout(() => {
+      setIsCheckingSlow(true);
+    }, STATUS_ACTIONS_DELAY_MS);
 
     return () => {
-      window.clearTimeout(timeoutId);
+      window.clearTimeout(reassuranceId);
+      window.clearTimeout(actionsId);
     };
   }, [verificationState]);
 
@@ -140,8 +147,12 @@ export default function SuccessRedirectGuard({
           }
 
           if (!response.ok) {
+            // This link cannot be checked from here (an old link, a new
+            // browser, an expired session). Saying so is the only safe
+            // answer: dropping the buyer into the checkout page without a
+            // word invites a second payment for something already paid.
             if (response.status === 400 || response.status === 403) {
-              router.replace(paymentPath);
+              setVerificationState("unavailable");
               return;
             }
 
@@ -209,7 +220,7 @@ export default function SuccessRedirectGuard({
       });
       pendingTimeouts.clear();
     };
-  }, [checkoutSessionId, failedPath, paymentIntentId, paymentPath, router]);
+  }, [checkoutSessionId, failedPath, paymentIntentId, router]);
 
   if (verificationState === "succeeded") {
     return <>{children}</>;
@@ -243,7 +254,7 @@ export default function SuccessRedirectGuard({
           again, so checking again must not require finding the reload
           button); the support button appears once the status truly could not
           be confirmed. */}
-      {verificationState !== "checking" && (
+      {(verificationState !== "checking" || isCheckingSlow) && (
         <ResultActions>
           {verificationState === "pending" && (
             <Button
@@ -251,7 +262,7 @@ export default function SuccessRedirectGuard({
               onClick={() => window.location.reload()}
             />
           )}
-          {isUnavailable && (
+          {(isUnavailable || isCheckingSlow) && (
             <Button
               buttonText={supportButtonText}
               href={SUPPORT_TELEGRAM_URL}

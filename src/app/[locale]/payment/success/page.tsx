@@ -132,7 +132,6 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           failedPath={failedPath}
           homeButtonText={t("buttons.home")}
           paymentIntentId={paymentIntentId}
-          paymentPath={paymentPath}
           pendingText={t("verification.pending")}
           preparingText={paymentT("successVerification.preparing")}
           refreshButtonText={t("verification.refreshButton")}

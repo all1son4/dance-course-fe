@@ -1,5 +1,6 @@
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
 
+import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import Input from "@/components/common/Input";
 import StripePaymentTabs, {
@@ -11,6 +12,7 @@ import {
   FormBox,
   InputField,
   Inputs,
+  PaymentLockedHint,
   PaymentPreparationError,
   PersonalData,
   PersonalDataTitle,
@@ -169,6 +171,10 @@ export type CheckoutFormProps = {
   renewalStatus: RenewalStatus;
   renewalStatusText: string;
   renewalStatusTone: RenewalStatusTone;
+  paymentLockedHintText: string;
+  /** Re-asks for the payment intent after a failure; absent when there is nothing to retry. */
+  onRetryPaymentPreparation?: () => void;
+  retryLabel: string;
   stripeIntentErrorText: string;
   stripeProps: StripePaymentTabsProps;
   verifyLabel: string;
@@ -193,6 +199,9 @@ export const CheckoutForm = ({
   renewalStatus,
   renewalStatusText,
   renewalStatusTone,
+  onRetryPaymentPreparation,
+  paymentLockedHintText,
+  retryLabel,
   stripeIntentErrorText,
   stripeProps,
   verifyLabel,
@@ -238,8 +247,25 @@ export const CheckoutForm = ({
     </PersonalData>
     {stripeIntentErrorText ? (
       <PaymentPreparationError role="alert">
-        {stripeIntentErrorText}
+        <p>{stripeIntentErrorText}</p>
+        {/* Without this the message asks the buyer to try again with nothing
+            to press: the request only re-runs when a form field changes. */}
+        {onRetryPaymentPreparation ? (
+          <Button
+            buttonText={retryLabel}
+            onClick={onRetryPaymentPreparation}
+            size="sm"
+            type="button"
+            variant="secondary"
+            width="max-content"
+          />
+        ) : null}
       </PaymentPreparationError>
+    ) : null}
+    {/* The card below is empty until the form is complete; without a word
+        here the payment step simply is not on the page. */}
+    {!canRevealStripe && !stripeIntentErrorText ? (
+      <PaymentLockedHint>{paymentLockedHintText}</PaymentLockedHint>
     ) : null}
     <StripeReveal
       $isVisible={canRevealStripe}

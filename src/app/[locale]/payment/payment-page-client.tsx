@@ -495,11 +495,23 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.renewalCampaignSlug,
   ]);
 
+  // Leaving the checkout resets it and cancels the intents it minted - unless
+  // a payment is under way. Stripe keeps `processing` intents cancellable, so
+  // cancelling here could void a payment the buyer has already confirmed.
+  const isPaymentSubmittingRef = useRef(isPaymentSubmitting);
+  isPaymentSubmittingRef.current = isPaymentSubmitting;
+
   useEffect(() => {
     return () => {
-      paymentStore.resetCheckoutForm();
+      paymentStore.resetCheckoutForm({
+        cancelActiveIntents: !isPaymentSubmittingRef.current,
+      });
     };
   }, [paymentStore]);
+
+  const handleRetryPaymentPreparation = () => {
+    void paymentStore.retryStripePaymentIntent();
+  };
 
   const handleInputChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -852,6 +864,11 @@ const PaymentPage = observer(function PaymentPage({
             renewalStatus={renewalStatus}
             renewalStatusText={renewalStatusText}
             renewalStatusTone={renewalStatusTone}
+            onRetryPaymentPreparation={
+              paymentStore.stripeIntentError ? handleRetryPaymentPreparation : undefined
+            }
+            paymentLockedHintText={t("paymentLockedHint")}
+            retryLabel={commonT("tryAgain")}
             stripeIntentErrorText={stripeIntentErrorText}
             stripeProps={stripeProps}
             verifyLabel={t("renewal.buttons.verify")}

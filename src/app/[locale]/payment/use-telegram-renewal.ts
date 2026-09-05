@@ -109,8 +109,15 @@ export const useTelegramRenewal = ({
           (error.message === "renewal_campaign_not_found" ||
             error.message === "renewal_campaign_inactive");
 
-        setRenewalClientId("");
-        setRenewalNonce("");
+        // Only a dead campaign clears the credentials: blanking them after a
+        // network hiccup disabled the verify button on a form where every
+        // other control is already disabled until verification - a dead end
+        // with nothing to press.
+        if (isTerminalCampaignError) {
+          setRenewalClientId("");
+          setRenewalNonce("");
+        }
+
         setRenewalStatus("error");
         setRenewalStatusText(t("renewal.status.loadFailed"));
         setIsRenewalUnavailable(isTerminalCampaignError);

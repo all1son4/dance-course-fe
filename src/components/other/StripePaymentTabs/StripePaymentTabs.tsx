@@ -234,6 +234,13 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
   };
 
   const finishOnResultPage = (completion: PaymentRedirectCompletion): void => {
+    // The verification outlives this form on purpose, but only the checkout
+    // page may be replaced by the result: a buyer who moved on stays where
+    // they are and hears the outcome by email.
+    if (!/\/payment\/?$/.test(window.location.pathname)) {
+      return;
+    }
+
     if (completion.cancelUnusedIntents && completion.paymentIntentId) {
       cancelUnusedPaymentIntents({
         allPaymentIntentIds,
@@ -399,7 +406,9 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
             stripe,
           })
         }
-        isSubmitting={isSubmitting}
+        // Settled: the status line below the button explains what happened,
+        // so the button stops spinning and stays out of the way.
+        isSubmitting={isSubmitting && verification !== "unresolved"}
         isUpdating={isPayLocked && !isSubmitting}
         onPayment={handlePayment}
         payButtonText={payButtonText}
@@ -444,7 +453,7 @@ const PaymentLoadingState = ({ statusText }: PaymentLoadingStateProps): ReactEle
     </LoadingFieldRow>
     <LoadingFooter>
       <LoadingPulse />
-      <StatusText>{statusText}</StatusText>
+      {statusText ? <StatusText>{statusText}</StatusText> : null}
     </LoadingFooter>
     <LoadingAction aria-hidden />
   </LoadingState>
@@ -487,6 +496,7 @@ export const StripePaymentTabs = ({
   });
   const [currentForm, setCurrentForm] = useState<PaymentForm | null>(null);
   const [isPreparingSlow, setIsPreparingSlow] = useState(false);
+  const [hasStripeLoadFailure, setHasStripeLoadFailure] = useState(false);
   const requestedFormKeyRef = useRef<string | null>(null);
   const isSkeletonCurrent = currentForm === null;
   const incomingForm =
@@ -534,13 +544,36 @@ export const StripePaymentTabs = ({
     };
   }, [isSkeletonCurrent, requestedForm?.key]);
 
-  const loadingStatusText = t(
-    getLoadingStatusTranslationKey({
-      hasClientSecret: Boolean(clientSecret),
-      hasPublishableKey: Boolean(publishableKey),
-      isPreparingSlow,
-    }),
-  );
+  useEffect(() => {
+    if (!publishableKey) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    void getStripePromise(publishableKey).then((stripe) => {
+      if (isCurrent && !stripe) {
+        setHasStripeLoadFailure(true);
+      }
+    });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [publishableKey]);
+
+  // While the preparation error is on screen above the card, the skeleton
+  // saying the form is on its way would contradict it.
+  const loadingStatusText = hasIntentError
+    ? ""
+    : t(
+        getLoadingStatusTranslationKey({
+          hasClientSecret: Boolean(clientSecret),
+          hasPublishableKey: Boolean(publishableKey),
+          hasStripeLoadFailure,
+          isPreparingSlow,
+        }),
+      );
   const paymentFormProps: StripePaymentElementsProps["paymentFormProps"] = {
     allPaymentIntentIds,
     billingAddressLine1,

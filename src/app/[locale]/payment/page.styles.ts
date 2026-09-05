@@ -119,8 +119,21 @@ export const PersonalData = styled.fieldset`
   }
 `;
 
-export const PaymentPreparationError = styled.p`
+/** Explains the gap where the payment card will be. */
+export const PaymentLockedHint = styled.p`
   margin: 18px 0 0;
+  color: var(--ink-muted);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+`;
+
+export const PaymentPreparationError = styled.div`
+  margin: 18px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 12px 16px;
   border: 1px solid rgba(176, 24, 33, 0.24);
   border-radius: 12px;
@@ -129,6 +142,11 @@ export const PaymentPreparationError = styled.p`
   font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 500;
+
+  & > p {
+    margin: 0;
+    flex: 1 1 220px;
+  }
 `;
 
 export const SalesClosedActions = styled.div`

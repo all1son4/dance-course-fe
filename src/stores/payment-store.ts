@@ -850,7 +850,7 @@ export class PaymentStore {
     }
   }
 
-  resetCheckoutForm() {
+  resetCheckoutForm({ cancelActiveIntents = true } = {}) {
     const previousCheckoutSessionId = this.checkoutSessionId;
     const defaultProduct =
       this.getSellableProductById(DEFAULT_CHECKOUT_PRODUCT.id) ??
@@ -858,7 +858,7 @@ export class PaymentStore {
       DEFAULT_CHECKOUT_PRODUCT;
     const defaultOffer = getDefaultProductOffer(defaultProduct);
 
-    this.clearStripeIntentState(true, previousCheckoutSessionId);
+    this.clearStripeIntentState(cancelActiveIntents, previousCheckoutSessionId);
     this.checkoutSessionId = createCheckoutSessionId();
     this.customerData = normalizePaymentCustomerDataDraft();
     this.customerErrors = {};
@@ -881,6 +881,17 @@ export class PaymentStore {
     offerId: string | null | undefined,
   ) {
     return product.offers.find((offer) => offer.id === offerId);
+  }
+
+  /**
+   * Asks for the intent again after a failure. The error is cleared first so
+   * the request is not blocked, and the currency keeps whatever it had.
+   */
+  retryStripePaymentIntent() {
+    const currency = getResolvedCheckoutCurrency(this.selectedCurrency);
+    this.setStripeIntentError(currency, null);
+
+    return this.ensureStripePaymentIntent(currency);
   }
 
   clearStripeIntentState(

@@ -123,6 +123,7 @@ export const isPaymentSubmissionReady = (
 
 export type LoadingStatusTranslationKey =
   | "placeholder.awaitingClientSecret"
+  | "errors.paymentFormBlocked"
   | "placeholder.missingPublishableKey"
   | "status.preparing"
   | "status.preparingSlow";
@@ -130,18 +131,27 @@ export type LoadingStatusTranslationKey =
 export const getLoadingStatusTranslationKey = ({
   hasClientSecret,
   hasPublishableKey,
+  hasStripeLoadFailure,
   isPreparingSlow,
 }: {
   hasClientSecret: boolean;
   hasPublishableKey: boolean;
+  hasStripeLoadFailure: boolean;
   isPreparingSlow: boolean;
 }): LoadingStatusTranslationKey => {
   if (!hasPublishableKey) {
     return "placeholder.missingPublishableKey";
   }
 
+  if (hasStripeLoadFailure) {
+    return "errors.paymentFormBlocked";
+  }
+
+  // The client secret is minted a moment after the form becomes valid, so
+  // this is the ordinary first second of every checkout: it says the payment
+  // is being prepared, not that a clientSecret is awaited.
   if (!hasClientSecret) {
-    return isPreparingSlow ? "status.preparingSlow" : "placeholder.awaitingClientSecret";
+    return isPreparingSlow ? "status.preparingSlow" : "status.preparing";
   }
 
   return isPreparingSlow ? "status.preparingSlow" : "status.preparing";

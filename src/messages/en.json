@@ -751,7 +751,8 @@
     },
     "successVerification": {
       "preparing": "Almost there — confirming your payment and preparing your access. This can take a few more seconds…"
-    }
+    },
+    "paymentLockedHint": "The payment form opens here once the details are filled in and the agreements are accepted."
   },
   "PaymentSuccessPage": {
     "title": "Payment successful",
@@ -853,7 +854,8 @@
       "telegramRenewalVerificationRequired": "Confirm Telegram for this renewal first.",
       "renewalCampaignInactive": "This renewal link is no longer active. Use the current link from the group.",
       "renewalPaymentContextMismatch": "This renewal link does not match the selected product.",
-      "confirmPaymentFailed": "Failed to complete the payment. Please try again."
+      "confirmPaymentFailed": "Failed to complete the payment. Please try again.",
+      "paymentFormBlocked": "We could not load the payment form. It may be blocked by an extension or your network - turn the blocker off, or open the page in another browser."
     }
   },
   "CurrencySwitch": {
