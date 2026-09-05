@@ -12,6 +12,8 @@ export default function SkipLink() {
   const t = useTranslations("Common");
 
   return (
-    <SkipLinkAnchor href={`#${MAIN_CONTENT_ID}`}>{t("skipToContent")}</SkipLinkAnchor>
+    <SkipLinkAnchor href={`#${MAIN_CONTENT_ID}`} data-print-hidden="">
+      {t("skipToContent")}
+    </SkipLinkAnchor>
   );
 }

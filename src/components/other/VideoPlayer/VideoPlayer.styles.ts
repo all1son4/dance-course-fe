@@ -1,5 +1,6 @@
 import styled, { keyframes } from "styled-components";
 
+import { Ring } from "@/components/common/Spinner/Spinner.styles";
 import { glass } from "@/styles/mixins/glass";
 
 type VideoWrapProps = {
@@ -49,10 +50,15 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
 
   cursor: pointer;
 
+  /* glass() transitions only background-color/box-shadow on the same tokens;
+     the button adds opacity/transform on top, so it restates the whole list
+     (as Button.styles.ts does) - a partial list would drop the glass fill's
+     easing and snap it while the shadow still eased. */
   transition:
-    opacity 160ms ease,
-    transform 160ms ease,
-    box-shadow 200ms ease;
+    opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
+    transform var(--motion-fast, 160ms) var(--ease-standard, ease),
+    background-color var(--motion-base, 220ms) var(--ease-standard, ease),
+    box-shadow var(--motion-base, 220ms) var(--ease-standard, ease);
 
   svg {
     width: var(--vp-icon-size);
@@ -74,9 +80,14 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
     }
   }
 
+  /* Focus is no longer thrown away after a click, so the ring has to be
+     right: :focus-visible keeps it off for mouse and touch, and while the
+     video plays a keyboard-focused button stays in view for its toggle. */
   &:focus-visible {
     opacity: 1;
     pointer-events: auto;
+    outline: var(--focus-ring);
+    outline-offset: 3px;
   }
 
   /* Disabled only while the player library is still loading: read as
@@ -97,6 +108,34 @@ export const CenterButton = styled.button<{ $isPlaying: boolean }>`
       transform: translate(-50%, -50%);
     }
   }
+`;
+
+/**
+ * The site's loading ring (components/common/Spinner) in the play button's
+ * place while the media has been asked to play but has not rendered a frame
+ * yet. Sized on the ring itself: it declares its own 20px defaults at element
+ * level, so variables set on an ancestor would be ignored. Centred with
+ * margins rather than a transform - the ring's spin owns `transform`.
+ */
+export const BufferingRing = styled(Ring)<{ $isVisible: boolean }>`
+  --spinner-size: 28px;
+  --spinner-stroke: 2px;
+  --spinner-dot: 5px;
+  --spinner-orbit: 13px;
+
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 15;
+  margin: calc(var(--spinner-size) / -2) 0 0 calc(var(--spinner-size) / -2);
+  color: var(--ink-inverse);
+  filter: drop-shadow(0 1px 2px rgba(7, 10, 16, 0.45));
+  pointer-events: none;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  /* One beat of grace before it shows, so a clip that starts at once never
+     flashes it; it leaves without delay. */
+  transition: opacity var(--motion-fast, 160ms) var(--ease-standard, ease)
+    ${({ $isVisible }) => ($isVisible ? "var(--motion-fast, 160ms)" : "0ms")};
 `;
 
 export const VideoWrap = styled.div<VideoWrapProps>`
@@ -192,7 +231,7 @@ export const PosterOverlay = styled.div<{ $src: string; $isVisible: boolean }>`
   background-image: url(${({ $src }) => $src});
   background-position: center;
   background-size: cover;
-  transition: opacity 220ms ease;
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
   opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
   pointer-events: none;
 `;

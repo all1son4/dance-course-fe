@@ -1,8 +1,10 @@
-import styled, { css } from "styled-components";
+import styled, { createGlobalStyle, css } from "styled-components";
 
 import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
 import { glass } from "@/styles/mixins/glass";
 import { chevronHint } from "@/styles/mixins/motion";
+
+import { REVIEW_SLIDER_LAYOUT } from "./Reviews.constants";
 
 export const ReviewsContainer = styled.div`
   box-sizing: border-box;
@@ -58,6 +60,14 @@ export const NavigationButtonBox = styled.div`
   }
 `;
 
+type SlideColumns = { slidesPerView: number; spaceBetween: number };
+
+/* The width Swiper computes for a slide: (container - gaps) / columns. */
+const slideColumns = ({ slidesPerView, spaceBetween }: SlideColumns) => css`
+  width: calc((100% - ${(slidesPerView - 1) * spaceBetween}px) / ${slidesPerView});
+  margin-right: ${spaceBetween}px;
+`;
+
 export const ReviewsSlider = styled.div`
   box-sizing: border-box;
   width: 100%;
@@ -80,11 +90,24 @@ export const ReviewsSlider = styled.div`
     transition-property: transform;
   }
 
+  /* Until Swiper initialises, slides carry the width and gap its JS will
+     then set inline - the same columns and breakpoints as
+     REVIEW_SLIDER_LAYOUT - so the server frame wraps text exactly like the
+     hydrated one and init does not reflow the section. */
   & .swiper-slide {
     box-sizing: border-box;
     display: flex;
     align-self: flex-start;
     height: auto;
+    ${slideColumns(REVIEW_SLIDER_LAYOUT.base)}
+
+    ${Object.entries(REVIEW_SLIDER_LAYOUT.breakpoints).map(
+      ([minWidth, columns]) => css`
+        @media (min-width: ${minWidth}px) {
+          ${slideColumns(columns)}
+        }
+      `,
+    )}
   }
 
   /* Dots replace the arrow buttons where those are hidden (<= 880px): the
@@ -124,6 +147,19 @@ export const ReviewsSlider = styled.div`
 `;
 
 /**
+ * Registers the fade position so it can transition (Safari 16.4+, Firefox
+ * 128+, Chrome 85+). Where `@property` is unsupported the fade still works;
+ * it switches instead of sliding. Rendered once by Reviews.
+ */
+export const ReviewFadeProperty = createGlobalStyle`
+  @property --review-fade-start {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 100%;
+  }
+`;
+
+/**
  * Clamps the review to a fixed number of lines (--review-clamp) and animates
  * to the measured full height when expanded (set inline by ReviewBody).
  */
@@ -132,35 +168,49 @@ export const ReviewTextClamp = styled.div<{
   $isClampable: boolean;
 }>`
   --review-clamp: calc(6 * 17px * 1.5);
+  /* Where the fade into transparency starts: over the last lines while
+     clamped, past the end (no fade) once expanded. It transitions together
+     with max-height, so the fade slides away as the text opens instead of
+     cutting out on the first frame. */
+  --review-fade-start: ${({ $isExpanded }) => ($isExpanded ? "100%" : "62%")};
   position: relative;
   z-index: 1;
   max-height: var(--review-clamp);
   overflow: hidden;
-  transition: max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+  transition:
+    max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
+    --review-fade-start var(--motion-slow, 320ms) var(--ease-emphasized, ease);
   transition-delay: var(--motion-settle, 40ms);
-  /* Fade the last lines out while clamped so the cut does not look like a bug. */
-  mask-image: ${({ $isExpanded, $isClampable }) =>
-    !$isExpanded && $isClampable
-      ? "linear-gradient(to bottom, #000 62%, transparent 100%)"
-      : "none"};
-  -webkit-mask-image: ${({ $isExpanded, $isClampable }) =>
-    !$isExpanded && $isClampable
-      ? "linear-gradient(to bottom, #000 62%, transparent 100%)"
-      : "none"};
+
+  /* Only the cards that clamp carry a mask; the others stay plain paint. */
+  ${({ $isClampable }) =>
+    $isClampable &&
+    css`
+      mask-image: linear-gradient(
+        to bottom,
+        #000 var(--review-fade-start),
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 var(--review-fade-start),
+        transparent 100%
+      );
+    `}
 
   @media (max-width: 450px) {
     --review-clamp: calc(6 * 15px * 1.5);
   }
 `;
 
-export const ReadMoreButton = styled.button`
+export const ReadMoreButton = styled.button<{ $isHidden: boolean; $isReserved: boolean }>`
   appearance: none;
   border: 0;
   padding: 0;
   margin: -6px 0 0;
   background: transparent;
   align-self: flex-start;
-  display: inline-flex;
+  display: ${({ $isHidden, $isReserved }) => ($isHidden && !$isReserved ? "none" : "inline-flex")};
   align-items: center;
   gap: 8px;
   position: relative;
@@ -173,6 +223,11 @@ export const ReadMoreButton = styled.button`
   cursor: pointer;
   min-height: 32px;
   transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
+  /* Reviews estimated to clamp keep this row laid out whether or not the
+     measurement agrees, so a card is the same height before and after
+     hydration; the short ones have no row at all (see ReviewBody). */
+  visibility: ${({ $isHidden }) => ($isHidden ? "hidden" : "visible")};
+  pointer-events: ${({ $isHidden }) => ($isHidden ? "none" : "auto")};
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {

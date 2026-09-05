@@ -87,9 +87,7 @@ export const useTelegramRenewal = ({
         );
 
         if (data.verified && verifiedUsername) {
-          paymentStore.setCustomerField("nickname", verifiedUsername, {
-            skipStripeIntentReset: true,
-          });
+          paymentStore.setCustomerField("nickname", verifiedUsername);
         }
 
         setRenewalClientId(data.clientId ?? "");
@@ -111,8 +109,15 @@ export const useTelegramRenewal = ({
           (error.message === "renewal_campaign_not_found" ||
             error.message === "renewal_campaign_inactive");
 
-        setRenewalClientId("");
-        setRenewalNonce("");
+        // Only a dead campaign clears the credentials: blanking them after a
+        // network hiccup disabled the verify button on a form where every
+        // other control is already disabled until verification - a dead end
+        // with nothing to press.
+        if (isTerminalCampaignError) {
+          setRenewalClientId("");
+          setRenewalNonce("");
+        }
+
         setRenewalStatus("error");
         setRenewalStatusText(t("renewal.status.loadFailed"));
         setIsRenewalUnavailable(isTerminalCampaignError);
@@ -125,6 +130,8 @@ export const useTelegramRenewal = ({
 
   const verifyTelegramRenewal = async () => {
     const numericClientId = Number(renewalClientId);
+    // The handle is stored as typed until blur; the claim must be the settled form.
+    paymentStore.normalizeCustomerField("nickname");
     const claimedUsername = paymentStore.customerData.nickname.trim();
 
     if (
@@ -205,9 +212,7 @@ export const useTelegramRenewal = ({
       );
 
       if (verifiedNickname) {
-        paymentStore.setCustomerField("nickname", verifiedNickname, {
-          skipStripeIntentReset: true,
-        });
+        paymentStore.setCustomerField("nickname", verifiedNickname);
       }
 
       window.focus();

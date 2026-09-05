@@ -27,9 +27,9 @@ export const Track = styled.span`
   border-radius: var(--radius-pill);
   background: rgba(0, 0, 0, 0.08);
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    opacity 0.2s ease;
+    background-color var(--motion-base, 220ms) var(--ease-standard, ease),
+    border-color var(--motion-base, 220ms) var(--ease-standard, ease),
+    opacity var(--motion-base, 220ms) var(--ease-standard, ease);
 
   &::after {
     content: "";
@@ -41,7 +41,7 @@ export const Track = styled.span`
     border-radius: var(--radius-pill);
     background: #ffffff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
-    transition: transform 0.2s ease;
+    transition: transform var(--motion-base, 220ms) var(--ease-standard, ease);
   }
 
   ${Input}:checked + & {

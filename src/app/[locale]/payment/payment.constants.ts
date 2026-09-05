@@ -22,9 +22,13 @@ export type PaymentAgreementFieldName =
 
 export type PaymentAgreementState = Record<PaymentAgreementFieldName, boolean>;
 
+export type PaymentInputMode = "email" | "numeric" | "text";
+
 export type PaymentInputConfig = {
   autoComplete?: string;
   id: PaymentCustomerFieldName;
+  /** Virtual keyboard hint; every field is a plain text control otherwise. */
+  inputMode?: PaymentInputMode;
   labelKey: string;
   layout?: "full" | "half";
   name: PaymentCustomerFieldName;
@@ -67,6 +71,7 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
   {
     autoComplete: "email",
     id: "email",
+    inputMode: "email",
     labelKey: "inputs.email.label",
     name: "email",
     placeholderKey: "inputs.email.placeholder",
@@ -102,6 +107,9 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
   {
     autoComplete: "postal-code",
     id: "postalCode",
+    // Most codes in the shop's markets are digits; letters (GB, NL, CA) are
+    // still allowed by validation, the hint only picks the first keyboard.
+    inputMode: "numeric",
     labelKey: "inputs.postalCode.label",
     layout: "half",
     name: "postalCode",
@@ -193,5 +201,26 @@ export const normalizePaymentCustomerFieldValue = (
     return normalizedValue === "en" ? "en" : "ru";
   }
 
-  return value.replace(/\s+/g, " ").trimStart();
+  return value.replace(/\s+/g, " ").trim();
 };
+
+/**
+ * The record the checkout validates, sends to the intent API and saves as a
+ * draft. Field values are stored raw while they are being typed (normalising
+ * on every keystroke throws the caret to the end of the field); this is the
+ * canonical form they take on blur, on submit and on the wire.
+ */
+export const normalizePaymentCustomerData = (
+  customerData: PaymentCustomerData,
+): PaymentCustomerData =>
+  (Object.keys(INITIAL_CUSTOMER_DATA) as PaymentCustomerFieldName[]).reduce(
+    (acc, fieldName) => {
+      acc[fieldName] = normalizePaymentCustomerFieldValue(
+        fieldName,
+        customerData[fieldName] ?? INITIAL_CUSTOMER_DATA[fieldName],
+      );
+
+      return acc;
+    },
+    { ...INITIAL_CUSTOMER_DATA },
+  );

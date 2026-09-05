@@ -70,6 +70,36 @@ html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: auto;
   background: var(--bg);
+  /* Native anchor jumps (cold #hash loads, find-in-page, bfcache, the skip
+     link) stop short of the fixed header pill; the JS path in lib/scroll.ts
+     measures the live header and lands in the same place. */
+  scroll-padding-top: calc(var(--header-clearance) + var(--safe-area-top));
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: calc(var(--header-clearance-mobile) + var(--safe-area-top));
+  }
+}
+
+/* A dialog locks scrolling through Radix, which hides the classic scrollbar
+   and compensates the body with a right margin. Fixed elements resolve against
+   the viewport, which has just grown by that width, so they take the same
+   offset and stay where they were. Overlay scrollbars (macOS, phones) report a
+   gap of 0 and nothing moves. Reserving the space permanently with
+   `scrollbar-gutter: stable` on the root looked simpler, but in WebKit it also
+   makes the root its own scroll container: the fixed header then slides away
+   with the page during rubber-band overscroll. */
+body[data-scroll-locked] header {
+  /* The header centres itself with auto margins, so it is pinned left first:
+     otherwise the narrower box splits the difference and moves by half. */
+  width: calc(100% - var(--removed-body-scroll-bar-size, 0px));
+  margin-left: 0;
+  margin-right: auto;
+}
+
+body[data-scroll-locked] [data-scroll-lock-offset] {
+  margin-right: var(--removed-body-scroll-bar-size, 0px);
 }
 
 body {
@@ -201,5 +231,11 @@ a {
   [data-fade] {
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  /* Fixed chrome would print over the first page of the legal documents. */
+  header,
+  [data-print-hidden] {
+    display: none !important;
   }
 }

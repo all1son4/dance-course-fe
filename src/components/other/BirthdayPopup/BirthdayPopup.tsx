@@ -42,6 +42,8 @@ export default function BirthdayPopup() {
 
   return (
     <AbsoluteContainer
+      data-print-hidden=""
+      data-scroll-lock-offset=""
       role="dialog"
       aria-modal={false}
       aria-labelledby={TITLE_ELEMENT_ID}

@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import CurrencySwitch from "@/components/other/CurrencySwitch";
 import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
@@ -24,6 +26,8 @@ export type CheckoutSummaryCardProps = {
     text: string;
   }>;
   formattedPrice: string;
+  /** Stripe is confirming: the amount it was minted for must not change. */
+  isCurrencyLocked?: boolean;
   /** Catalogue still loading: price and plan line show placeholders. */
   isLoading?: boolean;
   isMobile?: boolean;
@@ -41,6 +45,7 @@ export const CheckoutSummaryCard = ({
   currencyLabel,
   descriptionParagraphs,
   formattedPrice,
+  isCurrencyLocked = false,
   isLoading = false,
   isMobile = false,
   isRenewalCheckout,
@@ -50,6 +55,10 @@ export const CheckoutSummaryCard = ({
   selectedCurrency,
   title,
 }: CheckoutSummaryCardProps) => {
+  // The amount only fades when the currency is switched, never on first
+  // paint: the initial currency is what the server rendered.
+  const [initialCurrency] = useState(selectedCurrency);
+  const hasSwitchedCurrency = selectedCurrency !== initialCurrency;
   const topRowContent = (
     <SummaryTopContent>
       <SummaryBoxParahraphs>
@@ -74,6 +83,7 @@ export const CheckoutSummaryCard = ({
       <CurrencyBox>
         <MoneyTitle>{currencyLabel}</MoneyTitle>
         <CurrencySwitch
+          disabled={isCurrencyLocked}
           onChange={onCurrencyChange}
           value={selectedCurrency}
           width="160px"
@@ -86,7 +96,9 @@ export const CheckoutSummaryCard = ({
             <PriceSkeleton aria-hidden />
           </Price>
         ) : (
-          <Price>{formattedPrice}</Price>
+          <Price key={selectedCurrency} $isSwapped={hasSwitchedCurrency}>
+            {formattedPrice}
+          </Price>
         )}
       </PriceBox>
     </SummaryBottomContent>

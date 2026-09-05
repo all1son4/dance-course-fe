@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+import { gridRowReveal } from "@/styles/mixins/motion";
+
 type MarkStyleProps = {
   $hasError: boolean;
 };
@@ -24,10 +26,16 @@ export const Label = styled.label`
   width: 100%;
   cursor: pointer;
   user-select: none;
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
 
   & > input:checked + div {
     border-color: var(--ink);
     background: var(--ink);
+  }
+
+  & > input:checked + div svg {
+    opacity: 1;
+    transform: scale(1);
   }
 
   &:has(input:disabled) {
@@ -43,7 +51,8 @@ export const Label = styled.label`
 
   & > input:focus-visible + div {
     border-color: var(--ink);
-    box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+    outline: var(--focus-ring);
+    outline-offset: 3px;
   }
 
   & > input[aria-invalid="true"]:not(:checked) + div {
@@ -73,16 +82,19 @@ export const Mark = styled.div<MarkStyleProps>`
     ${({ $hasError }) => ($hasError ? "rgba(213, 0, 4, 1)" : "rgba(125, 125, 125, 1)")};
   border-radius: 6px;
   transition:
-    border-color 0.2s ease,
-    background-color 0.2s ease,
-    box-shadow 0.2s ease;
+    border-color var(--motion-base, 220ms) var(--ease-standard, ease),
+    background-color var(--motion-base, 220ms) var(--ease-standard, ease);
 
   & svg {
     margin-left: 1px;
+    opacity: 0;
+    transform: scale(0.6);
+    transition:
+      opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
+      transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
   }
 
   & svg path {
-    transition: fill 0.2s ease;
     fill: rgba(255, 255, 255, 1);
   }
 `;
@@ -99,10 +111,16 @@ export const PlaceholderText = styled.span`
   z-index: 2;
 `;
 
-export const ErrorMessage = styled.p`
+export const ErrorReveal = styled.div<{ $isOpen: boolean }>`
+  ${({ $isOpen }) => gridRowReveal($isOpen)}
+`;
+
+export const ErrorMessage = styled.p<{ $isVisible: boolean }>`
   margin: 6px 0 0 31px;
   color: var(--danger);
   font-weight: 500;
   font-size: 12px;
   line-height: 1.35;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
 `;

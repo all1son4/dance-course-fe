@@ -59,3 +59,17 @@ Because in the end I just want to enjoy dancing.`,
 Overall just happy to be there. And I would love to join online courses with you more often. I learned and improved so much, but I had still sooo much fun along the way.`,
   },
 ] as const satisfies readonly Review[];
+
+/**
+ * Columns and gaps of the slider per viewport. Swiper applies them on init;
+ * Reviews.styles.ts paints the same layout for the server-rendered frame so
+ * that hydration does not reflow the section (Swiper's breakpoints are
+ * `min-width` queries on the window, like the CSS ones).
+ */
+export const REVIEW_SLIDER_LAYOUT = {
+  base: { slidesPerView: 1, spaceBetween: 14 },
+  breakpoints: {
+    600: { slidesPerView: 2, spaceBetween: 18 },
+    1024: { slidesPerView: 3, spaceBetween: 20 },
+  },
+} as const;

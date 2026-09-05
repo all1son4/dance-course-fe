@@ -91,13 +91,18 @@ export const FormBox = styled.form`
   min-width: 0;
 `;
 
-export const PersonalData = styled.div`
+/* A fieldset so one `disabled` freezes every control while Stripe confirms;
+   the UA fieldset chrome (border, padding, min-width) is reset below. */
+export const PersonalData = styled.fieldset`
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 40px;
   width: 100%;
+  min-width: 0;
+  margin: 0;
+  border: 0;
   padding: 50px;
   box-sizing: border-box;
 
@@ -114,8 +119,21 @@ export const PersonalData = styled.div`
   }
 `;
 
-export const PaymentPreparationError = styled.p`
+/** Explains the gap where the payment card will be. */
+export const PaymentLockedHint = styled.p`
   margin: 18px 0 0;
+  color: var(--ink-muted);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+`;
+
+export const PaymentPreparationError = styled.div`
+  margin: 18px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 12px 16px;
   border: 1px solid rgba(176, 24, 33, 0.24);
   border-radius: 12px;
@@ -124,6 +142,11 @@ export const PaymentPreparationError = styled.p`
   font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 500;
+
+  & > p {
+    margin: 0;
+    flex: 1 1 220px;
+  }
 `;
 
 export const SalesClosedActions = styled.div`
@@ -173,31 +196,51 @@ export const SalesClosedDescription = styled.p`
   color: var(--ink-muted);
 `;
 
+/*
+ * Opens by animating the grid row between 0fr and 1fr (the house pattern, see
+ * Header's MenuReveal and FAQ's AnswerWrap). The old `max-height: 0 -> 920px`
+ * cap painted the content full-size while the box was still growing and
+ * clipped payment method sets taller than the cap; the row tracks the real
+ * height, however tall Stripe's method list turns out to be.
+ */
 export const StripeReveal = styled.div<{ $isVisible: boolean }>`
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-rows: ${({ $isVisible }) => ($isVisible ? "1fr" : "0fr")};
   padding-top: ${({ $isVisible }) => ($isVisible ? "20px" : "0")};
   width: 100%;
   min-width: 0;
-  overflow: ${({ $isVisible }) => ($isVisible ? "unset" : "hidden")};
-  max-height: ${({ $isVisible }) => ($isVisible ? "920px" : "0")};
   opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
   transform: translateY(${({ $isVisible }) => ($isVisible ? "0" : "-18px")});
   pointer-events: ${({ $isVisible }) => ($isVisible ? "auto" : "none")};
   transition:
+    grid-template-rows var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     padding-top var(--motion-slow, 320ms) var(--ease-emphasized, ease),
-    max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     opacity var(--motion-fast, 160ms) var(--ease-standard, ease),
     transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
-
-  @media (max-width: 767px) {
-    max-height: ${({ $isVisible }) => ($isVisible ? "1240px" : "0")};
-  }
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
     transform: none;
   }
+`;
+
+/*
+ * The row's single child: `min-height: 0` lets the 0fr row really reach zero
+ * and `overflow: hidden` keeps the content inside the growing row. Once open
+ * the clip is lifted again (after the row has finished, via a discrete
+ * transition where supported) so the payment card's glass shadow is not cut
+ * off at the edges the way it would be under a permanent clip.
+ */
+export const StripeRevealContent = styled.div<{ $isVisible: boolean }>`
+  min-height: 0;
+  min-width: 0;
+  overflow: ${({ $isVisible }) => ($isVisible ? "visible" : "hidden")};
+  transition-property: overflow;
+  transition-duration: 0s;
+  transition-delay: ${({ $isVisible }) => ($isVisible ? "var(--motion-slow, 320ms)" : "0s")};
+  transition-behavior: allow-discrete;
 `;
 
 export const TelegramInputControl = styled.div<{
@@ -504,7 +547,23 @@ export const SummaryLineSkeleton = styled.span`
   margin-top: 4px;
 `;
 
-export const Price = styled.p`
+const priceFade = keyframes`
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+`;
+
+/*
+ * `$isSwapped`: the amount was just re-rendered for another currency. It
+ * fades in over the switch thumb's slide instead of snapping - the number's
+ * width changes and the box aligns to the end, so a hard swap made the left
+ * edge jump. Opacity only: the line keeps its height and nothing reflows.
+ */
+export const Price = styled.p<{ $isSwapped?: boolean }>`
   font-weight: 400;
   font-style: normal;
   font-size: var(--text-h3);
@@ -512,6 +571,13 @@ export const Price = styled.p`
   letter-spacing: 0;
   margin: 0;
   color: var(--ink);
+  ${({ $isSwapped }) =>
+    $isSwapped
+      ? css`
+          animation: ${priceFade} var(--motion-base, 220ms) var(--ease-standard, ease)
+            both;
+        `
+      : ""}
 
   @media (max-width: 920px) {
     font-size: var(--text-fact);

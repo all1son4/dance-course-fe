@@ -1,4 +1,9 @@
-import type { ChangeEvent, FocusEventHandler, HTMLInputTypeAttribute } from "react";
+import type {
+  ChangeEvent,
+  FocusEventHandler,
+  HTMLInputTypeAttribute,
+  InputHTMLAttributes,
+} from "react";
 
 export type InputElement = HTMLInputElement | HTMLSelectElement;
 
@@ -28,4 +33,8 @@ export type TInput = {
   id?: string;
   selectOptions?: InputOption[];
   autoComplete?: string;
+  /** Picks the phone keyboard (numeric for a postal code, email…). */
+  inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
+  /** Labels the phone keyboard's return key ("next", "done"). */
+  enterKeyHint?: InputHTMLAttributes<HTMLInputElement>["enterKeyHint"];
 };

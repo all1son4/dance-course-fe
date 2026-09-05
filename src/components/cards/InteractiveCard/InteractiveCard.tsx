@@ -15,9 +15,11 @@ import {
   CollapseToggle,
   ContentWrapper,
   Divider,
+  DividerReveal,
   Title,
   TitleBlock,
   TopInfoRow,
+  TopInfoRowContent,
 } from "./InteractiveCard.styles";
 import type { InteractiveCardProps } from "./InteractiveCard.types";
 
@@ -78,12 +80,20 @@ export default function InteractiveCard({
       <ContentWrapper>
         {hasTopRow ? (
           <TopInfoRow id={topRowId} $isCollapsed={isTopRowCollapsed}>
-            {topRowContent}
+            <TopInfoRowContent $isCollapsed={isTopRowCollapsed}>
+              {topRowContent}
+            </TopInfoRowContent>
           </TopInfoRow>
         ) : null}
 
         <BottomBlock>
-          {hasTopRow ? <Divider $isCollapsed={isTopRowCollapsed} /> : null}
+          {hasTopRow ? (
+            <DividerReveal $isCollapsed={isTopRowCollapsed}>
+              <div>
+                <Divider $isCollapsed={isTopRowCollapsed} />
+              </div>
+            </DividerReveal>
+          ) : null}
           {bottomRowContent && <BottomInfoRow>{bottomRowContent}</BottomInfoRow>}
           {buttonText && (
             <ButtonBox>

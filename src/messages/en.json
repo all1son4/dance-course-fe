@@ -667,7 +667,6 @@
       "offerLabel": "Plan: {offer}"
     },
     "renewal": {
-      "text": "Confirm Telegram to unlock renewal payment.",
       "title": "Confirm Telegram before payment",
       "description": "To renew with the discount, confirm Telegram: we will check the previous chat membership and send a personal invite to the new group after payment.",
       "summaryCard": {
@@ -675,12 +674,8 @@
         "accessNote": "After payment, you will receive a personal one-time invite to the new Telegram chat.",
         "accessNotePlus": "After payment, you will receive personal one-time invites to the new Telegram chat and Inspiration Hub. Hub access is provided for the duration of the cycle."
       },
-      "sourceChat": "Checking: {title}",
-      "targetChat": "Access after payment: {title}",
       "buttons": {
-        "verify": "Confirm Telegram",
-        "verifying": "Checking...",
-        "verified": "Telegram confirmed"
+        "verify": "Confirm Telegram"
       },
       "status": {
         "loading": "Preparing check...",
@@ -690,9 +685,9 @@
         "verified": "Done.",
         "verifiedAs": "Done: {username}",
         "verifiedAsWithProfile": "Done: {username}. Your details are filled in — please review them.",
-        "notMember": "This Telegram account was not found in the old chat.",
-        "usernameMismatch": "The entered username does not match the confirmed Telegram account.",
-        "loadFailed": "Could not load the check.",
+        "notMember": "We could not find this account in the old chat. Check the username or message support.",
+        "usernameMismatch": "The username does not match the confirmed Telegram account. Enter the same one or confirm again.",
+        "loadFailed": "We could not start the check. Please try again.",
         "failed": "Could not confirm Telegram."
       },
       "unavailable": {
@@ -748,7 +743,11 @@
       "title": "This link is out of date",
       "description": "This offer is no longer available. Take a look at the current courses and materials to see what is on now.",
       "catalogButton": "Browse courses"
-    }
+    },
+    "successVerification": {
+      "preparing": "Almost there — confirming your payment and preparing your access. This can take a few more seconds…"
+    },
+    "paymentLockedHint": "Fill in the details and accept the agreements — the payment form will open here."
   },
   "PaymentSuccessPage": {
     "title": "Payment successful",
@@ -799,7 +798,9 @@
       "openInspiration": "Open Inspiration Hub",
       "pending": "Preparing your personal Telegram lessons link...",
       "unavailable": "The link is not ready yet. Please contact support.",
-      "contactSupport": "Support"
+      "contactSupport": "Support",
+      "nameMainGroup": "Online Group",
+      "nameInspiration": "Inspiration Hub"
     },
     "buttons": {
       "home": "Back to home"
@@ -821,33 +822,35 @@
     "description": "Secure payment via Stripe",
     "button": {
       "pay": "Pay",
-      "processing": "Processing..."
+      "processing": "Processing...",
+      "updating": "Updating…"
     },
     "status": {
       "preparing": "Preparing secure payment with Stripe...",
       "preparingSlow": "Preparation is taking longer than usual. Please wait a bit or refresh the page.",
-      "succeeded": "Payment completed successfully.",
-      "confirmed": "Payment details are confirmed. Stripe will finish the payment if an extra step is required."
+      "verifying": "We're verifying your payment — please don't pay again. This usually takes a few seconds.",
+      "verificationUnresolved": "We couldn't confirm your payment yet — please don't pay again. Once it's confirmed, your access links will be sent to your email. If nothing arrives, <link>contact support</link>."
     },
     "placeholder": {
-      "missingPublishableKey": "Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to .env and restart the dev server.",
-      "awaitingClientSecret": "Stripe is ready. The Payment Element will appear here automatically after receiving the clientSecret."
+      "missingPublishableKey": "Payment is temporarily unavailable."
     },
     "errors": {
-      "missingClientSecret": "Stripe did not return a client secret.",
+      "missingClientSecret": "We could not prepare the payment. Please try again.",
       "catalogUnavailable": "Sales are temporarily unavailable. Please try again later.",
       "salesClosed": "Sales for this product are currently closed.",
       "consentEvidenceFailed": "We couldn't save the required consent confirmation. Please try again.",
       "invalidCustomerData": "Please check the customer details and try again.",
-      "missingSecretKey": "STRIPE_SECRET_KEY is missing. Add it to .env and restart the server.",
-      "paymentIntentFailed": "Failed to prepare the Stripe payment. Check your Stripe settings.",
+      "missingSecretKey": "Payment is temporarily unavailable. Please try again later or message support.",
+      "paymentIntentFailed": "We could not prepare the payment. Please try again or message support.",
       "paymentIntentRequestFailed": "Failed to prepare the payment. Please try again.",
       "requiredConsentMissing": "Please accept all required agreements to continue.",
       "onlineGroupCampaignNotConfigured": "The new Online Group cycle is not configured yet. Please contact support.",
       "telegramRenewalVerificationRequired": "Confirm Telegram for this renewal first.",
       "renewalCampaignInactive": "This renewal link is no longer active. Use the current link from the group.",
       "renewalPaymentContextMismatch": "This renewal link does not match the selected product.",
-      "confirmPaymentFailed": "Failed to complete the payment. Please try again."
+      "confirmPaymentFailed": "Failed to complete the payment. Please try again.",
+      "paymentFormBlocked": "We could not load the payment form — an extension or your network may be blocking it. Turn the blocker off or open the page in another browser.",
+      "rateLimited": "Too many attempts. Wait a minute and try again."
     }
   },
   "CurrencySwitch": {
