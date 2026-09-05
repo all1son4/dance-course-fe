@@ -362,6 +362,67 @@ The earliest accelerated `DROP-02` review is 24 hours after the successful produ
 smoke: `2026-09-04T20:08:20Z` (`22:08:20` Europe/Warsaw). Do not combine exporter
 retirement or credential revocation with this release.
 
+### DROP-02 production exporter retirement — 2026-09-05
+
+Status: `OBSERVING (production switch applied; next-day verification pending)`.
+
+The fresh preflight after the owner-approved observation window passed health,
+schema, catalog, all 32 invariants, actionable queue checks, and classified
+reconciliation. Counts were 105 purchases, 308 Stripe events, 81 successful-customer
+projections, 42 invoices, and seven report runs. Shared financial records matched;
+all active Sheet access was represented in PostgreSQL. The 25 DB-only Payments,
+160 DB-only Stripe events, 15 DB-only invoices, two DB-only report runs, known legacy
+duplicate, newer access states, and historical skipped alert are classified
+post-cutover/history differences. No waiting Sheet export remained.
+
+Only `DB_SHEETS_EXPORT_MODE=database` was added to Production at
+`2026-09-05T10:50:29.683Z`. The source deployment
+`dpl_FnQJFxRW9MbzThy226YCmpJHHbWJ` was redeployed with the same Git revision
+`361fb9f48fd11488e87e9158a8f2232dd249587e` as
+`dpl_CSMhzgYpoSTmjpRv3XkaH5K6Rw5m`
+([deployment](https://anna-strok-ez773y8gr-dzmitrys-projects-82230603.vercel.app)).
+It became ready and was assigned to the production domains at
+`2026-09-05T10:52:20.568Z`. Development UI changes were not part of this deployment.
+Vercel confirmed the production setting and its presence in the new deployment.
+The value/metadata fingerprint of all 74 pre-existing variables across all three
+environments was identical before and after the change; Google credentials and
+Preview/Development configuration were unchanged.
+
+The unchanged revision already passed production CI
+[run 33910368661](https://github.com/all1son4/dance-course-fe/actions/runs/33910368661).
+The new deployment passed all nine browser checks in
+[run 33961802367](https://github.com/all1son4/dance-course-fe/actions/runs/33961802367),
+completed at `2026-09-05T10:53:40Z`. Five exporter/flag unit tests and 12 integration
+tests passed on matching persistence/exporter code in a disposable local PostgreSQL
+17 database. A fetch guard blocked Google and asserted zero attempts. Successful
+Stripe projection retained its purchase/email/alert jobs but created no export job;
+the retired-export Online Group grant also created no export. The local database was
+stopped after testing. No real production payment, grant, or outbound report email
+was generated for verification.
+
+Immediate production health, migrations, catalog, queues, and all 32 invariants
+passed. The `2026-09-05T10:54:56.706Z` reconciliation reproduced the preflight
+fingerprint `7c0fbaa80b83c2eda09fb937d3a87fcb66303b49411285662ab8e573db943b13`,
+with no new unexplained difference and `81/81` SuccessfulCustomers. Authenticated
+read-only requests to the production sales API returned HTTP 200 for August
+(28 sales) and September (one sale). The August CSV download returned HTTP 200 and
+the accepted SHA-256
+`cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
+The immediate Vercel log review, scoped to the new deployment since its ready time,
+returned zero HTTP 5xx requests and zero error-level records.
+
+Next-day verification is due at or after `2026-09-06T10:53:40Z`
+(`12:53:40` Europe/Warsaw), 24 hours after successful deployment smoke. Repeat
+health/schema/catalog, queues/invariants, classified reconciliation, admin sales/CSV
+reads, and deployment/error checks before marking `DROP-02` done or starting
+credential revocation. No new real purchase occurred during the immediate checks;
+the controlled non-production tests provide the no-export purchase evidence. New
+DB-only SuccessfulCustomers after the switch are expected; new queued exports,
+unexplained shared-row changes, or missing canonical access require investigation.
+Keep the protected snapshot; the September 23 destructive-cleanup boundary remains.
+
+### Historical CUT-03 flag sequence
+
 The numbered flag sequence below is retained as the historical `CUT-03` execution
 record. Since the `DROP-01` production release, `DB_TELEGRAM_ACCESS_MODE`,
 `DB_BUSINESS_OPERATIONS_MODE`, `DB_PAYMENT_EVENTS_MODE`, and

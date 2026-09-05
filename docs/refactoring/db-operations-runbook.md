@@ -118,7 +118,12 @@ admin response. Daily maintenance recovers this queue independently from Stripe.
 
 Setting the mode to `database` stops creating new Sheet export jobs. An already queued
 versioned export is marked `skipped` without loading customer data or calling Google.
-This value is reserved for the later export-retirement step; do not use it as an
+Production has used this value since the `DROP-02` deployment on 2026-09-05; its
+next-day verification remains pending in the
+[`production cutover runbook`](./production-cutover-runbook.md#drop-02-production-exporter-retirement--2026-09-05).
+Preview/Development settings and Google credentials were unchanged. Do not unset the
+production flag to recover missing Sheet rows after a DB-only purchase; keep
+PostgreSQL authoritative and use a forward fix. This is an exporter setting, not an
 admin-write cutover switch.
 
 After deployment, verify one ordinary and one Online Group admin grant, one invoice,

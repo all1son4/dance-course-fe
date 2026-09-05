@@ -1379,6 +1379,10 @@ cleanup eligibility after `2026-09-23T00:56:17Z`. These are earliest review time
 not automatic approvals; unexplained anomalies or insufficient natural traffic extend
 the applicable window.
 
+The owner-approved 2026-09-03 acceleration recorded under `DROP-01`/`DROP-02`
+replaces only the September 7 reader/exporter hold. The September 23 destructive
+cleanup boundary and backup requirements remain unchanged.
+
 ### Gate G6
 
 Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
@@ -1388,7 +1392,8 @@ Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
 - [x] All active legacy access is accounted for in PostgreSQL.
 - [x] Dead-letter, ready, working, and stale queues are empty; historical retries are
       terminal and explained.
-- [x] Critical runtime paths use PostgreSQL and the Sheets exporter remains disabled.
+- [x] Critical runtime paths use PostgreSQL; the optional one-way Sheets exporter
+      remains isolated until its separate `DROP-02` retirement.
 - [x] The corrected completed-month report matches bounded control SQL and regenerated
       CSV content exactly.
 - [x] The owner accepted automated production verification and reported no other
@@ -1399,8 +1404,9 @@ Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
 
 Status: `IN_PROGRESS` — cleanup preparation started on 2026-09-01. On 2026-09-03 the
 owner explicitly shortened the original `2026-09-07T00:56:17Z` hold after a fresh
-green production preflight. `DROP-01` is in production; the exporter and credentials
-remain unchanged during a new minimum 24-hour observation step.
+green production preflight. `DROP-01` is in production. After more than 24 hours of
+observation and a fresh preflight, `DROP-02` disabled the production exporter on
+2026-09-05; its next-day verification is pending. Google credentials remain present.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
@@ -1465,31 +1471,53 @@ exports, clean ready/working/stale/dead-letter queues, and all 32 invariants pas
 
 ### DROP-02 — Disable the transitional exporter after the rollback window
 
-Status: `OBSERVING` — the isolated exporter already has a tested retirement
-switch: `DB_SHEETS_EXPORT_MODE=database` stops enqueueing new jobs and marks an
-already queued versioned export `skipped` before loading customer data or calling
-Google. The 2026-09-01 development preflight found zero waiting Sheet exports and no
-ready, working, stale, or dead-letter outbox jobs. It remained unchanged during the
-2026-09-03 `DROP-01` release.
+Status: `OBSERVING (production switch applied)` — `DB_SHEETS_EXPORT_MODE=database`
+was added only to Production at `2026-09-05T10:50:29.683Z`. It stops enqueueing new
+exports and marks queued versioned exports `skipped` before loading customer data or
+calling Google. The owner-approved earliest review time, `2026-09-04T20:08:20Z`,
+had passed. The fresh preflight found no unexplained difference or waiting export.
 
-The owner explicitly replaced the original September 7 hold with a minimum 24-hour
-post-release observation. Do not apply the switch before
-`2026-09-04T20:08:20Z` (`22:08:20` Europe/Warsaw). At or after that review time:
+The existing production revision `361fb9f48fd11488e87e9158a8f2232dd249587e` was
+redeployed as `dpl_CSMhzgYpoSTmjpRv3XkaH5K6Rw5m`, ready and assigned to
+`annastrok.com` at `2026-09-05T10:52:20.568Z`. No development UI commit was included.
+All other 74 Vercel variables across Production, Preview, and Development retained
+the same values and metadata. Google credentials remain unchanged. Deployment smoke
+[run 33961802367](https://github.com/all1son4/dance-course-fe/actions/runs/33961802367)
+passed all nine browser checks; the unchanged production revision already passed CI
+[run 33910368661](https://github.com/all1son4/dance-course-fe/actions/runs/33910368661).
 
-1. repeat production health, schema, catalog, queue, invariant, and classified
-   reconciliation checks;
-2. confirm there is still no unexplained anomaly and no waiting Sheet export;
-3. set only `DB_SHEETS_EXPORT_MODE=database`, wait for the deployment, and run the
-   six critical journeys plus queue/invariant checks;
-4. confirm a new eligible purchase or controlled non-production projection creates
-   no export job and no Google API attempt;
-5. repeat the read-only production check the next day before marking `DROP-02` done.
+Five exporter/flag unit tests and 12 PostgreSQL integration tests passed, including
+successful Stripe projection and Online Group grants with zero export jobs. These
+tests ran against a disposable local database with Google fetch calls blocked and
+asserted absent. The tested persistence/exporter code matches the deployed revision.
+No real payment or production test grant was created.
+
+Immediate production health, 19 migrations, 12-offer catalog, clean actionable
+queues, and all 32 invariants passed. Reconciliation at
+`2026-09-05T10:54:56.706Z` reproduced the preflight fingerprint
+`7c0fbaa80b83c2eda09fb937d3a87fcb66303b49411285662ab8e573db943b13`.
+All 80 shared unique Payments and 81 SuccessfulCustomers match, no Sheet-only payment
+or active access is missing in PostgreSQL, and classified historical/post-cutover
+differences remain unchanged. The authenticated production sales API returned August
+28 / September 1; the downloaded August CSV exactly matches the accepted report hash
+`cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
+
+Next checkpoint: at or after `2026-09-06T10:53:40Z` (`12:53:40` Europe/Warsaw),
+24 hours after successful deployment smoke, repeat the read-only production checks
+and review any new traffic. Mark `DROP-02` done only after that pass, then proceed to
+`DROP-03`. There were no new purchases during this session; the no-export purchase
+evidence is the controlled non-production projection above. After retirement, new
+DB-only SuccessfulCustomers rows are expected; a growing export backlog, changed
+shared financial rows, or missing canonical access is not.
 
 Rollback before any post-switch purchase is an environment revert. After a canonical
 purchase has been accepted without an export, keep PostgreSQL authoritative and use a
 forward fix; never reconstruct authority from the stale worksheet.
 
 ### DROP-03 — Revoke service-account credentials and archive Sheets securely
+
+Status: `TODO` — follows the `DROP-02` next-day verification. Credentials and the
+protected source snapshot remain intact during observation.
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
@@ -1616,3 +1644,4 @@ Status: `TODO`
 | 2026-09-01 | DROP-02 preflight           | `READY`       | Switch tested; dev exports/queues clean; date gate remains    |
 | 2026-09-03 | DROP-01 early release       | `DONE`        | Owner waiver; prod CI/smoke/reconciliation/invariants green   |
 | 2026-09-03 | DROP-02 observation         | `IN_PROGRESS` | Exporter unchanged; review after 2026-09-04T20:08:20Z         |
+| 2026-09-05 | DROP-02 production switch   | `OBSERVING`   | Export off; nine browser checks; next check Sep 6 10:53:40Z   |
