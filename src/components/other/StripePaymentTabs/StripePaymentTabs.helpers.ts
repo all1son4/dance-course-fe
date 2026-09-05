@@ -3,7 +3,7 @@ import type {
   Stripe,
   StripeElements,
 } from "@stripe/stripe-js";
-import type { CSSProperties } from "react";
+import type { ReactNode } from "react";
 
 export type StripePaymentFormProps = {
   allPaymentIntentIds?: string[] | null;
@@ -14,11 +14,16 @@ export type StripePaymentFormProps = {
   billingName?: string | null;
   billingPostalCode?: string | null;
   checkoutSessionId?: string | null;
-  confirmedText: string;
   confirmPaymentFailedText: string;
-  isContentVisible: boolean;
+  /**
+   * The mounted intent is being replaced (form data changed, currency
+   * switched): paying waits for the new one so the amount and the customer
+   * data always match the intent that gets confirmed.
+   */
+  isPayLocked: boolean;
   isRenewalCheckout?: boolean;
-  onPaymentElementReadyChange?: (isReady: boolean) => void;
+  onPaymentElementReady?: () => void;
+  onSubmittingChange?: (isSubmitting: boolean) => void;
   paymentIntentId?: string | null;
   payButtonText: string;
   processingText: string;
@@ -28,6 +33,9 @@ export type StripePaymentFormProps = {
   resultProductCode?: string | null;
   resultProductId?: string | null;
   resultValue?: number | null;
+  updatingText: string;
+  verificationUnresolvedText: ReactNode;
+  verifyingText: string;
 };
 
 export type ResolvedBillingDetails = {
@@ -63,7 +71,15 @@ export const resolveBillingDetails = ({
   billingEmail,
   billingName,
   billingPostalCode,
-}: StripePaymentFormProps): ResolvedBillingDetails => ({
+}: Pick<
+  StripePaymentFormProps,
+  | "billingAddressLine1"
+  | "billingCity"
+  | "billingCountry"
+  | "billingEmail"
+  | "billingName"
+  | "billingPostalCode"
+>): ResolvedBillingDetails => ({
   addressLine1: trimValue(billingAddressLine1),
   city: trimValue(billingCity),
   country: normalizeCountry(billingCountry),
@@ -95,11 +111,6 @@ export const resolveStripeErrorMessage = (
   fallbackMessage: string,
 ): string => message?.trim() || fallbackMessage;
 
-export const createPaymentContentStyle = (isContentVisible: boolean): CSSProperties => ({
-  visibility: isContentVisible ? "visible" : "hidden",
-  pointerEvents: isContentVisible ? "auto" : "none",
-});
-
 export const isPaymentSubmissionReady = (
   submission: PaymentSubmissionState,
 ): submission is ReadyPaymentSubmissionState =>
@@ -109,13 +120,6 @@ export const isPaymentSubmissionReady = (
     !submission.isSubmitting &&
     submission.isPaymentElementReady,
   );
-
-export const createStripeElementsStyle = (isLoading: boolean): CSSProperties => ({
-  position: isLoading ? "absolute" : "relative",
-  inset: isLoading ? 0 : undefined,
-  opacity: isLoading ? 0 : 1,
-  pointerEvents: isLoading ? "none" : "auto",
-});
 
 export type LoadingStatusTranslationKey =
   | "placeholder.awaitingClientSecret"
@@ -141,4 +145,88 @@ export const getLoadingStatusTranslationKey = ({
   }
 
   return isPreparingSlow ? "status.preparingSlow" : "status.preparing";
+};
+
+/** One mounted Elements instance: an intent, identified by what it was created from. */
+export type PaymentForm = {
+  clientSecret: string;
+  key: string;
+  paymentIntentId: string;
+};
+
+export const createPaymentForm = ({
+  clientSecret,
+  paymentIntentId,
+  publishableKey,
+  stripeLocale,
+}: {
+  clientSecret?: string | null;
+  paymentIntentId?: string | null;
+  publishableKey: string;
+  stripeLocale: string;
+}): PaymentForm | null =>
+  clientSecret && publishableKey
+    ? {
+        clientSecret,
+        key: `${clientSecret}:${publishableKey}:${stripeLocale}`,
+        paymentIntentId: paymentIntentId ?? "",
+      }
+    : null;
+
+/**
+ * Glides a container from one content height to the next. The height is
+ * pinned to `from`, committed, then transitioned to `to`; while it runs a
+ * ResizeObserver keeps retargeting the end value in case the new content
+ * (Stripe's iframe finishing its fonts and layout) is still settling. Inline
+ * styles are cleared once the transition ends, so the container follows its
+ * content again. Returns the cleanup that also settles early.
+ */
+export const glideHeight = ({
+  container,
+  content,
+  durationMs,
+  from,
+  to,
+}: {
+  container: HTMLElement;
+  content: HTMLElement | null;
+  durationMs: number;
+  from: number;
+  to: number;
+}): (() => void) => {
+  container.style.height = `${from}px`;
+  container.style.overflow = "hidden";
+  // Commit the start height before switching to the end height, or there is
+  // nothing to transition from.
+  container.getBoundingClientRect();
+  container.style.transition = `height ${durationMs}ms var(--ease-emphasized, ease)`;
+  container.style.height = `${to}px`;
+
+  const observer =
+    content && typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(() => {
+          container.style.height = `${content.offsetHeight}px`;
+        })
+      : null;
+
+  const settle = () => {
+    window.clearTimeout(fallback);
+    container.removeEventListener("transitionend", handleTransitionEnd);
+    observer?.disconnect();
+    container.style.height = "";
+    container.style.overflow = "";
+    container.style.transition = "";
+  };
+  const handleTransitionEnd = (event: TransitionEvent) => {
+    // Layers inside fade at the same time; only the container's own height matters.
+    if (event.target === container && event.propertyName === "height") {
+      settle();
+    }
+  };
+  const fallback = window.setTimeout(settle, durationMs + 200);
+
+  container.addEventListener("transitionend", handleTransitionEnd);
+  observer?.observe(content as Element);
+
+  return settle;
 };

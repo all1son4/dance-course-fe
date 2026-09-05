@@ -748,6 +748,9 @@
       "title": "This link is out of date",
       "description": "This offer is no longer available. Take a look at the current courses and materials to see what is on now.",
       "catalogButton": "Browse courses"
+    },
+    "successVerification": {
+      "preparing": "Almost there — confirming your payment and preparing your access. This can take a few more seconds…"
     }
   },
   "PaymentSuccessPage": {
@@ -821,13 +824,16 @@
     "description": "Secure payment via Stripe",
     "button": {
       "pay": "Pay",
-      "processing": "Processing..."
+      "processing": "Processing...",
+      "updating": "Updating…"
     },
     "status": {
       "preparing": "Preparing secure payment with Stripe...",
       "preparingSlow": "Preparation is taking longer than usual. Please wait a bit or refresh the page.",
       "succeeded": "Payment completed successfully.",
-      "confirmed": "Payment details are confirmed. Stripe will finish the payment if an extra step is required."
+      "confirmed": "Payment details are confirmed. Stripe will finish the payment if an extra step is required.",
+      "verifying": "We're verifying your payment — please don't pay again. This usually takes a few seconds.",
+      "verificationUnresolved": "We couldn't confirm your payment yet — please don't pay again. Once it's confirmed, your access links will be sent to your email. If nothing arrives, <link>contact support</link>."
     },
     "placeholder": {
       "missingPublishableKey": "Add NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to .env and restart the dev server.",

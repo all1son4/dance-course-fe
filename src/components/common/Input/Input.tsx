@@ -1,12 +1,13 @@
 "use client";
 
-import type { FC } from "react";
+import { type FC, useState } from "react";
 
 import Placeholder from "./components/Placeholder";
 import { defaultType, defaultVariant, defaultWidth } from "./Input.constants";
 import { resolveMaskOptions } from "./Input.mask";
 import {
   ErrorMessage,
+  ErrorReveal,
   InputBox,
   InputWrapper,
   Label,
@@ -33,8 +34,16 @@ export const Input: FC<TInput> = ({
   id,
   selectOptions,
   autoComplete,
+  inputMode,
+  enterKeyHint,
 }) => {
   const hasError = Boolean(errorMessage);
+  // The message stays in the collapsing row while it closes, so the text does
+  // not vanish a frame before the space does (adjust-state-on-render).
+  const [shownErrorMessage, setShownErrorMessage] = useState(errorMessage);
+  if (hasError && shownErrorMessage !== errorMessage) {
+    setShownErrorMessage(errorMessage);
+  }
   const hasValue = String(value).length > 0;
   const inputId = id ?? name;
   const errorMessageId = hasError ? `${inputId}-error` : undefined;
@@ -57,6 +66,8 @@ export const Input: FC<TInput> = ({
 
   const inputFieldProps = {
     ...commonFieldProps,
+    enterKeyHint,
+    inputMode,
     placeholder: label ? placeholder : undefined,
     type,
   };
@@ -83,13 +94,22 @@ export const Input: FC<TInput> = ({
         )}
         {!label && !hasValue && placeholder && <Placeholder text={placeholder} />}
       </InputWrapper>
-      {/* Rendered for every variant: the field always points at this id via
-          aria-describedby. `role="alert"` announces it as it appears. */}
-      {hasError && (
-        <ErrorMessage id={errorMessageId} role="alert">
-          {errorMessage}
-        </ErrorMessage>
-      )}
+      {/* Always in the DOM so the row can open and close smoothly instead of
+          shoving the fields below down by a line. The field points at it via
+          aria-describedby only while there is an error; `role="alert"`
+          announces the text as it appears. */}
+      <ErrorReveal $isOpen={hasError}>
+        <div>
+          <ErrorMessage
+            id={`${inputId}-error`}
+            role="alert"
+            aria-hidden={hasError ? undefined : true}
+            $isVisible={hasError}
+          >
+            {hasError ? errorMessage : shownErrorMessage}
+          </ErrorMessage>
+        </div>
+      </ErrorReveal>
     </InputBox>
   );
 };

@@ -70,6 +70,27 @@ html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: auto;
   background: var(--bg);
+  /* Native anchor jumps (cold #hash loads, find-in-page, bfcache, the skip
+     link) stop short of the fixed header pill; the JS path in lib/scroll.ts
+     measures the live header and lands in the same place. */
+  scroll-padding-top: calc(var(--header-clearance) + var(--safe-area-top));
+  /* Keep the classic-scrollbar gutter while a dialog locks scrolling:
+     otherwise the viewport widens by the scrollbar and every fixed element
+     (header pill, cookie banner, popup) jumps sideways. Overlay scrollbars
+     (macOS, phones) have no gutter, so nothing changes there. */
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 767px) {
+  html {
+    scroll-padding-top: calc(var(--header-clearance-mobile) + var(--safe-area-top));
+  }
+}
+
+/* Radix's scroll lock adds the scrollbar width as a body margin; with the
+   gutter kept above that would shift the page content instead. */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
 }
 
 body {
@@ -201,5 +222,11 @@ a {
   [data-fade] {
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  /* Fixed chrome would print over the first page of the legal documents. */
+  header,
+  [data-print-hidden] {
+    display: none !important;
   }
 }

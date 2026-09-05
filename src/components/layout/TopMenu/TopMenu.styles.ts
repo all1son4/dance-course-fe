@@ -34,7 +34,7 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   line-height: 1.1;
   letter-spacing: 0;
 
-  transition: color 0.2s ease;
+  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
 
   ${({ $selected }) =>
     $selected &&

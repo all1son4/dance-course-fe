@@ -171,7 +171,7 @@ export const ResultMeta = styled.p`
  */
 export type StatusKind = "progress" | "notice";
 
-export const StatusCard = styled.div<{ $kind: StatusKind }>`
+export const StatusCard = styled.div<{ $isLeaving?: boolean; $kind: StatusKind }>`
   display: flex;
   align-items: center;
   gap: 12px;
@@ -180,6 +180,10 @@ export const StatusCard = styled.div<{ $kind: StatusKind }>`
   padding: 12px 16px;
   border-radius: 18px;
   min-height: 56px;
+  /* Leaving: the verification settled and the confirmed content is about to
+     take the card's place; it fades out first instead of vanishing. */
+  opacity: ${({ $isLeaving }) => ($isLeaving ? 0 : 1)};
+  transition: opacity var(--motion-fast, 160ms) var(--ease-standard, ease);
 
   ${({ $kind }) =>
     $kind === "progress"

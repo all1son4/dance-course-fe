@@ -14,6 +14,18 @@ const menuShow = keyframes`
   }
 `;
 
+const menuHide = keyframes`
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+`;
+
 export const MenuWrap = styled.div`
   position: relative;
   display: flex;
@@ -35,7 +47,7 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   gap: 10px;
   min-height: 32px;
 
-  transition: color 0.2s ease;
+  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
 
   color: ${(props) => (props.$isOpen ? "rgba(124, 0, 2, 1)" : "#000000")};
 
@@ -45,15 +57,15 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   }
 
   & span {
-    transition: color 0.2s ease;
+    transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
   }
 
   & > svg {
-    transition: transform 0.2s ease;
+    transition: transform var(--motion-base, 220ms) var(--ease-standard, ease);
     transform: rotate(${(props) => (props.$isOpen ? "180deg" : "0deg")});
     & path {
       stroke: ${(props) => (props.$isOpen ? "rgba(124, 0, 2, 1)" : "#000000")};
-      transition: stroke 0.2s ease;
+      transition: stroke var(--motion-base, 220ms) var(--ease-standard, ease);
     }
   }
 
@@ -93,13 +105,34 @@ export const TriggerLabel = styled.span`
   font-style: normal;
   font-size: var(--text-small);
   position: relative;
+  /* All labels share one cell: the widest sets the size, the current one shows.
+     The names are translated per locale ("Angielski" is the widest at 4.23em),
+     so the floor keeps the trigger the same width in every locale and the nav
+     does not shift when the language changes. */
+  display: inline-grid;
+  justify-items: start;
+  min-width: 4.3em;
 
   line-height: 1.1;
   letter-spacing: 0;
 
+  & > * {
+    grid-area: 1 / 1;
+  }
+
   @media (max-width: 767px) {
     font-size: var(--text-body);
   }
+`;
+
+export const TriggerLabelGhost = styled.span`
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+`;
+
+export const TriggerLabelText = styled.span`
+  white-space: nowrap;
 `;
 
 export const Menu = styled.div`
@@ -133,10 +166,18 @@ export const Menu = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
-  /* Settle pause: the live-glass layer is built before the menu starts to move. */
-  animation: ${menuShow} var(--motion-slow, 320ms) var(--ease-emphasized, ease)
-    calc(1.5 * var(--motion-settle, 40ms)) both;
   will-change: opacity, transform;
+
+  /* Settle pause: the glass layer is built before the menu starts to move. */
+  &[data-state="open"] {
+    animation: ${menuShow} var(--motion-slow, 320ms) var(--ease-emphasized, ease)
+      var(--motion-settle, 40ms) both;
+  }
+
+  &[data-state="closed"] {
+    animation: ${menuHide} var(--motion-base, 220ms) var(--ease-standard, ease) both;
+    pointer-events: none;
+  }
 
   @media (max-width: 767px) {
     left: 0;
@@ -168,7 +209,7 @@ export const Item = styled.button<{ $selected?: boolean }>`
   line-height: 1.1;
   letter-spacing: 0;
   color: var(--ink);
-  transition: opacity 0.2s ease;
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
 
   opacity: ${(props) => (props.$selected ? 0.4 : 1)};
 
@@ -183,12 +224,12 @@ export const Item = styled.button<{ $selected?: boolean }>`
   }
 
   & span {
-    transition: color 0.2s ease;
+    transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
   }
 
   & > svg {
     & path {
-      transition: stroke 0.2s ease;
+      transition: stroke var(--motion-base, 220ms) var(--ease-standard, ease);
     }
   }
 

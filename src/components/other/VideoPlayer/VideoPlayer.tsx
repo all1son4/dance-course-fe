@@ -12,7 +12,12 @@ import { INSTAGRAM_BASE_URL } from "@/constants/links";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { Play } from "@/svg";
 
-import { CenterButton, PosterOverlay, VideoWrap } from "./VideoPlayer.styles";
+import {
+  BufferingRing,
+  CenterButton,
+  PosterOverlay,
+  VideoWrap,
+} from "./VideoPlayer.styles";
 import type { TVideoPlayerProps } from "./VideoPlayer.types";
 
 type PlayerApi = {
@@ -151,7 +156,9 @@ const shouldIgnorePauseShortcut = (
   playButton: HTMLButtonElement | null,
 ): boolean => {
   if (!element) return false;
-  if (playButton && playButton.contains(element)) return false;
+  // The play button answers Space/Enter itself (its click toggles playback),
+  // so the document-level shortcut must not pause underneath it as well.
+  if (playButton && playButton.contains(element)) return true;
 
   const tag = element.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
@@ -189,6 +196,8 @@ export default function VideoPlayer({
   const [isReady, setIsReady] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  /** Asked to play, but no frame has been rendered yet. */
+  const [isBuffering, setIsBuffering] = useState(false);
 
   const youtubeId = useMemo(() => getYoutubeId(src), [src]);
   const instagramPostUrl = useMemo(() => getInstagramPostUrl(src), [src]);
@@ -206,6 +215,7 @@ export default function VideoPlayer({
     setIsReady(false);
     setIsPlaying(false);
     setHasStarted(false);
+    setIsBuffering(false);
     hasTrackedStartRef.current = false;
     hasTrackedCompletionRef.current = false;
   }, [src]);
@@ -232,6 +242,14 @@ export default function VideoPlayer({
       if (!mounted) return;
       setIsPlaying(true);
       setHasStarted(true);
+      // With preload="none" nothing is buffered when play is pressed: the
+      // poster would sit frozen, and the button gone, until the first frame
+      // arrives - the ring covers that wait. (An embed reports readiness
+      // through `playing` alone.)
+      setIsBuffering(
+        isYoutube ||
+          (video !== null && video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA),
+      );
 
       if (analyticsId && !hasTrackedStartRef.current) {
         hasTrackedStartRef.current = true;
@@ -245,6 +263,7 @@ export default function VideoPlayer({
     const handlePause = () => {
       if (!mounted) return;
       setIsPlaying(false);
+      setIsBuffering(false);
 
       if (analyticsId && hasTrackedStartRef.current && !hasTrackedCompletionRef.current) {
         void trackAnalyticsEvent("video_paused", {
@@ -257,6 +276,7 @@ export default function VideoPlayer({
     const handleEnded = () => {
       if (!mounted) return;
       setIsPlaying(false);
+      setIsBuffering(false);
 
       if (analyticsId && !hasTrackedCompletionRef.current) {
         hasTrackedCompletionRef.current = true;
@@ -267,6 +287,28 @@ export default function VideoPlayer({
       }
     };
 
+    const handleWaiting = () => {
+      if (!mounted) return;
+      setIsBuffering(true);
+    };
+
+    const handlePlaying = () => {
+      if (!mounted) return;
+      setIsBuffering(false);
+    };
+
+    // Only meaningful for the native element (Plyr raises it for an embed as
+    // soon as the player is ready, well before a frame shows).
+    const handleCanPlay = () => {
+      if (!mounted || isYoutube) return;
+      setIsBuffering(false);
+    };
+
+    const handleError = () => {
+      if (!mounted) return;
+      setIsBuffering(false);
+    };
+
     let eventTarget: HTMLElement | null = null;
 
     const attachMediaEvents = (target: HTMLElement) => {
@@ -274,6 +316,10 @@ export default function VideoPlayer({
       target.addEventListener("play", handlePlay);
       target.addEventListener("pause", handlePause);
       target.addEventListener("ended", handleEnded);
+      target.addEventListener("waiting", handleWaiting);
+      target.addEventListener("playing", handlePlaying);
+      target.addEventListener("canplay", handleCanPlay);
+      target.addEventListener("error", handleError);
     };
 
     if (!isYoutube && video) {
@@ -338,6 +384,10 @@ export default function VideoPlayer({
         eventTarget.removeEventListener("play", handlePlay);
         eventTarget.removeEventListener("pause", handlePause);
         eventTarget.removeEventListener("ended", handleEnded);
+        eventTarget.removeEventListener("waiting", handleWaiting);
+        eventTarget.removeEventListener("playing", handlePlaying);
+        eventTarget.removeEventListener("canplay", handleCanPlay);
+        eventTarget.removeEventListener("error", handleError);
       }
 
       if (plyrRef.current) {
@@ -359,18 +409,29 @@ export default function VideoPlayer({
         }
         window.open(instagramPostUrl, INSTAGRAM_WINDOW_TARGET, INSTAGRAM_WINDOW_FEATURES);
       }
-      playButtonRef.current?.blur();
       return;
     }
 
     const api = getPlayerApi(plyrRef.current, videoRef.current);
     if (!api) return;
 
+    // Focus stays on the button after a click (`:focus-visible` keeps the
+    // ring off for mouse and touch), so while playing the button can still
+    // be activated - by keyboard, or by mouse while keyboard focus shows it -
+    // and then it toggles.
+    if (isPlaying) {
+      api.pause();
+      return;
+    }
+
     const result = api.play();
     if (result instanceof Promise) {
-      void result;
+      // Rejected when the browser refuses or a pause interrupts the start;
+      // either way nothing is coming, so the ring must not keep spinning.
+      result.catch(() => {
+        setIsBuffering(false);
+      });
     }
-    playButtonRef.current?.blur();
   };
 
   const handleWrapClickCapture = (event: MouseEvent<HTMLDivElement>) => {
@@ -446,6 +507,7 @@ export default function VideoPlayer({
       $radius={radius}
       $buttonSize={buttonSize}
       $iconSize={iconSize}
+      aria-busy={isBuffering || undefined}
     >
       {poster && (isYoutube || isInstagram) && (
         <PosterOverlay
@@ -464,6 +526,7 @@ export default function VideoPlayer({
       >
         <Play />
       </CenterButton>
+      <BufferingRing $isVisible={isBuffering} aria-hidden />
 
       {renderMedia()}
     </VideoWrap>

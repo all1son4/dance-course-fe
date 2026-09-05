@@ -87,9 +87,7 @@ export const useTelegramRenewal = ({
         );
 
         if (data.verified && verifiedUsername) {
-          paymentStore.setCustomerField("nickname", verifiedUsername, {
-            skipStripeIntentReset: true,
-          });
+          paymentStore.setCustomerField("nickname", verifiedUsername);
         }
 
         setRenewalClientId(data.clientId ?? "");
@@ -125,6 +123,8 @@ export const useTelegramRenewal = ({
 
   const verifyTelegramRenewal = async () => {
     const numericClientId = Number(renewalClientId);
+    // The handle is stored as typed until blur; the claim must be the settled form.
+    paymentStore.normalizeCustomerField("nickname");
     const claimedUsername = paymentStore.customerData.nickname.trim();
 
     if (
@@ -205,9 +205,7 @@ export const useTelegramRenewal = ({
       );
 
       if (verifiedNickname) {
-        paymentStore.setCustomerField("nickname", verifiedNickname, {
-          skipStripeIntentReset: true,
-        });
+        paymentStore.setCustomerField("nickname", verifiedNickname);
       }
 
       window.focus();

@@ -8,6 +8,7 @@ import {
   cancelUnusedPaymentIntents,
   createResultPageUrl,
   PAYMENT_RESULT_PATHS,
+  pollPaymentCompletion,
   resolvePaymentCompletion,
 } from "./StripePaymentTabs.completion";
 
@@ -204,4 +205,106 @@ test("cancellation without a checkout session never reaches the network", async 
   });
 
   await new Promise((resolve) => setTimeout(resolve, 0));
+});
+
+const processingStatus = {
+  body: {
+    outcome: "processing",
+    paymentIntentId: "pi_test_1",
+    status: "processing",
+  },
+};
+
+test("verification keeps asking until the payment settles, then names the result page", async (t) => {
+  const calls = installJsonFetchFixture(t, [
+    processingStatus,
+    { body: {}, status: 503 },
+    processingStatus,
+    {
+      body: {
+        outcome: "succeeded",
+        paymentIntentId: "pi_test_1",
+        status: "succeeded",
+      },
+    },
+  ]);
+
+  const result = await pollPaymentCompletion({
+    checkoutSessionId: "cs_test_1",
+    intervalMs: 1,
+    paymentIntentId: "pi_test_1",
+    timeoutMs: 5_000,
+  });
+
+  assert.deepEqual(result, {
+    cancelUnusedIntents: true,
+    kind: "redirect",
+    pathname: PAYMENT_RESULT_PATHS.success,
+    paymentIntentId: "pi_test_1",
+  });
+  assert.equal(calls.length, 4);
+});
+
+test("a payment that fails during verification goes to the failed page", async (t) => {
+  installJsonFetchFixture(t, [
+    processingStatus,
+    {
+      body: {
+        outcome: "canceled",
+        paymentIntentId: "pi_test_1",
+        status: "canceled",
+      },
+    },
+  ]);
+
+  const result = await pollPaymentCompletion({
+    checkoutSessionId: "cs_test_1",
+    intervalMs: 1,
+    paymentIntentId: "pi_test_1",
+    timeoutMs: 5_000,
+  });
+
+  assert.equal(result.kind, "redirect");
+  assert.equal(
+    result.kind === "redirect" ? result.pathname : null,
+    PAYMENT_RESULT_PATHS.failed,
+  );
+});
+
+test("verification gives up after its deadline without ever failing the attempt", async (t) => {
+  const calls = installJsonFetchFixture(
+    t,
+    Array.from({ length: 200 }, () => processingStatus),
+  );
+
+  const result = await pollPaymentCompletion({
+    checkoutSessionId: "cs_test_1",
+    intervalMs: 2,
+    paymentIntentId: "pi_test_1",
+    timeoutMs: 40,
+  });
+
+  assert.deepEqual(result, { kind: "unresolved" });
+  assert.ok(calls.length >= 2);
+  assert.ok(calls.length < 200);
+});
+
+test("verification stops when the form is gone and cannot start without a session", async (t) => {
+  installJsonFetchFixture(t, []);
+
+  assert.deepEqual(
+    await pollPaymentCompletion({
+      checkoutSessionId: null,
+      paymentIntentId: "pi_test_1",
+    }),
+    { kind: "unresolved" },
+  );
+  assert.deepEqual(
+    await pollPaymentCompletion({
+      checkoutSessionId: "cs_test_1",
+      paymentIntentId: "pi_test_1",
+      shouldContinue: () => false,
+    }),
+    { kind: "unresolved" },
+  );
 });

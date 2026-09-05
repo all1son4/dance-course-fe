@@ -1,4 +1,4 @@
-import styled, { keyframes } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
 
@@ -84,6 +84,22 @@ export const ErrorText = styled(StatusText)`
   color: var(--danger);
 `;
 
+export const StatusLink = styled.a`
+  color: var(--ink);
+  font-weight: 400;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+`;
+
+/* The button comes first; whatever the attempt has to say lands underneath
+   in a row that always reserves one line, so an error appearing at the
+   moment of the tap never moves the button under the finger. */
 export const Actions = styled.div`
   display: flex;
   flex-direction: column;
@@ -99,6 +115,46 @@ export const Actions = styled.div`
       max-width: 100%;
     }
   }
+`;
+
+export const ActionFeedback = styled.div`
+  width: 100%;
+  min-height: 20px;
+`;
+
+/*
+ * The form area: the skeleton and every Elements instance are layers of one
+ * stage. The layer being shown lays out normally; a replacement mounts on top
+ * of it invisibly until Stripe reports it ready, then the two cross-fade and
+ * the stage's height glides between them (see StripePaymentTabs).
+ */
+export const PaymentStage = styled.div`
+  position: relative;
+  width: 100%;
+  min-width: 0;
+`;
+
+export type StageLayerRole = "current" | "incoming" | "leaving";
+
+export const StageLayer = styled.div<{ $role: StageLayerRole }>`
+  width: 100%;
+  min-width: 0;
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+
+  ${({ $role }) =>
+    $role === "current"
+      ? css`
+          position: relative;
+          opacity: 1;
+        `
+      : css`
+          position: absolute;
+          top: 0;
+          right: 0;
+          left: 0;
+          opacity: 0;
+          pointer-events: none;
+        `}
 `;
 
 const shimmer = keyframes`

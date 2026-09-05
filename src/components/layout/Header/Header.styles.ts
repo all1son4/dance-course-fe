@@ -35,6 +35,9 @@ export const MobileMenuBackdrop = styled.div<{ $isOpen: boolean }>`
     z-index: 1;
     opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
     pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
+    /* A drag on the backdrop used to scroll the page under the open menu. */
+    touch-action: none;
+    overscroll-behavior: contain;
     transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
   }
 `;
@@ -50,6 +53,11 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
   justify-content: space-between;
   align-items: center;
   padding: 26px 50px;
+
+  @media (max-width: 767px) {
+    /* While the menu is open a drag on the pill must not scroll the page. */
+    touch-action: ${({ $isOpen }) => ($isOpen ? "none" : "auto")};
+  }
 
   ${glass({
     variant: "chrome",
@@ -94,7 +102,8 @@ export const MenuReveal = styled.div<{ $isOpen: boolean }>`
   width: 100%;
   grid-template-rows: ${({ $isOpen }) => ($isOpen ? "1fr" : "0fr")};
   transition: grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease);
-  transition-delay: var(--motion-settle, 40ms);
+  /* The settle pause is for the entrance; a collapse has nothing to build. */
+  transition-delay: ${({ $isOpen }) => ($isOpen ? "var(--motion-settle, 40ms)" : "0ms")};
 
   & > * {
     min-height: 0;
@@ -201,7 +210,7 @@ export const Bottom = styled.div<{ $isOpen: boolean }>`
     transition:
       opacity var(--motion-base, 220ms) var(--ease-standard, ease),
       transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
-    transition-delay: var(--motion-settle, 40ms);
+    transition-delay: ${({ $isOpen }) => ($isOpen ? "var(--motion-settle, 40ms)" : "0ms")};
     will-change: opacity, transform;
     pointer-events: ${({ $isOpen }) => ($isOpen ? "all" : "none")};
   }

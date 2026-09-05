@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { prefersReducedMotion } from "@/lib/reveal";
 import type { usePaymentStore } from "@/stores";
 
 import {
@@ -50,6 +51,8 @@ export type SelectOption = {
   value: string;
 };
 export type CheckoutInputField = PaymentInputConfig & {
+  /** "next" walks the keyboard to the following field, "done" closes it on the last. */
+  enterKeyHint: "done" | "next";
   errorMessage: string;
   label: string;
   placeholder: string;
@@ -156,6 +159,11 @@ export const getVisiblePaymentInputs = ({
     return 0;
   });
 };
+
+export const getCheckoutEnterKeyHint = (
+  index: number,
+  fieldCount: number,
+): CheckoutInputField["enterKeyHint"] => (index === fieldCount - 1 ? "done" : "next");
 
 export const resolveRenewalStatusTone = (status: RenewalStatus): RenewalStatusTone => {
   if (status === "verified") {
@@ -296,9 +304,8 @@ export const prefillRenewalCustomerProfile = (
       return;
     }
 
-    paymentStore.setCustomerField(fieldName, value, {
-      skipStripeIntentReset: true,
-    });
+    paymentStore.setCustomerField(fieldName, value);
+    paymentStore.normalizeCustomerField(fieldName);
     hasPrefilledProfile = true;
   });
 
@@ -327,7 +334,7 @@ export const focusNextCheckoutControl = ({
   ) {
     nextControl.focus({ preventScroll: true });
     nextControl.scrollIntoView({
-      behavior: "smooth",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
       block: "center",
     });
   }

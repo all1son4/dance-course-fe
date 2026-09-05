@@ -1,7 +1,7 @@
 import { css, styled } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
-import { chevronHint } from "@/styles/mixins/motion";
+import { chevronHint, gridRowReveal } from "@/styles/mixins/motion";
 
 import type { InteractiveCardFrost } from "./InteractiveCard.types";
 
@@ -29,7 +29,8 @@ export const CardContainer = styled.div<{
   max-width: 100%;
   overflow: hidden;
   position: relative;
-  padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "4px" : "0")};
+  /* Room for the collapse chevron and its focus ring inside the clip. */
+  padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "8px" : "0")};
 
   ${({ $frost }) => frostStyles[$frost]}
 
@@ -88,20 +89,25 @@ export const ContentWrapper = styled.div`
   }
 `;
 
+/* The row opens by its grid track (see gridRowReveal): the old
+   `max-height: 0 -> 560px` finished in the first 60ms of a 320ms expand and
+   waited 90ms before a collapse, because the curve ran over 560px while the
+   content was ~310px. */
 export const TopInfoRow = styled.div<{ $isCollapsed?: boolean }>`
   width: 100%;
+  ${({ $isCollapsed }) => gridRowReveal(!$isCollapsed, "var(--motion-slow, 320ms)")}
+  pointer-events: ${({ $isCollapsed }) => ($isCollapsed ? "none" : "auto")};
+`;
+
+export const TopInfoRowContent = styled.div<{ $isCollapsed?: boolean }>`
+  width: 100%;
   display: flex;
-  min-height: 0;
-  overflow: hidden;
-  max-height: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "560px")};
   opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
   transform: translateY(${({ $isCollapsed }) => ($isCollapsed ? "-8px" : "0")});
   transition:
-    max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
     opacity var(--motion-base, 220ms) var(--ease-standard, ease),
     transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
-  transition-delay: var(--motion-settle, 40ms);
-  pointer-events: ${({ $isCollapsed }) => ($isCollapsed ? "none" : "auto")};
+  transition-delay: ${({ $isCollapsed }) => ($isCollapsed ? "0ms" : "var(--motion-settle, 40ms)")};
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
@@ -121,21 +127,24 @@ export const BottomInfoRow = styled.div`
   display: flex;
 `;
 
+/* The divider and its 40px margins collapse on the same track curve as the
+   top row, so the two halves of the card move as one. */
+export const DividerReveal = styled.div<{ $isCollapsed?: boolean }>`
+  width: 100%;
+  ${({ $isCollapsed }) => gridRowReveal(!$isCollapsed, "var(--motion-slow, 320ms)")}
+`;
+
 export const Divider = styled.div<{ $isCollapsed?: boolean }>`
   width: 100%;
-  height: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "1px")};
+  height: 1px;
   background: rgba(209, 211, 218, 1);
-  margin: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "40px 0")};
+  margin: 40px 0;
   opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
-  transition:
-    height var(--motion-slow, 320ms) var(--ease-emphasized, ease),
-    margin var(--motion-slow, 320ms) var(--ease-emphasized, ease),
-    opacity var(--motion-base, 220ms) var(--ease-standard, ease);
-  transition-delay: var(--motion-settle, 40ms);
-  overflow: hidden;
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+  transition-delay: ${({ $isCollapsed }) => ($isCollapsed ? "0ms" : "var(--motion-settle, 40ms)")};
 
   @media (max-width: 880px) {
-    margin: ${({ $isCollapsed }) => ($isCollapsed ? "0" : "30px 0")};
+    margin: 30px 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -162,7 +171,8 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   justify-content: center;
   position: absolute;
   left: calc(50% - 14px);
-  bottom: -2px;
+  /* Fully inside the card's clip, ring included (28px button + 2px offset). */
+  bottom: 5px;
   background: transparent;
   cursor: pointer;
   z-index: 2;

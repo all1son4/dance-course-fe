@@ -6,6 +6,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-intent/lib";
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { prefersReducedMotion } from "@/lib/reveal";
 
 import {
   ResultActions,
@@ -19,6 +20,10 @@ import { resolveSuccessPageOutcomeAction } from "./success-outcome";
 const STATUS_CHECK_MAX_ATTEMPTS = 4;
 const STATUS_CHECK_RETRY_DELAY_MS = 1_000;
 const STATUS_REQUEST_TIMEOUT_MS = 8_000;
+/** A check that runs this long gets a reassurance instead of the same spinner. */
+const STATUS_REASSURANCE_DELAY_MS = 5_000;
+/** How long the status card fades before the confirmed content takes its place. */
+const STATUS_LEAVE_MS = 160;
 
 type SuccessRedirectGuardProps = {
   children: ReactNode;
@@ -29,6 +34,7 @@ type SuccessRedirectGuardProps = {
   paymentIntentId: string;
   paymentPath: string;
   pendingText: string;
+  preparingText: string;
   refreshButtonText: string;
   supportButtonText: string;
   unavailableText: string;
@@ -45,6 +51,7 @@ export default function SuccessRedirectGuard({
   paymentIntentId,
   paymentPath,
   pendingText,
+  preparingText,
   refreshButtonText,
   supportButtonText,
   unavailableText,
@@ -52,6 +59,26 @@ export default function SuccessRedirectGuard({
   const router = useRouter();
   const [verificationState, setVerificationState] =
     useState<VerificationState>("checking");
+  const [isCheckingLong, setIsCheckingLong] = useState(false);
+  const [isStatusLeaving, setIsStatusLeaving] = useState(false);
+
+  // The checks can take a while (four attempts, each with its own timeout).
+  // After a few seconds the spinner line changes from "checking" to a note
+  // that the payment is being prepared, so a longer wait does not read as a
+  // hang.
+  useEffect(() => {
+    if (verificationState !== "checking") {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setIsCheckingLong(true);
+    }, STATUS_REASSURANCE_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [verificationState]);
 
   useEffect(() => {
     if (!paymentIntentId || !checkoutSessionId) {
@@ -69,6 +96,22 @@ export default function SuccessRedirectGuard({
         }, delayMs);
         pendingTimeouts.add(timeoutId);
       });
+
+    // The confirmed content replaces the status card through a fade rather
+    // than a hard swap: the card fades out first, then the result mounts and
+    // plays its own entrance (see result-page.styles).
+    const showConfirmedContent = async () => {
+      if (!prefersReducedMotion()) {
+        setIsStatusLeaving(true);
+        await wait(STATUS_LEAVE_MS);
+
+        if (isDisposed) {
+          return;
+        }
+      }
+
+      setVerificationState("succeeded");
+    };
 
     const verifyOutcome = async () => {
       for (let attempt = 0; attempt < STATUS_CHECK_MAX_ATTEMPTS; attempt += 1) {
@@ -117,7 +160,7 @@ export default function SuccessRedirectGuard({
           const action = resolveSuccessPageOutcomeAction(data.outcome);
 
           if (action === "show_success") {
-            setVerificationState("succeeded");
+            await showConfirmedContent();
             return;
           }
 
@@ -177,6 +220,7 @@ export default function SuccessRedirectGuard({
   return (
     <>
       <StatusCard
+        $isLeaving={isStatusLeaving}
         $kind={isUnavailable ? "notice" : "progress"}
         role={isUnavailable ? "alert" : "status"}
         aria-atomic="true"
@@ -185,7 +229,9 @@ export default function SuccessRedirectGuard({
         {isUnavailable ? <StatusMark aria-hidden /> : <StatusSpinner />}
         <StatusText>
           {verificationState === "checking"
-            ? checkingText
+            ? isCheckingLong
+              ? preparingText
+              : checkingText
             : verificationState === "pending"
               ? pendingText
               : unavailableText}

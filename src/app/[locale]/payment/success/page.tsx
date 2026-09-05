@@ -43,9 +43,10 @@ const getParamValue = (searchParams: SuccessPageSearchParams, key: string): stri
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const [locale, t] = await Promise.all([
+  const [locale, t, paymentT] = await Promise.all([
     getLocale(),
     getTranslations("PaymentSuccessPage"),
+    getTranslations("PaymentPage"),
   ]);
   const productId = getParamValue(resolvedSearchParams, "product");
   const offerId = getParamValue(resolvedSearchParams, "offer");
@@ -133,6 +134,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           paymentIntentId={paymentIntentId}
           paymentPath={paymentPath}
           pendingText={t("verification.pending")}
+          preparingText={paymentT("successVerification.preparing")}
           refreshButtonText={t("verification.refreshButton")}
           supportButtonText={t("telegram.contactSupport")}
           unavailableText={t("verification.unavailable")}

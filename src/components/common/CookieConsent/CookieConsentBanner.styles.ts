@@ -99,7 +99,7 @@ export const BannerLink = styled(Link)`
   color: var(--ink-muted);
   text-decoration: underline;
   text-underline-offset: 2px;
-  transition: color 0.2s ease;
+  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
 
   @media (hover: hover) and (pointer: fine) {
     &:hover {
@@ -188,7 +188,8 @@ export const InlineSettings = styled.div<{ $isOpen?: boolean }>`
   transition:
     grid-template-rows var(--motion-base, 220ms) var(--ease-emphasized, ease),
     padding-top var(--motion-base, 220ms) var(--ease-emphasized, ease);
-  transition-delay: var(--motion-settle, 40ms);
+  /* The settle pause is for the entrance; a collapse has nothing to build. */
+  transition-delay: ${({ $isOpen }) => ($isOpen ? "var(--motion-settle, 40ms)" : "0ms")};
   min-height: 0;
   overflow: clip;
   pointer-events: ${({ $isOpen }) => ($isOpen ? "auto" : "none")};
@@ -208,7 +209,7 @@ export const InlineSettingsContent = styled.div<{ $isOpen?: boolean }>`
   transition:
     opacity var(--motion-base, 220ms) var(--ease-standard, ease),
     transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
-  transition-delay: var(--motion-settle, 40ms);
+  transition-delay: ${({ $isOpen }) => ($isOpen ? "var(--motion-settle, 40ms)" : "0ms")};
   will-change: opacity, transform;
 
   @media (max-width: 767px) {

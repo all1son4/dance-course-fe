@@ -93,7 +93,12 @@ export default function StickyCta({
   const hasText = Boolean(title || note);
 
   return createPortal(
-    <StickyCtaViewport $isVisible={isVisible} aria-hidden={!isVisible} inert={!isVisible}>
+    <StickyCtaViewport
+      $isVisible={isVisible}
+      aria-hidden={!isVisible}
+      inert={!isVisible}
+      data-print-hidden=""
+    >
       <StickyCtaMotionLayer $isVisible={isVisible} $motion={motion}>
         <StickyCtaCard role="region" aria-label={title ?? label}>
           {hasText && (

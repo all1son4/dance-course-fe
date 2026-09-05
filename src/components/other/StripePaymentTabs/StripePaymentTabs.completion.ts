@@ -21,6 +21,13 @@ const PAYMENT_STATUS_RETRY_BASE_DELAY_MS = 320;
 const PAYMENT_STATUS_RETRY_MAX_DELAY_MS = 1_400;
 const PAYMENT_STATUS_RETRY_JITTER_MS = 140;
 const MILLISECONDS_PER_SECOND = 1_000;
+/**
+ * Once Stripe has accepted a confirmation the money may already be moving, so
+ * an answer that is still "processing" (or no answer at all) is followed up
+ * gently for a while rather than handed back as a failure with a live button.
+ */
+export const PAYMENT_VERIFICATION_POLL_INTERVAL_MS = 3_000;
+export const PAYMENT_VERIFICATION_TIMEOUT_MS = 120_000;
 
 type PaymentIntentStatusResponse = {
   outcome: "canceled" | "failed" | "processing" | "requires_action" | "succeeded";
@@ -33,15 +40,24 @@ export type ResultPageContext = Pick<
   "checkoutSessionId" | "resultCurrency" | "resultOfferId" | "resultProductId"
 >;
 
+export type PaymentRedirectCompletion = {
+  cancelUnusedIntents: boolean;
+  kind: "redirect";
+  pathname: string;
+  paymentIntentId?: string;
+};
+
 export type PaymentCompletion =
   | {
       kind: "confirmed";
     }
+  | PaymentRedirectCompletion;
+
+/** Verification either settles on a result page or gives up after the deadline. */
+export type PaymentVerificationResult =
+  | PaymentRedirectCompletion
   | {
-      cancelUnusedIntents: boolean;
-      kind: "redirect";
-      pathname: string;
-      paymentIntentId?: string;
+      kind: "unresolved";
     };
 
 const wait = (delayMs: number): Promise<void> =>
@@ -84,6 +100,34 @@ const getRetryAfterSeconds = (response: Response): number | undefined => {
 const isRetryablePaymentStatusError = (error: unknown): boolean =>
   (error instanceof Error && error.name === "AbortError") || error instanceof TypeError;
 
+/** One status request, abandoned after the request timeout. */
+const requestPaymentIntentStatus = async (
+  paymentIntentId: string,
+  checkoutSessionId: string,
+): Promise<Response> => {
+  const requestController = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    requestController.abort();
+  }, PAYMENT_STATUS_REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(PAYMENT_API_ENDPOINTS.getIntentStatus, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        checkoutSessionId,
+        paymentIntentId,
+      }),
+      cache: "no-store",
+      signal: requestController.signal,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
+
 const getConfirmedStatus = async (
   paymentIntentId: string,
   checkoutSessionId: string,
@@ -91,25 +135,12 @@ const getConfirmedStatus = async (
   let finalHttpStatus: number | undefined;
 
   for (let attempt = 0; attempt < PAYMENT_STATUS_MAX_ATTEMPTS; attempt += 1) {
-    const requestController = new AbortController();
-    const timeoutId = window.setTimeout(() => {
-      requestController.abort();
-    }, PAYMENT_STATUS_REQUEST_TIMEOUT_MS);
-
     try {
       finalHttpStatus = undefined;
-      const response = await fetch(PAYMENT_API_ENDPOINTS.getIntentStatus, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          checkoutSessionId,
-          paymentIntentId,
-        }),
-        cache: "no-store",
-        signal: requestController.signal,
-      });
+      const response = await requestPaymentIntentStatus(
+        paymentIntentId,
+        checkoutSessionId,
+      );
 
       if (response.ok) {
         return (await response.json()) as PaymentIntentStatusResponse;
@@ -149,8 +180,6 @@ const getConfirmedStatus = async (
         status: finalHttpStatus,
       });
       throw new Error(PAYMENT_STATUS_REQUEST_ERROR);
-    } finally {
-      window.clearTimeout(timeoutId);
     }
   }
 
@@ -263,6 +292,62 @@ const resolveServerPaymentCompletion = (
   }
 
   return { kind: "confirmed" };
+};
+
+/**
+ * Follows a payment whose first status probe did not settle it. The customer
+ * has already confirmed, so nothing here may ever re-enable paying: the
+ * endpoint is asked at a gentle interval until it names a result page, or
+ * until the deadline passes and the caller falls back to support.
+ * Transport errors and non-2xx answers are simply asked again.
+ */
+export const pollPaymentCompletion = async ({
+  checkoutSessionId,
+  intervalMs = PAYMENT_VERIFICATION_POLL_INTERVAL_MS,
+  paymentIntentId,
+  shouldContinue = () => true,
+  timeoutMs = PAYMENT_VERIFICATION_TIMEOUT_MS,
+}: {
+  checkoutSessionId?: string | null;
+  intervalMs?: number;
+  paymentIntentId?: string | null;
+  /** Lets an unmounted form stop the loop at the next tick. */
+  shouldContinue?: () => boolean;
+  timeoutMs?: number;
+}): Promise<PaymentVerificationResult> => {
+  if (!checkoutSessionId || !paymentIntentId) {
+    return { kind: "unresolved" };
+  }
+
+  const deadline = Date.now() + timeoutMs;
+
+  while (shouldContinue()) {
+    try {
+      const response = await requestPaymentIntentStatus(
+        paymentIntentId,
+        checkoutSessionId,
+      );
+
+      if (response.ok) {
+        const { outcome } = (await response.json()) as PaymentIntentStatusResponse;
+        const completion = resolveServerPaymentCompletion(outcome, paymentIntentId);
+
+        if (completion.kind === "redirect") {
+          return completion;
+        }
+      }
+    } catch {
+      // Asked again on the next tick; the deadline bounds the loop.
+    }
+
+    if (Date.now() >= deadline) {
+      break;
+    }
+
+    await wait(intervalMs);
+  }
+
+  return { kind: "unresolved" };
 };
 
 export const resolvePaymentCompletion = async ({

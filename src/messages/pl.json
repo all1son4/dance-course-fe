@@ -748,6 +748,9 @@
       "title": "Link jest nieaktualny",
       "description": "Ta oferta nie jest już dostępna. Zobacz aktualne kursy i materiały — tam znajdziesz wszystko, co jest teraz w sprzedaży.",
       "catalogButton": "Zobacz kursy"
+    },
+    "successVerification": {
+      "preparing": "Prawie gotowe — potwierdzamy płatność i przygotowujemy dostęp. Może to potrwać jeszcze kilka sekund…"
     }
   },
   "PaymentSuccessPage": {
@@ -821,13 +824,16 @@
     "description": "Bezpieczna płatność przez Stripe",
     "button": {
       "pay": "Zapłać",
-      "processing": "Przetwarzanie..."
+      "processing": "Przetwarzanie...",
+      "updating": "Aktualizujemy…"
     },
     "status": {
       "preparing": "Przygotowujemy bezpieczną płatność przez Stripe...",
       "preparingSlow": "Przygotowanie trwa dłużej niż zwykle. Poczekaj chwilę lub odśwież stronę.",
       "succeeded": "Płatność zakończona pomyślnie.",
-      "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok."
+      "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok.",
+      "verifying": "Weryfikujemy Twoją płatność — nie płać ponownie. Zwykle trwa to kilka sekund.",
+      "verificationUnresolved": "Nie udało się jeszcze potwierdzić płatności — nie płać ponownie. Gdy zostanie potwierdzona, linki dostępu wyślemy na Twój e-mail. Jeśli nic nie przyjdzie, <link>skontaktuj się ze wsparciem</link>."
     },
     "placeholder": {
       "missingPublishableKey": "Dodaj NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY do .env i uruchom ponownie dev server.",
