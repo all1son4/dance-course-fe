@@ -123,8 +123,8 @@ export const PersonalData = styled.fieldset`
 export const PaymentLockedHint = styled.p`
   margin: 18px 0 0;
   color: var(--ink-muted);
-  font-size: var(--text-caption);
-  line-height: 1.4;
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
 `;
 
 export const PaymentPreparationError = styled.div`

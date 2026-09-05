@@ -164,6 +164,10 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
                 : undefined
             }
             telegramAccessActiveText={t("telegram.active")}
+            telegramAccessNames={{
+              inspiration: t("telegram.nameInspiration"),
+              main: t("telegram.nameMainGroup"),
+            }}
             telegramContactSupportText={t("telegram.contactSupport")}
             telegramInspirationLinkText={t("telegram.openInspiration")}
             telegramInspirationUntilLabel={t("telegram.inspirationUntil")}

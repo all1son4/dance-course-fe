@@ -34,6 +34,8 @@ type SuccessContentProps = {
   productCode: string;
   purchaseCurrency?: "eur" | "pln";
   purchaseValue?: number;
+  /** Names the access in a notice; the button labels stay calls to action. */
+  telegramAccessNames: { inspiration: string; main: string };
   telegramAccessActiveText: string;
   telegramContactSupportText: string;
   telegramInspirationLinkText: string;
@@ -61,6 +63,7 @@ export default function SuccessContent({
   productCode,
   purchaseCurrency,
   purchaseValue,
+  telegramAccessNames,
   telegramAccessActiveText,
   telegramContactSupportText,
   telegramInspirationLinkText,
@@ -141,6 +144,7 @@ export default function SuccessContent({
       <ResultActions>
         {isTelegramAccessPurchase ? (
           <TelegramAccessButton
+            accessNames={telegramAccessNames}
             activeText={telegramAccessActiveText}
             buttonText={telegramOpenLinkText}
             checkoutSessionId={checkoutSessionId}

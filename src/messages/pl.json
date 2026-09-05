@@ -667,7 +667,6 @@
       "offerLabel": "Pakiet: {offer}"
     },
     "renewal": {
-      "text": "Potwierdź Telegram, aby odblokować płatność za kontynuację.",
       "title": "Potwierdź Telegram przed płatnością",
       "description": "Aby przedłużyć ze zniżką, potwierdź konto Telegram: sprawdzimy udział w poprzednim czacie, a po płatności wyślemy osobisty link do nowej grupy.",
       "summaryCard": {
@@ -675,12 +674,8 @@
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
         "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
       },
-      "sourceChat": "Sprawdzamy: {title}",
-      "targetChat": "Dostęp po płatności: {title}",
       "buttons": {
-        "verify": "Potwierdź Telegram",
-        "verifying": "Sprawdzamy...",
-        "verified": "Telegram potwierdzony"
+        "verify": "Potwierdź Telegram"
       },
       "status": {
         "loading": "Przygotowujemy weryfikację...",
@@ -690,9 +685,9 @@
         "verified": "Gotowe.",
         "verifiedAs": "Gotowe: {username}",
         "verifiedAsWithProfile": "Gotowe: {username}. Dane zostały uzupełnione — sprawdź je.",
-        "notMember": "Tego konta Telegram nie znaleziono w starym czacie.",
-        "usernameMismatch": "Wpisana nazwa użytkownika nie pasuje do potwierdzonego konta Telegram.",
-        "loadFailed": "Nie udało się załadować weryfikacji.",
+        "notMember": "Nie znaleźliśmy tego konta w starym czacie. Sprawdź nazwę użytkownika lub napisz do nas.",
+        "usernameMismatch": "Nazwa użytkownika nie zgadza się z potwierdzonym kontem Telegram. Wpisz tę samą lub potwierdź ponownie.",
+        "loadFailed": "Nie udało się rozpocząć weryfikacji. Spróbuj ponownie.",
         "failed": "Nie udało się potwierdzić Telegrama."
       },
       "unavailable": {
@@ -752,7 +747,7 @@
     "successVerification": {
       "preparing": "Prawie gotowe — potwierdzamy płatność i przygotowujemy dostęp. Może to potrwać jeszcze kilka sekund…"
     },
-    "paymentLockedHint": "Formularz płatności pojawi się tutaj, gdy dane zostaną uzupełnione, a zgody zaznaczone."
+    "paymentLockedHint": "Uzupełnij dane i zaznacz zgody — tutaj otworzy się formularz płatności."
   },
   "PaymentSuccessPage": {
     "title": "Płatność zakończona pomyślnie",
@@ -803,7 +798,9 @@
       "openInspiration": "Otwórz Inspiration Hub",
       "pending": "Przygotowujemy Twój osobisty link do lekcji w Telegramie...",
       "unavailable": "Link nie jest jeszcze gotowy. Skontaktuj się ze wsparciem.",
-      "contactSupport": "Wsparcie"
+      "contactSupport": "Wsparcie",
+      "nameMainGroup": "Online Group",
+      "nameInspiration": "Inspiration Hub"
     },
     "buttons": {
       "home": "Wróć na stronę główną"
@@ -831,23 +828,20 @@
     "status": {
       "preparing": "Przygotowujemy bezpieczną płatność przez Stripe...",
       "preparingSlow": "Przygotowanie trwa dłużej niż zwykle. Poczekaj chwilę lub odśwież stronę.",
-      "succeeded": "Płatność zakończona pomyślnie.",
-      "confirmed": "Dane płatności zostały potwierdzone. Stripe dokończy płatność, jeśli będzie potrzebny dodatkowy krok.",
       "verifying": "Weryfikujemy Twoją płatność — nie płać ponownie. Zwykle trwa to kilka sekund.",
       "verificationUnresolved": "Nie udało się jeszcze potwierdzić płatności — nie płać ponownie. Gdy zostanie potwierdzona, linki dostępu wyślemy na Twój e-mail. Jeśli nic nie przyjdzie, <link>skontaktuj się ze wsparciem</link>."
     },
     "placeholder": {
-      "missingPublishableKey": "Dodaj NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY do .env i uruchom ponownie dev server.",
-      "awaitingClientSecret": "Stripe jest gotowy. Payment Element pojawi się tutaj automatycznie po otrzymaniu clientSecret."
+      "missingPublishableKey": "Płatność jest chwilowo niedostępna."
     },
     "errors": {
-      "missingClientSecret": "Stripe nie zwrócił client secret.",
+      "missingClientSecret": "Nie udało się przygotować płatności. Spróbuj ponownie.",
       "catalogUnavailable": "Sprzedaż jest tymczasowo niedostępna. Spróbuj ponownie później.",
       "salesClosed": "Sprzedaż tego produktu jest obecnie zamknięta.",
       "consentEvidenceFailed": "Nie udało się zapisać wymaganego potwierdzenia zgód. Spróbuj ponownie.",
       "invalidCustomerData": "Sprawdź dane klienta i spróbuj ponownie.",
-      "missingSecretKey": "Brakuje STRIPE_SECRET_KEY. Dodaj go do .env i uruchom ponownie serwer.",
-      "paymentIntentFailed": "Nie udało się przygotować płatności Stripe. Sprawdź ustawienia Stripe.",
+      "missingSecretKey": "Płatność jest chwilowo niedostępna. Spróbuj później lub napisz do nas.",
+      "paymentIntentFailed": "Nie udało się przygotować płatności. Spróbuj ponownie lub napisz do nas.",
       "paymentIntentRequestFailed": "Nie udało się przygotować płatności. Spróbuj ponownie.",
       "requiredConsentMissing": "Zaakceptuj wszystkie wymagane zgody, aby kontynuować.",
       "onlineGroupCampaignNotConfigured": "Nowy cykl Online Group nie został jeszcze skonfigurowany. Skontaktuj się ze wsparciem.",
@@ -855,7 +849,8 @@
       "renewalCampaignInactive": "Ten link kontynuacji nie jest już aktywny. Użyj aktualnego linku z grupy.",
       "renewalPaymentContextMismatch": "Ten link kontynuacji nie pasuje do wybranego produktu.",
       "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie.",
-      "paymentFormBlocked": "Nie udało się wczytać formularza płatności. Może go blokować rozszerzenie lub sieć - wyłącz blokowanie albo otwórz stronę w innej przeglądarce."
+      "paymentFormBlocked": "Nie udało się wczytać formularza płatności — może go blokować rozszerzenie lub sieć. Wyłącz blokowanie albo otwórz stronę w innej przeglądarce.",
+      "rateLimited": "Zbyt wiele prób. Odczekaj minutę i spróbuj ponownie."
     }
   },
   "CurrencySwitch": {

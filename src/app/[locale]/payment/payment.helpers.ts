@@ -36,6 +36,7 @@ export const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
   online_group_campaign_not_configured: "errors.onlineGroupCampaignNotConfigured",
   payment_intent_failed: "errors.paymentIntentFailed",
   payment_intent_request_failed: "errors.paymentIntentRequestFailed",
+  rate_limited: "errors.rateLimited",
   required_consent_missing: "errors.requiredConsentMissing",
   renewal_campaign_inactive: "errors.renewalCampaignInactive",
   renewal_payment_context_mismatch: "errors.renewalPaymentContextMismatch",

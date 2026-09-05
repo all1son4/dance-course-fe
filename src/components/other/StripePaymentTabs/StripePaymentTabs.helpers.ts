@@ -122,7 +122,6 @@ export const isPaymentSubmissionReady = (
   );
 
 export type LoadingStatusTranslationKey =
-  | "placeholder.awaitingClientSecret"
   | "errors.paymentFormBlocked"
   | "placeholder.missingPublishableKey"
   | "status.preparing"

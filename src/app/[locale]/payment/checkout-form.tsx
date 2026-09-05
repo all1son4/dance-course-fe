@@ -252,12 +252,13 @@ export const CheckoutForm = ({
             to press: the request only re-runs when a form field changes. */}
         {onRetryPaymentPreparation ? (
           <Button
+            analytics={{ id: "payment_preparation_retry", placement: "checkout" }}
             buttonText={retryLabel}
             onClick={onRetryPaymentPreparation}
             size="sm"
             type="button"
             variant="secondary"
-            width="max-content"
+            width="fit-content"
           />
         ) : null}
       </PaymentPreparationError>
