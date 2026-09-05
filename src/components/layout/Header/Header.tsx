@@ -7,11 +7,6 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "rea
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { getLocaleCookieName } from "@/lib/cookie-consent";
-import {
-  ensureLocationChangeEvents,
-  LOCATION_CHANGE_EVENT,
-  LOCATION_WILL_CHANGE_EVENT,
-} from "@/lib/location-change";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation-events";
 import {
@@ -19,20 +14,6 @@ import {
   scrollToHashTarget,
   scrollToTopInstant,
 } from "@/lib/scroll";
-import {
-  getNavigationType,
-  getRememberedScrollOffset,
-  getScrollRestorationKey,
-  parseScrollOffsetStore,
-  planRouteScroll,
-  rememberScrollOffset,
-  replayScrollOffset,
-  SCROLL_OFFSET_STORAGE_KEY,
-  type ScrollOffset,
-  type ScrollOffsetStore,
-  serializeScrollOffsetStore,
-  shouldRestoreOnLoad,
-} from "@/lib/scroll-restoration";
 import { EnglishFlag, Logo, MenuButton, PolishFlag, RussianFlag } from "@/svg";
 
 import LanguageSelect from "../LanguageSelect";
@@ -160,8 +141,6 @@ export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const previousPathnameRef = useRef(pathname);
-  /** Set on popstate; the route-change effect replays it once the page is in. */
-  const traversalRestoreRef = useRef<{ key: string; offset: ScrollOffset } | null>(null);
   const menuRevealRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -176,127 +155,13 @@ export default function Header() {
     };
   }, [locale]);
 
-  // Scroll offsets are kept per history entry (lib/scroll-restoration) and
-  // replayed by the route-change effect below. The browser's own restoration
-  // stays off while the app runs: for an in-app Back/Forward it would fire
-  // before the router has swapped the page in, against the height of the
-  // page being left, and clamp.
   useEffect(() => {
-    const supportsScrollRestoration = "scrollRestoration" in window.history;
-
-    if (supportsScrollRestoration) {
+    if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
     }
 
-    let currentKey = getScrollRestorationKey(window.location);
-    // Kept from the scroll event rather than read on demand: when the router
-    // pushes the next URL the new page is already in the DOM, and a read at
-    // that moment can be clamped to the new page's height.
-    let lastOffset: ScrollOffset = { x: window.scrollX, y: window.scrollY };
-    // Traversals within this document keep working when sessionStorage is
-    // unavailable (privacy settings); only reload/return lose their offset.
-    let memoryStore: ScrollOffsetStore = {};
-
-    const readStore = (): ScrollOffsetStore => {
-      try {
-        const raw = window.sessionStorage.getItem(SCROLL_OFFSET_STORAGE_KEY);
-
-        if (raw !== null) {
-          return parseScrollOffsetStore(raw);
-        }
-      } catch {
-        // Fall through to the in-memory copy.
-      }
-
-      return memoryStore;
-    };
-
-    const remember = (key: string) => {
-      memoryStore = rememberScrollOffset(readStore(), key, lastOffset);
-
-      try {
-        window.sessionStorage.setItem(
-          SCROLL_OFFSET_STORAGE_KEY,
-          serializeScrollOffsetStore(memoryStore),
-        );
-      } catch {
-        // Kept in memory only.
-      }
-    };
-
-    const onScroll = () => {
-      lastOffset = { x: window.scrollX, y: window.scrollY };
-    };
-
-    // Leaving an entry through push/replace: the URL is still the old one.
-    const onLocationWillChange = () => {
-      remember(currentKey);
-      traversalRestoreRef.current = null;
-    };
-
-    const onLocationChange = () => {
-      currentKey = getScrollRestorationKey(window.location);
-    };
-
-    // Leaving through Back/Forward: the URL is already the destination.
-    const onPopState = () => {
-      remember(currentKey);
-
-      const nextKey = getScrollRestorationKey(window.location);
-      const offset = getRememberedScrollOffset(readStore(), nextKey);
-
-      traversalRestoreRef.current = offset ? { key: nextKey, offset } : null;
-      currentKey = nextKey;
-    };
-
-    // Leaving the document (reload, another site, bfcache): hand restoration
-    // back to the browser so a reload or a return lands where the reader was
-    // before the app has even hydrated. Best effort - the fallback below
-    // covers browsers that do not carry the change over.
-    const onPageHide = () => {
-      remember(currentKey);
-
-      if (supportsScrollRestoration) {
-        window.history.scrollRestoration = "auto";
-      }
-    };
-
-    const onPageShow = (event: PageTransitionEvent) => {
-      if (event.persisted && supportsScrollRestoration) {
-        window.history.scrollRestoration = "manual";
-      }
-    };
-
-    ensureLocationChangeEvents();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener(LOCATION_WILL_CHANGE_EVENT, onLocationWillChange);
-    window.addEventListener(LOCATION_CHANGE_EVENT, onLocationChange);
-    window.addEventListener("popstate", onPopState);
-    window.addEventListener("pagehide", onPageHide);
-    window.addEventListener("pageshow", onPageShow);
-
-    // A fresh document after a reload or a return from another site.
-    const savedOffset = getRememberedScrollOffset(readStore(), currentKey);
-    const shouldReplayOnLoad = shouldRestoreOnLoad({
-      navigationType: getNavigationType(
-        performance.getEntriesByType("navigation") as PerformanceNavigationTiming[],
-      ),
-      scrollY: window.scrollY,
-      savedOffset,
-    });
-    const cancelLoadReplay =
-      savedOffset && shouldReplayOnLoad ? replayScrollOffset(savedOffset, window) : null;
-
     return () => {
-      cancelLoadReplay?.();
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener(LOCATION_WILL_CHANGE_EVENT, onLocationWillChange);
-      window.removeEventListener(LOCATION_CHANGE_EVENT, onLocationChange);
-      window.removeEventListener("popstate", onPopState);
-      window.removeEventListener("pagehide", onPageHide);
-      window.removeEventListener("pageshow", onPageShow);
-
-      if (supportsScrollRestoration) {
+      if ("scrollRestoration" in window.history) {
         window.history.scrollRestoration = "auto";
       }
     };
@@ -333,25 +198,13 @@ export default function Header() {
   useEffect(() => {
     const routeChanged = previousPathnameRef.current !== pathname;
     let hashScrollTimeoutId: number | null = null;
-    let cancelReplay: (() => void) | null = null;
 
     if (routeChanged) {
-      const traversal = traversalRestoreRef.current;
-      traversalRestoreRef.current = null;
+      const hashTargetId = getHashTargetFromLocation();
 
-      const plan = planRouteScroll({
-        traversalOffset:
-          traversal && traversal.key === getScrollRestorationKey(window.location)
-            ? traversal.offset
-            : null,
-        hashTargetId: getHashTargetFromLocation(),
-      });
-
-      if (plan.kind === "restore") {
-        cancelReplay = replayScrollOffset(plan.offset, window);
-      } else if (plan.kind === "hash") {
+      if (hashTargetId) {
         const scrollToHash = (attempt = 0) => {
-          if (scrollToHashTarget(plan.targetId)) {
+          if (scrollToHashTarget(hashTargetId)) {
             return;
           }
 
@@ -377,8 +230,6 @@ export default function Header() {
       if (hashScrollTimeoutId !== null) {
         window.clearTimeout(hashScrollTimeoutId);
       }
-
-      cancelReplay?.();
     };
   }, [pathname]);
 

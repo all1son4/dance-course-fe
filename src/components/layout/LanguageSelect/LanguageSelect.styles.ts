@@ -105,34 +105,18 @@ export const TriggerLabel = styled.span`
   font-style: normal;
   font-size: var(--text-small);
   position: relative;
-  /* All labels share one cell: the widest sets the size, the current one shows.
-     The names are translated per locale ("Angielski" is the widest at 4.23em),
-     so the floor keeps the trigger the same width in every locale and the nav
+  /* The names are translated per locale, and the widest ("Angielski") is
+     4.23em, so this floor keeps the trigger one width everywhere and the nav
      does not shift when the language changes. */
-  display: inline-grid;
-  justify-items: start;
   min-width: 4.3em;
+  white-space: nowrap;
 
   line-height: 1.1;
   letter-spacing: 0;
 
-  & > * {
-    grid-area: 1 / 1;
-  }
-
   @media (max-width: 767px) {
     font-size: var(--text-body);
   }
-`;
-
-export const TriggerLabelGhost = styled.span`
-  visibility: hidden;
-  pointer-events: none;
-  white-space: nowrap;
-`;
-
-export const TriggerLabelText = styled.span`
-  white-space: nowrap;
 `;
 
 export const Menu = styled.div`

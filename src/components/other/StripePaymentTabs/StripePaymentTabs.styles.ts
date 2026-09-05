@@ -134,7 +134,7 @@ export const PaymentStage = styled.div`
   min-width: 0;
 `;
 
-export type StageLayerRole = "current" | "incoming" | "leaving";
+export type StageLayerRole = "current" | "incoming";
 
 export const StageLayer = styled.div<{ $role: StageLayerRole }>`
   width: 100%;

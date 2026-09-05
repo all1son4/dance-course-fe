@@ -9,12 +9,11 @@ import {
 import type { PaymentIntentResult, StripeElementsOptions } from "@stripe/stripe-js";
 import { useLocale, useTranslations } from "next-intl";
 import type { ReactElement, ReactNode } from "react";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
-import { prefersReducedMotion } from "@/lib/reveal";
 
 import {
   createElementsOptions,
@@ -37,7 +36,6 @@ import {
   createPaymentForm,
   createStripeBillingDetails,
   getLoadingStatusTranslationKey,
-  glideHeight,
   isPaymentSubmissionReady,
   type PaymentForm,
   resolveBillingDetails,
@@ -71,9 +69,6 @@ import type { StripePaymentTabsProps } from "./StripePaymentTabs.types";
 
 const PAYMENT_PREPARING_SLOW_THRESHOLD_MS = 8_000;
 const PAYMENT_BUTTON_WIDTH = "240px";
-/** A replaced layer fades for --motion-base (220 ms); it is unmounted after. */
-const STAGE_LEAVE_MS = 260;
-const STAGE_GLIDE_MS = 320;
 const SKELETON_LAYER_KEY = "skeleton";
 
 type StripePaymentElementsProps = {
@@ -105,7 +100,7 @@ type PaymentActionsProps = {
 
 type VerificationState = "idle" | "unresolved" | "verifying";
 
-/** Roles are derived from position: older layers leave, the newest waits its turn. */
+/** The visible form, plus an optional replacement warming up behind it. */
 type StageLayerEntry = {
   form: PaymentForm | null;
   key: string;
@@ -491,12 +486,8 @@ export const StripePaymentTabs = ({
     stripeLocale: String(stripeLocale),
   });
   const [currentForm, setCurrentForm] = useState<PaymentForm | null>(null);
-  const [leavingLayer, setLeavingLayer] = useState<StageLayerEntry | null>(null);
   const [isPreparingSlow, setIsPreparingSlow] = useState(false);
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const currentLayerRef = useRef<HTMLDivElement | null>(null);
   const requestedFormKeyRef = useRef<string | null>(null);
-  const glideFromHeightRef = useRef<number | null>(null);
   const isSkeletonCurrent = currentForm === null;
   const incomingForm =
     requestedForm && requestedForm.key !== currentForm?.key ? requestedForm : null;
@@ -507,38 +498,13 @@ export const StripePaymentTabs = ({
     requestedFormKeyRef.current = requestedForm?.key ?? null;
   }, [requestedForm?.key]);
 
-  // Hands the stage over to the next layer. The old one stays mounted as a
-  // fading layer; the stage measures itself before and after so its height
-  // can glide instead of jumping.
-  const showLayer = (nextForm: PaymentForm | null): void => {
-    glideFromHeightRef.current = stageRef.current?.offsetHeight ?? null;
-    setLeavingLayer({
-      form: currentForm,
-      key: currentForm?.key ?? SKELETON_LAYER_KEY,
-      role: "leaving",
-    });
-    setCurrentForm(nextForm);
-  };
-
-  // Wanted again while still fading out (a currency flipped straight back):
-  // its Elements are ready and will not report so a second time, so it goes
-  // straight back on stage.
-  useEffect(() => {
-    if (incomingForm && leavingLayer && leavingLayer.key === incomingForm.key) {
-      setLeavingLayer(null);
-      setCurrentForm(incomingForm);
-    }
-    // incomingForm is derived from props; the keys are what matters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [incomingForm?.key, leavingLayer?.key]);
-
   const handleFormReady = (form: PaymentForm): void => {
     // A form that took long enough to be superseded is dropped, not shown.
     if (form.key !== requestedFormKeyRef.current || form.key === currentForm?.key) {
       return;
     }
 
-    showLayer(form);
+    setCurrentForm(form);
   };
 
   // A dropped secret (the replacement intent could not be minted, sales just
@@ -548,53 +514,9 @@ export const StripePaymentTabs = ({
 
   useEffect(() => {
     if (shouldDropCurrentForm) {
-      showLayer(null);
+      setCurrentForm(null);
     }
-    // showLayer reads the current form; the flag alone decides when to run.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldDropCurrentForm]);
-
-  useEffect(() => {
-    if (!leavingLayer) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(
-      () => {
-        setLeavingLayer(null);
-      },
-      prefersReducedMotion() ? 0 : STAGE_LEAVE_MS,
-    );
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [leavingLayer]);
-
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    const from = glideFromHeightRef.current;
-    glideFromHeightRef.current = null;
-
-    if (!stage || from === null) {
-      return;
-    }
-
-    // The leaving layer is out of flow by now, so this is the new content's height.
-    const to = stage.offsetHeight;
-
-    if (from === to || prefersReducedMotion()) {
-      return;
-    }
-
-    return glideHeight({
-      container: stage,
-      content: currentLayerRef.current,
-      durationMs: STAGE_GLIDE_MS,
-      from,
-      to,
-    });
-  }, [currentForm]);
 
   useEffect(() => {
     setIsPreparingSlow(false);
@@ -650,17 +572,16 @@ export const StripePaymentTabs = ({
     verifyingText: t("status.verifying"),
   };
 
-  // Rendered oldest first and never reordered, so React only ever appends or
-  // removes layers: a moved iframe would reload, wiping what was typed.
+  // The form on stage first, a replacement warming up behind it second. Keys
+  // are the client secret, so promoting the replacement only removes the old
+  // layer and never moves the new one: a moved iframe would reload and wipe
+  // what was typed.
   const layers: StageLayerEntry[] = [
-    ...(leavingLayer ? [leavingLayer] : []),
     { form: currentForm, key: currentForm?.key ?? SKELETON_LAYER_KEY, role: "current" },
     ...(incomingForm
-      ? [{ form: incomingForm, key: incomingForm.key, role: "incoming" }]
+      ? [{ form: incomingForm, key: incomingForm.key, role: "incoming" as const }]
       : []),
-  ].filter(
-    (layer, index, all) => all.findIndex((other) => other.key === layer.key) === index,
-  ) as StageLayerEntry[];
+  ];
 
   return (
     <Card aria-busy={isSkeletonCurrent}>
@@ -668,14 +589,13 @@ export const StripePaymentTabs = ({
         <Title>{t("title")}</Title>
         <Description>{t("description")}</Description>
       </Header>
-      <PaymentStage ref={stageRef}>
+      <PaymentStage>
         {layers.map((layer) => {
           const isCurrent = layer.role === "current";
 
           return (
             <StageLayer
               key={layer.key}
-              ref={isCurrent ? currentLayerRef : undefined}
               $role={layer.role}
               aria-hidden={!isCurrent || undefined}
               inert={!isCurrent}

@@ -20,8 +20,6 @@ import {
   MenuWrap,
   Trigger,
   TriggerLabel,
-  TriggerLabelGhost,
-  TriggerLabelText,
 } from "./LanguageSelect.styles";
 
 /** Failsafe for a swallowed animationend (tab in the background, etc.). */
@@ -234,17 +232,7 @@ export default function LanguageSelect({
         $isOpen={open}
       >
         <Flag aria-hidden>{selected?.flag}</Flag>
-        {/* Every label is laid out invisibly in the same cell, so the trigger
-            keeps the width of the longest one and the nav never shifts when
-            the language changes ("Русский" is 18px wider than "Polski"). */}
-        <TriggerLabel>
-          {options.map((option) => (
-            <TriggerLabelGhost key={option.code} aria-hidden>
-              {option.label}
-            </TriggerLabelGhost>
-          ))}
-          <TriggerLabelText>{selected?.label}</TriggerLabelText>
-        </TriggerLabel>
+        <TriggerLabel>{selected?.label}</TriggerLabel>
         <Chevron aria-hidden />
       </Trigger>
 
