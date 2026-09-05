@@ -9,9 +9,22 @@ import {
 
 /**
  * Fixed header (top offset + height) that covers the top of the viewport. An
- * anchor hiding entirely behind it does not count as "in view".
+ * anchor hiding entirely behind it does not count as "in view". Measured from
+ * the live header so the phone pill, the notch inset and the desktop pill all
+ * get their real clearance; the constant is only the no-header fallback.
  */
-const HEADER_CLEARANCE_PX = 110;
+const FALLBACK_HEADER_CLEARANCE_PX = 110;
+const HEADER_CLEARANCE_MARGIN_PX = 6;
+
+const measureHeaderClearance = () => {
+  const header = document.querySelector("header");
+
+  if (!header) {
+    return FALLBACK_HEADER_CLEARANCE_PX;
+  }
+
+  return Math.ceil(header.getBoundingClientRect().bottom) + HEADER_CLEARANCE_MARGIN_PX;
+};
 /**
  * The bar rides up with the footer (CSS sticky, see StickyCtaViewport) only
  * this far (share of viewport height); past it the pill would hang
@@ -69,6 +82,7 @@ export const useStickyCtaVisibilityState = (): StickyCtaVisibilityState => {
 
     const anchors = Array.from(document.querySelectorAll(STICKY_CTA_ANCHOR_SELECTOR));
     const footer = document.querySelector("footer");
+    const headerClearancePx = measureHeaderClearance();
     const anchorsInView = new Set<Element>();
     const passedAnchors = new Set<Element>();
     let isFooterCoveringViewport = false;
@@ -121,7 +135,7 @@ export const useStickyCtaVisibilityState = (): StickyCtaVisibilityState => {
       passDetectionFrame = 0;
 
       for (const anchor of anchors) {
-        if (anchor.getBoundingClientRect().bottom < HEADER_CLEARANCE_PX) {
+        if (anchor.getBoundingClientRect().bottom < headerClearancePx) {
           passedAnchors.add(anchor);
         }
       }
@@ -179,7 +193,7 @@ export const useStickyCtaVisibilityState = (): StickyCtaVisibilityState => {
 
         commit();
       },
-      { rootMargin: `-${HEADER_CLEARANCE_PX}px 0px 0px 0px`, threshold: 0 },
+      { rootMargin: `-${headerClearancePx}px 0px 0px 0px`, threshold: 0 },
     );
 
     for (const anchor of anchors) {

@@ -8,7 +8,15 @@ import {
   type SellableProduct,
 } from "@/constants/sellable-products";
 
+import { installJsonFetchFixture } from "../../tests/fixtures/providers";
 import { PaymentStore } from "./payment-store";
+
+// The store targets the browser; the tests provide the timers its intent
+// requests use for their timeouts and retries.
+(globalThis as { window?: unknown }).window = {
+  clearTimeout: (id: number) => clearTimeout(id),
+  setTimeout: (handler: () => void, delayMs?: number) => setTimeout(handler, delayMs),
+};
 
 const VALID_CUSTOMER_DATA = {
   address: "ul. Testowa 1",
@@ -300,31 +308,122 @@ test("validateCustomerForm reports every missing field at once", () => {
   assert.equal(Object.values(store.touchedFields).every(Boolean), true);
 });
 
-test("customer input is normalized before it is stored", () => {
+test("customer input stays as typed and settles into its normalized form on blur", () => {
   const store = new PaymentStore();
 
   store.setCustomerField("nickname", "anna_strok");
+  assert.equal(store.customerData.nickname, "anna_strok");
+  store.touchCustomerField("nickname");
   assert.equal(store.customerData.nickname, "@anna_strok");
 
   store.setCustomerField("country", "pl");
+  store.touchCustomerField("country");
   assert.equal(store.customerData.country, "PL");
 
   store.setCustomerField("lessonLanguage", "EN ");
+  store.touchCustomerField("lessonLanguage");
   assert.equal(store.customerData.lessonLanguage, "en");
 
   store.setCustomerField("fullName", "  Анна   Строк");
+  assert.equal(store.customerData.fullName, "  Анна   Строк");
+  store.touchCustomerField("fullName");
   assert.equal(store.customerData.fullName, "Анна Строк");
 });
 
-test("editing customer data drops an already minted intent unless opted out", () => {
+test("validation, the draft and the intent request see the normalized data while typing", () => {
   const store = new PaymentStore();
-  store.stripeClientSecrets = { pln: "secret_pln" };
+  fillValidCheckout(store);
 
-  store.setCustomerField("city", "Kraków", { skipStripeIntentReset: true });
-  assert.deepEqual(store.stripeClientSecrets, { pln: "secret_pln" });
+  // Mid-edit values: no "@" yet, stray whitespace. The form is still valid
+  // because everything downstream reads the normalized record.
+  store.setCustomerField("nickname", "anna_strok");
+  store.setCustomerField("fullName", "  Анна   Строк ");
+
+  assert.equal(store.isCustomerDataValid, true);
+  assert.equal(store.canShowStripe, true);
+  assert.equal(store.normalizedCustomerData.nickname, "@anna_strok");
+  // Trimmed at both ends, like the server does before it builds the intent.
+  assert.equal(store.normalizedCustomerData.fullName, "Анна Строк");
+  assert.equal(store.getCheckoutDraftSnapshot().customerData.nickname, "@anna_strok");
+
+  store.touchCustomerField("nickname");
+  assert.equal(store.customerErrors.nickname, undefined);
+});
+
+test("submitting normalizes every field before it is validated", () => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  store.setCustomerField("nickname", " anna_strok ");
+  store.setCustomerField("city", "  Warszawa");
+
+  store.validateCustomerForm();
+
+  assert.equal(store.customerData.nickname, "@anna_strok");
+  assert.equal(store.customerData.city, "Warszawa");
+  assert.deepEqual(store.customerErrors, {});
+});
+
+test("editing customer data marks the minted intent stale but keeps it mounted", () => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  store.stripeClientSecrets = { pln: "secret_pln" };
+  store.stripePaymentIntentIds = { pln: "pi_pln" };
+  store.stripeIntentCustomerKeys = { pln: store.stripeIntentCustomerKey };
+  const revisionBefore = store.stripeIntentStateRevision;
+
+  assert.equal(store.isStripeIntentUpdating, false);
+
+  // Whitespace that normalizes away changes nothing on the wire.
+  store.setCustomerField("city", " Warszawa");
+  assert.equal(store.isStripeIntentUpdating, false);
+  assert.equal(store.stripeIntentStateRevision, revisionBefore);
 
   store.setCustomerField("city", "Gdańsk");
-  assert.deepEqual(store.stripeClientSecrets, {});
+  assert.equal(store.isStripeIntentUpdating, true);
+  assert.equal(store.isStripeIntentStale("pln"), true);
+  assert.ok(store.stripeIntentStateRevision > revisionBefore);
+  // The secret survives so the card details typed into Stripe stay on screen.
+  assert.deepEqual(store.stripeClientSecrets, { pln: "secret_pln" });
+
+  store.setCustomerField("city", "Warszawa");
+  assert.equal(store.isStripeIntentUpdating, false);
+});
+
+test("a stale intent is fresh again once a replacement is minted with the new data", async (t) => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  store.stripeClientSecrets = { pln: "secret_old" };
+  store.stripePaymentIntentIds = { pln: "pi_old" };
+  store.stripeIntentCustomerKeys = { pln: "outdated" };
+  const calls = installJsonFetchFixture(t, [
+    { body: { clientSecret: "secret_new", paymentIntentId: "pi_new" } },
+  ]);
+
+  assert.equal(store.isStripeIntentUpdating, true);
+
+  await store.ensureStripePaymentIntent("pln");
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(store.stripeClientSecrets.pln, "secret_new");
+  assert.equal(store.stripePaymentIntentIds.pln, "pi_new");
+  assert.equal(store.isStripeIntentUpdating, false);
+  assert.equal(JSON.parse(calls[0]?.body ?? "{}").customerData.nickname, "@anna_strok");
+  // The replaced intent is left open on purpose: the server mints idempotently
+  // per session and form data, so an edit reverted later gets it back, and a
+  // cancelled one could not be paid. Leftovers are cancelled after a payment.
+  assert.equal(calls.length, 1);
+});
+
+test("a fresh intent is not minted twice", async (t) => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  store.stripeClientSecrets = { pln: "secret_pln" };
+  store.stripeIntentCustomerKeys = { pln: store.stripeIntentCustomerKey };
+  installJsonFetchFixture(t, []);
+
+  await store.ensureStripePaymentIntent("pln");
+
+  assert.equal(store.stripeClientSecrets.pln, "secret_pln");
 });
 
 test("checkout currency initializes once and only accepts supported values", () => {

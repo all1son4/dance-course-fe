@@ -1,5 +1,6 @@
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
 
+import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import Input from "@/components/common/Input";
 import StripePaymentTabs, {
@@ -11,15 +12,20 @@ import {
   FormBox,
   InputField,
   Inputs,
+  PaymentLockedHint,
   PaymentPreparationError,
   PersonalData,
   PersonalDataTitle,
   StripeReveal,
+  StripeRevealContent,
   TelegramInputControl,
   TelegramInputStatus,
   TelegramVerifyButton,
 } from "./page.styles";
-import type { PaymentAgreementFieldName } from "./payment.constants";
+import {
+  normalizeTelegramNickname,
+  type PaymentAgreementFieldName,
+} from "./payment.constants";
 import {
   type CheckoutAgreement,
   type CheckoutInputField,
@@ -82,8 +88,10 @@ const CheckoutInput = ({
   const inputNode = (
     <Input
       autoComplete={field.autoComplete}
+      enterKeyHint={field.enterKeyHint}
       errorMessage={field.errorMessage}
       id={field.id}
+      inputMode={field.inputMode ?? "text"}
       label={field.label}
       name={field.name}
       disabled={isRenewalInputDisabled({
@@ -113,7 +121,9 @@ const CheckoutInput = ({
               aria-label={verifyLabel}
               disabled={isTelegramVerificationDisabled({
                 clientId: renewalClientId,
-                nickname: field.value,
+                // The field holds the handle as typed until blur; the button
+                // judges the form it will take.
+                nickname: normalizeTelegramNickname(field.value),
                 nonce: renewalNonce,
                 status: renewalStatus,
               })}
@@ -142,6 +152,8 @@ export type CheckoutFormProps = {
   agreements: CheckoutAgreement[];
   canRevealStripe: boolean;
   fields: CheckoutInputField[];
+  /** Stripe is confirming the payment: the details it was minted for are frozen. */
+  isPersonalDataLocked: boolean;
   isRenewalCheckout: boolean;
   isRenewalVerified: boolean;
   onAgreementChange: (
@@ -159,6 +171,10 @@ export type CheckoutFormProps = {
   renewalStatus: RenewalStatus;
   renewalStatusText: string;
   renewalStatusTone: RenewalStatusTone;
+  paymentLockedHintText: string;
+  /** Re-asks for the payment intent after a failure; absent when there is nothing to retry. */
+  onRetryPaymentPreparation?: () => void;
+  retryLabel: string;
   stripeIntentErrorText: string;
   stripeProps: StripePaymentTabsProps;
   verifyLabel: string;
@@ -168,6 +184,7 @@ export const CheckoutForm = ({
   agreements,
   canRevealStripe,
   fields,
+  isPersonalDataLocked,
   isRenewalCheckout,
   isRenewalVerified,
   onAgreementChange,
@@ -182,12 +199,18 @@ export const CheckoutForm = ({
   renewalStatus,
   renewalStatusText,
   renewalStatusTone,
+  onRetryPaymentPreparation,
+  paymentLockedHintText,
+  retryLabel,
   stripeIntentErrorText,
   stripeProps,
   verifyLabel,
 }: CheckoutFormProps) => (
   <FormBox onSubmit={onSubmit}>
-    <PersonalData>
+    <PersonalData
+      aria-busy={isPersonalDataLocked || undefined}
+      disabled={isPersonalDataLocked}
+    >
       <PersonalDataTitle>{personalDataTitle}</PersonalDataTitle>
       <Inputs>
         {fields.map((field) => (
@@ -224,15 +247,37 @@ export const CheckoutForm = ({
     </PersonalData>
     {stripeIntentErrorText ? (
       <PaymentPreparationError role="alert">
-        {stripeIntentErrorText}
+        <p>{stripeIntentErrorText}</p>
+        {/* Without this the message asks the buyer to try again with nothing
+            to press: the request only re-runs when a form field changes. */}
+        {onRetryPaymentPreparation ? (
+          <Button
+            analytics={{ id: "payment_preparation_retry", placement: "checkout" }}
+            buttonText={retryLabel}
+            onClick={onRetryPaymentPreparation}
+            size="sm"
+            type="button"
+            variant="secondary"
+            width="fit-content"
+          />
+        ) : null}
       </PaymentPreparationError>
+    ) : null}
+    {/* The card below is empty until the form is complete; without a word
+        here the payment step simply is not on the page. */}
+    {!canRevealStripe && !stripeIntentErrorText ? (
+      <PaymentLockedHint>{paymentLockedHintText}</PaymentLockedHint>
     ) : null}
     <StripeReveal
       $isVisible={canRevealStripe}
       aria-hidden={!canRevealStripe}
       inert={!canRevealStripe}
     >
-      <StripePaymentTabs key={stripeProps.resultCurrency} {...stripeProps} />
+      {/* Not keyed on the currency: the mounted Elements stay on screen until
+          the intent for the new currency is ready (see StripePaymentTabs). */}
+      <StripeRevealContent $isVisible={canRevealStripe}>
+        <StripePaymentTabs {...stripeProps} />
+      </StripeRevealContent>
     </StripeReveal>
   </FormBox>
 );

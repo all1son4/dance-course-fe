@@ -3,16 +3,19 @@
 import { observer } from "mobx-react-lite";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
 import type { StripePaymentTabsProps } from "@/components/other/StripePaymentTabs";
-import {
-  type CountryOption,
-  getFallbackCountryOptions,
-  getLocalizedCountryOptions,
-} from "@/constants/countries";
+import type { CountryOption } from "@/constants/countries";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
   BIRTHDAY_DROP_PRODUCT_ID,
@@ -28,6 +31,7 @@ import {
   isBirthdayOfferId,
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
+import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
@@ -65,6 +69,7 @@ import {
 import {
   type CheckoutAgreement,
   type CheckoutInputField,
+  getCheckoutEnterKeyHint,
   getCompactSummaryTitle,
   getVisiblePaymentInputs,
   isReloadNavigation,
@@ -76,10 +81,12 @@ import { resolvePaymentValidationLocale } from "./payment.validation";
 import { useTelegramRenewal } from "./use-telegram-renewal";
 
 type PaymentPageProps = {
+  countryOptions: CountryOption[];
   initialSearchKey: string;
 };
 
 const PaymentPage = observer(function PaymentPage({
+  countryOptions,
   initialSearchKey,
 }: PaymentPageProps) {
   const paymentStore = usePaymentStore();
@@ -89,10 +96,9 @@ const PaymentPage = observer(function PaymentPage({
   const commonT = useTranslations("Common");
   const stripeT = useTranslations("StripePaymentTabs");
   const productT = useTranslations("SellableProducts");
-  const [countryOptions, setCountryOptions] = useState<CountryOption[]>(
-    getFallbackCountryOptions,
-  );
   const [searchKey, setSearchKey] = useState(initialSearchKey);
+  // Stripe is confirming: the customer data it was minted for must not move.
+  const [isPaymentSubmitting, setIsPaymentSubmitting] = useState(false);
   const hasHydratedCheckoutDraftRef = useRef(false);
   const lastTrackedCheckoutRef = useRef<string | null>(null);
   const lastTrackedBlockedStateRef = useRef<string | null>(null);
@@ -209,10 +215,6 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.setValidationLocale(locale);
     paymentStore.initializeCheckoutCurrency(getDefaultCheckoutCurrencyByLocale(locale));
   }, [locale, paymentStore]);
-
-  useEffect(() => {
-    setCountryOptions(getLocalizedCountryOptions(locale));
-  }, [locale]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -362,12 +364,8 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.setSelectedCurrency(nextCurrency);
   }, [paymentStore, searchKey]);
 
-  useEffect(() => {
-    if (
-      hasHydratedCheckoutDraftRef.current ||
-      typeof window === "undefined" ||
-      !canUseFunctionalStorage
-    ) {
+  const restoreCheckoutDraft = useCallback(() => {
+    if (hasHydratedCheckoutDraftRef.current || typeof window === "undefined") {
       return;
     }
 
@@ -409,7 +407,27 @@ const PaymentPage = observer(function PaymentPage({
     } catch {
       sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
     }
-  }, [canUseFunctionalStorage, locale, paymentStore]);
+  }, [locale, paymentStore]);
+
+  // The draft is applied in the hydration commit itself, reading consent
+  // straight from storage rather than waiting for the consent provider's
+  // mount effect. The store update it makes is flushed before the browser
+  // paints, so the first client frame already shows the filled form and the
+  // Stripe reveal then opens exactly once - no empty frame, no second pop.
+  // (The server HTML stays the empty form: hydration matches it, the fields'
+  // values are applied on top.)
+  useLayoutEffect(() => {
+    if (hasCookieConsentFor(getStoredCookieConsent(), "functional")) {
+      restoreCheckoutDraft();
+    }
+  }, [restoreCheckoutDraft]);
+
+  // Consent given only later in this visit (banner answered after the load).
+  useEffect(() => {
+    if (canUseFunctionalStorage) {
+      restoreCheckoutDraft();
+    }
+  }, [canUseFunctionalStorage, restoreCheckoutDraft]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !canUseFunctionalStorage) {
@@ -477,11 +495,23 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.renewalCampaignSlug,
   ]);
 
+  // Leaving the checkout resets it and cancels the intents it minted - unless
+  // a payment is under way. Stripe keeps `processing` intents cancellable, so
+  // cancelling here could void a payment the buyer has already confirmed.
+  const isPaymentSubmittingRef = useRef(isPaymentSubmitting);
+  isPaymentSubmittingRef.current = isPaymentSubmitting;
+
   useEffect(() => {
     return () => {
-      paymentStore.resetCheckoutForm();
+      paymentStore.resetCheckoutForm({
+        cancelActiveIntents: !isPaymentSubmittingRef.current,
+      });
     };
   }, [paymentStore]);
+
+  const handleRetryPaymentPreparation = () => {
+    void paymentStore.retryStripePaymentIntent();
+  };
 
   const handleInputChange = (
     event: ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -522,6 +552,7 @@ const PaymentPage = observer(function PaymentPage({
 
   const handleInputBlur = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const fieldName = event.currentTarget.name as PaymentCustomerFieldName;
+    // Settles the value into its normalized form and validates it.
     paymentStore.touchCustomerField(fieldName);
 
     if (!canUseAnalytics || !event.currentTarget.value.trim()) {
@@ -582,6 +613,10 @@ const PaymentPage = observer(function PaymentPage({
   };
 
   const handleCurrencyChange = (value: SupportedCheckoutCurrency) => {
+    if (isPaymentSubmitting) {
+      return;
+    }
+
     const previousCurrency = paymentStore.selectedCurrency;
     paymentStore.setSelectedCurrency(value);
 
@@ -609,8 +644,9 @@ const PaymentPage = observer(function PaymentPage({
   };
 
   const checkoutInputFields: CheckoutInputField[] = visiblePaymentInputs.map(
-    (inputConfig) => ({
+    (inputConfig, index) => ({
       ...inputConfig,
+      enterKeyHint: getCheckoutEnterKeyHint(index, visiblePaymentInputs.length),
       errorMessage: paymentStore.customerErrors[inputConfig.name] ?? "",
       label: t(inputConfig.labelKey),
       placeholder: t(inputConfig.placeholderKey),
@@ -666,6 +702,7 @@ const PaymentPage = observer(function PaymentPage({
       paymentStore.selectedPrice,
       paymentStore.selectedCurrency,
     ),
+    isCurrencyLocked: isPaymentSubmitting,
     isLoading: paymentStore.catalogStatus === "loading",
     isRenewalCheckout,
     offerSummary: isOnlineGroupCheckout
@@ -687,6 +724,9 @@ const PaymentPage = observer(function PaymentPage({
     billingPostalCode: paymentStore.customerData.postalCode,
     checkoutSessionId: paymentStore.checkoutSessionId,
     clientSecret: paymentStore.stripeClientSecrets?.[paymentStore.selectedCurrency] ?? "",
+    hasIntentError: Boolean(paymentStore.stripeIntentError),
+    isUpdating: paymentStore.isStripeIntentUpdating,
+    onSubmittingChange: setIsPaymentSubmitting,
     paymentIntentId:
       paymentStore.stripePaymentIntentIds?.[paymentStore.selectedCurrency] ?? "",
     resultCurrency: paymentStore.selectedCurrency,
@@ -809,6 +849,7 @@ const PaymentPage = observer(function PaymentPage({
             agreements={checkoutAgreements}
             canRevealStripe={canRevealStripe}
             fields={checkoutInputFields}
+            isPersonalDataLocked={isPaymentSubmitting}
             isRenewalCheckout={isRenewalCheckout}
             isRenewalVerified={isRenewalVerified}
             onAgreementChange={handleAgreementChange}
@@ -823,6 +864,11 @@ const PaymentPage = observer(function PaymentPage({
             renewalStatus={renewalStatus}
             renewalStatusText={renewalStatusText}
             renewalStatusTone={renewalStatusTone}
+            onRetryPaymentPreparation={
+              paymentStore.stripeIntentError ? handleRetryPaymentPreparation : undefined
+            }
+            paymentLockedHintText={t("paymentLockedHint")}
+            retryLabel={commonT("tryAgain")}
             stripeIntentErrorText={stripeIntentErrorText}
             stripeProps={stripeProps}
             verifyLabel={t("renewal.buttons.verify")}
@@ -841,15 +887,17 @@ const PaymentPage = observer(function PaymentPage({
 });
 
 export default function PaymentRouteClient({
+  countryOptions,
   initialSearchKey,
   paymentInitialization,
 }: {
+  countryOptions: CountryOption[];
   initialSearchKey: string;
   paymentInitialization: PaymentStoreInitialization;
 }) {
   return (
     <StoreProvider paymentInitialization={paymentInitialization}>
-      <PaymentPage initialSearchKey={initialSearchKey} />
+      <PaymentPage countryOptions={countryOptions} initialSearchKey={initialSearchKey} />
     </StoreProvider>
   );
 }

@@ -9,6 +9,8 @@ import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { StatusCard, StatusMark, StatusSpinner, StatusText } from "../result-page.styles";
 
 type TelegramAccessButtonProps = {
+  /** Names the access in a notice, where a button label would read as an order. */
+  accessNames: { inspiration: string; main: string };
   activeText: string;
   buttonText: string;
   checkoutSessionId: string;
@@ -169,6 +171,7 @@ const getAccessAnalyticsResult = ({
 };
 
 export default function TelegramAccessButton({
+  accessNames,
   activeText,
   buttonText,
   checkoutSessionId,
@@ -417,6 +420,8 @@ export default function TelegramAccessButton({
     const otherAccesses = accesses.filter((access) => !readyAccesses.includes(access));
     const labelOf = (access: TelegramAccess) =>
       access.accessKey === "inspiration-hub" ? inspirationButtonText : mainButtonText;
+    const nameOf = (access: TelegramAccess) =>
+      access.accessKey === "inspiration-hub" ? accessNames.inspiration : accessNames.main;
 
     return (
       <>
@@ -437,7 +442,7 @@ export default function TelegramAccessButton({
         {otherAccesses.map((access) =>
           renderNotice(
             access.accessKey,
-            `${labelOf(access)}: ${access.status === "active" ? activeText : unavailableText}`,
+            `${nameOf(access)}: ${access.status === "active" ? activeText : unavailableText}`,
           ),
         )}
         {hasUnavailableAccess ? renderSupportButton("secondary") : null}

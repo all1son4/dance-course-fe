@@ -216,6 +216,11 @@ export const FormControl = styled.div`
     font-size: 14px;
     font-weight: 400;
 
+    /* iOS Safari zooms the page into any field under 16px. */
+    @media (max-width: 520px) {
+      font-size: 16px;
+    }
+
     &:focus-visible {
       border-color: rgba(124, 0, 2, 0.58);
       box-shadow: 0 0 0 3px rgba(124, 0, 2, 0.07);

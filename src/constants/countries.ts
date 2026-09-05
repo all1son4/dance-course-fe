@@ -257,10 +257,6 @@ const ISO_COUNTRY_CODES = [
 
 const ISO_COUNTRY_CODE_SET = new Set<string>(ISO_COUNTRY_CODES);
 const countryOptionsCache = new Map<string, CountryOption[]>();
-const fallbackCountryOptions = ISO_COUNTRY_CODES.map((countryCode) => ({
-  value: countryCode,
-  label: countryCode,
-}));
 
 export const normalizeCountryCode = (value: string | null | undefined) => {
   const normalizedValue = value?.trim().toUpperCase() ?? "";
@@ -271,8 +267,12 @@ export const normalizeCountryCode = (value: string | null | undefined) => {
 export const isSupportedCountryCode = (value: string | null | undefined) =>
   Boolean(normalizeCountryCode(value));
 
-export const getFallbackCountryOptions = () => fallbackCountryOptions;
-
+/**
+ * Labels come from the runtime's ICU data. The checkout resolves this once on
+ * the server and hands the list to the client as props: a visitor's browser
+ * may ship older CLDR names (Turkey/Türkiye, Czech Republic/Czechia), and a
+ * client-side recompute would then mismatch the server HTML at hydration.
+ */
 export const getLocalizedCountryOptions = (locale: string | null | undefined) => {
   const normalizedLocale = locale?.trim() || "en";
   const cachedOptions = countryOptionsCache.get(normalizedLocale);

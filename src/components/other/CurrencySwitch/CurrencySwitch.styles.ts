@@ -29,8 +29,8 @@ export const Root = styled.div<{ $value: CurrencySwitchValue; $width: string }>`
     border-radius: ${({ $value }) =>
       $value === "eur" ? "0 20px 20px 0" : "20px 0 0 20px"};
     transition:
-      transform 0.22s ease,
-      border-radius 0.22s ease;
+      transform var(--motion-base, 220ms) var(--ease-emphasized, ease),
+      border-radius var(--motion-base, 220ms) var(--ease-emphasized, ease);
     z-index: 1;
   }
 `;
@@ -49,7 +49,17 @@ export const OptionButton = styled.button<{ $isActive: boolean }>`
   letter-spacing: 0;
   color: ${({ $isActive }) =>
     $isActive ? "rgba(255, 255, 255, 1)" : "rgba(0, 0, 0, 1)"};
-  transition: color 0.18s ease;
+  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
+
+  ${({ $isActive }) =>
+    !$isActive &&
+    `
+    @media (hover: hover) and (pointer: fine) {
+      &:not(:disabled):hover {
+        color: var(--brand);
+      }
+    }
+  `}
 
   &:focus-visible {
     outline: var(--focus-ring);

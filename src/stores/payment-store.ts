@@ -4,6 +4,7 @@ import { ValidationError } from "yup";
 import {
   INITIAL_AGREEMENTS,
   INITIAL_CUSTOMER_DATA,
+  normalizePaymentCustomerData,
   normalizePaymentCustomerFieldValue,
   PAYMENT_INPUTS,
   type PaymentAgreementFieldName,
@@ -32,6 +33,7 @@ type PaymentCustomerErrors = Partial<Record<PaymentCustomerFieldName, string>>;
 type PaymentCustomerTouched = Partial<Record<PaymentCustomerFieldName, boolean>>;
 type StripeClientSecrets = Partial<Record<SupportedCheckoutCurrency, string>>;
 type StripePaymentIntentIds = Partial<Record<SupportedCheckoutCurrency, string>>;
+type StripeIntentCustomerKeys = Partial<Record<SupportedCheckoutCurrency, string>>;
 type StripeIntentErrors = Partial<
   Record<SupportedCheckoutCurrency, StripeIntentErrorCode | null>
 >;
@@ -154,6 +156,13 @@ export class PaymentStore {
   stripeClientSecrets: StripeClientSecrets = {};
   stripePaymentIntentIds: StripePaymentIntentIds = {};
   stripeIntentErrors: StripeIntentErrors = {};
+  /**
+   * The customer data each minted intent carries, keyed like the secrets. An
+   * intent whose key no longer matches the form is stale: it stays mounted so
+   * the typed card details survive, but it must be replaced before it can be
+   * confirmed.
+   */
+  stripeIntentCustomerKeys: StripeIntentCustomerKeys = {};
   pendingStripeCurrencies = new Set<SupportedCheckoutCurrency>();
   stripeIntentStateRevision = 0;
   sellableProducts: SellableProduct[] = SELLABLE_PRODUCTS_LIST;
@@ -205,11 +214,24 @@ export class PaymentStore {
     return Object.values(this.agreements).every(Boolean);
   }
 
-  get isCustomerDataValid() {
-    return this.customerSchema.isValidSync({
+  /**
+   * What the form values become on blur and on the wire. Validation, the
+   * intent request and the draft all read this shape, so a field that is
+   * still being typed behaves exactly as if it had already been normalised.
+   */
+  get normalizedCustomerData(): PaymentCustomerData {
+    return normalizePaymentCustomerData({
       ...INITIAL_CUSTOMER_DATA,
       ...this.customerData,
     });
+  }
+
+  get stripeIntentCustomerKey() {
+    return JSON.stringify(this.normalizedCustomerData);
+  }
+
+  get isCustomerDataValid() {
+    return this.customerSchema.isValidSync(this.normalizedCustomerData);
   }
 
   get canShowStripe() {
@@ -272,13 +294,18 @@ export class PaymentStore {
     return this.getStripePaymentIntentId(this.selectedCurrency);
   }
 
+  /** The mounted intent no longer matches the form; a replacement is due. */
+  get isStripeIntentUpdating() {
+    return this.isStripeIntentStale(this.selectedCurrency);
+  }
+
   getCheckoutDraftSnapshot(): PaymentCheckoutDraft {
     this.ensureCustomerDataShape();
 
     return {
       agreements: { ...this.agreements },
       checkoutSessionId: this.checkoutSessionId,
-      customerData: { ...this.customerData },
+      customerData: this.normalizedCustomerData,
       selectedCurrency: this.selectedCurrency,
       selectedOfferId: this.selectedOfferId,
       selectedProductId: this.selectedProductId,
@@ -442,26 +469,41 @@ export class PaymentStore {
     this.selectedCurrency = nextCurrency;
   }
 
-  setCustomerField(
-    fieldName: PaymentCustomerFieldName,
-    value: string,
-    options?: { skipStripeIntentReset?: boolean },
-  ) {
+  /**
+   * Stores the value as typed. Normalisation waits for the blur (or submit),
+   * so editing in the middle of a field does not throw the caret to the end.
+   * Minted intents are left in place: a keystroke that changes what would be
+   * sent only marks them stale and invalidates requests still in flight.
+   */
+  setCustomerField(fieldName: PaymentCustomerFieldName, value: string) {
     this.ensureCustomerDataShape();
 
-    const nextValue = normalizePaymentCustomerFieldValue(fieldName, value);
-    const hasValueChanged = this.customerData[fieldName] !== nextValue;
+    if (this.customerData[fieldName] !== value) {
+      const previousIntentCustomerKey = this.stripeIntentCustomerKey;
 
-    if (hasValueChanged) {
-      this.customerData[fieldName] = nextValue;
+      this.customerData[fieldName] = value;
 
-      if (this.hasStripeIntentState && !options?.skipStripeIntentReset) {
-        this.clearStripeIntentState(false);
+      if (this.stripeIntentCustomerKey !== previousIntentCustomerKey) {
+        this.invalidateStripeIntentRequests();
       }
     }
 
     if (this.touchedFields[fieldName]) {
       this.validateCustomerField(fieldName);
+    }
+  }
+
+  /** Blur: the field settles into its canonical form and gets validated. */
+  normalizeCustomerField(fieldName: PaymentCustomerFieldName) {
+    this.ensureCustomerDataShape();
+
+    const normalizedValue = normalizePaymentCustomerFieldValue(
+      fieldName,
+      this.customerData[fieldName],
+    );
+
+    if (this.customerData[fieldName] !== normalizedValue) {
+      this.customerData[fieldName] = normalizedValue;
     }
   }
 
@@ -488,6 +530,7 @@ export class PaymentStore {
   }
 
   touchCustomerField(fieldName: PaymentCustomerFieldName) {
+    this.normalizeCustomerField(fieldName);
     this.touchedFields[fieldName] = true;
     this.validateCustomerField(fieldName);
   }
@@ -514,11 +557,23 @@ export class PaymentStore {
     return this.stripePaymentIntentIds[resolvedCurrency] ?? "";
   }
 
+  isStripeIntentStale(currency: SupportedCheckoutCurrency) {
+    const resolvedCurrency = getResolvedCheckoutCurrency(currency);
+
+    return (
+      Boolean(this.stripeClientSecrets[resolvedCurrency]) &&
+      this.stripeIntentCustomerKeys[resolvedCurrency] !== this.stripeIntentCustomerKey
+    );
+  }
+
   async ensureStripePaymentIntent(
     currency: SupportedCheckoutCurrency = this.selectedCurrency,
   ) {
     const resolvedCurrency = getResolvedCheckoutCurrency(currency);
     const requestRevision = this.stripeIntentStateRevision;
+    // The data this request carries; the minted intent is fresh for as long
+    // as the form still normalises to the same record.
+    const requestCustomerKey = this.stripeIntentCustomerKey;
 
     if (this.isStripePaymentIntentRequestBlocked(resolvedCurrency)) {
       return;
@@ -536,6 +591,14 @@ export class PaymentStore {
       // Stripe intent creation is a network boundary in the checkout flow, so retry
       // only transport-like failures and keep API validation failures visible. The
       // awaits stay in this method so no extra microtask can precede the stale check.
+      // The body is fixed before the first attempt: a retry that re-read the
+      // form after an edit would mint (and then discard) the intent the
+      // parallel, up-to-date request is about to store.
+      const requestBody = this.getStripePaymentIntentRequestOptions(
+        resolvedCurrency,
+        new AbortController().signal,
+      ).body;
+
       for (let attempt = 0; attempt <= PAYMENT_INTENT_MAX_RETRY_ATTEMPTS; attempt += 1) {
         const requestController = new AbortController();
         const timeoutId = window.setTimeout(() => {
@@ -544,13 +607,13 @@ export class PaymentStore {
 
         try {
           finalHttpStatus = undefined;
-          const response = await fetch(
-            "/api/stripe/payment-intent",
-            this.getStripePaymentIntentRequestOptions(
+          const response = await fetch("/api/stripe/payment-intent", {
+            ...this.getStripePaymentIntentRequestOptions(
               resolvedCurrency,
               requestController.signal,
             ),
-          );
+            body: requestBody,
+          });
           finalHttpStatus = response.ok ? undefined : response.status;
           const responseData = (await response.json()) as StripeIntentResponse;
 
@@ -594,15 +657,15 @@ export class PaymentStore {
       }
 
       if (this.isStripeIntentRequestStale(requestRevision)) {
-        // The customer changed checkout data while this request was in flight.
-        // The old intent is canceled so Stripe does not keep unused attempts open.
-        if (data.paymentIntentId) {
-          this.cancelStripePaymentIntents([data.paymentIntentId], this.checkoutSessionId);
-        }
+        // The customer changed checkout data while this request was in flight:
+        // the answer is simply dropped. Never cancelled from here - the server
+        // mints idempotently per session and form data, so reverting an edit
+        // gets this same intent back, and a cancelled one could not be paid.
+        // Unused intents are cancelled once a payment succeeds.
         return;
       }
 
-      this.storeSuccessfulStripePaymentIntent(resolvedCurrency, data);
+      this.storeSuccessfulStripePaymentIntent(resolvedCurrency, data, requestCustomerKey);
     } catch (error) {
       if (this.isStripeIntentRequestStale(requestRevision)) {
         return;
@@ -624,7 +687,8 @@ export class PaymentStore {
   private isStripePaymentIntentRequestBlocked(currency: SupportedCheckoutCurrency) {
     return (
       !this.canShowStripe ||
-      Boolean(this.getStripeClientSecret(currency)) ||
+      (Boolean(this.getStripeClientSecret(currency)) &&
+        !this.isStripeIntentStale(currency)) ||
       this.pendingStripeCurrencies.has(currency)
     );
   }
@@ -642,7 +706,7 @@ export class PaymentStore {
         agreements: this.agreements,
         checkoutLocale: this.validationLocale,
         checkoutSessionId: this.checkoutSessionId,
-        customerData: this.customerData,
+        customerData: this.normalizedCustomerData,
         currency,
         offerId: this.selectedOffer.id,
         productId: this.selectedProduct.id,
@@ -665,6 +729,7 @@ export class PaymentStore {
   private storeSuccessfulStripePaymentIntent(
     currency: SupportedCheckoutCurrency,
     data: StripeIntentResponse,
+    customerKey: string,
   ) {
     runInAction(() => {
       this.stripeClientSecrets = {
@@ -675,7 +740,14 @@ export class PaymentStore {
         ...this.stripePaymentIntentIds,
         [currency]: data.paymentIntentId ?? "",
       };
+      this.stripeIntentCustomerKeys = {
+        ...this.stripeIntentCustomerKeys,
+        [currency]: customerKey,
+      };
       this.setStripeIntentError(currency, null);
+      // The replaced intent stays open (see ensureStripePaymentIntent): an
+      // edit reverted later gets it back through the server's idempotency, and
+      // cancelUnusedPaymentIntents clears the leftovers after a payment.
     });
   }
 
@@ -686,12 +758,18 @@ export class PaymentStore {
     runInAction(() => {
       const errorCode = getStripeIntentErrorCode(error);
 
+      // A stale intent that could not be replaced must not stay confirmable
+      // with outdated data: drop it along with the failed attempt.
       this.stripeClientSecrets = {
         ...this.stripeClientSecrets,
         [currency]: "",
       };
       this.stripePaymentIntentIds = {
         ...this.stripePaymentIntentIds,
+        [currency]: "",
+      };
+      this.stripeIntentCustomerKeys = {
+        ...this.stripeIntentCustomerKeys,
         [currency]: "",
       };
       this.setStripeIntentError(currency, errorCode);
@@ -727,7 +805,7 @@ export class PaymentStore {
     this.ensureCustomerDataShape();
 
     try {
-      this.customerSchema.validateSyncAt(fieldName, this.customerData);
+      this.customerSchema.validateSyncAt(fieldName, this.normalizedCustomerData);
       this.clearFieldError(fieldName);
     } catch (error) {
       if (error instanceof ValidationError) {
@@ -741,6 +819,9 @@ export class PaymentStore {
 
   validateCustomerForm() {
     this.ensureCustomerDataShape();
+    PAYMENT_CUSTOMER_FIELD_NAMES.forEach((fieldName) => {
+      this.normalizeCustomerField(fieldName);
+    });
     this.markAllFieldsTouched();
 
     try {
@@ -769,7 +850,7 @@ export class PaymentStore {
     }
   }
 
-  resetCheckoutForm() {
+  resetCheckoutForm({ cancelActiveIntents = true } = {}) {
     const previousCheckoutSessionId = this.checkoutSessionId;
     const defaultProduct =
       this.getSellableProductById(DEFAULT_CHECKOUT_PRODUCT.id) ??
@@ -777,7 +858,7 @@ export class PaymentStore {
       DEFAULT_CHECKOUT_PRODUCT;
     const defaultOffer = getDefaultProductOffer(defaultProduct);
 
-    this.clearStripeIntentState(true, previousCheckoutSessionId);
+    this.clearStripeIntentState(cancelActiveIntents, previousCheckoutSessionId);
     this.checkoutSessionId = createCheckoutSessionId();
     this.customerData = normalizePaymentCustomerDataDraft();
     this.customerErrors = {};
@@ -802,6 +883,17 @@ export class PaymentStore {
     return product.offers.find((offer) => offer.id === offerId);
   }
 
+  /**
+   * Asks for the intent again after a failure. The error is cleared first so
+   * the request is not blocked, and the currency keeps whatever it had.
+   */
+  retryStripePaymentIntent() {
+    const currency = getResolvedCheckoutCurrency(this.selectedCurrency);
+    this.setStripeIntentError(currency, null);
+
+    return this.ensureStripePaymentIntent(currency);
+  }
+
   clearStripeIntentState(
     cancelActiveIntents = false,
     checkoutSessionId = this.checkoutSessionId,
@@ -816,12 +908,23 @@ export class PaymentStore {
 
     this.stripeClientSecrets = {};
     this.stripePaymentIntentIds = {};
+    this.stripeIntentCustomerKeys = {};
     this.stripeIntentErrors = {};
     this.pendingStripeCurrencies.clear();
 
     if (activePaymentIntentIds.length > 0) {
       this.cancelStripePaymentIntents(activePaymentIntentIds, checkoutSessionId);
     }
+  }
+
+  /**
+   * The form changed under a request: whatever it returns describes data the
+   * customer no longer has on screen, so it is discarded (and cancelled) on
+   * arrival, and the pending mark is lifted so the settled data can mint.
+   */
+  private invalidateStripeIntentRequests() {
+    this.stripeIntentStateRevision += 1;
+    this.pendingStripeCurrencies.clear();
   }
 
   private clearFieldError(fieldName: PaymentCustomerFieldName) {
@@ -872,14 +975,6 @@ export class PaymentStore {
 
   private get customerSchema() {
     return getPaymentCustomerSchema(this.validationLocale);
-  }
-
-  private get hasStripeIntentState() {
-    return (
-      Object.keys(this.stripeClientSecrets).length > 0 ||
-      Object.keys(this.stripePaymentIntentIds).length > 0 ||
-      Object.keys(this.stripeIntentErrors).length > 0
-    );
   }
 
   private isStripeIntentRequestStale(requestRevision: number) {

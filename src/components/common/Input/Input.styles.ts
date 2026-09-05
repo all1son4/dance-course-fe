@@ -1,6 +1,8 @@
 import { InputMask } from "@react-input/mask";
 import styled, { css } from "styled-components";
 
+import { gridRowReveal } from "@/styles/mixins/motion";
+
 import type { InputVariant } from "./Input.types";
 
 type InputFieldStyleProps = {
@@ -33,11 +35,22 @@ const inputFieldStyles = css<InputFieldStyleProps>`
   letter-spacing: 0;
   outline: none;
   transition:
-    border-color 0.2s ease,
-    opacity 0.2s ease;
+    border-color var(--motion-base, 220ms) var(--ease-standard, ease),
+    opacity var(--motion-base, 220ms) var(--ease-standard, ease);
 
   &::placeholder {
     color: rgba(72, 72, 72, 0.8);
+  }
+
+  /* Browser autofill paints its own yellow/blue box over the glass card and
+     swaps the text colour; keep the field on the site's surface instead. */
+  &:-webkit-autofill,
+  &:-webkit-autofill:hover,
+  &:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--ink);
+    caret-color: var(--brand);
+    box-shadow: inset 0 0 0 1000px var(--surface);
+    transition: background-color 600000s 0s;
   }
 
   &::-webkit-outer-spin-button,
@@ -124,10 +137,18 @@ export const SelectField = styled.select<SelectFieldStyleProps>`
   }
 `;
 
-export const ErrorMessage = styled.p`
+/* Opens the error line by its grid row, so the fields below glide instead of
+   jumping a line when a message mounts. */
+export const ErrorReveal = styled.div<{ $isOpen: boolean }>`
+  ${({ $isOpen }) => gridRowReveal($isOpen)}
+`;
+
+export const ErrorMessage = styled.p<{ $isVisible: boolean }>`
   margin: 6px 0 0 2px;
   color: var(--danger);
   font-weight: 500;
   font-size: 12px;
   line-height: 1.35;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
 `;

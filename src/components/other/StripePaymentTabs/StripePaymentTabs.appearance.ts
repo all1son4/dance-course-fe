@@ -139,7 +139,10 @@ export const getStripePromise = (
     return cachedPromise;
   }
 
-  const stripePromise = loadStripe(publishableKey);
+  // Ad blockers and corporate proxies do block js.stripe.com. The rejection
+  // is turned into `null` here: unhandled it surfaced nowhere, and the form
+  // waited for an Elements instance that could never arrive.
+  const stripePromise = loadStripe(publishableKey).catch(() => null);
   stripePromiseCache.set(publishableKey, stripePromise);
 
   return stripePromise;

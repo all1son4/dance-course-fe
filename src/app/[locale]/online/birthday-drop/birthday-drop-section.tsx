@@ -108,10 +108,12 @@ export default async function BirthdayDropSection() {
                 />
               </>
             ) : null}
+            {/* Sized to its label: the pill is 180px for "Learn more" and grows
+                for "Dowiedz się więcej", which used to sit against its edges. */}
             <Button
               buttonText={t("detailsButton")}
               variant="ghost"
-              width="180px"
+              width="max-content"
               href={`#${BIRTHDAY_ABOUT_SECTION_ID}`}
               analytics={{ id: "birthday_drop_details", placement: "hero" }}
             />

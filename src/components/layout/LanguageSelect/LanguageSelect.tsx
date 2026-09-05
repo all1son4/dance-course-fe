@@ -21,6 +21,9 @@ import {
   Trigger,
   TriggerLabel,
 } from "./LanguageSelect.styles";
+
+/** Failsafe for a swallowed animationend (tab in the background, etc.). */
+const MENU_EXIT_FALLBACK_MS = 600;
 import type { LanguageOption } from "./LanguageSelect.types";
 
 const getSelectedLanguageOption = (options: LanguageOption[], value: string) =>
@@ -47,6 +50,13 @@ export default function LanguageSelect({
 }) {
   const t = useTranslations("Header");
   const [open, setOpen] = useState(false);
+  // The menu stays mounted through its exit animation; conditional rendering
+  // made it vanish in one frame after a 320ms entrance.
+  const [isMenuMounted, setIsMenuMounted] = useState(false);
+  if (open && !isMenuMounted) {
+    setIsMenuMounted(true);
+  }
+  const isMenuLeaving = isMenuMounted && !open;
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -96,6 +106,21 @@ export default function LanguageSelect({
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
+
+  useEffect(() => {
+    if (!isMenuLeaving) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(
+      () => setIsMenuMounted(false),
+      MENU_EXIT_FALLBACK_MS,
+    );
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [isMenuLeaving]);
 
   useEffect(() => {
     if (!open || optionsCount === 0) {
@@ -211,8 +236,18 @@ export default function LanguageSelect({
         <Chevron aria-hidden />
       </Trigger>
 
-      {open && (
-        <Menu role="menu" aria-label={t("language.optionsAriaLabel")}>
+      {isMenuMounted && (
+        <Menu
+          role="menu"
+          aria-label={t("language.optionsAriaLabel")}
+          data-state={open ? "open" : "closed"}
+          inert={open ? undefined : true}
+          onAnimationEnd={(event) => {
+            if (event.target === event.currentTarget && !open) {
+              setIsMenuMounted(false);
+            }
+          }}
+        >
           {options.map((opt, index) => (
             <Item
               key={opt.code}

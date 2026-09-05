@@ -139,7 +139,10 @@ export default function Dialog({
 
       if (inset > 0 && active instanceof HTMLElement && content.contains(active)) {
         window.requestAnimationFrame(() => {
-          active.scrollIntoView({ block: "center", behavior: "smooth" });
+          active.scrollIntoView({
+            block: "center",
+            behavior: prefersReducedMotion() ? "auto" : "smooth",
+          });
         });
       }
     };

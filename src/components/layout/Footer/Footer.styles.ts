@@ -192,7 +192,7 @@ export const PrivacyPolicy = styled(Link)`
   text-underline-offset: 2px;
   margin: 0;
   color: var(--ink-muted);
-  transition: color 0.2s ease;
+  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
 
   &:focus-visible {
     outline: var(--focus-ring);
@@ -229,7 +229,7 @@ export const CookieSettingsButton = styled.button`
   margin: 0;
   padding: 0;
   color: var(--ink-muted);
-  transition: color 0.2s ease;
+  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
 
   &:focus-visible {
     outline: var(--focus-ring);

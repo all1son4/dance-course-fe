@@ -1,5 +1,6 @@
 import { getLocale } from "next-intl/server";
 
+import { getLocalizedCountryOptions } from "@/constants/countries";
 import {
   getDefaultCheckoutCurrencyByLocale,
   getResolvedCheckoutCurrency,
@@ -71,6 +72,9 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
 
   return (
     <PaymentRouteClient
+      // Resolved here so the select carries its final, sorted labels in the
+      // first HTML instead of ISO codes that get relabelled after hydration.
+      countryOptions={getLocalizedCountryOptions(locale)}
       initialSearchKey={serializeSearchParams(resolvedSearchParams)}
       paymentInitialization={{
         currency,

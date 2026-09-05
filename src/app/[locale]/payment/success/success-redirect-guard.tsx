@@ -6,6 +6,7 @@ import { type ReactNode, useEffect, useState } from "react";
 import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-intent/lib";
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { prefersReducedMotion } from "@/lib/reveal";
 
 import {
   ResultActions,
@@ -19,6 +20,12 @@ import { resolveSuccessPageOutcomeAction } from "./success-outcome";
 const STATUS_CHECK_MAX_ATTEMPTS = 4;
 const STATUS_CHECK_RETRY_DELAY_MS = 1_000;
 const STATUS_REQUEST_TIMEOUT_MS = 8_000;
+/** A check that runs this long gets a reassurance instead of the same spinner. */
+const STATUS_REASSURANCE_DELAY_MS = 5_000;
+/** And this long: the buyer also gets something to press, rather than waiting. */
+const STATUS_ACTIONS_DELAY_MS = 12_000;
+/** How long the status card fades before the confirmed content takes its place. */
+const STATUS_LEAVE_MS = 160;
 
 type SuccessRedirectGuardProps = {
   children: ReactNode;
@@ -27,8 +34,8 @@ type SuccessRedirectGuardProps = {
   failedPath: string;
   homeButtonText: string;
   paymentIntentId: string;
-  paymentPath: string;
   pendingText: string;
+  preparingText: string;
   refreshButtonText: string;
   supportButtonText: string;
   unavailableText: string;
@@ -43,8 +50,8 @@ export default function SuccessRedirectGuard({
   failedPath,
   homeButtonText,
   paymentIntentId,
-  paymentPath,
   pendingText,
+  preparingText,
   refreshButtonText,
   supportButtonText,
   unavailableText,
@@ -52,6 +59,33 @@ export default function SuccessRedirectGuard({
   const router = useRouter();
   const [verificationState, setVerificationState] =
     useState<VerificationState>("checking");
+  const [isCheckingLong, setIsCheckingLong] = useState(false);
+  const [isCheckingSlow, setIsCheckingSlow] = useState(false);
+  const [isStatusLeaving, setIsStatusLeaving] = useState(false);
+
+  // The checks can take a while (four attempts, each with its own timeout).
+  // After a few seconds the spinner line changes from "checking" to a note
+  // that the payment is being prepared, so a longer wait does not read as a
+  // hang.
+  useEffect(() => {
+    if (verificationState !== "checking") {
+      return;
+    }
+
+    const reassuranceId = window.setTimeout(() => {
+      setIsCheckingLong(true);
+    }, STATUS_REASSURANCE_DELAY_MS);
+    // Past this point the wait is long enough that the buyer should have
+    // something to press rather than only a spinner to watch.
+    const actionsId = window.setTimeout(() => {
+      setIsCheckingSlow(true);
+    }, STATUS_ACTIONS_DELAY_MS);
+
+    return () => {
+      window.clearTimeout(reassuranceId);
+      window.clearTimeout(actionsId);
+    };
+  }, [verificationState]);
 
   useEffect(() => {
     if (!paymentIntentId || !checkoutSessionId) {
@@ -69,6 +103,22 @@ export default function SuccessRedirectGuard({
         }, delayMs);
         pendingTimeouts.add(timeoutId);
       });
+
+    // The confirmed content replaces the status card through a fade rather
+    // than a hard swap: the card fades out first, then the result mounts and
+    // plays its own entrance (see result-page.styles).
+    const showConfirmedContent = async () => {
+      if (!prefersReducedMotion()) {
+        setIsStatusLeaving(true);
+        await wait(STATUS_LEAVE_MS);
+
+        if (isDisposed) {
+          return;
+        }
+      }
+
+      setVerificationState("succeeded");
+    };
 
     const verifyOutcome = async () => {
       for (let attempt = 0; attempt < STATUS_CHECK_MAX_ATTEMPTS; attempt += 1) {
@@ -97,8 +147,12 @@ export default function SuccessRedirectGuard({
           }
 
           if (!response.ok) {
+            // This link cannot be checked from here (an old link, a new
+            // browser, an expired session). Saying so is the only safe
+            // answer: dropping the buyer into the checkout page without a
+            // word invites a second payment for something already paid.
             if (response.status === 400 || response.status === 403) {
-              router.replace(paymentPath);
+              setVerificationState("unavailable");
               return;
             }
 
@@ -117,7 +171,7 @@ export default function SuccessRedirectGuard({
           const action = resolveSuccessPageOutcomeAction(data.outcome);
 
           if (action === "show_success") {
-            setVerificationState("succeeded");
+            await showConfirmedContent();
             return;
           }
 
@@ -166,7 +220,7 @@ export default function SuccessRedirectGuard({
       });
       pendingTimeouts.clear();
     };
-  }, [checkoutSessionId, failedPath, paymentIntentId, paymentPath, router]);
+  }, [checkoutSessionId, failedPath, paymentIntentId, router]);
 
   if (verificationState === "succeeded") {
     return <>{children}</>;
@@ -177,6 +231,7 @@ export default function SuccessRedirectGuard({
   return (
     <>
       <StatusCard
+        $isLeaving={isStatusLeaving}
         $kind={isUnavailable ? "notice" : "progress"}
         role={isUnavailable ? "alert" : "status"}
         aria-atomic="true"
@@ -185,7 +240,9 @@ export default function SuccessRedirectGuard({
         {isUnavailable ? <StatusMark aria-hidden /> : <StatusSpinner />}
         <StatusText>
           {verificationState === "checking"
-            ? checkingText
+            ? isCheckingLong
+              ? preparingText
+              : checkingText
             : verificationState === "pending"
               ? pendingText
               : unavailableText}
@@ -197,7 +254,7 @@ export default function SuccessRedirectGuard({
           again, so checking again must not require finding the reload
           button); the support button appears once the status truly could not
           be confirmed. */}
-      {verificationState !== "checking" && (
+      {(verificationState !== "checking" || isCheckingSlow) && (
         <ResultActions>
           {verificationState === "pending" && (
             <Button
@@ -205,7 +262,7 @@ export default function SuccessRedirectGuard({
               onClick={() => window.location.reload()}
             />
           )}
-          {isUnavailable && (
+          {(isUnavailable || isCheckingSlow) && (
             <Button
               buttonText={supportButtonText}
               href={SUPPORT_TELEGRAM_URL}

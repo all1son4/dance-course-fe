@@ -133,7 +133,7 @@ export const ContactCardLink = styled(Link)`
   }
 
   & svg rect {
-    transition: fill 0.2s ease;
+    transition: fill var(--motion-base, 220ms) var(--ease-standard, ease);
   }
 
   @media (hover: hover) and (pointer: fine) {

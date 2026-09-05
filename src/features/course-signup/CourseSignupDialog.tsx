@@ -2,7 +2,7 @@
 
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FormEvent } from "react";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { ValidationError } from "yup";
 
 import {
@@ -60,6 +60,14 @@ const SIGNUP_FIELD_NAMES = [
   "email",
   "consentAccepted",
 ] as const satisfies Array<keyof CourseSignupFormValues>;
+type SignupTextFieldName = Exclude<keyof CourseSignupFormValues, "consentAccepted">;
+/** The `name` each field's control carries in the DOM, for focusing it. */
+const SIGNUP_FIELD_CONTROL_NAMES: Record<keyof CourseSignupFormValues, string> = {
+  consentAccepted: "first-touch-email-consent",
+  email: "email",
+  fullName: "fullName",
+  socialContact: "socialContact",
+};
 
 const getAllTouchedSignupFields = () =>
   SIGNUP_FIELD_NAMES.reduce<CourseSignupTouchedFields>((nextTouchedFields, field) => {
@@ -67,16 +75,36 @@ const getAllTouchedSignupFields = () =>
     return nextTouchedFields;
   }, {});
 
-const normalizeSignupTextFieldValue = (
-  fieldName: keyof CourseSignupFormValues,
-  value: string,
-) => {
+const normalizeSignupTextFieldValue = (fieldName: SignupTextFieldName, value: string) => {
   if (fieldName === "fullName" || fieldName === "email") {
     return normalizePaymentCustomerFieldValue(fieldName, value);
   }
 
   return value.replace(/\s+/g, " ").trimStart();
 };
+
+/**
+ * Values are kept as typed (normalising on every keystroke throws the caret
+ * to the end of the field); this is the form they settle into on blur, on
+ * submit and in the request. Validation always looks at the settled form, so
+ * a field mid-edit reads exactly like the value it is about to become.
+ */
+const settleSignupField = (
+  fieldName: keyof CourseSignupFormValues,
+  currentValues: CourseSignupFormValues,
+): CourseSignupFormValues =>
+  fieldName === "consentAccepted"
+    ? currentValues
+    : {
+        ...currentValues,
+        [fieldName]: normalizeSignupTextFieldValue(fieldName, currentValues[fieldName]),
+      };
+
+const settleSignupValues = (currentValues: CourseSignupFormValues) =>
+  SIGNUP_FIELD_NAMES.reduce<CourseSignupFormValues>(
+    (settledValues, fieldName) => settleSignupField(fieldName, settledValues),
+    currentValues,
+  );
 
 const getSubmitFailureReason = (
   errorCode: string | undefined,
@@ -149,6 +177,7 @@ export default function CourseSignupDialog({
   const locale = useLocale();
   const t = useTranslations("FirstTouchPage.signupDialog");
   const formId = useId();
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [values, setValues] = useState<CourseSignupFormValues>(INITIAL_SIGNUP_VALUES);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
@@ -179,19 +208,21 @@ export default function CourseSignupDialog({
     fieldName: keyof CourseSignupFormValues,
     nextValues: CourseSignupFormValues = values,
   ) => {
+    const settledValues = settleSignupField(fieldName, nextValues);
+
     if (fieldName === "fullName" || fieldName === "email") {
       return validatePaymentSignupField({
         fieldName,
         locale,
-        values: nextValues,
+        values: settledValues,
       });
     }
 
-    if (fieldName === "socialContact" && !nextValues.socialContact.trim()) {
+    if (fieldName === "socialContact" && !settledValues.socialContact.trim()) {
       return t("fields.socialContact.error");
     }
 
-    if (fieldName === "consentAccepted" && !nextValues.consentAccepted) {
+    if (fieldName === "consentAccepted" && !settledValues.consentAccepted) {
       return t("fields.consent.error");
     }
 
@@ -199,9 +230,9 @@ export default function CourseSignupDialog({
   };
 
   const updateValue =
-    (field: keyof CourseSignupFormValues) =>
+    (field: SignupTextFieldName) =>
     (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const nextValue = normalizeSignupTextFieldValue(field, event.target.value);
+      const nextValue = event.target.value;
       const nextValues = {
         ...values,
         [field]: nextValue,
@@ -217,22 +248,26 @@ export default function CourseSignupDialog({
       setSubmitState("idle");
     };
 
+  // Blur: the field settles into its normalized form and gets validated.
   const touchAndValidateField = (field: keyof CourseSignupFormValues) => () => {
+    const settledValues = settleSignupField(field, values);
+
+    setValues(settledValues);
     setTouchedFields((currentTouchedFields) => ({
       ...currentTouchedFields,
       [field]: true,
     }));
     setErrors((currentErrors) => ({
       ...currentErrors,
-      [field]: validateField(field),
+      [field]: validateField(field, settledValues),
     }));
   };
 
-  const validateForm = () => {
+  const validateForm = (currentValues: CourseSignupFormValues) => {
     const nextErrors: CourseSignupFormErrors = {};
 
     SIGNUP_FIELD_NAMES.forEach((fieldName) => {
-      const fieldError = validateField(fieldName);
+      const fieldError = validateField(fieldName, currentValues);
 
       if (fieldError) {
         nextErrors[fieldName] = fieldError;
@@ -240,6 +275,35 @@ export default function CourseSignupDialog({
     });
 
     return nextErrors;
+  };
+
+  // Errors alone are easy to miss in a dialog that scrolls: the first invalid
+  // control gets focus and is brought into view (after the error rows have
+  // opened beneath the fields, so the measurement includes them).
+  const focusFirstInvalidField = (nextErrors: CourseSignupFormErrors) => {
+    const firstInvalidField = SIGNUP_FIELD_NAMES.find((fieldName) =>
+      Boolean(nextErrors[fieldName]),
+    );
+
+    if (!firstInvalidField) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      const control = formRef.current?.querySelector<HTMLElement>(
+        `[name="${SIGNUP_FIELD_CONTROL_NAMES[firstInvalidField]}"]`,
+      );
+
+      if (!control) {
+        return;
+      }
+
+      control.focus({ preventScroll: true });
+      control.scrollIntoView({
+        behavior: prefersReducedMotion() ? "auto" : "smooth",
+        block: "center",
+      });
+    });
   };
 
   const resetDialogFeedback = () => {
@@ -290,9 +354,11 @@ export default function CourseSignupDialog({
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const settledValues = settleSignupValues(values);
+    setValues(settledValues);
     setTouchedFields(getAllTouchedSignupFields());
 
-    const nextErrors = validateForm();
+    const nextErrors = validateForm(settledValues);
     setErrors(nextErrors);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -300,6 +366,7 @@ export default function CourseSignupDialog({
         course_id: SIGNUP_COURSE_ID,
         invalid_fields: Object.keys(nextErrors),
       });
+      focusFirstInvalidField(nextErrors);
       return;
     }
 
@@ -319,7 +386,7 @@ export default function CourseSignupDialog({
         body: JSON.stringify(
           buildCourseSignupRequestBody({
             locale,
-            values,
+            values: settledValues,
           }),
         ),
       });
@@ -459,9 +526,11 @@ export default function CourseSignupDialog({
     }
 
     return (
-      <SignupForm id={formId} onSubmit={handleSubmit}>
+      <SignupForm id={formId} onSubmit={handleSubmit} ref={formRef}>
         <Input
           name="fullName"
+          autoComplete="name"
+          enterKeyHint="next"
           label={t("fields.fullName.label")}
           placeholder={t("fields.fullName.placeholder")}
           value={values.fullName}
@@ -472,6 +541,10 @@ export default function CourseSignupDialog({
         />
         <Input
           name="socialContact"
+          // A messenger handle is not a browser-known identity field; keep
+          // autofill from guessing a username into it.
+          autoComplete="off"
+          enterKeyHint="next"
           label={t("fields.socialContact.label")}
           placeholder={t("fields.socialContact.placeholder")}
           value={values.socialContact}
@@ -483,6 +556,9 @@ export default function CourseSignupDialog({
         <Input
           name="email"
           type="email"
+          autoComplete="email"
+          enterKeyHint="done"
+          inputMode="email"
           label={t("fields.email.label")}
           placeholder={t("fields.email.placeholder")}
           value={values.email}
