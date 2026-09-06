@@ -1406,7 +1406,10 @@ Status: `IN_PROGRESS` — cleanup preparation started on 2026-09-01. On 2026-09-
 owner explicitly shortened the original `2026-09-07T00:56:17Z` hold after a fresh
 green production preflight. `DROP-01` is in production. After more than 24 hours of
 observation and a fresh preflight, `DROP-02` disabled the production exporter on
-2026-09-05; its next-day verification is pending. Google credentials remain present.
+2026-09-05. The owner waived the additional next-day hold that evening after another
+green preflight; `DROP-02` is complete. `DROP-03` is also complete: archives restored,
+Google key disabled, credentials removed, and same-revision dev/prod checks green.
+`DROP-04` is next; the September 23 destructive-cleanup boundary is unchanged.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
@@ -1471,8 +1474,8 @@ exports, clean ready/working/stale/dead-letter queues, and all 32 invariants pas
 
 ### DROP-02 — Disable the transitional exporter after the rollback window
 
-Status: `OBSERVING (production switch applied)` — `DB_SHEETS_EXPORT_MODE=database`
-was added only to Production at `2026-09-05T10:50:29.683Z`. It stops enqueueing new
+Status: `DONE` — `DB_SHEETS_EXPORT_MODE=database`
+was initially added only to Production at `2026-09-05T10:50:29.683Z`. It stops new
 exports and marks queued versioned exports `skipped` before loading customer data or
 calling Google. The owner-approved earliest review time, `2026-09-04T20:08:20Z`,
 had passed. The fresh preflight found no unexplained difference or waiting export.
@@ -1481,7 +1484,8 @@ The existing production revision `361fb9f48fd11488e87e9158a8f2232dd249587e` was
 redeployed as `dpl_CSMhzgYpoSTmjpRv3XkaH5K6Rw5m`, ready and assigned to
 `annastrok.com` at `2026-09-05T10:52:20.568Z`. No development UI commit was included.
 All other 74 Vercel variables across Production, Preview, and Development retained
-the same values and metadata. Google credentials remain unchanged. Deployment smoke
+the same values and metadata. Google credentials were unchanged at that checkpoint.
+Deployment smoke
 [run 33961802367](https://github.com/all1son4/dance-course-fe/actions/runs/33961802367)
 passed all nine browser checks; the unchanged production revision already passed CI
 [run 33910368661](https://github.com/all1son4/dance-course-fe/actions/runs/33910368661).
@@ -1502,28 +1506,69 @@ differences remain unchanged. The authenticated production sales API returned Au
 28 / September 1; the downloaded August CSV exactly matches the accepted report hash
 `cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
 
-Next checkpoint: at or after `2026-09-06T10:53:40Z` (`12:53:40` Europe/Warsaw),
-24 hours after successful deployment smoke, repeat the read-only production checks
-and review any new traffic. Mark `DROP-02` done only after that pass, then proceed to
-`DROP-03`. There were no new purchases during this session; the no-export purchase
-evidence is the controlled non-production projection above. After retirement, new
-DB-only SuccessfulCustomers rows are expected; a growing export backlog, changed
+The originally planned additional checkpoint at `2026-09-06T10:53:40Z` was waived
+by the owner on the evening of September 5. This is an explicit reduction of the
+observation period, not a claim that the next nightly cron or another 24 hours was
+observed. The same-day repeat passed health/schema/catalog, 32 invariants, clean
+actionable queues, and the same reconciliation fingerprint at
+`2026-09-05T21:24:34.953Z`. Admin sales and the accepted August CSV hash still match.
+The owner had independently released PR 57; its production revision `ef5fcd9` passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/33991999717) and
+[smoke](https://github.com/all1son4/dance-course-fe/actions/runs/33992036414), with no
+change to the persistence/exporter code and no observed deployment HTTP 5xx.
+Preview/Development also received `DB_SHEETS_EXPORT_MODE=database` at
+`2026-09-05T21:25:48.546Z`; same-revision Preview smoke
+[run 33993177599](https://github.com/all1son4/dance-course-fe/actions/runs/33993177599)
+passed all 11 checks. Local development uses the same setting.
+
+There were no new real purchases during these checks; the no-export purchase
+evidence is the controlled non-production projection above. The next natural daily
+maintenance run remains a useful follow-up, not a blocking date gate. After retirement,
+new DB-only SuccessfulCustomers rows are expected; a growing export backlog, changed
 shared financial rows, or missing canonical access is not.
 
-Rollback before any post-switch purchase is an environment revert. After a canonical
-purchase has been accepted without an export, keep PostgreSQL authoritative and use a
-forward fix; never reconstruct authority from the stale worksheet.
+Before `DROP-03`, an environment revert was possible only before any post-switch
+purchase. After credential retirement, or after accepting a purchase without an
+export, keep PostgreSQL authoritative and use a DB-compatible forward fix; never
+reconstruct authority from the stale worksheet or re-enable the retired key as a
+routine rollback.
 
 ### DROP-03 — Revoke service-account credentials and archive Sheets securely
 
-Status: `TODO` — follows the `DROP-02` next-day verification. Credentials and the
-protected source snapshot remain intact during observation.
+Status: `DONE` — same-day owner waiver accepted; the owner confirmed that the
+Google service account is used only by this site's dev/prod. Fresh encrypted source
+archives for both environments passed isolated PostgreSQL 17 restores and Sheet
+checksum verification. Google confirmed the matching application key disabled at
+`2026-09-05T21:39:36.419Z`; a fresh OAuth exchange was rejected with `invalid_grant`.
+The three Google environment names were removed from Vercel Production, Preview,
+Development and the two local env files. All other Vercel/local settings were preserved.
+The same source revisions were redeployed without Google configuration: production
+`ef5fcd9` passed all nine
+[browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33993972821),
+dev `cd7b4ef` passed all 11
+[browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33994023749).
+Both builds are ready; 200 local unit tests and TypeScript passed. Both databases
+passed health and 32 invariants with no actionable queue backlog. Post-deploy prod
+sales/CSV checks reproduce the accepted accounting figures and hash; no HTTP 5xx
+were observed on either new deployment. No live payment, grant, or report was created
+for testing. See the
+[execution record](./production-cutover-runbook.md#drop-03-credential-retirement--2026-09-05).
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
+Status: `TODO` — the next code-only cleanup after credential-free checks. No new
+calendar hold; preserve user journeys and the offline archive recovery path.
+
 ### DROP-05 — Apply destructive contract migrations in a separate release
 
+Status: `TODO` — separate approval/release; no earlier than the retained
+`2026-09-23T00:56:17Z` boundary. Neither owner acceleration waived this data-retention
+window or authorized deleting production history.
+
 ### Gate G7
+
+Status: `NOT PASSED` — credential retirement alone does not remove the legacy
+adapters and dependency code tracked by `DROP-04`/`DROP-05`.
 
 - Runtime contains no Google Sheets network dependency.
 - Credentials are revoked.
@@ -1644,4 +1689,6 @@ Status: `TODO`
 | 2026-09-01 | DROP-02 preflight           | `READY`       | Switch tested; dev exports/queues clean; date gate remains    |
 | 2026-09-03 | DROP-01 early release       | `DONE`        | Owner waiver; prod CI/smoke/reconciliation/invariants green   |
 | 2026-09-03 | DROP-02 observation         | `IN_PROGRESS` | Exporter unchanged; review after 2026-09-04T20:08:20Z         |
-| 2026-09-05 | DROP-02 production switch   | `OBSERVING`   | Export off; nine browser checks; next check Sep 6 10:53:40Z   |
+| 2026-09-05 | DROP-02 production switch   | `OBSERVING`   | Morning checkpoint; next-day hold later superseded below      |
+| 2026-09-05 | DROP-02 same-day closure    | `DONE`        | Owner waiver; repeat checks green; export off in all envs     |
+| 2026-09-05 | DROP-03 credentials/archive | `DONE`        | Verified restores; key disabled; Google-free prod/dev green   |

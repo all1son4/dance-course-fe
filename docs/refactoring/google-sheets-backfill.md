@@ -3,6 +3,12 @@
 Status: `DONE`
 Implemented: 2026-08-11
 
+Operational update: live Google credentials were retired in `DROP-03` on 2026-09-05.
+This tool reads protected offline archives and does not need Google access. Retain it
+for reviewed archive recovery; do not replay historical Sheets into the live canonical
+database as routine maintenance or as a rollback. Source archives and verified restore
+evidence are in [protected snapshots](./data-source-snapshots.md#drop-03-final-source-archives--2026-09-05).
+
 ## Purpose
 
 `DATA-02` copies the six migration-owned legacy record sets from the immutable

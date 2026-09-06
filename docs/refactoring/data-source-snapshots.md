@@ -3,6 +3,11 @@
 Status: complete
 Implemented: 2026-08-11
 
+Operational update: `DROP-03` retired live Google credentials on 2026-09-05 after the
+final dev/prod captures below. Live capture commands are retained as historical
+operator instructions, not routine tasks to rerun with revoked credentials. Offline
+decryption/restore needs only the encrypted triplet and its separate recovery key.
+
 ## Purpose
 
 `DATA-01` creates a restorable PostgreSQL logical dump and an exact, read-only export
@@ -34,8 +39,9 @@ Each run:
 AES-GCM authenticates the entire archive. The public manifest records the ciphertext
 and wrapped-key SHA-256 values, IV, authentication tag, and RSA public-key fingerprint.
 The RSA private key never enters GitHub, Vercel, application runtime, or the encrypted
-artifact. Google and database credentials remain in the existing local environment;
-no additional credential copy was created for snapshot automation.
+artifact. Capture used the then-existing local Google/database environment values;
+no additional credential copy was created for snapshot automation. `DROP-03` later
+removed the retired Google values while preserving database configuration.
 
 The local `.data-snapshots` directory is excluded from Git and restricted to the owner.
 Keep the encrypted triplets and private key in the owner's normal encrypted computer
@@ -64,9 +70,9 @@ openssl pkey \
   -out .data-snapshots/source-snapshot-public.pem
 ```
 
-The capture command uses the existing local database and Google environment values. It
-requests a `spreadsheets.readonly` OAuth token even when the runtime service account has
-broader compatibility permissions, and the credential is not copied to GitHub.
+Before credential retirement, the capture command used local database and Google
+environment values. It requested a `spreadsheets.readonly` OAuth token even with
+broader service-account permissions; the credential was not copied to GitHub.
 
 ## Controlled capture
 
@@ -148,3 +154,30 @@ Development Sheet counts were `44/86/35/33/6/2/1`; production counts were
 were 38 purchases, 112 Stripe events, 5 invoices, and 40 entitlements. Restored
 production aggregates were 75 purchases, 171 Stripe events, 23 invoices, and 93
 entitlements. These are identifier-free verification summaries, not backfill input.
+
+## DROP-03 final source archives — 2026-09-05
+
+Both archives use the same dedicated snapshot public-key fingerprint recorded above,
+AES-256-GCM encryption and RSA-OAEP-SHA256 key wrapping. The private recovery key is
+not the retired Google key. Capture tooling revision was `cd7b4ef`; this records the
+operator's tooling revision, not a claim that dev code was deployed to production.
+
+| Target      | Capture ID                                     | Cut-off                    | Encrypted archive SHA-256                                          |
+| ----------- | ---------------------------------------------- | -------------------------- | ------------------------------------------------------------------ |
+| production  | `production-20260905T212429218Z-cd7b4ef32d7e`  | `2026-09-05T21:25:30.938Z` | `c7f01f133e4d27af386d3a68de37a54ee2bb0ad6743e6c9385a638dcb1e33f88` |
+| development | `development-20260905T212531429Z-cd7b4ef32d7e` | `2026-09-05T21:25:37.667Z` | `2beedec8ac1955d788bcbb642a5f51e4a76eac2e6692ff861af330198578d1ea` |
+
+Ciphertext, wrapped key, inner file checksums, and all seven Sheet counts were
+verified. Both archives restored with `pg_restore --exit-on-error` into isolated local
+PostgreSQL 17 databases: 21 public tables, 19 migrations, zero invalid indexes each.
+Production restored 105 purchases, 308 Stripe events, 42 invoices, 127 entitlements;
+development restored 43 purchases, 137 events, five invoices, 45 entitlements.
+Sheet row counts in the documented order were `81/148/81/21/18/5/3` for production and
+`46/87/38/34/6/2/1` for development.
+
+The test cluster and decrypted files were removed after successful verification;
+the encrypted triplets remain in ignored `.data-snapshots/production` and
+`.data-snapshots/development` with owner-only permissions. Keep these and the separate
+private recovery key in the owner's encrypted backup. No off-device backup upload
+was performed or independently verified during this step. Keep the September 23
+minimum retention boundary and do not delete the originals as part of `DROP-04`.

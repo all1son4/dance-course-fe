@@ -5,6 +5,12 @@ Captured: 2026-07-30
 Call-site audit refreshed: 2026-09-01 (`DROP-01`, Stripe runtime slice)
 Scope: runtime, maintenance tooling, and type coupling
 
+Operational update: `DROP-02` disabled the exporter in Production, Preview, Development,
+and local development on 2026-09-05. `DROP-03` disabled the sole application Google
+key and removed its three environment variables after verified encrypted dev/prod
+archives. The inventory below still describes code present for `DROP-04` cleanup,
+not live authenticated Google access.
+
 ## Purpose
 
 This document records the current dependency on Google Sheets before any cutover work.
@@ -17,7 +23,7 @@ architecture.
 
 ## Current persistence semantics
 
-Seven worksheets are currently connected:
+Seven legacy worksheets were connected before credential retirement:
 
 - `Payments`;
 - `StripeEvents`;
@@ -43,8 +49,9 @@ semantics:
 
 There is no automatic database-to-Sheets fallback. Sheets can no longer affect a
 runtime read, authoritative write, webhook result, or side-effect lease. The isolated
-exporter and offline migration tools intentionally retain provider access until their
-dedicated `DROP` slices.
+exporter and live migration tools retained provider access until `DROP-02`/`DROP-03`.
+That access is now retired; legacy code and DTOs still await `DROP-04`. Offline archive
+recovery does not require the Google key.
 
 Catalog authorization is not a Sheets domain. Since `SAFE-07`, catalog and checkout
 commercial selection read PostgreSQL only and fail closed; code constants cannot
@@ -191,7 +198,8 @@ Remove after reconciliation and the rollback observation window:
 
 - the legacy backfill and comparison scripts;
 - the shared Google Sheets facade and schema;
-- Google service-account credentials and worksheet environment variables;
+- Google service-account credentials and worksheet environment variables (retired
+  in `DROP-03`, 2026-09-05; the provider key is disabled, not deleted);
 - the transitional exporter;
 - remaining Sheet-shaped database adapters.
 

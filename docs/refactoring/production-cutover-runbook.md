@@ -364,7 +364,8 @@ retirement or credential revocation with this release.
 
 ### DROP-02 production exporter retirement — 2026-09-05
 
-Status: `OBSERVING (production switch applied; next-day verification pending)`.
+Status: `DONE` — morning switch followed by an owner-approved same-day verification
+instead of the originally planned additional next-day hold.
 
 The fresh preflight after the owner-approved observation window passed health,
 schema, catalog, all 32 invariants, actionable queue checks, and classified
@@ -411,15 +412,97 @@ the accepted SHA-256
 The immediate Vercel log review, scoped to the new deployment since its ready time,
 returned zero HTTP 5xx requests and zero error-level records.
 
-Next-day verification is due at or after `2026-09-06T10:53:40Z`
-(`12:53:40` Europe/Warsaw), 24 hours after successful deployment smoke. Repeat
-health/schema/catalog, queues/invariants, classified reconciliation, admin sales/CSV
-reads, and deployment/error checks before marking `DROP-02` done or starting
-credential revocation. No new real purchase occurred during the immediate checks;
+The original next-day checkpoint at `2026-09-06T10:53:40Z` was explicitly waived
+by the owner on September 5 evening. The repeat preflight passed production health,
+schema/catalog, queues, and all 32 invariants. Reconciliation at
+`2026-09-05T21:24:34.953Z` reproduced the fingerprint above. Authenticated sales/CSV
+checks at `2026-09-05T21:24:38.284Z` returned the same 28 August / one September sale
+and identical accepted August CSV. No new real purchase occurred during these checks;
 the controlled non-production tests provide the no-export purchase evidence. New
 DB-only SuccessfulCustomers after the switch are expected; new queued exports,
 unexplained shared-row changes, or missing canonical access require investigation.
 Keep the protected snapshot; the September 23 destructive-cleanup boundary remains.
+
+The owner independently released PR 57 before this checkpoint: production revision
+`ef5fcd93e5934e216eb3f38ef2d2b910762a64cf` passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/33991999717) and
+[deployment smoke](https://github.com/all1son4/dance-course-fe/actions/runs/33992036414).
+Its persistence/exporter code matches the morning-tested code. The deployment log
+review since `21:05Z` returned no HTTP 5xx. Preview/Development received
+`DB_SHEETS_EXPORT_MODE=database` at `2026-09-05T21:25:48.546Z`; redeploying existing
+dev revision `cd7b4ef` as `dpl_rvqn7HBz6NdX9wUNYKx4jQ6doWKR` passed all 11
+[browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33993177599).
+Both environments had no waiting exports or actionable inbox/outbox jobs. Local
+development uses the same export-disabled setting.
+
+This waiver closes `DROP-02` but is not evidence of another 24 hours, a new production
+purchase, or a successful next nightly cron. Review the next natural maintenance run
+as a non-blocking follow-up; no cron was forced and no customer email was sent for
+these checks.
+
+### DROP-03 credential retirement — 2026-09-05
+
+Status: `DONE` — provider key disabled, archives restored, active Google configuration
+removed, and credential-free same-revision dev/prod deployments verified.
+
+The owner confirmed the service account has no consumers beyond this site's dev/prod.
+Before disabling its key, fresh encrypted production and development source archives
+were captured and successfully restored to disposable PostgreSQL 17 databases. Both
+had 21 public tables, 19 migrations, valid internal checksums, and no invalid indexes.
+See [archive IDs, hashes, and counts](./data-source-snapshots.md#drop-03-final-source-archives--2026-09-05).
+The temporary cleartext archives, Sheets exports, and restored database cluster were
+deleted after verification. Encrypted archives and their recovery key remain protected
+locally; the original Google worksheets were not changed or deleted.
+
+The configured private key was matched cryptographically to exactly one user-managed
+Google key (public SPKI SHA-256
+`905d7d2e4190dd8d4ee677f9102fefcf3a6b3b6b990dabff30f6420d1d280ee8`).
+The initial IAM `403 SERVICE_DISABLED` was resolved by enabling only
+`iam.googleapis.com` using existing permissions; no IAM roles were added. Google
+confirmed key `a0ff73ed08ca3bc338f10bf0683a3c90850d7772` as `disabled: true` at
+`2026-09-05T21:39:36.419Z`. A new OAuth exchange at `21:42:42.463Z` returned HTTP 400
+`invalid_grant`, without issuing a token. The key is disabled, not permanently deleted.
+[Google's documented behavior](https://docs.cloud.google.com/iam/docs/keys-disable-enable)
+allows later administrative re-enablement; already issued short-lived tokens expire
+naturally and are not immediately revoked by key disablement.
+
+Removed `GOOGLE_PRIVATE_KEY`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, and
+`GOOGLE_SHEETS_SPREADSHEET_ID` from all three Vercel environments and from
+`.env.local`/`.env.production.local`. At `21:43:58.907Z`, no project-level Google
+variables remained. All other 72 Vercel records, including both export-disabled
+settings, retained identical values/metadata (SHA-256
+`cb7ed69b0a2a51e670d1eb33e77ade624c65e820d7155bc579d44c4ee22730f6`).
+Local removal preserved every unrelated setting and retained line byte-for-byte.
+No replacement Google credential or extra secret copy was created.
+
+Credential-free releases used the existing source revisions, with no dev-to-prod merge:
+
+- Production `ef5fcd9`: `dpl_E6iPSwxs3zFqJZ8LCFNwQjgkLiZa`, ready at
+  `2026-09-05T21:45:42.833Z`; all nine
+  [browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33993972821)
+  passed against that deployment URL.
+- Preview `cd7b4ef`: `dpl_2ZDuGYo1Tk5k3uwAhmXttqv9Tm24`, ready at
+  `2026-09-05T21:46:49.405Z`; all 11
+  [browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33994023749)
+  passed against that deployment URL.
+
+Vercel reported no `GOOGLE_*` names and the export-disabled flag present in both
+deployment environments. The existing exact-revision CI runs remained green; 200
+local unit tests and TypeScript also passed after local credential removal. Read-only
+health checks and all 32 DB invariants passed in each environment. Production queue
+checks at `21:49:00.394Z` showed no ready/working/stale/dead-letter jobs and no waiting
+exports; historical retries/imported warnings were unchanged. Authenticated
+production sales/CSV checks at `21:48:59.561Z` returned HTTP 200, August 28 sales
+(EUR 800.00, PLN 735.00), September one sale (EUR 15.00), and the identical accepted
+August CSV SHA-256 above. Both new deployments had zero observed HTTP 5xx and zero
+error-level records during the immediate post-deploy review. No real payment or
+outbound report email was generated.
+
+Older deployments may retain their captured environment. Do not promote them as a
+rollback: redeploy a reviewed DB-compatible revision with current export-disabled,
+Google-free configuration. Live Sheet comparison/capture tools no longer authenticate;
+offline archive recovery remains available. Do not restore Google access merely to
+make a stale worksheet resemble the canonical database.
 
 ### Historical CUT-03 flag sequence
 

@@ -118,11 +118,13 @@ admin response. Daily maintenance recovers this queue independently from Stripe.
 
 Setting the mode to `database` stops creating new Sheet export jobs. An already queued
 versioned export is marked `skipped` without loading customer data or calling Google.
-Production has used this value since the `DROP-02` deployment on 2026-09-05; its
-next-day verification remains pending in the
+Production has used this value since the morning `DROP-02` deployment on 2026-09-05;
+Preview, Development, and local development use it after the same-day follow-up. The
+owner waived the additional next-day hold after a fresh green preflight; see the
 [`production cutover runbook`](./production-cutover-runbook.md#drop-02-production-exporter-retirement--2026-09-05).
-Preview/Development settings and Google credentials were unchanged. Do not unset the
-production flag to recover missing Sheet rows after a DB-only purchase; keep
+`DROP-03` disabled the Google service-account key and removed the three Google env
+names from active Vercel/local configuration. Do not unset the export-disabled
+flag to recover missing Sheet rows after a DB-only purchase; keep
 PostgreSQL authoritative and use a forward fix. This is an exporter setting, not an
 admin-write cutover switch.
 
@@ -174,12 +176,17 @@ old worker revision is still active, then inspect application logs by the row ID
 
 ## Reconciliation and export lag
 
-Use `npm run db:baseline:sheets` and `npm run db:compare:sheets` for detailed controlled
-reconciliation. The operational command only reports safe aggregate warning signals.
+The historical `npm run db:baseline:sheets` and `npm run db:compare:sheets` commands
+require live Google credentials, retired in `DROP-03`; do not re-enable the service
+account to run routine health checks. Use canonical DB health, schema/catalog,
+invariants, queue status, and accounting API/CSV checks. The final accepted live
+comparison and protected source archives are recorded in the cutover runbook.
+The operational command only reports safe aggregate warning signals.
 `projection.waitingSheetsExports` counts only versioned jobs that the exporter can
 claim; historical unversioned migration markers are deliberately excluded. Investigate
-a growing count as an optional-sink problem. It must never be repaired by changing
-payment or access state.
+a nonzero waiting count after retirement as an export regression; the flag must remain
+`database` and old queued jobs must skip Google. It must never be repaired by changing
+payment or access state or reinstating credentials.
 
 After database write mode has accepted events, do not roll back to a release that does
 not understand the inbox/outbox workers. Disable only through a DB-compatible release
