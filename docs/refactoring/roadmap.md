@@ -901,8 +901,10 @@ enablement is reserved for `CUT-03` after the dependent READ cutovers.
 Export only non-secret projections asynchronously. Export failure must not affect any
 user request.
 
-Status: `DONE`. The only database-mode runtime write to Sheets is now the isolated
-[`Sheets export outbox`](../../src/lib/sheets-export-outbox.ts). It claims the existing
+Status: `DONE` (historical implementation; exporter retired by `DROP-02`/`DROP-04`).
+The isolated `sheets-export-outbox.ts` was the only database-mode runtime writer.
+The implementation below records the accepted WRITE-07 behavior, not instructions
+to reinstate it after retirement. It claimed the existing
 versioned `successful_customer_export` job independently from Stripe delivery, loads
 the canonical PostgreSQL purchase projection, and crosses the provider boundary
 through an explicit eleven-field allowlist. Raw Stripe payloads, outbox metadata,
@@ -1409,7 +1411,8 @@ observation and a fresh preflight, `DROP-02` disabled the production exporter on
 2026-09-05. The owner waived the additional next-day hold that evening after another
 green preflight; `DROP-02` is complete. `DROP-03` is also complete: archives restored,
 Google key disabled, credentials removed, and same-revision dev/prod checks green.
-`DROP-04` is next; the September 23 destructive-cleanup boundary is unchanged.
+`DROP-04` started on dev with exporter-code retirement; the September 23
+destructive-cleanup boundary is unchanged.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
@@ -1556,8 +1559,32 @@ for testing. See the
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
-Status: `TODO` — the next code-only cleanup after credential-free checks. No new
-calendar hold; preserve user journeys and the offline archive recovery path.
+Status: `IN_PROGRESS (DEV)` — exporter-code retirement is the first verified slice.
+Stripe success projection and ordinary/Online Group admin grants no longer enqueue
+`successful_customer_export`; the export-mode selector and provider-delivery adapter
+were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
+exports back on in this revision. The bounded
+[retired-job drain](../../src/lib/retired-export-outbox.ts) still claims old versioned
+exports and marks them `skipped` without loading customer projections, reading
+configuration, or calling any provider. It preserves rows, attempt history, existing
+worker/cron response fields, and unversioned imported markers. No schema, production
+configuration, checkout, accounting period, email, or Telegram renewal flow changed.
+
+Local verification passed formatting, lint, TypeScript, 197 unit tests, all 52
+PostgreSQL integration tests in an isolated local PG17 database, and the production
+build. Tests cover no-export purchases with absent/stale flags, both admin grant
+flows, terminal retirement without a duplicate claim or network access, and untouched
+unversioned history. A transitive-import guard rejects application entry points that
+load the legacy Google client. Archived-source backfill and snapshot encryption tests
+remain in the passing suite. This slice is released to dev only, not production.
+
+Remaining `DROP-04` work: separate Sheet-shaped runtime DTOs/mappers from archive
+schemas, remove unused facade/cache/write adapters and retired live maintenance
+paths, preserve offline archive decryption/restore, then verify and release those
+slices. Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback
+revisions until their replacement is approved; it is inert only in the new code.
+No new calendar hold applies to this code-only work. Do not mark all of `DROP-04` or
+G7 complete based on this first slice.
 
 ### DROP-05 — Apply destructive contract migrations in a separate release
 
@@ -1692,3 +1719,4 @@ Status: `TODO`
 | 2026-09-05 | DROP-02 production switch   | `OBSERVING`   | Morning checkpoint; next-day hold later superseded below      |
 | 2026-09-05 | DROP-02 same-day closure    | `DONE`        | Owner waiver; repeat checks green; export off in all envs     |
 | 2026-09-05 | DROP-03 credentials/archive | `DONE`        | Verified restores; key disabled; Google-free prod/dev green   |
+| 2026-09-07 | DROP-04 exporter-code slice | `DONE (DEV)`  | No new exports; old jobs skip; 197 unit / 52 PG tests pass    |

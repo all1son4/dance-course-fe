@@ -5,7 +5,6 @@ import {
   projectPaymentStateInTransaction,
 } from "@/db/payment-projection";
 import { processNextStripeInboxEvent } from "@/db/stripe-event-inbox";
-import { isSheetsExportEnabled } from "@/lib/sheets-export-outbox";
 
 import {
   applyPreparedStripeChargeSettlement,
@@ -86,14 +85,6 @@ const createPurchaseOutboxJobs = ({
       provider: "telegram" as const,
     },
   ];
-
-  if (isSheetsExportEnabled()) {
-    jobs.push({
-      kind: "successful_customer_export" as const,
-      payload: sharedPayload,
-      provider: "google_sheets" as const,
-    });
-  }
 
   return jobs;
 };

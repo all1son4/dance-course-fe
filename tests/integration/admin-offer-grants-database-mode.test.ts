@@ -53,7 +53,7 @@ const configureDatabaseOnlyAdminOffers = (context: TestContext) => {
   });
 };
 
-test("creates and reads one atomic admin grant and export job without a mode flag or Google credentials", async (t) => {
+test("creates and reads one atomic admin grant without export even with a stale legacy flag", async (t) => {
   const suffix = randomUUID().replaceAll("-", "");
   const productExternalId = `prd_write05_${suffix}`;
   const offerExternalId = `off_write05_${suffix}`;
@@ -204,8 +204,8 @@ test("creates and reads one atomic admin grant and export job without a mode fla
         entitlementCount: number;
         entitlementStatus: string;
         exportCount: number;
-        exportSource: string;
-        exportStatus: string;
+        exportSource: string | null;
+        exportStatus: string | null;
         outcome: string;
         purchaseCount: number;
         source: string;
@@ -241,16 +241,16 @@ test("creates and reads one atomic admin grant and export job without a mode fla
       results.every(
         (record) =>
           record.payment_intent_id === paymentIntentId &&
-          record.successful_customer_log_status === "pending",
+          record.successful_customer_log_status === "",
       ),
     );
     assert.deepEqual(stored, {
       amountMinor: 0,
       entitlementCount: 1,
       entitlementStatus: "pending",
-      exportCount: 1,
-      exportSource: "admin_offer_link",
-      exportStatus: "pending",
+      exportCount: 0,
+      exportSource: null,
+      exportStatus: null,
       outcome: "succeeded",
       purchaseCount: 1,
       source: "admin_offer_link",
@@ -279,14 +279,14 @@ test("creates and reads one atomic admin grant and export job without a mode fla
   }
 });
 
-test("creates a DB-native Online Group grant with the export retired", async (t) => {
+test("creates a DB-native Online Group grant without an export flag or Google credentials", async (t) => {
   const suffix = randomUUID().replaceAll("-", "");
   const productExternalId = `prd_write05_no_export_${suffix}`;
   const offerExternalId = `off_write05_no_export_${suffix}`;
   const paymentIntentId = `adm_offer_pi_no_export_${suffix}`;
 
   configureDatabaseOnlyAdminOffers(t);
-  process.env.DB_SHEETS_EXPORT_MODE = "database";
+  delete process.env.DB_SHEETS_EXPORT_MODE;
 
   try {
     const [product] = await client<{ id: string }[]>`

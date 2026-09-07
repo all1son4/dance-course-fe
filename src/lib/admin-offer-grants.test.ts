@@ -3,28 +3,13 @@ import test from "node:test";
 
 import type { CreateAdminOfferGrantCommand } from "@/db/admin-offer-grants";
 
-import {
-  createAdminOfferGrant,
-  shouldExportAdminOfferGrantToSheets,
-} from "./admin-offer-grants";
+import { createAdminOfferGrant } from "./admin-offer-grants";
 
-test("keeps the transitional export unless Sheets are explicitly retired", () => {
-  assert.equal(shouldExportAdminOfferGrantToSheets({}), true);
-  assert.equal(
-    shouldExportAdminOfferGrantToSheets({ DB_SHEETS_EXPORT_MODE: "shadow" }),
-    true,
-  );
-  assert.equal(
-    shouldExportAdminOfferGrantToSheets({ DB_SHEETS_EXPORT_MODE: "database" }),
-    false,
-  );
-});
-
-test("always delegates admin grants to PostgreSQL and keeps export independent", async () => {
-  let capturedExport = true;
+test("delegates the unchanged grant command to PostgreSQL without an export option", async () => {
+  let capturedCommand: CreateAdminOfferGrantCommand | undefined;
   const marker = { payment_intent_id: "adm_offer_pi_test" };
   const createInDatabase = (async (command: CreateAdminOfferGrantCommand) => {
-    capturedExport = command.enqueueSuccessfulCustomerExport;
+    capturedCommand = command;
     return marker;
   }) as Parameters<typeof createAdminOfferGrant>[1] extends {
     createInDatabase?: infer T;
@@ -48,12 +33,11 @@ test("always delegates admin grants to PostgreSQL and keeps export independent",
     },
     {
       createInDatabase,
-      environment: {
-        DB_SHEETS_EXPORT_MODE: "database",
-      },
     },
   );
 
   assert.equal(result, marker);
-  assert.equal(capturedExport, false);
+  assert.ok(capturedCommand);
+  assert.equal(capturedCommand.paymentIntentId, "adm_offer_pi_test");
+  assert.equal("enqueueSuccessfulCustomerExport" in capturedCommand, false);
 });

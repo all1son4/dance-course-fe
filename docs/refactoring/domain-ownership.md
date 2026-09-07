@@ -93,10 +93,12 @@ release, never to stale Sheet data.
 The catalog is already in `database` state after `SAFE-07`. Other domains remain
 transitional until their WRITE and READ items pass.
 
-[`domain-persistence.ts`](../../src/db/domain-persistence.ts) defines one validated
-environment flag per domain. Missing flags deliberately mean `legacy`; invalid values
-fail configuration instead of silently falling back. The DB-phase release does not set
-any of these flags, so it adds no runtime cutover and changes no user journey.
+The original `domain-persistence.ts` defined validated per-domain flags: missing flags
+meant `legacy`, invalid values failed configuration. This describes the historical
+DB-phase rollout, not a current rollback mechanism. `DROP-01` made business paths
+PostgreSQL-only; the `DROP-04` dev exporter slice removed the final selector module.
+That revision cannot enable Google export through a flag. Keep older production
+revisions' existing export-disabled configuration until a separate approved release.
 
 ## Implementation sequence enabled by this boundary
 

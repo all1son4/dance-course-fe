@@ -109,7 +109,8 @@ npm run db:business-jobs:run
 Optional `DB_BUSINESS_JOBS_LIMIT` is capped at 100. Production requires both values to
 name `production`. Output contains aggregate counts only.
 
-The optional one-way export job is enabled while `DB_SHEETS_EXPORT_MODE` is unset,
+On revisions before the `DROP-04` exporter-code slice, the optional one-way export
+job is enabled while `DB_SHEETS_EXPORT_MODE` is unset,
 `legacy`, or `shadow`. It exports only the allowlisted `SuccessfulCustomers`
 projection; no provider payload, credential, access token, invite link, or raw outbox
 payload is sent to Sheets. A Google failure changes only that durable job to retry or
@@ -127,6 +128,17 @@ names from active Vercel/local configuration. Do not unset the export-disabled
 flag to recover missing Sheet rows after a DB-only purchase; keep
 PostgreSQL authoritative and use a forward fix. This is an exporter setting, not an
 admin-write cutover switch.
+
+The `DROP-04` dev slice removes that selector and all runtime export producers.
+`DB_SHEETS_EXPORT_MODE` cannot enable export in the new code. Keep it set to
+`database` for older production/rollback revisions; this development slice does not
+change production configuration. The replacement
+[`retired-export-outbox.ts`](../../src/lib/retired-export-outbox.ts) only drains old
+versioned exports to `skipped`, without Google or customer projection reads. It does
+not delete history, mark exports `sent`, or modify unversioned import markers. The
+existing `sheetsExport` worker result and `sheetsExportResult`/`sheetsExportError`
+cron fields remain for operational compatibility; they now describe retirement, not
+delivery. Admin replay uses the same bounded retirement path.
 
 After deployment, verify one ordinary and one Online Group admin grant, one invoice,
 one report, one signup plus broadcast, and no duplicate invoice, campaign email,

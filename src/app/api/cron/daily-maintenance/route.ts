@@ -6,7 +6,7 @@ import {
   getScheduledMonthlySalesReportPeriod,
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
-import { runSheetsExportOutboxJobs } from "@/lib/sheets-export-outbox";
+import { runRetiredExportOutboxJobs } from "@/lib/retired-export-outbox";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
@@ -54,7 +54,7 @@ export async function GET(request: Request) {
   let paymentJobsResult: Awaited<ReturnType<typeof runStripeBackgroundJobs>> | null =
     null;
   let sheetsExportError: string | null = null;
-  let sheetsExportResult: Awaited<ReturnType<typeof runSheetsExportOutboxJobs>> | null =
+  let sheetsExportResult: Awaited<ReturnType<typeof runRetiredExportOutboxJobs>> | null =
     null;
 
   try {
@@ -109,12 +109,12 @@ export async function GET(request: Request) {
     paymentJobsError = "stripe_background_recovery_failed";
   }
 
-  // Sheets is an optional one-way sink. Its queue is recovered independently from
-  // Stripe so admin-created exports do not require Stripe mode or credentials.
+  // Retain the response fields and drain old exports to skipped. No Google client
+  // or credentials exist in this worker, regardless of old environment settings.
   try {
-    sheetsExportResult = await runSheetsExportOutboxJobs();
+    sheetsExportResult = await runRetiredExportOutboxJobs();
   } catch (error) {
-    console.error("Daily maintenance: Sheets export recovery failed", {
+    console.error("Daily maintenance: retired export cleanup failed", {
       errorName: error instanceof Error ? error.name : "UnknownError",
     });
     sheetsExportError = "sheets_export_recovery_failed";

@@ -1,7 +1,7 @@
 import { after } from "next/server";
 
 import { processNextOutboxJob } from "@/db/transactional-outbox";
-import { runSheetsExportOutboxJobs } from "@/lib/sheets-export-outbox";
+import { runRetiredExportOutboxJobs } from "@/lib/retired-export-outbox";
 
 import { getStripeServer } from "../../payment-intent/lib";
 import { processNextStripeWebhookInboxJob } from "./inbox-worker";
@@ -74,7 +74,8 @@ export const runStripeBackgroundJobs = async ({
     }
   }
 
-  const sheetsExport = await runSheetsExportOutboxJobs({ limit: outboxLimit });
+  // Keep the operational result shape while retiring old jobs without Google.
+  const sheetsExport = await runRetiredExportOutboxJobs({ limit: outboxLimit });
 
   return { inbox, outbox, sheetsExport };
 };
