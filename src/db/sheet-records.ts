@@ -2,10 +2,10 @@ import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizz
 
 import type {
   EmailCampaignLeadSheetRecord,
-  MonthlySalesReportRunSheetRecord,
   StripeEventSheetRecord,
   SuccessfulCustomersSheetRecord,
 } from "@/lib/google-sheets-schema";
+import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import type {
   TelegramAccessTokenRecord,
   TelegramUserBindingRecord,
@@ -852,7 +852,7 @@ export const upsertTelegramUserBindingRecordToDatabase = async (
 
 const mapMonthlySalesReportRunRecordFromDatabase = (
   row: typeof monthlyReportRuns.$inferSelect,
-): MonthlySalesReportRunSheetRecord => ({
+): MonthlySalesReportRunRecord => ({
   csv_sha256: row.csvSha256 ?? "",
   delivered_at_utc: toIso(row.deliveredAtUtc),
   delivered_to: row.deliveredTo ?? "",
@@ -890,7 +890,7 @@ export const listMonthlySalesReportRunRecordsFromDatabase = async () => {
 };
 
 export const upsertMonthlySalesReportRunToDatabase = async (
-  record: MonthlySalesReportRunSheetRecord,
+  record: MonthlySalesReportRunRecord,
 ) => {
   const now = new Date();
 

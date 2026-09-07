@@ -29,9 +29,14 @@ const resolveLocalImport = (specifier: string, importer: string) => {
 
 test("application entry points cannot load Google code or archive headers transitively", () => {
   const telegramRoot = join(root, "src/lib/telegram");
-  // Include type-only Telegram modules as roots so their contracts are checked too.
+  // Include independent type-only modules as roots so their contracts are checked too.
   const telegramFiles = new Set(filesUnder(telegramRoot));
-  const pending = [...filesUnder(join(root, "src/app")), ...telegramFiles];
+  const independentFiles = new Set([
+    ...telegramFiles,
+    resolve(root, "src/lib/monthly-sales-report.ts"),
+    resolve(root, "src/lib/monthly-sales-report-record.ts"),
+  ]);
+  const pending = [...filesUnder(join(root, "src/app")), ...independentFiles];
   const visited = new Set<string>();
   const googleClient = resolve(root, "src/lib/google-sheets.ts");
   const archiveSchema = resolve(root, "src/lib/google-sheets-schema.ts");
@@ -39,6 +44,7 @@ test("application entry points cannot load Google code or archive headers transi
     "PaymentSheetRecord",
     "TelegramAccessTokenSheetRecord",
     "TelegramUserBindingSheetRecord",
+    "MonthlySalesReportRunSheetRecord",
   ]);
   const forbidden = new Set([googleClient, archiveSchema]);
 
@@ -65,8 +71,8 @@ test("application entry points cannot load Google code or archive headers transi
       if (dependency) pending.push(dependency);
     };
     const visit = (node: ts.Node) => {
-      // Other record families are migrated in later DROP-04 slices. Payments and
-      // Telegram already own their contracts, including type-only references.
+      // Other record families are migrated in later DROP-04 slices. Payments,
+      // Telegram and monthly reports already own their contracts, including types.
       if (ts.isIdentifier(node)) {
         assert.ok(
           !retiredRecordTypes.has(node.text),
@@ -84,7 +90,7 @@ test("application entry points cannot load Google code or archive headers transi
           googleClient,
           `${relative(root, file)} imports the retired Google facade (including types)`,
         );
-        if (telegramFiles.has(file)) {
+        if (independentFiles.has(file)) {
           assert.notEqual(
             dependency,
             archiveSchema,
@@ -146,6 +152,9 @@ test("application entry points cannot load Google code or archive headers transi
     "src/lib/telegram/access-records.ts",
     "src/lib/telegram/access-read-runtime.ts",
     "src/lib/telegram/access-persistence.ts",
+    "src/lib/monthly-sales-report.ts",
+    "src/lib/monthly-sales-report-record.ts",
+    "src/lib/business-operation-read-runtime.ts",
   ]) {
     assert.ok(
       visited.has(resolve(root, dependency)),

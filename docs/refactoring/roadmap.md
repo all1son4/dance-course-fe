@@ -1630,7 +1630,27 @@ invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
 The classified historical counters are unchanged; the last-15-minute runtime-error
 query returned zero entries. Production was not changed by this slice.
 
-Remaining `DROP-04` work: separate the remaining report/campaign/admin-history DTOs from archive
+The monthly-report contract slice introduces independent
+[`MonthlySalesReportRunRecord`](../../src/lib/monthly-sales-report-record.ts) with
+the same ten string fields. Report generation/delivery and database reads now use
+this contract instead of the archive DTO. Archive schemas and offline upsert inputs
+remain compatible. Executable-body comparison confirms no changes in the three
+affected runtime modules: accounting queries, CSV formatting, Warsaw month bounds,
+schedule, and durable delivery remain unchanged (`BEH-ADMIN-01`). No migration,
+environment update, production release, or real report/email is part of this slice;
+rollback remains the previous DB-compatible dev revision.
+
+Local verification passes formatting, lint, TypeScript, build, 203 unit tests, and
+56 isolated PostgreSQL integration tests. Added coverage checks all ten projected
+fields, empty/zero values, delivery statuses, exact CSV content and SHA-256, inclusion
+of the first/last sale within the Warsaw month, exclusion of adjacent-month sales,
+and deduplication of repeated successful Stripe events. The durable-delivery test
+also verifies the complete saved report record after one mocked provider call.
+The import guard rejects the old report type in reachable application modules and
+any archive-schema import in the report module or its independent contract.
+Dev release verification is pending; these local checks do not close the slice.
+
+Remaining `DROP-04` work: separate the remaining campaign/admin-history DTOs from archive
 schemas, remove unused facade/cache/write adapters and retired live maintenance
 paths, split the mixed database adapter, preserve offline archive decryption/restore, then verify and release those
 slices. Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback
@@ -1774,3 +1794,4 @@ Status: `TODO`
 | 2026-09-07 | DROP-04 exporter-code slice | `DONE (DEV)`  | No new exports; old jobs skip; 197 unit / 52 PG tests pass    |
 | 2026-09-07 | DROP-04 payment contract    | `DONE (DEV)`  | 48 fields; 200 unit / 52 PG; CI, 11 browser, 32 audits pass   |
 | 2026-09-07 | DROP-04 Telegram contracts  | `DONE (DEV)`  | 202 unit / 54 PG; CI/browser/32 audits; claim rules kept      |
+| 2026-09-07 | DROP-04 report contract     | `LOCAL PASS`  | 203 unit / 56 PG; exact CSV/month bounds; dev check pending   |

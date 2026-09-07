@@ -122,7 +122,7 @@ removes the legacy boundary.
 | [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`admin-offer-grants`](../../src/lib/admin-offer-grants.ts)                                                       | PostgreSQL-only grant command; no export producer                            | —     | Export option removed in `DROP-04` dev slice                      |
 | [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
-| [`monthly-sales-report`](../../src/lib/monthly-sales-report.ts)                                                   | PostgreSQL-only report state and durable delivery plus compatibility DTO     | `T`   | Runtime dependency removed in `DROP-01`; DTO in `DROP-04`         |
+| [`monthly-sales-report`](../../src/lib/monthly-sales-report.ts)                                                   | Independent report contract; PostgreSQL state and durable delivery           | —     | Report contract separated in DROP-04 dev slice                    |
 | [`payment-read-runtime`](../../src/lib/payment-read-runtime.ts)                                                   | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`retired-export-outbox`](../../src/lib/retired-export-outbox.ts)                                                 | Bounded provider-free drain: old versioned exports become skipped            | —     | Exporter removed in `DROP-04` dev slice; historical rows retained |
 | [`telegram/access`](../../src/lib/telegram/access.ts)                                                             | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
@@ -139,7 +139,7 @@ removes the legacy boundary.
 | [`capture-source-snapshot`](../../src/db/capture-source-snapshot.ts)                 | protected DATA-01 source capture through the isolated legacy readers              | `R/MT/T`        | Keep through rollback observation; then `DROP-04` |
 | [`compare-google-sheets`](../../src/db/compare-google-sheets.ts)                     | six Sheet/database list readers                                                   | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                    |
 | [`payment-records`](../../src/db/payment-records.ts)                                 | Independent payment projection; no Sheet header/type dependency                   | —               | Payment contract separated in DROP-04 dev slice   |
-| [`sheet-records`](../../src/db/sheet-records.ts)                                     | Independent Telegram contracts; four remaining archive DTOs                       | `T`             | `DB-07`, `DROP-04`                                |
+| [`sheet-records`](../../src/db/sheet-records.ts)                                     | Independent Telegram/report contracts; three remaining archive DTOs               | `T`             | `DB-07`, `DROP-04`                                |
 | [`reconciliation-baseline`](../../src/db/reconciliation-baseline.ts)                 | all seven Sheet DTOs used by the pure report builder                              | `MT/T`          | `CUT-04`, `DROP-04`                               |
 | [`reconciliation-baseline.test`](../../src/db/reconciliation-baseline.test.ts)       | all seven Sheet headers/DTOs used by privacy fixtures                             | `MT/T`          | Keep with the baseline tool; remove at `DROP-04`  |
 | [`google-sheets`](../../src/lib/google-sheets.ts)                                    | sole Google OAuth/values API facade, explicit reads, caches, mirror, coordination | `R/W/M/F/C/X/E` | `DROP-01`, then `DROP-04`                         |
@@ -169,8 +169,11 @@ test checks archive compatibility in both directions. The Telegram-contract slic
 also separates the 17-field token and 14-field binding contracts in
 [`access-records.ts`](../../src/lib/telegram/access-records.ts), with no type-only
 archive imports in Telegram runtime modules. Their database mapping and claim rules
-are unchanged. Remaining report/campaign/admin-history contracts and the mixed
-database adapter still need cleanup. This is not yet a full decomposition
+are unchanged. The report-contract slice separates all ten report-state fields in
+[`monthly-sales-report-record.ts`](../../src/lib/monthly-sales-report-record.ts),
+without changing accounting calculations, CSV, month boundaries, or scheduling.
+Remaining campaign/admin-history contracts and the mixed database adapter still
+need cleanup. This is not yet a full decomposition
 of the payment aggregate or removal of offline adapters.
 
 Replacing `FromSheets` functions with `FromDatabase` functions while retaining a
@@ -270,12 +273,12 @@ signup, exclusion, and delivery are now PostgreSQL-only as well. Their synchrono
 Sheet writes, Sheet-backed locks/counters, direct delivery branches, Google-specific
 route errors, and `DB_BUSINESS_OPERATIONS_MODE` selector are removed. Daily
 maintenance always recovers the business outbox.
-Payment and Telegram contracts have been separated on dev. Other compatibility
+Payment, Telegram, and report contracts have been separated in dev code. Other compatibility
 record types remain until their `DROP-04` slices, with no value import of the archive
 schema reachable from application entry points.
 
 This paragraph originally described the September 1 dev-only checkpoint. The owner
 subsequently approved the staged acceleration recorded in the roadmap: `DROP-01`,
 `DROP-02`, and `DROP-03` are complete in production. `DROP-04` exporter-code removal
-and payment/Telegram-contract separation are dev-only; remaining DTO/facade/maintenance cleanup and the separate destructive
+and payment/Telegram/report-contract separation are dev-only; remaining DTO/facade/maintenance cleanup and the separate destructive
 window have not been waived or silently completed.

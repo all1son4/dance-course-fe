@@ -1,13 +1,11 @@
 import { domainRepositories } from "@/db/domain-repositories";
-import type {
-  EmailCampaignLeadSheetRecord,
-  MonthlySalesReportRunSheetRecord,
-} from "@/lib/google-sheets-schema";
+import type { EmailCampaignLeadSheetRecord } from "@/lib/google-sheets-schema";
+import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
 type CampaignLead = EmailCampaignLeadSheetRecord | null;
 type InvoicePayment = PaymentRecordSnapshot | null;
-type MonthlyReportRun = MonthlySalesReportRunSheetRecord | null;
+type MonthlyReportRun = MonthlySalesReportRunRecord | null;
 
 export type BusinessOperationReadSource = {
   findCampaignLead: (input: {

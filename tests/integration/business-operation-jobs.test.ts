@@ -332,8 +332,18 @@ test("monthly report jobs persist delivery and never resend a completed job", as
       rowCount: 3,
       status: "sent",
     });
-    assert.equal(readRun?.delivery_status, "sent");
-    assert.equal(readRun?.row_count, "3");
+    assert.deepEqual(readRun, {
+      csv_sha256: "fixture-hash",
+      delivered_at_utc: "2096-04-01T00:00:00.000Z",
+      delivered_to: recipient,
+      delivery_status: "sent",
+      generated_at_utc: "2096-04-01T00:00:00.000Z",
+      period_end_utc: "2096-04-01T00:00:00.000Z",
+      period_start_utc: "2096-03-01T00:00:00.000Z",
+      report_family: "monthly_sales",
+      report_key: reportKey,
+      row_count: "3",
+    });
   } finally {
     await client`
       DELETE FROM purchase_side_effects

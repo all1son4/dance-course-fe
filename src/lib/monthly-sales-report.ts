@@ -21,7 +21,7 @@ import {
 } from "@/lib/business-operation-outbox";
 import { findMonthlyReportRunRecord } from "@/lib/business-operation-read-runtime";
 import { escapeSpreadsheetCsvCell } from "@/lib/csv";
-import type { MonthlySalesReportRunSheetRecord } from "@/lib/google-sheets-schema";
+import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
 const MONTHLY_SALES_REPORT_RECIPIENT = process.env.RESEND_REPLY_TO?.trim() ?? "";
@@ -418,7 +418,7 @@ const buildMonthlySalesReportRunRecord = ({
   period: MonthlySalesReportPeriod;
   rowCount: number;
   status: "sent" | "skipped" | "failed";
-}): MonthlySalesReportRunSheetRecord => ({
+}): MonthlySalesReportRunRecord => ({
   csv_sha256: csvSha256,
   delivered_at_utc: deliveredAtUtc,
   delivered_to: deliveredTo,
@@ -431,7 +431,7 @@ const buildMonthlySalesReportRunRecord = ({
   row_count: String(rowCount),
 });
 
-const recordMonthlySalesReportRun = async (record: MonthlySalesReportRunSheetRecord) => {
+const recordMonthlySalesReportRun = async (record: MonthlySalesReportRunRecord) => {
   const deliveryStatus = record.delivery_status;
 
   if (

@@ -4,9 +4,8 @@ import test from "node:test";
 import {
   EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
   type EmailCampaignLeadSheetRecord,
-  MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
-  type MonthlySalesReportRunSheetRecord,
 } from "@/lib/google-sheets-schema";
+import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,
@@ -32,8 +31,8 @@ const createInvoicePayment = (): PaymentRecordSnapshot => ({
   payment_intent_id: "pi_invoice",
 });
 
-const createMonthlyReport = (): MonthlySalesReportRunSheetRecord => ({
-  ...fromHeaders(MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS),
+const createMonthlyReport = (): MonthlySalesReportRunRecord => ({
+  csv_sha256: "",
   delivered_at_utc: "2026-08-13T10:00:00.000Z",
   delivered_to: "owner@example.com",
   delivery_status: "sent",
