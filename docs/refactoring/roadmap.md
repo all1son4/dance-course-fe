@@ -1559,7 +1559,8 @@ for testing. See the
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
-Status: `IN_PROGRESS (DEV)` — exporter-code retirement is the first verified slice.
+Status: `IN_PROGRESS (DEV)` — exporter retirement and payment-contract separation are
+verified slices; the rest of this task is still pending.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
@@ -1589,9 +1590,18 @@ empty-record factory, and a local mapper rename. This protects `BEH-PAY-01`–`0
 `BEH-TG-01`–`03`, `BEH-OG-01`–`02`, `BEH-REN-01`–`02`, and `BEH-ACCESS-01`.
 The import guard now also forbids loading archive headers at runtime and using the
 old payment type in reachable application modules. Local verification: 200 unit
-tests, 52 isolated PostgreSQL integration tests, TypeScript, and production build
+tests, 52 isolated PostgreSQL integration tests, formatting, lint, TypeScript, and production build
 pass. No schema/data migration or environment update is needed; rollback is to the
 previous DB-compatible dev revision. Production is not included in this slice.
+
+Dev release `3d2b3b2` passed
+[CI including backup/restore rehearsal](https://github.com/all1son4/dance-course-fe/actions/runs/34120534178)
+and [11 deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34120588697).
+Vercel Preview `dpl_AmVEWGSAiUsqjXPogakRrLUBEX1s` is `READY` with no `GOOGLE_*`
+environment names. The `2026-09-07T12:13:31Z` post-deploy dev check passed all 32
+invariants, found no ready/working/stale/dead-letter jobs or waiting Sheets exports,
+and preserved the classified historical counters. The bounded runtime error-log
+query returned zero entries. Production/main remains at `ef5fcd9`.
 
 Remaining `DROP-04` work: separate the other Sheet-shaped runtime DTOs/mappers from archive
 schemas, remove unused facade/cache/write adapters and retired live maintenance
@@ -1735,4 +1745,4 @@ Status: `TODO`
 | 2026-09-05 | DROP-02 same-day closure    | `DONE`        | Owner waiver; repeat checks green; export off in all envs     |
 | 2026-09-05 | DROP-03 credentials/archive | `DONE`        | Verified restores; key disabled; Google-free prod/dev green   |
 | 2026-09-07 | DROP-04 exporter-code slice | `DONE (DEV)`  | No new exports; old jobs skip; 197 unit / 52 PG tests pass    |
-| 2026-09-07 | DROP-04 payment contract    | `LOCAL PASS`  | 48 fields preserved; 200 unit / 52 PG; no Google headers      |
+| 2026-09-07 | DROP-04 payment contract    | `DONE (DEV)`  | 48 fields; 200 unit / 52 PG; CI, 11 browser, 32 audits pass   |
