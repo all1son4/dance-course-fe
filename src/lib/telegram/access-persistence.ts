@@ -4,11 +4,11 @@ import {
   upsertTelegramUserBindingRecordToDatabase,
 } from "@/db/sheet-records";
 import { updateTelegramAccessInDatabase } from "@/db/telegram-access";
-import type {
-  TelegramAccessTokenSheetRecord,
-  TelegramUserBindingSheetRecord,
-} from "@/lib/google-sheets-schema";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import type {
+  TelegramAccessTokenRecord,
+  TelegramUserBindingRecord,
+} from "@/lib/telegram/access-records";
 
 type AccessStatus =
   | "activated"
@@ -127,7 +127,7 @@ const getExternalTargetType = (paymentRecord: PaymentRecordSnapshot) => {
 };
 
 export const upsertTelegramAccessTokenRecord = (
-  record: TelegramAccessTokenSheetRecord,
+  record: TelegramAccessTokenRecord,
   dependencies: TelegramAccessPersistenceDependencies = defaultDependencies,
 ) => dependencies.upsertToken(record);
 
@@ -137,7 +137,7 @@ export const claimTelegramAccessTokenRecord = (
 ) => dependencies.claimToken(claim);
 
 export const upsertTelegramUserBindingRecord = (
-  record: TelegramUserBindingSheetRecord,
+  record: TelegramUserBindingRecord,
   dependencies: TelegramAccessPersistenceDependencies = defaultDependencies,
 ) => dependencies.upsertBinding(record);
 

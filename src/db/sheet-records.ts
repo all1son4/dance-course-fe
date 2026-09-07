@@ -5,9 +5,11 @@ import type {
   MonthlySalesReportRunSheetRecord,
   StripeEventSheetRecord,
   SuccessfulCustomersSheetRecord,
-  TelegramAccessTokenSheetRecord,
-  TelegramUserBindingSheetRecord,
 } from "@/lib/google-sheets-schema";
+import type {
+  TelegramAccessTokenRecord,
+  TelegramUserBindingRecord,
+} from "@/lib/telegram/access-records";
 
 import { getDatabase } from "./client";
 import {
@@ -297,7 +299,7 @@ export const recordSuccessfulCustomerExportToDatabase = async (
 const mapTelegramAccessTokenRecordFromDatabase = (
   row: typeof telegramAccessTokens.$inferSelect,
   purchaseById: Map<string, typeof purchases.$inferSelect>,
-): TelegramAccessTokenSheetRecord => {
+): TelegramAccessTokenRecord => {
   const purchase = purchaseById.get(row.purchaseId);
 
   return {
@@ -419,7 +421,7 @@ export const findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase = 
 
 export type TelegramAccessTokenClaimResult =
   | {
-      record: TelegramAccessTokenSheetRecord;
+      record: TelegramAccessTokenRecord;
       status:
         | "already_claimed_by_user"
         | "claimed"
@@ -582,7 +584,7 @@ export const claimTelegramAccessTokenRecordInDatabase = async ({
 };
 
 export const upsertTelegramAccessTokenRecordToDatabase = async (
-  record: TelegramAccessTokenSheetRecord,
+  record: TelegramAccessTokenRecord,
 ) => {
   const purchase = await getPurchaseByPaymentIntentId(record.payment_intent_id);
 
@@ -646,7 +648,7 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
 const mapTelegramUserBindingRecordFromDatabase = (
   row: typeof telegramUserBindings.$inferSelect,
   purchaseById: Map<string, typeof purchases.$inferSelect>,
-): TelegramUserBindingSheetRecord => {
+): TelegramUserBindingRecord => {
   const purchase = purchaseById.get(row.purchaseId);
 
   return {
@@ -726,7 +728,7 @@ export const findTelegramUserBindingsByCustomerEmailFromDatabase = async (
   const normalizedEmail = normalizeEmail(customerEmail);
 
   if (!normalizedEmail) {
-    return [] as TelegramUserBindingSheetRecord[];
+    return [] as TelegramUserBindingRecord[];
   }
 
   const rows = await getDatabase()
@@ -770,7 +772,7 @@ export const findActiveTelegramUserBindingsFromDatabase = async () => {
 };
 
 export const upsertTelegramUserBindingRecordToDatabase = async (
-  record: TelegramUserBindingSheetRecord,
+  record: TelegramUserBindingRecord,
 ) => {
   const purchase = await getPurchaseByPaymentIntentId(record.payment_intent_id);
 

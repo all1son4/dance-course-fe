@@ -1603,9 +1603,27 @@ invariants, found no ready/working/stale/dead-letter jobs or waiting Sheets expo
 and preserved the classified historical counters. The bounded runtime error-log
 query returned zero entries. Production/main remains at `ef5fcd9`.
 
-Remaining `DROP-04` work: separate the other Sheet-shaped runtime DTOs/mappers from archive
+The Telegram-contract dev slice introduces independent
+[`TelegramAccessTokenRecord` and `TelegramUserBindingRecord`](../../src/lib/telegram/access-records.ts)
+with the same 17/14 string fields. Database mappers, readers, and persistence now
+use those contracts; no Telegram runtime module imports the archive schema, even
+for types. Unit fixtures no longer construct Telegram records from Sheet headers.
+Archive schemas, offline backfill, and restore inputs remain unchanged.
+Executable-body comparison confirms that all three affected runtime modules retain
+the same queries, normalization, atomic claims, and binding writes. No migration,
+environment change, production release, or alteration to ordinary/renewal checkout
+is included; rollback remains the previous DB-compatible dev revision.
+
+Local checks pass formatting, lint, TypeScript, build, 202 unit tests, and 54 isolated
+PostgreSQL integration tests. New tests check both archive type boundaries, complete
+empty/populated database projections, customer-snapshot precedence, large string
+identifiers, and the exact token-expiry boundary. Existing concurrency, owner reuse,
+join/leave, and access tests protect `BEH-TG-01`–`03`, `BEH-OG-01`–`02`,
+`BEH-REN-01`–`02`, and `BEH-ACCESS-01`. Deployment verification is recorded separately.
+
+Remaining `DROP-04` work: separate the remaining report/campaign/admin-history DTOs from archive
 schemas, remove unused facade/cache/write adapters and retired live maintenance
-paths, preserve offline archive decryption/restore, then verify and release those
+paths, split the mixed database adapter, preserve offline archive decryption/restore, then verify and release those
 slices. Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback
 revisions until their replacement is approved; it is inert only in the new code.
 No new calendar hold applies to this code-only work. Do not mark all of `DROP-04` or
@@ -1746,3 +1764,4 @@ Status: `TODO`
 | 2026-09-05 | DROP-03 credentials/archive | `DONE`        | Verified restores; key disabled; Google-free prod/dev green   |
 | 2026-09-07 | DROP-04 exporter-code slice | `DONE (DEV)`  | No new exports; old jobs skip; 197 unit / 52 PG tests pass    |
 | 2026-09-07 | DROP-04 payment contract    | `DONE (DEV)`  | 48 fields; 200 unit / 52 PG; CI, 11 browser, 32 audits pass   |
+| 2026-09-07 | DROP-04 Telegram contracts  | `LOCAL PASS`  | 17/14 fields preserved; 202 unit / 54 PG; same claim rules    |
