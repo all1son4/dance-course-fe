@@ -14,7 +14,11 @@ import {
 } from "@/lib/telegram/online-group-access";
 import { toUtcIso } from "@/lib/time";
 
-import { buildPurchaseAlertText, isEmailDeliveryInFlight } from "../purchase-alert";
+import {
+  buildPurchaseAlertReplyMarkup,
+  buildPurchaseAlertText,
+  isEmailDeliveryInFlight,
+} from "../purchase-alert";
 import { shouldRunPurchaseSuccessSideEffects } from "./eligibility";
 import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
 import type { StripeWebhookSyncResult } from "./types";
@@ -142,6 +146,10 @@ export const deliverPurchaseAlertFromOutbox = async ({
       disableWebPagePreview: true,
       maxAttempts: 1,
       parseMode: "HTML",
+      replyMarkup: buildPurchaseAlertReplyMarkup({
+        isLiveMode: event.livemode,
+        paymentIntentId,
+      }),
       text: alertText,
     });
   } catch {

@@ -171,12 +171,17 @@ const callTelegramApi = async <T>(
   throw new Error(`telegram_api_failed:${method}:unknown_error`);
 };
 
+export type TelegramInlineKeyboardMarkup = {
+  inline_keyboard: Array<Array<{ text: string; url: string }>>;
+};
+
 export const sendTelegramMessage = async ({
   botToken,
   chatId,
   disableWebPagePreview,
   maxAttempts,
   parseMode,
+  replyMarkup,
   text,
 }: {
   botToken?: string;
@@ -184,6 +189,7 @@ export const sendTelegramMessage = async ({
   disableWebPagePreview?: boolean;
   maxAttempts?: number;
   parseMode?: "HTML" | "MarkdownV2";
+  replyMarkup?: TelegramInlineKeyboardMarkup;
   text: string;
 }) =>
   callTelegramApi<{ message_id: number }>(
@@ -192,6 +198,7 @@ export const sendTelegramMessage = async ({
       chat_id: chatId,
       disable_web_page_preview: disableWebPagePreview,
       parse_mode: parseMode,
+      reply_markup: replyMarkup,
       text,
     },
     {

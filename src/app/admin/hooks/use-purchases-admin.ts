@@ -14,6 +14,8 @@ import type {
 } from "../lib/admin.types";
 
 type UsePurchasesAdminOptions = {
+  /** Search seeded from the `?q=` deep link the purchase alert links to. */
+  initialSearch?: string;
   isActive: boolean;
   isAuthorized: boolean;
   onUnauthorized: () => void;
@@ -30,16 +32,18 @@ type PurchasesOverview = {
 };
 
 export const usePurchasesAdmin = ({
+  initialSearch = "",
   isActive,
   isAuthorized,
   onUnauthorized,
 }: UsePurchasesAdminOptions) => {
+  const seededSearch = initialSearch.trim();
   const [isLoading, setIsLoading] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [overview, setOverview] = useState<PurchasesOverview | null>(null);
   const [monthValue, setMonthValue] = useState("");
-  const [searchInput, setSearchInput] = useState("");
-  const [appliedSearch, setAppliedSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(seededSearch);
+  const [appliedSearch, setAppliedSearch] = useState(seededSearch);
   const [status, setStatus] = useState<StatusMessage>(null);
   const [resendingPaymentIntentId, setResendingPaymentIntentId] = useState("");
   const [isSendingReport, setIsSendingReport] = useState(false);
@@ -346,8 +350,8 @@ export const usePurchasesAdmin = ({
       setIsLoading(false);
       setOverview(null);
       setMonthValue("");
-      setSearchInput("");
-      setAppliedSearch("");
+      setSearchInput(seededSearch);
+      setAppliedSearch(seededSearch);
       setStatus(null);
       setResendingPaymentIntentId("");
       setIsSendingReport(false);
@@ -360,8 +364,8 @@ export const usePurchasesAdmin = ({
       return;
     }
 
-    void load();
-  }, [hasLoaded, isActive, isAuthorized, isLoading, load]);
+    void load({ search: appliedSearch });
+  }, [appliedSearch, hasLoaded, isActive, isAuthorized, isLoading, load, seededSearch]);
 
   return {
     appliedSearch,
