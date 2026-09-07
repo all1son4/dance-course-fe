@@ -1559,8 +1559,8 @@ for testing. See the
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
-Status: `IN_PROGRESS (DEV)` — exporter retirement and payment-contract separation are
-verified slices; the rest of this task is still pending.
+Status: `IN_PROGRESS (DEV)` — exporter retirement plus independent payment and Telegram
+contracts are verified slices; the rest of this task is still pending.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
@@ -1619,7 +1619,16 @@ PostgreSQL integration tests. New tests check both archive type boundaries, comp
 empty/populated database projections, customer-snapshot precedence, large string
 identifiers, and the exact token-expiry boundary. Existing concurrency, owner reuse,
 join/leave, and access tests protect `BEH-TG-01`–`03`, `BEH-OG-01`–`02`,
-`BEH-REN-01`–`02`, and `BEH-ACCESS-01`. Deployment verification is recorded separately.
+`BEH-REN-01`–`02`, and `BEH-ACCESS-01`.
+
+Dev release `456e230` passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/34124047709) and
+[deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34124102818).
+Vercel Preview `dpl_4Pv7o4abfL4JxqJdTpzknA4j7WZU` is `READY` with no `GOOGLE_*`
+environment names. The `2026-09-07T18:52:43Z` post-deploy dev check passed all 32
+invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
+The classified historical counters are unchanged; the last-15-minute runtime-error
+query returned zero entries. Production was not changed by this slice.
 
 Remaining `DROP-04` work: separate the remaining report/campaign/admin-history DTOs from archive
 schemas, remove unused facade/cache/write adapters and retired live maintenance
@@ -1764,4 +1773,4 @@ Status: `TODO`
 | 2026-09-05 | DROP-03 credentials/archive | `DONE`        | Verified restores; key disabled; Google-free prod/dev green   |
 | 2026-09-07 | DROP-04 exporter-code slice | `DONE (DEV)`  | No new exports; old jobs skip; 197 unit / 52 PG tests pass    |
 | 2026-09-07 | DROP-04 payment contract    | `DONE (DEV)`  | 48 fields; 200 unit / 52 PG; CI, 11 browser, 32 audits pass   |
-| 2026-09-07 | DROP-04 Telegram contracts  | `LOCAL PASS`  | 17/14 fields preserved; 202 unit / 54 PG; same claim rules    |
+| 2026-09-07 | DROP-04 Telegram contracts  | `DONE (DEV)`  | 202 unit / 54 PG; CI/browser/32 audits; claim rules kept      |
