@@ -16,6 +16,7 @@
     "test:integration": "tsx --test tests/integration/*.test.ts",
     "test:integration:setup": "tsx tests/integration/setup-test-database.ts",
     "test:unit": "tsx --test \"src/**/*.test.ts\" \"tests/unit/*.test.ts\"",
+    "telegram:alert:preview": "tsx src/lib/telegram/preview-purchase-alert.ts",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:audit:invariants": "tsx src/db/audit-invariants.ts",

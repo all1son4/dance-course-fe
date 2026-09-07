@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AdminFeatureHeader, AdminLogin, AdminSidebar } from "./components/admin-shell";
@@ -27,6 +28,7 @@ import { usePurchasesAdmin } from "./hooks/use-purchases-admin";
 import { useSalesAdmin } from "./hooks/use-sales-admin";
 import { ADMIN_FEATURES } from "./lib/admin.constants";
 import type { AdminFeatureId } from "./lib/admin.types";
+import { readAdminDeepLink } from "./lib/admin-deep-link";
 import {
   AdminInvitePage,
   AdminShell,
@@ -40,7 +42,10 @@ import {
 } from "./page.styles";
 
 export default function AdminPage() {
-  const [activeFeatureId, setActiveFeatureId] = useState<AdminFeatureId>("invite-links");
+  const deepLink = readAdminDeepLink(useSearchParams());
+  const [activeFeatureId, setActiveFeatureId] = useState<AdminFeatureId>(
+    deepLink.view || "invite-links",
+  );
 
   const activeFeature =
     ADMIN_FEATURES.find((feature) => feature.id === activeFeatureId) ?? ADMIN_FEATURES[0];
@@ -95,6 +100,7 @@ export default function AdminPage() {
     onUnauthorized: handleSessionExpired,
   });
   const purchasesAdmin = usePurchasesAdmin({
+    initialSearch: deepLink.purchasesSearch,
     isActive: isPurchasesFeatureActive,
     isAuthorized,
     onUnauthorized: handleSessionExpired,
