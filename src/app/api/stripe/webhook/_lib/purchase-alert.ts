@@ -1,7 +1,9 @@
 import { normalizeCountryCode } from "@/constants/countries";
+import { DEFAULT_SITE_HOME_URL } from "@/constants/links";
 import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
 import type { PaymentSheetRecord } from "@/lib/google-sheets";
 import {
+  getOfferAccessDurationDaysByOfferId,
   isOnlineGroupAccessOfferId,
   isWithMentorOfferId,
 } from "@/lib/telegram/offer-access";
@@ -13,7 +15,14 @@ import {
   getResolvedCheckoutLocale,
 } from "../../payment-intent/lib";
 
-const PAYMENT_PROCESSING_STATUS_PREFIX = "sending:";
+const SITE_HOME_URL =
+  process.env.SITE_URL?.trim() ||
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+  DEFAULT_SITE_HOME_URL;
+const STRIPE_DASHBOARD_URL = "https://dashboard.stripe.com";
+// A leased side effect is stored as "<status>:<lease token>", so the bare and
+// the leased spelling of the same status mean the same thing.
+const IN_FLIGHT_SIDE_EFFECT_STATUSES = ["pending", "sending"] as const;
 const CHECKOUT_LOCALE_TO_INTL_LOCALE = {
   en: "en-US",
   pl: "pl-PL",
@@ -84,19 +93,50 @@ const getPurchaseItemLabel = (paymentRecord: PaymentSheetRecord) => {
 const getCheckoutLanguageLabel = (checkoutLocale: "en" | "pl" | "ru") =>
   CHECKOUT_LANGUAGE_LABEL_BY_LOCALE[checkoutLocale];
 
-const getLessonLanguageLabel = ({
-  checkoutLocale,
-  lessonLanguage,
-}: {
-  checkoutLocale: "en" | "pl" | "ru";
-  lessonLanguage: string;
-}) => {
-  const fallbackLessonLanguage = checkoutLocale === "en" ? "en" : "ru";
-  const resolvedLessonLanguage = getResolvedCheckoutLessonLanguage(
-    lessonLanguage || fallbackLessonLanguage,
-  );
+/** The lesson language is only ever chosen for choreo products, so an empty
+ * value means the buyer made no such choice and the row is left out rather
+ * than filled with a default. */
+const getLessonLanguageLabel = (lessonLanguage: string) => {
+  const normalizedLessonLanguage = lessonLanguage.trim();
 
-  return LESSON_LANGUAGE_LABEL_BY_LANGUAGE[resolvedLessonLanguage];
+  if (!normalizedLessonLanguage) {
+    return "";
+  }
+
+  return LESSON_LANGUAGE_LABEL_BY_LANGUAGE[
+    getResolvedCheckoutLessonLanguage(normalizedLessonLanguage)
+  ];
+};
+
+const getRussianPlural = (count: number, [one, few, many]: [string, string, string]) => {
+  const lastTwoDigits = Math.abs(count) % 100;
+  const lastDigit = lastTwoDigits % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return many;
+  }
+
+  if (lastDigit === 1) {
+    return one;
+  }
+
+  return lastDigit >= 2 && lastDigit <= 4 ? few : many;
+};
+
+const getAccessDurationLabel = (offerId: string) => {
+  const durationDays = getOfferAccessDurationDaysByOfferId(offerId);
+
+  if (!durationDays || durationDays <= 0) {
+    return "";
+  }
+
+  if (durationDays % 30 === 0) {
+    const months = durationDays / 30;
+
+    return `${months} ${getRussianPlural(months, ["месяц", "месяца", "месяцев"])}`;
+  }
+
+  return `${durationDays} ${getRussianPlural(durationDays, ["день", "дня", "дней"])}`;
 };
 
 const getFormattedCountryLabel = ({
@@ -137,6 +177,10 @@ const getAccessWorkflowLabel = (workflow: string) => {
     return "Telegram-канал";
   }
 
+  if (workflow === "telegram-channel-lifetime") {
+    return "Telegram-канал (навсегда)";
+  }
+
   if (workflow === "telegram-chat") {
     return "Telegram-чат";
   }
@@ -153,19 +197,21 @@ const getAccessWorkflowLabel = (workflow: string) => {
     return "Продление Online Group";
   }
 
-  if (workflow === "online-group") {
-    return "Онлайн-группа";
-  }
-
-  if (workflow === "online-live") {
-    return "Онлайн-занятия";
-  }
-
   if (workflow === "manual-admin") {
     return "Ручное добавление админом";
   }
 
   return workflow || "—";
+};
+
+const getAccessFieldValue = (paymentRecord: PaymentSheetRecord) => {
+  const workflow = paymentRecord.access_workflow.trim();
+  const workflowLabel = getAccessWorkflowLabel(workflow);
+  const durationLabel = getAccessDurationLabel(paymentRecord.offer_id);
+
+  return durationLabel
+    ? `${workflowLabel} (${durationLabel} после входа)`
+    : workflowLabel;
 };
 
 type PurchaseProcessingState =
@@ -219,19 +265,8 @@ const buildAlertFieldLines = (
   return rows.map((row) => buildAlertFieldLine({ ...row, labelWidth }));
 };
 
-const buildEmailValueHtml = (email: string) => {
-  const normalizedEmail = email.trim().toLowerCase();
-
-  if (!normalizedEmail) {
-    return escapeTelegramHtml("—");
-  }
-
-  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/u.test(normalizedEmail)) {
-    return escapeTelegramHtml(normalizedEmail);
-  }
-
-  return escapeTelegramHtml(normalizedEmail);
-};
+const buildEmailValueHtml = (email: string) =>
+  escapeTelegramHtml(email.trim().toLowerCase() || "—");
 
 const buildTelegramUsernameValueHtml = (nickname: string) => {
   const normalizedNickname = nickname.trim()
@@ -272,52 +307,15 @@ const getPaymentProcessingStatus = (
   };
 };
 
-const getSaleRecordingProcessingStatus = (
-  paymentRecord: PaymentSheetRecord,
-): PurchaseProcessingStatus => {
-  const status = paymentRecord.successful_customer_log_status.trim();
-
-  if (status === "sent" || paymentRecord.successful_customer_logged_at.trim()) {
-    return {
-      detail: "завершён",
-      label: "Учёт продажи",
-      state: "success",
-    };
-  }
-
-  if (status === "failed") {
-    return {
-      detail: "не завершён — проверьте Vercel Logs",
-      label: "Учёт продажи",
-      state: "error",
-    };
-  }
-
-  if (status === "pending" || status.startsWith("pending:")) {
-    return {
-      detail: "ещё выполняется",
-      label: "Учёт продажи",
-      state: "pending",
-    };
-  }
-
-  return {
-    detail: status ? `неизвестный статус ${status}` : "статус не подтверждён",
-    label: "Учёт продажи",
-    state: "attention",
-  };
-};
-
 // One classification for "the email/access job has not finished yet", shared
 // with the alert schedulers so the alert can wait for a final state instead of
 // reporting an in-flight one.
 export const isEmailDeliveryInFlight = (paymentRecord: PaymentSheetRecord): boolean => {
   const status = paymentRecord.email_delivery_status.trim();
 
-  return (
-    status === "pending" ||
-    status === "sending" ||
-    status.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
+  return IN_FLIGHT_SIDE_EFFECT_STATUSES.some(
+    (inFlightStatus) =>
+      status === inFlightStatus || status.startsWith(`${inFlightStatus}:`),
   );
 };
 
@@ -384,11 +382,7 @@ const getInvoiceProcessingStatus = (
       };
     }
 
-    if (
-      emailStatus === "pending" ||
-      emailStatus === "sending" ||
-      emailStatus.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
-    ) {
+    if (isEmailDeliveryInFlight(paymentRecord)) {
       return {
         detail: `создан, ожидает отправки — ${invoiceNumber}`,
         label: "Инвойс",
@@ -411,11 +405,7 @@ const getInvoiceProcessingStatus = (
     };
   }
 
-  if (
-    emailStatus === "pending" ||
-    emailStatus === "sending" ||
-    emailStatus.startsWith(PAYMENT_PROCESSING_STATUS_PREFIX)
-  ) {
+  if (isEmailDeliveryInFlight(paymentRecord)) {
     return {
       detail: "ожидает завершения email-цепочки",
       label: "Инвойс",
@@ -501,7 +491,11 @@ const getAccessProcessingStatus = ({
 const getStandardAccessLabel = (paymentRecord: PaymentSheetRecord) => {
   const workflow = paymentRecord.access_workflow.trim();
 
-  if (workflow === "telegram-channel" || workflow === "with-mentor") {
+  if (
+    workflow === "telegram-channel" ||
+    workflow === "telegram-channel-lifetime" ||
+    workflow === "with-mentor"
+  ) {
     return "Telegram-канал";
   }
 
@@ -513,12 +507,8 @@ const getStandardAccessLabel = (paymentRecord: PaymentSheetRecord) => {
     return "Telegram-бот";
   }
 
-  if (workflow === "online-group" || workflow === "telegram-online-group") {
+  if (workflow === "telegram-online-group") {
     return "Online Group";
-  }
-
-  if (workflow === "online-live") {
-    return "Онлайн-доступ";
   }
 
   return paymentRecord.delivery_channel.trim() === "telegram"
@@ -618,9 +608,7 @@ const getAccessProcessingStatuses = ({
   const expectsAccess =
     paymentRecord.delivery_channel.trim() === "telegram" ||
     workflow.startsWith("telegram") ||
-    workflow === "with-mentor" ||
-    workflow === "online-group" ||
-    workflow === "online-live";
+    workflow === "with-mentor";
   const statuses = [
     getAccessProcessingStatus({
       expected: expectsAccess,
@@ -682,7 +670,6 @@ const getPurchaseProcessingStatusLines = ({
 }) => {
   const statuses = [
     getPaymentProcessingStatus(paymentRecord),
-    getSaleRecordingProcessingStatus(paymentRecord),
     getInvoiceProcessingStatus(paymentRecord),
     getEmailProcessingStatus(paymentRecord),
     ...getAccessProcessingStatuses({
@@ -694,6 +681,39 @@ const getPurchaseProcessingStatusLines = ({
   return [getProcessingSummaryStatus(statuses), ...statuses].map(
     buildProcessingStatusLine,
   );
+};
+
+/** Inline keyboard for the alert: the two places an operator actually goes when
+ * a purchase needs a second look. */
+export const buildPurchaseAlertReplyMarkup = ({
+  isLiveMode,
+  paymentIntentId,
+}: {
+  isLiveMode: boolean;
+  paymentIntentId: string;
+}) => {
+  const normalizedPaymentIntentId = paymentIntentId.trim();
+
+  if (!normalizedPaymentIntentId) {
+    return undefined;
+  }
+
+  const stripePath = isLiveMode ? "payments" : "test/payments";
+
+  return {
+    inline_keyboard: [
+      [
+        {
+          text: "Stripe",
+          url: `${STRIPE_DASHBOARD_URL}/${stripePath}/${encodeURIComponent(normalizedPaymentIntentId)}`,
+        },
+        {
+          text: "Админка",
+          url: `${SITE_HOME_URL}/admin?view=purchases&q=${encodeURIComponent(normalizedPaymentIntentId)}`,
+        },
+      ],
+    ],
+  };
 };
 
 export const buildPurchaseAlertText = ({
@@ -722,15 +742,12 @@ export const buildPurchaseAlertText = ({
     checkoutLocale,
   });
   const checkoutLanguageLabel = getCheckoutLanguageLabel(checkoutLocale);
-  const lessonLanguageLabel = getLessonLanguageLabel({
-    checkoutLocale,
-    lessonLanguage: paymentRecord.lesson_language,
-  });
+  const lessonLanguageLabel = getLessonLanguageLabel(paymentRecord.lesson_language);
   const countryLabel = getFormattedCountryLabel({
     checkoutLocale,
     customerCountry: paymentRecord.customer_country,
   });
-  const accessWorkflowLabel = getAccessWorkflowLabel(paymentRecord.access_workflow);
+  const accessLabel = getAccessFieldValue(paymentRecord);
   const lines = [
     // Sales were closed for this product when the payment settled: the buyer
     // still gets access, this only makes sure the sale cannot pass unnoticed.
@@ -753,7 +770,7 @@ export const buildPurchaseAlertText = ({
       },
       {
         label: "Доступ",
-        value: accessWorkflowLabel,
+        value: accessLabel,
       },
       {
         label: "Сумма",
@@ -763,10 +780,9 @@ export const buildPurchaseAlertText = ({
         label: "Checkout",
         value: `${checkoutLanguageLabel} (${checkoutLocale.toUpperCase()})`,
       },
-      {
-        label: "Материалы",
-        value: lessonLanguageLabel,
-      },
+      ...(lessonLanguageLabel
+        ? [{ label: "Материалы", value: lessonLanguageLabel }]
+        : []),
     ]),
     "",
     "👤 <b>Клиент</b>",
@@ -804,7 +820,7 @@ export const buildPurchaseAlertText = ({
         value: paymentRecord.payment_intent_id,
       },
       {
-        label: "Checkout",
+        label: "Checkout ID",
         value: paymentRecord.checkout_session_id,
       },
       {
