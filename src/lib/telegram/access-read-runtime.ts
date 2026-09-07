@@ -1,11 +1,11 @@
 import { domainRepositories } from "@/db/domain-repositories";
 import type {
-  PaymentSheetRecord,
   TelegramAccessTokenSheetRecord,
   TelegramUserBindingSheetRecord,
 } from "@/lib/google-sheets-schema";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
-type PaymentRecord = PaymentSheetRecord | null;
+type PaymentRecord = PaymentRecordSnapshot | null;
 type TokenRecord = TelegramAccessTokenSheetRecord | null;
 type BindingRecord = TelegramUserBindingSheetRecord | null;
 

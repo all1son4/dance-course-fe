@@ -2,13 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
   TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
   TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
   type TelegramAccessTokenSheetRecord,
   type TelegramUserBindingSheetRecord,
 } from "@/lib/google-sheets-schema";
+import {
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import {
   findActiveTelegramUserBindings,
@@ -27,8 +29,8 @@ import {
 const fromHeaders = <Header extends string>(headers: readonly Header[]) =>
   Object.fromEntries(headers.map((header) => [header, ""])) as Record<Header, string>;
 
-const createPaymentRecord = (): PaymentSheetRecord => ({
-  ...fromHeaders(PAYMENT_SHEET_HEADERS),
+const createPaymentRecord = (): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
   payment_intent_id: "pi_test",
 });
 

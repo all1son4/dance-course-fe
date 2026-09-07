@@ -108,27 +108,27 @@ removes the legacy boundary.
 | Component                                                                                                         | Imported surface                                                                               | Class | Planned exit                                                      |
 | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ----- | ----------------------------------------------------------------- |
 | [`admin/invite-links/history`](../../src/app/admin/api/invite-links/history/route.ts)                             | PostgreSQL-only history reader; no Google facade or error dependency                           | —     | Runtime dependency removed in `DROP-01`                           |
-| [`admin/invite-links`](../../src/app/admin/api/invite-links/route.ts)                                             | PostgreSQL-only grant boundary plus an optional one-way export job                             | `X`   | Runtime dependency removed in `DROP-01`                           |
-| [`admin/online-group-invite-links`](../../src/app/admin/api/online-group-invite-links/route.ts)                   | PostgreSQL-only grant boundary plus an optional one-way export job                             | `X`   | Runtime dependency removed in `DROP-01`                           |
+| [`admin/invite-links`](../../src/app/admin/api/invite-links/route.ts)                                             | PostgreSQL-only grant boundary; no export producer                                             | —     | Export producer removed in DROP-04 dev slice                      |
+| [`admin/online-group-invite-links`](../../src/app/admin/api/online-group-invite-links/route.ts)                   | PostgreSQL-only grant boundary; no export producer                                             | —     | Export producer removed in DROP-04 dev slice                      |
 | [`course-signup`](../../src/app/api/course-signup/route.ts)                                                       | PostgreSQL-only campaign command; no Google error or rate-limit dependency                     | —     | Runtime dependency removed in `DROP-01`                           |
-| [`stripe/database-sync`](../../src/app/api/stripe/webhook/_lib/database-sync.ts)                                  | database projection helpers plus compatibility payment DTO                                     | `T`   | Runtime dependency removed in `DROP-01`; DTO in `DROP-04`         |
-| [`stripe/purchase-alert`](../../src/app/api/stripe/webhook/_lib/purchase-alert.ts)                                | payment DTO                                                                                    | `T`   | `DB-07`, `DROP-04`                                                |
+| [`stripe/database-sync`](../../src/app/api/stripe/webhook/_lib/database-sync.ts)                                  | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
+| [`stripe/purchase-alert`](../../src/app/api/stripe/webhook/_lib/purchase-alert.ts)                                | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
 | `stripe/payment-status-lease`                                                                                     | deleted; purchase delivery leases are PostgreSQL outbox state                                  | —     | Removed in `DROP-01`                                              |
 | [`stripe/purchase-telegram-alert`](../../src/app/api/stripe/webhook/_lib/side-effects/purchase-telegram-alert.ts) | PostgreSQL outbox delivery only                                                                | —     | Runtime dependency removed in `DROP-01`                           |
-| [`stripe/sync`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                    | Stripe-to-database mapping plus compatibility payment DTO                                      | `T`   | Runtime dependency removed in `DROP-01`; DTO in `DROP-04`         |
+| [`stripe/sync`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                    | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`stripe/webhook`](../../src/app/api/stripe/webhook/route.ts)                                                     | durable PostgreSQL inbox only                                                                  | —     | Runtime dependency removed in `DROP-01`                           |
 | [`telegram/access-link`](../../src/app/api/telegram/access-link/route.ts)                                         | PostgreSQL-only payment/session reader; no Google facade or error dependency                   | —     | Removed in `DROP-01`                                              |
 | [`email-campaigns`](../../src/lib/email-campaigns.ts)                                                             | PostgreSQL reads, commands, and durable delivery plus compatibility DTO                        | `T`   | Runtime dependency removed in `DROP-01`; DTO in `DROP-04`         |
-| [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | PostgreSQL-only atomic allocation plus compatibility DTO                                       | `T`   | Runtime dependency removed in `DROP-01`; DTO in `DROP-04`         |
+| [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`admin-offer-grants`](../../src/lib/admin-offer-grants.ts)                                                       | PostgreSQL-only grant command; no export producer                                              | —     | Export option removed in `DROP-04` dev slice                      |
-| [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | payment DTO                                                                                    | `T`   | `DB-07`, `DROP-04`                                                |
+| [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`monthly-sales-report`](../../src/lib/monthly-sales-report.ts)                                                   | PostgreSQL-only report state and durable delivery plus compatibility DTO                       | `T`   | Runtime dependency removed in `DROP-01`; DTO in `DROP-04`         |
-| [`payment-read-runtime`](../../src/lib/payment-read-runtime.ts)                                                   | PostgreSQL-only payment/session reader plus the temporary Sheet-shaped compatibility DTO       | `T`   | `DROP-01`; DTO in `DROP-04`                                       |
+| [`payment-read-runtime`](../../src/lib/payment-read-runtime.ts)                                                   | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`retired-export-outbox`](../../src/lib/retired-export-outbox.ts)                                                 | Bounded provider-free drain: old versioned exports become skipped                              | —     | Exporter removed in `DROP-04` dev slice; historical rows retained |
-| [`telegram/access`](../../src/lib/telegram/access.ts)                                                             | PostgreSQL-only access engine with unchanged user-flow orchestration                           | `T`   | Runtime dependency removed in `DROP-01`                           |
+| [`telegram/access`](../../src/lib/telegram/access.ts)                                                             | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`telegram/access-persistence`](../../src/lib/telegram/access-persistence.ts)                                     | PostgreSQL-only token, binding, entitlement, and atomic claim commands plus compatibility DTOs | `T`   | `DROP-01`; DTOs in `DROP-04`                                      |
 | [`telegram/access-read-runtime`](../../src/lib/telegram/access-read-runtime.ts)                                   | PostgreSQL-only payment, token, and binding reads plus compatibility DTOs                      | `T`   | `DROP-01`; DTOs in `DROP-04`                                      |
-| [`telegram/online-group-access`](../../src/lib/telegram/online-group-access.ts)                                   | payment DTO only; its access persistence is already database-native                            | `T`   | `DB-07`, `DROP-04`                                                |
+| [`telegram/online-group-access`](../../src/lib/telegram/online-group-access.ts)                                   | Independent payment projection; no Sheet header/type dependency                                | —     | Payment contract separated in DROP-04 dev slice                   |
 
 ### Maintenance, comparison, and internal adapters
 
@@ -138,7 +138,7 @@ removes the legacy boundary.
 | [`capture-reconciliation-baseline`](../../src/db/capture-reconciliation-baseline.ts) | all seven values-only Sheet readers                                               | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                    |
 | [`capture-source-snapshot`](../../src/db/capture-source-snapshot.ts)                 | protected DATA-01 source capture through the isolated legacy readers              | `R/MT/T`        | Keep through rollback observation; then `DROP-04` |
 | [`compare-google-sheets`](../../src/db/compare-google-sheets.ts)                     | six Sheet/database list readers                                                   | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                    |
-| [`payment-records`](../../src/db/payment-records.ts)                                 | Sheet-shaped payment/event DTOs used by database projections                      | `T`             | `DB-07`, `DROP-04`                                |
+| [`payment-records`](../../src/db/payment-records.ts)                                 | Independent payment projection; no Sheet header/type dependency                   | —               | Payment contract separated in DROP-04 dev slice   |
 | [`sheet-records`](../../src/db/sheet-records.ts)                                     | all Sheet-shaped DTOs used by database facade adapters                            | `T`             | `DB-07`, `DROP-04`                                |
 | [`reconciliation-baseline`](../../src/db/reconciliation-baseline.ts)                 | all seven Sheet DTOs used by the pure report builder                              | `MT/T`          | `CUT-04`, `DROP-04`                               |
 | [`reconciliation-baseline.test`](../../src/db/reconciliation-baseline.test.ts)       | all seven Sheet headers/DTOs used by privacy fixtures                             | `MT/T`          | Keep with the baseline tool; remove at `DROP-04`  |
@@ -160,10 +160,14 @@ gone. The following explicit dependencies remain until their later slices:
 
 ## Type-coupling warning
 
-`PaymentSheetRecord` is not only a transport type. It is currently used as a flattened
-aggregate containing purchase, customer, entitlement, invoice, and side-effect state.
-It appears in Telegram access, Online Group access, invoice rendering and numbering,
-Stripe synchronization and alerts, and admin invite handling.
+In the `DROP-04` payment-contract dev slice, application code no longer uses
+`PaymentSheetRecord` or constructs payments from positional archive headers.
+[`PaymentRecordSnapshot`](../../src/lib/payment-record.ts) is the independent flat
+projection for purchase, customer, entitlement, invoice, and side-effect state.
+It preserves all 48 string fields, empty defaults, and historical markers; a boundary
+test checks archive compatibility in both directions. Other record families still
+use archive-derived types and remain pending. This is not yet a full decomposition
+of the payment aggregate or removal of offline adapters.
 
 Replacing `FromSheets` functions with `FromDatabase` functions while retaining a
 generic `upsertPaymentRecord` would preserve the most dangerous coupling: unrelated
@@ -262,10 +266,12 @@ signup, exclusion, and delivery are now PostgreSQL-only as well. Their synchrono
 Sheet writes, Sheet-backed locks/counters, direct delivery branches, Google-specific
 route errors, and `DB_BUSINESS_OPERATIONS_MODE` selector are removed. Daily
 maintenance always recovers the business outbox.
-Compatibility record types remain until `DROP-04`.
+Non-payment compatibility record types remain until their `DROP-04` slices. The
+payment contract has been separated on dev, with no value import of the archive
+schema reachable from application entry points.
 
 This paragraph originally described the September 1 dev-only checkpoint. The owner
 subsequently approved the staged acceleration recorded in the roadmap: `DROP-01`,
 `DROP-02`, and `DROP-03` are complete in production. `DROP-04` exporter-code removal
-is dev-only; remaining DTO/facade/maintenance cleanup and the separate destructive
+and payment-contract separation are dev-only; remaining DTO/facade/maintenance cleanup and the separate destructive
 window have not been waived or silently completed.

@@ -1578,13 +1578,28 @@ unversioned history. A transitive-import guard rejects application entry points 
 load the legacy Google client. Archived-source backfill and snapshot encryption tests
 remain in the passing suite. This slice is released to dev only, not production.
 
-Remaining `DROP-04` work: separate Sheet-shaped runtime DTOs/mappers from archive
+The next dev-only slice separates the payment contract from the archive schema.
+[`PaymentRecordSnapshot`](../../src/lib/payment-record.ts) owns all 48 string fields
+and fresh empty defaults; PostgreSQL hydration no longer reads Sheet headers.
+Stripe mapping/alerts, invoice allocation/rendering, payment lookup, and Telegram
+access use this independent type. Field names, empty values, historical delivery
+markers, and archive compatibility are unchanged. Executable-body comparison across
+the 12 affected runtime modules found no changes beyond imports, the equivalent
+empty-record factory, and a local mapper rename. This protects `BEH-PAY-01`–`03`,
+`BEH-TG-01`–`03`, `BEH-OG-01`–`02`, `BEH-REN-01`–`02`, and `BEH-ACCESS-01`.
+The import guard now also forbids loading archive headers at runtime and using the
+old payment type in reachable application modules. Local verification: 200 unit
+tests, 52 isolated PostgreSQL integration tests, TypeScript, and production build
+pass. No schema/data migration or environment update is needed; rollback is to the
+previous DB-compatible dev revision. Production is not included in this slice.
+
+Remaining `DROP-04` work: separate the other Sheet-shaped runtime DTOs/mappers from archive
 schemas, remove unused facade/cache/write adapters and retired live maintenance
 paths, preserve offline archive decryption/restore, then verify and release those
 slices. Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback
 revisions until their replacement is approved; it is inert only in the new code.
 No new calendar hold applies to this code-only work. Do not mark all of `DROP-04` or
-G7 complete based on this first slice.
+G7 complete based on these partial slices.
 
 ### DROP-05 — Apply destructive contract migrations in a separate release
 
@@ -1720,3 +1735,4 @@ Status: `TODO`
 | 2026-09-05 | DROP-02 same-day closure    | `DONE`        | Owner waiver; repeat checks green; export off in all envs     |
 | 2026-09-05 | DROP-03 credentials/archive | `DONE`        | Verified restores; key disabled; Google-free prod/dev green   |
 | 2026-09-07 | DROP-04 exporter-code slice | `DONE (DEV)`  | No new exports; old jobs skip; 197 unit / 52 PG tests pass    |
+| 2026-09-07 | DROP-04 payment contract    | `LOCAL PASS`  | 48 fields preserved; 200 unit / 52 PG; no Google headers      |

@@ -4,7 +4,7 @@ import type Stripe from "stripe";
 import { getDatabase } from "@/db/client";
 import { type PaymentProjectionCommand } from "@/db/payment-projection";
 import { purchases } from "@/db/schema";
-import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
 export type StripeSettlementSnapshot = {
   settlementAmountMinor: number | null;
@@ -80,7 +80,7 @@ const normalizeLessonLanguage = (value: string): "ru" | "en" | null => {
 
 const normalizeAccessStatus = (
   value: string,
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ):
   | "pending"
   | "not_required"
@@ -125,7 +125,7 @@ const getSaleTimestamp = ({
   paymentRecord,
 }: {
   event: Stripe.Event;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }) => {
   if (
     event.type === "payment_intent.succeeded" &&
@@ -140,7 +140,7 @@ const getSaleTimestamp = ({
 const getPurchaseSource = (paymentIntentId: string) =>
   paymentIntentId.startsWith("adm_offer_pi_") ? "admin_offer_link" : "stripe";
 
-const getExternalTargetType = (paymentRecord: PaymentSheetRecord) => {
+const getExternalTargetType = (paymentRecord: PaymentRecordSnapshot) => {
   const workflow = paymentRecord.access_workflow.trim();
   const deliveryChannel = paymentRecord.delivery_channel.trim();
 
@@ -337,7 +337,7 @@ export const getPurchaseSettlementSnapshot = async ({
   stripe,
 }: {
   paymentIntentId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   stripe: Stripe;
 }): Promise<StripeSettlementSnapshot> => {
   if (paymentRecord.outcome.trim() === "succeeded") {
@@ -369,7 +369,7 @@ export const createStripePaymentProjectionCommand = ({
   now: Date;
   outboxJobs?: PaymentProjectionCommand["outboxJobs"];
   paymentIntentId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   settlementSnapshot: StripeSettlementSnapshot;
 }): PaymentProjectionCommand => {
   const firstSeenAt = parseRequiredDate(

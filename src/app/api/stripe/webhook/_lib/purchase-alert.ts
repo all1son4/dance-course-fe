@@ -1,6 +1,6 @@
 import { normalizeCountryCode } from "@/constants/countries";
 import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
-import type { PaymentSheetRecord } from "@/lib/google-sheets";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import {
   isOnlineGroupAccessOfferId,
   isWithMentorOfferId,
@@ -64,7 +64,7 @@ const getFormattedAmountLabel = ({
   }
 };
 
-const getPurchaseItemLabel = (paymentRecord: PaymentSheetRecord) => {
+const getPurchaseItemLabel = (paymentRecord: PaymentRecordSnapshot) => {
   const purchaseItem = paymentRecord.purchase_item.trim();
 
   if (purchaseItem) {
@@ -255,7 +255,7 @@ const buildTelegramUsernameValueHtml = (nickname: string) => {
 };
 
 const getPaymentProcessingStatus = (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): PurchaseProcessingStatus => {
   if (paymentRecord.outcome.trim() === "succeeded") {
     return {
@@ -273,7 +273,7 @@ const getPaymentProcessingStatus = (
 };
 
 const getSaleRecordingProcessingStatus = (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): PurchaseProcessingStatus => {
   const status = paymentRecord.successful_customer_log_status.trim();
 
@@ -311,7 +311,9 @@ const getSaleRecordingProcessingStatus = (
 // One classification for "the email/access job has not finished yet", shared
 // with the alert schedulers so the alert can wait for a final state instead of
 // reporting an in-flight one.
-export const isEmailDeliveryInFlight = (paymentRecord: PaymentSheetRecord): boolean => {
+export const isEmailDeliveryInFlight = (
+  paymentRecord: PaymentRecordSnapshot,
+): boolean => {
   const status = paymentRecord.email_delivery_status.trim();
 
   return (
@@ -322,7 +324,7 @@ export const isEmailDeliveryInFlight = (paymentRecord: PaymentSheetRecord): bool
 };
 
 const getEmailProcessingStatus = (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): PurchaseProcessingStatus => {
   const status = paymentRecord.email_delivery_status.trim();
 
@@ -366,7 +368,7 @@ const getEmailProcessingStatus = (
 };
 
 const getInvoiceProcessingStatus = (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): PurchaseProcessingStatus => {
   const emailStatus = paymentRecord.email_delivery_status.trim();
   const hasInvoice =
@@ -498,7 +500,7 @@ const getAccessProcessingStatus = ({
   };
 };
 
-const getStandardAccessLabel = (paymentRecord: PaymentSheetRecord) => {
+const getStandardAccessLabel = (paymentRecord: PaymentRecordSnapshot) => {
   const workflow = paymentRecord.access_workflow.trim();
 
   if (workflow === "telegram-channel" || workflow === "with-mentor") {
@@ -531,7 +533,7 @@ const getOnlineGroupAccessProcessingStatuses = ({
   paymentRecord,
 }: {
   onlineGroupAccessStates: OnlineGroupAccessState[] | null | undefined;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }): PurchaseProcessingStatus[] => {
   const expectsInspirationHub = isOnlineGroupLibraryOfferId(paymentRecord.offer_id);
 
@@ -588,7 +590,7 @@ const getAccessProcessingStatuses = ({
   paymentRecord,
 }: {
   onlineGroupAccessStates: OnlineGroupAccessState[] | null | undefined;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }): PurchaseProcessingStatus[] => {
   if (isOnlineGroupAccessOfferId(paymentRecord.offer_id)) {
     return getOnlineGroupAccessProcessingStatuses({
@@ -678,7 +680,7 @@ const getPurchaseProcessingStatusLines = ({
   paymentRecord,
 }: {
   onlineGroupAccessStates: OnlineGroupAccessState[] | null | undefined;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }) => {
   const statuses = [
     getPaymentProcessingStatus(paymentRecord),
@@ -711,7 +713,7 @@ export const buildPurchaseAlertText = ({
   hasClosedSales?: boolean;
   onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
   processedAtIso: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }) => {
   const checkoutLocale = getResolvedCheckoutLocale(paymentRecord.checkout_locale);
   const fullName = paymentRecord.customer_full_name.trim();

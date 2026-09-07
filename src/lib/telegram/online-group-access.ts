@@ -10,7 +10,7 @@ import {
   telegramAccessTokens,
   telegramUserBindings,
 } from "@/db/schema";
-import type { PaymentSheetRecord } from "@/lib/google-sheets";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
 import {
   banTelegramChatMember,
@@ -82,7 +82,7 @@ const createAccessItem = ({
 });
 
 const getAccessTargets = (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
   purchaseSnapshot?: {
     inspirationAccessExpiresAt: Date | null;
     inspirationChatId: string | null;
@@ -675,7 +675,7 @@ const ensureTargetAccess = async ({
   accessExpiresAt: string;
   accessKey: OnlineGroupAccessKey;
   chatId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   purchase: OnlineGroupPurchase;
 }): Promise<OnlineGroupAccessItem> => {
   const now = new Date();
@@ -785,7 +785,7 @@ const ensureTargetAccess = async ({
 };
 
 const ensureOnlineGroupAccessForPaymentInternal = async (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): Promise<OnlineGroupAccessItem[] | null> => {
   if (
     !isOnlineGroupAccessOfferId(paymentRecord.offer_id) ||
@@ -821,7 +821,7 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
 };
 
 export const ensureOnlineGroupAccessForPayment = (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): Promise<OnlineGroupAccessItem[] | null> => {
   const paymentIntentId = paymentRecord.payment_intent_id.trim();
 

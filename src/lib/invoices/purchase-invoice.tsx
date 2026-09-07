@@ -10,7 +10,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 
-import type { PaymentSheetRecord } from "@/lib/google-sheets";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 
 const SELLER_NAME = "Hanna Karzhova";
@@ -48,7 +48,7 @@ export type PurchaseInvoiceAttachment = {
 
 export type BuildPurchaseInvoiceAttachmentInput = {
   issuedAt: Date;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 };
 
 type PurchaseInvoiceDocumentProps = {
@@ -266,7 +266,7 @@ const formatCountryName = (country: string) => {
   }
 };
 
-const getInvoiceNumber = (paymentRecord: PaymentSheetRecord) => {
+const getInvoiceNumber = (paymentRecord: PaymentRecordSnapshot) => {
   const savedInvoiceNumber = paymentRecord.invoice_number.trim();
 
   if (savedInvoiceNumber) {
@@ -292,7 +292,7 @@ const getInvoiceNumber = (paymentRecord: PaymentSheetRecord) => {
 const getInvoiceFilename = (invoiceNumber: string) =>
   `${invoiceNumber.replace(/[^A-Za-z0-9_-]+/gu, "-")}.pdf`;
 
-const getPurchaseDescription = (paymentRecord: PaymentSheetRecord) => {
+const getPurchaseDescription = (paymentRecord: PaymentRecordSnapshot) => {
   const englishOfferMetadata = getLocalizedOfferMetadataByOfferId(
     paymentRecord.offer_id,
     "en",
@@ -319,7 +319,7 @@ const getPurchaseDescription = (paymentRecord: PaymentSheetRecord) => {
   );
 };
 
-const getBuyerAddressLines = (paymentRecord: PaymentSheetRecord) =>
+const getBuyerAddressLines = (paymentRecord: PaymentRecordSnapshot) =>
   [
     trimAndCollapseSpaces(paymentRecord.customer_address),
     [paymentRecord.customer_postal_code, paymentRecord.customer_city]

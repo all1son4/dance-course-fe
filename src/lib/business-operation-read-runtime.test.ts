@@ -6,9 +6,11 @@ import {
   type EmailCampaignLeadSheetRecord,
   MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
   type MonthlySalesReportRunSheetRecord,
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
 } from "@/lib/google-sheets-schema";
+import {
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import {
   type BusinessOperationReadDependencies,
@@ -23,8 +25,8 @@ import {
 const fromHeaders = <Header extends string>(headers: readonly Header[]) =>
   Object.fromEntries(headers.map((header) => [header, ""])) as Record<Header, string>;
 
-const createInvoicePayment = (): PaymentSheetRecord => ({
-  ...fromHeaders(PAYMENT_SHEET_HEADERS),
+const createInvoicePayment = (): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
   invoice_issued_at: "2026-08-13T10:00:00.000Z",
   invoice_number: "FV/2026/08/001",
   payment_intent_id: "pi_invoice",

@@ -7,9 +7,9 @@ import postgres from "postgres";
 import { getDatabaseClient } from "@/db/client";
 import { upsertPaymentRecordToDatabase } from "@/db/payment-records";
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -36,14 +36,12 @@ const createPaymentRecord = ({
   timestamp,
 }: {
   eventId: string;
-  outcome: PaymentSheetRecord["outcome"];
+  outcome: PaymentRecordSnapshot["outcome"];
   paymentIntentId: string;
   status: string;
   timestamp: string;
-}): PaymentSheetRecord => ({
-  ...(Object.fromEntries(
-    PAYMENT_SHEET_HEADERS.map((header) => [header, ""]),
-  ) as PaymentSheetRecord),
+}): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
   amount: "5000",
   checkout_currency: "eur",
   currency: "eur",

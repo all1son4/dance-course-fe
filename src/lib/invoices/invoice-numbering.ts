@@ -1,7 +1,7 @@
 import { allocateInvoiceForPaymentIntent } from "@/db/invoice-repository";
-import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
-const pendingInvoiceNumberAssignments = new Map<string, Promise<PaymentSheetRecord>>();
+const pendingInvoiceNumberAssignments = new Map<string, Promise<PaymentRecordSnapshot>>();
 
 const ensureInvoiceNumberForPaymentInternal = async ({
   allocateForPaymentIntent,
@@ -10,7 +10,7 @@ const ensureInvoiceNumberForPaymentInternal = async ({
 }: {
   allocateForPaymentIntent: typeof allocateInvoiceForPaymentIntent;
   issuedAt: Date;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }) => {
   return allocateForPaymentIntent({
     issuedAt,
@@ -24,7 +24,7 @@ export const ensureInvoiceNumberForPayment = async (
     paymentRecord,
   }: {
     issuedAt: Date;
-    paymentRecord: PaymentSheetRecord;
+    paymentRecord: PaymentRecordSnapshot;
   },
   dependencies: {
     allocateForPaymentIntent?: typeof allocateInvoiceForPaymentIntent;

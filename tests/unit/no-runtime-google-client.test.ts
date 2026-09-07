@@ -27,19 +27,22 @@ const resolveLocalImport = (specifier: string, importer: string) => {
   );
 };
 
-test("application entry points cannot load the retired Google client transitively", () => {
+test("application entry points cannot load Google code or archive headers transitively", () => {
   const pending = filesUnder(join(root, "src/app"));
   const visited = new Set<string>();
-  const forbidden = resolve(root, "src/lib/google-sheets.ts");
+  const googleClient = resolve(root, "src/lib/google-sheets.ts");
+  const forbidden = new Set([
+    googleClient,
+    resolve(root, "src/lib/google-sheets-schema.ts"),
+  ]);
 
   while (pending.length) {
     const file = pending.pop()!;
     if (visited.has(file)) continue;
     visited.add(file);
-    assert.notEqual(
-      file,
-      forbidden,
-      "An application import chain reaches the retired Google client",
+    assert.ok(
+      !forbidden.has(file),
+      "An application value import chain reaches Google code or archive headers",
     );
     const source = ts.createSourceFile(
       file,
@@ -49,17 +52,33 @@ test("application entry points cannot load the retired Google client transitivel
     );
     const follow = (specifier: string) => {
       const dependency = resolveLocalImport(specifier, file);
-      assert.notEqual(
-        dependency,
-        forbidden,
-        `${relative(root, file)} imports the retired Google client`,
+      assert.ok(
+        !dependency || !forbidden.has(dependency),
+        `${relative(root, file)} loads Google code or archive headers`,
       );
       if (dependency) pending.push(dependency);
     };
     const visit = (node: ts.Node) => {
+      // Other record families are migrated in later DROP-04 slices. Payments
+      // already own their contract; even type-only archive imports must not return.
+      if (ts.isIdentifier(node)) {
+        assert.notEqual(
+          node.text,
+          "PaymentSheetRecord",
+          `${relative(root, file)} must use the independent payment record contract`,
+        );
+      }
       if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+        assert.notEqual(
+          resolveLocalImport(node.moduleSpecifier.text, file),
+          googleClient,
+          `${relative(root, file)} imports the retired Google facade (including types)`,
+        );
         const clause = node.importClause;
-        if (clause?.isTypeOnly) return;
+        if (clause?.isTypeOnly) {
+          ts.forEachChild(node, visit);
+          return;
+        }
         const bindings = clause?.namedBindings;
         if (
           !clause?.name &&
@@ -67,8 +86,10 @@ test("application entry points cannot load the retired Google client transitivel
           ts.isNamedImports(bindings) &&
           bindings.elements.length > 0 &&
           bindings.elements.every((element) => element.isTypeOnly)
-        )
+        ) {
+          ts.forEachChild(node, visit);
           return;
+        }
         follow(node.moduleSpecifier.text);
       } else if (
         ts.isExportDeclaration(node) &&
@@ -100,6 +121,7 @@ test("application entry points cannot load the retired Google client transitivel
 
   for (const dependency of [
     "src/db/payment-records.ts",
+    "src/lib/payment-record.ts",
     "src/lib/retired-export-outbox.ts",
   ]) {
     assert.ok(
