@@ -9,8 +9,13 @@ import { BIRTHDAY_DROP_OFFER_ID } from "@/constants/sellable-products";
 export const BIRTHDAY_POPUP_STORAGE_KEY = "birthday-popup:v1";
 export const BIRTHDAY_POPUP_UPDATED_EVENT = "birthday-popup-updated";
 
-/** Master switch: flip to false to retire the campaign in a single deploy. */
-export const BIRTHDAY_POPUP_ENABLED = true;
+/**
+ * Master switch. Off, the campaign is retired in a single deploy: the popup
+ * never appears and the drop page answers 404. The product itself stays in the
+ * catalogue for its buyers; the card on /online and the sitemap entry are
+ * commented out by hand alongside this flag.
+ */
+export const BIRTHDAY_CAMPAIGN_ENABLED = false;
 
 /** Where the call to action sends the visitor. */
 export const BIRTHDAY_POPUP_CTA_HREF = "/online/birthday-drop";
