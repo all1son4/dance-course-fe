@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
-  type EmailCampaignLeadSheetRecord,
-} from "@/lib/google-sheets-schema";
+import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
 import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import {
   createEmptyPaymentRecord,
@@ -20,9 +17,6 @@ import {
   listEmailCampaignLeadReadRecords,
   listInvoicePaymentRecords,
 } from "./business-operation-read-runtime";
-
-const fromHeaders = <Header extends string>(headers: readonly Header[]) =>
-  Object.fromEntries(headers.map((header) => [header, ""])) as Record<Header, string>;
 
 const createInvoicePayment = (): PaymentRecordSnapshot => ({
   ...createEmptyPaymentRecord(),
@@ -44,15 +38,16 @@ const createMonthlyReport = (): MonthlySalesReportRunRecord => ({
   row_count: "3",
 });
 
-const createCampaignLead = (): EmailCampaignLeadSheetRecord => ({
-  ...fromHeaders(EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS),
+const createCampaignLead = (): EmailCampaignLeadRecord => ({
   campaign_key: "campaign_test",
   created_at: "2026-08-13T10:00:00.000Z",
   email: "customer@example.com",
   email_send_attempts: "0",
   email_send_status: "pending",
+  email_sent_at: "",
   full_name: "Customer",
   lead_id: "lead_test",
+  last_email_error: "",
   locale: "en",
   social_contact: "@customer",
 });
@@ -148,6 +143,29 @@ test("fails closed when a PostgreSQL business read fails", async () => {
 
   await assert.rejects(
     findMonthlyReportRunRecord("monthly_sales:test", options),
+    /database unavailable/u,
+  );
+});
+
+test("campaign reads fail closed without an empty audience fallback", async () => {
+  const fail = async () => {
+    throw new Error("database unavailable");
+  };
+  const options = {
+    dependencies: createDependencies({
+      findCampaignLead: fail,
+      listCampaignLeads: fail,
+    }),
+  };
+  await assert.rejects(
+    findEmailCampaignLeadRecord(
+      { campaignKey: "campaign", email: "fixture@example.test" },
+      options,
+    ),
+    /database unavailable/u,
+  );
+  await assert.rejects(
+    listEmailCampaignLeadReadRecords(options),
     /database unavailable/u,
   );
 });

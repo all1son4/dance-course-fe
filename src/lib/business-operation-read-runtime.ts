@@ -1,9 +1,9 @@
 import { domainRepositories } from "@/db/domain-repositories";
-import type { EmailCampaignLeadSheetRecord } from "@/lib/google-sheets-schema";
+import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
 import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
-type CampaignLead = EmailCampaignLeadSheetRecord | null;
+type CampaignLead = EmailCampaignLeadRecord | null;
 type InvoicePayment = PaymentRecordSnapshot | null;
 type MonthlyReportRun = MonthlySalesReportRunRecord | null;
 
@@ -14,7 +14,7 @@ export type BusinessOperationReadSource = {
   }) => Promise<CampaignLead>;
   findInvoicePaymentByIntentId: (paymentIntentId: string) => Promise<InvoicePayment>;
   findMonthlyReportRun: (reportKey: string) => Promise<MonthlyReportRun>;
-  listCampaignLeads: () => Promise<EmailCampaignLeadSheetRecord[]>;
+  listCampaignLeads: () => Promise<EmailCampaignLeadRecord[]>;
   listInvoicePayments: () => Promise<PaymentRecordSnapshot[]>;
 };
 

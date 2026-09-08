@@ -86,7 +86,7 @@ fallback.
 | Invoice numbering                        | `T`                     | [`invoices/invoice-numbering.ts`](../../src/lib/invoices/invoice-numbering.ts)                                                                                                                                                               | Transactional database counter or advisory lock plus unique invoice constraints       | Runtime read/write/lock dependency removed in `DROP-01`; DTO moves in `DROP-04`  |
 | Purchase email and alert leases          | —                       | Transactional outbox with database leases                                                                                                                                                                                                    | `purchase_side_effects` with a unique purchase/kind key and atomic lease updates      | Sheet-backed leases removed in `DROP-01`                                         |
 | Monthly reports                          | `T`                     | [`monthly-sales-report.ts`](../../src/lib/monthly-sales-report.ts)                                                                                                                                                                           | `monthly_report_runs` repository and idempotent outbox delivery                       | Runtime read/write/lock dependency removed in `DROP-01`; DTO moves in `DROP-04`  |
-| Email campaigns                          | `T`                     | [`email-campaigns.ts`](../../src/lib/email-campaigns.ts), course signup                                                                                                                                                                      | `email_campaign_leads` with a unique campaign/email key and outbox delivery           | Runtime read/write/error dependency removed in `DROP-01`; DTO moves in `DROP-04` |
+| Email campaigns                          | —                       | [`email-campaigns.ts`](../../src/lib/email-campaigns.ts), course signup                                                                                                                                                                      | `email_campaign_leads` with a unique campaign/email key and outbox delivery           | Independent campaign DTO in local `DROP-04` code; dev checks and release pending |
 | Google-specific configuration and errors | `MT`                    | Legacy live maintenance tools only; credentials retired                                                                                                                                                                                      | Offline archival tools                                                                | Runtime provider edge removed in `DROP-04` dev slice; tooling cleanup remains    |
 | Sheet-shaped records                     | `T`                     | Telegram, invoices, Stripe sync and alerts, database adapters                                                                                                                                                                                | Domain commands and purpose-specific read DTOs                                        | Remove after all callers stop using the flattened aggregate                      |
 | Backfill and comparison                  | `R/MT`                  | [`db/backfill-google-sheets.ts`](../../src/db/backfill-google-sheets.ts), [`db/compare-google-sheets.ts`](../../src/db/compare-google-sheets.ts), [`db/capture-reconciliation-baseline.ts`](../../src/db/capture-reconciliation-baseline.ts) | Isolated, read-only legacy Sheets adapter                                             | Keep through reconciliation and rollback observation; then archive or delete     |
@@ -118,7 +118,7 @@ removes the legacy boundary.
 | [`stripe/sync`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                    | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`stripe/webhook`](../../src/app/api/stripe/webhook/route.ts)                                                     | durable PostgreSQL inbox only                                                | —     | Runtime dependency removed in `DROP-01`                           |
 | [`telegram/access-link`](../../src/app/api/telegram/access-link/route.ts)                                         | PostgreSQL-only payment/session reader; no Google facade or error dependency | —     | Removed in `DROP-01`                                              |
-| [`email-campaigns`](../../src/lib/email-campaigns.ts)                                                             | PostgreSQL reads, commands, and durable delivery plus compatibility DTO      | `T`   | Runtime dependency removed in `DROP-01`; DTO in `DROP-04`         |
+| [`email-campaigns`](../../src/lib/email-campaigns.ts)                                                             | Independent campaign contract; PostgreSQL commands and durable delivery      | —     | DROP-04 local implementation; dev release pending                 |
 | [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`admin-offer-grants`](../../src/lib/admin-offer-grants.ts)                                                       | PostgreSQL-only grant command; no export producer                            | —     | Export option removed in `DROP-04` dev slice                      |
 | [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
@@ -139,7 +139,7 @@ removes the legacy boundary.
 | [`capture-source-snapshot`](../../src/db/capture-source-snapshot.ts)                 | protected DATA-01 source capture through the isolated legacy readers              | `R/MT/T`        | Keep through rollback observation; then `DROP-04` |
 | [`compare-google-sheets`](../../src/db/compare-google-sheets.ts)                     | six Sheet/database list readers                                                   | `R/MT/T`        | `DATA-03`, `CUT-04`, `DROP-04`                    |
 | [`payment-records`](../../src/db/payment-records.ts)                                 | Independent payment projection; no Sheet header/type dependency                   | —               | Payment contract separated in DROP-04 dev slice   |
-| [`sheet-records`](../../src/db/sheet-records.ts)                                     | Independent Telegram/report contracts; three remaining archive DTOs               | `T`             | `DB-07`, `DROP-04`                                |
+| [`sheet-records`](../../src/db/sheet-records.ts)                                     | Independent Telegram/report/campaign contracts; two remaining archive DTOs        | `T`             | `DB-07`, `DROP-04`                                |
 | [`reconciliation-baseline`](../../src/db/reconciliation-baseline.ts)                 | all seven Sheet DTOs used by the pure report builder                              | `MT/T`          | `CUT-04`, `DROP-04`                               |
 | [`reconciliation-baseline.test`](../../src/db/reconciliation-baseline.test.ts)       | all seven Sheet headers/DTOs used by privacy fixtures                             | `MT/T`          | Keep with the baseline tool; remove at `DROP-04`  |
 | [`google-sheets`](../../src/lib/google-sheets.ts)                                    | sole Google OAuth/values API facade, explicit reads, caches, mirror, coordination | `R/W/M/F/C/X/E` | `DROP-01`, then `DROP-04`                         |
@@ -172,8 +172,11 @@ archive imports in Telegram runtime modules. Their database mapping and claim ru
 are unchanged. The report-contract slice separates all ten report-state fields in
 [`monthly-sales-report-record.ts`](../../src/lib/monthly-sales-report-record.ts),
 without changing accounting calculations, CSV, month boundaries, or scheduling.
-Remaining campaign/admin-history contracts and the mixed database adapter still
-need cleanup. This is not yet a full decomposition
+The local campaign slice separates all eleven lead fields in
+[`email-campaign-record.ts`](../../src/lib/email-campaign-record.ts), with unchanged
+signup, audience, exclusion, and delivery behavior. Its migration-only dev release
+is owner-approved; deployed verification remains pending. Admin-history contracts and the mixed
+database adapter still need cleanup. This is not yet a full decomposition
 of the payment aggregate or removal of offline adapters.
 
 Replacing `FromSheets` functions with `FromDatabase` functions while retaining a
@@ -273,7 +276,8 @@ signup, exclusion, and delivery are now PostgreSQL-only as well. Their synchrono
 Sheet writes, Sheet-backed locks/counters, direct delivery branches, Google-specific
 route errors, and `DB_BUSINESS_OPERATIONS_MODE` selector are removed. Daily
 maintenance always recovers the business outbox.
-Payment, Telegram, and report contracts have been separated in dev code. Other compatibility
+Payment, Telegram, and report contracts have been separated in dev code. Campaign
+contracts are also separated locally, but not committed or deployed. Other compatibility
 record types remain until their `DROP-04` slices, with no value import of the archive
 schema reachable from application entry points.
 

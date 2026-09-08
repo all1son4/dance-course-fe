@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, gt, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 
+import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
 import type {
-  EmailCampaignLeadSheetRecord,
   StripeEventSheetRecord,
   SuccessfulCustomersSheetRecord,
 } from "@/lib/google-sheets-schema";
@@ -930,7 +930,7 @@ export const upsertMonthlySalesReportRunToDatabase = async (
 
 const mapEmailCampaignLeadRecordFromDatabase = (
   row: typeof emailCampaignLeads.$inferSelect,
-): EmailCampaignLeadSheetRecord => ({
+): EmailCampaignLeadRecord => ({
   campaign_key: row.campaignKey,
   created_at: toIso(row.createdAt),
   email: row.email,
@@ -984,7 +984,7 @@ export const findEmailCampaignLeadByCampaignAndEmailFromDatabase = async ({
 };
 
 export const upsertEmailCampaignLeadRecordToDatabase = async (
-  record: EmailCampaignLeadSheetRecord,
+  record: EmailCampaignLeadRecord,
 ) => {
   const now = new Date();
   const normalizedEmail = normalizeEmail(record.email);

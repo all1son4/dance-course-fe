@@ -1658,7 +1658,36 @@ invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
 The classified historical counters are unchanged; the bounded last-15-minute
 runtime-error query returned zero entries. Production/main remains at `ef5fcd9`.
 
-Remaining `DROP-04` work: separate the remaining campaign/admin-history DTOs from archive
+The campaign-contract slice is `LOCAL PASS` on `2026-09-08`, not deployed.
+[`EmailCampaignLeadRecord`](../../src/lib/email-campaign-record.ts) owns the same
+eleven string fields, including empty delivery evidence and string attempt counts.
+Campaign creation/delivery, business-operation reads, and the database mapper no
+longer import the archive campaign DTO. The business read module and its fixtures
+are now completely independent of the archive schema. Archive import/restore
+contracts remain compatible. All three affected runtime modules have identical
+executable bodies after removing type-only syntax/imports; normalization, duplicate
+handling, audience classification, exclusion rules, email content, and delivery
+remain unchanged (`BEH-ENTRY-01`, `BEH-ADMIN-01`).
+
+Local verification passed formatting, lint, TypeScript, production build, 213 unit
+tests, and 59 isolated PostgreSQL integration tests. New checks cover all eleven
+fields and six statuses, concurrent/later duplicate signups, fail-closed campaign
+reads, campaign-only exclusions, global blocks across existing/future campaigns,
+and retry/sent projections with one stable provider idempotency key and no resend
+after completion. Providers were blocked or mocked; no real email was sent.
+The `2026-09-08T05:53:19Z` read-only dev preflight passed all 32 invariants, found no
+actionable queue backlog, and preserved the classified historical counters.
+
+The owner initially held this slice locally during parallel birthday work, then
+authorized a dev release of migration-related changes only. A fresh isolated copy
+of dev plus only this slice's eleven files passed formatting, lint, TypeScript,
+build, 213 unit tests, and 59 PostgreSQL integration tests again. Birthday UI,
+sitemap, and the other session's browser-test edits are excluded from this release
+and remain local. No environment update, schema/data migration, or production
+release is included. CI/deployed-browser verification is pending; this slice is not
+yet `DONE (DEV)` and does not close `DROP-04` or G7.
+
+Remaining `DROP-04` work: verify/release the local campaign slice, separate admin-history DTOs from archive
 schemas, remove unused facade/cache/write adapters and retired live maintenance
 paths, split the mixed database adapter, preserve offline archive decryption/restore, then verify and release those
 slices. Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback
@@ -1803,3 +1832,4 @@ Status: `TODO`
 | 2026-09-07 | DROP-04 payment contract    | `DONE (DEV)`  | 48 fields; 200 unit / 52 PG; CI, 11 browser, 32 audits pass   |
 | 2026-09-07 | DROP-04 Telegram contracts  | `DONE (DEV)`  | 202 unit / 54 PG; CI/browser/32 audits; claim rules kept      |
 | 2026-09-07 | DROP-04 report contract     | `DONE (DEV)`  | 203 unit / 56 PG; CI/browser/32 audits; accounting unchanged  |
+| 2026-09-08 | DROP-04 campaign contract   | `LOCAL PASS`  | 213 unit / 59 PG; isolated build passes; dev checks pending   |

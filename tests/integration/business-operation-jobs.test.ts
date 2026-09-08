@@ -177,6 +177,11 @@ test("campaign jobs retry with one Resend idempotency key and persist final stat
       await businessOutbox.processBusinessOperationOutboxJob(deduplicationKey);
 
     assert.equal(first.status, "retry");
+    const failedLead = await findEmailCampaignLeadRecord({ campaignKey, email });
+    assert.equal(failedLead?.email_send_status, "failed");
+    assert.equal(failedLead?.email_send_attempts, "1");
+    assert.equal(failedLead?.email_sent_at, "");
+    assert.ok(failedLead?.last_email_error);
 
     await businessOutbox.enqueueCampaignEmailDelivery({
       campaignKey,
@@ -216,9 +221,30 @@ test("campaign jobs retry with one Resend idempotency key and persist final stat
       jobStatus: "sent",
       leadStatus: "sent",
     });
-    assert.equal(readLead?.email_send_attempts, "2");
-    assert.equal(readLead?.email_send_status, "sent");
-    assert.ok(readLeads.some((lead) => lead.lead_id === leadId));
+    assert.ok(readLead?.email_sent_at);
+    assert.equal(new Date(readLead.email_sent_at).toISOString(), readLead.email_sent_at);
+    assert.deepEqual(readLead, {
+      lead_id: leadId,
+      campaign_key: campaignKey,
+      email_send_status: "sent",
+      full_name: "Write 06",
+      social_contact: "@write06",
+      email,
+      locale: "en",
+      created_at: "2026-08-13T10:00:00.000Z",
+      email_sent_at: readLead.email_sent_at,
+      email_send_attempts: "2",
+      last_email_error: "",
+    });
+    assert.deepEqual(
+      readLeads.find((lead) => lead.lead_id === leadId),
+      readLead,
+    );
+    assert.equal(
+      (await businessOutbox.processBusinessOperationOutboxJob(deduplicationKey)).status,
+      "empty",
+    );
+    assert.equal(calls.length, 2);
   } finally {
     await client`
       DELETE FROM purchase_side_effects

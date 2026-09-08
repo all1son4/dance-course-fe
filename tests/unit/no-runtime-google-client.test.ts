@@ -35,6 +35,9 @@ test("application entry points cannot load Google code or archive headers transi
     ...telegramFiles,
     resolve(root, "src/lib/monthly-sales-report.ts"),
     resolve(root, "src/lib/monthly-sales-report-record.ts"),
+    resolve(root, "src/lib/email-campaigns.ts"),
+    resolve(root, "src/lib/email-campaign-record.ts"),
+    resolve(root, "src/lib/business-operation-read-runtime.ts"),
   ]);
   const pending = [...filesUnder(join(root, "src/app")), ...independentFiles];
   const visited = new Set<string>();
@@ -45,6 +48,7 @@ test("application entry points cannot load Google code or archive headers transi
     "TelegramAccessTokenSheetRecord",
     "TelegramUserBindingSheetRecord",
     "MonthlySalesReportRunSheetRecord",
+    "EmailCampaignLeadSheetRecord",
   ]);
   const forbidden = new Set([googleClient, archiveSchema]);
 
@@ -72,7 +76,7 @@ test("application entry points cannot load Google code or archive headers transi
     };
     const visit = (node: ts.Node) => {
       // Other record families are migrated in later DROP-04 slices. Payments,
-      // Telegram and monthly reports already own their contracts, including types.
+      // Telegram, reports and campaigns already own their contracts, including types.
       if (ts.isIdentifier(node)) {
         assert.ok(
           !retiredRecordTypes.has(node.text),
@@ -155,6 +159,8 @@ test("application entry points cannot load Google code or archive headers transi
     "src/lib/monthly-sales-report.ts",
     "src/lib/monthly-sales-report-record.ts",
     "src/lib/business-operation-read-runtime.ts",
+    "src/lib/email-campaigns.ts",
+    "src/lib/email-campaign-record.ts",
   ]) {
     assert.ok(
       visited.has(resolve(root, dependency)),
