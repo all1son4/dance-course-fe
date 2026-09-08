@@ -1411,8 +1411,8 @@ observation and a fresh preflight, `DROP-02` disabled the production exporter on
 2026-09-05. The owner waived the additional next-day hold that evening after another
 green preflight; `DROP-02` is complete. `DROP-03` is also complete: archives restored,
 Google key disabled, credentials removed, and same-revision dev/prod checks green.
-`DROP-04` started on dev with exporter-code retirement; the September 23
-destructive-cleanup boundary is unchanged.
+`DROP-04` started on dev with exporter-code retirement and completed on dev on
+2026-09-08; the September 23 destructive-cleanup boundary is unchanged.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
@@ -1559,11 +1559,12 @@ for testing. See the
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
-Status: `IN_PROGRESS (DEV)` — every code slice is complete and verified locally; only
-the dev release of the final cleanup slice is outstanding. Exporter retirement plus the
-independent payment, Telegram, monthly-report, campaign, and admin-history contracts are
-verified slices, and the legacy facade adapters, dual-read selector, and mixed database
-adapter are removed.
+Status: `DONE (DEV)` — every listed code slice is released to dev and verified there.
+Exporter retirement plus the independent payment, Telegram, monthly-report, campaign, and
+admin-history contracts are verified slices, and the legacy facade adapters, dual-read
+selector, and mixed database adapter are removed. Production/`main` still runs the
+previous code, so a separate production release remains required; Gate G7 also stays
+`NOT PASSED` until `DROP-05`.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
@@ -1736,8 +1737,18 @@ tests, and 59 PostgreSQL integration tests in an isolated local PG17 cluster; th
 59 integration tests passed before and after the split. The import guard now also
 rejects the retired admin-history archive type and reaches every new adapter module. No
 schema, data migration, environment update, or production release is part of this slice;
-rollback remains the previous DB-compatible dev revision. This slice is not yet released
-to dev.
+rollback remains the previous DB-compatible dev revision.
+
+Dev release `9d30d08` passed
+[CI including backup/restore rehearsal](https://github.com/all1son4/dance-course-fe/actions/runs/34208194032)
+and [deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34208246379)
+with 11 passed and one skipped journey. Vercel Preview deployment `6324296867`
+(`anna-strok-o6om5o368-dzmitrys-projects-82230603.vercel.app`) reported `success`. The
+`2026-09-08T09:08:57Z` post-deploy dev check passed health, all 19 migrations, and all 32
+invariants, and found no ready, working, stale, or dead-letter inbox/outbox jobs and zero
+waiting Sheets exports. The classified historical counters are unchanged: one inbox
+retry, 12 unlinked processed events, and 112 unverified imported events. Main remains at
+`1feb1bb`, unchanged by this release.
 
 Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback revisions
 until their replacement is approved; it is inert only in the new code. No new calendar
