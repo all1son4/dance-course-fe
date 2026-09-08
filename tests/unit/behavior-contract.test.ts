@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import test from "node:test";
 
 import {
@@ -11,7 +13,7 @@ import {
   SELLABLE_PRODUCTS_LIST,
 } from "@/constants/sellable-products";
 
-test("keeps the accepted product, offer, price, and access-duration matrix", () => {
+test("[BEH-TG-02] keeps the accepted product, offer, price, and access-duration matrix", () => {
   const actualMatrix = SELLABLE_PRODUCTS_LIST.flatMap((product) =>
     product.offers.map((offer) => ({
       durationDays: offer.telegramAccessDurationDays,
@@ -134,5 +136,48 @@ test("keeps locale currency defaults and internal checkout context", () => {
       productId: "prd_fixture",
     }),
     "/payment?product=prd_fixture&offer=off_fixture",
+  );
+});
+
+const CONTRACT_PATH = join(process.cwd(), "docs/refactoring/behavior-contract.md");
+
+const testFilesUnder = (directory: string): string[] =>
+  readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) return testFilesUnder(path);
+    return /\.(?:test|spec)\.tsx?$/u.test(path) ? [path] : [];
+  });
+
+// Each case of the behavior contract must be claimed by a test title, so deleting
+// or renaming that test is a failure here instead of a silent loss of coverage.
+test("every behavior-contract case names the test that protects it", () => {
+  const contractIds = new Set(
+    readFileSync(CONTRACT_PATH, "utf8").match(/BEH-[A-Z]+-\d+/gu) ?? [],
+  );
+
+  assert.ok(contractIds.size > 0, "The behavior contract lists no case identifiers.");
+
+  const claimed = new Map<string, string[]>();
+
+  for (const file of [
+    ...testFilesUnder(join(process.cwd(), "src")),
+    ...testFilesUnder(join(process.cwd(), "tests")),
+  ]) {
+    const source = readFileSync(file, "utf8");
+
+    for (const [, id] of source.matchAll(/^\s*test\(\s*"\[([^\]]+)\]/gmu)) {
+      claimed.set(id, [...(claimed.get(id) ?? []), file]);
+    }
+  }
+
+  assert.deepEqual(
+    [...contractIds].filter((id) => !claimed.has(id)).sort(),
+    [],
+    "These behavior-contract cases have no test claiming them.",
+  );
+  assert.deepEqual(
+    [...claimed.keys()].filter((id) => !contractIds.has(id)).sort(),
+    [],
+    "These test titles claim a case the behavior contract does not define.",
   );
 });
