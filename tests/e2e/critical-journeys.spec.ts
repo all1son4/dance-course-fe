@@ -4,6 +4,7 @@ import {
   buildCheckoutHref,
   SELLABLE_PRODUCTS,
 } from "../../src/constants/sellable-products";
+import { BIRTHDAY_CAMPAIGN_ENABLED } from "../../src/lib/birthday-popup/config";
 
 /**
  * The checkout receives its catalogue with the server render, so these specs
@@ -91,9 +92,21 @@ test("Online Group entry follows the authoritative sales switch", async ({ page 
   assertCheckoutContexts(checkoutContexts, product.id, expectedOfferIds);
 });
 
+test("the retired Birthday Drop page is not reachable", async ({ page }) => {
+  test.skip(BIRTHDAY_CAMPAIGN_ENABLED, "The campaign is live on this build.");
+
+  for (const path of ["/online/birthday-drop", "/ru/online/birthday-drop"]) {
+    const response = await page.request.get(path);
+
+    expect(response.status(), path).toBe(404);
+  }
+});
+
 test("Birthday Drop entry carries the sales switch in its first render", async ({
   page,
 }) => {
+  test.skip(!BIRTHDAY_CAMPAIGN_ENABLED, "The campaign is retired on this build.");
+
   const product = SELLABLE_PRODUCTS["choreo-birthday-drop"];
   const catalogProducts = await readAuthoritativeCatalog(page);
   const catalogProduct = catalogProducts.find((item) => item.id === product.id);
@@ -145,16 +158,16 @@ test("Birthday Drop entry carries the sales switch in its first render", async (
 });
 
 test("a loading buy button never moves the UI around it", async ({ page }) => {
-  const product = SELLABLE_PRODUCTS["choreo-birthday-drop"];
+  const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
   const catalogProducts = await readAuthoritativeCatalog(page);
   const catalogProduct = catalogProducts.find((item) => item.id === product.id);
 
   test.skip(
     !catalogProduct?.salesEnabled,
-    "Birthday Drop sales are closed on this deployment, so there is no buy button to load",
+    "Online Group sales are closed on this deployment, so there is no buy button to load",
   );
 
-  await page.goto("/online/birthday-drop");
+  await page.goto("/online/group");
 
   // Hold the checkout navigation back so the loading ring stays on screen.
   await page.route("**/payment**", async (route) => {
@@ -162,18 +175,29 @@ test("a loading buy button never moves the UI around it", async ({ page }) => {
     await route.continue().catch(() => undefined);
   });
 
-  const buyButton = page.getByRole("link", { name: /^Buy for / });
+  // Each tariff card carries its own buy link, named after its plan: the Plus
+  // one is the neighbour that must not move while Standard is loading.
+  const buyButton = page.getByRole("link", { name: "Buy \u2014 Standard" });
   const label = buyButton.locator("span > span").first();
-  const learnMore = page.getByRole("link", { name: "Learn more" });
-  const boxOf = async (locator: typeof buyButton) => {
-    const box = await locator.boundingBox();
+  const neighbour = page.getByRole("link", { name: "Buy \u2014 Plus" });
+  // Document coordinates, not viewport ones: clicking a button this far down
+  // the page scrolls it into view first, which would move every viewport-based
+  // box without anything having shifted on the page.
+  const boxOf = async (locator: typeof buyButton) =>
+    locator.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
 
-    return box && [box.x, box.y, box.width, box.height].map(Math.round);
-  };
+      return [
+        rect.x + window.scrollX,
+        rect.y + window.scrollY,
+        rect.width,
+        rect.height,
+      ].map(Math.round);
+    });
   const before = {
     button: await boxOf(buyButton),
     label: await boxOf(label),
-    learnMore: await boxOf(learnMore),
+    neighbour: await boxOf(neighbour),
   };
 
   await buyButton.click({ noWaitAfter: true });
@@ -186,7 +210,7 @@ test("a loading buy button never moves the UI around it", async ({ page }) => {
   const after = { button: await boxOf(buyButton), label: await boxOf(label) };
 
   expect(after.button).toEqual(before.button);
-  expect(await boxOf(learnMore)).toEqual(before.learnMore);
+  expect(await boxOf(neighbour)).toEqual(before.neighbour);
   expect(after.label?.[1]).toEqual(before.label?.[1]);
   expect(after.label?.[3]).toEqual(before.label?.[3]);
   expect(

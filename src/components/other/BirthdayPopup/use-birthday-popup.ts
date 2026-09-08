@@ -6,9 +6,9 @@ import { useCookieConsent } from "@/components/common/CookieConsent";
 import { usePathname } from "@/i18n/navigation";
 import {
   applyBirthdayPopupSignal,
+  BIRTHDAY_CAMPAIGN_ENABLED,
   BIRTHDAY_POPUP_CONSENT_SETTLE_MS,
   BIRTHDAY_POPUP_DWELL_MS,
-  BIRTHDAY_POPUP_ENABLED,
   BIRTHDAY_POPUP_SAME_VIEW_GAP_MS,
   BIRTHDAY_POPUP_STORAGE_KEY,
   getBirthdayPopupState,
@@ -86,7 +86,7 @@ export const useBirthdayPopup = () => {
   }, [canUseFunctionalStorage, consent, isReady]);
 
   useEffect(() => {
-    if (!BIRTHDAY_POPUP_ENABLED || isVisible) {
+    if (!BIRTHDAY_CAMPAIGN_ENABLED || isVisible) {
       return;
     }
 

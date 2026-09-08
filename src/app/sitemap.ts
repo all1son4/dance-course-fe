@@ -14,7 +14,8 @@ const indexableRoutes = [
   "/online/group",
   "/online/first-touch",
   "/online/choreo",
-  "/online/birthday-drop",
+  // Retired with BIRTHDAY_CAMPAIGN_ENABLED; the page answers 404 meanwhile.
+  // "/online/birthday-drop",
   "/offline",
   "/privacy-policy",
   "/cookie-policy",

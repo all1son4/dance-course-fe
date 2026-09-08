@@ -1,6 +1,8 @@
+import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import StructuredData from "@/components/common/StructuredData";
+import { BIRTHDAY_CAMPAIGN_ENABLED } from "@/lib/birthday-popup";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
@@ -17,6 +19,12 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function BirthdayDropPage() {
+  // Retired campaign: the page is kept for a possible return but is not
+  // reachable while the switch is off.
+  if (!BIRTHDAY_CAMPAIGN_ENABLED) {
+    notFound();
+  }
+
   const [locale, t] = await Promise.all([
     getLocale(),
     getTranslations("BirthdayDropPage"),

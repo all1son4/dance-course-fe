@@ -15,25 +15,27 @@ export const getOnlineCoursesArray = (
   t: Translate,
   commonT: Translate,
 ): InteractiveCourseCard[] => [
-  {
-    id: "birthday-drop",
-    title: t("cards.birthdayDrop.title"),
-    topRowContent: (
-      <ContentStack $gap="16px">
-        <DetailText>{t("cards.birthdayDrop.description.1")}</DetailText>
-        <DetailText>{t("cards.birthdayDrop.description.2")}</DetailText>
-      </ContentStack>
-    ),
-    bottomRowContent: (
-      <ContentStack>
-        <DetailText>{t("cards.birthdayDrop.salesLabel")}</DetailText>
-        <DetailValueText>{t("cards.birthdayDrop.salesValue")}</DetailValueText>
-      </ContentStack>
-    ),
-    buttonText: commonT("details"),
-    buttonHref: "/online/birthday-drop",
-    buttonPrefetch: false,
-  },
+  // The Birthday Drop is retired (see BIRTHDAY_CAMPAIGN_ENABLED); its page
+  // answers 404, so the card stays out until the campaign returns.
+  // {
+  //   id: "birthday-drop",
+  //   title: t("cards.birthdayDrop.title"),
+  //   topRowContent: (
+  //     <ContentStack $gap="16px">
+  //       <DetailText>{t("cards.birthdayDrop.description.1")}</DetailText>
+  //       <DetailText>{t("cards.birthdayDrop.description.2")}</DetailText>
+  //     </ContentStack>
+  //   ),
+  //   bottomRowContent: (
+  //     <ContentStack>
+  //       <DetailText>{t("cards.birthdayDrop.salesLabel")}</DetailText>
+  //       <DetailValueText>{t("cards.birthdayDrop.salesValue")}</DetailValueText>
+  //     </ContentStack>
+  //   ),
+  //   buttonText: commonT("details"),
+  //   buttonHref: "/online/birthday-drop",
+  //   buttonPrefetch: false,
+  // },
   {
     id: "online-group",
     title: t("cards.onlineGroup.title"),
