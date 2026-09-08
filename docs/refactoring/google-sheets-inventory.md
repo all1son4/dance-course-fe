@@ -86,7 +86,7 @@ fallback.
 | Invoice numbering                        | `T`                     | [`invoices/invoice-numbering.ts`](../../src/lib/invoices/invoice-numbering.ts)                                                                                                                                                               | Transactional database counter or advisory lock plus unique invoice constraints       | Runtime read/write/lock dependency removed in `DROP-01`; DTO moves in `DROP-04`  |
 | Purchase email and alert leases          | —                       | Transactional outbox with database leases                                                                                                                                                                                                    | `purchase_side_effects` with a unique purchase/kind key and atomic lease updates      | Sheet-backed leases removed in `DROP-01`                                         |
 | Monthly reports                          | `T`                     | [`monthly-sales-report.ts`](../../src/lib/monthly-sales-report.ts)                                                                                                                                                                           | `monthly_report_runs` repository and idempotent outbox delivery                       | Runtime read/write/lock dependency removed in `DROP-01`; DTO moves in `DROP-04`  |
-| Email campaigns                          | —                       | [`email-campaigns.ts`](../../src/lib/email-campaigns.ts), course signup                                                                                                                                                                      | `email_campaign_leads` with a unique campaign/email key and outbox delivery           | Independent campaign DTO in local `DROP-04` code; dev checks and release pending |
+| Email campaigns                          | —                       | [`email-campaigns.ts`](../../src/lib/email-campaigns.ts), course signup                                                                                                                                                                      | `email_campaign_leads` with a unique campaign/email key and outbox delivery           | Independent campaign DTO in `DROP-04` dev code; CI/browser/database checks pass. |
 | Google-specific configuration and errors | `MT`                    | Legacy live maintenance tools only; credentials retired                                                                                                                                                                                      | Offline archival tools                                                                | Runtime provider edge removed in `DROP-04` dev slice; tooling cleanup remains    |
 | Sheet-shaped records                     | `T`                     | Telegram, invoices, Stripe sync and alerts, database adapters                                                                                                                                                                                | Domain commands and purpose-specific read DTOs                                        | Remove after all callers stop using the flattened aggregate                      |
 | Backfill and comparison                  | `R/MT`                  | [`db/backfill-google-sheets.ts`](../../src/db/backfill-google-sheets.ts), [`db/compare-google-sheets.ts`](../../src/db/compare-google-sheets.ts), [`db/capture-reconciliation-baseline.ts`](../../src/db/capture-reconciliation-baseline.ts) | Isolated, read-only legacy Sheets adapter                                             | Keep through reconciliation and rollback observation; then archive or delete     |
@@ -118,7 +118,7 @@ removes the legacy boundary.
 | [`stripe/sync`](../../src/app/api/stripe/webhook/_lib/sync.ts)                                                    | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`stripe/webhook`](../../src/app/api/stripe/webhook/route.ts)                                                     | durable PostgreSQL inbox only                                                | —     | Runtime dependency removed in `DROP-01`                           |
 | [`telegram/access-link`](../../src/app/api/telegram/access-link/route.ts)                                         | PostgreSQL-only payment/session reader; no Google facade or error dependency | —     | Removed in `DROP-01`                                              |
-| [`email-campaigns`](../../src/lib/email-campaigns.ts)                                                             | Independent campaign contract; PostgreSQL commands and durable delivery      | —     | DROP-04 local implementation; dev release pending                 |
+| [`email-campaigns`](../../src/lib/email-campaigns.ts)                                                             | Independent campaign contract; PostgreSQL commands and durable delivery      | —     | Campaign contract verified in DROP-04 dev slice                   |
 | [`invoice-numbering`](../../src/lib/invoices/invoice-numbering.ts)                                                | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
 | [`admin-offer-grants`](../../src/lib/admin-offer-grants.ts)                                                       | PostgreSQL-only grant command; no export producer                            | —     | Export option removed in `DROP-04` dev slice                      |
 | [`purchase-invoice`](../../src/lib/invoices/purchase-invoice.tsx)                                                 | Independent payment projection; no Sheet header/type dependency              | —     | Payment contract separated in DROP-04 dev slice                   |
@@ -172,10 +172,10 @@ archive imports in Telegram runtime modules. Their database mapping and claim ru
 are unchanged. The report-contract slice separates all ten report-state fields in
 [`monthly-sales-report-record.ts`](../../src/lib/monthly-sales-report-record.ts),
 without changing accounting calculations, CSV, month boundaries, or scheduling.
-The local campaign slice separates all eleven lead fields in
+The campaign dev slice separates all eleven lead fields in
 [`email-campaign-record.ts`](../../src/lib/email-campaign-record.ts), with unchanged
 signup, audience, exclusion, and delivery behavior. Its migration-only dev release
-is owner-approved; deployed verification remains pending. Admin-history contracts and the mixed
+passed CI, deployed browser checks, and all 32 database invariants. Admin-history contracts and the mixed
 database adapter still need cleanup. This is not yet a full decomposition
 of the payment aggregate or removal of offline adapters.
 
@@ -276,13 +276,13 @@ signup, exclusion, and delivery are now PostgreSQL-only as well. Their synchrono
 Sheet writes, Sheet-backed locks/counters, direct delivery branches, Google-specific
 route errors, and `DB_BUSINESS_OPERATIONS_MODE` selector are removed. Daily
 maintenance always recovers the business outbox.
-Payment, Telegram, and report contracts have been separated in dev code. Campaign
-contracts are also separated locally, but not committed or deployed. Other compatibility
+Payment, Telegram, report, and campaign contracts have been separated and verified
+on dev. Other compatibility
 record types remain until their `DROP-04` slices, with no value import of the archive
 schema reachable from application entry points.
 
 This paragraph originally described the September 1 dev-only checkpoint. The owner
 subsequently approved the staged acceleration recorded in the roadmap: `DROP-01`,
 `DROP-02`, and `DROP-03` are complete in production. `DROP-04` exporter-code removal
-and payment/Telegram/report-contract separation are dev-only; remaining DTO/facade/maintenance cleanup and the separate destructive
+and payment/Telegram/report/campaign-contract separation are dev-only; remaining DTO/facade/maintenance cleanup and the separate destructive
 window have not been waived or silently completed.

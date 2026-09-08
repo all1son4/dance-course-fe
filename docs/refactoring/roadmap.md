@@ -1560,7 +1560,7 @@ for testing. See the
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
 Status: `IN_PROGRESS (DEV)` — exporter retirement plus independent payment, Telegram,
-and monthly-report contracts are verified slices; the rest of this task is still pending.
+monthly-report, and campaign contracts are verified slices; the rest is still pending.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
@@ -1658,7 +1658,7 @@ invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
 The classified historical counters are unchanged; the bounded last-15-minute
 runtime-error query returned zero entries. Production/main remains at `ef5fcd9`.
 
-The campaign-contract slice is `LOCAL PASS` on `2026-09-08`, not deployed.
+The campaign-contract slice is `DONE (DEV)` on `2026-09-08`, not in production.
 [`EmailCampaignLeadRecord`](../../src/lib/email-campaign-record.ts) owns the same
 eleven string fields, including empty delivery evidence and string attempt counts.
 Campaign creation/delivery, business-operation reads, and the database mapper no
@@ -1684,10 +1684,20 @@ of dev plus only this slice's eleven files passed formatting, lint, TypeScript,
 build, 213 unit tests, and 59 PostgreSQL integration tests again. Birthday UI,
 sitemap, and the other session's browser-test edits are excluded from this release
 and remain local. No environment update, schema/data migration, or production
-release is included. CI/deployed-browser verification is pending; this slice is not
-yet `DONE (DEV)` and does not close `DROP-04` or G7.
+release is included. Completing this slice does not close `DROP-04` or G7.
 
-Remaining `DROP-04` work: verify/release the local campaign slice, separate admin-history DTOs from archive
+Dev release `7661ed7` passed
+[CI including backup/restore rehearsal](https://github.com/all1son4/dance-course-fe/actions/runs/34193627306)
+and [deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34193666617).
+Vercel Preview `dpl_Dc1SbZ8kJ48qkDNAQiscckEXsRvx` is `READY` with no `GOOGLE_*`
+environment names. The `2026-09-08T06:13:48Z` post-deploy dev check passed all 32
+invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
+The classified historical counters are unchanged; the bounded last-15-minute
+runtime-error query returned zero entries. Main remains at `9d28fd8`, unchanged by
+this release. All seven excluded birthday/sitemap/browser-test files retained their
+pre-commit content hashes and remain local.
+
+Remaining `DROP-04` work: separate admin-history DTOs from archive
 schemas, remove unused facade/cache/write adapters and retired live maintenance
 paths, split the mixed database adapter, preserve offline archive decryption/restore, then verify and release those
 slices. Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback
@@ -1832,4 +1842,4 @@ Status: `TODO`
 | 2026-09-07 | DROP-04 payment contract    | `DONE (DEV)`  | 48 fields; 200 unit / 52 PG; CI, 11 browser, 32 audits pass   |
 | 2026-09-07 | DROP-04 Telegram contracts  | `DONE (DEV)`  | 202 unit / 54 PG; CI/browser/32 audits; claim rules kept      |
 | 2026-09-07 | DROP-04 report contract     | `DONE (DEV)`  | 203 unit / 56 PG; CI/browser/32 audits; accounting unchanged  |
-| 2026-09-08 | DROP-04 campaign contract   | `LOCAL PASS`  | 213 unit / 59 PG; isolated build passes; dev checks pending   |
+| 2026-09-08 | DROP-04 campaign contract   | `DONE (DEV)`  | 213 unit / 59 PG; CI/browser/32 audits; migration-only push   |
