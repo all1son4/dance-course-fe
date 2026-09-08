@@ -1,5 +1,10 @@
 import { getResolvedCheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
-import { DEFAULT_SITE_HOME_URL, SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import {
+  DEFAULT_SITE_HOME_URL,
+  INSTAGRAM_PROFILE_HANDLE,
+  PERSONAL_TELEGRAM_HANDLE,
+  SUPPORT_TELEGRAM_URL,
+} from "@/constants/links";
 
 const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
@@ -18,6 +23,8 @@ const EMAIL_COPY = {
     defaultOfferLabel: "Standard access",
     heading: "Thank you, your payment was successful",
     intro: "We have prepared your access to the materials and the receipt details.",
+    introPrivateLesson:
+      "We have received your payment. Below are the purchase details and the receipt.",
     invoiceAttached: "The PDF invoice is attached to this email.",
     limitedAccessValidity:
       "Access to the materials is provided for {days} days from joining.",
@@ -44,6 +51,10 @@ const EMAIL_COPY = {
       manualAdmin: {
         title: "Next step",
         body: "The admin will contact you and add you to the online group manually. No Telegram access link is required for this purchase.",
+      },
+      privateLesson: {
+        title: "Your lesson",
+        body: `If the date and time are already agreed, see you at the lesson. If not yet, we will get in touch to arrange them — or message us on Telegram ${PERSONAL_TELEGRAM_HANDLE} or Instagram @${INSTAGRAM_PROFILE_HANDLE}, that may be faster.`,
       },
       support: {
         title: "Access details",
@@ -102,6 +113,8 @@ const EMAIL_COPY = {
     defaultOfferLabel: "Dostęp standardowy",
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
     intro: "Przygotowaliśmy dostęp do materiałów oraz potwierdzenie płatności.",
+    introPrivateLesson:
+      "Otrzymaliśmy Twoją płatność. Poniżej znajdziesz szczegóły zakupu i potwierdzenie.",
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
     limitedAccessValidity:
       "Dostęp do materiałów jest przyznawany na {days} dni od dołączenia.",
@@ -129,6 +142,10 @@ const EMAIL_COPY = {
       manualAdmin: {
         title: "Następny krok",
         body: "Administrator skontaktuje się z Tobą i ręcznie doda Cię do grupy online. Ta płatność nie wymaga linku dostępu do Telegrama.",
+      },
+      privateLesson: {
+        title: "Twoje zajęcia",
+        body: `Jeśli data i godzina są już ustalone — do zobaczenia na zajęciach. Jeśli jeszcze nie, skontaktujemy się z Tobą, aby je ustalić — możesz też napisać do nas na Telegramie ${PERSONAL_TELEGRAM_HANDLE} lub Instagramie @${INSTAGRAM_PROFILE_HANDLE}, tak może być szybciej.`,
       },
       support: {
         title: "Szczegóły dostępu",
@@ -187,6 +204,7 @@ const EMAIL_COPY = {
     defaultOfferLabel: "Стандартный доступ",
     heading: "Спасибо, оплата прошла успешно",
     intro: "Мы подготовили доступ к материалам и данные по чеку.",
+    introPrivateLesson: "Мы получили вашу оплату. Ниже — детали покупки и чек.",
     invoiceAttached: "PDF-инвойс прикреплен к этому письму.",
     limitedAccessValidity:
       "Доступ к материалам предоставляется на {days} дней с момента вступления.",
@@ -213,6 +231,10 @@ const EMAIL_COPY = {
       manualAdmin: {
         title: "Следующий шаг",
         body: "Администратор свяжется с вами и вручную добавит вас в онлайн-группу. Для этой покупки ссылка доступа в Telegram не нужна.",
+      },
+      privateLesson: {
+        title: "Ваше занятие",
+        body: `Если дата и время уже согласованы — ждём вас на занятии. Если ещё нет, мы свяжемся с вами, чтобы договориться, — или напишите нам в Telegram ${PERSONAL_TELEGRAM_HANDLE} или Instagram @${INSTAGRAM_PROFILE_HANDLE}, так может быть быстрее.`,
       },
       support: {
         title: "Детали доступа",
@@ -266,6 +288,7 @@ const EMAIL_COPY = {
 
 export type PurchaseSuccessEmailAccessKind =
   | "manual-admin"
+  | "private-lesson"
   | "support"
   | "telegram-channel"
   | "telegram-channel-lifetime"
@@ -439,6 +462,13 @@ const resolveAccessContent = ({
         description: copy.access.manualAdmin.body,
         mentorFollowupNote: "",
         title: copy.access.manualAdmin.title,
+      };
+    case "private-lesson":
+      return {
+        cta: "",
+        description: copy.access.privateLesson.body,
+        mentorFollowupNote: "",
+        title: copy.access.privateLesson.title,
       };
     case "support":
       return {
@@ -626,6 +656,7 @@ const renderPurchaseSuccessEmailHtml = ({
   accessContent,
   copy,
   inspirationAccessParagraph,
+  intro,
   limitedAccessValidityParagraph,
   mentorFollowupParagraph,
   onlineGroupAccessButtons,
@@ -640,6 +671,7 @@ const renderPurchaseSuccessEmailHtml = ({
   accessContent: AccessContent;
   copy: EmailCopy;
   inspirationAccessParagraph: string;
+  intro: string;
   limitedAccessValidityParagraph: string;
   mentorFollowupParagraph: string;
   onlineGroupAccessButtons: string;
@@ -657,7 +689,7 @@ const renderPurchaseSuccessEmailHtml = ({
           ${copy.heading}
         </h1>
         <p style="margin:0 0 26px 0;font-size:15px;line-height:24px;color:#444444;">
-          ${copy.intro}
+          ${intro}
         </p>
 
         <div style="background:#faf9f7;border:1px solid rgba(18,18,18,0.08);border-radius:18px;padding:18px;margin-bottom:22px;">
@@ -830,6 +862,9 @@ export const buildPurchaseSuccessEmail = ({
   const formattedInspirationExpiry = inspirationAccessExpiresAt
     ? formatAccessExpiry(inspirationAccessExpiresAt, locale)
     : "";
+  // A private lesson unlocks no materials, so the default intro would point the
+  // buyer at access they are not waiting for.
+  const intro = accessKind === "private-lesson" ? copy.introPrivateLesson : copy.intro;
   const accessContent = resolveAccessContent({
     accessKind,
     copy,
@@ -885,6 +920,7 @@ export const buildPurchaseSuccessEmail = ({
     accessContent,
     copy,
     inspirationAccessParagraph,
+    intro,
     limitedAccessValidityParagraph: limitedAccessValidity.paragraph,
     mentorFollowupParagraph,
     onlineGroupAccessButtons,
