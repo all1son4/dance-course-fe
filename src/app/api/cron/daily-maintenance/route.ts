@@ -1,6 +1,6 @@
 import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
 import { runBusinessOperationOutboxJobs } from "@/lib/business-operation-outbox";
-import { jsonNoStore } from "@/lib/http-security";
+import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
   getScheduledMonthlySalesReportPeriod,
@@ -28,12 +28,7 @@ const isAuthorizedCronRequest = (request: Request) => {
 
 export async function GET(request: Request) {
   if (!isAuthorizedCronRequest(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const now = new Date();

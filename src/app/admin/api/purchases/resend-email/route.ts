@@ -5,6 +5,7 @@ import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
   getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -20,7 +21,7 @@ type ResendEmailBody = {
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -40,13 +41,10 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   try {
@@ -55,13 +53,13 @@ export async function POST(request: Request) {
       typeof body?.paymentIntentId === "string" ? body.paymentIntentId.trim() : "";
 
     if (!paymentIntentId) {
-      return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     const stripe = getStripeServer();
 
     if (!stripe) {
-      return jsonNoStore({ errorCode: "stripe_not_configured" }, { status: 503 });
+      return jsonErrorNoStore("stripe_not_configured", { status: 503 });
     }
 
     const [paymentRecord, event] = await Promise.all([
@@ -70,15 +68,15 @@ export async function POST(request: Request) {
     ]);
 
     if (!paymentRecord) {
-      return jsonNoStore({ errorCode: "purchase_not_found" }, { status: 404 });
+      return jsonErrorNoStore("purchase_not_found", { status: 404 });
     }
 
     if (paymentRecord.outcome !== "succeeded") {
-      return jsonNoStore({ errorCode: "purchase_not_succeeded" }, { status: 409 });
+      return jsonErrorNoStore("purchase_not_succeeded", { status: 409 });
     }
 
     if (!event) {
-      return jsonNoStore({ errorCode: "succeeded_event_missing" }, { status: 409 });
+      return jsonErrorNoStore("succeeded_event_missing", { status: 409 });
     }
 
     // A fresh idempotency key per click: the original send already used the
@@ -93,6 +91,6 @@ export async function POST(request: Request) {
     return jsonNoStore({ status: result.skipped ? "skipped" : "sent" });
   } catch (error) {
     console.error("Failed to resend purchase email from admin", error);
-    return jsonNoStore({ errorCode: "resend_purchase_email_failed" }, { status: 500 });
+    return jsonErrorNoStore("resend_purchase_email_failed", { status: 500 });
   }
 }

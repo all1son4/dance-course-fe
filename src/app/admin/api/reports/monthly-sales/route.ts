@@ -1,5 +1,9 @@
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import { isTrustedBrowserOrigin, jsonNoStore } from "@/lib/http-security";
+import {
+  isTrustedBrowserOrigin,
+  jsonErrorNoStore,
+  jsonNoStore,
+} from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
   toMonthlySalesReportDeliveryResponse,
@@ -13,21 +17,11 @@ type MonthlySalesReportRequestBody = {
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   if (!isTrustedBrowserOrigin(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "invalid_origin",
-      },
-      { status: 403 },
-    );
+    return jsonErrorNoStore("invalid_origin", { status: 403 });
   }
 
   try {
@@ -59,11 +53,6 @@ export async function POST(request: Request) {
 
     console.error("Failed to generate monthly sales report from admin", error);
 
-    return jsonNoStore(
-      {
-        errorCode: "monthly_sales_report_failed",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("monthly_sales_report_failed", { status: 500 });
   }
 }

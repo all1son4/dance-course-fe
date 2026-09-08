@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 
 import {
   createEmptyPaymentRecord,
@@ -18,7 +18,6 @@ import {
   products,
   purchases,
   purchaseSideEffects,
-  stripeEvents,
 } from "./schema";
 
 const trim = (value: string | null | undefined) => value?.trim() ?? "";
@@ -1026,58 +1025,4 @@ export const upsertPaymentRecordToDatabase = async (
   return (
     (await findPaymentRecordByIntentIdFromDatabase(paymentIntentId)) ?? paymentRecord
   );
-};
-
-export const listSucceededPaymentRecordsFromDatabaseInUtcRange = async ({
-  endUtcIsoExclusive,
-  startUtcIso,
-}: {
-  endUtcIsoExclusive: string;
-  startUtcIso: string;
-}) => {
-  const startDate = new Date(startUtcIso);
-  const endDate = new Date(endUtcIsoExclusive);
-
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return [] as PaymentRecordSnapshot[];
-  }
-
-  const db = getDatabase();
-  const rows = await db
-    .select({
-      purchase: purchases,
-    })
-    .from(purchases)
-    .innerJoin(
-      stripeEvents,
-      and(
-        eq(stripeEvents.paymentIntentId, purchases.paymentIntentId),
-        eq(stripeEvents.eventType, "payment_intent.succeeded"),
-      ),
-    )
-    .where(
-      and(
-        eq(purchases.outcome, "succeeded"),
-        eq(purchases.source, "stripe"),
-        eq(stripeEvents.processingStatus, "processed"),
-        eq(stripeEvents.outcomeSnapshot, "succeeded"),
-        gte(stripeEvents.stripeCreatedAt, startDate),
-        lt(stripeEvents.stripeCreatedAt, endDate),
-      ),
-    )
-    .orderBy(asc(stripeEvents.stripeCreatedAt), asc(purchases.paymentIntentId));
-  const seenPaymentIntentIds = new Set<string>();
-  const purchasesByFirstSucceededEvent = rows
-    .map((row) => row.purchase)
-    .filter((purchase) => {
-      if (seenPaymentIntentIds.has(purchase.paymentIntentId)) {
-        return false;
-      }
-
-      seenPaymentIntentIds.add(purchase.paymentIntentId);
-      return true;
-    });
-  const records = await hydratePaymentRecords(purchasesByFirstSucceededEvent);
-
-  return records;
 };

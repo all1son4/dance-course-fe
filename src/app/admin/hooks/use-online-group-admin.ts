@@ -5,7 +5,7 @@ import {
   ONLINE_GROUP_RENEWAL_OFFER_ID,
 } from "@/constants/sellable-products";
 
-import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
+import { ADMIN_API_ENDPOINTS, RATE_LIMITED_STATUS_TEXT } from "../lib/admin.constants";
 import type {
   OnlineGroupAdminAccessMode,
   OnlineGroupAdminGrant,
@@ -20,11 +20,43 @@ import type {
   TelegramChatsResponse,
 } from "../lib/admin.types";
 import { formatDateTimeInput } from "../lib/admin.utils";
+import { ADMIN_NETWORK_ERROR_CODE, requestAdminJson } from "../lib/admin-request";
 
 type UseOnlineGroupAdminOptions = {
   isActive: boolean;
   isAuthorized: boolean;
   onUnauthorized: () => void;
+};
+
+const ADMIN_ACCESS_ERROR_MESSAGES: Record<string, string> = {
+  missing_admin_label: "Добавь идентификатор получателя.",
+  network_error: "Ошибка сети при генерации ссылок доступа.",
+  online_group_settings_not_configured:
+    "Сначала настрой и активируй поток с основным чатом и Inspiration Hub.",
+  rate_limited: RATE_LIMITED_STATUS_TEXT,
+};
+
+const RENEWAL_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при создании ссылки продления.",
+  renewal_offer_not_seeded: "Скидочный offer не найден в БД. Запусти seed продуктов.",
+  same_source_and_target_chat: "Старый и новый чат должны отличаться.",
+  telegram_chat_not_registered:
+    "Один из чатов не зарегистрирован. Добавь бота в чат и отправь /register_chat.",
+};
+
+const SETTINGS_ERROR_MESSAGES: Record<string, string> = {
+  inspiration_chat_is_fixed: "Inspiration Hub уже закреплен и не может быть заменен.",
+  invalid_start_date: "Укажи корректную дату старта потока.",
+  network_error: "Ошибка сети при сохранении настроек Online Group.",
+  same_main_and_inspiration_chat: "Основной чат и Inspiration Hub должны отличаться.",
+  telegram_chat_not_registered: "Один из чатов не зарегистрирован через /register_chat.",
+};
+
+const RENEWAL_TOGGLE_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при изменении состояния ссылки.",
+  renewal_campaign_inactive:
+    "Эта ссылка относится к старому потоку и не может быть включена.",
+  renewal_campaign_not_found: "Ссылка продления не найдена.",
 };
 
 export const useOnlineGroupAdmin = ({
@@ -105,80 +137,82 @@ export const useOnlineGroupAdmin = ({
   const load = useCallback(async () => {
     setIsLoading(true);
 
-    try {
-      const [chatsResponse, campaignsResponse, onlineGroupResponse, adminLinksResponse] =
-        await Promise.all([
-          fetch(ADMIN_API_ENDPOINTS.telegramChats, {
-            method: "GET",
-            cache: "no-store",
-          }),
-          fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
-            method: "GET",
-            cache: "no-store",
-          }),
-          fetch(ADMIN_API_ENDPOINTS.onlineGroupSettings, {
-            method: "GET",
-            cache: "no-store",
-          }),
-          fetch(ADMIN_API_ENDPOINTS.onlineGroupInviteLinks, {
-            method: "GET",
-            cache: "no-store",
-          }),
-        ]);
-      const chatsData = (await chatsResponse.json()) as TelegramChatsResponse;
-      const campaignsData = (await campaignsResponse.json()) as RenewalCampaignsResponse;
-      const onlineGroupData =
-        (await onlineGroupResponse.json()) as OnlineGroupCampaignsResponse;
-      const adminLinksData =
-        (await adminLinksResponse.json()) as OnlineGroupAdminLinksResponse;
+    const [chatsResult, campaignsResult, onlineGroupResult, adminLinksResult] =
+      await Promise.all([
+        requestAdminJson<TelegramChatsResponse>(ADMIN_API_ENDPOINTS.telegramChats),
+        requestAdminJson<RenewalCampaignsResponse>(ADMIN_API_ENDPOINTS.renewalCampaigns),
+        requestAdminJson<OnlineGroupCampaignsResponse>(
+          ADMIN_API_ENDPOINTS.onlineGroupSettings,
+        ),
+        requestAdminJson<OnlineGroupAdminLinksResponse>(
+          ADMIN_API_ENDPOINTS.onlineGroupInviteLinks,
+        ),
+      ]);
+    // The workspace is one screen fed by four endpoints, so a single unreachable
+    // endpoint reports network failure for the whole screen rather than half of it.
+    const hasNetworkError = [
+      chatsResult,
+      campaignsResult,
+      onlineGroupResult,
+      adminLinksResult,
+    ].some((result) => result.errorCode === ADMIN_NETWORK_ERROR_CODE);
 
-      if (adminLinksData.errorCode === "unauthorized") {
-        onUnauthorized();
-        return;
-      }
-
-      if (!chatsResponse.ok || !campaignsResponse.ok || !onlineGroupResponse.ok) {
-        if (
-          chatsData.errorCode === "unauthorized" ||
-          campaignsData.errorCode === "unauthorized" ||
-          onlineGroupData.errorCode === "unauthorized"
-        ) {
-          onUnauthorized();
-          return;
-        }
-
-        setStatus({
-          text: "Не удалось загрузить настройки Online Group.",
-          tone: "error",
-        });
-        setRenewalStatus({
-          text: "Не удалось загрузить чаты или историю продлений.",
-          tone: "error",
-        });
-        return;
-      }
-
-      const chats = Array.isArray(chatsData.chats) ? chatsData.chats : [];
-      const renewalCampaignEntries = Array.isArray(campaignsData.campaigns)
-        ? campaignsData.campaigns
+    if (hasNetworkError) {
+      setStatus({
+        text: "Ошибка сети при загрузке настроек Online Group.",
+        tone: "error",
+      });
+      setRenewalStatus({
+        text: "Ошибка сети при загрузке продлений.",
+        tone: "error",
+      });
+      setAdminStatus({
+        text: "Ошибка сети при загрузке ручных доступов.",
+        tone: "error",
+      });
+    } else if (
+      adminLinksResult.unauthorized ||
+      ((!chatsResult.ok || !campaignsResult.ok || !onlineGroupResult.ok) &&
+        (chatsResult.unauthorized ||
+          campaignsResult.unauthorized ||
+          onlineGroupResult.unauthorized))
+    ) {
+      onUnauthorized();
+    } else if (!chatsResult.ok || !campaignsResult.ok || !onlineGroupResult.ok) {
+      setStatus({
+        text: "Не удалось загрузить настройки Online Group.",
+        tone: "error",
+      });
+      setRenewalStatus({
+        text: "Не удалось загрузить чаты или историю продлений.",
+        tone: "error",
+      });
+    } else {
+      const chats = Array.isArray(chatsResult.data.chats) ? chatsResult.data.chats : [];
+      const renewalCampaignEntries = Array.isArray(campaignsResult.data.campaigns)
+        ? campaignsResult.data.campaigns
         : [];
+      const onlineGroupCampaigns = onlineGroupResult.data.campaigns;
 
       setTelegramChats(chats);
       setRenewalCampaigns(renewalCampaignEntries);
-      setCampaigns(
-        Array.isArray(onlineGroupData.campaigns) ? onlineGroupData.campaigns : [],
-      );
-      if (adminLinksResponse.ok) {
-        setAdminGrants(Array.isArray(adminLinksData.grants) ? adminLinksData.grants : []);
+      setCampaigns(Array.isArray(onlineGroupCampaigns) ? onlineGroupCampaigns : []);
+
+      if (adminLinksResult.ok) {
+        setAdminGrants(
+          Array.isArray(adminLinksResult.data.grants) ? adminLinksResult.data.grants : [],
+        );
       } else {
         setAdminStatus({
           text: "Не удалось загрузить журнал ручных доступов.",
           tone: "error",
         });
       }
-      const loadedActiveCampaign = onlineGroupData.campaigns?.find(
+
+      const loadedActiveCampaign = onlineGroupCampaigns?.find(
         (campaign) => campaign.status === "active",
       );
+
       setMainChatId(loadedActiveCampaign?.mainChatId ?? chats[0]?.chatId ?? "");
       setLibraryChatId(
         loadedActiveCampaign?.inspirationChatId ??
@@ -200,23 +234,10 @@ export const useOnlineGroupAdmin = ({
 
         return validValues.length ? validValues : chats[0] ? [chats[0].chatId] : [];
       });
-    } catch {
-      setStatus({
-        text: "Ошибка сети при загрузке настроек Online Group.",
-        tone: "error",
-      });
-      setRenewalStatus({
-        text: "Ошибка сети при загрузке продлений.",
-        tone: "error",
-      });
-      setAdminStatus({
-        text: "Ошибка сети при загрузке ручных доступов.",
-        tone: "error",
-      });
-    } finally {
-      setHasLoaded(true);
-      setIsLoading(false);
     }
+
+    setHasLoaded(true);
+    setIsLoading(false);
   }, [onUnauthorized]);
 
   const toggleForm = useCallback(() => {
@@ -277,40 +298,32 @@ export const useOnlineGroupAdmin = ({
 
     const normalizedAdminLabel = adminLabel.trim();
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.onlineGroupInviteLinks, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const result = await requestAdminJson<OnlineGroupAdminLinksResponse>(
+      ADMIN_API_ENDPOINTS.onlineGroupInviteLinks,
+      {
+        body: {
           accessMode: adminAccessMode,
           adminLabel: normalizedAdminLabel,
-        }),
+        },
+        method: "POST",
+      },
+    );
+    const { grant: issuedGrant, status: grantStatus } = result.data;
+
+    if (result.unauthorized) {
+      onUnauthorized();
+      setAdminStatus(null);
+    } else if (!result.ok || !issuedGrant) {
+      setAdminStatus({
+        text:
+          ADMIN_ACCESS_ERROR_MESSAGES[result.errorCode] ??
+          "Не удалось создать ссылки доступа.",
+        tone: "error",
       });
-      const data = (await response.json()) as OnlineGroupAdminLinksResponse;
-
-      if (data.errorCode === "unauthorized") {
-        onUnauthorized();
-        setAdminStatus(null);
-        return;
-      }
-
-      if (!response.ok || !data.grant) {
-        const errorText =
-          data.errorCode === "online_group_settings_not_configured"
-            ? "Сначала настрой и активируй поток с основным чатом и Inspiration Hub."
-            : data.errorCode === "rate_limited"
-              ? "Слишком много запросов. Подожди немного и попробуй снова."
-              : data.errorCode === "missing_admin_label"
-                ? "Добавь идентификатор получателя."
-                : "Не удалось создать ссылки доступа.";
-
-        setAdminStatus({ text: errorText, tone: "error" });
-        return;
-      }
-
+    } else {
       const grant = {
-        ...data.grant,
-        accesses: data.grant.accesses.map((access) => ({
+        ...issuedGrant,
+        accesses: issuedGrant.accesses.map((access) => ({
           ...access,
           chatTitle:
             access.chatTitle ||
@@ -327,7 +340,7 @@ export const useOnlineGroupAdmin = ({
       ]);
       setAdminLabel("");
       setAdminStatus(
-        data.status === "ready"
+        grantStatus === "ready"
           ? {
               text:
                 grant.accessMode === "plus"
@@ -335,7 +348,7 @@ export const useOnlineGroupAdmin = ({
                   : "Ссылка в основной чат готова.",
               tone: "success",
             }
-          : data.status === "partial"
+          : grantStatus === "partial"
             ? {
                 text: "Создана только часть ссылок. Проверь статусы ниже.",
                 tone: "info",
@@ -345,14 +358,9 @@ export const useOnlineGroupAdmin = ({
                 tone: "error",
               },
       );
-    } catch {
-      setAdminStatus({
-        text: "Ошибка сети при генерации ссылок доступа.",
-        tone: "error",
-      });
-    } finally {
-      setIsGeneratingAdminAccess(false);
     }
+
+    setIsGeneratingAdminAccess(false);
   }, [
     adminAccessMode,
     adminLabel,
@@ -376,90 +384,79 @@ export const useOnlineGroupAdmin = ({
         tone: "info",
       });
 
-      try {
-        const response = await fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+      const result = await requestAdminJson<RenewalCampaignsResponse>(
+        ADMIN_API_ENDPOINTS.renewalCampaigns,
+        {
+          body: {
             offerId: renewalOfferId,
             regenerate,
             sourceChatIds: renewalSourceChatIds,
             title: renewalTitle,
-          }),
-        });
-        const data = (await response.json()) as RenewalCampaignsResponse;
+          },
+          method: "POST",
+        },
+      );
+      const { campaign, reused, status: renewalResultStatus } = result.data;
 
-        if (!response.ok || data.status !== "ready" || !data.campaign?.checkoutUrl) {
-          if (data.errorCode === "unauthorized") {
-            onUnauthorized();
-            setRenewalStatus(null);
-            return;
-          }
-
-          setRenewalStatus({
-            text:
-              data.errorCode === "same_source_and_target_chat"
-                ? "Старый и новый чат должны отличаться."
-                : data.errorCode === "telegram_chat_not_registered"
-                  ? "Один из чатов не зарегистрирован. Добавь бота в чат и отправь /register_chat."
-                  : data.errorCode === "renewal_offer_not_seeded"
-                    ? "Скидочный offer не найден в БД. Запусти seed продуктов."
-                    : "Не удалось создать ссылку продления.",
-            tone: "error",
-          });
-          return;
-        }
-
-        setGeneratedRenewalLink(data.campaign.checkoutUrl);
+      if (result.unauthorized) {
+        onUnauthorized();
+        setRenewalStatus(null);
+      } else if (
+        !result.ok ||
+        renewalResultStatus !== "ready" ||
+        !campaign?.checkoutUrl
+      ) {
         setRenewalStatus({
-          text: data.reused
+          text:
+            RENEWAL_ERROR_MESSAGES[result.errorCode] ??
+            "Не удалось создать ссылку продления.",
+          tone: "error",
+        });
+      } else {
+        setGeneratedRenewalLink(campaign.checkoutUrl);
+        setRenewalStatus({
+          text: reused
             ? "Активная checkout-ссылка уже была создана, можно копировать."
             : "Checkout-ссылка продления готова.",
           tone: "success",
         });
         setRenewalCampaigns((previousCampaigns) => {
           const nextCampaign: RenewalCampaignEntry = {
-            checkoutUrl: data.campaign?.checkoutUrl ?? "",
-            createdAt: data.campaign?.createdAt ?? new Date().toISOString(),
-            id: data.campaign?.id ?? "",
-            offerId: data.campaign?.offerId ?? renewalOfferId,
-            slug: data.campaign?.slug ?? "",
+            checkoutUrl: campaign.checkoutUrl,
+            createdAt: campaign.createdAt ?? new Date().toISOString(),
+            id: campaign.id ?? "",
+            offerId: campaign.offerId ?? renewalOfferId,
+            slug: campaign.slug ?? "",
             sourceChatId: renewalSourceChatIds[0] ?? "",
-            sourceChatIds: data.campaign?.sourceChatIds ?? renewalSourceChatIds,
+            sourceChatIds: campaign.sourceChatIds ?? renewalSourceChatIds,
             sourceChatTitle:
-              data.campaign?.sourceChatTitles?.[0] ?? renewalSourceChatIds[0] ?? "",
-            sourceChatTitles: data.campaign?.sourceChatTitles ?? renewalSourceChatIds,
+              campaign.sourceChatTitles?.[0] ?? renewalSourceChatIds[0] ?? "",
+            sourceChatTitles: campaign.sourceChatTitles ?? renewalSourceChatIds,
             status: "active",
             targetChatId: activeCampaign?.mainChatId ?? "",
-            title: data.campaign?.title ?? renewalTitle,
+            title: campaign.title ?? renewalTitle,
           };
 
           return [
             nextCampaign,
             ...previousCampaigns
               .filter(
-                (campaign) =>
-                  campaign.id !== nextCampaign.id && campaign.slug !== nextCampaign.slug,
+                (previousCampaign) =>
+                  previousCampaign.id !== nextCampaign.id &&
+                  previousCampaign.slug !== nextCampaign.slug,
               )
-              .map((campaign) =>
-                campaign.offerId === nextCampaign.offerId &&
-                campaign.targetChatId === nextCampaign.targetChatId
-                  ? { ...campaign, status: "archived" }
-                  : campaign,
+              .map((previousCampaign) =>
+                previousCampaign.offerId === nextCampaign.offerId &&
+                previousCampaign.targetChatId === nextCampaign.targetChatId
+                  ? { ...previousCampaign, status: "archived" }
+                  : previousCampaign,
               ),
           ];
         });
         setRenewalTitle("");
-      } catch {
-        setRenewalStatus({
-          text: "Ошибка сети при создании ссылки продления.",
-          tone: "error",
-        });
-      } finally {
-        setIsGeneratingRenewal(false);
       }
+
+      setIsGeneratingRenewal(false);
     },
     [
       activeCampaign,
@@ -482,44 +479,34 @@ export const useOnlineGroupAdmin = ({
       tone: "info",
     });
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.onlineGroupSettings, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+    const result = await requestAdminJson<OnlineGroupCampaignsResponse>(
+      ADMIN_API_ENDPOINTS.onlineGroupSettings,
+      {
+        body: {
           inspirationChatId: libraryChatId,
           mainChatId,
           startsAt: new Date(startsAt).toISOString(),
           title,
-        }),
+        },
+        method: "POST",
+      },
+    );
+    const { campaign: savedCampaign, reused, status: saveResultStatus } = result.data;
+
+    if (result.unauthorized) {
+      onUnauthorized();
+    } else if (!result.ok || saveResultStatus !== "ready" || !savedCampaign) {
+      setStatus({
+        text:
+          SETTINGS_ERROR_MESSAGES[result.errorCode] ??
+          "Не удалось сохранить настройки Online Group.",
+        tone: "error",
       });
-      const data = (await response.json()) as OnlineGroupCampaignsResponse;
-
-      if (!response.ok || data.status !== "ready" || !data.campaign) {
-        if (data.errorCode === "unauthorized") {
-          onUnauthorized();
-          return;
-        }
-
-        const errorText =
-          data.errorCode === "same_main_and_inspiration_chat"
-            ? "Основной чат и Inspiration Hub должны отличаться."
-            : data.errorCode === "inspiration_chat_is_fixed"
-              ? "Inspiration Hub уже закреплен и не может быть заменен."
-              : data.errorCode === "telegram_chat_not_registered"
-                ? "Один из чатов не зарегистрирован через /register_chat."
-                : data.errorCode === "invalid_start_date"
-                  ? "Укажи корректную дату старта потока."
-                  : "Не удалось сохранить настройки Online Group.";
-
-        setStatus({ text: errorText, tone: "error" });
-        return;
-      }
-
+    } else {
       setCampaigns((currentCampaigns) => [
-        data.campaign as OnlineGroupCampaignEntry,
+        savedCampaign,
         ...currentCampaigns
-          .filter((campaign) => campaign.id !== data.campaign?.id)
+          .filter((campaign) => campaign.id !== savedCampaign.id)
           .map((campaign) =>
             campaign.status === "active" ? { ...campaign, status: "archived" } : campaign,
           ),
@@ -527,7 +514,7 @@ export const useOnlineGroupAdmin = ({
       setRenewalCampaigns((currentCampaigns) =>
         currentCampaigns.map((campaign) =>
           campaign.status === "active" &&
-          campaign.targetChatId !== data.campaign?.mainChatId
+          campaign.targetChatId !== savedCampaign.mainChatId
             ? { ...campaign, status: "archived" }
             : campaign,
         ),
@@ -539,24 +526,19 @@ export const useOnlineGroupAdmin = ({
 
       if (
         generatedCampaign &&
-        generatedCampaign.targetChatId !== data.campaign.mainChatId
+        generatedCampaign.targetChatId !== savedCampaign.mainChatId
       ) {
         setGeneratedRenewalLink("");
       }
 
       setStatus({
-        text: data.reused ? "Настройки уже актуальны." : "Новый поток активирован.",
+        text: reused ? "Настройки уже актуальны." : "Новый поток активирован.",
         tone: "success",
       });
       setIsFormOpen(false);
-    } catch {
-      setStatus({
-        text: "Ошибка сети при сохранении настроек Online Group.",
-        tone: "error",
-      });
-    } finally {
-      setIsSaving(false);
     }
+
+    setIsSaving(false);
   }, [
     generatedRenewalLink,
     isSaveDisabled,
@@ -584,27 +566,22 @@ export const useOnlineGroupAdmin = ({
 
       setUpdatingRenewalSlug(slug);
 
-      try {
-        const response = await fetch(ADMIN_API_ENDPOINTS.renewalCampaigns, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ active, slug }),
+      const result = await requestAdminJson(ADMIN_API_ENDPOINTS.renewalCampaigns, {
+        body: { active, slug },
+        method: "PATCH",
+      });
+
+      if (result.unauthorized) {
+        onUnauthorized();
+        setRenewalStatus(null);
+      } else if (!result.ok) {
+        setRenewalStatus({
+          text:
+            RENEWAL_TOGGLE_ERROR_MESSAGES[result.errorCode] ??
+            "Не удалось изменить состояние ссылки.",
+          tone: "error",
         });
-        const data = (await response.json()) as { errorCode?: string };
-
-        if (!response.ok) {
-          setRenewalStatus({
-            text:
-              data.errorCode === "renewal_campaign_inactive"
-                ? "Эта ссылка относится к старому потоку и не может быть включена."
-                : data.errorCode === "renewal_campaign_not_found"
-                  ? "Ссылка продления не найдена."
-                  : "Не удалось изменить состояние ссылки.",
-            tone: "error",
-          });
-          return;
-        }
-
+      } else {
         setRenewalCampaigns((currentCampaigns) =>
           currentCampaigns.map((campaign) => {
             if (campaign.slug === slug) {
@@ -622,23 +599,20 @@ export const useOnlineGroupAdmin = ({
             return campaign;
           }),
         );
+
         if (!active && selectedCampaign.checkoutUrl === generatedRenewalLink) {
           setGeneratedRenewalLink("");
         }
+
         setRenewalStatus({
           text: active ? "Ссылка продления включена." : "Ссылка продления выключена.",
           tone: "success",
         });
-      } catch {
-        setRenewalStatus({
-          text: "Ошибка сети при изменении состояния ссылки.",
-          tone: "error",
-        });
-      } finally {
-        setUpdatingRenewalSlug("");
       }
+
+      setUpdatingRenewalSlug("");
     },
-    [generatedRenewalLink, renewalCampaigns, updatingRenewalSlug],
+    [generatedRenewalLink, onUnauthorized, renewalCampaigns, updatingRenewalSlug],
   );
 
   useEffect(() => {

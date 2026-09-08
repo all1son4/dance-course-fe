@@ -13,6 +13,7 @@ import {
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
   getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -79,20 +80,20 @@ const loadSalesState = async () => {
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   try {
     return jsonNoStore(await loadSalesState());
   } catch (error) {
     console.error("Failed to load product sales state", error);
-    return jsonNoStore({ errorCode: "sales_state_unavailable" }, { status: 500 });
+    return jsonErrorNoStore("sales_state_unavailable", { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -112,20 +113,17 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   try {
     const body = await parseJsonBody<ToggleSalesBody>(request);
 
     if (!body || typeof body.salesEnabled !== "boolean") {
-      return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     const productId = (body.productId ?? "").trim();
@@ -137,20 +135,17 @@ export async function POST(request: Request) {
     );
 
     if (!product) {
-      return jsonNoStore({ errorCode: "product_not_found" }, { status: 404 });
+      return jsonErrorNoStore("product_not_found", { status: 404 });
     }
 
     if (salesEnabled && product.requiresActiveCampaign && !product.hasActiveCampaign) {
-      return jsonNoStore(
-        { errorCode: "online_group_campaign_required" },
-        { status: 409 },
-      );
+      return jsonErrorNoStore("online_group_campaign_required", { status: 409 });
     }
 
     const updatedRow = await setProductSalesEnabled({ productId, salesEnabled });
 
     if (!updatedRow) {
-      return jsonNoStore({ errorCode: "product_not_found" }, { status: 404 });
+      return jsonErrorNoStore("product_not_found", { status: 404 });
     }
 
     // The storefront reads the switch through a cached copy; expire it now so
@@ -166,6 +161,6 @@ export async function POST(request: Request) {
     return jsonNoStore(await loadSalesState());
   } catch (error) {
     console.error("Failed to change product sales switch", error);
-    return jsonNoStore({ errorCode: "sales_switch_failed" }, { status: 500 });
+    return jsonErrorNoStore("sales_switch_failed", { status: 500 });
   }
 }

@@ -12,6 +12,7 @@ import type {
   SelectOption,
   StatusMessage,
 } from "../lib/admin.types";
+import { requestAdminJson } from "../lib/admin-request";
 
 type UsePurchasesAdminOptions = {
   /** Search seeded from the `?q=` deep link the purchase alert links to. */
@@ -29,6 +30,34 @@ type PurchasesOverview = {
   products: AdminProductBreakdownEntry[];
   purchases: AdminPurchaseEntry[];
   summary: AdminPurchasesSummary | null;
+};
+
+const INVALID_REPORT_MONTH_STATUS_TEXT =
+  "Выбранный месяц невалиден. Обнови страницу и попробуй снова.";
+const SEND_REPORT_FALLBACK_ERROR_TEXT =
+  "Не удалось отправить отчет. Проверь настройки и попробуй снова.";
+
+const LOAD_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при загрузке продаж.",
+};
+
+const RESEND_EMAIL_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при переотправке письма.",
+  purchase_not_succeeded: "Эта оплата не завершилась успехом — письмо не отправляется.",
+  rate_limited: RATE_LIMITED_STATUS_TEXT,
+  succeeded_event_missing:
+    "У покупки нет подтвержденного Stripe-события — так бывает со старыми продажами, перенесенными из таблиц. Отправь письмо вручную.",
+};
+
+const SEND_REPORT_ERROR_MESSAGES: Record<string, string> = {
+  future_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
+  invalid_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
+  network_error: SEND_REPORT_FALLBACK_ERROR_TEXT,
+};
+
+const DOWNLOAD_REPORT_ERROR_MESSAGES: Record<string, string> = {
+  future_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
+  invalid_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
 };
 
 export const usePurchasesAdmin = ({
@@ -74,54 +103,35 @@ export const usePurchasesAdmin = ({
         ? `${ADMIN_API_ENDPOINTS.purchases}?${query}`
         : ADMIN_API_ENDPOINTS.purchases;
 
-      try {
-        const response = await fetch(endpoint, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const data = (await response.json()) as AdminPurchasesResponse;
+      const result = await requestAdminJson<AdminPurchasesResponse>(endpoint);
 
-        if (loadSequence !== loadSequenceRef.current) {
-          return;
-        }
+      if (loadSequence !== loadSequenceRef.current) {
+        return;
+      }
 
-        if (!response.ok) {
-          if (data.errorCode === "unauthorized") {
-            onUnauthorized();
-            return;
-          }
-
-          setStatus({
-            text: "Не удалось загрузить продажи.",
-            tone: "error",
-          });
-          return;
-        }
-
-        setOverview({
-          months: Array.isArray(data.months) ? data.months : [],
-          previousSummary: data.previousSummary ?? null,
-          products: Array.isArray(data.products) ? data.products : [],
-          purchases: Array.isArray(data.purchases) ? data.purchases : [],
-          summary: data.summary ?? null,
-        });
-        setMonthValue(data.summary?.monthValue ?? month ?? "");
-        setStatus(null);
-      } catch {
-        if (loadSequence !== loadSequenceRef.current) {
-          return;
-        }
-
+      if (result.unauthorized) {
+        onUnauthorized();
+      } else if (!result.ok) {
         setStatus({
-          text: "Ошибка сети при загрузке продаж.",
+          text: LOAD_ERROR_MESSAGES[result.errorCode] ?? "Не удалось загрузить продажи.",
           tone: "error",
         });
-      } finally {
-        if (loadSequence === loadSequenceRef.current) {
-          setHasLoaded(true);
-          setIsLoading(false);
-        }
+      } else {
+        const { months, previousSummary, products, purchases, summary } = result.data;
+
+        setOverview({
+          months: Array.isArray(months) ? months : [],
+          previousSummary: previousSummary ?? null,
+          products: Array.isArray(products) ? products : [],
+          purchases: Array.isArray(purchases) ? purchases : [],
+          summary: summary ?? null,
+        });
+        setMonthValue(summary?.monthValue ?? month ?? "");
+        setStatus(null);
       }
+
+      setHasLoaded(true);
+      setIsLoading(false);
     },
     [onUnauthorized],
   );
@@ -169,37 +179,27 @@ export const usePurchasesAdmin = ({
         tone: "info",
       });
 
-      try {
-        const response = await fetch(ADMIN_API_ENDPOINTS.purchasesResendEmail, {
+      const result = await requestAdminJson<ResendPurchaseEmailResponse>(
+        ADMIN_API_ENDPOINTS.purchasesResendEmail,
+        {
+          body: { paymentIntentId },
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentIntentId }),
+        },
+      );
+
+      if (result.unauthorized) {
+        onUnauthorized();
+        setStatus(null);
+      } else if (!result.ok) {
+        setStatus({
+          text:
+            RESEND_EMAIL_ERROR_MESSAGES[result.errorCode] ??
+            "Не удалось переотправить письмо.",
+          tone: "error",
         });
-        const data = (await response.json()) as ResendPurchaseEmailResponse;
-
-        if (!response.ok) {
-          if (data.errorCode === "unauthorized") {
-            onUnauthorized();
-            setStatus(null);
-            return;
-          }
-
-          setStatus({
-            text:
-              data.errorCode === "purchase_not_succeeded"
-                ? "Эта оплата не завершилась успехом — письмо не отправляется."
-                : data.errorCode === "succeeded_event_missing"
-                  ? "У покупки нет подтвержденного Stripe-события — так бывает со старыми продажами, перенесенными из таблиц. Отправь письмо вручную."
-                  : data.errorCode === "rate_limited"
-                    ? RATE_LIMITED_STATUS_TEXT
-                    : "Не удалось переотправить письмо.",
-            tone: "error",
-          });
-          return;
-        }
-
+      } else {
         setStatus(
-          data.status === "sent"
+          result.data.status === "sent"
             ? {
                 text: "Письмо о покупке отправлено повторно вместе с инвойсом.",
                 tone: "success",
@@ -209,14 +209,9 @@ export const usePurchasesAdmin = ({
                 tone: "info",
               },
         );
-      } catch {
-        setStatus({
-          text: "Ошибка сети при переотправке письма.",
-          tone: "error",
-        });
-      } finally {
-        setResendingPaymentIntentId("");
       }
+
+      setResendingPaymentIntentId("");
     },
     [onUnauthorized, resendingPaymentIntentId],
   );
@@ -232,53 +227,45 @@ export const usePurchasesAdmin = ({
       tone: "info",
     });
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.monthlySalesReport, {
+    const result = await requestAdminJson<MonthlySalesReportResponse>(
+      ADMIN_API_ENDPOINTS.monthlySalesReport,
+      {
+        body: { reportMonth: monthValue },
         method: "POST",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reportMonth: monthValue }),
-      });
-      const data = (await response.json()) as MonthlySalesReportResponse;
+      },
+    );
 
-      if (!response.ok) {
-        if (data.errorCode === "unauthorized") {
-          onUnauthorized();
-          setReportStatus(null);
-          return;
-        }
-
-        setReportStatus({
-          text:
-            data.errorCode === "invalid_monthly_sales_report_month" ||
-            data.errorCode === "future_monthly_sales_report_month"
-              ? "Выбранный месяц невалиден. Обнови страницу и попробуй снова."
-              : "Не удалось отправить отчет. Проверь настройки и попробуй снова.",
-          tone: "error",
-        });
-        return;
-      }
-
-      if (data.status === "skipped" && data.skippedReason === "empty") {
-        setReportStatus({
-          text: "За выбранный период продаж нет, письмо не отправлено.",
-          tone: "info",
-        });
-        return;
-      }
-
+    if (result.unauthorized) {
+      onUnauthorized();
+      setReportStatus(null);
+    } else if (!result.ok) {
       setReportStatus({
-        text: `Отчет отправлен на ${data.deliveredTo || "адрес из RESEND_REPLY_TO"}. Строк: ${data.rowCount ?? 0}.`,
-        tone: "success",
-      });
-    } catch {
-      setReportStatus({
-        text: "Не удалось отправить отчет. Проверь настройки и попробуй снова.",
+        text:
+          SEND_REPORT_ERROR_MESSAGES[result.errorCode] ?? SEND_REPORT_FALLBACK_ERROR_TEXT,
         tone: "error",
       });
-    } finally {
-      setIsSendingReport(false);
+    } else {
+      const {
+        deliveredTo,
+        rowCount,
+        skippedReason,
+        status: reportResultStatus,
+      } = result.data;
+
+      setReportStatus(
+        reportResultStatus === "skipped" && skippedReason === "empty"
+          ? {
+              text: "За выбранный период продаж нет, письмо не отправлено.",
+              tone: "info",
+            }
+          : {
+              text: `Отчет отправлен на ${deliveredTo || "адрес из RESEND_REPLY_TO"}. Строк: ${rowCount ?? 0}.`,
+              tone: "success",
+            },
+      );
     }
+
+    setIsSendingReport(false);
   }, [isSendingReport, monthValue, onUnauthorized]);
 
   const downloadReport = useCallback(async () => {
@@ -310,10 +297,8 @@ export const usePurchasesAdmin = ({
 
         setReportStatus({
           text:
-            data.errorCode === "invalid_monthly_sales_report_month" ||
-            data.errorCode === "future_monthly_sales_report_month"
-              ? "Выбранный месяц невалиден. Обнови страницу и попробуй снова."
-              : "Не удалось сформировать CSV. Попробуй снова.",
+            DOWNLOAD_REPORT_ERROR_MESSAGES[data.errorCode ?? ""] ??
+            "Не удалось сформировать CSV. Попробуй снова.",
           tone: "error",
         });
         return;

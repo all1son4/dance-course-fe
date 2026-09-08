@@ -4,6 +4,15 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 
 import { ADMIN_API_ENDPOINTS, ADMIN_SESSION_HEARTBEAT_MS } from "../lib/admin.constants";
 import type { AuthResponse, AuthState, StatusMessage } from "../lib/admin.types";
+import { ADMIN_NETWORK_ERROR_CODE, requestAdminJson } from "../lib/admin-request";
+
+const AUTH_NOT_CONFIGURED_STATUS_TEXT = "Не задан ADMIN_PASSWORD на сервере.";
+
+const UNLOCK_ERROR_MESSAGES: Record<string, string> = {
+  auth_not_configured: AUTH_NOT_CONFIGURED_STATUS_TEXT,
+  invalid_password: "Неверный пароль.",
+  network_error: "Ошибка сети при авторизации.",
+};
 
 export const useAdminAuth = () => {
   const [authState, setAuthState] = useState<AuthState>("checking");
@@ -36,52 +45,43 @@ export const useAdminAuth = () => {
         });
       }
 
-      try {
-        const response = await fetch(ADMIN_API_ENDPOINTS.auth, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const data = (await response.json()) as AuthResponse;
+      const result = await requestAdminJson<AuthResponse>(ADMIN_API_ENDPOINTS.auth);
 
-        if (response.ok && data.authorized) {
-          setAuthState("authorized");
-
-          if (!silent) {
-            setAuthStatus(null);
-          }
-
-          return;
-        }
-
-        setAuthState("locked");
-
-        if (data.errorCode === "auth_not_configured") {
-          setAuthStatus({
-            text: "Не задан ADMIN_PASSWORD на сервере.",
-            tone: "error",
-          });
-          return;
-        }
-
-        if (silent) {
-          setAuthStatus({
-            text: "Сессия завершена. Введи пароль снова.",
-            tone: "info",
-          });
-          return;
-        }
-
-        setAuthStatus({
-          text: "Введи пароль для доступа к админке.",
-          tone: "info",
-        });
-      } catch {
+      if (result.errorCode === ADMIN_NETWORK_ERROR_CODE) {
         setAuthState("locked");
         setAuthStatus({
           text: "Не удалось проверить авторизацию. Попробуй обновить страницу.",
           tone: "error",
         });
+        return;
       }
+
+      if (result.ok && result.data.authorized) {
+        setAuthState("authorized");
+
+        if (!silent) {
+          setAuthStatus(null);
+        }
+
+        return;
+      }
+
+      setAuthState("locked");
+
+      if (result.errorCode === "auth_not_configured") {
+        setAuthStatus({
+          text: AUTH_NOT_CONFIGURED_STATUS_TEXT,
+          tone: "error",
+        });
+        return;
+      }
+
+      setAuthStatus({
+        text: silent
+          ? "Сессия завершена. Введи пароль снова."
+          : "Введи пароль для доступа к админке.",
+        tone: "info",
+      });
     },
     [],
   );
@@ -120,19 +120,19 @@ export const useAdminAuth = () => {
 
     setIsLoggingOut(true);
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.auth, {
-        method: "DELETE",
+    const result = await requestAdminJson(ADMIN_API_ENDPOINTS.auth, {
+      method: "DELETE",
+    });
+
+    if (!result.ok) {
+      setAuthStatus({
+        text:
+          result.errorCode === ADMIN_NETWORK_ERROR_CODE
+            ? "Ошибка сети при завершении сессии."
+            : "Не удалось завершить сессию. Попробуй снова.",
+        tone: "error",
       });
-
-      if (!response.ok) {
-        setAuthStatus({
-          text: "Не удалось завершить сессию. Попробуй снова.",
-          tone: "error",
-        });
-        return;
-      }
-
+    } else {
       setAuthState("locked");
       setAuthPassword("");
       onLoggedOut?.();
@@ -140,14 +140,9 @@ export const useAdminAuth = () => {
         text: "Сессия завершена.",
         tone: "info",
       });
-    } catch {
-      setAuthStatus({
-        text: "Ошибка сети при завершении сессии.",
-        tone: "error",
-      });
-    } finally {
-      setIsLoggingOut(false);
     }
+
+    setIsLoggingOut(false);
   };
 
   const submitUnlock = async (event: FormEvent<HTMLFormElement>) => {
@@ -163,53 +158,25 @@ export const useAdminAuth = () => {
       tone: "info",
     });
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.auth, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          password: authPassword,
-        }),
-      });
-      const data = (await response.json()) as AuthResponse;
+    const result = await requestAdminJson<AuthResponse>(ADMIN_API_ENDPOINTS.auth, {
+      body: { password: authPassword },
+      method: "POST",
+    });
 
-      if (response.ok && data.authorized) {
-        setAuthState("authorized");
-        setAuthPassword("");
-        setAuthStatus(null);
-        return;
-      }
-
-      if (data.errorCode === "invalid_password") {
-        setAuthStatus({
-          text: "Неверный пароль.",
-          tone: "error",
-        });
-        return;
-      }
-
-      if (data.errorCode === "auth_not_configured") {
-        setAuthStatus({
-          text: "Не задан ADMIN_PASSWORD на сервере.",
-          tone: "error",
-        });
-        return;
-      }
-
+    if (result.ok && result.data.authorized) {
+      setAuthState("authorized");
+      setAuthPassword("");
+      setAuthStatus(null);
+    } else {
       setAuthStatus({
-        text: "Не удалось авторизоваться. Попробуй снова.",
+        text:
+          UNLOCK_ERROR_MESSAGES[result.errorCode] ??
+          "Не удалось авторизоваться. Попробуй снова.",
         tone: "error",
       });
-    } catch {
-      setAuthStatus({
-        text: "Ошибка сети при авторизации.",
-        tone: "error",
-      });
-    } finally {
-      setIsUnlocking(false);
     }
+
+    setIsUnlocking(false);
   };
 
   return {

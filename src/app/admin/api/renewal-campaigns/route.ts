@@ -8,6 +8,7 @@ import {
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
   getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -71,12 +72,7 @@ const buildRenewalCheckoutUrl = ({
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   try {
@@ -106,23 +102,13 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Failed to list renewal campaigns", error);
 
-    return jsonNoStore(
-      {
-        errorCode: "renewal_campaigns_unavailable",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("renewal_campaigns_unavailable", { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -142,29 +128,19 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      {
-        errorCode: "rate_limited",
+    return jsonErrorNoStore("rate_limited", {
+      headers: {
+        "Retry-After": String(rateLimit.retryAfterSeconds),
       },
-      {
-        headers: {
-          "Retry-After": String(rateLimit.retryAfterSeconds),
-        },
-        status: 429,
-      },
-    );
+      status: 429,
+    });
   }
 
   try {
     const body = await parseJsonBody<CreateRenewalCampaignBody>(request);
 
     if (!body) {
-      return jsonNoStore(
-        {
-          errorCode: "invalid_request_body",
-        },
-        { status: 400 },
-      );
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     const sourceChatIds = [
@@ -235,18 +211,13 @@ export async function POST(request: Request) {
 
     console.error("Failed to create renewal campaign", error);
 
-    return jsonNoStore(
-      {
-        errorCode: "renewal_campaign_failed",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("renewal_campaign_failed", { status: 500 });
   }
 }
 
 export async function DELETE(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -266,13 +237,10 @@ export async function DELETE(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   const body = await parseJsonBody<{ slug?: string }>(request);
@@ -284,7 +252,7 @@ export async function DELETE(request: Request) {
     : null;
 
   if (!campaign) {
-    return jsonNoStore({ errorCode: "renewal_campaign_not_found" }, { status: 404 });
+    return jsonErrorNoStore("renewal_campaign_not_found", { status: 404 });
   }
 
   return jsonNoStore({
@@ -295,7 +263,7 @@ export async function DELETE(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -315,19 +283,16 @@ export async function PATCH(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   const body = await parseJsonBody<{ active?: boolean; slug?: string }>(request);
 
   if (!body?.slug || typeof body.active !== "boolean") {
-    return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+    return jsonErrorNoStore("invalid_request_body", { status: 400 });
   }
 
   if (body.active) {
@@ -339,7 +304,7 @@ export async function PATCH(request: Request) {
       !onlineGroupCampaign ||
       campaign.targetChatId !== onlineGroupCampaign.regularChatId
     ) {
-      return jsonNoStore({ errorCode: "renewal_campaign_inactive" }, { status: 409 });
+      return jsonErrorNoStore("renewal_campaign_inactive", { status: 409 });
     }
   }
 
@@ -349,7 +314,7 @@ export async function PATCH(request: Request) {
   });
 
   if (!campaign) {
-    return jsonNoStore({ errorCode: "renewal_campaign_not_found" }, { status: 404 });
+    return jsonErrorNoStore("renewal_campaign_not_found", { status: 404 });
   }
 
   return jsonNoStore({

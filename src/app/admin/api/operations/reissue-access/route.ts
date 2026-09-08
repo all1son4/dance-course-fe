@@ -2,6 +2,7 @@ import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
   getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -32,7 +33,7 @@ const ONLINE_GROUP_ACCESS_LABELS: Record<OnlineGroupAccessKey, string> = {
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -52,13 +53,10 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   try {
@@ -67,19 +65,19 @@ export async function POST(request: Request) {
       typeof body?.paymentIntentId === "string" ? body.paymentIntentId.trim() : "";
 
     if (!paymentIntentId) {
-      return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     const paymentRecord = await findPaymentRecordByIntentIdFromDatabase(paymentIntentId);
 
     if (!paymentRecord) {
-      return jsonNoStore({ errorCode: "purchase_not_found" }, { status: 404 });
+      return jsonErrorNoStore("purchase_not_found", { status: 404 });
     }
 
     // The ensure helpers return an empty result for unpaid purchases; refusing
     // here keeps the admin from reading that as a Telegram failure.
     if (paymentRecord.outcome !== "succeeded") {
-      return jsonNoStore({ errorCode: "purchase_not_succeeded" }, { status: 409 });
+      return jsonErrorNoStore("purchase_not_succeeded", { status: 409 });
     }
 
     const onlineGroupAccess = await ensureOnlineGroupAccessForPayment(paymentRecord);
@@ -129,6 +127,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Failed to reissue access links from admin", error);
-    return jsonNoStore({ errorCode: "reissue_access_failed" }, { status: 500 });
+    return jsonErrorNoStore("reissue_access_failed", { status: 500 });
   }
 }

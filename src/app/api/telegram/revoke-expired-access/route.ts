@@ -1,4 +1,4 @@
-import { jsonNoStore } from "@/lib/http-security";
+import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
@@ -19,12 +19,7 @@ const isAuthorizedCronRequest = (request: Request) => {
 
 export async function GET(request: Request) {
   if (!isAuthorizedCronRequest(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   try {
@@ -41,11 +36,6 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Failed to revoke expired Telegram access", error);
 
-    return jsonNoStore(
-      {
-        errorCode: "revoke_expired_access_failed",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("revoke_expired_access_failed", { status: 500 });
   }
 }

@@ -12,6 +12,7 @@ import type {
   StatusMessage,
 } from "../lib/admin.types";
 import { getChoreoSelections, resolveGeneratorErrorMessage } from "../lib/admin.utils";
+import { requestAdminJson } from "../lib/admin-request";
 
 type UseInviteLinksAdminOptions = {
   isAuthorized: boolean;
@@ -67,31 +68,19 @@ export const useInviteLinksAdmin = ({
         ? `${ADMIN_API_ENDPOINTS.inviteLinksHistory}?refresh=1`
         : ADMIN_API_ENDPOINTS.inviteLinksHistory;
 
-      try {
-        const response = await fetch(endpoint, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const data = (await response.json()) as HistoryResponse;
+      const result = await requestAdminJson<HistoryResponse>(endpoint);
 
-        if (!response.ok) {
-          if (data.errorCode === "unauthorized") {
-            onUnauthorized();
-          }
-
-          return;
-        }
-
-        const items = Array.isArray(data.items) ? data.items : [];
-
-        setRecentLinks(items);
-      } catch {
-        // Silent by design: history request should not block admin actions.
-      } finally {
-        setHasLoadedJournalOnce(true);
-        setIsJournalLoading(false);
-        journalLoadInFlightRef.current = false;
+      if (result.unauthorized) {
+        onUnauthorized();
+      } else if (result.ok) {
+        // A failed history request stays silent by design: it must not block
+        // admin actions.
+        setRecentLinks(Array.isArray(result.data.items) ? result.data.items : []);
       }
+
+      setHasLoadedJournalOnce(true);
+      setIsJournalLoading(false);
+      journalLoadInFlightRef.current = false;
     },
     [onUnauthorized],
   );
@@ -151,62 +140,49 @@ export const useInviteLinksAdmin = ({
             lessonLanguage: "ru" satisfies LessonLanguage,
           };
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.inviteLinks, {
+    const result = await requestAdminJson<GenerateResponse>(
+      ADMIN_API_ENDPOINTS.inviteLinks,
+      {
+        body,
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
+      },
+    );
+    const { accessUrl, status: generatedStatus, tokenExpiresAt } = result.data;
+
+    if (result.unauthorized) {
+      onUnauthorized();
+      setStatus(null);
+    } else if (!result.ok || generatedStatus !== "ready" || !accessUrl) {
+      setStatus({
+        text: resolveGeneratorErrorMessage(result.errorCode, result.data.reason ?? ""),
+        tone: "error",
       });
-      const data = (await response.json()) as GenerateResponse;
-
-      if (!response.ok || data.status !== "ready" || !data.accessUrl) {
-        if (data.errorCode === "unauthorized") {
-          onUnauthorized();
-          setStatus(null);
-          return;
-        }
-
-        setStatus({
-          text: resolveGeneratorErrorMessage(data.errorCode ?? "", data.reason ?? ""),
-          tone: "error",
-        });
-        return;
-      }
-
+    } else {
       const selectionLabel =
         kind === "choreo" && resolvedChoreoSelection
           ? resolvedChoreoSelection.label
           : "Первый курс (First Touch)";
 
-      setGeneratedLink(data.accessUrl);
+      setGeneratedLink(accessUrl);
       setStatus({
         text: "Ссылка готова. Можно копировать.",
         tone: "success",
       });
-      setRecentLinks((previousLinks) => {
-        return [
-          {
-            accessUrl: data.accessUrl ?? "",
-            adminLabel: normalizedAdminLabel,
-            createdAtIso: new Date().toISOString(),
-            linkState: "active" satisfies LinkState,
-            selectionLabel,
-            tokenExpiresAt: data.tokenExpiresAt ?? "",
-          },
-          ...previousLinks.filter((entry) => entry.accessUrl !== data.accessUrl),
-        ];
-      });
+      setRecentLinks((previousLinks) => [
+        {
+          accessUrl,
+          adminLabel: normalizedAdminLabel,
+          createdAtIso: new Date().toISOString(),
+          linkState: "active" satisfies LinkState,
+          selectionLabel,
+          tokenExpiresAt: tokenExpiresAt ?? "",
+        },
+        ...previousLinks.filter((entry) => entry.accessUrl !== accessUrl),
+      ]);
       setAdminLabel("");
-    } catch {
-      setStatus({
-        text: "Ошибка сети при генерации ссылки.",
-        tone: "error",
-      });
-    } finally {
-      setIsGenerating(false);
     }
+
+    setIsGenerating(false);
   }, [adminLabel, isGenerateDisabled, kind, onUnauthorized, resolvedChoreoSelection]);
 
   const resetForLogout = useCallback(() => {
