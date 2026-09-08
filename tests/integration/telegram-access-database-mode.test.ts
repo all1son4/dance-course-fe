@@ -266,7 +266,7 @@ test("activates legacy Telegram access through PostgreSQL without Sheets", async
   }
 });
 
-test("preserves timed join and leave semantics in PostgreSQL-only mode", async (t) => {
+test("[BEH-TG-01] preserves timed join and leave semantics in PostgreSQL-only mode", async (t) => {
   const suffix = randomUUID().replaceAll("-", "");
   const paymentIntentId = `pi_write04_timed_${suffix}`;
   const inviteLink = `https://t.me/+write04-${suffix}`;

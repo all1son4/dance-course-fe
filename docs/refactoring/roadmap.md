@@ -1426,6 +1426,14 @@ Google key disabled, credentials removed, and same-revision dev/prod checks gree
 `DROP-04` started on dev with exporter-code retirement and completed on dev on
 2026-09-08; the September 23 destructive-cleanup boundary is unchanged.
 
+The owner decided on 2026-09-08 that the whole DROP phase ships to production as one
+batch once Gate G7 closes, rather than as separate per-slice releases. Until then
+production deliberately keeps running the pre-`DROP-04` code with its legacy adapters,
+and `main` stays behind `dev` by design. Two consequences are accepted: the production
+smoke suite exercises the journeys present on `main`, not the two added later on `dev`;
+and the eventual release is a single large one, so it needs its own preflight rather
+than being treated as a routine merge.
+
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
 Status: `DONE (production)` — the released slices permanently route admin invite-link
@@ -1575,8 +1583,8 @@ Status: `DONE (DEV)` — every listed code slice is released to dev and verified
 Exporter retirement plus the independent payment, Telegram, monthly-report, campaign, and
 admin-history contracts are verified slices, and the legacy facade adapters, dual-read
 selector, and mixed database adapter are removed. Production/`main` still runs the
-previous code, so a separate production release remains required; Gate G7 also stays
-`NOT PASSED` until `DROP-05`.
+previous code and ships with the single Gate G7 batch release described in the phase
+status above; Gate G7 stays `NOT PASSED` until `DROP-05`.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn

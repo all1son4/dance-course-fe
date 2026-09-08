@@ -179,7 +179,7 @@ test("a link to a product the catalogue no longer sells falls back to the defaul
   );
 });
 
-test("a renewal checkout whose target left the catalogue stays unavailable", () => {
+test("[BEH-REN-02] a renewal checkout whose target left the catalogue stays unavailable", () => {
   const removed = SELLABLE_PRODUCTS_LIST.find(
     (product) => product.id !== DEFAULT_CHECKOUT_PRODUCT.id,
   );
@@ -454,7 +454,7 @@ test("resetCheckoutForm starts a fresh session with default state", () => {
   assert.equal(store.renewalCampaignSlug, "");
 });
 
-test("setting a renewal slug invalidates intents minted without it", () => {
+test("[BEH-REN-01] setting a renewal slug invalidates intents minted without it", () => {
   const store = new PaymentStore();
   store.stripeClientSecrets = { pln: "secret_pln" };
 

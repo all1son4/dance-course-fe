@@ -26,7 +26,7 @@ const readAuthoritativeCatalog = async (page: Page) => {
   return catalog.products;
 };
 
-test("First Touch entry remains a lead dialog instead of direct checkout", async ({
+test("[BEH-ENTRY-01] First Touch entry remains a lead dialog instead of direct checkout", async ({
   page,
 }) => {
   await page.goto("/online/first-touch");
@@ -46,7 +46,9 @@ test("First Touch entry remains a lead dialog instead of direct checkout", async
   ).toBeVisible();
 });
 
-test("Online Group entry follows the authoritative sales switch", async ({ page }) => {
+test("[BEH-ENTRY-02] Online Group entry follows the authoritative sales switch", async ({
+  page,
+}) => {
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
   const expectedOfferIds = product.offers
     .filter((offer) => offer.code === "standard" || offer.code === "library-access")
