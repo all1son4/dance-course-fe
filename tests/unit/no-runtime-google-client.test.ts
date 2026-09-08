@@ -38,6 +38,8 @@ test("application entry points cannot load Google code or archive headers transi
     resolve(root, "src/lib/email-campaigns.ts"),
     resolve(root, "src/lib/email-campaign-record.ts"),
     resolve(root, "src/lib/business-operation-read-runtime.ts"),
+    resolve(root, "src/lib/admin-invite-link-history-read-runtime.ts"),
+    resolve(root, "src/lib/admin-invite-link-history-record.ts"),
   ]);
   const pending = [...filesUnder(join(root, "src/app")), ...independentFiles];
   const visited = new Set<string>();
@@ -49,6 +51,7 @@ test("application entry points cannot load Google code or archive headers transi
     "TelegramUserBindingSheetRecord",
     "MonthlySalesReportRunSheetRecord",
     "EmailCampaignLeadSheetRecord",
+    "AdminInviteLinkHistorySourceRecord",
   ]);
   const forbidden = new Set([googleClient, archiveSchema]);
 
@@ -76,7 +79,8 @@ test("application entry points cannot load Google code or archive headers transi
     };
     const visit = (node: ts.Node) => {
       // Other record families are migrated in later DROP-04 slices. Payments,
-      // Telegram, reports and campaigns already own their contracts, including types.
+      // Telegram, reports, campaigns and admin history already own their
+      // contracts, including types.
       if (ts.isIdentifier(node)) {
         assert.ok(
           !retiredRecordTypes.has(node.text),
@@ -152,7 +156,12 @@ test("application entry points cannot load Google code or archive headers transi
     "src/db/payment-records.ts",
     "src/lib/payment-record.ts",
     "src/lib/retired-export-outbox.ts",
-    "src/db/sheet-records.ts",
+    "src/db/record-values.ts",
+    "src/db/purchase-lookups.ts",
+    "src/db/telegram-access-token-records.ts",
+    "src/db/telegram-user-binding-records.ts",
+    "src/db/monthly-report-run-records.ts",
+    "src/db/email-campaign-lead-records.ts",
     "src/lib/telegram/access-records.ts",
     "src/lib/telegram/access-read-runtime.ts",
     "src/lib/telegram/access-persistence.ts",
@@ -161,6 +170,8 @@ test("application entry points cannot load Google code or archive headers transi
     "src/lib/business-operation-read-runtime.ts",
     "src/lib/email-campaigns.ts",
     "src/lib/email-campaign-record.ts",
+    "src/lib/admin-invite-link-history-read-runtime.ts",
+    "src/db/admin-invite-link-history.ts",
   ]) {
     assert.ok(
       visited.has(resolve(root, dependency)),

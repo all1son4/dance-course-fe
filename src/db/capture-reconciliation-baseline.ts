@@ -76,7 +76,6 @@ const loadSheetsSnapshot = async () => {
   const readOptions = {
     cacheTtlMs: 0,
     readOnly: true,
-    source: "sheets" as const,
   };
   const [
     payments,

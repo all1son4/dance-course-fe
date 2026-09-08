@@ -1559,8 +1559,11 @@ for testing. See the
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
-Status: `IN_PROGRESS (DEV)` — exporter retirement plus independent payment, Telegram,
-monthly-report, and campaign contracts are verified slices; the rest is still pending.
+Status: `IN_PROGRESS (DEV)` — every code slice is complete and verified locally; only
+the dev release of the final cleanup slice is outstanding. Exporter retirement plus the
+independent payment, Telegram, monthly-report, campaign, and admin-history contracts are
+verified slices, and the legacy facade adapters, dual-read selector, and mixed database
+adapter are removed.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
@@ -1697,13 +1700,50 @@ runtime-error query returned zero entries. Main remains at `9d28fd8`, unchanged 
 this release. All seven excluded birthday/sitemap/browser-test files retained their
 pre-commit content hashes and remain local.
 
-Remaining `DROP-04` work: separate admin-history DTOs from archive
-schemas, remove unused facade/cache/write adapters and retired live maintenance
-paths, split the mixed database adapter, preserve offline archive decryption/restore, then verify and release those
-slices. Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback
-revisions until their replacement is approved; it is inert only in the new code.
-No new calendar hold applies to this code-only work. Do not mark all of `DROP-04` or
-G7 complete based on these partial slices.
+The final cleanup slice closes the remaining `DROP-04` code work. Admin invite-link
+history owns
+[`AdminInviteLinkHistoryRecord`](../../src/lib/admin-invite-link-history-record.ts)
+with the same nine string fields; the PostgreSQL reader and the read runtime no longer
+import archive headers, and empty `tokenUsedAt`/`adminLabel` values keep the meaning the
+admin route depends on (`BEH-ADMIN-01`).
+
+The archive facade lost every adapter no longer reachable from the offline tools: the
+retired live maintenance path `ensureGoogleSheetsSchema`, all Sheet write and mirror
+adapters, the per-record lookup caches, and the `source` selector with its database
+branch. [`google-sheets`](../../src/lib/google-sheets.ts) is now a 1121-line offline
+archive reader with nine exports — seven values-only list readers, the protected source
+capture, and its snapshot type — and imports nothing from `src/db`. The last dual-read
+primitive, `explicit-read-source`, is deleted with it. The backfill tool reads protected
+offline archives only, as its runbook already documents, so its live read path and
+credential-dependent dry run are gone and a source archive is now required in every
+mode.
+
+The mixed `sheet-records` adapter is split by domain into
+[`record-values`](../../src/db/record-values.ts),
+[`purchase-lookups`](../../src/db/purchase-lookups.ts),
+[`telegram-access-token-records`](../../src/db/telegram-access-token-records.ts),
+[`telegram-user-binding-records`](../../src/db/telegram-user-binding-records.ts),
+[`monthly-report-run-records`](../../src/db/monthly-report-run-records.ts), and
+[`email-campaign-lead-records`](../../src/db/email-campaign-lead-records.ts).
+Executable-body comparison across the moved declarations found no change beyond
+Prettier reflow in two signatures. Thirteen declarations orphaned by the facade cleanup
+— the whole legacy Stripe-event record module, the legacy report and campaign upserts,
+and the unused list readers — were removed rather than moved. Offline archive
+decryption, restore, and the archive schema itself are untouched.
+
+Local verification passed formatting, lint, TypeScript, the production build, 211 unit
+tests, and 59 PostgreSQL integration tests in an isolated local PG17 cluster; the same
+59 integration tests passed before and after the split. The import guard now also
+rejects the retired admin-history archive type and reaches every new adapter module. No
+schema, data migration, environment update, or production release is part of this slice;
+rollback remains the previous DB-compatible dev revision. This slice is not yet released
+to dev.
+
+Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback revisions
+until their replacement is approved; it is inert only in the new code. No new calendar
+hold applies to this code-only work. `DROP-05` and Gate G7 are unchanged: the
+destructive contract migrations still need their own approval and release no earlier
+than the retained `2026-09-23T00:56:17Z` boundary.
 
 ### DROP-05 — Apply destructive contract migrations in a separate release
 

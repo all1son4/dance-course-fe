@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 
-import type { AdminInviteLinkHistorySourceRecord } from "@/lib/google-sheets-schema";
+import type { AdminInviteLinkHistoryRecord } from "@/lib/admin-invite-link-history-record";
 
 import { getDatabase } from "./client";
 import {
@@ -38,7 +38,7 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
 }: {
   accessWorkflow: string;
   limit?: number;
-}): Promise<AdminInviteLinkHistorySourceRecord[]> => {
+}): Promise<AdminInviteLinkHistoryRecord[]> => {
   const normalizedAccessWorkflow = accessWorkflow.trim().toLowerCase();
 
   if (!normalizedAccessWorkflow) {

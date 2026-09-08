@@ -2,15 +2,14 @@ import { and, eq, isNotNull, lte } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
-import {
-  listEmailCampaignLeadRecords,
-  listMonthlySalesReportRunRecords,
-  listPaymentRecords,
-  listStripeEventRecords,
-  listTelegramAccessTokenRecords,
-  listTelegramUserBindingRecords,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets";
+import type {
+  EmailCampaignLeadSheetRecord,
+  MonthlySalesReportRunSheetRecord,
+  PaymentSheetRecord,
+  StripeEventSheetRecord,
+  TelegramAccessTokenSheetRecord,
+  TelegramUserBindingSheetRecord,
+} from "@/lib/google-sheets-schema";
 
 import { getDatabaseEnvSelection, getRequiredDatabaseUrlFromEnv } from "./env";
 import {
@@ -24,7 +23,6 @@ import {
   GOOGLE_SHEETS_BACKFILL_STAGES,
   type GoogleSheetsBackfillBatch,
   type GoogleSheetsBackfillOperationCounts,
-  type GoogleSheetsBackfillRecords,
   type GoogleSheetsBackfillStage,
   type GoogleSheetsBackfillStats,
   type GoogleSheetsBackfillTarget,
@@ -317,33 +315,6 @@ const getExternalTargetType = (paymentRecord: PaymentSheetRecord) => {
   return null;
 };
 
-const loadLiveSheetRecords = async () => {
-  const [
-    paymentRecords,
-    stripeEventRecords,
-    telegramTokenRecords,
-    telegramBindingRecords,
-    monthlyReportRecords,
-    emailLeadRecords,
-  ] = await Promise.all([
-    listPaymentRecords({ cacheTtlMs: 0, source: "sheets" }),
-    listStripeEventRecords({ cacheTtlMs: 0, source: "sheets" }),
-    listTelegramAccessTokenRecords({ cacheTtlMs: 0, source: "sheets" }),
-    listTelegramUserBindingRecords({ cacheTtlMs: 0, source: "sheets" }),
-    listMonthlySalesReportRunRecords({ cacheTtlMs: 0, source: "sheets" }),
-    listEmailCampaignLeadRecords({ cacheTtlMs: 0, source: "sheets" }),
-  ]);
-
-  return {
-    emailLeadRecords,
-    monthlyReportRecords,
-    paymentRecords,
-    stripeEventRecords,
-    telegramBindingRecords,
-    telegramTokenRecords,
-  };
-};
-
 const getProductLookup = async (
   db: ReturnType<typeof drizzle>,
 ): Promise<ProductLookup> => {
@@ -579,23 +550,20 @@ const getPaymentSideEffects = (
 
 type Database = ReturnType<typeof drizzle>;
 type DatabaseTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
-type SheetRecords = Awaited<ReturnType<typeof loadLiveSheetRecords>>;
+// DROP-03 retired live Google access; this tool reads protected offline archives
+// only. The record shapes come from the archive schema itself.
+type SheetRecords = {
+  emailLeadRecords: EmailCampaignLeadSheetRecord[];
+  monthlyReportRecords: MonthlySalesReportRunSheetRecord[];
+  paymentRecords: PaymentSheetRecord[];
+  stripeEventRecords: StripeEventSheetRecord[];
+  telegramBindingRecords: TelegramUserBindingSheetRecord[];
+  telegramTokenRecords: TelegramAccessTokenSheetRecord[];
+};
 type TelegramTokenRecord = SheetRecords["telegramTokenRecords"][number];
 type TelegramBindingRecord = SheetRecords["telegramBindingRecords"][number];
 type MonthlyReportRecord = SheetRecords["monthlyReportRecords"][number];
 type EmailLeadRecord = SheetRecords["emailLeadRecords"][number];
-
-const toGoogleSheetsBackfillRecords = (
-  records: SheetRecords,
-): GoogleSheetsBackfillRecords => ({
-  emailCampaignLeads: records.emailLeadRecords,
-  monthlyReportRuns: records.monthlyReportRecords,
-  payments: records.paymentRecords,
-  stripeEvents: records.stripeEventRecords,
-  successfulCustomers: [],
-  telegramAccessTokens: records.telegramTokenRecords,
-  telegramUserBindings: records.telegramBindingRecords,
-});
 
 type BackfillTransactionContext = {
   customerIdByEmail: Map<string, string>;
@@ -2033,25 +2001,12 @@ const backfill = async (options: BackfillCliOptions) => {
 
   loadDatabaseEnvConfig();
 
-  if (options.dryRun && !options.sourceDirectory) {
-    const liveRecords = await loadLiveSheetRecords();
-    const records = toGoogleSheetsBackfillRecords(liveRecords);
-
-    console.warn(
-      JSON.stringify({
-        plan: getGoogleSheetsBackfillPlan(records),
-        source: "live_read_only_google_sheets",
-        status: "dry_run",
-      }),
-    );
-    console.warn(
-      "Write mode requires an extracted immutable DATA-01 source and explicit target confirmation.",
-    );
-    return;
-  }
-
   if (!options.target) {
     throw new Error("Pass --target with --source-dir.");
+  }
+
+  if (!options.sourceDirectory) {
+    throw new Error("Pass --source-dir with extracted immutable DATA-01 files.");
   }
 
   const source = await loadGoogleSheetsBackfillSource({

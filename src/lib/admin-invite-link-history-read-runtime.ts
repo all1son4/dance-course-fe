@@ -1,5 +1,5 @@
 import { domainRepositories } from "@/db/domain-repositories";
-import type { AdminInviteLinkHistorySourceRecord } from "@/lib/google-sheets-schema";
+import type { AdminInviteLinkHistoryRecord } from "@/lib/admin-invite-link-history-record";
 
 export type AdminInviteLinkHistoryReadInput = {
   accessWorkflow: string;
@@ -9,7 +9,7 @@ export type AdminInviteLinkHistoryReadInput = {
 export type AdminInviteLinkHistoryReadSource = {
   list: (
     input: AdminInviteLinkHistoryReadInput,
-  ) => Promise<AdminInviteLinkHistorySourceRecord[]>;
+  ) => Promise<AdminInviteLinkHistoryRecord[]>;
 };
 
 export type AdminInviteLinkHistoryReadDependencies = {

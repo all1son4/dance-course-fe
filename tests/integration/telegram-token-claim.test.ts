@@ -8,7 +8,7 @@ import { getDatabaseClient } from "@/db/client";
 import {
   claimTelegramAccessTokenRecordInDatabase,
   upsertTelegramAccessTokenRecordToDatabase,
-} from "@/db/sheet-records";
+} from "@/db/telegram-access-token-records";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 

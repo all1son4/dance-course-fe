@@ -1,9 +1,9 @@
+import { updateTelegramAccessInDatabase } from "@/db/telegram-access";
 import {
   claimTelegramAccessTokenRecordInDatabase,
   upsertTelegramAccessTokenRecordToDatabase,
-  upsertTelegramUserBindingRecordToDatabase,
-} from "@/db/sheet-records";
-import { updateTelegramAccessInDatabase } from "@/db/telegram-access";
+} from "@/db/telegram-access-token-records";
+import { upsertTelegramUserBindingRecordToDatabase } from "@/db/telegram-user-binding-records";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import type {
   TelegramAccessTokenRecord,

@@ -9,7 +9,7 @@ import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import {
   findTelegramUserBindingByPaymentIntentIdFromDatabase,
   upsertTelegramUserBindingRecordToDatabase,
-} from "@/db/sheet-records";
+} from "@/db/telegram-user-binding-records";
 import {
   findActiveTelegramUserBindings,
   findLatestTelegramAccessTokenRecordByPaymentIntentId,

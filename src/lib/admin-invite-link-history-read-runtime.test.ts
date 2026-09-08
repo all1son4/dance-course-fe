@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { AdminInviteLinkHistorySourceRecord } from "@/lib/google-sheets-schema";
+import type { AdminInviteLinkHistoryRecord } from "@/lib/admin-invite-link-history-record";
 
 import {
   type AdminInviteLinkHistoryReadDependencies,
@@ -9,8 +9,8 @@ import {
 } from "./admin-invite-link-history-read-runtime";
 
 const createHistoryRecord = (
-  overrides: Partial<AdminInviteLinkHistorySourceRecord> = {},
-): AdminInviteLinkHistorySourceRecord => ({
+  overrides: Partial<AdminInviteLinkHistoryRecord> = {},
+): AdminInviteLinkHistoryRecord => ({
   accessUrl: "https://t.me/+private_invite",
   adminLabel: "Admin label",
   createdAt: "2026-08-13T10:00:00.000Z",
