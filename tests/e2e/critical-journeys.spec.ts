@@ -26,7 +26,7 @@ const readAuthoritativeCatalog = async (page: Page) => {
   return catalog.products;
 };
 
-test("First Touch entry remains a lead dialog instead of direct checkout", async ({
+test("[BEH-ENTRY-01] First Touch entry remains a lead dialog instead of direct checkout", async ({
   page,
 }) => {
   await page.goto("/online/first-touch");
@@ -46,7 +46,9 @@ test("First Touch entry remains a lead dialog instead of direct checkout", async
   ).toBeVisible();
 });
 
-test("Online Group entry follows the authoritative sales switch", async ({ page }) => {
+test("[BEH-ENTRY-02] Online Group entry follows the authoritative sales switch", async ({
+  page,
+}) => {
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
   const expectedOfferIds = product.offers
     .filter((offer) => offer.code === "standard" || offer.code === "library-access")
@@ -155,6 +157,49 @@ test("Birthday Drop entry carries the sales switch in its first render", async (
   expect(shell).toContain(checkoutHref.replace("&", "&amp;"));
   await expect(purchaseLinks).toHaveCount(1);
   await expect(purchaseLinks).toHaveAttribute("href", checkoutHref);
+});
+
+test("a deep link lands below the header, not behind it", async ({ page }) => {
+  // The tariff section owns the #tariffs anchor the hero button and every
+  // shared link point at. Landing behind the fixed pill hides the heading the
+  // link promised, so the offset is part of the journey, not decoration.
+  await page.goto("/online/group#tariffs");
+  await page.waitForTimeout(1200);
+
+  const landing = await page.evaluate(() => {
+    const target = document.getElementById("tariffs");
+    const header = document.querySelector("header");
+
+    if (!target || !header) {
+      return null;
+    }
+
+    return {
+      targetTop: Math.round(target.getBoundingClientRect().top),
+      headerBottom: Math.round(header.getBoundingClientRect().bottom),
+    };
+  });
+
+  expect(landing).not.toBeNull();
+  expect(landing!.targetTop).toBeGreaterThanOrEqual(landing!.headerBottom);
+});
+
+test("the checkout says what opens the payment form", async ({ page }) => {
+  const product = SELLABLE_PRODUCTS["first-touch"];
+  const catalogProducts = await readAuthoritativeCatalog(page);
+  const catalogProduct = catalogProducts.find((item) => item.id === product.id);
+
+  if (!catalogProduct?.salesEnabled) {
+    test.skip(true, "Sales are closed on this deployment.");
+  }
+
+  await page.goto(
+    buildCheckoutHref({ offerId: product.defaultOfferId, productId: product.id }),
+  );
+
+  // An empty form has no payment card: without this line the step is missing
+  // with nothing to explain it, and the buyer has no idea what to do next.
+  await expect(page.getByText(/payment form will open here/i)).toBeVisible();
 });
 
 test("a loading buy button never moves the UI around it", async ({ page }) => {

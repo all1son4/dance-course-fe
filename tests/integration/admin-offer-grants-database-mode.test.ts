@@ -53,7 +53,7 @@ const configureDatabaseOnlyAdminOffers = (context: TestContext) => {
   });
 };
 
-test("creates and reads one atomic admin grant and export job without a mode flag or Google credentials", async (t) => {
+test("[BEH-ADMIN-01] creates and reads one atomic admin grant and export job without a mode flag or Google credentials", async (t) => {
   const suffix = randomUUID().replaceAll("-", "");
   const productExternalId = `prd_write05_${suffix}`;
   const offerExternalId = `off_write05_${suffix}`;

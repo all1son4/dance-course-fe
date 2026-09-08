@@ -82,7 +82,7 @@ const deletePurchase = (purchaseId: string) => client`
   WHERE id = ${purchaseId}
 `;
 
-test("allows exactly one Telegram user to win concurrent token claims", async () => {
+test("[BEH-ACCESS-01] allows exactly one Telegram user to win concurrent token claims", async () => {
   const fixture = await createPurchaseAndToken();
   const claimantIds = Array.from({ length: 8 }, (_, index) => `safe05-user-${index + 1}`);
 

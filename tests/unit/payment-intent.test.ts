@@ -9,7 +9,7 @@ import {
 
 import { createStripeFake, createStripePaymentIntent } from "../fixtures/providers";
 
-test("maps Stripe statuses to the accepted visible outcomes", () => {
+test("[BEH-PAY-03] maps Stripe statuses to the accepted visible outcomes", () => {
   assert.deepEqual(
     [
       "succeeded",

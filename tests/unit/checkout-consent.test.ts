@@ -33,7 +33,7 @@ const VALID_CUSTOMER_DATA = {
   postalCode: " 00-001 ",
 };
 
-test("validates the same customer fields and four agreements on the server", () => {
+test("[BEH-CHECKOUT-01] validates the same customer fields and four agreements on the server", () => {
   const result = validateCheckoutCustomerAndConsent({
     agreements: ACCEPTED_AGREEMENTS,
     checkoutLocale: "en",

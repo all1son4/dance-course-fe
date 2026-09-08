@@ -108,7 +108,7 @@ test("never prints a catalogue identifier in the readable part", () => {
   }
 });
 
-test("states the access term each offer actually grants", () => {
+test("[BEH-TG-03] states the access term each offer actually grants", () => {
   const accessLine = (overrides: Partial<PaymentSheetRecord>) =>
     asPlainText(renderAlert(overrides)).match(/^Доступ: +(.+)$/mu)?.[1];
 
@@ -145,7 +145,7 @@ test("shows the materials language only when the buyer chose one", () => {
   );
 });
 
-test("reports every step as done only when nothing is left open", () => {
+test("[BEH-OG-01] reports every step as done only when nothing is left open", () => {
   const cleanAlert = renderAlert({});
 
   assert.match(cleanAlert, /✅ Все этапы выполнены/u);
@@ -174,7 +174,7 @@ test("treats a leased in-flight status the same as the bare one", () => {
   }
 });
 
-test("lists both accesses of an Online Group Plus purchase", () => {
+test("[BEH-OG-02] lists both accesses of an Online Group Plus purchase", () => {
   const alertText = renderAlert({
     access_workflow: "telegram-online-group",
     offer_id: "off_online_group_anna_strok_library_access",
