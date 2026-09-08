@@ -175,17 +175,25 @@ test("a loading buy button never moves the UI around it", async ({ page }) => {
     await route.continue().catch(() => undefined);
   });
 
-  // The Standard and Plus tariff cards each carry a "Buy" link; the second one
-  // is the neighbour that must not move while the first is loading.
-  const buyButtons = page.getByRole("link", { name: "Buy", exact: true });
-  const buyButton = buyButtons.first();
+  // Each tariff card carries its own buy link, named after its plan: the Plus
+  // one is the neighbour that must not move while Standard is loading.
+  const buyButton = page.getByRole("link", { name: "Buy \u2014 Standard" });
   const label = buyButton.locator("span > span").first();
-  const neighbour = buyButtons.nth(1);
-  const boxOf = async (locator: typeof buyButton) => {
-    const box = await locator.boundingBox();
+  const neighbour = page.getByRole("link", { name: "Buy \u2014 Plus" });
+  // Document coordinates, not viewport ones: clicking a button this far down
+  // the page scrolls it into view first, which would move every viewport-based
+  // box without anything having shifted on the page.
+  const boxOf = async (locator: typeof buyButton) =>
+    locator.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
 
-    return box && [box.x, box.y, box.width, box.height].map(Math.round);
-  };
+      return [
+        rect.x + window.scrollX,
+        rect.y + window.scrollY,
+        rect.width,
+        rect.height,
+      ].map(Math.round);
+    });
   const before = {
     button: await boxOf(buyButton),
     label: await boxOf(label),
