@@ -1,7 +1,7 @@
 import { getAdminPurchasesOverview, listAdminSalesMonths } from "@/db/admin-sales";
 import { getAccountingMonthValue } from "@/lib/accounting-month";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import { jsonNoStore } from "@/lib/http-security";
+import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { formatReportMonthLabel, parseReportMonth } from "@/lib/monthly-sales-report";
 
 export const runtime = "nodejs";
@@ -10,7 +10,7 @@ const MAX_SEARCH_LENGTH = 120;
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   try {
@@ -52,6 +52,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Failed to load admin purchases overview", error);
-    return jsonNoStore({ errorCode: "purchases_overview_failed" }, { status: 500 });
+    return jsonErrorNoStore("purchases_overview_failed", { status: 500 });
   }
 }

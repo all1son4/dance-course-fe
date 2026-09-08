@@ -115,18 +115,6 @@ export const getProductSaleState = async (
   return state.open.has(productId) ? "open" : "closed";
 };
 
-export const isProductSaleOpen = async (productId: string) =>
-  (await getProductSaleState(productId)) === "open";
-
-/**
- * Fulfilment backstop. A payment can still settle for a product whose sales were
- * closed a moment earlier - the buyer already paid, so access is granted as
- * usual and this only flags the purchase for review.
- *
- * Requiring the product to be *known* is what keeps this quiet when the read
- * fails: an unreadable catalogue must not raise a false alarm on an ordinary
- * purchase.
- */
 export const hasClosedSalesAtFulfilment = async (productId: string) => {
   const { state } = await loadCatalogSalesState();
   const { known, open } = state;

@@ -39,24 +39,14 @@ const getPaymentContextErrorResponse = ({
   paymentRecord: PaymentRecord;
 }): AccessLinkResponse | null => {
   if (paymentRecord.checkout_session_id !== checkoutSessionId) {
-    return jsonNoStore(
-      {
-        errorCode: "payment_access_denied",
-      },
-      { status: 403 },
-    );
+    return jsonErrorNoStore("payment_access_denied", { status: 403 });
   }
 
   if (
     (expectedProductId && expectedProductId !== paymentRecord.product_id) ||
     (expectedOfferId && expectedOfferId !== paymentRecord.offer_id)
   ) {
-    return jsonNoStore(
-      {
-        errorCode: "payment_context_mismatch",
-      },
-      { status: 403 },
-    );
+    return jsonErrorNoStore("payment_context_mismatch", { status: 403 });
   }
 
   if (paymentRecord.outcome !== "succeeded") {
@@ -112,12 +102,7 @@ const resolveTelegramAccessResponse = async (
 const createAccessLinkErrorResponse = (error: unknown): AccessLinkResponse => {
   console.error("Failed to resolve Telegram access link", error);
 
-  return jsonNoStore(
-    {
-      errorCode: "telegram_access_link_failed",
-    },
-    { status: 500 },
-  );
+  return jsonErrorNoStore("telegram_access_link_failed", { status: 500 });
 };
 
 export async function POST(request: Request) {

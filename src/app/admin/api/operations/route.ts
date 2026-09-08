@@ -5,13 +5,13 @@ import {
 } from "@/db/admin-operations";
 import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import { jsonNoStore } from "@/lib/http-security";
+import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   try {
@@ -31,6 +31,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Failed to load admin operations snapshot", error);
-    return jsonNoStore({ errorCode: "operations_snapshot_failed" }, { status: 500 });
+    return jsonErrorNoStore("operations_snapshot_failed", { status: 500 });
   }
 }

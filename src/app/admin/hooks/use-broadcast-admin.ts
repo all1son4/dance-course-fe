@@ -8,11 +8,32 @@ import type {
   FirstTouchBroadcastResponse,
   StatusMessage,
 } from "../lib/admin.types";
+import { requestAdminJson } from "../lib/admin-request";
 
 type UseBroadcastAdminOptions = {
   isActive: boolean;
   isAuthorized: boolean;
   onUnauthorized: () => void;
+};
+
+const LOAD_FALLBACK_ERROR_TEXT = "Не удалось загрузить статистику рассылки.";
+
+const LOAD_ERROR_MESSAGES: Record<string, string> = {
+  network_error: LOAD_FALLBACK_ERROR_TEXT,
+};
+
+const SEND_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при отправке рассылки.",
+  product_sales_closed:
+    "Продажи First Touch выключены. Включи их в разделе «Продажи» — иначе в письме будет нерабочая ссылка на оплату.",
+  sales_state_unavailable:
+    "Не удалось проверить состояние продаж в базе. Рассылка не отправлена — попробуй ещё раз.",
+};
+
+const EXCLUDE_ERROR_MESSAGES: Record<string, string> = {
+  broadcast_in_progress: "Сейчас идет отправка. Дождись завершения и попробуй снова.",
+  lead_not_actionable: "Статус пользователя уже изменился. Обнови список.",
+  network_error: "Ошибка сети при изменении участия в рассылке.",
 };
 
 export const useBroadcastAdmin = ({
@@ -35,37 +56,24 @@ export const useBroadcastAdmin = ({
   const load = useCallback(async () => {
     setIsLoading(true);
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.firstTouchBroadcast, {
-        method: "GET",
-        cache: "no-store",
-      });
-      const data = (await response.json()) as FirstTouchBroadcastResponse;
+    const result = await requestAdminJson<FirstTouchBroadcastResponse>(
+      ADMIN_API_ENDPOINTS.firstTouchBroadcast,
+    );
 
-      if (!response.ok) {
-        if (data.errorCode === "unauthorized") {
-          onUnauthorized();
-          return;
-        }
-
-        setStatus({
-          text: "Не удалось загрузить статистику рассылки.",
-          tone: "error",
-        });
-        return;
-      }
-
-      setStats(data.stats ?? null);
-      setAudience(data.audience ?? []);
-    } catch {
+    if (result.unauthorized) {
+      onUnauthorized();
+    } else if (!result.ok) {
       setStatus({
-        text: "Не удалось загрузить статистику рассылки.",
+        text: LOAD_ERROR_MESSAGES[result.errorCode] ?? LOAD_FALLBACK_ERROR_TEXT,
         tone: "error",
       });
-    } finally {
-      setHasLoaded(true);
-      setIsLoading(false);
+    } else {
+      setStats(result.data.stats ?? null);
+      setAudience(result.data.audience ?? []);
     }
+
+    setHasLoaded(true);
+    setIsLoading(false);
   }, [onUnauthorized]);
 
   const send = useCallback(async () => {
@@ -79,49 +87,38 @@ export const useBroadcastAdmin = ({
       tone: "info",
     });
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.firstTouchBroadcast, {
-        method: "POST",
-        cache: "no-store",
-      });
-      const data = (await response.json()) as FirstTouchBroadcastResponse;
+    const result = await requestAdminJson<FirstTouchBroadcastResponse>(
+      ADMIN_API_ENDPOINTS.firstTouchBroadcast,
+      { method: "POST" },
+    );
 
-      if (!response.ok) {
-        if (data.errorCode === "unauthorized") {
-          onUnauthorized();
-          return;
-        }
-
-        setStatus({
-          text:
-            data.errorCode === "product_sales_closed"
-              ? "Продажи First Touch выключены. Включи их в разделе «Продажи» — иначе в письме будет нерабочая ссылка на оплату."
-              : data.errorCode === "sales_state_unavailable"
-                ? "Не удалось проверить состояние продаж в базе. Рассылка не отправлена — попробуй ещё раз."
-                : "Не удалось отправить рассылку. Проверь настройки Resend и таблицу.",
-          tone: "error",
-        });
-        return;
-      }
-
-      const result = data.result;
-
-      if (result) {
-        setStats(data.stats ?? result);
-        setAudience(data.audience ?? []);
-        setStatus({
-          text: `Рассылка обработана. Попыток: ${result.attempted}. Отправлено: ${result.sent}. Ошибок: ${result.failed}.`,
-          tone: result.failed > 0 ? "info" : "success",
-        });
-      }
-    } catch {
+    if (result.unauthorized) {
+      onUnauthorized();
+    } else if (!result.ok) {
       setStatus({
-        text: "Ошибка сети при отправке рассылки.",
+        text:
+          SEND_ERROR_MESSAGES[result.errorCode] ??
+          "Не удалось отправить рассылку. Проверь настройки Resend и таблицу.",
         tone: "error",
       });
-    } finally {
-      setIsSending(false);
+    } else {
+      const {
+        result: sendResult,
+        stats: sendStats,
+        audience: sendAudience,
+      } = result.data;
+
+      if (sendResult) {
+        setStats(sendStats ?? sendResult);
+        setAudience(sendAudience ?? []);
+        setStatus({
+          text: `Рассылка обработана. Попыток: ${sendResult.attempted}. Отправлено: ${sendResult.sent}. Ошибок: ${sendResult.failed}.`,
+          tone: sendResult.failed > 0 ? "info" : "success",
+        });
+      }
     }
+
+    setIsSending(false);
   }, [isDisabled, onUnauthorized]);
 
   const exclude = useCallback(
@@ -139,35 +136,26 @@ export const useBroadcastAdmin = ({
         tone: "info",
       });
 
-      try {
-        const response = await fetch(ADMIN_API_ENDPOINTS.firstTouchBroadcast, {
+      const result = await requestAdminJson<FirstTouchBroadcastResponse>(
+        ADMIN_API_ENDPOINTS.firstTouchBroadcast,
+        {
+          body: { leadId: lead.leadId, scope },
           method: "PATCH",
-          cache: "no-store",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ leadId: lead.leadId, scope }),
+        },
+      );
+
+      if (result.unauthorized) {
+        onUnauthorized();
+      } else if (!result.ok) {
+        setStatus({
+          text:
+            EXCLUDE_ERROR_MESSAGES[result.errorCode] ??
+            "Не удалось изменить участие в рассылке.",
+          tone: "error",
         });
-        const data = (await response.json()) as FirstTouchBroadcastResponse;
-
-        if (!response.ok) {
-          if (data.errorCode === "unauthorized") {
-            onUnauthorized();
-            return;
-          }
-
-          setStatus({
-            text:
-              data.errorCode === "broadcast_in_progress"
-                ? "Сейчас идет отправка. Дождись завершения и попробуй снова."
-                : data.errorCode === "lead_not_actionable"
-                  ? "Статус пользователя уже изменился. Обнови список."
-                  : "Не удалось изменить участие в рассылке.",
-            tone: "error",
-          });
-          return;
-        }
-
-        setStats(data.stats ?? null);
-        setAudience(data.audience ?? []);
+      } else {
+        setStats(result.data.stats ?? null);
+        setAudience(result.data.audience ?? []);
         setConfirmingGlobalLeadId("");
         setStatus({
           text:
@@ -176,14 +164,9 @@ export const useBroadcastAdmin = ({
               : `${lead.email} исключен из этой рассылки.`,
           tone: "success",
         });
-      } catch {
-        setStatus({
-          text: "Ошибка сети при изменении участия в рассылке.",
-          tone: "error",
-        });
-      } finally {
-        setUpdatingLeadId("");
       }
+
+      setUpdatingLeadId("");
     },
     [isSending, onUnauthorized, updatingLeadId],
   );

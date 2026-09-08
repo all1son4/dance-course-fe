@@ -12,6 +12,7 @@ import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links
 import { createAdminOfferGrant } from "@/lib/admin-offer-grants";
 import {
   getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -111,7 +112,7 @@ const serializeGrant = (
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const rateLimit = await consumeRequestRateLimit({
@@ -122,13 +123,10 @@ export async function GET(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   try {
@@ -137,16 +135,13 @@ export async function GET(request: Request) {
     return jsonNoStore({ grants: grants.map(serializeGrant) });
   } catch (error) {
     console.error("Failed to load admin Online Group invite links", error);
-    return jsonNoStore(
-      { errorCode: "online_group_invite_links_unavailable" },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("online_group_invite_links_unavailable", { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -166,20 +161,17 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   try {
     const body = await parseJsonBody<GenerateOnlineGroupLinksBody>(request);
 
     if (!body) {
-      return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     const accessMode = resolveAccessMode(body.accessMode);
@@ -187,11 +179,11 @@ export async function POST(request: Request) {
     const offer = accessMode ? resolveOffer(accessMode) : null;
 
     if (!accessMode || !offer) {
-      return jsonNoStore({ errorCode: "invalid_access_mode" }, { status: 400 });
+      return jsonErrorNoStore("invalid_access_mode", { status: 400 });
     }
 
     if (!adminLabel) {
-      return jsonNoStore({ errorCode: "missing_admin_label" }, { status: 400 });
+      return jsonErrorNoStore("missing_admin_label", { status: 400 });
     }
 
     const target = await getActiveOnlineGroupTargetByOfferId(offer.id);
@@ -205,10 +197,7 @@ export async function POST(request: Request) {
       !activeChatIds.has(target.campaign.libraryChatId) ||
       (accessMode === "plus" && !target.inspirationChatId)
     ) {
-      return jsonNoStore(
-        { errorCode: "online_group_settings_not_configured" },
-        { status: 409 },
-      );
+      return jsonErrorNoStore("online_group_settings_not_configured", { status: 409 });
     }
 
     const grantCommand = createAdminOnlineGroupGrantCommand({
@@ -221,10 +210,7 @@ export async function POST(request: Request) {
     const accesses = await ensureOnlineGroupAccessForPayment(paymentRecord);
 
     if (!accesses?.length) {
-      return jsonNoStore(
-        { errorCode: "online_group_invite_links_failed" },
-        { status: 409 },
-      );
+      return jsonErrorNoStore("online_group_invite_links_failed", { status: 409 });
     }
 
     const expectedAccessKeys =
@@ -278,9 +264,6 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Failed to generate admin Online Group invite links", error);
 
-    return jsonNoStore(
-      { errorCode: "online_group_invite_links_failed" },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("online_group_invite_links_failed", { status: 500 });
   }
 }

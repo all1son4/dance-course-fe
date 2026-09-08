@@ -666,10 +666,6 @@ export const CardEntityName = styled(SalesProductName)`
   overflow-wrap: anywhere;
 `;
 
-export const CardControlsRow = styled(FormGrid)`
-  margin-top: 13px;
-`;
-
 export const MonoMeta = styled.span`
   display: block;
   margin-top: 2px;

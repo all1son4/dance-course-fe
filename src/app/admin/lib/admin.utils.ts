@@ -1,6 +1,10 @@
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 
-import { LESSON_LANGUAGE_LABELS, OFFER_TYPE_LABELS } from "./admin.constants";
+import {
+  LESSON_LANGUAGE_LABELS,
+  OFFER_TYPE_LABELS,
+  RATE_LIMITED_STATUS_TEXT,
+} from "./admin.constants";
 import type {
   ChoreoSelection,
   LessonLanguage,
@@ -78,30 +82,21 @@ export const getChoreoSelections = () =>
     )
     .sort((left, right) => left.label.localeCompare(right.label, "ru"));
 
-export const resolveGeneratorErrorMessage = (errorCode: string, reason: string) => {
-  if (errorCode === "unauthorized") {
-    return "Сессия истекла. Введи пароль еще раз.";
-  }
-
-  if (errorCode === "invalid_offer_selection") {
-    return "Выбранные параметры невалидны. Проверь параметры и попробуй снова.";
-  }
-
-  if (errorCode === "rate_limited") {
-    return "Слишком много запросов. Подожди немного и попробуй снова.";
-  }
-
-  if (errorCode === "invalid_origin") {
-    return "Запрос отклонен по Origin. Открой страницу напрямую и попробуй снова.";
-  }
-
-  if (reason === "channel_not_configured") {
-    return "Для выбранного оффера не настроен Telegram-канал.";
-  }
-
-  if (reason === "offer_not_supported") {
-    return "Этот оффер сейчас не поддерживает выдачу invite-ссылки.";
-  }
-
-  return "Не удалось сгенерировать ссылку. Проверь настройки и попробуй снова.";
+const GENERATOR_ERROR_MESSAGES: Record<string, string> = {
+  invalid_offer_selection:
+    "Выбранные параметры невалидны. Проверь параметры и попробуй снова.",
+  invalid_origin: "Запрос отклонен по Origin. Открой страницу напрямую и попробуй снова.",
+  network_error: "Ошибка сети при генерации ссылки.",
+  rate_limited: RATE_LIMITED_STATUS_TEXT,
+  unauthorized: "Сессия истекла. Введи пароль еще раз.",
 };
+
+const GENERATOR_REASON_MESSAGES: Record<string, string> = {
+  channel_not_configured: "Для выбранного оффера не настроен Telegram-канал.",
+  offer_not_supported: "Этот оффер сейчас не поддерживает выдачу invite-ссылки.",
+};
+
+export const resolveGeneratorErrorMessage = (errorCode: string, reason: string) =>
+  GENERATOR_ERROR_MESSAGES[errorCode] ??
+  GENERATOR_REASON_MESSAGES[reason] ??
+  "Не удалось сгенерировать ссылку. Проверь настройки и попробуй снова.";

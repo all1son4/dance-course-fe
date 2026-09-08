@@ -9,6 +9,7 @@ import type {
   ReissuedAccessLink,
   StatusMessage,
 } from "../lib/admin.types";
+import { requestAdminJson } from "../lib/admin-request";
 
 type UseOperationsAdminOptions = {
   isActive: boolean;
@@ -23,6 +24,28 @@ const REPLAY_RESULT_LABELS: Record<string, string> = {
   processed: "Событие успешно обработано.",
   sent: "Доставка прошла успешно.",
   skipped: "Задача обработана и помечена как пропущенная.",
+};
+
+const LOAD_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при загрузке операционного статуса.",
+};
+
+const REPLAY_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при повторе доставки.",
+  rate_limited: RATE_LIMITED_STATUS_TEXT,
+  replay_event_not_verified:
+    "У события нет подтвержденной подписи Stripe (наследие миграции) — повтор невозможен.",
+  replay_job_not_found: "Задача не найдена или уже обработана. Обнови статус.",
+  replay_kind_unsupported:
+    "Эту задачу нельзя повторить из админки — для нее нет автоматического обработчика. Напиши разработчику.",
+};
+
+const REISSUE_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при перевыпуске ссылок.",
+  purchase_not_found: "Покупка не найдена в базе.",
+  purchase_not_succeeded:
+    "Эта оплата не завершилась успехом — выдавать доступ не за что.",
+  rate_limited: RATE_LIMITED_STATUS_TEXT,
 };
 
 export const useOperationsAdmin = ({
@@ -43,36 +66,25 @@ export const useOperationsAdmin = ({
   const load = useCallback(async () => {
     setIsLoading(true);
 
-    try {
-      const response = await fetch(ADMIN_API_ENDPOINTS.operations, {
-        method: "GET",
-        cache: "no-store",
-      });
-      const data = (await response.json()) as OperationsSnapshotResponse;
+    const result = await requestAdminJson<OperationsSnapshotResponse>(
+      ADMIN_API_ENDPOINTS.operations,
+    );
 
-      if (!response.ok) {
-        if (data.errorCode === "unauthorized") {
-          onUnauthorized();
-          return;
-        }
-
-        setStatus({
-          text: "Не удалось загрузить операционный статус.",
-          tone: "error",
-        });
-        return;
-      }
-
-      setSnapshot(data as OperationsSnapshot);
-    } catch {
+    if (result.unauthorized) {
+      onUnauthorized();
+    } else if (!result.ok) {
       setStatus({
-        text: "Ошибка сети при загрузке операционного статуса.",
+        text:
+          LOAD_ERROR_MESSAGES[result.errorCode] ??
+          "Не удалось загрузить операционный статус.",
         tone: "error",
       });
-    } finally {
-      setHasLoaded(true);
-      setIsLoading(false);
+    } else {
+      setSnapshot(result.data as OperationsSnapshot);
     }
+
+    setHasLoaded(true);
+    setIsLoading(false);
   }, [onUnauthorized]);
 
   const refresh = useCallback(async () => {
@@ -92,57 +104,39 @@ export const useOperationsAdmin = ({
         tone: "info",
       });
 
-      try {
-        const response = await fetch(ADMIN_API_ENDPOINTS.operationsReplay, {
+      const result = await requestAdminJson<OperationsReplayResponse>(
+        ADMIN_API_ENDPOINTS.operationsReplay,
+        {
+          body: { key, queue },
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ key, queue }),
+        },
+      );
+
+      if (result.unauthorized) {
+        onUnauthorized();
+        setStatus(null);
+      } else if (!result.ok) {
+        setStatus({
+          text:
+            REPLAY_ERROR_MESSAGES[result.errorCode] ?? "Не удалось повторить доставку.",
+          tone: "error",
         });
-        const data = (await response.json()) as OperationsReplayResponse;
-
-        if (!response.ok) {
-          if (data.errorCode === "unauthorized") {
-            onUnauthorized();
-            setStatus(null);
-            return;
-          }
-
-          setStatus({
-            text:
-              data.errorCode === "replay_job_not_found"
-                ? "Задача не найдена или уже обработана. Обнови статус."
-                : data.errorCode === "replay_kind_unsupported"
-                  ? "Эту задачу нельзя повторить из админки — для нее нет автоматического обработчика. Напиши разработчику."
-                  : data.errorCode === "replay_event_not_verified"
-                    ? "У события нет подтвержденной подписи Stripe (наследие миграции) — повтор невозможен."
-                    : data.errorCode === "rate_limited"
-                      ? RATE_LIMITED_STATUS_TEXT
-                      : "Не удалось повторить доставку.",
-            tone: "error",
-          });
-          return;
-        }
-
-        const resultLabel =
-          REPLAY_RESULT_LABELS[data.status ?? ""] ??
-          `Задача переведена в статус «${data.status ?? "pending"}».`;
+      } else {
+        const { status: replayStatus } = result.data;
 
         setStatus({
-          text: resultLabel,
+          text:
+            REPLAY_RESULT_LABELS[replayStatus ?? ""] ??
+            `Задача переведена в статус «${replayStatus ?? "pending"}».`,
           tone:
-            data.status === "dead_letter" || data.status === "failed"
+            replayStatus === "dead_letter" || replayStatus === "failed"
               ? "error"
               : "success",
         });
         await load();
-      } catch {
-        setStatus({
-          text: "Ошибка сети при повторе доставки.",
-          tone: "error",
-        });
-      } finally {
-        setReplayingKey("");
       }
+
+      setReplayingKey("");
     },
     [load, onUnauthorized, replayingKey],
   );
@@ -159,51 +153,43 @@ export const useOperationsAdmin = ({
         tone: "info",
       });
 
-      try {
-        const response = await fetch(ADMIN_API_ENDPOINTS.operationsReissueAccess, {
+      const result = await requestAdminJson<ReissueAccessResponse>(
+        ADMIN_API_ENDPOINTS.operationsReissueAccess,
+        {
+          body: { paymentIntentId },
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ paymentIntentId }),
+        },
+      );
+
+      if (result.unauthorized) {
+        onUnauthorized();
+        setStatus(null);
+      } else if (!result.ok) {
+        setStatus({
+          text:
+            REISSUE_ERROR_MESSAGES[result.errorCode] ??
+            "Не удалось перевыпустить ссылки доступа.",
+          tone: "error",
         });
-        const data = (await response.json()) as ReissueAccessResponse;
+      } else {
+        const { links, status: reissueStatus } = result.data;
 
-        if (!response.ok) {
-          if (data.errorCode === "unauthorized") {
-            onUnauthorized();
-            setStatus(null);
-            return;
-          }
-
-          setStatus({
-            text:
-              data.errorCode === "purchase_not_found"
-                ? "Покупка не найдена в базе."
-                : data.errorCode === "purchase_not_succeeded"
-                  ? "Эта оплата не завершилась успехом — выдавать доступ не за что."
-                  : data.errorCode === "rate_limited"
-                    ? RATE_LIMITED_STATUS_TEXT
-                    : "Не удалось перевыпустить ссылки доступа.",
-            tone: "error",
-          });
-          return;
-        }
-
-        setReissuedLinks((links) => ({
-          ...links,
-          [paymentIntentId]: data.links ?? [],
+        setReissuedLinks((currentLinks) => ({
+          ...currentLinks,
+          [paymentIntentId]: links ?? [],
         }));
         setStatus(
-          data.status === "ready"
+          reissueStatus === "ready"
             ? {
                 text: "Ссылки готовы. Скопируй их из карточки или переотправь письмо о покупке.",
                 tone: "success",
               }
-            : data.status === "partial"
+            : reissueStatus === "partial"
               ? {
                   text: "Готова только часть ссылок. Проверь карточку и попробуй снова.",
                   tone: "info",
                 }
-              : data.status === "not_applicable"
+              : reissueStatus === "not_applicable"
                 ? {
                     text: "Для этой покупки ссылки не создаются: доступ выдается вручную.",
                     tone: "info",
@@ -214,14 +200,9 @@ export const useOperationsAdmin = ({
                   },
         );
         await load();
-      } catch {
-        setStatus({
-          text: "Ошибка сети при перевыпуске ссылок.",
-          tone: "error",
-        });
-      } finally {
-        setReissuingPaymentIntentId("");
       }
+
+      setReissuingPaymentIntentId("");
     },
     [load, onUnauthorized, reissuingPaymentIntentId],
   );

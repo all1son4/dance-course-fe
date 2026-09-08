@@ -7,13 +7,13 @@ import {
   isAdminInviteLinksRequestAuthenticated,
 } from "@/lib/admin-invite-links-auth";
 import {
-  hasJsonContentType,
-  isPayloadTooLarge,
+  getBrowserJsonRequestErrorResponse,
   isTrustedBrowserOrigin,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
-import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
+import { consumeRequestRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -25,12 +25,7 @@ type AuthBody = {
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksPasswordConfigured()) {
-    return jsonNoStore(
-      {
-        errorCode: "auth_not_configured",
-      },
-      { status: 503 },
-    );
+    return jsonErrorNoStore("auth_not_configured", { status: 503 });
   }
 
   return jsonNoStore({
@@ -39,94 +34,58 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // Origin is answered before the configuration probe so an untrusted caller
+  // cannot learn whether an admin password is set on this deployment. The
+  // shared guard then re-checks it and applies the body-shape rules.
   if (!isTrustedBrowserOrigin(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "invalid_origin",
-      },
-      { status: 403 },
-    );
+    return jsonErrorNoStore("invalid_origin", { status: 403 });
   }
 
   if (!isAdminInviteLinksPasswordConfigured()) {
-    return jsonNoStore(
-      {
-        errorCode: "auth_not_configured",
-      },
-      { status: 503 },
-    );
+    return jsonErrorNoStore("auth_not_configured", { status: 503 });
   }
 
-  if (isPayloadTooLarge(request, MAX_AUTH_BODY_BYTES)) {
-    return jsonNoStore(
-      {
-        errorCode: "payload_too_large",
-      },
-      { status: 413 },
-    );
+  const requestErrorResponse = getBrowserJsonRequestErrorResponse(
+    request,
+    MAX_AUTH_BODY_BYTES,
+  );
+
+  if (requestErrorResponse) {
+    return requestErrorResponse;
   }
 
-  if (!hasJsonContentType(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unsupported_media_type",
-      },
-      { status: 415 },
-    );
-  }
-
-  const requesterIp = getRequestIp(request);
-  const rateLimit = await consumeRateLimit({
-    key: `admin:invite-links:auth:${requesterIp}`,
+  const rateLimit = await consumeRequestRateLimit({
+    keyPrefix: "admin:invite-links:auth",
     limit: 20,
+    request,
     windowMs: 60_000,
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      {
-        errorCode: "rate_limited",
+    return jsonErrorNoStore("rate_limited", {
+      headers: {
+        "Retry-After": String(rateLimit.retryAfterSeconds),
       },
-      {
-        headers: {
-          "Retry-After": String(rateLimit.retryAfterSeconds),
-        },
-        status: 429,
-      },
-    );
+      status: 429,
+    });
   }
 
   const body = await parseJsonBody<AuthBody>(request);
 
   if (!body) {
-    return jsonNoStore(
-      {
-        errorCode: "invalid_request_body",
-      },
-      { status: 400 },
-    );
+    return jsonErrorNoStore("invalid_request_body", { status: 400 });
   }
 
   const password = body.password?.trim() ?? "";
 
   if (!isAdminInviteLinksPasswordValid(password)) {
-    return jsonNoStore(
-      {
-        errorCode: "invalid_password",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("invalid_password", { status: 401 });
   }
 
   const sessionCookieValue = createAdminInviteLinksSessionCookieValue();
 
   if (!sessionCookieValue) {
-    return jsonNoStore(
-      {
-        errorCode: "auth_not_configured",
-      },
-      { status: 503 },
-    );
+    return jsonErrorNoStore("auth_not_configured", { status: 503 });
   }
 
   const response = jsonNoStore({
@@ -149,12 +108,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   if (!isTrustedBrowserOrigin(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "invalid_origin",
-      },
-      { status: 403 },
-    );
+    return jsonErrorNoStore("invalid_origin", { status: 403 });
   }
 
   const response = jsonNoStore({

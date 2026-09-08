@@ -1,12 +1,12 @@
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import { API_NO_STORE_HEADERS, jsonNoStore } from "@/lib/http-security";
+import { API_NO_STORE_HEADERS, jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { generateMonthlySalesReportCsvForMonth } from "@/lib/monthly-sales-report";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   try {
@@ -14,12 +14,9 @@ export async function GET(request: Request) {
     const reportMonth = url.searchParams.get("month")?.trim() ?? "";
 
     if (!reportMonth) {
-      return jsonNoStore(
-        { errorCode: "invalid_monthly_sales_report_month" },
-        {
-          status: 400,
-        },
-      );
+      return jsonErrorNoStore("invalid_monthly_sales_report_month", {
+        status: 400,
+      });
     }
 
     const { csv, filename } = await generateMonthlySalesReportCsvForMonth({
@@ -44,6 +41,6 @@ export async function GET(request: Request) {
     }
 
     console.error("Failed to download monthly sales report from admin", error);
-    return jsonNoStore({ errorCode: "monthly_sales_report_failed" }, { status: 500 });
+    return jsonErrorNoStore("monthly_sales_report_failed", { status: 500 });
   }
 }

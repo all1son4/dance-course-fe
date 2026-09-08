@@ -5,6 +5,7 @@ import {
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
   getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -44,7 +45,7 @@ const serializeCampaign = (campaign: {
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   try {
@@ -55,16 +56,13 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Failed to load Online Group settings", error);
-    return jsonNoStore(
-      { errorCode: "online_group_settings_unavailable" },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("online_group_settings_unavailable", { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -84,20 +82,17 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   try {
     const body = await parseJsonBody<SaveSettingsBody>(request);
 
     if (!body) {
-      return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     const { campaign, inspirationChat, isReused, mainChat } =
@@ -132,6 +127,6 @@ export async function POST(request: Request) {
     }
 
     console.error("Failed to save Online Group settings", error);
-    return jsonNoStore({ errorCode: "online_group_settings_failed" }, { status: 500 });
+    return jsonErrorNoStore("online_group_settings_failed", { status: 500 });
   }
 }

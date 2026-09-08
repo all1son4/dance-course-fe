@@ -41,25 +41,6 @@ export const DetailValueText = styled.p`
   color: var(--ink);
 `;
 
-export const InfoSection = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-`;
-
-export const InfoGrid = styled.div`
-  display: grid;
-  grid-template-columns: 18px 1fr;
-  column-gap: 10px;
-  row-gap: 10px;
-`;
-
-export const IconCell = styled.div`
-  display: flex;
-  align-items: flex-start;
-  padding-top: 2px;
-`;
-
 export const PriceRow = styled.div`
   display: flex;
   gap: 8px;
