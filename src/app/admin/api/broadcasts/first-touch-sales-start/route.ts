@@ -9,6 +9,7 @@ import {
 import {
   getBrowserJsonRequestErrorResponse,
   isTrustedBrowserOrigin,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -41,23 +42,15 @@ const getRateLimitResponse = async ({
     return null;
   }
 
-  return jsonNoStore(
-    { errorCode: "rate_limited" },
-    {
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      status: 429,
-    },
-  );
+  return jsonErrorNoStore("rate_limited", {
+    headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+    status: 429,
+  });
 };
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const rateLimitResponse = await getRateLimitResponse({
@@ -81,27 +74,17 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Failed to load First Touch broadcast stats", error);
 
-    return jsonNoStore(
-      {
-        errorCode: "first_touch_broadcast_stats_failed",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("first_touch_broadcast_stats_failed", { status: 500 });
   }
 }
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   if (!isTrustedBrowserOrigin(request)) {
-    return jsonNoStore({ errorCode: "invalid_origin" }, { status: 403 });
+    return jsonErrorNoStore("invalid_origin", { status: 403 });
   }
 
   const rateLimitResponse = await getRateLimitResponse({
@@ -120,11 +103,11 @@ export async function POST(request: Request) {
     const saleState = await getProductSaleState(FIRST_TOUCH_PRODUCT.id);
 
     if (saleState === "unavailable") {
-      return jsonNoStore({ errorCode: "sales_state_unavailable" }, { status: 503 });
+      return jsonErrorNoStore("sales_state_unavailable", { status: 503 });
     }
 
     if (saleState === "closed") {
-      return jsonNoStore({ errorCode: "product_sales_closed" }, { status: 409 });
+      return jsonErrorNoStore("product_sales_closed", { status: 409 });
     }
 
     const result = await deliverFirstTouchSalesStartCampaign();
@@ -140,18 +123,13 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Failed to deliver First Touch broadcast", error);
 
-    return jsonNoStore(
-      {
-        errorCode: "first_touch_broadcast_failed",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("first_touch_broadcast_failed", { status: 500 });
   }
 }
 
 export async function PATCH(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -179,7 +157,7 @@ export async function PATCH(request: Request) {
     body?.scope === "global" ? "global" : body?.scope === "campaign" ? "campaign" : null;
 
   if (!body || !leadId || !scope) {
-    return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+    return jsonErrorNoStore("invalid_request_body", { status: 400 });
   }
 
   try {
@@ -190,15 +168,15 @@ export async function PATCH(request: Request) {
     });
 
     if (result.status === "not_found") {
-      return jsonNoStore({ errorCode: "lead_not_found" }, { status: 404 });
+      return jsonErrorNoStore("lead_not_found", { status: 404 });
     }
 
     if (result.status === "delivery_in_progress") {
-      return jsonNoStore({ errorCode: "broadcast_in_progress" }, { status: 409 });
+      return jsonErrorNoStore("broadcast_in_progress", { status: 409 });
     }
 
     if (result.status === "not_actionable") {
-      return jsonNoStore({ errorCode: "lead_not_actionable" }, { status: 409 });
+      return jsonErrorNoStore("lead_not_actionable", { status: 409 });
     }
 
     return jsonNoStore({
@@ -209,9 +187,6 @@ export async function PATCH(request: Request) {
   } catch (error) {
     console.error("Failed to exclude First Touch broadcast lead", error);
 
-    return jsonNoStore(
-      { errorCode: "first_touch_broadcast_exclusion_failed" },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("first_touch_broadcast_exclusion_failed", { status: 500 });
   }
 }

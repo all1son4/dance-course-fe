@@ -1,6 +1,6 @@
 import { listAdminInviteLinkHistoryRecords } from "@/lib/admin-invite-link-history-read-runtime";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import { jsonNoStore } from "@/lib/http-security";
+import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
 
@@ -113,12 +113,7 @@ const resolveHistoryItems = async ({ forceRefresh }: { forceRefresh: boolean }) 
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const url = new URL(request.url);
@@ -145,17 +140,12 @@ export async function GET(request: Request) {
       });
     }
 
-    return jsonNoStore(
-      {
-        errorCode: "rate_limited",
+    return jsonErrorNoStore("rate_limited", {
+      headers: {
+        "Retry-After": String(rateLimit.retryAfterSeconds),
       },
-      {
-        headers: {
-          "Retry-After": String(rateLimit.retryAfterSeconds),
-        },
-        status: 429,
-      },
-    );
+      status: 429,
+    });
   }
 
   try {
@@ -178,11 +168,6 @@ export async function GET(request: Request) {
       errorName: error instanceof Error ? error.name : "UnknownError",
     });
 
-    return jsonNoStore(
-      {
-        errorCode: "admin_invite_link_history_failed",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("admin_invite_link_history_failed", { status: 500 });
   }
 }

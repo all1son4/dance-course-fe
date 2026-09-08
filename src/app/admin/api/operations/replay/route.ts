@@ -21,6 +21,7 @@ import {
 } from "@/lib/business-operation-outbox";
 import {
   getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
@@ -79,7 +80,7 @@ const drainReplayedOutboxJob = async ({
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore({ errorCode: "unauthorized" }, { status: 401 });
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
   const requestErrorResponse = getBrowserJsonRequestErrorResponse(
@@ -99,13 +100,10 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      { errorCode: "rate_limited" },
-      {
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-        status: 429,
-      },
-    );
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
   }
 
   try {
@@ -114,7 +112,7 @@ export async function POST(request: Request) {
     const key = typeof body?.key === "string" ? body.key.trim() : "";
 
     if (!queue || !key) {
-      return jsonNoStore({ errorCode: "invalid_request_body" }, { status: 400 });
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     // Refuse before touching the row: replay wipes the stored diagnostics, so
@@ -125,21 +123,21 @@ export async function POST(request: Request) {
       const eventState = await findStripeInboxEventReplayState(key);
 
       if (!eventState) {
-        return jsonNoStore({ errorCode: "replay_job_not_found" }, { status: 404 });
+        return jsonErrorNoStore("replay_job_not_found", { status: 404 });
       }
 
       if (!eventState.providerPayloadVerified) {
-        return jsonNoStore({ errorCode: "replay_event_not_verified" }, { status: 409 });
+        return jsonErrorNoStore("replay_event_not_verified", { status: 409 });
       }
     } else {
       const kind = await findOutboxJobKindByDeduplicationKey(key);
 
       if (!kind) {
-        return jsonNoStore({ errorCode: "replay_job_not_found" }, { status: 404 });
+        return jsonErrorNoStore("replay_job_not_found", { status: 404 });
       }
 
       if (!isReplayableOutboxKind(kind)) {
-        return jsonNoStore({ errorCode: "replay_kind_unsupported" }, { status: 409 });
+        return jsonErrorNoStore("replay_kind_unsupported", { status: 409 });
       }
 
       outboxKind = kind;
@@ -151,7 +149,7 @@ export async function POST(request: Request) {
         : await replayOutboxJob({ deduplicationKey: key });
 
     if (!replayed) {
-      return jsonNoStore({ errorCode: "replay_job_not_found" }, { status: 404 });
+      return jsonErrorNoStore("replay_job_not_found", { status: 404 });
     }
 
     // The replay only re-queues the row; a bounded drain right away gives the
@@ -179,6 +177,6 @@ export async function POST(request: Request) {
     return jsonNoStore({ status });
   } catch (error) {
     console.error("Failed to replay durable job from admin", error);
-    return jsonNoStore({ errorCode: "replay_failed" }, { status: 500 });
+    return jsonErrorNoStore("replay_failed", { status: 500 });
   }
 }

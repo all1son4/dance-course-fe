@@ -11,13 +11,12 @@ import {
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { createAdminOfferGrant } from "@/lib/admin-offer-grants";
 import {
-  hasJsonContentType,
-  isPayloadTooLarge,
-  isTrustedBrowserOrigin,
+  getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
-import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
+import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
 
@@ -156,83 +155,45 @@ const createAdminOfferGrantCommand = ({
 
 export async function POST(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unauthorized",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
-  if (!isTrustedBrowserOrigin(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "invalid_origin",
-      },
-      { status: 403 },
-    );
+  const requestErrorResponse = getBrowserJsonRequestErrorResponse(
+    request,
+    MAX_ADMIN_INVITE_LINK_BODY_BYTES,
+  );
+
+  if (requestErrorResponse) {
+    return requestErrorResponse;
   }
 
-  if (isPayloadTooLarge(request, MAX_ADMIN_INVITE_LINK_BODY_BYTES)) {
-    return jsonNoStore(
-      {
-        errorCode: "payload_too_large",
-      },
-      { status: 413 },
-    );
-  }
-
-  if (!hasJsonContentType(request)) {
-    return jsonNoStore(
-      {
-        errorCode: "unsupported_media_type",
-      },
-      { status: 415 },
-    );
-  }
-
-  const requesterIp = getRequestIp(request);
-  const rateLimit = await consumeRateLimit({
-    key: `admin:invite-links:${requesterIp}`,
+  const rateLimit = await consumeRequestRateLimit({
+    keyPrefix: "admin:invite-links",
     limit: 60,
+    request,
     windowMs: 60_000,
   });
 
   if (rateLimit.limited) {
-    return jsonNoStore(
-      {
-        errorCode: "rate_limited",
+    return jsonErrorNoStore("rate_limited", {
+      headers: {
+        "Retry-After": String(rateLimit.retryAfterSeconds),
       },
-      {
-        headers: {
-          "Retry-After": String(rateLimit.retryAfterSeconds),
-        },
-        status: 429,
-      },
-    );
+      status: 429,
+    });
   }
 
   try {
     const body = await parseJsonBody<AdminInviteLinkBody>(request);
 
     if (!body) {
-      return jsonNoStore(
-        {
-          errorCode: "invalid_request_body",
-        },
-        { status: 400 },
-      );
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
     const resolvedSelection = resolveAdminInviteSelection(body);
 
     if (!resolvedSelection) {
-      return jsonNoStore(
-        {
-          errorCode: "invalid_offer_selection",
-        },
-        { status: 400 },
-      );
+      return jsonErrorNoStore("invalid_offer_selection", { status: 400 });
     }
 
     const grantCommand = createAdminOfferGrantCommand({
@@ -263,11 +224,6 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error("Failed to generate admin invite link", error);
 
-    return jsonNoStore(
-      {
-        errorCode: "admin_invite_link_failed",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("admin_invite_link_failed", { status: 500 });
   }
 }

@@ -1,6 +1,11 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { upsertRegisteredTelegramChat } from "@/db/renewal-campaigns";
-import { isPayloadTooLarge, jsonNoStore, parseJsonBody } from "@/lib/http-security";
+import {
+  isPayloadTooLarge,
+  jsonErrorNoStore,
+  jsonNoStore,
+  parseJsonBody,
+} from "@/lib/http-security";
 import {
   activateTelegramStartToken,
   getActivatedPaymentsByTelegramUserId,
@@ -434,12 +439,7 @@ const getOkWebhookResponse = () =>
 
 const validateTelegramWebhookRequest = (request: Request): Response | null => {
   if (isPayloadTooLarge(request, MAX_TELEGRAM_WEBHOOK_BODY_BYTES)) {
-    return jsonNoStore(
-      {
-        errorCode: "payload_too_large",
-      },
-      { status: 413 },
-    );
+    return jsonErrorNoStore("payload_too_large", { status: 413 });
   }
 
   if (!isTelegramBotConfigured()) {
@@ -456,12 +456,7 @@ const validateTelegramWebhookRequest = (request: Request): Response | null => {
   if (isProduction && !webhookSecret) {
     console.error("TELEGRAM_WEBHOOK_SECRET is required in production");
 
-    return jsonNoStore(
-      {
-        errorCode: "missing_webhook_secret",
-      },
-      { status: 500 },
-    );
+    return jsonErrorNoStore("missing_webhook_secret", { status: 500 });
   }
 
   if (!webhookSecret) {
@@ -471,12 +466,7 @@ const validateTelegramWebhookRequest = (request: Request): Response | null => {
   const receivedSecret = request.headers.get("x-telegram-bot-api-secret-token") ?? "";
 
   if (receivedSecret !== webhookSecret) {
-    return jsonNoStore(
-      {
-        errorCode: "invalid_webhook_secret",
-      },
-      { status: 401 },
-    );
+    return jsonErrorNoStore("invalid_webhook_secret", { status: 401 });
   }
 
   return null;
@@ -757,14 +747,9 @@ const handleTelegramWebhookError = async ({
     }
   }
 
-  return jsonNoStore(
-    {
-      errorCode: "telegram_webhook_failed",
-    },
-    {
-      status: 500,
-    },
-  );
+  return jsonErrorNoStore("telegram_webhook_failed", {
+    status: 500,
+  });
 };
 
 export async function POST(request: Request) {

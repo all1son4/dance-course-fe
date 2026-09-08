@@ -25,7 +25,6 @@ import type { MonthlySalesReportRunSheetRecord } from "@/lib/google-sheets-schem
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
 const MONTHLY_SALES_REPORT_RECIPIENT = process.env.RESEND_REPLY_TO?.trim() ?? "";
-const EARLIEST_MONTHLY_SALES_REPORT_START_UTC_ISO = "1970-01-01T00:00:00.000Z";
 const pendingMonthlySalesReportRuns = new Map<
   string,
   Promise<MonthlySalesReportRunResult>
@@ -53,11 +52,6 @@ export type MonthlySalesReportRunResult = {
   status: "sent" | "skipped" | "failed";
 };
 export type MonthlySalesReportDeliveryResponse = Omit<MonthlySalesReportRunResult, "csv">;
-export type MonthlySalesReportMonthOption = {
-  label: string;
-  value: string;
-};
-
 type MonthlySalesReportSaleRecord = {
   amountMinor: string;
   currency: string;
@@ -675,37 +669,6 @@ const listSucceededSaleRecordsInUtcRange = async ({
     endUtcIsoExclusive,
     startUtcIso,
   });
-};
-
-export const listAvailableMonthlySalesReportMonths = async (
-  referenceDate: Date = new Date(),
-): Promise<MonthlySalesReportMonthOption[]> => {
-  const startUtcIso = EARLIEST_MONTHLY_SALES_REPORT_START_UTC_ISO;
-  const endUtcIsoExclusive = referenceDate.toISOString();
-  const saleRecords = await listSucceededSaleRecordsInUtcRange({
-    endUtcIsoExclusive,
-    startUtcIso,
-  });
-  const monthValues = Array.from(
-    new Set(
-      saleRecords
-        .map((saleRecord) => {
-          const saleDate = new Date(saleRecord.saleTimestampIso);
-
-          if (Number.isNaN(saleDate.getTime())) {
-            return "";
-          }
-
-          return getAccountingMonthValue(saleDate);
-        })
-        .filter(Boolean),
-    ),
-  ).sort((left, right) => right.localeCompare(left));
-
-  return monthValues.map((monthValue) => ({
-    label: formatReportMonthLabel(monthValue),
-    value: monthValue,
-  }));
 };
 
 export const generateMonthlySalesReportCsvForMonth = async ({
