@@ -201,6 +201,10 @@ const getAccessWorkflowLabel = (workflow: string) => {
     return "Ручное добавление админом";
   }
 
+  if (workflow === "private-lesson") {
+    return "Индивидуальное занятие";
+  }
+
   return workflow || "—";
 };
 
@@ -603,6 +607,19 @@ const getAccessProcessingStatuses = ({
           paymentRecord.telegram_access_status.trim() === "manual_done"
             ? "success"
             : "attention",
+      },
+    ];
+  }
+
+  // A private lesson has nothing to hand over automatically, and the booking
+  // may have been agreed either before or after the payment. The alert states
+  // what is known - the time lives outside the system - instead of guessing.
+  if (workflow === "private-lesson") {
+    return [
+      {
+        detail: "время согласуется вручную",
+        label: "Занятие",
+        state: "attention",
       },
     ];
   }

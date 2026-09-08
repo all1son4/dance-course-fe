@@ -49,6 +49,10 @@ const getPurchaseSuccessEmailAccessKind = ({
     return "manual-admin";
   }
 
+  if (configuredAccessWorkflow === "private-lesson") {
+    return "private-lesson";
+  }
+
   if (configuredAccessWorkflow === "telegram-renewal") {
     return "telegram-renewal";
   }
