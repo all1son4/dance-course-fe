@@ -4,7 +4,7 @@
  * No storage and no browser APIs live here.
  */
 
-import { BIRTHDAY_POPUP_ENABLED, MAX_CAMPAIGN_DAYS, REACTED_COOLDOWN_MS } from "./config";
+import { MAX_CAMPAIGN_DAYS, REACTED_COOLDOWN_MS } from "./config";
 
 export type BirthdayPopupState = {
   version: 1;
@@ -88,7 +88,7 @@ export const shouldShowBirthdayPopup = (
   state: BirthdayPopupState,
   now: Date,
 ): boolean => {
-  if (!BIRTHDAY_POPUP_ENABLED || state.purchasedAt) {
+  if (state.purchasedAt) {
     return false;
   }
 
