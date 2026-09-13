@@ -348,6 +348,11 @@ export const purchases = pgTable(
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    // Preserve the historical invite-list date independently of retired export rows.
+    // Null keeps DB-native purchases on their immutable firstSeenAt fallback.
+    inviteHistoryCreatedAt: timestamp("invite_history_created_at", {
+      withTimezone: true,
+    }),
     succeededAt: timestamp("succeeded_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

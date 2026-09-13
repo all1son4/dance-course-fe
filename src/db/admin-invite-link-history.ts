@@ -49,6 +49,7 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
   // postgres.js returns raw SQL timestamp expressions as strings, while direct
   // timestamp columns are mapped to Date by Drizzle.
   const createdAt = sql<string>`COALESCE(
+    ${purchases.inviteHistoryCreatedAt},
     ${purchaseSideEffects.sentAt},
     ${purchases.firstSeenAt},
     ${purchases.updatedAt},

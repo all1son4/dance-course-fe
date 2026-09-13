@@ -134,6 +134,13 @@
       "when": 1787495270206,
       "tag": "0018_birthday_drop_price",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789155893982,
+      "tag": "0019_invite_history_created_at",
+      "breakpoints": true
     }
   ]
 }
