@@ -1875,10 +1875,11 @@ Next steps, in order:
 2. **DONE (DEV), September 13:** remove the reader's export-row dependency after the
    preserved-date dev release. The separate compatibility revision and its evidence
    are recorded below.
-3. **NEXT:** prepare invoice and archive/checkpoint consumers and a rollback revision
-   that works with the intended contracted schema. Then rehearse cleanup and restore
-   in an isolated database, verify retained business rows,
-   and refresh preflight/backup evidence. No real cleanup SQL is pending in `drizzle/`.
+3. **IN PROGRESS (DEV):** invoice runtime compatibility is done; prepare the remaining
+   archive/checkpoint consumers and nominate a rollback revision that works with the
+   intended contracted schema. Then rehearse cleanup and restore in an isolated
+   database, verify retained business rows, and refresh preflight/backup evidence.
+   No real cleanup SQL is pending in `drizzle/`.
 4. Obtain separate owner approval for the exact deletions and production rollout;
    the retained September 23 boundary still applies unless explicitly revised.
    Apply the contract migration only in that controlled release, run post-deploy
@@ -2002,12 +2003,28 @@ lock timeout and 30-second statement timeout bounded the migration connection.
   passed. Authenticated GET parity at `2026-09-13T15:22:19.632Z` matched the dev database
   for invite history and August/September purchases; the deployment returned zero error
   logs in the bounded post-release window. No legacy rows were removed.
+- Dev revision `4483c67` removed the unused `pdf_storage_key` mapping from the runtime
+  Drizzle invoice model while leaving the physical column and all database values intact.
+  Consequently ordinary invoice `SELECT`, `INSERT` and `RETURNING` queries no longer
+  address the future contract column. A guard test prevents that mapping from returning.
+  In an isolated PostgreSQL 17 test database, the physical column was then actually
+  dropped and all 13 invoice/read-write and adjacent durable-job integration scenarios
+  passed. Local formatting, lint, TypeScript, all 226 unit tests and the production build
+  also passed. No `0020`/contract migration was generated: committing it early would
+  block later expand migrations under the phase guard.
+- [Invoice compatibility CI](https://github.com/all1son4/dance-course-fe/actions/runs/34765613913)
+  and [deployed browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/34765637877)
+  passed on dev. Vercel deployment `dpl_zkRYvrWNNujhiaQysgViXYGmSJhn` is `READY`.
+  Authenticated GET parity at `2026-09-13T15:27:51.558Z` again matched dev DB history
+  and August/September sales exactly; the bounded deployment error-log query returned
+  zero entries. The temporary contracted-schema test database is not release evidence
+  for production and is removed after the test.
 
 No environment variables were edited. `main` and its production deployment remain at
 `e0c470a`; no production schema/data, push or release was changed by this step.
 `DROP-05` as a whole and Gate G7 remain open; the September 23 retention boundary and
-separate deletion/production approval remain in force. Invoice and archive/checkpoint
-consumers still need preparation before the isolated contract rehearsal.
+separate deletion/production approval remain in force. Archive/checkpoint consumers
+still need preparation before the isolated contract rehearsal.
 
 ### Gate G7
 

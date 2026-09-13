@@ -32,6 +32,13 @@ no export rows were deleted. Production still requires the same schema-first ord
 apply `0019`, prove preservation, and only then deploy this reader revision or a later
 contract-compatible revision.
 
+Dev revision `4483c67` also stopped runtime invoice queries from addressing the unused
+`pdf_storage_key` column. The physical dev/production columns remain untouched, and no
+contract migration is present in `drizzle/`. CI, deployed smoke, authenticated history
+and sales parity, and an isolated invoice read/write rehearsal with the column actually
+absent all passed. This revision is only one part of the future rollback candidate;
+archive/checkpoint preparation and the full isolated contract rehearsal remain open.
+
 ## Fixed rollback release (`CUT-01`)
 
 The DB-compatible rollback release is production revision
