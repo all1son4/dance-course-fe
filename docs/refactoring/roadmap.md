@@ -1778,13 +1778,14 @@ than the retained `2026-09-23T00:56:17Z` boundary.
 
 ### DROP-05 — Apply destructive contract migrations in a separate release
 
-Status: `TODO` — separate approval/release; no earlier than the retained
+Status: `IN PROGRESS (DEV COMPATIBILITY PREPARATION)` — destructive changes still require a
+separate approval/release; no earlier than the retained
 `2026-09-23T00:56:17Z` boundary. Neither owner acceleration waived this data-retention
 window or authorized deleting production history.
 
-**Surveyed on 2026-09-08 (read-only, nothing applied).** The destructive surface is
-smaller than the phase name suggests, and all of it is dead weight rather than blocked
-behaviour:
+**Surveyed on 2026-09-08 (read-only, nothing applied).** These are cleanup candidates,
+not proof that deleting them preserves behavior. The September 11 compatibility check
+below identifies remaining consumers and supersedes that assumption:
 
 | Object                                                            | Production                                                                          | Development                                                             |
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -1792,9 +1793,10 @@ behaviour:
 | `data_backfill_runs`                                              | 1 completed `DATA-02` run                                                           | 1                                                                       |
 | `invoices.pdf_storage_key`                                        | 44 invoices, 0 populated                                                            | 5 invoices, 0 populated                                                 |
 
-The dev `pending` export markers are inert: the retired drain claims only versioned rows,
-and the operational export-lag counter already reports zero waiting exports in both
-environments. No export job is claimable anywhere, so nothing is waiting on this task.
+At that survey, the dev `pending` export markers were inert: the retired drain claims
+only versioned rows, and the operational export-lag counter reported zero waiting
+exports in both environments. An empty export queue does not establish that its retained
+history is unused.
 
 The contract release therefore covers: the retained `successful_customer_export` history
 and its `google_sheets` provider value, the `google_sheets_export` kind that was never
@@ -1810,13 +1812,196 @@ pending migration to declare the requested phase, so a committed but unapplied
 work until this release lands.
 
 Deleting the retained export history is exactly what the retention window protects, so it
-needs the owner's explicit approval on top of the date; the other three items are schema
-only and carry no history.
+needs the owner's explicit approval on top of the date. Preserve completed backfill
+checkpoint metadata in the protected backup and verify that `pdf_storage_key` is still
+empty before removing those objects; schema-only changes also require consumer and
+rollback compatibility checks.
+
+#### September 11 preparation — read-only preflight and history regression tests
+
+The owner approved starting gradual preparation before September 23, not early data
+deletion or a production release. That September 11 slice was local only: no committed migration,
+schema/data mutation in dev or production, environment change, push, or deployment.
+
+[`db:audit:legacy-contract`](../../src/db/audit-legacy-contract.ts) requires an explicit
+target and runs in a bounded `REPEATABLE READ, READ ONLY` transaction. Its output
+contains counts and blocker codes only, not payment identifiers, email addresses,
+tokens, PDF keys, or checkpoint source details:
+
+```bash
+DATABASE_ENV=development npm run db:audit:legacy-contract
+DATABASE_ENV=production npm run db:audit:legacy-contract
+```
+
+Exit `0` means only that the implemented **data** checks passed, never G7/release
+approval. Exit `2` reports preservation/work blockers; exit `1` means the inspection
+failed, including a missing pre-contract table/column, and must not be treated as an
+empty inventory. This is a pre-contract tool, not a post-contract health check.
+
+The read-only checks at `2026-09-11T19:32:26.021Z` (dev) and
+`2026-09-11T19:32:39.189Z` (production) both completed with expected exit `2`:
+
+| Check                                                                   | Dev   | Production |
+| ----------------------------------------------------------------------- | ----- | ---------- |
+| Retained `successful_customer_export` rows                              | 29    | 76         |
+| Export timestamps differing from purchase fallback                      | 21    | 68         |
+| Currently visible invite-history dates that naive deletion would change | 16    | 44         |
+| Non-terminal versioned export jobs / leases                             | 0 / 0 | 0 / 0      |
+| Inert non-terminal legacy export markers                                | 7     | 0          |
+| Unexpected `google_sheets` provider kinds / `google_sheets_export` rows | 0 / 0 | 0 / 0      |
+| Invoices / non-null `pdf_storage_key` values                            | 5 / 0 | 45 / 0     |
+| Backfill runs / incomplete runs                                         | 1 / 0 | 1 / 0      |
+
+These blockers are **not a current site incident**. They prevent a future destructive
+change from silently changing healthy behavior. In particular:
+
+- [`admin-invite-link-history.ts`](../../src/db/admin-invite-link-history.ts) currently
+  prefers the export's `sent_at` over purchase/token timestamps. Its dates, ordering,
+  limit, and reissued-link behavior are now protected by a PostgreSQL regression test.
+  Keep timestamps for all affected purchases, including those without a currently
+  visible link: reissuing one later must not change its historical date.
+- Invoice allocation and payment hydration use the full Drizzle invoice model;
+  implicit `SELECT`/`RETURNING` and generated `INSERT` columns still include
+  `pdf_storage_key`. An empty column is not sufficient evidence that it can be dropped.
+- Offline backfill still uses `data_backfill_runs`, and payment/archive projections
+  still expose historical export fields. Retain an explicit supported archive/restore
+  path and classify these fields before narrowing the schema.
+
+Next steps, in order:
+
+1. **DONE (DEV), September 13:** prepare and apply additive migration `0019` on dev
+   before deploying its compatible reader; preserve exact historical dates and verify
+   full timestamp/order/limit parity as described below. Production is not migrated.
+2. **NEXT:** remove the reader's export-row dependency after the preserved-date dev
+   release. Prepare
+   invoice and archive/checkpoint consumers and a rollback revision that works with
+   the intended contracted schema.
+3. Rehearse cleanup and restore in an isolated database, verify retained business rows,
+   and refresh preflight/backup evidence. No real cleanup SQL is pending in `drizzle/`.
+4. Obtain separate owner approval for the exact deletions and production rollout;
+   the retained September 23 boundary still applies unless explicitly revised.
+   Apply the contract migration only in that controlled release, run post-deploy
+   checks, and only then consider G7 complete.
+
+Local verification: formatting, lint, TypeScript, 225 unit tests, all 61 PostgreSQL
+integration tests, and the production build passed. The new preflight test uses
+connection-local synthetic tables, checks that the inspection leaves all data intact,
+and exercises terminal/inert/leased exports, timestamp preservation, unexpected
+providers, PDF data, unfinished backfill, and failure on a missing column. No
+provider sends, job replays, browser purchases, or live DB writes were used.
+
+#### Invite-history date preservation — DONE (DEV), September 13
+
+[`0019_invite_history_created_at.sql`](../../drizzle/0019_invite_history_created_at.sql)
+is an **expand**, not a destructive migration. It adds the nullable
+`purchases.invite_history_created_at` timestamp and copies each non-null historical
+export `sent_at` directly inside PostgreSQL, including purchases without a visible
+invite. No JavaScript date conversion, precision loss, default current time, or
+modification of `first_seen_at`, `succeeded_at`, `created_at`, `updated_at`, invoice,
+amount, or currency fields is involved. No export rows are deleted.
+
+The backfill only fills null values. Repeating its data step updates zero already
+preserved rows; a conflicting preserved timestamp fails verification and rolls back
+the transaction instead of overwriting it. The migration runner keeps the additive
+DDL once-only through its journal.
+
+The reader now prefers the preserved date, then the old export timestamp, then the
+existing purchase/token fallbacks. The legacy join intentionally remains during this
+compatibility step. DB-native purchases without an export keep a null preservation
+field and continue using their immutable `first_seen_at`; creating or reissuing a
+token does not assign a new history date.
+
+**Release order is mandatory.** The application schema now includes the new column,
+including implicit Drizzle purchase projections/inserts. The new application revision
+must not be deployed or used against a database before `0019` is applied. On dev:
+
+1. Refresh the read-only preflight and backup evidence; resolve any active export
+   jobs, leases or unexplained differences. Keep old exports and checkpoint data.
+2. Use the approved migration runner with `MIGRATION_TARGET=development`,
+   `MIGRATION_PHASE=expand` and its existing explicit target/ref approval guards.
+   Confirm that only `0019_invite_history_created_at` is pending before applying it.
+3. Require `inviteHistoryDateColumnPresent=true` and zero purchase/export and visible
+   history timestamp differences from `db:audit:legacy-contract`, then deploy the
+   compatible reader and check history ordering/limits and the normal dev smoke suite.
+4. If verification fails, stop the rollout. Keep the additive column and retained
+   export rows; the preceding application revision remains compatible with the
+   expanded schema. Do not "roll back" by dropping data or changing payment dates.
+
+The preflight itself supports both pre- and post-`0019` schemas. Its timestamp counters
+now account for the preserved date and still report conflicting values. At the earlier
+live read-only checks, `2026-09-11T19:51:16.063Z` (dev) and
+`2026-09-11T19:51:21.305Z` (production), the column was absent in both environments;
+the earlier 21/68 purchase and 16/44 visible-history differences were unchanged.
+Those earlier dev counters are superseded by the September 13 migration evidence
+below. No production migration is claimed by the dev release.
+
+Verification of this local slice passed:
+
+- formatting, lint, TypeScript, 225 unit tests, all 62 PostgreSQL integration tests,
+  production build, and Drizzle snapshot consistency;
+- exact microsecond preservation, mixed old/new reader parity, tie ordering and
+  limits, reissued links, no change to other purchase/export fields, repeatable
+  backfill, and atomic rejection of conflicting preserved dates;
+- deletion of **synthetic fixture exports only** leaves the full displayed history
+  unchanged; neither dev nor production history was deleted;
+- the actual guarded migration runner upgraded an isolated database from 19 to 20
+  migrations, with only `0019` pending; a repeat run had no pending work;
+- a local logical dump/restore of that synthetic upgraded database preserved the
+  exact timestamp, all purchase/export row fingerprints and 20 migration entries.
+  The restored copy passed the data preflight. This additive-schema rehearsal does
+  not replace the future destructive-cleanup rehearsal or a fresh production backup.
+
+**September 13 dev release:** code revision `f7bcb33` was deployed only after applying
+`0019` with the guarded runner (`development`, `expand`, release ref `dev`). Exactly
+that migration was pending; the journal advanced from 19 to 20 migrations. A 5-second
+lock timeout and 30-second statement timeout bounded the migration connection.
+
+- Fresh PostgreSQL-only backup: `development-drop05-0019-20260913T101844437Z`, captured
+  at `2026-09-13T10:18:44.438Z`. Encrypted archive SHA-256:
+  `d96ab269305c57a26c933fab0e28254b25e32464589679d65e942742a03f6399`.
+  The encrypted archive, wrapped key, public manifest and verification evidence are
+  retained in the ignored protected `.data-snapshots/development/` directory. Existing
+  recovery keys were reused, not replaced. No Google Sheets access was attempted.
+- Decryption and restoration into an isolated local PostgreSQL 17 database passed.
+  All 21 public-table fingerprints, all 31 visible history records across 7 workflows,
+  their order and per-workflow `limit=2` matched the consistent source snapshot.
+  Timestamp serialization was explicitly normalized to UTC for fingerprint comparison;
+  no stored dates or database/server time-zone settings were changed.
+- At `2026-09-13T10:20:28.758Z`, all 22 non-null export dates were preserved exactly.
+  Both timestamp-difference counters fell to zero; preflight passed with no blockers.
+  Fingerprints of every pre-existing business field matched the backup, including
+  payment/accounting fields; all 29 legacy export rows and the backfill checkpoint remain.
+  The actual application reader matched all baseline history/order/limit fingerprints.
+- All 32 invariant checks and both pooled/unpooled health checks passed, with 20 applied
+  migrations. This is additive preservation only, not a deletion/contract rehearsal.
+- Vercel dev deployment `dpl_F3ef6P7y73VDx56HFLm6A9SLEsjF` is `READY` for `f7bcb33`.
+  Authenticated GET checks at `2026-09-13T10:24:17.707Z` returned fresh HTTP 200 responses
+  for invite history and August/September purchases; their complete result payloads
+  matched the dev database. No purchase, provider send, email or replay was triggered.
+- [Dev CI](https://github.com/all1son4/dance-course-fe/actions/runs/34751671051)
+  passed formatting, lint, TypeScript, all 225 unit and 62 PostgreSQL integration tests,
+  logical backup/restore and the production build.
+  [Deployed browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/34751693138)
+  passed 11 tests with 1 conditional skip. The bounded post-deploy error-log query returned
+  zero entries. Operational counters at `2026-09-13T10:25:56.714Z` matched the pre-release
+  baseline: no ready/working/dead-letter jobs or stale leases; the already classified
+  11 pending access records, 1 historical inbox retry, 12 unlinked processed events and
+  112 unverified imported events were unchanged.
+- The temporary restore server was stopped and its plaintext dump/restored database
+  deleted after verification. The encrypted recovery archive and verification manifests
+  remain protected locally; no credentials or customer records were committed.
+
+No environment variables were edited. `main` and its production deployment remain at
+`e0c470a`; no production schema/data, push or release was changed by this step.
+`DROP-05` as a whole and Gate G7 remain open; the September 23 retention boundary and
+separate deletion/production approval remain in force. The next dev-only slice removes
+the legacy history join; invoice and archive/checkpoint consumers still need preparation.
 
 ### Gate G7
 
-Status: `NOT PASSED` — credential retirement alone does not remove the legacy
-adapters and dependency code tracked by `DROP-04`/`DROP-05`.
+Status: `NOT PASSED` — `DROP-04` is complete on dev, but `DROP-05` compatibility,
+destructive-release approval, restore evidence, and the approved production rollout
+remain open. Local preflight success alone cannot close this gate.
 
 - Runtime contains no Google Sheets network dependency.
 - Credentials are revoked.

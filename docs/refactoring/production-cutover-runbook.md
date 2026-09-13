@@ -8,6 +8,24 @@ change: all runtime switches remain separate, controlled `CUT-03` operations. Th
 document preserves the accepted user journeys and does not add Telegram verification
 outside the existing Online Group renewal flow.
 
+Later destructive cleanup is a separate `DROP-05` release, not part of this completed
+CUT runbook. Its [current preparation and approval checklist](roadmap.md#drop-05--apply-destructive-contract-migrations-in-a-separate-release)
+includes the September 11 read-only preflight: legacy export timestamps still affect
+invite-history dates, so empty queues alone do not authorize deleting that history.
+The September 23 retention boundary has not been waived by starting preparation.
+
+The additive change `0019_invite_history_created_at` preserves those dates without
+deleting exports. On September 13 it was applied to **dev only**, before deploying
+compatible reader revision `f7bcb33`. A fresh encrypted dev backup was restored locally;
+all 21 public tables and full history/order/limit fingerprints matched, with 22 dates
+preserved and zero remaining timestamp differences. See the
+[dev evidence and mandatory schema-before-application release order](roadmap.md#invite-history-date-preservation--done-dev-september-13).
+Production has not received this migration or code: do not merge/deploy the new Drizzle
+purchase model there before its separately approved schema migration and checks. Keep
+the old exports and use the previous application revision on the expanded schema if a
+rollback is needed; no destructive rollback is part of this step. This dev backup does
+not replace a fresh production backup or authorize early cleanup.
+
 ## Fixed rollback release (`CUT-01`)
 
 The DB-compatible rollback release is production revision
