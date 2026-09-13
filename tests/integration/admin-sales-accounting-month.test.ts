@@ -153,6 +153,16 @@ test("tracks terminal entry only for successful Polish Stripe sales", async () =
 
     assert.equal(recorded?.terminalRecordedAt?.toISOString(), recordedAt.toISOString());
     assert.equal(await countOutstandingPolishTerminalSales("2042-04"), 0);
+
+    const overviewAfter = await getAdminPurchasesOverview({
+      monthValue: "2042-04",
+      searchQuery: polishPaymentIntentId,
+    });
+
+    assert.equal(
+      overviewAfter.purchases[0]?.terminalRecordedAtIso,
+      recordedAt.toISOString(),
+    );
     assert.equal(
       await setPolishSaleTerminalRecorded({
         paymentIntentId: nonPolishPaymentIntentId,
