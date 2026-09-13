@@ -645,7 +645,6 @@ export const invoices = pgTable(
     buyerAddressSnapshot: text("buyer_address_snapshot"),
     amountMinor: integer("amount_minor").notNull(),
     currency: text("currency").notNull(),
-    pdfStorageKey: text("pdf_storage_key"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
