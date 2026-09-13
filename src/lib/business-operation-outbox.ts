@@ -1,3 +1,4 @@
+import { DEFAULT_SITE_HOME_URL } from "@/constants/links";
 import {
   claimEmailCampaignLeadForDelivery,
   findMonthlyReportRunInDatabase,
@@ -5,6 +6,7 @@ import {
   markEmailCampaignLeadSent,
   recordMonthlyReportRunInDatabase,
 } from "@/db/business-operation-jobs";
+import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales";
 import {
   type ClaimedOutboxJob,
   enqueueOutboxJob,
@@ -13,10 +15,18 @@ import {
   replayOutboxJob,
 } from "@/db/transactional-outbox";
 import { sendResendEmail, type SendResendEmailInput } from "@/lib/email/resend";
+import { formatReportMonthLabel } from "@/lib/monthly-sales-report";
+import { sendTelegramMessage } from "@/lib/telegram/bot-api";
+import {
+  getTelegramAlertsBotToken,
+  getTelegramAlertsChatId,
+  isTelegramAlertsConfigured,
+} from "@/lib/telegram/config";
 
 export const BUSINESS_OPERATION_OUTBOX_KINDS = [
   "monthly_report_delivery",
   "campaign_email_delivery",
+  "polish_terminal_reminder",
 ] as const;
 
 type MonthlyReportDeliveryPayload = {
@@ -40,6 +50,15 @@ type CampaignEmailDeliveryPayload = {
   email: SendResendEmailInput;
   leadId: string;
 };
+
+type PolishTerminalReminderPayload = {
+  monthValue: string;
+};
+
+const SITE_HOME_URL =
+  process.env.SITE_URL?.trim() ||
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+  DEFAULT_SITE_HOME_URL;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -142,6 +161,18 @@ const parseMonthlyReportDeliveryPayload = (
       rowCount: Number(rowCount),
     },
   };
+};
+
+const parsePolishTerminalReminderPayload = (
+  payload: Record<string, unknown>,
+): PolishTerminalReminderPayload => {
+  const monthValue = requireString(payload.monthValue, "terminal_reminder_month");
+
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/u.test(monthValue)) {
+    throw createNonRetryableError("business_outbox_terminal_reminder_month_invalid");
+  }
+
+  return { monthValue };
 };
 
 const deliverCampaignEmail = async (job: ClaimedOutboxJob) => {
@@ -250,6 +281,65 @@ const deliverMonthlyReport = async (job: ClaimedOutboxJob) => {
   }
 };
 
+const deliverPolishTerminalReminder = async (job: ClaimedOutboxJob) => {
+  const { monthValue } = parsePolishTerminalReminderPayload(job.payload);
+  const outstandingCount = await countOutstandingPolishTerminalSales(monthValue);
+
+  // The operator may clear the final checkbox after enqueue but before delivery.
+  // Re-read here so a stale queued job never sends a false reminder.
+  if (outstandingCount === 0) {
+    return { skipped: true };
+  }
+
+  if (!isTelegramAlertsConfigured()) {
+    throw new Error("telegram_alerts_not_configured");
+  }
+
+  const botToken = getTelegramAlertsBotToken();
+  const chatId = getTelegramAlertsChatId();
+
+  if (!botToken || !chatId) {
+    throw new Error("telegram_alerts_not_configured");
+  }
+
+  const monthLabel = formatReportMonthLabel(monthValue).toLocaleLowerCase("ru-RU");
+  const text = [
+    "⚠️ <b>Польские продажи: фискальный терминал</b>",
+    "",
+    `За ${monthLabel} не внесено в терминал: <b>${outstandingCount}</b>.`,
+    "Проверь продажи в админке и отметь обработанные записи до конца месяца.",
+  ].join("\n");
+
+  try {
+    const message = await sendTelegramMessage({
+      botToken,
+      chatId,
+      disableWebPagePreview: true,
+      maxAttempts: 1,
+      parseMode: "HTML",
+      replyMarkup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Открыть продажи",
+              url: `${SITE_HOME_URL}/admin?view=purchases`,
+            },
+          ],
+        ],
+      },
+      text,
+    });
+
+    return { externalMessageId: String(message.message_id) };
+  } catch {
+    // sendMessage has no idempotency key. An uncertain provider response must
+    // not be retried automatically and risk showing the same reminder twice.
+    throw createNonRetryableError(
+      "telegram_terminal_reminder_delivery_uncertain_manual_review_required",
+    );
+  }
+};
+
 export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
   if (job.kind === "campaign_email_delivery") {
     return deliverCampaignEmail(job);
@@ -257,6 +347,10 @@ export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
 
   if (job.kind === "monthly_report_delivery") {
     return deliverMonthlyReport(job);
+  }
+
+  if (job.kind === "polish_terminal_reminder") {
+    return deliverPolishTerminalReminder(job);
   }
 
   throw Object.assign(new Error(`unsupported_business_outbox_kind:${job.kind}`), {
@@ -303,6 +397,18 @@ export const enqueueMonthlyReportDelivery = ({
     payload,
     provider: "resend",
     recipient: payload.email.to,
+  });
+
+export const enqueuePolishTerminalReminder = ({
+  deduplicationKey,
+  monthValue,
+}: PolishTerminalReminderPayload & { deduplicationKey: string }) =>
+  enqueueOutboxJob({
+    deduplicationKey,
+    kind: "polish_terminal_reminder",
+    payload: { monthValue },
+    provider: "telegram",
+    recipient: getTelegramAlertsChatId() || null,
   });
 
 export const processBusinessOperationOutboxJob = (deduplicationKey: string) =>

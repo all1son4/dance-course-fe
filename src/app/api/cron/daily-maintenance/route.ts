@@ -1,11 +1,16 @@
 import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
-import { runBusinessOperationOutboxJobs } from "@/lib/business-operation-outbox";
+import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales";
+import {
+  enqueuePolishTerminalReminder,
+  runBusinessOperationOutboxJobs,
+} from "@/lib/business-operation-outbox";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
   getScheduledMonthlySalesReportPeriod,
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
+import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
 import { runRetiredExportOutboxJobs } from "@/lib/retired-export-outbox";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
@@ -51,6 +56,11 @@ export async function GET(request: Request) {
   let sheetsExportError: string | null = null;
   let sheetsExportResult: Awaited<ReturnType<typeof runRetiredExportOutboxJobs>> | null =
     null;
+  let polishTerminalReminderError: string | null = null;
+  let polishTerminalReminderResult: {
+    outstandingCount: number;
+    status: "duplicate" | "empty" | "enqueued";
+  } | null = null;
 
   try {
     const [standard, onlineGroup] = await Promise.all([
@@ -78,6 +88,35 @@ export async function GET(request: Request) {
       console.error("Daily maintenance: failed to generate monthly sales report", error);
       monthlySalesReportError =
         error instanceof Error ? error.message : "monthly_sales_report_failed";
+    }
+  }
+
+  const polishTerminalReminderPeriod = getScheduledPolishTerminalReminderPeriod(now);
+
+  if (polishTerminalReminderPeriod) {
+    try {
+      const outstandingCount = await countOutstandingPolishTerminalSales(
+        polishTerminalReminderPeriod.monthValue,
+      );
+
+      if (outstandingCount === 0) {
+        polishTerminalReminderResult = { outstandingCount, status: "empty" };
+      } else {
+        const enqueued = await enqueuePolishTerminalReminder({
+          deduplicationKey: `polish_terminal_reminder:${polishTerminalReminderPeriod.monthValue}`,
+          monthValue: polishTerminalReminderPeriod.monthValue,
+        });
+
+        polishTerminalReminderResult = {
+          outstandingCount,
+          status: enqueued.duplicate ? "duplicate" : "enqueued",
+        };
+      }
+    } catch (error) {
+      console.error("Daily maintenance: failed to schedule Polish terminal reminder", {
+        errorName: error instanceof Error ? error.name : "UnknownError",
+      });
+      polishTerminalReminderError = "polish_terminal_reminder_failed";
     }
   }
 
@@ -119,6 +158,7 @@ export async function GET(request: Request) {
     accessRevocationError ||
     businessJobsError ||
     monthlySalesReportError ||
+    polishTerminalReminderError ||
     paymentJobsError,
   );
 
@@ -132,6 +172,8 @@ export async function GET(request: Request) {
       monthlySalesReportResult,
       paymentJobsError,
       paymentJobsResult,
+      polishTerminalReminderError,
+      polishTerminalReminderResult,
       sheetsExportError,
       sheetsExportResult,
       ok: !hasFailure,

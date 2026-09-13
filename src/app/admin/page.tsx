@@ -335,6 +335,7 @@ export default function AdminPage() {
                 onSearchInputChange={purchasesAdmin.setSearchInput}
                 onSendReport={purchasesAdmin.sendReport}
                 onSubmitSearch={purchasesAdmin.submitSearch}
+                onTerminalRecordedChange={purchasesAdmin.setTerminalRecorded}
                 previousSummary={purchasesAdmin.previousSummary}
                 products={purchasesAdmin.products}
                 purchases={purchasesAdmin.purchases}
@@ -343,6 +344,9 @@ export default function AdminPage() {
                 searchInput={purchasesAdmin.searchInput}
                 status={purchasesAdmin.status}
                 summary={purchasesAdmin.summary}
+                updatingTerminalPaymentIntentId={
+                  purchasesAdmin.updatingTerminalPaymentIntentId
+                }
               />
             ) : isOperationsFeatureActive ? (
               <OperationsWorkspace

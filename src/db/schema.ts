@@ -354,6 +354,10 @@ export const purchases = pgTable(
       withTimezone: true,
     }),
     succeededAt: timestamp("succeeded_at", { withTimezone: true }),
+    // Polish online sales also have to be entered manually into the fiscal
+    // terminal. A timestamp preserves both the checkbox state and when the
+    // operator completed that accounting step; null means it is still due.
+    terminalRecordedAt: timestamp("terminal_recorded_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -569,6 +573,7 @@ export const purchaseSideEffects = pgTable(
         | "telegram_access_delivery"
         | "monthly_report_delivery"
         | "campaign_email_delivery"
+        | "polish_terminal_reminder"
         | "google_sheets_export"
       >(),
     provider: text("provider").$type<

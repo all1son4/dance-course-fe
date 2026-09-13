@@ -200,3 +200,83 @@ export const ProductShareFill = styled.div<{ $percent: number }>`
   border-radius: 999px;
   background: linear-gradient(90deg, rgba(124, 0, 2, 0.55), rgba(124, 0, 2, 0.8));
 `;
+
+export const PurchaseTableRow = styled.tr<{ $isPolish: boolean }>`
+  ${({ $isPolish }) =>
+    $isPolish &&
+    css`
+      & > td {
+        background: rgba(196, 30, 58, 0.035);
+      }
+
+      & > td:first-child {
+        border-left: 2px solid rgba(196, 30, 58, 0.46);
+      }
+    `}
+
+  @media (max-width: 760px) {
+    ${({ $isPolish }) =>
+      $isPolish &&
+      css`
+        border-color: rgba(196, 30, 58, 0.18);
+        background: rgba(196, 30, 58, 0.035);
+
+        & > td {
+          background: transparent;
+        }
+      `}
+  }
+`;
+
+export const PolishSaleBadge = styled.span`
+  width: fit-content;
+  margin-top: 5px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(196, 30, 58, 0.16);
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: rgba(139, 20, 43, 0.9);
+  background: rgba(196, 30, 58, 0.055);
+  font-size: 9px;
+  font-weight: 680;
+  line-height: 1.25;
+  white-space: nowrap;
+`;
+
+export const TerminalCheckboxLabel = styled.label<{ $checked: boolean }>`
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: ${({ $checked }) =>
+    $checked ? "rgba(22, 88, 60, 0.92)" : "rgba(139, 20, 43, 0.92)"};
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.3;
+  white-space: nowrap;
+
+  input {
+    width: 15px;
+    height: 15px;
+    margin: 0;
+    accent-color: ${({ $checked }) => ($checked ? "rgb(30, 108, 74)" : "rgb(124, 0, 2)")};
+    cursor: pointer;
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid rgba(124, 0, 2, 0.28);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  &:has(input:disabled) {
+    cursor: wait;
+    opacity: 0.58;
+  }
+
+  input:disabled {
+    cursor: wait;
+  }
+`;

@@ -105,6 +105,7 @@ const OUTBOX_KIND_LABELS: Record<string, string> = {
   campaign_email_delivery: "Письмо рассылки",
   google_sheets_export: "Выгрузка в Google Sheets",
   monthly_report_delivery: "Месячный отчет",
+  polish_terminal_reminder: "Напоминание о польских продажах",
   purchase_success_email: "Письмо о покупке",
   successful_customer_export: "Выгрузка покупателя в Sheets",
   telegram_access_delivery: "Выдача Telegram-доступа",
