@@ -3,12 +3,7 @@ import { and, asc, desc, eq, sql } from "drizzle-orm";
 import type { AdminInviteLinkHistoryRecord } from "@/lib/admin-invite-link-history-record";
 
 import { getDatabase } from "./client";
-import {
-  accessEntitlements,
-  purchases,
-  purchaseSideEffects,
-  telegramAccessTokens,
-} from "./schema";
+import { accessEntitlements, purchases, telegramAccessTokens } from "./schema";
 
 const toIso = (value: Date | string | null) => {
   if (!value) {
@@ -50,7 +45,6 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
   // timestamp columns are mapped to Date by Drizzle.
   const createdAt = sql<string>`COALESCE(
     ${purchases.inviteHistoryCreatedAt},
-    ${purchaseSideEffects.sentAt},
     ${purchases.firstSeenAt},
     ${purchases.updatedAt},
     ${telegramAccessTokens.createdAt}
@@ -82,13 +76,6 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
     .innerJoin(
       telegramAccessTokens,
       eq(accessEntitlements.currentTokenId, telegramAccessTokens.tokenId),
-    )
-    .leftJoin(
-      purchaseSideEffects,
-      and(
-        eq(purchaseSideEffects.purchaseId, purchases.id),
-        eq(purchaseSideEffects.kind, "successful_customer_export"),
-      ),
     )
     .where(
       and(

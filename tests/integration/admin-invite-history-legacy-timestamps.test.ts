@@ -19,7 +19,7 @@ after(async () => {
   await Promise.all([client.end(), applicationClient.end()]);
 });
 
-test("legacy invite history preserves export timestamps, fallback, tie order and limit", async () => {
+test("invite history uses preserved timestamps without export rows and keeps fallback, tie order and limit", async () => {
   const suffix = randomUUID();
   const workflow = `contract-history-${suffix}`;
   const purchaseIds: string[] = [];
@@ -42,9 +42,10 @@ test("legacy invite history preserves export timestamps, fallback, tie order and
       const tokenId = `contract-${fixture.name}-${suffix}`;
       const [purchase] = await client<{ id: string }[]>`
         INSERT INTO purchases (payment_intent_id, amount_minor, currency, stripe_status,
-          outcome, first_seen_at, updated_at)
+          outcome, first_seen_at, invite_history_created_at, updated_at)
         VALUES (${`adm_${fixture.name}_${suffix}`}, 0, 'pln', 'succeeded', 'succeeded',
-          ${fixture.firstSeen}, '2026-09-01T00:00:00Z') RETURNING id
+          ${fixture.firstSeen}, ${fixture.sentAt}::text::timestamptz,
+          '2026-09-01T00:00:00Z') RETURNING id
       `;
       purchaseIds.push(purchase.id);
       const [entitlement] = await client<{ id: string }[]>`
@@ -91,24 +92,11 @@ test("legacy invite history preserves export timestamps, fallback, tie order and
     );
     assert.deepEqual(await list(2), history.slice(0, 2));
 
-    // Mixed rollout: a preserved value wins while untouched rows still use
-    // the legacy export. Both must produce exactly the same visible record.
-    await client`UPDATE purchases purchase
-      SET invite_history_created_at = effect.sent_at
-      FROM purchase_side_effects effect
-      WHERE effect.purchase_id = purchase.id
-        AND effect.kind = 'successful_customer_export'
-        AND purchase.id = ${purchaseIds[0]}`;
-    assert.deepEqual(await list(), history);
-
-    await client`UPDATE purchases purchase
-      SET invite_history_created_at = effect.sent_at
-      FROM purchase_side_effects effect
-      WHERE effect.purchase_id = purchase.id
-        AND effect.kind = 'successful_customer_export'
-        AND effect.sent_at IS NOT NULL
-        AND purchase.invite_history_created_at IS NULL
-        AND purchase.id IN ${client(purchaseIds)}`;
+    // The compatibility release no longer reads export rows. Even a changed
+    // legacy timestamp must not affect the displayed date or ordering.
+    await client`UPDATE purchase_side_effects
+      SET sent_at = '2030-01-01T00:00:00Z'
+      WHERE kind = 'successful_customer_export' AND purchase_id = ${purchaseIds[0]}`;
     assert.deepEqual(await list(), history);
 
     // Synthetic fixtures only: prove the displayed values no longer depend on
