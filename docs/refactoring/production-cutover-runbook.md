@@ -26,6 +26,12 @@ the old exports and use the previous application revision on the expanded schema
 rollback is needed; no destructive rollback is part of this step. This dev backup does
 not replace a fresh production backup or authorize early cleanup.
 
+Dev follow-up revision `86571a4` then removed the invite-history query's legacy export
+join. Its CI, browser smoke and authenticated history/sales GET parity checks passed;
+no export rows were deleted. Production still requires the same schema-first order:
+apply `0019`, prove preservation, and only then deploy this reader revision or a later
+contract-compatible revision.
+
 ## Fixed rollback release (`CUT-01`)
 
 The DB-compatible rollback release is production revision

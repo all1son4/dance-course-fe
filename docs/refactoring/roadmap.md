@@ -1872,11 +1872,12 @@ Next steps, in order:
 1. **DONE (DEV), September 13:** prepare and apply additive migration `0019` on dev
    before deploying its compatible reader; preserve exact historical dates and verify
    full timestamp/order/limit parity as described below. Production is not migrated.
-2. **NEXT:** remove the reader's export-row dependency after the preserved-date dev
-   release. Prepare
-   invoice and archive/checkpoint consumers and a rollback revision that works with
-   the intended contracted schema.
-3. Rehearse cleanup and restore in an isolated database, verify retained business rows,
+2. **DONE (DEV), September 13:** remove the reader's export-row dependency after the
+   preserved-date dev release. The separate compatibility revision and its evidence
+   are recorded below.
+3. **NEXT:** prepare invoice and archive/checkpoint consumers and a rollback revision
+   that works with the intended contracted schema. Then rehearse cleanup and restore
+   in an isolated database, verify retained business rows,
    and refresh preflight/backup evidence. No real cleanup SQL is pending in `drizzle/`.
 4. Obtain separate owner approval for the exact deletions and production rollout;
    the retained September 23 boundary still applies unless explicitly revised.
@@ -1905,11 +1906,13 @@ preserved rows; a conflicting preserved timestamp fails verification and rolls b
 the transaction instead of overwriting it. The migration runner keeps the additive
 DDL once-only through its journal.
 
-The reader now prefers the preserved date, then the old export timestamp, then the
-existing purchase/token fallbacks. The legacy join intentionally remains during this
-compatibility step. DB-native purchases without an export keep a null preservation
-field and continue using their immutable `first_seen_at`; creating or reissuing a
-token does not assign a new history date.
+The first compatibility revision preferred the preserved date, then the old export
+timestamp, then the existing purchase/token fallbacks. After its dev backfill and
+parity checks passed, follow-up revision `86571a4` removed the legacy export join. The
+reader now uses the preserved date and existing purchase/token fallbacks only. DB-native
+purchases without an export keep a null preservation field and continue using their
+immutable `first_seen_at`; creating or reissuing a token does not assign a new history
+date.
 
 **Release order is mandatory.** The application schema now includes the new column,
 including implicit Drizzle purchase projections/inserts. The new application revision
@@ -1990,12 +1993,21 @@ lock timeout and 30-second statement timeout bounded the migration connection.
 - The temporary restore server was stopped and its plaintext dump/restored database
   deleted after verification. The encrypted recovery archive and verification manifests
   remain protected locally; no credentials or customer records were committed.
+- Follow-up dev revision `86571a4` removed `purchase_side_effects` from the actual
+  invite-history query. Its regression test proves that changing or deleting synthetic
+  legacy export rows cannot alter dates, ordering or limits once preservation is present.
+  Local verification again passed 225 unit tests, 62 PostgreSQL integration tests and
+  the production build. [Dev CI](https://github.com/all1son4/dance-course-fe/actions/runs/34765281729)
+  and [deployed browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/34765306824)
+  passed. Authenticated GET parity at `2026-09-13T15:22:19.632Z` matched the dev database
+  for invite history and August/September purchases; the deployment returned zero error
+  logs in the bounded post-release window. No legacy rows were removed.
 
 No environment variables were edited. `main` and its production deployment remain at
 `e0c470a`; no production schema/data, push or release was changed by this step.
 `DROP-05` as a whole and Gate G7 remain open; the September 23 retention boundary and
-separate deletion/production approval remain in force. The next dev-only slice removes
-the legacy history join; invoice and archive/checkpoint consumers still need preparation.
+separate deletion/production approval remain in force. Invoice and archive/checkpoint
+consumers still need preparation before the isolated contract rehearsal.
 
 ### Gate G7
 
