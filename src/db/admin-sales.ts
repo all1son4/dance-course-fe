@@ -9,7 +9,17 @@ import {
 import { formatMinorAmount } from "@/lib/minor-amount";
 
 import { getDatabase } from "./client";
-import { invoices, productOffers, products, purchases } from "./schema";
+import {
+  isPolishPurchaseCountry,
+  POLISH_TERMINAL_RECORDED_KIND,
+} from "./polish-terminal-sales";
+import {
+  invoices,
+  productOffers,
+  products,
+  purchases,
+  purchaseSideEffects,
+} from "./schema";
 
 const PRODUCT_BREAKDOWN_LIMIT = 8;
 
@@ -20,10 +30,12 @@ export type AdminPurchaseListEntry = {
   customerEmail: string;
   customerName: string;
   invoiceNumber: string;
+  isPolish: boolean;
   outcome: PurchaseOutcome;
   paymentIntentId: string;
   purchaseItem: string;
   soldAtIso: string;
+  terminalRecordedAtIso: string;
 };
 
 export type AdminPurchasesSummary = {
@@ -151,15 +163,24 @@ export const getAdminPurchasesOverview = async ({
         customerEmail: purchases.customerEmailSnapshot,
         customerName: purchases.customerFullNameSnapshot,
         invoiceNumber: invoices.invoiceNumber,
+        isPolish: isPolishPurchaseCountry,
         outcome: purchases.outcome,
         paymentIntentId: purchases.paymentIntentId,
         purchaseItem: productItemColumn,
         soldAt: soldAtColumn,
+        terminalRecordedAt: purchaseSideEffects.sentAt,
       })
       .from(purchases)
       .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
       .leftJoin(products, eq(products.id, purchases.productId))
       .leftJoin(productOffers, eq(productOffers.id, purchases.offerId))
+      .leftJoin(
+        purchaseSideEffects,
+        and(
+          eq(purchaseSideEffects.purchaseId, purchases.id),
+          eq(purchaseSideEffects.kind, POLISH_TERMINAL_RECORDED_KIND),
+        ),
+      )
       .where(listFilter)
       .orderBy(desc(soldAtColumn), desc(purchases.paymentIntentId))
       .limit(PURCHASES_LIST_LIMIT),
@@ -236,10 +257,12 @@ export const getAdminPurchasesOverview = async ({
       customerEmail: row.customerEmail ?? "",
       customerName: row.customerName ?? "",
       invoiceNumber: row.invoiceNumber ?? "",
+      isPolish: row.isPolish,
       outcome: row.outcome,
       paymentIntentId: row.paymentIntentId,
       purchaseItem: row.purchaseItem,
       soldAtIso: new Date(row.soldAt).toISOString(),
+      terminalRecordedAtIso: row.terminalRecordedAt?.toISOString() ?? "",
     })),
     summary: {
       eurTotalLabel: formatMinorAmount(summaryRow?.eurTotalMinor ?? 0, "eur"),

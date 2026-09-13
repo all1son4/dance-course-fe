@@ -564,6 +564,8 @@ export const purchaseSideEffects = pgTable(
         | "telegram_access_delivery"
         | "monthly_report_delivery"
         | "campaign_email_delivery"
+        | "polish_terminal_recorded"
+        | "polish_terminal_reminder"
         | "google_sheets_export"
       >(),
     provider: text("provider").$type<

@@ -1,12 +1,25 @@
 import { getAdminPurchasesOverview, listAdminSalesMonths } from "@/db/admin-sales";
+import { setPolishSaleTerminalRecorded } from "@/db/polish-terminal-sales";
 import { getAccountingMonthValue } from "@/lib/accounting-month";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import {
+  getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
+  jsonNoStore,
+  parseJsonBody,
+} from "@/lib/http-security";
 import { formatReportMonthLabel, parseReportMonth } from "@/lib/monthly-sales-report";
+import { consumeRequestRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 const MAX_SEARCH_LENGTH = 120;
+const MAX_BODY_BYTES = 4 * 1024;
+
+type SetTerminalRecordedBody = {
+  paymentIntentId?: unknown;
+  terminalRecorded?: unknown;
+};
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
@@ -53,5 +66,61 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error("Failed to load admin purchases overview", error);
     return jsonErrorNoStore("purchases_overview_failed", { status: 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  if (!isAdminInviteLinksRequestAuthenticated(request)) {
+    return jsonErrorNoStore("unauthorized", { status: 401 });
+  }
+
+  const requestErrorResponse = getBrowserJsonRequestErrorResponse(
+    request,
+    MAX_BODY_BYTES,
+  );
+
+  if (requestErrorResponse) {
+    return requestErrorResponse;
+  }
+
+  const rateLimit = await consumeRequestRateLimit({
+    keyPrefix: "admin:polish-terminal-sales",
+    limit: 60,
+    request,
+    windowMs: 60_000,
+  });
+
+  if (rateLimit.limited) {
+    return jsonErrorNoStore("rate_limited", {
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      status: 429,
+    });
+  }
+
+  try {
+    const body = await parseJsonBody<SetTerminalRecordedBody>(request);
+    const paymentIntentId =
+      typeof body?.paymentIntentId === "string" ? body.paymentIntentId.trim() : "";
+
+    if (!paymentIntentId || typeof body?.terminalRecorded !== "boolean") {
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
+    }
+
+    const updated = await setPolishSaleTerminalRecorded({
+      paymentIntentId,
+      terminalRecorded: body.terminalRecorded,
+    });
+
+    if (!updated) {
+      return jsonErrorNoStore("polish_sale_not_eligible", { status: 409 });
+    }
+
+    return jsonNoStore({
+      paymentIntentId: updated.paymentIntentId,
+      terminalRecordedAtIso: updated.terminalRecordedAt?.toISOString() ?? "",
+    });
+  } catch (error) {
+    console.error("Failed to update Polish terminal sale state", error);
+    return jsonErrorNoStore("polish_terminal_update_failed", { status: 500 });
   }
 }

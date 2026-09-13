@@ -630,7 +630,7 @@ export const SalesStatusBadge = styled.span<{ $state: "blocked" | "closed" | "op
 
 export const AdminDataTable = styled.table`
   ${adminTableBase}
-  min-width: 680px;
+  min-width: 790px;
 
   th,
   td {
