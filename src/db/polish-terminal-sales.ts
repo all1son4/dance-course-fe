@@ -1,9 +1,11 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 import { getAccountingMonthRange } from "@/lib/accounting-month";
 
 import { getDatabase } from "./client";
-import { purchases } from "./schema";
+import { purchases, purchaseSideEffects } from "./schema";
+
+export const POLISH_TERMINAL_RECORDED_KIND = "polish_terminal_recorded" as const;
 
 // New checkouts persist ISO `PL`. The names cover historical rows imported
 // from the retired spreadsheet before the checkout country field was normalized.
@@ -22,7 +24,12 @@ const getOutstandingFilter = (monthValue: string) => {
     eq(purchases.source, "stripe"),
     eq(purchases.outcome, "succeeded"),
     isPolishPurchaseCountry,
-    isNull(purchases.terminalRecordedAt),
+    sql`NOT EXISTS (
+      SELECT 1
+      FROM ${purchaseSideEffects}
+      WHERE ${purchaseSideEffects.purchaseId} = ${purchases.id}
+        AND ${purchaseSideEffects.kind} = ${POLISH_TERMINAL_RECORDED_KIND}
+    )`,
     sql`${soldAtColumn} >= ${range.start.toISOString()}::timestamptz`,
     sql`${soldAtColumn} < ${range.end.toISOString()}::timestamptz`,
   );
@@ -58,24 +65,63 @@ export const setPolishSaleTerminalRecorded = async ({
     return null;
   }
 
-  const [updated] = await getDatabase()
-    .update(purchases)
-    .set({
-      terminalRecordedAt: terminalRecorded ? now : null,
-      updatedAt: now,
-    })
-    .where(
-      and(
-        eq(purchases.paymentIntentId, normalizedPaymentIntentId),
-        eq(purchases.source, "stripe"),
-        eq(purchases.outcome, "succeeded"),
-        isPolishPurchaseCountry,
-      ),
-    )
-    .returning({
-      paymentIntentId: purchases.paymentIntentId,
-      terminalRecordedAt: purchases.terminalRecordedAt,
-    });
+  return getDatabase().transaction(async (transaction) => {
+    const [purchase] = await transaction
+      .select({
+        id: purchases.id,
+        paymentIntentId: purchases.paymentIntentId,
+      })
+      .from(purchases)
+      .where(
+        and(
+          eq(purchases.paymentIntentId, normalizedPaymentIntentId),
+          eq(purchases.source, "stripe"),
+          eq(purchases.outcome, "succeeded"),
+          isPolishPurchaseCountry,
+        ),
+      )
+      .limit(1)
+      .for("update");
 
-  return updated ?? null;
+    if (!purchase) {
+      return null;
+    }
+
+    if (terminalRecorded) {
+      await transaction
+        .insert(purchaseSideEffects)
+        .values({
+          deduplicationKey: `polish-terminal-recorded:${purchase.id}`,
+          kind: POLISH_TERMINAL_RECORDED_KIND,
+          payload: {},
+          provider: "internal",
+          purchaseId: purchase.id,
+          sentAt: now,
+          status: "sent",
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          set: {
+            sentAt: now,
+            status: "sent",
+            updatedAt: now,
+          },
+          target: [purchaseSideEffects.purchaseId, purchaseSideEffects.kind],
+        });
+    } else {
+      await transaction
+        .delete(purchaseSideEffects)
+        .where(
+          and(
+            eq(purchaseSideEffects.purchaseId, purchase.id),
+            eq(purchaseSideEffects.kind, POLISH_TERMINAL_RECORDED_KIND),
+          ),
+        );
+    }
+
+    return {
+      paymentIntentId: purchase.paymentIntentId,
+      terminalRecordedAt: terminalRecorded ? now : null,
+    };
+  });
 };

@@ -9,8 +9,17 @@ import {
 import { formatMinorAmount } from "@/lib/minor-amount";
 
 import { getDatabase } from "./client";
-import { isPolishPurchaseCountry } from "./polish-terminal-sales";
-import { invoices, productOffers, products, purchases } from "./schema";
+import {
+  isPolishPurchaseCountry,
+  POLISH_TERMINAL_RECORDED_KIND,
+} from "./polish-terminal-sales";
+import {
+  invoices,
+  productOffers,
+  products,
+  purchases,
+  purchaseSideEffects,
+} from "./schema";
 
 const PRODUCT_BREAKDOWN_LIMIT = 8;
 
@@ -159,12 +168,19 @@ export const getAdminPurchasesOverview = async ({
         paymentIntentId: purchases.paymentIntentId,
         purchaseItem: productItemColumn,
         soldAt: soldAtColumn,
-        terminalRecordedAt: purchases.terminalRecordedAt,
+        terminalRecordedAt: purchaseSideEffects.sentAt,
       })
       .from(purchases)
       .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
       .leftJoin(products, eq(products.id, purchases.productId))
       .leftJoin(productOffers, eq(productOffers.id, purchases.offerId))
+      .leftJoin(
+        purchaseSideEffects,
+        and(
+          eq(purchaseSideEffects.purchaseId, purchases.id),
+          eq(purchaseSideEffects.kind, POLISH_TERMINAL_RECORDED_KIND),
+        ),
+      )
       .where(listFilter)
       .orderBy(desc(soldAtColumn), desc(purchases.paymentIntentId))
       .limit(PURCHASES_LIST_LIMIT),
