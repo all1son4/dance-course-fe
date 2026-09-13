@@ -311,6 +311,12 @@ export type AdminPurchasesResponse = {
   summary?: AdminPurchasesSummary;
 };
 
+export type PolishTerminalUpdateResponse = {
+  errorCode?: string;
+  paymentIntentId?: string;
+  terminalRecordedAtIso?: string;
+};
+
 export type ResendPurchaseEmailResponse = {
   errorCode?: string;
   status?: "sent" | "skipped";

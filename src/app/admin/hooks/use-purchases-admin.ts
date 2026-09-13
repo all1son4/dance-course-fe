@@ -8,6 +8,7 @@ import type {
   AdminPurchasesResponse,
   AdminPurchasesSummary,
   MonthlySalesReportResponse,
+  PolishTerminalUpdateResponse,
   ResendPurchaseEmailResponse,
   SelectOption,
   StatusMessage,
@@ -60,6 +61,13 @@ const DOWNLOAD_REPORT_ERROR_MESSAGES: Record<string, string> = {
   invalid_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
 };
 
+const TERMINAL_UPDATE_ERROR_MESSAGES: Record<string, string> = {
+  network_error: "Ошибка сети при сохранении отметки терминала.",
+  polish_sale_not_eligible:
+    "Эта запись больше не является успешной продажей из Польши. Обнови список.",
+  rate_limited: RATE_LIMITED_STATUS_TEXT,
+};
+
 export const usePurchasesAdmin = ({
   initialSearch = "",
   isActive,
@@ -75,6 +83,8 @@ export const usePurchasesAdmin = ({
   const [appliedSearch, setAppliedSearch] = useState(seededSearch);
   const [status, setStatus] = useState<StatusMessage>(null);
   const [resendingPaymentIntentId, setResendingPaymentIntentId] = useState("");
+  const [updatingTerminalPaymentIntentId, setUpdatingTerminalPaymentIntentId] =
+    useState("");
   const [isSendingReport, setIsSendingReport] = useState(false);
   const [isDownloadingReport, setIsDownloadingReport] = useState(false);
   const [reportStatus, setReportStatus] = useState<StatusMessage>(null);
@@ -216,6 +226,67 @@ export const usePurchasesAdmin = ({
     [onUnauthorized, resendingPaymentIntentId],
   );
 
+  const setTerminalRecorded = useCallback(
+    async (purchase: AdminPurchaseEntry, terminalRecorded: boolean) => {
+      if (
+        !purchase.isPolish ||
+        purchase.outcome !== "succeeded" ||
+        updatingTerminalPaymentIntentId
+      ) {
+        return;
+      }
+
+      setUpdatingTerminalPaymentIntentId(purchase.paymentIntentId);
+      setStatus(null);
+
+      const result = await requestAdminJson<PolishTerminalUpdateResponse>(
+        ADMIN_API_ENDPOINTS.purchases,
+        {
+          body: {
+            paymentIntentId: purchase.paymentIntentId,
+            terminalRecorded,
+          },
+          method: "PATCH",
+        },
+      );
+
+      if (result.unauthorized) {
+        onUnauthorized();
+      } else if (!result.ok) {
+        setStatus({
+          text:
+            TERMINAL_UPDATE_ERROR_MESSAGES[result.errorCode] ??
+            "Не удалось сохранить отметку терминала.",
+          tone: "error",
+        });
+      } else {
+        const terminalRecordedAtIso = result.data.terminalRecordedAtIso ?? "";
+
+        setOverview((currentOverview) =>
+          currentOverview
+            ? {
+                ...currentOverview,
+                purchases: currentOverview.purchases.map((entry) =>
+                  entry.paymentIntentId === purchase.paymentIntentId
+                    ? { ...entry, terminalRecordedAtIso }
+                    : entry,
+                ),
+              }
+            : currentOverview,
+        );
+        setStatus({
+          text: terminalRecorded
+            ? "Продажа отмечена как внесенная в фискальный терминал."
+            : "Отметка терминала снята — продажа снова попадет в напоминание.",
+          tone: terminalRecorded ? "success" : "info",
+        });
+      }
+
+      setUpdatingTerminalPaymentIntentId("");
+    },
+    [onUnauthorized, updatingTerminalPaymentIntentId],
+  );
+
   const sendReport = useCallback(async () => {
     if (!monthValue || isSendingReport) {
       return;
@@ -339,6 +410,7 @@ export const usePurchasesAdmin = ({
       setAppliedSearch(seededSearch);
       setStatus(null);
       setResendingPaymentIntentId("");
+      setUpdatingTerminalPaymentIntentId("");
       setIsSendingReport(false);
       setIsDownloadingReport(false);
       setReportStatus(null);
@@ -371,9 +443,11 @@ export const usePurchasesAdmin = ({
     searchInput,
     selectMonth,
     sendReport,
+    setTerminalRecorded,
     setSearchInput,
     status,
     submitSearch,
     summary: overview?.summary ?? null,
+    updatingTerminalPaymentIntentId,
   };
 };

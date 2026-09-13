@@ -28,6 +28,7 @@ import {
   JournalEmptyState,
   JournalSkeletonCard,
   JournalSkeletonList,
+  PolishSaleBadge,
   ProductBreakdownHeader,
   ProductBreakdownList,
   ProductBreakdownName,
@@ -35,6 +36,7 @@ import {
   ProductBreakdownRow,
   ProductShareFill,
   ProductShareTrack,
+  PurchaseTableRow,
   SalesProductMeta,
   SalesProductName,
   SalesStatusBadge,
@@ -53,6 +55,7 @@ import {
   SurfaceHeaderActions,
   SurfaceHeaderRow,
   SurfaceTitle,
+  TerminalCheckboxLabel,
   WorkspaceStack,
 } from "../page.styles";
 
@@ -70,6 +73,10 @@ type PurchasesWorkspaceProps = {
   onResendEmail: (paymentIntentId: string) => void | Promise<void>;
   onSearchInputChange: (value: string) => void;
   onSendReport: () => void | Promise<void>;
+  onTerminalRecordedChange: (
+    purchase: AdminPurchaseEntry,
+    terminalRecorded: boolean,
+  ) => void | Promise<void>;
   onSubmitSearch: () => void | Promise<void>;
   previousSummary: AdminPurchasesPreviousSummary | null;
   products: AdminProductBreakdownEntry[];
@@ -79,6 +86,7 @@ type PurchasesWorkspaceProps = {
   searchInput: string;
   status: StatusMessage;
   summary: AdminPurchasesSummary | null;
+  updatingTerminalPaymentIntentId: string;
 };
 
 const OUTCOME_META: Record<
@@ -137,6 +145,7 @@ export const PurchasesWorkspace = ({
   onResendEmail,
   onSearchInputChange,
   onSendReport,
+  onTerminalRecordedChange,
   onSubmitSearch,
   previousSummary,
   products,
@@ -146,6 +155,7 @@ export const PurchasesWorkspace = ({
   searchInput,
   status,
   summary,
+  updatingTerminalPaymentIntentId,
 }: PurchasesWorkspaceProps) => {
   const isReportDisabled =
     !monthValue || isLoading || isSendingReport || isDownloadingReport;
@@ -405,6 +415,7 @@ export const PurchasesWorkspace = ({
                   <th>Покупка</th>
                   <th>Сумма</th>
                   <th>Статус</th>
+                  <th>Терминал</th>
                   <th>Действие</th>
                 </tr>
               </thead>
@@ -413,9 +424,17 @@ export const PurchasesWorkspace = ({
                   const outcomeMeta = OUTCOME_META[purchase.outcome];
                   const isResending =
                     resendingPaymentIntentId === purchase.paymentIntentId;
+                  const isUpdatingTerminal =
+                    updatingTerminalPaymentIntentId === purchase.paymentIntentId;
+                  const isTerminalRecorded = Boolean(purchase.terminalRecordedAtIso);
+                  const requiresTerminalRecording =
+                    purchase.isPolish && purchase.outcome === "succeeded";
 
                   return (
-                    <tr key={purchase.paymentIntentId}>
+                    <PurchaseTableRow
+                      key={purchase.paymentIntentId}
+                      $isPolish={requiresTerminalRecording}
+                    >
                       <td data-label="Дата">
                         {formatDateTime(purchase.soldAtIso, ACCOUNTING_TIME_ZONE)}
                       </td>
@@ -426,6 +445,9 @@ export const PurchasesWorkspace = ({
                           </SalesProductName>
                           {purchase.customerEmail && (
                             <SalesProductMeta>{purchase.customerEmail}</SalesProductMeta>
+                          )}
+                          {requiresTerminalRecording && (
+                            <PolishSaleBadge>Польша · фискальный учет</PolishSaleBadge>
                           )}
                         </span>
                       </td>
@@ -449,6 +471,41 @@ export const PurchasesWorkspace = ({
                           {outcomeMeta.label}
                         </SalesStatusBadge>
                       </td>
+                      <td data-label="Терминал">
+                        {requiresTerminalRecording ? (
+                          <span>
+                            <TerminalCheckboxLabel $checked={isTerminalRecorded}>
+                              <input
+                                type="checkbox"
+                                checked={isTerminalRecorded}
+                                onChange={(event) =>
+                                  void onTerminalRecordedChange(
+                                    purchase,
+                                    event.target.checked,
+                                  )
+                                }
+                                disabled={Boolean(updatingTerminalPaymentIntentId)}
+                                aria-label={`Продажа ${purchase.paymentIntentId} внесена в фискальный терминал`}
+                              />
+                              {isUpdatingTerminal
+                                ? "Сохраняю..."
+                                : isTerminalRecorded
+                                  ? "Внесено"
+                                  : "Не внесено"}
+                            </TerminalCheckboxLabel>
+                            {purchase.terminalRecordedAtIso && (
+                              <SalesProductMeta>
+                                {formatDateTime(
+                                  purchase.terminalRecordedAtIso,
+                                  ACCOUNTING_TIME_ZONE,
+                                )}
+                              </SalesProductMeta>
+                            )}
+                          </span>
+                        ) : (
+                          <SalesProductMeta>—</SalesProductMeta>
+                        )}
+                      </td>
                       <td data-label="Действие">
                         {purchase.outcome === "succeeded" && (
                           <BroadcastActionButton
@@ -465,7 +522,7 @@ export const PurchasesWorkspace = ({
                           </BroadcastActionButton>
                         )}
                       </td>
-                    </tr>
+                    </PurchaseTableRow>
                   );
                 })}
               </tbody>

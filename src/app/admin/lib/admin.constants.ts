@@ -74,7 +74,7 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   },
   purchases: {
     description:
-      "Продажи и покупатели: суммы за месяц, поиск по имени или email, переотправка письма о покупке и месячный отчет в CSV.",
+      "Продажи и покупатели: суммы за месяц, польские оплаты для внесения в фискальный терминал, поиск, переотправка письма и месячный отчет в CSV.",
   },
   sales: {
     description:
