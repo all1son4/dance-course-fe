@@ -53,12 +53,16 @@ const RESEND_EMAIL_ERROR_MESSAGES: Record<string, string> = {
 const SEND_REPORT_ERROR_MESSAGES: Record<string, string> = {
   future_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
   invalid_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
+  monthly_sales_report_stripe_data_incomplete:
+    "Отчет не сформирован: по одной или нескольким продажам Stripe еще не подтвердил полный набор финансовых данных (сумму, комиссию и нетто).",
   network_error: SEND_REPORT_FALLBACK_ERROR_TEXT,
 };
 
 const DOWNLOAD_REPORT_ERROR_MESSAGES: Record<string, string> = {
   future_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
   invalid_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
+  monthly_sales_report_stripe_data_incomplete:
+    "CSV не сформирован: по одной или нескольким продажам Stripe еще не подтвердил полный набор финансовых данных (сумму, комиссию и нетто).",
 };
 
 const TERMINAL_UPDATE_ERROR_MESSAGES: Record<string, string> = {
@@ -330,7 +334,7 @@ export const usePurchasesAdmin = ({
               tone: "info",
             }
           : {
-              text: `Отчет отправлен на ${deliveredTo || "адрес из RESEND_REPLY_TO"}. Строк: ${rowCount ?? 0}.`,
+              text: `Отчет отправлен на ${deliveredTo || "адрес из RESEND_REPLY_TO"}. Продаж: ${rowCount ?? 0}.`,
               tone: "success",
             },
       );

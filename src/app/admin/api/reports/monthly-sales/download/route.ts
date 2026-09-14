@@ -35,9 +35,16 @@ export async function GET(request: Request) {
     if (
       error instanceof Error &&
       (error.message === "invalid_monthly_sales_report_month" ||
-        error.message === "future_monthly_sales_report_month")
+        error.message === "future_monthly_sales_report_month" ||
+        error.message === "monthly_sales_report_stripe_data_incomplete")
     ) {
-      return jsonNoStore({ errorCode: error.message }, { status: 400 });
+      return jsonNoStore(
+        { errorCode: error.message },
+        {
+          status:
+            error.message === "monthly_sales_report_stripe_data_incomplete" ? 409 : 400,
+        },
+      );
     }
 
     console.error("Failed to download monthly sales report from admin", error);

@@ -82,8 +82,15 @@ test("monthly CSV includes the first and last sale of the Warsaw month only once
       const [purchase] = await client<{ id: string }[]>`
         INSERT INTO purchases (
           payment_intent_id, amount_minor, currency, stripe_status, outcome,
-          source, purchase_item_snapshot
-        ) VALUES (${paymentIntentId}, 5000, 'pln', 'succeeded', 'succeeded', 'stripe', ${fixture.item})
+          source, purchase_item_snapshot, customer_country_snapshot,
+          settlement_amount_minor, settlement_currency,
+          stripe_balance_transaction_id, stripe_fee_amount_minor,
+          stripe_net_amount_minor
+        ) VALUES (
+          ${paymentIntentId}, 5000, 'pln', 'succeeded', 'succeeded', 'stripe',
+          ${fixture.item}, 'PL', 5000, 'pln',
+          ${`txn_report_contract_${runId}_${index}`}, 150, 4850
+        )
         RETURNING id
       `;
       assert.ok(purchase);
@@ -115,9 +122,10 @@ test("monthly CSV includes the first and last sale of the Warsaw month only once
       reportMonth: "2042-08",
     });
     const expectedCsv = [
-      "Дата продажи (Europe/Warsaw),Номер инвойса,ФИО / Email,Страна покупки,Что купили,Сумма продажи,Комиссия Stripe,Сумма после комиссии",
-      "2042-08-01 00:00:00,,,,fixture-at-start,50.00 PLN,,",
-      "2042-08-31 23:59:59,,,,fixture-before-end,50.00 PLN,,",
+      "Дата продажи (Europe/Warsaw),Номер инвойса,ФИО / Email,Страна покупки,Что купили,Оригинальная сумма (до конвертации Stripe),Сумма продажи (после конвертации Stripe),Комиссия Stripe,Сумма после комиссии",
+      "2042-08-01 00:00:00,,,PL,fixture-at-start,50.00 PLN,50.00 PLN,1.50 PLN,48.50 PLN",
+      "2042-08-31 23:59:59,,,PL,fixture-before-end,50.00 PLN,50.00 PLN,1.50 PLN,48.50 PLN",
+      ",,,PL,Итого по стране после комиссии Stripe (2 продажи),,,,97.00 PLN",
     ].join("\n");
     assert.equal(report.rowCount, 2);
     assert.equal(report.csv, expectedCsv);

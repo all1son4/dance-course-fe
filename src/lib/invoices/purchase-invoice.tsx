@@ -10,6 +10,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 
+import { ACCOUNTING_TIME_ZONE } from "@/lib/accounting-month";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 
@@ -22,7 +23,6 @@ const SELLER_ADDRESS_LINES = [
   "NIP 5273113119",
 ];
 
-const DEFAULT_INVOICE_DATE_TIME_ZONE = "Europe/Warsaw";
 const PDF_FONT_FAMILY = "Noto Sans";
 
 const invoiceFontDirectory = path.join(process.cwd(), "public", "fonts");
@@ -218,7 +218,7 @@ const formatInvoiceDate = (date: Date) =>
   new Intl.DateTimeFormat("en-US", {
     day: "numeric",
     month: "long",
-    timeZone: DEFAULT_INVOICE_DATE_TIME_ZONE,
+    timeZone: ACCOUNTING_TIME_ZONE,
     year: "numeric",
   }).format(getInvoiceDate(date));
 
