@@ -402,9 +402,16 @@
       },
       "impro": {
         "title": "Impro Room",
-        "description": "Improvisation practice.",
-        "note": "This group has no fixed schedule.",
-        "details": "Every month we decide when and where to meet, practice different exercises, explore nuances, details and the interplay with music and silence, and build our own dance language.",
+        "description": "These meetings are for anyone who wants to learn to improvise, practise more and stop being afraid of improv.",
+        "note": "Important: Impro Room is not a class where I teach you how to improvise correctly. I come up with exercises, create space for practice and learn together with you.",
+        "details": "We get together in the studio and work with different exercises and concepts, try new approaches, jam and simply improvise a lot.",
+        "scheduleTitle": "September schedule",
+        "schedule": {
+          "1": "19.09 — 13:30–15:00",
+          "2": "26.09 — 13:30–15:00"
+        },
+        "location": "Location",
+        "locationValue": "Warsaw, Wola",
         "price": "50 PLN",
         "priceSuffix": "/ per class"
       }

@@ -35,9 +35,9 @@ export default function OnlinePromoCard({ bgColor, icon }: OnlinePromoCardProps)
             {t("items.2.prefix")} <HighlightText>{t("items.2.highlight")}</HighlightText>
           </li>
           <li>{t("items.3")}</li>
-          <li>
+          {/* <li>
             <HighlightText>{t("items.4")}</HighlightText>
-          </li>
+          </li> */}
         </CourseList>
       }
       buttonText={commonT("details")}
