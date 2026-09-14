@@ -212,6 +212,18 @@ const formatAccountingSaleTimestamp = (saleTimestampIso: string) => {
 const formatCountry = (country: string) =>
   country.trim().toLocaleUpperCase("ru-RU") || "Не указана";
 
+const formatCountryName = (country: string) => {
+  if (!/^[A-Z]{2}$/u.test(country)) {
+    return country;
+  }
+
+  try {
+    return new Intl.DisplayNames(["ru"], { type: "region" }).of(country) ?? country;
+  } catch {
+    return country;
+  }
+};
+
 const compareCountrySaleRecords = (
   left: MonthlySalesReportSaleRecord,
   right: MonthlySalesReportSaleRecord,
@@ -267,6 +279,7 @@ const buildCountryTotalCsvRow = (
   country: string,
   saleRecords: MonthlySalesReportSaleRecord[],
 ) => {
+  const countryName = formatCountryName(country);
   const netTotalMinor = saleRecords.reduce(
     (total, saleRecord) => total + parseMinorAmount(saleRecord.stripeNetAmountMinor),
     BigInt(0),
@@ -276,8 +289,8 @@ const buildCountryTotalCsvRow = (
     "",
     "",
     "",
-    country,
-    `Итого по стране после комиссии Stripe (${formatSaleCount(saleRecords.length)})`,
+    countryName,
+    `Итого по стране ${countryName} после комиссии Stripe (${formatSaleCount(saleRecords.length)})`,
     "",
     "",
     "",
