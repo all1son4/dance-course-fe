@@ -5,6 +5,7 @@ import {
   ACCOUNTING_TIME_ZONE,
   getAccountingCalendarDateValue,
   getAccountingDateTimeValue,
+  getAccountingMonthParts,
   getAccountingMonthRange,
   getAccountingMonthValue,
   getPreviousAccountingMonthValue,
@@ -14,6 +15,10 @@ test("uses Europe/Warsaw as the single accounting calendar", () => {
   assert.equal(ACCOUNTING_TIME_ZONE, "Europe/Warsaw");
   assert.equal(getAccountingMonthValue(new Date("2026-08-31T21:59:59.999Z")), "2026-08");
   assert.equal(getAccountingMonthValue(new Date("2026-08-31T22:00:00.000Z")), "2026-09");
+  assert.deepEqual(getAccountingMonthParts(new Date("2026-08-31T22:00:00.000Z")), {
+    month: 9,
+    year: 2026,
+  });
   assert.equal(
     getAccountingCalendarDateValue(new Date("2026-08-31T22:00:00.000Z")),
     "2026-09-01",

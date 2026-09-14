@@ -1,5 +1,7 @@
 import { and, eq, max, sql } from "drizzle-orm";
 
+import { getAccountingMonthParts } from "@/lib/accounting-month";
+
 import { getDatabase } from "./client";
 import { findPaymentRecordByIntentIdFromDatabase } from "./payment-records";
 import { invoices, invoiceSequences, purchases } from "./schema";
@@ -49,8 +51,9 @@ export const allocateInvoice = async (input: AllocateInvoiceInput) => {
   assertInvoiceInput(input);
 
   const purchaseId = input.purchaseId.trim();
-  const sequenceYear = input.issuedAt.getUTCFullYear();
-  const sequenceMonth = input.issuedAt.getUTCMonth() + 1;
+  const { month: sequenceMonth, year: sequenceYear } = getAccountingMonthParts(
+    input.issuedAt,
+  );
 
   return getDatabase().transaction(async (transaction) => {
     await transaction.execute(

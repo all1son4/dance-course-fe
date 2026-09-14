@@ -131,6 +131,12 @@ export const getAccountingMonthValue = (date: Date) => {
   return `${year}-${pad2(month)}`;
 };
 
+export const getAccountingMonthParts = (date: Date) => {
+  const { month, year } = getAccountingCalendarParts(date);
+
+  return { month, year };
+};
+
 export const getAccountingCalendarDateValue = (date: Date) => {
   const { day, month, year } = getAccountingCalendarParts(date);
 

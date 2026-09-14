@@ -659,3 +659,43 @@ test("allocates one invoice per purchase and unique monthly sequences concurrent
     `;
   }
 });
+
+test("allocates invoice numbers by the Warsaw accounting month", async () => {
+  const runId = randomUUID().replaceAll("-", "");
+  const paymentIntentId = `pi_db06_invoice_boundary_${runId}`;
+  const issuedAt = new Date("2098-08-31T22:00:00.000Z");
+
+  try {
+    const [purchase] = await client<{ id: string }[]>`
+      INSERT INTO purchases (
+        payment_intent_id,
+        amount_minor,
+        currency,
+        stripe_status,
+        outcome
+      ) VALUES (
+        ${paymentIntentId},
+        5000,
+        'eur',
+        'succeeded',
+        'succeeded'
+      )
+      RETURNING id
+    `;
+    const allocation = await allocateInvoice({
+      amountMinor: 5000,
+      currency: "eur",
+      issuedAt,
+      purchaseId: purchase.id,
+    });
+
+    assert.equal(allocation.invoice.sequenceYear, 2098);
+    assert.equal(allocation.invoice.sequenceMonth, 9);
+    assert.match(allocation.invoice.invoiceNumber, /^FV\/2098\/09\/\d{3,}$/u);
+  } finally {
+    await client`
+      DELETE FROM purchases
+      WHERE payment_intent_id = ${paymentIntentId}
+    `;
+  }
+});
