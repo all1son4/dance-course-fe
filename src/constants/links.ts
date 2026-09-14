@@ -18,6 +18,9 @@ export const INSTAGRAM_DIB_GALA_URL =
 export const FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL =
   "https://docs.google.com/forms/d/1CQj--QKVTDUOeYMeZm8QBCKvBBD_I9xdS-6Y126oO00/viewform";
 
+export const IMPRO_ROOM_REGISTRATION_FORM_VIEW_URL =
+  "https://forms.gle/pLwUq2LeGHyXK3y56";
+
 export const CHOREO_STILL_ALIVE_REEL_URL =
   "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2";
 export const CHOREO_HER_LIES_REEL_URL =

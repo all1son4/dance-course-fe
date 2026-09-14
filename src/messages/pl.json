@@ -402,9 +402,16 @@
       },
       "impro": {
         "title": "Impro Room",
-        "description": "Praktyka improwizacji.",
-        "note": "W tej grupie nie ma stałego grafiku.",
-        "details": "Co miesiąc ustalamy, kiedy i gdzie się spotykamy, ćwiczymy różne zadania, badamy niuanse, detale oraz grę z muzyką i ciszą, tworzymy własny język tańca.",
+        "description": "Te spotkania są dla osób, które chcą uczyć się improwizować, więcej ćwiczyć i przestać bać się improwizacji.",
+        "note": "Ważne: Impro Room nie jest zajęciami, na których uczę, jak poprawnie improwizować. Wymyślam zadania, tworzę przestrzeń do praktyki i uczę się razem z wami.",
+        "details": "Spotykamy się razem na sali i pracujemy z różnymi zadaniami i koncepcjami, próbujemy nowych podejść, jamujemy i po prostu dużo improwizujemy.",
+        "scheduleTitle": "Grafik na wrzesień",
+        "schedule": {
+          "1": "19.09 — 13:30–15:00",
+          "2": "26.09 — 13:30–15:00"
+        },
+        "location": "Lokalizacja",
+        "locationValue": "Warszawa, Wola",
         "price": "50 PLN",
         "priceSuffix": "/ za zajęcia"
       }
