@@ -1875,11 +1875,12 @@ Next steps, in order:
 2. **DONE (DEV), September 13:** remove the reader's export-row dependency after the
    preserved-date dev release. The separate compatibility revision and its evidence
    are recorded below.
-3. **IN PROGRESS (DEV):** invoice runtime compatibility is done; prepare the remaining
-   archive/checkpoint consumers and nominate a rollback revision that works with the
-   intended contracted schema. Then rehearse cleanup and restore in an isolated
-   database, verify retained business rows, and refresh preflight/backup evidence.
-   No real cleanup SQL is pending in `drizzle/`.
+3. **IN PROGRESS (DEV):** invoice compatibility is released; the DB-only contract
+   archive and payment-export compatibility are prepared locally. Retire the remaining
+   historical backfill/checkpoint code and nominate a rollback revision that works with
+   the intended contracted schema. Then rehearse cleanup and restore in an isolated
+   database, verify retained business rows, and refresh preflight/backup evidence. No
+   real cleanup SQL is pending in `drizzle/`.
 4. Obtain separate owner approval for the exact deletions and production rollout;
    the retained September 23 boundary still applies unless explicitly revised.
    Apply the contract migration only in that controlled release, run post-deploy
@@ -2042,6 +2043,21 @@ with `pg_restore --exit-on-error` into a separate database. The archive containe
 `database.dump` and `manifest.json`; no Google import, credential, network request or
 live-environment write occurred. This is tooling proof only: no real dev/production
 archive or contract deletion is claimed yet, and Gate G7 remains open.
+
+#### Payment export compatibility — LOCAL, September 14
+
+The active PostgreSQL payment adapter no longer reads retained
+`successful_customer_export` rows into payment records and no longer creates or updates
+such rows from the two historical compatibility fields. Its side-effect hydration query
+now selects only purchase email and admin Telegram alert records. The fields remain in
+the frozen archive DTO until the maintenance-code removal, so this slice does not mix a
+broad type cleanup into runtime compatibility.
+
+A PostgreSQL regression test proves all three required states: populated legacy input
+cannot create a new export row; adding or changing a retained legacy row cannot alter
+the hydrated payment record; deleting that synthetic row also leaves the result
+identical. Adjacent payment monotonicity, Telegram access and admin-grant integration
+tests pass. No real export row, schema, environment or live database was changed.
 
 ### Gate G7
 
