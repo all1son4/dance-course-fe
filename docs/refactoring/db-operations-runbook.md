@@ -205,9 +205,12 @@ not understand the inbox/outbox workers. Disable only through a DB-compatible re
 or deploy a forward fix; immutable inbox rows and versioned outbox jobs must remain
 claimable.
 
-The protected source backfill has its own checkpoint and recovery procedure in
-[`google-sheets-backfill.md`](./google-sheets-backfill.md). Resume the same source
-fingerprint; do not edit `data_backfill_runs` manually or start a second operator run.
+The protected source backfill and its checkpoint are completed historical migration
+evidence. Do not resume it, edit `data_backfill_runs`, or re-enable Google credentials.
+Before `DROP-05` removes the physical checkpoint and compatibility columns, use the
+PostgreSQL-only encrypted contract archive in
+[`data-source-snapshots.md`](./data-source-snapshots.md#drop-05-postgresql-only-contract-archive)
+and prove restoration in an isolated database.
 
 ## Backup and restore
 

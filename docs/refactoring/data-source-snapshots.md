@@ -7,6 +7,8 @@ Operational update: `DROP-03` retired live Google credentials on 2026-09-05 afte
 final dev/prod captures below. Live capture commands are retained as historical
 operator instructions, not routine tasks to rerun with revoked credentials. Offline
 decryption/restore needs only the encrypted triplet and its separate recovery key.
+`DROP-05` adds a separate PostgreSQL-only contract archive described below; it never
+loads the Google adapter or requires a Google credential.
 
 ## Purpose
 
@@ -101,8 +103,36 @@ npm run db:snapshot:sources -- \
 ```
 
 The command refuses an implicit target, an incorrect typed confirmation, conflicting
-public-key inputs, and existing output filenames. Output directories and files are
-restricted to mode `0700`/`0600`.
+public-key inputs, a generic database URL without an explicit `DEV`/`PROD` marker, and
+existing output filenames. Output directories and files are restricted to mode
+`0700`/`0600`.
+
+## DROP-05 PostgreSQL-only contract archive
+
+Before rehearsing or applying a contract migration, capture the selected database
+without re-enabling Google access:
+
+```bash
+PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" \
+npm run db:snapshot:legacy-contract -- \
+  --target=development \
+  --confirmation=snapshot-development \
+  --public-key-path=.data-snapshots/source-snapshot-public.pem \
+  --output-dir=.data-snapshots/development
+```
+
+Production uses the corresponding explicit `production` target, confirmation and
+output directory, but only in the separately approved contract release. The selected
+database URL must come from an environment-specific variable containing `DEV` or
+`PROD`; common `DATABASE_URL` fallbacks are rejected even when `DATABASE_ENV` is set.
+
+This mode writes manifest schema version 2 with `scope: "database"`. Its encrypted
+archive has exactly `database.dump` and `manifest.json`; it cannot contain
+`google-sheets.json`. Before encryption, `pg_restore --list` must prove that the dump
+contains table data for `purchases`, `purchase_side_effects`, `invoices`, and
+`data_backfill_runs`. The dump is captured in one serializable, deferrable PostgreSQL
+transaction. The existing decrypt command supports both historical version-1 source
+archives and version-2 database-only archives.
 
 ## Cut-off semantics
 
@@ -121,7 +151,8 @@ point-in-time consistency and do not interrupt user purchases to obtain it.
 
 ## Recovery check
 
-Use all three files from one capture and decrypt only into a protected temporary path:
+Use the encrypted archive, wrapped key and public manifest from one capture and decrypt
+only into a protected temporary path:
 
 ```bash
 npm run db:snapshot:decrypt -- \

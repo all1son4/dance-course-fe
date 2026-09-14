@@ -2024,7 +2024,24 @@ No environment variables were edited. `main` and its production deployment remai
 `e0c470a`; no production schema/data, push or release was changed by this step.
 `DROP-05` as a whole and Gate G7 remain open; the September 23 retention boundary and
 separate deletion/production approval remain in force. Archive/checkpoint consumers
-still need preparation before the isolated contract rehearsal.
+still need code retirement before the isolated contract rehearsal.
+
+#### Contract archive preparation — LOCAL, September 14
+
+A dedicated `db:snapshot:legacy-contract` mode now captures only PostgreSQL in one
+serializable, deferrable dump transaction. It dynamically avoids the retired Google
+adapter, rejects generic/non-targeted database variables, and requires dump contents
+for `purchases`, `purchase_side_effects`, `invoices`, and `data_backfill_runs` before
+encryption. Manifest schema version 2 distinguishes the two-file database archive from
+historical version-1 DB + Sheets archives; the existing decryptor accepts both.
+
+The implementation passed formatting, TypeScript and seven focused encryption/plan
+tests. A fully synthetic PostgreSQL 17 database with all 21 repository migrations and
+one row in each required contract table was captured, encrypted, decrypted and restored
+with `pg_restore --exit-on-error` into a separate database. The archive contained only
+`database.dump` and `manifest.json`; no Google import, credential, network request or
+live-environment write occurred. This is tooling proof only: no real dev/production
+archive or contract deletion is claimed yet, and Gate G7 remains open.
 
 ### Gate G7
 

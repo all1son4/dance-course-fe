@@ -14,11 +14,16 @@ import {
 import { tmpdir } from "node:os";
 import { basename, join, resolve } from "node:path";
 
-import { captureGoogleSheetsSourceSnapshot } from "@/lib/google-sheets";
-
 import { getDatabaseEnvSelection, getRequiredDatabaseUrlFromEnv } from "./env";
 import { loadDatabaseEnvConfig } from "./load-env";
 import { encryptSourceSnapshotArchive } from "./source-snapshot-crypto";
+import {
+  assertLegacyContractArchiveTables,
+  assertSnapshotDatabaseEnvVariable,
+  getSourceSnapshotArchiveEntries,
+  getSourceSnapshotSchemaVersion,
+  parseSourceSnapshotScope,
+} from "./source-snapshot-plan";
 
 type SnapshotTarget = "development" | "production";
 
@@ -288,7 +293,7 @@ const captureDatabaseDump = async ({
     ],
     workingDirectory,
   });
-  await runPostgresCommand({
+  const restoreListing = await runPostgresCommand({
     databaseUrl,
     program: "pg_restore",
     programArgs: ["--list", dumpPath],
@@ -298,6 +303,7 @@ const captureDatabaseDump = async ({
   return {
     captureCompletedAt: new Date().toISOString(),
     captureStartedAt,
+    restoreListing: restoreListing.stdout,
   };
 };
 
@@ -342,11 +348,17 @@ const getPublicKey = async () => {
 
 const main = async () => {
   const target = getTarget();
+  const scope = parseSourceSnapshotScope(getArgumentValue("scope"));
+  const requireLegacyContract = process.argv.includes("--require-legacy-contract");
   const confirmation = getArgumentValue("confirmation");
   const expectedConfirmation = `snapshot-${target}`;
 
   if (confirmation !== expectedConfirmation) {
     throw new Error(`Pass --confirmation=${expectedConfirmation} exactly.`);
+  }
+
+  if (requireLegacyContract && scope !== "database") {
+    throw new Error("--require-legacy-contract requires --scope=database.");
   }
 
   process.env.DATABASE_ENV = target;
@@ -359,6 +371,11 @@ const main = async () => {
       `Resolved ${databaseSelection.deploymentEnvironment} database for ${target} snapshot.`,
     );
   }
+
+  assertSnapshotDatabaseEnvVariable({
+    target,
+    variableName: databaseSelection.variableName,
+  });
 
   const databaseUrl = getRequiredDatabaseUrlFromEnv({
     kind: "unpooled",
@@ -374,7 +391,7 @@ const main = async () => {
   const captureStartedAt = new Date().toISOString();
   const gitSha = await getGitSha();
   const timestamp = captureStartedAt.replaceAll(/[-:.]/gu, "");
-  const captureId = `${target}-${timestamp}-${gitSha.slice(0, 12)}`;
+  const captureId = `${target}${scope === "database" ? "-database" : ""}-${timestamp}-${gitSha.slice(0, 12)}`;
   const encryptedArchiveName = `${captureId}.tar.gz.enc`;
   const wrappedKeyName = `${captureId}.key.enc`;
   const publicManifestName = `${captureId}.manifest.json`;
@@ -402,12 +419,17 @@ const main = async () => {
       dumpPath,
       workingDirectory,
     });
-    const sheetsCapturePromise = captureGoogleSheetsSourceSnapshot().then(
-      async (snapshot) => {
-        await writePrivateJson(sheetsPath, snapshot);
-        return snapshot;
-      },
-    );
+    const sheetsCapturePromise =
+      scope === "sources"
+        ? import("@/lib/google-sheets").then(
+            async ({ captureGoogleSheetsSourceSnapshot }) => {
+              const snapshot = await captureGoogleSheetsSourceSnapshot();
+
+              await writePrivateJson(sheetsPath, snapshot);
+              return snapshot;
+            },
+          )
+        : Promise.resolve(null);
     const [databaseResult, sheetsResult] = await Promise.allSettled([
       databaseCapturePromise,
       sheetsCapturePromise,
@@ -424,10 +446,12 @@ const main = async () => {
     const databaseCapture = databaseResult.value;
     const sheetsCapture = sheetsResult.value;
     const captureCompletedAt = new Date().toISOString();
-    const [databaseFile, sheetsFile] = await Promise.all([
-      getFileEvidence(dumpPath),
-      getFileEvidence(sheetsPath),
-    ]);
+    const { restoreListing, ...databaseCaptureEvidence } = databaseCapture;
+    const databaseFile = await getFileEvidence(dumpPath);
+    const sheetsFile = sheetsCapture ? await getFileEvidence(sheetsPath) : null;
+    const legacyContractArchiveTables = requireLegacyContract
+      ? assertLegacyContractArchiveTables(restoreListing)
+      : null;
     const internalManifest = {
       captureId,
       captureWindow: {
@@ -436,24 +460,31 @@ const main = async () => {
       },
       cutOffAt: captureCompletedAt,
       cutOffPolicy:
-        "Upper bound of a non-atomic cross-source capture; changes inside the capture window require delta reconciliation.",
+        scope === "database"
+          ? "PostgreSQL custom-format dump captured from one serializable, deferrable transaction."
+          : "Upper bound of a non-atomic cross-source capture; changes inside the capture window require delta reconciliation.",
       database: {
-        ...databaseCapture,
+        ...databaseCaptureEvidence,
         file: databaseFile,
         toolVersion: postgresToolVersion,
       },
       gitSha,
-      googleSheets: {
-        captureCompletedAt: sheetsCapture.captureCompletedAt,
-        captureStartedAt: sheetsCapture.captureStartedAt,
-        file: sheetsFile,
-        sheetCounts: sheetsCapture.sheets.map(({ key, rowCount }) => ({
-          key,
-          rowCount,
-        })),
-        spreadsheetIdSha256: sheetsCapture.spreadsheetIdSha256,
-      },
-      schemaVersion: 1,
+      ...(sheetsCapture && sheetsFile
+        ? {
+            googleSheets: {
+              captureCompletedAt: sheetsCapture.captureCompletedAt,
+              captureStartedAt: sheetsCapture.captureStartedAt,
+              file: sheetsFile,
+              sheetCounts: sheetsCapture.sheets.map(({ key, rowCount }) => ({
+                key,
+                rowCount,
+              })),
+              spreadsheetIdSha256: sheetsCapture.spreadsheetIdSha256,
+            },
+          }
+        : {}),
+      schemaVersion: getSourceSnapshotSchemaVersion(scope),
+      ...(scope === "database" ? { legacyContractArchiveTables, scope } : {}),
       target,
     };
 
@@ -463,9 +494,7 @@ const main = async () => {
       plainArchivePath,
       "-C",
       workingDirectory,
-      basename(dumpPath),
-      basename(sheetsPath),
-      basename(internalManifestPath),
+      ...getSourceSnapshotArchiveEntries(scope),
     ]);
     await chmod(plainArchivePath, 0o600);
 
@@ -503,8 +532,16 @@ const main = async () => {
       },
       gitSha,
       publicKeySha256,
-      schemaVersion: 1,
-      sourceCounts: internalManifest.googleSheets.sheetCounts,
+      schemaVersion: internalManifest.schemaVersion,
+      ...(scope === "database" ? { legacyContractArchiveTables, scope } : {}),
+      ...(sheetsCapture
+        ? {
+            sourceCounts: sheetsCapture.sheets.map(({ key, rowCount }) => ({
+              key,
+              rowCount,
+            })),
+          }
+        : {}),
       target,
     };
 
@@ -517,6 +554,7 @@ const main = async () => {
         encryptedArchiveSha256: encryptedArchive.sha256,
         outputDirectory,
         publicKeySha256,
+        scope,
         target,
       })}\n`,
     );
