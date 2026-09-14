@@ -67,7 +67,7 @@ test("monthly report groups countries and gives each group one PLN total", () =>
   );
   assert.equal(
     rows[2],
-    ",,,DE,Итого по стране после комиссии Stripe (1 продажа),,,,250.00 PLN",
+    ",,,Германия,Итого по стране Германия после комиссии Stripe (1 продажа),,,,250.00 PLN",
   );
   assert.equal(
     rows[3],
@@ -79,7 +79,7 @@ test("monthly report groups countries and gives each group one PLN total", () =>
   );
   assert.equal(
     rows[5],
-    ",,,PL,Итого по стране после комиссии Stripe (2 продажи),,,,422.00 PLN",
+    ",,,Польша,Итого по стране Польша после комиссии Stripe (2 продажи),,,,422.00 PLN",
   );
 });
 
