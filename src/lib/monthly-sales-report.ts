@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import { and, asc, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, lt } from "drizzle-orm";
 
 import { recordMonthlyReportRunInDatabase } from "@/db/business-operation-jobs";
 import { getDatabase } from "@/db/client";
@@ -52,7 +52,7 @@ export type MonthlySalesReportRunResult = {
   status: "sent" | "skipped" | "failed";
 };
 export type MonthlySalesReportDeliveryResponse = Omit<MonthlySalesReportRunResult, "csv">;
-type MonthlySalesReportSaleRecord = {
+export type MonthlySalesReportSaleRecord = {
   amountMinor: string;
   currency: string;
   customerCountry: string;
@@ -64,6 +64,7 @@ type MonthlySalesReportSaleRecord = {
   saleTimestampIso: string;
   settlementAmountMinor: string;
   settlementCurrency: string;
+  stripeBalanceTransactionId: string;
   stripeFeeAmountMinor: string;
   stripeNetAmountMinor: string;
 };
@@ -75,17 +76,37 @@ type ExistingMonthlySalesReportRun = NonNullable<
 const capitalizeFirstLetter = (value: string) =>
   `${value[0]?.toUpperCase() ?? ""}${value.slice(1)}`;
 
-const formatAmount = (amountMinor: string, currency: string) => {
-  const parsedAmountMinor = Number.parseInt(amountMinor, 10);
-  const normalizedCurrency = currency.trim().toUpperCase();
+const parseMinorAmount = (amountMinor: string) => {
+  const normalizedAmountMinor = amountMinor.trim();
 
-  if (!Number.isFinite(parsedAmountMinor) || !normalizedCurrency) {
-    return [amountMinor.trim(), normalizedCurrency].filter(Boolean).join(" ").trim();
+  if (!/^-?\d+$/u.test(normalizedAmountMinor)) {
+    throw new Error("monthly_sales_report_stripe_data_incomplete");
   }
 
-  const majorAmount = (parsedAmountMinor / 100).toFixed(2);
+  return BigInt(normalizedAmountMinor);
+};
 
-  return `${majorAmount} ${normalizedCurrency}`;
+const formatAmount = (amountMinor: string | bigint, currency: string) => {
+  const parsedAmountMinor =
+    typeof amountMinor === "bigint" ? amountMinor : parseMinorAmount(amountMinor);
+  const normalizedCurrency = currency.trim().toUpperCase();
+
+  if (!normalizedCurrency) {
+    throw new Error("monthly_sales_report_stripe_data_incomplete");
+  }
+
+  const zero = BigInt(0);
+  const minorUnitsPerMajor = BigInt(100);
+  const sign = parsedAmountMinor < zero ? "-" : "";
+  const absoluteAmountMinor =
+    parsedAmountMinor < zero ? -parsedAmountMinor : parsedAmountMinor;
+  const majorAmount = absoluteAmountMinor / minorUnitsPerMajor;
+  const fractionalAmount = String(absoluteAmountMinor % minorUnitsPerMajor).padStart(
+    2,
+    "0",
+  );
+
+  return `${sign}${majorAmount}.${fractionalAmount} ${normalizedCurrency}`;
 };
 
 export const parseReportMonth = parseAccountingMonthValue;
@@ -160,7 +181,8 @@ const buildCsv = (rows: string[][]) => {
     "ФИО / Email",
     "Страна покупки",
     "Что купили",
-    "Сумма продажи",
+    "Оригинальная сумма (до конвертации Stripe)",
+    "Сумма продажи (после конвертации Stripe)",
     "Комиссия Stripe",
     "Сумма после комиссии",
   ];
@@ -169,31 +191,6 @@ const buildCsv = (rows: string[][]) => {
   return csvRows
     .map((row) => row.map((cell) => escapeSpreadsheetCsvCell(cell ?? "")).join(","))
     .join("\n");
-};
-
-const formatNullableAmount = (amountMinor: string, currency: string) =>
-  amountMinor.trim() && currency.trim() ? formatAmount(amountMinor, currency) : "";
-
-const formatPlnSaleAmount = ({
-  amountMinor,
-  currency,
-  settlementAmountMinor,
-  settlementCurrency,
-}: {
-  amountMinor: string;
-  currency: string;
-  settlementAmountMinor: string;
-  settlementCurrency: string;
-}) => {
-  if (settlementAmountMinor.trim() && settlementCurrency.trim().toLowerCase() === "pln") {
-    return formatAmount(settlementAmountMinor, settlementCurrency);
-  }
-
-  if (currency.trim().toLowerCase() === "pln") {
-    return formatAmount(amountMinor, currency);
-  }
-
-  return "";
 };
 
 const formatCustomerIdentity = ({
@@ -212,17 +209,148 @@ const formatAccountingSaleTimestamp = (saleTimestampIso: string) => {
     : getAccountingDateTimeValue(saleDate);
 };
 
-const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) =>
-  saleRecords.map((saleRecord) => [
-    formatAccountingSaleTimestamp(saleRecord.saleTimestampIso),
-    saleRecord.invoiceNumber.trim(),
-    formatCustomerIdentity(saleRecord),
-    saleRecord.customerCountry.trim(),
-    saleRecord.purchaseItem.trim(),
-    formatPlnSaleAmount(saleRecord),
-    formatNullableAmount(saleRecord.stripeFeeAmountMinor, saleRecord.settlementCurrency),
-    formatNullableAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
-  ]);
+const formatCountry = (country: string) =>
+  country.trim().toLocaleUpperCase("ru-RU") || "Не указана";
+
+const compareCountrySaleRecords = (
+  left: MonthlySalesReportSaleRecord,
+  right: MonthlySalesReportSaleRecord,
+) => {
+  const leftCountry = formatCountry(left.customerCountry);
+  const rightCountry = formatCountry(right.customerCountry);
+
+  if (leftCountry === "Не указана" && rightCountry !== "Не указана") {
+    return 1;
+  }
+
+  if (rightCountry === "Не указана" && leftCountry !== "Не указана") {
+    return -1;
+  }
+
+  const countryDiff = leftCountry.localeCompare(rightCountry, "ru-RU");
+
+  return countryDiff || compareSaleRecords(left, right);
+};
+
+const formatSaleCsvRow = (saleRecord: MonthlySalesReportSaleRecord) => [
+  formatAccountingSaleTimestamp(saleRecord.saleTimestampIso),
+  saleRecord.invoiceNumber.trim(),
+  formatCustomerIdentity(saleRecord),
+  formatCountry(saleRecord.customerCountry),
+  saleRecord.purchaseItem.trim(),
+  formatAmount(saleRecord.amountMinor, saleRecord.currency),
+  formatAmount(saleRecord.settlementAmountMinor, saleRecord.settlementCurrency),
+  formatAmount(saleRecord.stripeFeeAmountMinor, saleRecord.settlementCurrency),
+  formatAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
+];
+
+const formatSaleCount = (count: number) => {
+  const mod100 = count % 100;
+  const mod10 = count % 10;
+
+  if (mod100 >= 11 && mod100 <= 14) {
+    return `${count} продаж`;
+  }
+
+  if (mod10 === 1) {
+    return `${count} продажа`;
+  }
+
+  if (mod10 >= 2 && mod10 <= 4) {
+    return `${count} продажи`;
+  }
+
+  return `${count} продаж`;
+};
+
+const buildCountryTotalCsvRow = (
+  country: string,
+  saleRecords: MonthlySalesReportSaleRecord[],
+) => {
+  const netTotalMinor = saleRecords.reduce(
+    (total, saleRecord) => total + parseMinorAmount(saleRecord.stripeNetAmountMinor),
+    BigInt(0),
+  );
+
+  return [
+    "",
+    "",
+    "",
+    country,
+    `Итого по стране после комиссии Stripe (${formatSaleCount(saleRecords.length)})`,
+    "",
+    "",
+    "",
+    formatAmount(netTotalMinor, "pln"),
+  ];
+};
+
+const validateStripeFinancialData = (saleRecords: MonthlySalesReportSaleRecord[]) => {
+  const invalidPaymentIntentIds: string[] = [];
+
+  for (const saleRecord of saleRecords) {
+    const paymentIntentId = saleRecord.paymentIntentId.trim();
+    const balanceTransactionId = saleRecord.stripeBalanceTransactionId.trim();
+
+    try {
+      const originalAmountMinor = parseMinorAmount(saleRecord.amountMinor);
+      const settlementAmountMinor = parseMinorAmount(saleRecord.settlementAmountMinor);
+      const feeAmountMinor = parseMinorAmount(saleRecord.stripeFeeAmountMinor);
+      const netAmountMinor = parseMinorAmount(saleRecord.stripeNetAmountMinor);
+      const originalCurrency = saleRecord.currency.trim().toLowerCase();
+      const settlementCurrency = saleRecord.settlementCurrency.trim().toLowerCase();
+
+      if (
+        !paymentIntentId.startsWith("pi_") ||
+        !balanceTransactionId.startsWith("txn_") ||
+        !["eur", "pln"].includes(originalCurrency) ||
+        settlementCurrency !== "pln" ||
+        originalAmountMinor < BigInt(0) ||
+        settlementAmountMinor < BigInt(0) ||
+        feeAmountMinor < BigInt(0) ||
+        netAmountMinor < BigInt(0) ||
+        (originalCurrency === "pln" && originalAmountMinor !== settlementAmountMinor) ||
+        settlementAmountMinor !== feeAmountMinor + netAmountMinor
+      ) {
+        invalidPaymentIntentIds.push(paymentIntentId || "missing_payment_intent_id");
+      }
+    } catch {
+      invalidPaymentIntentIds.push(paymentIntentId || "missing_payment_intent_id");
+    }
+  }
+
+  if (invalidPaymentIntentIds.length > 0) {
+    console.error("Monthly sales report rejected incomplete Stripe financial data", {
+      affectedPaymentIntentIds: invalidPaymentIntentIds,
+    });
+    throw new Error("monthly_sales_report_stripe_data_incomplete");
+  }
+};
+
+const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) => {
+  const rows: string[][] = [];
+  let currentCountry = "";
+  let currentCountrySaleRecords: MonthlySalesReportSaleRecord[] = [];
+
+  for (const saleRecord of [...saleRecords].sort(compareCountrySaleRecords)) {
+    const country = formatCountry(saleRecord.customerCountry);
+
+    if (currentCountry && country !== currentCountry) {
+      rows.push(buildCountryTotalCsvRow(currentCountry, currentCountrySaleRecords));
+      currentCountrySaleRecords = [];
+    }
+
+    currentCountry = country;
+    currentCountrySaleRecords.push(saleRecord);
+    rows.push(formatSaleCsvRow(saleRecord));
+  }
+
+  if (currentCountry) {
+    rows.push(buildCountryTotalCsvRow(currentCountry, currentCountrySaleRecords));
+  }
+
+  return rows;
+};
 
 const shouldPreferSaleRecord = ({
   existingSaleRecord,
@@ -450,9 +578,10 @@ const recordMonthlySalesReportRun = async (record: MonthlySalesReportRunSheetRec
   });
 };
 
-const generateMonthlySalesReportContent = (
+export const generateMonthlySalesReportContent = (
   saleRecords: MonthlySalesReportSaleRecord[],
 ) => {
+  validateStripeFinancialData(saleRecords);
   const csvRows = buildCsvRows(saleRecords);
   const csv = buildCsv(csvRows);
   const sha256 = createHash("sha256").update(csv).digest("hex");
@@ -607,6 +736,7 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
       settlementAmountMinor: purchases.settlementAmountMinor,
       settlementCurrency: purchases.settlementCurrency,
       saleTimestamp,
+      stripeBalanceTransactionId: purchases.stripeBalanceTransactionId,
       stripeFeeAmountMinor: purchases.stripeFeeAmountMinor,
       stripeNetAmountMinor: purchases.stripeNetAmountMinor,
     })
@@ -622,7 +752,7 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
     .where(
       and(
         eq(purchases.outcome, "succeeded"),
-        ne(purchases.source, "admin_offer_link"),
+        eq(purchases.source, "stripe"),
         eq(stripeEvents.processingStatus, "processed"),
         eq(stripeEvents.outcomeSnapshot, "succeeded"),
         isNotNull(saleTimestamp),
@@ -650,6 +780,7 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
       settlementAmountMinor:
         row.settlementAmountMinor === null ? "" : String(row.settlementAmountMinor),
       settlementCurrency: row.settlementCurrency ?? "",
+      stripeBalanceTransactionId: row.stripeBalanceTransactionId ?? "",
       stripeFeeAmountMinor:
         row.stripeFeeAmountMinor === null ? "" : String(row.stripeFeeAmountMinor),
       stripeNetAmountMinor:

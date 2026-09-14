@@ -41,13 +41,17 @@ export async function POST(request: Request) {
     if (
       error instanceof Error &&
       (error.message === "invalid_monthly_sales_report_month" ||
-        error.message === "future_monthly_sales_report_month")
+        error.message === "future_monthly_sales_report_month" ||
+        error.message === "monthly_sales_report_stripe_data_incomplete")
     ) {
       return jsonNoStore(
         {
           errorCode: error.message,
         },
-        { status: 400 },
+        {
+          status:
+            error.message === "monthly_sales_report_stripe_data_incomplete" ? 409 : 400,
+        },
       );
     }
 
