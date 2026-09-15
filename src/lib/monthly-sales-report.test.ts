@@ -26,7 +26,7 @@ const createSaleRecord = (
   ...overrides,
 });
 
-test("monthly report groups countries and gives each group one PLN total", () => {
+test("monthly report groups countries with gross, fee and net PLN totals", () => {
   const saleRecords = [
     createSaleRecord({
       amountMinor: "5000",
@@ -67,7 +67,7 @@ test("monthly report groups countries and gives each group one PLN total", () =>
   );
   assert.equal(
     rows[2],
-    ",,,Германия,Итого по стране Германия после комиссии Stripe (1 продажа),,,,250.00 PLN",
+    ",,,DE,Итого по стране Германия (1 продажа),,260.00 PLN,10.00 PLN,250.00 PLN",
   );
   assert.equal(
     rows[3],
@@ -79,7 +79,7 @@ test("monthly report groups countries and gives each group one PLN total", () =>
   );
   assert.equal(
     rows[5],
-    ",,,Польша,Итого по стране Польша после комиссии Stripe (2 продажи),,,,422.00 PLN",
+    ",,,PL,Итого по стране Польша (2 продажи),,440.00 PLN,18.00 PLN,422.00 PLN",
   );
 });
 

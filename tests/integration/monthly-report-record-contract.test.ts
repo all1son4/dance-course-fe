@@ -125,7 +125,7 @@ test("monthly CSV includes the first and last sale of the Warsaw month only once
       "Дата продажи (Europe/Warsaw),Номер инвойса,ФИО / Email,Страна покупки,Что купили,Оригинальная сумма (до конвертации Stripe),Сумма продажи (после конвертации Stripe),Комиссия Stripe,Сумма после комиссии",
       "2042-08-01 00:00:00,,,PL,fixture-at-start,50.00 PLN,50.00 PLN,1.50 PLN,48.50 PLN",
       "2042-08-31 23:59:59,,,PL,fixture-before-end,50.00 PLN,50.00 PLN,1.50 PLN,48.50 PLN",
-      ",,,Польша,Итого по стране Польша после комиссии Stripe (2 продажи),,,,97.00 PLN",
+      ",,,PL,Итого по стране Польша (2 продажи),,100.00 PLN,3.00 PLN,97.00 PLN",
     ].join("\n");
     assert.equal(report.rowCount, 2);
     assert.equal(report.csv, expectedCsv);

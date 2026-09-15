@@ -280,21 +280,29 @@ const buildCountryTotalCsvRow = (
   saleRecords: MonthlySalesReportSaleRecord[],
 ) => {
   const countryName = formatCountryName(country);
-  const netTotalMinor = saleRecords.reduce(
-    (total, saleRecord) => total + parseMinorAmount(saleRecord.stripeNetAmountMinor),
-    BigInt(0),
+  const totals = saleRecords.reduce(
+    (result, saleRecord) => ({
+      feeMinor: result.feeMinor + parseMinorAmount(saleRecord.stripeFeeAmountMinor),
+      grossMinor: result.grossMinor + parseMinorAmount(saleRecord.settlementAmountMinor),
+      netMinor: result.netMinor + parseMinorAmount(saleRecord.stripeNetAmountMinor),
+    }),
+    {
+      feeMinor: BigInt(0),
+      grossMinor: BigInt(0),
+      netMinor: BigInt(0),
+    },
   );
 
   return [
     "",
     "",
     "",
-    countryName,
-    `Итого по стране ${countryName} после комиссии Stripe (${formatSaleCount(saleRecords.length)})`,
+    country,
+    `Итого по стране ${countryName} (${formatSaleCount(saleRecords.length)})`,
     "",
-    "",
-    "",
-    formatAmount(netTotalMinor, "pln"),
+    formatAmount(totals.grossMinor, "pln"),
+    formatAmount(totals.feeMinor, "pln"),
+    formatAmount(totals.netMinor, "pln"),
   ];
 };
 
