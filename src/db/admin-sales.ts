@@ -1,9 +1,10 @@
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, isNull, or, sql, type SQLWrapper } from "drizzle-orm";
 
 import { PURCHASES_LIST_LIMIT } from "@/app/admin/lib/admin.constants";
 import {
   ACCOUNTING_TIME_ZONE,
   getAccountingMonthRange,
+  getAccountingMonthValue,
   getPreviousAccountingMonthValue,
 } from "@/lib/accounting-month";
 import { formatMinorAmount } from "@/lib/minor-amount";
@@ -20,6 +21,10 @@ import {
   purchases,
   purchaseSideEffects,
 } from "./schema";
+import {
+  getCanonicalSucceededStripeEvents,
+  stripeFinancialDataComplete as stripeFinancialDataCompletePredicate,
+} from "./stripe-sales";
 
 const PRODUCT_BREAKDOWN_LIMIT = 8;
 
@@ -43,19 +48,28 @@ export type AdminPurchasesSummary = {
   eurTotalMinor: number;
   failedAttempts: number;
   feeTotalLabel: string;
+  feeTotalMinor: number | null;
+  grossTotalLabel: string;
+  grossTotalMinor: number | null;
   monthValue: string;
   netTotalLabel: string;
+  netTotalMinor: number | null;
   plnTotalLabel: string;
   plnTotalMinor: number;
   salesCount: number;
   settledCount: number;
+  stripeFinancialDataComplete: boolean;
+  unconfirmedSalesCount: number;
 };
 
 export type AdminPurchasesPreviousSummary = {
   eurTotalMinor: number;
+  grossTotalMinor: number | null;
   monthValue: string;
+  netTotalMinor: number | null;
   plnTotalMinor: number;
   salesCount: number;
+  stripeFinancialDataComplete: boolean;
 };
 
 export type AdminProductBreakdownEntry = {
@@ -66,41 +80,54 @@ export type AdminProductBreakdownEntry = {
 
 const escapeLikePattern = (value: string) => value.replaceAll(/([%_\\])/g, "\\$1");
 
-// The moment a purchase counts as "sold": settlement time for succeeded
-// payments, first-seen time while the payment is still in flight or failed.
-const soldAtColumn = sql<Date>`COALESCE(${purchases.succeededAt}, ${purchases.createdAt})`;
+const parseMinorTotal = (value: string | number | null | undefined) => {
+  const parsed = typeof value === "number" ? value : Number(value ?? 0);
+
+  if (!Number.isSafeInteger(parsed)) {
+    throw new Error("admin_sales_money_total_out_of_range");
+  }
+
+  return parsed;
+};
 
 // These are the same half-open Europe/Warsaw accounting ranges used by the
-// monthly report. Dates compared against a raw SQL expression must be bound as
-// ISO strings with an explicit cast: the driver cannot infer a parameter type
-// from the expression and refuses to serialize a Date object.
-const soldAtWithinRange = (monthRange: { end: Date; start: Date }) => [
-  sql`${soldAtColumn} >= ${monthRange.start.toISOString()}::timestamptz`,
-  sql`${soldAtColumn} < ${monthRange.end.toISOString()}::timestamptz`,
+// monthly report. ISO strings need an explicit cast when a raw SQL expression
+// is compared because the driver cannot infer a Date parameter type from it.
+const timestampWithinRange = (
+  timestamp: SQLWrapper,
+  monthRange: { end: Date; start: Date },
+) => [
+  sql`${timestamp} >= ${monthRange.start.toISOString()}::timestamptz`,
+  sql`${timestamp} < ${monthRange.end.toISOString()}::timestamptz`,
 ];
 
-const succeededInMonthFilter = (monthRange: { end: Date; start: Date }) =>
-  and(
-    eq(purchases.source, "stripe"),
-    eq(purchases.outcome, "succeeded"),
-    ...soldAtWithinRange(monthRange),
-  );
-
-// Distinct sale months for the month selector — bucketed by the same soldAt
-// expression as the summary and the list, so the dropdown never offers a month
-// the screen would render as empty.
+// Distinct sale months come from the same canonical processed Stripe events as
+// the CSV, so the selector and the report cannot disagree at month boundaries.
 export const listAdminSalesMonths = async (): Promise<string[]> => {
+  const db = getDatabase();
+  const canonicalSucceededEvents = getCanonicalSucceededStripeEvents();
+  const nowIso = new Date().toISOString();
   // Keep one SQL expression for DISTINCT and ORDER BY. Without an alias Drizzle
   // binds the timezone twice, and PostgreSQL no longer considers the ORDER BY
   // expression identical to the selected DISTINCT expression.
   const monthColumn =
-    sql<string>`to_char(date_trunc('month', COALESCE(${purchases.succeededAt}, ${purchases.createdAt}) AT TIME ZONE ${ACCOUNTING_TIME_ZONE}), 'YYYY-MM')`.as(
+    sql<string>`to_char(date_trunc('month', ${canonicalSucceededEvents.saleTimestamp} AT TIME ZONE ${ACCOUNTING_TIME_ZONE}), 'YYYY-MM')`.as(
       "accounting_month",
     );
-  const rows = await getDatabase()
+  const rows = await db
     .selectDistinct({ monthValue: monthColumn })
     .from(purchases)
-    .where(and(eq(purchases.source, "stripe"), eq(purchases.outcome, "succeeded")))
+    .innerJoin(
+      canonicalSucceededEvents,
+      eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
+    )
+    .where(
+      and(
+        eq(purchases.source, "stripe"),
+        eq(purchases.outcome, "succeeded"),
+        sql`${canonicalSucceededEvents.saleTimestamp} < ${nowIso}::timestamptz`,
+      ),
+    )
     .orderBy(desc(monthColumn));
 
   return rows.map((row) => row.monthValue);
@@ -119,7 +146,22 @@ export const getAdminPurchasesOverview = async ({
   summary: AdminPurchasesSummary;
 }> => {
   const db = getDatabase();
-  const monthRange = getAccountingMonthRange(monthValue);
+  const canonicalSucceededEvents = getCanonicalSucceededStripeEvents();
+  const canonicalSoldAtColumn = canonicalSucceededEvents.saleTimestamp;
+  // Non-successful attempts have no succeeded event; their operational date is
+  // kept only for the attempt counter and purchase journal.
+  const attemptAtColumn = sql<Date>`COALESCE(${purchases.succeededAt}, ${purchases.createdAt})`;
+  const displayedAtColumn = sql<Date>`COALESCE(
+    ${canonicalSoldAtColumn},
+    ${purchases.succeededAt},
+    ${purchases.createdAt}
+  )`;
+  const referenceDate = new Date();
+  const fullMonthRange = getAccountingMonthRange(monthValue);
+  const monthRange =
+    fullMonthRange && monthValue === getAccountingMonthValue(referenceDate)
+      ? { ...fullMonthRange, end: referenceDate }
+      : fullMonthRange;
   const previousMonthValue = getPreviousAccountingMonthValue(monthValue);
   const previousMonthRange = previousMonthValue
     ? getAccountingMonthRange(previousMonthValue)
@@ -140,7 +182,20 @@ export const getAdminPurchasesOverview = async ({
       )
     : and(
         eq(purchases.source, "stripe"),
-        ...(monthRange ? soldAtWithinRange(monthRange) : []),
+        ...(monthRange
+          ? [
+              or(
+                and(
+                  eq(purchases.outcome, "succeeded"),
+                  ...timestampWithinRange(canonicalSoldAtColumn, monthRange),
+                ),
+                and(
+                  sql`${purchases.outcome} <> 'succeeded'`,
+                  ...timestampWithinRange(attemptAtColumn, monthRange),
+                ),
+              ),
+            ]
+          : []),
       );
 
   // Snapshots keep whatever language the buyer checked out in, so grouping by
@@ -155,7 +210,14 @@ export const getAdminPurchasesOverview = async ({
     'Без названия'
   )`;
 
-  const [listRows, summaryRows, previousSummaryRows, productRows] = await Promise.all([
+  const [
+    listRows,
+    summaryRows,
+    previousSummaryRows,
+    productRows,
+    failedAttemptRows,
+    unconfirmedSaleRows,
+  ] = await Promise.all([
     db
       .select({
         amountMinor: purchases.amountMinor,
@@ -167,10 +229,14 @@ export const getAdminPurchasesOverview = async ({
         outcome: purchases.outcome,
         paymentIntentId: purchases.paymentIntentId,
         purchaseItem: productItemColumn,
-        soldAt: soldAtColumn,
+        soldAt: displayedAtColumn,
         terminalRecordedAt: purchaseSideEffects.sentAt,
       })
       .from(purchases)
+      .leftJoin(
+        canonicalSucceededEvents,
+        eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
+      )
       .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
       .leftJoin(products, eq(products.id, purchases.productId))
       .leftJoin(productOffers, eq(productOffers.id, purchases.offerId))
@@ -182,76 +248,174 @@ export const getAdminPurchasesOverview = async ({
         ),
       )
       .where(listFilter)
-      .orderBy(desc(soldAtColumn), desc(purchases.paymentIntentId))
+      .orderBy(desc(displayedAtColumn), desc(purchases.paymentIntentId))
       .limit(PURCHASES_LIST_LIMIT),
     monthRange
       ? db
           .select({
-            eurTotalMinor: sql<number>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.outcome} = 'succeeded' AND ${purchases.currency} = 'eur'), 0)::int`,
-            failedAttempts: sql<number>`COUNT(*) FILTER (WHERE ${purchases.outcome} IN ('failed', 'canceled'))::int`,
-            feeTotalMinor: sql<number>`COALESCE(SUM(${purchases.stripeFeeAmountMinor}) FILTER (WHERE ${purchases.outcome} = 'succeeded'), 0)::int`,
-            netTotalMinor: sql<number>`COALESCE(SUM(${purchases.stripeNetAmountMinor}) FILTER (WHERE ${purchases.outcome} = 'succeeded'), 0)::int`,
-            plnTotalMinor: sql<number>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.outcome} = 'succeeded' AND ${purchases.currency} = 'pln'), 0)::int`,
-            salesCount: sql<number>`COUNT(*) FILTER (WHERE ${purchases.outcome} = 'succeeded')::int`,
-            settledCount: sql<number>`COUNT(*) FILTER (WHERE ${purchases.outcome} = 'succeeded' AND ${purchases.stripeNetAmountMinor} IS NOT NULL)::int`,
-            settlementCurrency: sql<
-              string | null
-            >`MIN(${purchases.settlementCurrency}) FILTER (WHERE ${purchases.outcome} = 'succeeded' AND ${purchases.settlementCurrency} IS NOT NULL)`,
+            eurTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'eur'), 0)::text`,
+            feeTotalMinor: sql<string>`COALESCE(SUM(${purchases.stripeFeeAmountMinor}), 0)::text`,
+            grossTotalMinor: sql<string>`COALESCE(SUM(${purchases.settlementAmountMinor}), 0)::text`,
+            netTotalMinor: sql<string>`COALESCE(SUM(${purchases.stripeNetAmountMinor}), 0)::text`,
+            plnTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'pln'), 0)::text`,
+            salesCount: sql<number>`COUNT(*)::int`,
+            settledCount: sql<number>`COUNT(*) FILTER (WHERE ${stripeFinancialDataCompletePredicate})::int`,
           })
           .from(purchases)
-          .where(and(eq(purchases.source, "stripe"), ...soldAtWithinRange(monthRange)))
+          .innerJoin(
+            canonicalSucceededEvents,
+            eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
+          )
+          .where(
+            and(
+              eq(purchases.source, "stripe"),
+              eq(purchases.outcome, "succeeded"),
+              ...timestampWithinRange(canonicalSoldAtColumn, monthRange),
+            ),
+          )
       : Promise.resolve([]),
     previousMonthRange
       ? db
           .select({
-            eurTotalMinor: sql<number>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'eur'), 0)::int`,
-            plnTotalMinor: sql<number>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'pln'), 0)::int`,
+            eurTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'eur'), 0)::text`,
+            grossTotalMinor: sql<string>`COALESCE(SUM(${purchases.settlementAmountMinor}), 0)::text`,
+            netTotalMinor: sql<string>`COALESCE(SUM(${purchases.stripeNetAmountMinor}), 0)::text`,
+            plnTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'pln'), 0)::text`,
             salesCount: sql<number>`COUNT(*)::int`,
+            settledCount: sql<number>`COUNT(*) FILTER (WHERE ${stripeFinancialDataCompletePredicate})::int`,
           })
           .from(purchases)
-          .where(succeededInMonthFilter(previousMonthRange))
+          .innerJoin(
+            canonicalSucceededEvents,
+            eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
+          )
+          .where(
+            and(
+              eq(purchases.source, "stripe"),
+              eq(purchases.outcome, "succeeded"),
+              ...timestampWithinRange(canonicalSoldAtColumn, previousMonthRange),
+            ),
+          )
       : Promise.resolve([]),
     monthRange
       ? db
           .select({
-            eurTotalMinor: sql<number>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'eur'), 0)::int`,
+            eurTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'eur'), 0)::text`,
             itemTitle: productItemColumn,
-            plnTotalMinor: sql<number>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'pln'), 0)::int`,
+            plnTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'pln'), 0)::text`,
             salesCount: sql<number>`COUNT(*)::int`,
           })
           .from(purchases)
+          .innerJoin(
+            canonicalSucceededEvents,
+            eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
+          )
           .leftJoin(products, eq(products.id, purchases.productId))
           .leftJoin(productOffers, eq(productOffers.id, purchases.offerId))
-          .where(succeededInMonthFilter(monthRange))
+          .where(
+            and(
+              eq(purchases.source, "stripe"),
+              eq(purchases.outcome, "succeeded"),
+              ...timestampWithinRange(canonicalSoldAtColumn, monthRange),
+            ),
+          )
           .groupBy(productItemColumn)
           .orderBy(desc(sql`COUNT(*)`), desc(sql`SUM(${purchases.amountMinor})`))
           .limit(PRODUCT_BREAKDOWN_LIMIT)
+      : Promise.resolve([]),
+    monthRange
+      ? db
+          .select({
+            count: sql<number>`COUNT(*)::int`,
+          })
+          .from(purchases)
+          .where(
+            and(
+              eq(purchases.source, "stripe"),
+              sql`${purchases.outcome} IN ('failed', 'canceled')`,
+              ...timestampWithinRange(attemptAtColumn, monthRange),
+            ),
+          )
+      : Promise.resolve([]),
+    monthRange
+      ? db
+          .select({
+            count: sql<number>`COUNT(*)::int`,
+          })
+          .from(purchases)
+          .leftJoin(
+            canonicalSucceededEvents,
+            eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
+          )
+          .where(
+            and(
+              eq(purchases.source, "stripe"),
+              eq(purchases.outcome, "succeeded"),
+              isNull(canonicalSucceededEvents.paymentIntentId),
+              ...timestampWithinRange(attemptAtColumn, monthRange),
+            ),
+          )
       : Promise.resolve([]),
   ]);
 
   const summaryRow = summaryRows[0];
   const previousSummaryRow = previousSummaryRows[0];
-  const settlementCurrency = summaryRow?.settlementCurrency ?? "pln";
+  const salesCount = summaryRow?.salesCount ?? 0;
   const settledCount = summaryRow?.settledCount ?? 0;
+  const stripeFinancialDataComplete = settledCount === salesCount;
+  const grossTotalMinor = stripeFinancialDataComplete
+    ? parseMinorTotal(summaryRow?.grossTotalMinor)
+    : null;
+  const feeTotalMinor = stripeFinancialDataComplete
+    ? parseMinorTotal(summaryRow?.feeTotalMinor)
+    : null;
+  const netTotalMinor = stripeFinancialDataComplete
+    ? parseMinorTotal(summaryRow?.netTotalMinor)
+    : null;
+
+  if (
+    grossTotalMinor !== null &&
+    feeTotalMinor !== null &&
+    netTotalMinor !== null &&
+    grossTotalMinor !== feeTotalMinor + netTotalMinor
+  ) {
+    throw new Error("admin_sales_stripe_totals_inconsistent");
+  }
+
+  const previousSalesCount = previousSummaryRow?.salesCount ?? 0;
+  const previousStripeFinancialDataComplete =
+    (previousSummaryRow?.settledCount ?? 0) === previousSalesCount;
 
   return {
     previousSummary:
       previousMonthValue && previousSummaryRow
         ? {
-            eurTotalMinor: previousSummaryRow.eurTotalMinor,
+            eurTotalMinor: parseMinorTotal(previousSummaryRow.eurTotalMinor),
+            grossTotalMinor: previousStripeFinancialDataComplete
+              ? parseMinorTotal(previousSummaryRow.grossTotalMinor)
+              : null,
             monthValue: previousMonthValue,
-            plnTotalMinor: previousSummaryRow.plnTotalMinor,
-            salesCount: previousSummaryRow.salesCount,
+            netTotalMinor: previousStripeFinancialDataComplete
+              ? parseMinorTotal(previousSummaryRow.netTotalMinor)
+              : null,
+            plnTotalMinor: parseMinorTotal(previousSummaryRow.plnTotalMinor),
+            salesCount: previousSalesCount,
+            stripeFinancialDataComplete: previousStripeFinancialDataComplete,
           }
         : null,
-    products: productRows.map((row) => ({
-      amountLabels: [
-        ...(row.plnTotalMinor > 0 ? [formatMinorAmount(row.plnTotalMinor, "pln")] : []),
-        ...(row.eurTotalMinor > 0 ? [formatMinorAmount(row.eurTotalMinor, "eur")] : []),
-      ],
-      itemTitle: row.itemTitle,
-      salesCount: row.salesCount,
-    })),
+    products: productRows.map((row) => {
+      const plnTotalMinor = parseMinorTotal(row.plnTotalMinor);
+      const eurTotalMinor = parseMinorTotal(row.eurTotalMinor);
+
+      return {
+        amountLabels: [
+          ...(plnTotalMinor > 0 ? [formatMinorAmount(plnTotalMinor, "pln")] : []),
+          ...(eurTotalMinor > 0 ? [formatMinorAmount(eurTotalMinor, "eur")] : []),
+        ],
+        itemTitle: row.itemTitle,
+        salesCount: row.salesCount,
+      };
+    }),
     purchases: listRows.map((row) => ({
       amountLabel: formatMinorAmount(row.amountMinor, row.currency),
       customerEmail: row.customerEmail ?? "",
@@ -265,22 +429,25 @@ export const getAdminPurchasesOverview = async ({
       terminalRecordedAtIso: row.terminalRecordedAt?.toISOString() ?? "",
     })),
     summary: {
-      eurTotalLabel: formatMinorAmount(summaryRow?.eurTotalMinor ?? 0, "eur"),
-      eurTotalMinor: summaryRow?.eurTotalMinor ?? 0,
-      failedAttempts: summaryRow?.failedAttempts ?? 0,
+      eurTotalLabel: formatMinorAmount(parseMinorTotal(summaryRow?.eurTotalMinor), "eur"),
+      eurTotalMinor: parseMinorTotal(summaryRow?.eurTotalMinor),
+      failedAttempts: failedAttemptRows[0]?.count ?? 0,
       feeTotalLabel:
-        settledCount > 0
-          ? formatMinorAmount(summaryRow?.feeTotalMinor ?? 0, settlementCurrency)
-          : "",
+        feeTotalMinor === null ? "" : formatMinorAmount(feeTotalMinor, "pln"),
+      feeTotalMinor,
+      grossTotalLabel:
+        grossTotalMinor === null ? "" : formatMinorAmount(grossTotalMinor, "pln"),
+      grossTotalMinor,
       monthValue,
       netTotalLabel:
-        settledCount > 0
-          ? formatMinorAmount(summaryRow?.netTotalMinor ?? 0, settlementCurrency)
-          : "",
-      plnTotalLabel: formatMinorAmount(summaryRow?.plnTotalMinor ?? 0, "pln"),
-      plnTotalMinor: summaryRow?.plnTotalMinor ?? 0,
-      salesCount: summaryRow?.salesCount ?? 0,
+        netTotalMinor === null ? "" : formatMinorAmount(netTotalMinor, "pln"),
+      netTotalMinor,
+      plnTotalLabel: formatMinorAmount(parseMinorTotal(summaryRow?.plnTotalMinor), "pln"),
+      plnTotalMinor: parseMinorTotal(summaryRow?.plnTotalMinor),
+      salesCount,
       settledCount,
+      stripeFinancialDataComplete,
+      unconfirmedSalesCount: unconfirmedSaleRows[0]?.count ?? 0,
     },
   };
 };
