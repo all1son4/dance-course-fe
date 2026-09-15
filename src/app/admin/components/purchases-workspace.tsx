@@ -170,9 +170,14 @@ export const PurchasesWorkspace = ({
     (maxCount, product) => Math.max(maxCount, product.salesCount),
     0,
   );
-  const settlementPending = Boolean(summary && summary.settledCount === 0);
-  const settlementPartial = Boolean(
-    summary && summary.settledCount > 0 && summary.settledCount < summary.salesCount,
+  const originalAmountLabel = summary
+    ? [
+        ...(summary.plnTotalMinor > 0 ? [summary.plnTotalLabel] : []),
+        ...(summary.eurTotalMinor > 0 ? [summary.eurTotalLabel] : []),
+      ].join(" · ") || "0 PLN"
+    : "";
+  const financialDataIncomplete = Boolean(
+    summary && !summary.stripeFinancialDataComplete,
   );
 
   return (
@@ -209,44 +214,70 @@ export const PurchasesWorkspace = ({
           </SurfaceHeaderActions>
         </SurfaceHeaderRow>
         <SurfaceDescription>
-          Успешные оплаты через Stripe; бесплатные ссылки из админки в выручку не
-          попадают.
+          Только подтвержденные продажи Stripe. Поступление, комиссия и сумма после
+          комиссии совпадают с итогами CSV в PLN; исходная стоимость сохраняет валюту
+          покупателя. Бесплатные ссылки из админки не учитываются.
         </SurfaceDescription>
 
         {summary && (
           <StatStrip>
             <StatCell>
-              <StatCellLabel>Выручка PLN</StatCellLabel>
-              <StatCellValue $primary>{summary.plnTotalLabel}</StatCellValue>
-              {hasPreviousData && previousSummary && (
-                <StatCellMeta>
-                  <MonthDelta
-                    delta={summary.plnTotalMinor - previousSummary.plnTotalMinor}
-                    formattedDelta={formatMinorDelta(
-                      summary.plnTotalMinor - previousSummary.plnTotalMinor,
-                      "pln",
-                    )}
-                  />
-                </StatCellMeta>
+              <StatCellLabel>Поступило в Stripe</StatCellLabel>
+              <StatCellValue $primary>
+                {financialDataIncomplete ? "—" : summary.grossTotalLabel}
+              </StatCellValue>
+              {hasPreviousData &&
+                previousSummary?.stripeFinancialDataComplete &&
+                previousSummary.grossTotalMinor !== null &&
+                summary.grossTotalMinor !== null && (
+                  <StatCellMeta>
+                    <MonthDelta
+                      delta={summary.grossTotalMinor - previousSummary.grossTotalMinor}
+                      formattedDelta={formatMinorDelta(
+                        summary.grossTotalMinor - previousSummary.grossTotalMinor,
+                        "pln",
+                      )}
+                    />
+                  </StatCellMeta>
+                )}
+              {!financialDataIncomplete && (
+                <StatCellMeta>до комиссии · итог CSV</StatCellMeta>
               )}
             </StatCell>
             <StatCell>
-              <StatCellLabel>Выручка EUR</StatCellLabel>
-              <StatCellValue $primary>{summary.eurTotalLabel}</StatCellValue>
-              {hasPreviousData && previousSummary && (
-                <StatCellMeta>
-                  <MonthDelta
-                    delta={summary.eurTotalMinor - previousSummary.eurTotalMinor}
-                    formattedDelta={formatMinorDelta(
-                      summary.eurTotalMinor - previousSummary.eurTotalMinor,
-                      "eur",
-                    )}
-                  />
-                </StatCellMeta>
-              )}
+              <StatCellLabel>Комиссия Stripe</StatCellLabel>
+              <StatCellValue>
+                {financialDataIncomplete ? "—" : summary.feeTotalLabel}
+              </StatCellValue>
+              {!financialDataIncomplete && <StatCellMeta>удержано Stripe</StatCellMeta>}
             </StatCell>
             <StatCell>
-              <StatCellLabel>Успешных оплат</StatCellLabel>
+              <StatCellLabel>После комиссии</StatCellLabel>
+              <StatCellValue $primary>
+                {financialDataIncomplete ? "—" : summary.netTotalLabel}
+              </StatCellValue>
+              {hasPreviousData &&
+                previousSummary?.stripeFinancialDataComplete &&
+                previousSummary.netTotalMinor !== null &&
+                summary.netTotalMinor !== null && (
+                  <StatCellMeta>
+                    <MonthDelta
+                      delta={summary.netTotalMinor - previousSummary.netTotalMinor}
+                      formattedDelta={formatMinorDelta(
+                        summary.netTotalMinor - previousSummary.netTotalMinor,
+                        "pln",
+                      )}
+                    />
+                  </StatCellMeta>
+                )}
+            </StatCell>
+            <StatCell>
+              <StatCellLabel>Исходная стоимость</StatCellLabel>
+              <StatCellValue>{originalAmountLabel}</StatCellValue>
+              <StatCellMeta>до конвертации Stripe</StatCellMeta>
+            </StatCell>
+            <StatCell>
+              <StatCellLabel>Продаж в отчете</StatCellLabel>
               <StatCellValue>{summary.salesCount}</StatCellValue>
               {hasPreviousData && previousSummary && (
                 <StatCellMeta>
@@ -258,35 +289,31 @@ export const PurchasesWorkspace = ({
                   />
                 </StatCellMeta>
               )}
+              {summary.unconfirmedSalesCount > 0 && (
+                <StatCellMeta>
+                  Без подтвержденного Stripe-события: {summary.unconfirmedSalesCount}
+                </StatCellMeta>
+              )}
             </StatCell>
             <StatCell>
-              <StatCellLabel>Чистыми после комиссии</StatCellLabel>
-              <StatCellValue>
-                {settlementPending ? "—" : summary.netTotalLabel}
-              </StatCellValue>
-              <StatCellMeta>
-                {settlementPending
-                  ? summary.salesCount > 0
-                    ? "Stripe еще не отдал комиссию"
-                    : "оплат нет"
-                  : `комиссия: ${summary.feeTotalLabel}${
-                      settlementPartial
-                        ? ` · по ${summary.settledCount} из ${summary.salesCount}`
-                        : ""
-                    }`}
-              </StatCellMeta>
-            </StatCell>
-            <StatCell>
-              <StatCellLabel>Оплат не прошло</StatCellLabel>
+              <StatCellLabel>Неуспешных попыток</StatCellLabel>
               <StatCellValue>{summary.failedAttempts}</StatCellValue>
               <StatCellMeta>отклонена или отменена</StatCellMeta>
             </StatCell>
           </StatStrip>
         )}
 
+        {summary && financialDataIncomplete && (
+          <StatusText $tone="error">
+            Финансовые итоги скрыты: полный набор суммы, комиссии и нетто Stripe есть по
+            {` ${summary.settledCount} из ${summary.salesCount}`} продаж. CSV также не
+            будет сформирован до заполнения всех данных.
+          </StatusText>
+        )}
+
         {products.length > 0 && (
           <>
-            <SectionHeading>По продуктам</SectionHeading>
+            <SectionHeading>По продуктам · исходная стоимость</SectionHeading>
             <ProductBreakdownList>
               {products.map((product) => (
                 <ProductBreakdownRow key={product.itemTitle}>
