@@ -1,10 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 
-import { and, asc, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { recordMonthlyReportRunInDatabase } from "@/db/business-operation-jobs";
 import { getDatabase } from "@/db/client";
-import { invoices, purchases, stripeEvents } from "@/db/schema";
+import { invoices, purchases } from "@/db/schema";
+import { getCanonicalSucceededStripeEvents } from "@/db/stripe-sales";
 import {
   ACCOUNTING_TIME_ZONE,
   getAccountingCalendarDateValue,
@@ -373,22 +374,6 @@ const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) => {
   return rows;
 };
 
-const shouldPreferSaleRecord = ({
-  existingSaleRecord,
-  nextSaleRecord,
-}: {
-  existingSaleRecord: MonthlySalesReportSaleRecord;
-  nextSaleRecord: MonthlySalesReportSaleRecord;
-}) => {
-  const existingTimestamp = Date.parse(existingSaleRecord.saleTimestampIso);
-  const nextTimestamp = Date.parse(nextSaleRecord.saleTimestampIso);
-
-  return (
-    Number.isFinite(nextTimestamp) &&
-    (!Number.isFinite(existingTimestamp) || nextTimestamp < existingTimestamp)
-  );
-};
-
 const compareSaleRecords = (
   left: MonthlySalesReportSaleRecord,
   right: MonthlySalesReportSaleRecord,
@@ -400,40 +385,6 @@ const compareSaleRecords = (
     (Number.isFinite(rightTimestamp) ? rightTimestamp : 0);
 
   return timestampDiff || left.paymentIntentId.localeCompare(right.paymentIntentId);
-};
-
-const dedupeSaleRecordsByPaymentIntent = (
-  saleRecords: MonthlySalesReportSaleRecord[],
-) => {
-  const saleRecordByPaymentIntentId = new Map<string, MonthlySalesReportSaleRecord>();
-
-  for (const saleRecord of saleRecords) {
-    if (!saleRecord.paymentIntentId.trim()) {
-      continue;
-    }
-
-    const existingSaleRecord = saleRecordByPaymentIntentId.get(
-      saleRecord.paymentIntentId,
-    );
-
-    if (!existingSaleRecord) {
-      saleRecordByPaymentIntentId.set(saleRecord.paymentIntentId, saleRecord);
-      continue;
-    }
-
-    // Multiple processed Stripe events can join to one purchase; the earliest
-    // valid event remains the canonical sale timestamp for a stable report.
-    if (
-      shouldPreferSaleRecord({
-        existingSaleRecord,
-        nextSaleRecord: saleRecord,
-      })
-    ) {
-      saleRecordByPaymentIntentId.set(saleRecord.paymentIntentId, saleRecord);
-    }
-  }
-
-  return Array.from(saleRecordByPaymentIntentId.values()).sort(compareSaleRecords);
 };
 
 const formatReportMonthForSubject = (monthValue: string) =>
@@ -741,7 +692,8 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
   }
 
   const db = getDatabase();
-  const saleTimestamp = stripeEvents.stripeCreatedAt;
+  const canonicalSucceededEvents = getCanonicalSucceededStripeEvents();
+  const saleTimestamp = canonicalSucceededEvents.saleTimestamp;
   const rows = await db
     .select({
       amountMinor: purchases.amountMinor,
@@ -764,27 +716,21 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
     .from(purchases)
     .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
     .innerJoin(
-      stripeEvents,
-      and(
-        eq(stripeEvents.paymentIntentId, purchases.paymentIntentId),
-        eq(stripeEvents.eventType, "payment_intent.succeeded"),
-      ),
+      canonicalSucceededEvents,
+      eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
     )
     .where(
       and(
         eq(purchases.outcome, "succeeded"),
         eq(purchases.source, "stripe"),
-        eq(stripeEvents.processingStatus, "processed"),
-        eq(stripeEvents.outcomeSnapshot, "succeeded"),
-        isNotNull(saleTimestamp),
-        gte(saleTimestamp, startDate),
-        lt(saleTimestamp, endDate),
+        sql`${saleTimestamp} >= ${startDate.toISOString()}::timestamptz`,
+        sql`${saleTimestamp} < ${endDate.toISOString()}::timestamptz`,
       ),
     )
     .orderBy(asc(saleTimestamp), asc(purchases.paymentIntentId));
 
-  return dedupeSaleRecordsByPaymentIntent(
-    rows.map((row) => ({
+  return rows
+    .map((row) => ({
       amountMinor: String(row.amountMinor),
       currency: row.currency,
       customerCountry: row.customerCountrySnapshot ?? "",
@@ -806,8 +752,8 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
         row.stripeFeeAmountMinor === null ? "" : String(row.stripeFeeAmountMinor),
       stripeNetAmountMinor:
         row.stripeNetAmountMinor === null ? "" : String(row.stripeNetAmountMinor),
-    })),
-  );
+    }))
+    .sort(compareSaleRecords);
 };
 
 const listSucceededSaleRecordsInUtcRange = async ({
