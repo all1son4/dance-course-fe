@@ -1876,9 +1876,9 @@ Next steps, in order:
 2. **DONE (DEV), September 13:** remove the reader's export-row dependency after the
    preserved-date dev release. The separate compatibility revision and its evidence
    are recorded below.
-3. **IN PROGRESS (DEV):** invoice compatibility is released; the DB-only contract
-   archive, payment-export compatibility, historical maintenance retirement, and
-   removal of the retired export drain are prepared locally. Nominate a rollback
+3. **IN PROGRESS (DEV):** invoice compatibility, the DB-only contract archive,
+   payment-export compatibility, historical maintenance retirement, and removal of
+   the retired export drain are released and verified on dev. Nominate a rollback
    revision that works with the intended contracted schema. Then rehearse cleanup and
    restore in an isolated database, verify retained business rows, and refresh
    preflight/backup evidence. No real cleanup SQL is pending in `drizzle/`.
@@ -2060,7 +2060,7 @@ the hydrated payment record; deleting that synthetic row also leaves the result
 identical. Adjacent payment monotonicity, Telegram access and admin-grant integration
 tests pass. No real export row, schema, environment or live database was changed.
 
-#### Historical maintenance retirement — LOCAL, September 14–16
+#### Historical maintenance retirement — DONE (DEV), September 14–16
 
 The obsolete Google client, DB/Sheets baseline and comparison engine, protected-source
 capture mode, resumable Sheets backfill executable and their dedicated tests/npm
@@ -2096,6 +2096,16 @@ decrypted and restored that database with `pg_restore --exit-on-error`; the arch
 exactly `database.dump` and `manifest.json`. The disposable cluster and plaintext files
 were removed after verification. This remains code compatibility only, not a contract
 migration or live data deletion.
+
+Dev revision `552e9f2` passed
+[continuous integration](https://github.com/all1son4/dance-course-fe/actions/runs/35073268170),
+including formatting, lint, TypeScript, unit and PostgreSQL integration tests, logical
+backup/restore rehearsal, and the production build. The exact deployed revision then
+passed the
+[critical browser journeys](https://github.com/all1son4/dance-course-fe/actions/runs/35073349735).
+Both workflows completed successfully on 2026-09-16. No production deployment,
+contract migration, environment change, or live legacy-row mutation was part of this
+release.
 
 ### Gate G7
 
@@ -2232,4 +2242,4 @@ Status: `TODO`
 | 2026-09-08 | DROP-04 campaign contract   | `DONE (DEV)`  | 213 unit / 59 PG; CI/browser/32 audits; migration-only push              |
 | 2026-09-08 | DROP-04 final cleanup       | `DONE (DEV)`  | Facade/adapter split; 211 unit / 59 PG; CI, 11 browser, 32 audits        |
 | 2026-09-08 | DROP-05 survey              | `DONE`        | Read-only: destructive surface measured in dev and prod; nothing applied |
-| 2026-09-16 | DROP-05 compatibility prep  | `READY (DEV)` | Legacy maintenance/runtime drain removed; 222 unit / 63 PG / build pass  |
+| 2026-09-16 | DROP-05 compatibility prep  | `DONE (DEV)`  | CI/restore/build/browser green for `552e9f2`; no live deletion           |
