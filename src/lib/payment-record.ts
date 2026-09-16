@@ -2,7 +2,6 @@
  * Flat payment projection shared by PostgreSQL readers, Stripe, invoices and access.
  * All values intentionally remain strings; an absent value is the empty string.
  * This contract is independent of positional archive headers and the DB table schema.
- * Historical export and lease fields stay until a separately approved contract step.
  */
 export type PaymentRecordSnapshot = {
   payment_intent_id: string;
@@ -26,7 +25,6 @@ export type PaymentRecordSnapshot = {
   last_payment_error_code: string;
   last_payment_error_message: string;
   first_seen_at: string;
-  successful_customer_logged_at: string;
   updated_at: string;
   checkout_session_id: string;
   purchase_item: string;
@@ -50,7 +48,6 @@ export type PaymentRecordSnapshot = {
   customer_postal_code: string;
   invoice_number: string;
   invoice_issued_at: string;
-  successful_customer_log_status: string;
   telegram_inspiration_chat_id: string;
   telegram_inspiration_access_expires_at: string;
 };
@@ -78,7 +75,6 @@ export const createEmptyPaymentRecord = (): PaymentRecordSnapshot => ({
   last_payment_error_code: "",
   last_payment_error_message: "",
   first_seen_at: "",
-  successful_customer_logged_at: "",
   updated_at: "",
   checkout_session_id: "",
   purchase_item: "",
@@ -102,7 +98,6 @@ export const createEmptyPaymentRecord = (): PaymentRecordSnapshot => ({
   customer_postal_code: "",
   invoice_number: "",
   invoice_issued_at: "",
-  successful_customer_log_status: "",
   telegram_inspiration_chat_id: "",
   telegram_inspiration_access_expires_at: "",
 });

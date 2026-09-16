@@ -9,6 +9,9 @@ operator instructions, not routine tasks to rerun with revoked credentials. Offl
 decryption/restore needs only the encrypted triplet and its separate recovery key.
 `DROP-05` adds a separate PostgreSQL-only contract archive described below; it never
 loads the Google adapter or requires a Google credential.
+The former `db:snapshot:sources` command and live Google capture implementation were
+removed on dev during `DROP-05`; their examples below document already accepted
+captures and are not available in the current revision.
 
 ## Purpose
 
@@ -76,11 +79,12 @@ Before credential retirement, the capture command used local database and Google
 environment values. It requested a `spreadsheets.readonly` OAuth token even with
 broader service-account permissions; the credential was not copied to GitHub.
 
-## Controlled capture
+## Historical controlled source capture
 
-Run locally with a PostgreSQL client at least as new as the source server. The accepted
-captures used the keg-only Homebrew PostgreSQL `17.10` client without relinking or
-starting its persistent service.
+Before credential retirement, this was run locally with a PostgreSQL client at least as
+new as the source server. The accepted captures used the keg-only Homebrew PostgreSQL
+`17.10` client without relinking or starting its persistent service. Do not run these
+removed commands now.
 
 ```bash
 PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH" \

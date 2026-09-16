@@ -1,7 +1,6 @@
 import { after } from "next/server";
 
 import { processNextOutboxJob } from "@/db/transactional-outbox";
-import { runRetiredExportOutboxJobs } from "@/lib/retired-export-outbox";
 
 import { getStripeServer } from "../../payment-intent/lib";
 import { processNextStripeWebhookInboxJob } from "./inbox-worker";
@@ -25,7 +24,7 @@ const increment = (counts: WorkerCounts, status: WorkerStatus) => {
 };
 
 const hasRetry = (result: Awaited<ReturnType<typeof runStripeBackgroundJobs>>) =>
-  result.inbox.retry > 0 || result.outbox.retry > 0 || result.sheetsExport.retry > 0;
+  result.inbox.retry > 0 || result.outbox.retry > 0;
 
 const wait = (delayMs: number) =>
   new Promise<void>((resolve) => {
@@ -74,10 +73,7 @@ export const runStripeBackgroundJobs = async ({
     }
   }
 
-  // Keep the operational result shape while retiring old jobs without Google.
-  const sheetsExport = await runRetiredExportOutboxJobs({ limit: outboxLimit });
-
-  return { inbox, outbox, sheetsExport };
+  return { inbox, outbox };
 };
 
 const getSafeErrorName = (error: unknown) =>

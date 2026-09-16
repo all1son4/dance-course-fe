@@ -41,13 +41,10 @@ test("payment persistence ignores retained legacy export fields and rows", async
       outcome: "succeeded",
       payment_intent_id: paymentIntentId,
       status: "succeeded",
-      successful_customer_log_status: "sent",
-      successful_customer_logged_at: "2026-09-14T08:01:00.000Z",
       updated_at: "2026-09-14T08:02:00.000Z",
     });
 
-    assert.equal(saved.successful_customer_log_status, "");
-    assert.equal(saved.successful_customer_logged_at, "");
+    assert.equal(saved.payment_intent_id, paymentIntentId);
 
     const [purchase] = await client<{ id: string }[]>`
       SELECT id
@@ -109,8 +106,6 @@ test("payment persistence ignores retained legacy export fields and rows", async
 
     assert.deepEqual(withChangedLegacyRow, withLegacyRow);
     assert.deepEqual(withoutLegacyRow, withLegacyRow);
-    assert.equal(withoutLegacyRow?.successful_customer_log_status, "");
-    assert.equal(withoutLegacyRow?.successful_customer_logged_at, "");
   } finally {
     await client`
       DELETE FROM purchases

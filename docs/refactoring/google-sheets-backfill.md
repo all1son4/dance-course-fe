@@ -11,6 +11,9 @@ canonical database as routine maintenance or rollback. Its completed
 `data_backfill_runs` row is immutable migration evidence, not an active runtime lease.
 Source archives and verified restore evidence are in
 [protected snapshots](./data-source-snapshots.md#drop-03-final-source-archives--2026-09-05).
+The executable and npm command were removed from the current dev revision on
+2026-09-14. Git history preserves their implementation; do not restore it to perform a
+new live run.
 
 ## Purpose
 

@@ -1,14 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
-  type MonthlySalesReportRunSheetRecord,
-} from "./google-sheets-schema";
 import type { MonthlySalesReportRunRecord } from "./monthly-sales-report-record";
 
-// Only archive-boundary tests import both contracts. Runtime owns its own type.
-test("report-run contract preserves all ten archive fields and missing delivery values", () => {
+const MONTHLY_REPORT_FIELDS = [
+  "report_key",
+  "report_family",
+  "period_start_utc",
+  "period_end_utc",
+  "generated_at_utc",
+  "delivery_status",
+  "delivered_at_utc",
+  "delivered_to",
+  "row_count",
+  "csv_sha256",
+] as const satisfies readonly (keyof MonthlySalesReportRunRecord)[];
+
+test("report-run contract preserves all ten fields and missing delivery values", () => {
   const record: MonthlySalesReportRunRecord = {
     report_key: "monthly_sales:2026-08-01:2026-09-01",
     report_family: "monthly_sales",
@@ -21,11 +29,9 @@ test("report-run contract preserves all ten archive fields and missing delivery 
     row_count: "0",
     csv_sha256: "",
   };
-  // No casts: TypeScript checks assignability at both archive boundaries.
-  const archive: MonthlySalesReportRunSheetRecord = record;
-  const restored: MonthlySalesReportRunRecord = { ...archive };
+  const restored: MonthlySalesReportRunRecord = { ...record };
 
-  assert.deepEqual(Object.keys(record), [...MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS]);
+  assert.deepEqual(Object.keys(record), [...MONTHLY_REPORT_FIELDS]);
   assert.deepEqual(restored, record);
   assert.equal(restored.row_count, "0");
   assert.equal(restored.delivered_at_utc, "");

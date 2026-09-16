@@ -1588,12 +1588,13 @@ status above; Gate G7 stays `NOT PASSED` until `DROP-05`.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
-exports back on in this revision. The bounded
-[retired-job drain](../../src/lib/retired-export-outbox.ts) still claims old versioned
-exports and marks them `skipped` without loading customer projections, reading
-configuration, or calling any provider. It preserves rows, attempt history, existing
-worker/cron response fields, and unversioned imported markers. No schema, production
-configuration, checkout, accounting period, email, or Telegram renewal flow changed.
+exports back on in this revision. After preflight confirmed zero non-terminal
+versioned exports and zero leases in both environments, the `DROP-05` compatibility
+slice removed the temporary provider-free drain as well. Active Stripe recovery,
+daily maintenance, operational counters and admin replay no longer claim or present
+retired exports. Historical rows and attempt evidence remain unchanged. No schema,
+production configuration, checkout, accounting period, email, or Telegram renewal
+flow changed.
 
 Local verification passed formatting, lint, TypeScript, 197 unit tests, all 52
 PostgreSQL integration tests in an isolated local PG17 database, and the production
@@ -1731,7 +1732,7 @@ admin route depends on (`BEH-ADMIN-01`).
 The archive facade lost every adapter no longer reachable from the offline tools: the
 retired live maintenance path `ensureGoogleSheetsSchema`, all Sheet write and mirror
 adapters, the per-record lookup caches, and the `source` selector with its database
-branch. [`google-sheets`](../../src/lib/google-sheets.ts) is now a 1121-line offline
+branch. `google-sheets.ts` was then a 1121-line offline
 archive reader with nine exports — seven values-only list readers, the protected source
 capture, and its snapshot type — and imports nothing from `src/db`. The last dual-read
 primitive, `explicit-read-source`, is deleted with it. The backfill tool reads protected
@@ -1876,11 +1877,11 @@ Next steps, in order:
    preserved-date dev release. The separate compatibility revision and its evidence
    are recorded below.
 3. **IN PROGRESS (DEV):** invoice compatibility is released; the DB-only contract
-   archive and payment-export compatibility are prepared locally. Retire the remaining
-   historical backfill/checkpoint code and nominate a rollback revision that works with
-   the intended contracted schema. Then rehearse cleanup and restore in an isolated
-   database, verify retained business rows, and refresh preflight/backup evidence. No
-   real cleanup SQL is pending in `drizzle/`.
+   archive, payment-export compatibility, historical maintenance retirement, and
+   removal of the retired export drain are prepared locally. Nominate a rollback
+   revision that works with the intended contracted schema. Then rehearse cleanup and
+   restore in an isolated database, verify retained business rows, and refresh
+   preflight/backup evidence. No real cleanup SQL is pending in `drizzle/`.
 4. Obtain separate owner approval for the exact deletions and production rollout;
    the retained September 23 boundary still applies unless explicitly revised.
    Apply the contract migration only in that controlled release, run post-deploy
@@ -2049,15 +2050,52 @@ archive or contract deletion is claimed yet, and Gate G7 remains open.
 The active PostgreSQL payment adapter no longer reads retained
 `successful_customer_export` rows into payment records and no longer creates or updates
 such rows from the two historical compatibility fields. Its side-effect hydration query
-now selects only purchase email and admin Telegram alert records. The fields remain in
-the frozen archive DTO until the maintenance-code removal, so this slice does not mix a
-broad type cleanup into runtime compatibility.
+now selects only purchase email and admin Telegram alert records. The two export-only
+fields are removed from the independent payment DTO in the later maintenance-retirement
+slice.
 
 A PostgreSQL regression test proves all three required states: populated legacy input
 cannot create a new export row; adding or changing a retained legacy row cannot alter
 the hydrated payment record; deleting that synthetic row also leaves the result
 identical. Adjacent payment monotonicity, Telegram access and admin-grant integration
 tests pass. No real export row, schema, environment or live database was changed.
+
+#### Historical maintenance retirement — LOCAL, September 14–16
+
+The obsolete Google client, DB/Sheets baseline and comparison engine, protected-source
+capture mode, resumable Sheets backfill executable and their dedicated tests/npm
+commands are removed. Historical encrypted version-1 archives remain decryptable; the
+only capture command left is the version-2 PostgreSQL contract archive. The independent
+Stripe settlement backfill is unrelated and remains available.
+
+The unused Drizzle `dataBackfillRuns` mapping is removed so application code can compile
+against the future contracted schema. The physical `data_backfill_runs` table and its
+completed row remain untouched, and the pre-contract audit plus current database
+invariant tests continue to inspect them with read-only/raw SQL until the contract
+release. No migration file was generated: this compatibility commit must remain usable
+against the existing expanded database and cannot authorize an early drop.
+
+The frozen Sheet schema and its last test-only imports are removed as well. Payment,
+Telegram, report, campaign and admin-history tests now validate their independent field
+sets directly. The two unused SuccessfulCustomers export fields leave the payment DTO;
+no business route consumed them, and the retained database rows remain available only
+to the pre-contract audit and protected archive.
+
+The temporary provider-free worker that marked old versioned export jobs `skipped` is
+also removed after both live preflights showed zero non-terminal versioned exports and
+zero leases. Stripe recovery, daily maintenance and admin replay now process only
+supported PostgreSQL jobs. Active queue/dead-letter counters exclude both retired
+export kinds, and the obsolete Google-export card and response fields are gone from the
+admin surface. No retained row was replayed, updated or deleted.
+
+Local verification passed formatting, lint, TypeScript, 222 unit tests, all 63
+remaining PostgreSQL integration tests and the production build. A fresh database with
+all 21 migrations still passed the raw checkpoint invariant and legacy preflight after
+the Drizzle mapping was removed. The simplified archive command then encrypted,
+decrypted and restored that database with `pg_restore --exit-on-error`; the archive had
+exactly `database.dump` and `manifest.json`. The disposable cluster and plaintext files
+were removed after verification. This remains code compatibility only, not a contract
+migration or live data deletion.
 
 ### Gate G7
 
@@ -2194,3 +2232,4 @@ Status: `TODO`
 | 2026-09-08 | DROP-04 campaign contract   | `DONE (DEV)`  | 213 unit / 59 PG; CI/browser/32 audits; migration-only push              |
 | 2026-09-08 | DROP-04 final cleanup       | `DONE (DEV)`  | Facade/adapter split; 211 unit / 59 PG; CI, 11 browser, 32 audits        |
 | 2026-09-08 | DROP-05 survey              | `DONE`        | Read-only: destructive surface measured in dev and prod; nothing applied |
+| 2026-09-16 | DROP-05 compatibility prep  | `READY (DEV)` | Legacy maintenance/runtime drain removed; 222 unit / 63 PG / build pass  |

@@ -237,13 +237,7 @@ test("[BEH-ADMIN-01] creates and reads one atomic admin grant without export eve
     const historyRecord = history.find((record) => record.accessUrl === accessUrl);
 
     assert.equal(results.length, 8);
-    assert.ok(
-      results.every(
-        (record) =>
-          record.payment_intent_id === paymentIntentId &&
-          record.successful_customer_log_status === "",
-      ),
-    );
+    assert.ok(results.every((record) => record.payment_intent_id === paymentIntentId));
     assert.deepEqual(stored, {
       amountMinor: 0,
       entitlementCount: 1,
@@ -372,7 +366,6 @@ test("creates a DB-native Online Group grant without an export flag or Google cr
     `;
 
     assert.equal(paymentRecord.payment_intent_id, paymentIntentId);
-    assert.equal(paymentRecord.successful_customer_log_status, "");
     assert.deepEqual(stored, {
       accessWorkflow: "telegram-online-group",
       exportCount: 0,

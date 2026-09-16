@@ -11,7 +11,6 @@ import {
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
 import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
-import { runRetiredExportOutboxJobs } from "@/lib/retired-export-outbox";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
@@ -52,9 +51,6 @@ export async function GET(request: Request) {
   let monthlySalesReportError: string | null = null;
   let paymentJobsError: string | null = null;
   let paymentJobsResult: Awaited<ReturnType<typeof runStripeBackgroundJobs>> | null =
-    null;
-  let sheetsExportError: string | null = null;
-  let sheetsExportResult: Awaited<ReturnType<typeof runRetiredExportOutboxJobs>> | null =
     null;
   let polishTerminalReminderError: string | null = null;
   let polishTerminalReminderResult: {
@@ -143,17 +139,6 @@ export async function GET(request: Request) {
     paymentJobsError = "stripe_background_recovery_failed";
   }
 
-  // Retain the response fields and drain old exports to skipped. No Google client
-  // or credentials exist in this worker, regardless of old environment settings.
-  try {
-    sheetsExportResult = await runRetiredExportOutboxJobs();
-  } catch (error) {
-    console.error("Daily maintenance: retired export cleanup failed", {
-      errorName: error instanceof Error ? error.name : "UnknownError",
-    });
-    sheetsExportError = "sheets_export_recovery_failed";
-  }
-
   const hasFailure = Boolean(
     accessRevocationError ||
     businessJobsError ||
@@ -174,8 +159,6 @@ export async function GET(request: Request) {
       paymentJobsResult,
       polishTerminalReminderError,
       polishTerminalReminderResult,
-      sheetsExportError,
-      sheetsExportResult,
       ok: !hasFailure,
     },
     { status: hasFailure ? 500 : 200 },

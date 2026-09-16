@@ -45,6 +45,9 @@ test("application entry points cannot load Google code or archive headers transi
   const visited = new Set<string>();
   const googleClient = resolve(root, "src/lib/google-sheets.ts");
   const archiveSchema = resolve(root, "src/lib/google-sheets-schema.ts");
+
+  assert.equal(existsSync(googleClient), false, "The retired Google client returned");
+  assert.equal(existsSync(archiveSchema), false, "The retired Sheet schema returned");
   const retiredRecordTypes = new Set([
     "PaymentSheetRecord",
     "TelegramAccessTokenSheetRecord",
@@ -155,7 +158,6 @@ test("application entry points cannot load Google code or archive headers transi
   for (const dependency of [
     "src/db/payment-records.ts",
     "src/lib/payment-record.ts",
-    "src/lib/retired-export-outbox.ts",
     "src/db/record-values.ts",
     "src/db/purchase-lookups.ts",
     "src/db/telegram-access-token-records.ts",
@@ -177,5 +179,37 @@ test("application entry points cannot load Google code or archive headers transi
       visited.has(resolve(root, dependency)),
       `Guard did not reach ${dependency}`,
     );
+  }
+});
+
+test("application runtime has no retired export worker or operational contract", () => {
+  const retiredWorker = resolve(root, "src/lib/retired-export-outbox.ts");
+  assert.equal(existsSync(retiredWorker), false, "The retired export worker returned");
+
+  const runtimeFiles = [
+    "src/app/api/stripe/webhook/_lib/background-jobs.ts",
+    "src/app/api/cron/daily-maintenance/route.ts",
+    "src/app/admin/api/operations/replay/route.ts",
+    "src/app/admin/components/operations-workspace.tsx",
+    "src/app/admin/lib/admin.types.ts",
+  ];
+  const retiredRuntimeTerms = [
+    "runRetiredExportOutboxJobs",
+    "sheetsExport",
+    "waitingSheetsExports",
+    "successful_customer_export",
+    "google_sheets_export",
+  ];
+
+  for (const relativePath of runtimeFiles) {
+    const source = readFileSync(resolve(root, relativePath), "utf8");
+
+    for (const term of retiredRuntimeTerms) {
+      assert.equal(
+        source.includes(term),
+        false,
+        `${relativePath} still exposes retired export term ${term}`,
+      );
+    }
   }
 });

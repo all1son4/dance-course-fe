@@ -2,10 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { AdminInviteLinkHistoryRecord } from "./admin-invite-link-history-record";
-import type { AdminInviteLinkHistorySourceRecord } from "./google-sheets-schema";
 
-// Only archive-boundary tests import both contracts. Runtime owns its own type.
-test("history contract preserves all nine archive fields and missing timestamps", () => {
+test("history contract preserves all nine fields and missing timestamps", () => {
   const record: AdminInviteLinkHistoryRecord = {
     accessUrl: "https://t.me/+private_invite",
     adminLabel: "",
@@ -17,9 +15,7 @@ test("history contract preserves all nine archive fields and missing timestamps"
     tokenExpiresAt: "2026-08-14T10:00:00.000Z",
     tokenUsedAt: "",
   };
-  // No casts: TypeScript checks assignability at both archive boundaries.
-  const archive: AdminInviteLinkHistorySourceRecord = record;
-  const restored: AdminInviteLinkHistoryRecord = { ...archive };
+  const restored: AdminInviteLinkHistoryRecord = { ...record };
 
   assert.deepEqual(Object.keys(record), [
     "accessUrl",

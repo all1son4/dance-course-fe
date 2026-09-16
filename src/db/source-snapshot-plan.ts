@@ -1,5 +1,9 @@
-export type SourceSnapshotScope = "database" | "sources";
 export type SourceSnapshotTarget = "development" | "production";
+
+export const LEGACY_CONTRACT_ARCHIVE_ENTRIES = [
+  "database.dump",
+  "manifest.json",
+] as const;
 
 export const LEGACY_CONTRACT_ARCHIVE_TABLES = [
   "data_backfill_runs",
@@ -7,28 +11,6 @@ export const LEGACY_CONTRACT_ARCHIVE_TABLES = [
   "purchase_side_effects",
   "purchases",
 ] as const;
-
-export const parseSourceSnapshotScope = (value: string): SourceSnapshotScope => {
-  const normalizedValue = value.trim().toLowerCase();
-
-  if (!normalizedValue || normalizedValue === "sources") {
-    return "sources";
-  }
-
-  if (normalizedValue === "database") {
-    return "database";
-  }
-
-  throw new Error("Pass --scope=database or --scope=sources.");
-};
-
-export const getSourceSnapshotSchemaVersion = (scope: SourceSnapshotScope) =>
-  scope === "database" ? (2 as const) : (1 as const);
-
-export const getSourceSnapshotArchiveEntries = (scope: SourceSnapshotScope) =>
-  scope === "database"
-    ? (["database.dump", "manifest.json"] as const)
-    : (["database.dump", "google-sheets.json", "manifest.json"] as const);
 
 export const assertSnapshotDatabaseEnvVariable = ({
   target,

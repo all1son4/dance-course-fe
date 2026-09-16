@@ -4,10 +4,8 @@ import test from "node:test";
 import {
   assertLegacyContractArchiveTables,
   assertSnapshotDatabaseEnvVariable,
-  getSourceSnapshotArchiveEntries,
-  getSourceSnapshotSchemaVersion,
+  LEGACY_CONTRACT_ARCHIVE_ENTRIES,
   LEGACY_CONTRACT_ARCHIVE_TABLES,
-  parseSourceSnapshotScope,
 } from "./source-snapshot-plan";
 
 test("snapshot targets require an explicit environment-scoped database variable", () => {
@@ -43,25 +41,8 @@ test("snapshot targets require an explicit environment-scoped database variable"
   );
 });
 
-test("database snapshots exclude Google data and use a distinct manifest version", () => {
-  assert.equal(parseSourceSnapshotScope(" database "), "database");
-  assert.equal(getSourceSnapshotSchemaVersion("database"), 2);
-  assert.deepEqual(getSourceSnapshotArchiveEntries("database"), [
-    "database.dump",
-    "manifest.json",
-  ]);
-});
-
-test("historical source snapshots retain their version and archive shape", () => {
-  assert.equal(parseSourceSnapshotScope(""), "sources");
-  assert.equal(parseSourceSnapshotScope("sources"), "sources");
-  assert.equal(getSourceSnapshotSchemaVersion("sources"), 1);
-  assert.deepEqual(getSourceSnapshotArchiveEntries("sources"), [
-    "database.dump",
-    "google-sheets.json",
-    "manifest.json",
-  ]);
-  assert.throws(() => parseSourceSnapshotScope("all"), /scope=database/u);
+test("contract snapshots exclude Google data", () => {
+  assert.deepEqual(LEGACY_CONTRACT_ARCHIVE_ENTRIES, ["database.dump", "manifest.json"]);
 });
 
 test("legacy contract archives require every checkpoint and compatibility table", () => {

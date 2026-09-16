@@ -103,11 +103,9 @@ const SYSTEM_BADGES: Record<
 const OUTBOX_KIND_LABELS: Record<string, string> = {
   admin_telegram_alert: "Telegram-алерт о покупке",
   campaign_email_delivery: "Письмо рассылки",
-  google_sheets_export: "Выгрузка в Google Sheets",
   monthly_report_delivery: "Месячный отчет",
   polish_terminal_reminder: "Напоминание о польских продажах",
   purchase_success_email: "Письмо о покупке",
-  successful_customer_export: "Выгрузка покупателя в Sheets",
   telegram_access_delivery: "Выдача Telegram-доступа",
 };
 
@@ -248,8 +246,6 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
 
   const failedReports = snapshot.reports.failed ?? 0;
   const sentReports = snapshot.reports.sent ?? 0;
-  const waitingSheetsExports = snapshot.projection.waitingSheetsExports;
-
   return [
     buildQueueSystem({
       deadLetters: inboxDeadLetters,
@@ -266,23 +262,6 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
       queue: snapshot.outbox,
     }),
     accessSystem,
-    {
-      deadLetters: [],
-      detail:
-        waitingSheetsExports > 0
-          ? `Ждут выгрузки: ${waitingSheetsExports}. Уйдут при ближайшем прогоне.`
-          : "Очередь на выгрузку пуста.",
-      entitlements: [],
-      key: "sheets",
-      name: "Выгрузка в Google Sheets",
-      notes:
-        waitingSheetsExports > 0
-          ? [
-              "Выгрузка уходит автоматически: ее запускает каждый вебхук оплаты и ежедневное обслуживание. Если число не уменьшается несколько дней, проверь доступ сервисного аккаунта к таблице.",
-            ]
-          : [],
-      state: waitingSheetsExports > 0 ? "warn" : "ok",
-    },
     {
       deadLetters: [],
       detail:

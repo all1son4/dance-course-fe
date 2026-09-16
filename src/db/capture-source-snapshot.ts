@@ -20,12 +20,9 @@ import { encryptSourceSnapshotArchive } from "./source-snapshot-crypto";
 import {
   assertLegacyContractArchiveTables,
   assertSnapshotDatabaseEnvVariable,
-  getSourceSnapshotArchiveEntries,
-  getSourceSnapshotSchemaVersion,
-  parseSourceSnapshotScope,
+  LEGACY_CONTRACT_ARCHIVE_ENTRIES,
+  type SourceSnapshotTarget,
 } from "./source-snapshot-plan";
-
-type SnapshotTarget = "development" | "production";
 
 type CommandResult = {
   stderr: string;
@@ -39,7 +36,7 @@ const getArgumentValue = (name: string) => {
   return argument?.slice(prefix.length).trim() ?? "";
 };
 
-const getTarget = (): SnapshotTarget => {
+const getTarget = (): SourceSnapshotTarget => {
   const target = getArgumentValue("target").toLowerCase();
 
   if (target === "development" || target === "production") {
@@ -348,17 +345,11 @@ const getPublicKey = async () => {
 
 const main = async () => {
   const target = getTarget();
-  const scope = parseSourceSnapshotScope(getArgumentValue("scope"));
-  const requireLegacyContract = process.argv.includes("--require-legacy-contract");
   const confirmation = getArgumentValue("confirmation");
   const expectedConfirmation = `snapshot-${target}`;
 
   if (confirmation !== expectedConfirmation) {
     throw new Error(`Pass --confirmation=${expectedConfirmation} exactly.`);
-  }
-
-  if (requireLegacyContract && scope !== "database") {
-    throw new Error("--require-legacy-contract requires --scope=database.");
   }
 
   process.env.DATABASE_ENV = target;
@@ -379,7 +370,7 @@ const main = async () => {
 
   const databaseUrl = getRequiredDatabaseUrlFromEnv({
     kind: "unpooled",
-    purpose: `${target} DATA source snapshot`,
+    purpose: `${target} legacy contract snapshot`,
   });
   const publicKeyPem = await getPublicKey();
   const publicKeySha256 = getPublicKeyFingerprint(publicKeyPem);
@@ -391,7 +382,7 @@ const main = async () => {
   const captureStartedAt = new Date().toISOString();
   const gitSha = await getGitSha();
   const timestamp = captureStartedAt.replaceAll(/[-:.]/gu, "");
-  const captureId = `${target}${scope === "database" ? "-database" : ""}-${timestamp}-${gitSha.slice(0, 12)}`;
+  const captureId = `${target}-database-${timestamp}-${gitSha.slice(0, 12)}`;
   const encryptedArchiveName = `${captureId}.tar.gz.enc`;
   const wrappedKeyName = `${captureId}.key.enc`;
   const publicManifestName = `${captureId}.manifest.json`;
@@ -399,7 +390,6 @@ const main = async () => {
   const finalWrappedKeyPath = join(outputDirectory, wrappedKeyName);
   const finalPublicManifestPath = join(outputDirectory, publicManifestName);
   const dumpPath = join(workingDirectory, "database.dump");
-  const sheetsPath = join(workingDirectory, "google-sheets.json");
   const internalManifestPath = join(workingDirectory, "manifest.json");
   const plainArchivePath = join(workingDirectory, `${captureId}.tar.gz`);
   const encryptedArchivePath = join(workingDirectory, encryptedArchiveName);
@@ -414,44 +404,15 @@ const main = async () => {
       databaseUrl,
       workingDirectory,
     });
-    const databaseCapturePromise = captureDatabaseDump({
+    const databaseCapture = await captureDatabaseDump({
       databaseUrl,
       dumpPath,
       workingDirectory,
     });
-    const sheetsCapturePromise =
-      scope === "sources"
-        ? import("@/lib/google-sheets").then(
-            async ({ captureGoogleSheetsSourceSnapshot }) => {
-              const snapshot = await captureGoogleSheetsSourceSnapshot();
-
-              await writePrivateJson(sheetsPath, snapshot);
-              return snapshot;
-            },
-          )
-        : Promise.resolve(null);
-    const [databaseResult, sheetsResult] = await Promise.allSettled([
-      databaseCapturePromise,
-      sheetsCapturePromise,
-    ]);
-
-    if (databaseResult.status === "rejected") {
-      throw databaseResult.reason;
-    }
-
-    if (sheetsResult.status === "rejected") {
-      throw sheetsResult.reason;
-    }
-
-    const databaseCapture = databaseResult.value;
-    const sheetsCapture = sheetsResult.value;
     const captureCompletedAt = new Date().toISOString();
     const { restoreListing, ...databaseCaptureEvidence } = databaseCapture;
     const databaseFile = await getFileEvidence(dumpPath);
-    const sheetsFile = sheetsCapture ? await getFileEvidence(sheetsPath) : null;
-    const legacyContractArchiveTables = requireLegacyContract
-      ? assertLegacyContractArchiveTables(restoreListing)
-      : null;
+    const legacyContractArchiveTables = assertLegacyContractArchiveTables(restoreListing);
     const internalManifest = {
       captureId,
       captureWindow: {
@@ -460,31 +421,16 @@ const main = async () => {
       },
       cutOffAt: captureCompletedAt,
       cutOffPolicy:
-        scope === "database"
-          ? "PostgreSQL custom-format dump captured from one serializable, deferrable transaction."
-          : "Upper bound of a non-atomic cross-source capture; changes inside the capture window require delta reconciliation.",
+        "PostgreSQL custom-format dump captured from one serializable, deferrable transaction.",
       database: {
         ...databaseCaptureEvidence,
         file: databaseFile,
         toolVersion: postgresToolVersion,
       },
       gitSha,
-      ...(sheetsCapture && sheetsFile
-        ? {
-            googleSheets: {
-              captureCompletedAt: sheetsCapture.captureCompletedAt,
-              captureStartedAt: sheetsCapture.captureStartedAt,
-              file: sheetsFile,
-              sheetCounts: sheetsCapture.sheets.map(({ key, rowCount }) => ({
-                key,
-                rowCount,
-              })),
-              spreadsheetIdSha256: sheetsCapture.spreadsheetIdSha256,
-            },
-          }
-        : {}),
-      schemaVersion: getSourceSnapshotSchemaVersion(scope),
-      ...(scope === "database" ? { legacyContractArchiveTables, scope } : {}),
+      legacyContractArchiveTables,
+      schemaVersion: 2 as const,
+      scope: "database" as const,
       target,
     };
 
@@ -494,7 +440,7 @@ const main = async () => {
       plainArchivePath,
       "-C",
       workingDirectory,
-      ...getSourceSnapshotArchiveEntries(scope),
+      ...LEGACY_CONTRACT_ARCHIVE_ENTRIES,
     ]);
     await chmod(plainArchivePath, 0o600);
 
@@ -531,17 +477,10 @@ const main = async () => {
         wrappedKey,
       },
       gitSha,
+      legacyContractArchiveTables,
       publicKeySha256,
       schemaVersion: internalManifest.schemaVersion,
-      ...(scope === "database" ? { legacyContractArchiveTables, scope } : {}),
-      ...(sheetsCapture
-        ? {
-            sourceCounts: sheetsCapture.sheets.map(({ key, rowCount }) => ({
-              key,
-              rowCount,
-            })),
-          }
-        : {}),
+      scope: internalManifest.scope,
       target,
     };
 
@@ -554,7 +493,7 @@ const main = async () => {
         encryptedArchiveSha256: encryptedArchive.sha256,
         outputDirectory,
         publicKeySha256,
-        scope,
+        scope: internalManifest.scope,
         target,
       })}\n`,
     );
@@ -569,6 +508,6 @@ const main = async () => {
 main().catch((error) => {
   const message = error instanceof Error ? error.message : "Unknown snapshot error";
 
-  console.error(`Failed to capture DATA source snapshot: ${message}`);
+  console.error(`Failed to capture protected legacy contract snapshot: ${message}`);
   process.exitCode = 1;
 });

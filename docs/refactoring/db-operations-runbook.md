@@ -30,7 +30,6 @@ Investigate when any of these conditions persists beyond a normal worker interva
 - `staleLeases` is non-zero after at least one lease duration (two minutes);
 - `deadLetters` is non-zero;
 - `projection.unlinkedProcessedEvents` increases;
-- `projection.waitingSheetsExports` grows during the transitional export period;
 - access `linkFailed` or `manualPending` grows without an explained operator task;
 - report status totals differ from the expected scheduled runs.
 
@@ -132,13 +131,11 @@ admin-write cutover switch.
 The `DROP-04` dev slice removes that selector and all runtime export producers.
 `DB_SHEETS_EXPORT_MODE` cannot enable export in the new code. Keep it set to
 `database` for older production/rollback revisions; this development slice does not
-change production configuration. The replacement
-[`retired-export-outbox.ts`](../../src/lib/retired-export-outbox.ts) only drains old
-versioned exports to `skipped`, without Google or customer projection reads. It does
-not delete history, mark exports `sent`, or modify unversioned import markers. The
-existing `sheetsExport` worker result and `sheetsExportResult`/`sheetsExportError`
-cron fields remain for operational compatibility; they now describe retirement, not
-delivery. Admin replay uses the same bounded retirement path.
+change production configuration. After both environments showed zero non-terminal
+versioned export jobs and zero leases, the `DROP-05` compatibility slice also removed
+the temporary provider-free retirement worker. Stripe recovery, daily maintenance,
+admin status, and admin replay now operate only on supported PostgreSQL jobs. Retained
+legacy rows remain untouched for the separately approved contract release.
 
 After deployment, verify one ordinary and one Online Group admin grant, one invoice,
 one report, one signup plus broadcast, and no duplicate invoice, campaign email,
@@ -188,17 +185,16 @@ old worker revision is still active, then inspect application logs by the row ID
 
 ## Reconciliation and export lag
 
-The historical `npm run db:baseline:sheets` and `npm run db:compare:sheets` commands
-require live Google credentials, retired in `DROP-03`; do not re-enable the service
-account to run routine health checks. Use canonical DB health, schema/catalog,
+The historical `db:baseline:sheets` and `db:compare:sheets` commands were removed in
+`DROP-05` after their live Google credentials were retired; do not restore them or
+re-enable the service account. Use canonical DB health, schema/catalog,
 invariants, queue status, and accounting API/CSV checks. The final accepted live
 comparison and protected source archives are recorded in the cutover runbook.
-The operational command only reports safe aggregate warning signals.
-`projection.waitingSheetsExports` counts only versioned jobs that the exporter can
-claim; historical unversioned migration markers are deliberately excluded. Investigate
-a nonzero waiting count after retirement as an export regression; the flag must remain
-`database` and old queued jobs must skip Google. It must never be repaired by changing
-payment or access state or reinstating credentials.
+The operational command only reports safe aggregate warning signals. Retired export
+rows are excluded from active outbox and dead-letter counters and cannot be replayed
+from the admin UI. Use the read-only legacy-contract preflight to inspect their retained
+history until the contract release; never repair it by changing payment/access state or
+reinstating credentials.
 
 After database write mode has accepted events, do not roll back to a release that does
 not understand the inbox/outbox workers. Disable only through a DB-compatible release

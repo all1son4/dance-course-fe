@@ -711,10 +711,6 @@ const createPaymentRecord = ({
     first_seen_at: getExistingRecordValue(context, "first_seen_at") || timestamp,
     invoice_issued_at: getExistingRecordValue(context, "invoice_issued_at"),
     invoice_number: getExistingRecordValue(context, "invoice_number"),
-    successful_customer_log_status: getExistingRecordValue(
-      context,
-      "successful_customer_log_status",
-    ),
     last_payment_error_code: emptyIfNull(snapshot.lastPaymentErrorCode),
     last_payment_error_message: emptyIfNull(snapshot.lastPaymentErrorMessage),
     latest_event_id: event.id,
@@ -731,10 +727,6 @@ const createPaymentRecord = ({
       buildPurchaseItemLabel(checkout.productTitle, checkout.offerLabel) ||
       getExistingRecordValue(context, "purchase_item") ||
       "",
-    successful_customer_logged_at: getExistingRecordValue(
-      context,
-      "successful_customer_logged_at",
-    ),
     telegram_access_status: preservedAccess.telegramAccessStatus,
     telegram_token_expires_at: getExistingRecordValue(
       context,

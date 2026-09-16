@@ -2,10 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { EmailCampaignLeadRecord } from "./email-campaign-record";
-import {
-  EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
-  type EmailCampaignLeadSheetRecord,
-} from "./google-sheets-schema";
+
+const EMAIL_CAMPAIGN_FIELDS = [
+  "lead_id",
+  "campaign_key",
+  "email_send_status",
+  "full_name",
+  "social_contact",
+  "email",
+  "locale",
+  "created_at",
+  "email_sent_at",
+  "email_send_attempts",
+  "last_email_error",
+] as const satisfies readonly (keyof EmailCampaignLeadRecord)[];
 
 test("campaign contract preserves all eleven archive fields and empty delivery evidence", () => {
   const record: EmailCampaignLeadRecord = {
@@ -21,10 +31,8 @@ test("campaign contract preserves all eleven archive fields and empty delivery e
     email_send_attempts: "0",
     last_email_error: "",
   };
-  // No casts: both archive boundaries are checked by TypeScript.
-  const archive: EmailCampaignLeadSheetRecord = record;
-  const restored: EmailCampaignLeadRecord = { ...archive };
-  assert.deepEqual(Object.keys(record), [...EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS]);
+  const restored: EmailCampaignLeadRecord = { ...record };
+  assert.deepEqual(Object.keys(record), [...EMAIL_CAMPAIGN_FIELDS]);
   assert.deepEqual(restored, record);
   assert.equal(restored.email_send_attempts, "0");
   assert.equal(restored.email_sent_at, "");

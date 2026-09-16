@@ -71,6 +71,7 @@ export const readOperationalDatabaseStatus = async () => {
           ))::int AS "oldestReadyAgeSeconds"
         FROM purchase_side_effects
         WHERE payload @> '{"_outboxVersion":1}'::jsonb
+          AND kind NOT IN ('successful_customer_export', 'google_sheets_export')
       `,
       client<
         {
@@ -89,7 +90,6 @@ export const readOperationalDatabaseStatus = async () => {
         {
           unlinkedProcessedEvents: number;
           unverifiedEvents: number;
-          waitingSheetsExports: number;
         }[]
       >`
         SELECT
@@ -103,14 +103,7 @@ export const readOperationalDatabaseStatus = async () => {
             SELECT count(*)::int
             FROM stripe_events
             WHERE NOT provider_payload_verified
-          ) AS "unverifiedEvents",
-          (
-            SELECT count(*)::int
-            FROM purchase_side_effects
-            WHERE kind = 'successful_customer_export'
-              AND payload @> '{"_outboxVersion":1}'::jsonb
-              AND status NOT IN ('sent', 'skipped')
-          ) AS "waitingSheetsExports"
+          ) AS "unverifiedEvents"
       `,
       client<{ count: number; status: string }[]>`
         SELECT delivery_status AS "status", count(*)::int AS "count"
@@ -132,7 +125,6 @@ export const readOperationalDatabaseStatus = async () => {
     projection: projectionRows[0] ?? {
       unlinkedProcessedEvents: 0,
       unverifiedEvents: 0,
-      waitingSheetsExports: 0,
     },
     reports: Object.fromEntries(reportRows.map((row) => [row.status, row.count])),
   };
