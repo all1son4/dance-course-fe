@@ -36,8 +36,18 @@ Dev revision `4483c67` also stopped runtime invoice queries from addressing the 
 `pdf_storage_key` column. The physical dev/production columns remain untouched, and no
 contract migration is present in `drizzle/`. CI, deployed smoke, authenticated history
 and sales parity, and an isolated invoice read/write rehearsal with the column actually
-absent all passed. This revision is only one part of the future rollback candidate;
-archive/checkpoint preparation and the full isolated contract rehearsal remain open.
+absent all passed.
+
+Dev revision `552e9f2` completes the application compatibility work and is the nominated
+rollback target for the future contract release. On September 18, the protected dev
+archive was restored into disposable PostgreSQL 17 databases and the guarded cleanup
+was rehearsed locally. All retained table/field fingerprints matched before and after
+cleanup, the post-contract-compatible integration selection passed, and a fresh
+post-cleanup restore reproduced the recovery fingerprint. The full evidence is in the
+[DROP-05 roadmap section](roadmap.md#contract-cleanup-and-restore-rehearsal--done-local-september-18).
+No dev/production schema or data was changed, and no contract migration is committed.
+The September 23 boundary, exact deletion approval, controlled production migration,
+and post-deploy verification remain open.
 
 ## Fixed rollback release (`CUT-01`)
 
