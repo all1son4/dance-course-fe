@@ -9,13 +9,18 @@ comparison was extended by DATA-03 into a privacy-safe per-key schema-v3 report;
 [`data-reconciliation.md`](./data-reconciliation.md). The historical fingerprints
 below are intentionally not rewritten.
 
+Operational update (2026-09-14): the accepted comparison implementation and npm
+command were removed during `DROP-05` after Google credential retirement. The command
+examples below are historical evidence, not runnable instructions for the current
+revision. Canonical PostgreSQL audits replace them; do not restore Google code or keys.
+
 ## Purpose
 
 `BASE-04` requires a repeatable comparison of PostgreSQL and all seven Google Sheets
 without changing either source and without putting personal data, bearer tokens, or
 invite links into the report.
 
-The command is:
+The historical command was:
 
 ```bash
 npm run db:baseline:sheets

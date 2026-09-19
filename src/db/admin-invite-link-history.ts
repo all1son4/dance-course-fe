@@ -1,14 +1,9 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 
-import type { AdminInviteLinkHistorySourceRecord } from "@/lib/google-sheets-schema";
+import type { AdminInviteLinkHistoryRecord } from "@/lib/admin-invite-link-history-record";
 
 import { getDatabase } from "./client";
-import {
-  accessEntitlements,
-  purchases,
-  purchaseSideEffects,
-  telegramAccessTokens,
-} from "./schema";
+import { accessEntitlements, purchases, telegramAccessTokens } from "./schema";
 
 const toIso = (value: Date | string | null) => {
   if (!value) {
@@ -38,7 +33,7 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
 }: {
   accessWorkflow: string;
   limit?: number;
-}): Promise<AdminInviteLinkHistorySourceRecord[]> => {
+}): Promise<AdminInviteLinkHistoryRecord[]> => {
   const normalizedAccessWorkflow = accessWorkflow.trim().toLowerCase();
 
   if (!normalizedAccessWorkflow) {
@@ -49,7 +44,7 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
   // postgres.js returns raw SQL timestamp expressions as strings, while direct
   // timestamp columns are mapped to Date by Drizzle.
   const createdAt = sql<string>`COALESCE(
-    ${purchaseSideEffects.sentAt},
+    ${purchases.inviteHistoryCreatedAt},
     ${purchases.firstSeenAt},
     ${purchases.updatedAt},
     ${telegramAccessTokens.createdAt}
@@ -81,13 +76,6 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
     .innerJoin(
       telegramAccessTokens,
       eq(accessEntitlements.currentTokenId, telegramAccessTokens.tokenId),
-    )
-    .leftJoin(
-      purchaseSideEffects,
-      and(
-        eq(purchaseSideEffects.purchaseId, purchases.id),
-        eq(purchaseSideEffects.kind, "successful_customer_export"),
-      ),
     )
     .where(
       and(

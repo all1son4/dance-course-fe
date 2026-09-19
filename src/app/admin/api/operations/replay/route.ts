@@ -26,10 +26,6 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
-import {
-  runSheetsExportOutboxJobs,
-  SHEETS_EXPORT_OUTBOX_KINDS,
-} from "@/lib/sheets-export-outbox";
 
 export const runtime = "nodejs";
 
@@ -41,13 +37,12 @@ type ReplayBody = {
 };
 
 // Each set comes from the module that actually processes the kind; a kind
-// outside all three has no worker, so replaying it would only strand the row.
+// outside both has no worker, so replaying it would only strand the row.
 const STRIPE_KIND_SET = new Set<string>(STRIPE_OUTBOX_KINDS);
-const SHEETS_KIND_SET = new Set<string>(SHEETS_EXPORT_OUTBOX_KINDS);
 const BUSINESS_KIND_SET = new Set<string>(BUSINESS_OPERATION_OUTBOX_KINDS);
 
 const isReplayableOutboxKind = (kind: string) =>
-  STRIPE_KIND_SET.has(kind) || SHEETS_KIND_SET.has(kind) || BUSINESS_KIND_SET.has(kind);
+  STRIPE_KIND_SET.has(kind) || BUSINESS_KIND_SET.has(kind);
 
 const drainReplayedOutboxJob = async ({
   deduplicationKey,
@@ -67,11 +62,6 @@ const drainReplayedOutboxJob = async ({
       deduplicationKey,
       deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
     });
-    return;
-  }
-
-  if (SHEETS_KIND_SET.has(kind)) {
-    await runSheetsExportOutboxJobs({ limit: 4 });
     return;
   }
 

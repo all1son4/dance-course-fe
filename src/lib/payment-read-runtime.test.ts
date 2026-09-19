@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import {
   findPaymentAccessRecord,
@@ -12,11 +12,9 @@ import {
 } from "./payment-read-runtime";
 
 const createPaymentRecord = (
-  overrides: Partial<PaymentSheetRecord> = {},
-): PaymentSheetRecord => ({
-  ...(Object.fromEntries(
-    PAYMENT_SHEET_HEADERS.map((header) => [header, ""]),
-  ) as PaymentSheetRecord),
+  overrides: Partial<PaymentRecordSnapshot> = {},
+): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
   amount: "1000",
   checkout_session_id: "cs_test",
   currency: "pln",
@@ -31,8 +29,8 @@ const createDependencies = ({
   checkoutRecord = null,
   intentRecord = null,
 }: {
-  checkoutRecord?: PaymentSheetRecord | null;
-  intentRecord?: PaymentSheetRecord | null;
+  checkoutRecord?: PaymentRecordSnapshot | null;
+  intentRecord?: PaymentRecordSnapshot | null;
 } = {}): PaymentReadDependencies => ({
   database: {
     findByCheckoutSessionId: async () => checkoutRecord,

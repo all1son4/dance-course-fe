@@ -3,6 +3,10 @@
 Status: `DONE`
 Implemented: 2026-08-11
 
+Operational update (2026-09-14): these accepted DB/Sheets comparison commands and
+their implementation were retired in `DROP-05`. The examples below document the
+completed reconciliation only; they must not be restored or run against live systems.
+
 ## Purpose
 
 `DATA-03` extends the privacy-safe baseline into a per-key domain reconciliation. It
@@ -10,7 +14,7 @@ detects state differences even when both sources contain the same keys and aggre
 counts. It does not resolve or overwrite a difference; classification and correction
 belong to `DATA-04`.
 
-The two operator commands now use the same report engine:
+The two historical operator commands used the same report engine:
 
 ```bash
 npm run db:baseline:sheets

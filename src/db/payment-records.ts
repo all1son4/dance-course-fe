@@ -1,9 +1,9 @@
-import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import { getDatabase } from "./client";
 import {
@@ -18,7 +18,6 @@ import {
   products,
   purchases,
   purchaseSideEffects,
-  stripeEvents,
 } from "./schema";
 
 const trim = (value: string | null | undefined) => value?.trim() ?? "";
@@ -112,11 +111,6 @@ const serializePaymentSideEffectStatus = (
     : sideEffect.status;
 };
 
-const emptyPaymentRecord = (): PaymentSheetRecord =>
-  Object.fromEntries(
-    PAYMENT_SHEET_HEADERS.map((header) => [header, ""]),
-  ) as PaymentSheetRecord;
-
 const parseInteger = (value: string | null | undefined, fallback = 0) => {
   const parsedValue = Number.parseInt(trim(value), 10);
 
@@ -174,7 +168,7 @@ const normalizeLessonLanguage = (value: string): "ru" | "en" | null => {
 
 const normalizeAccessStatus = (
   value: string,
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ):
   | "pending"
   | "not_required"
@@ -219,7 +213,7 @@ const getSaleTimestamp = () => null;
 const getPurchaseSource = (paymentIntentId: string) =>
   paymentIntentId.startsWith("adm_offer_pi_") ? "admin_offer_link" : "stripe";
 
-const getExternalTargetType = (paymentRecord: PaymentSheetRecord) => {
+const getExternalTargetType = (paymentRecord: PaymentRecordSnapshot) => {
   const workflow = paymentRecord.access_workflow.trim();
   const deliveryChannel = paymentRecord.delivery_channel.trim();
 
@@ -252,7 +246,7 @@ const parseInvoiceNumber = (invoiceNumber: string) => {
   };
 };
 
-const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
+const getPaymentSideEffects = (paymentRecord: PaymentRecordSnapshot) => {
   const fallbackUpdatedAt = parseRequiredDate(
     paymentRecord.updated_at || paymentRecord.first_seen_at,
   );
@@ -260,8 +254,6 @@ const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
     parseDate(paymentRecord.email_delivery_updated_at) ?? fallbackUpdatedAt;
   const alertUpdatedAt =
     parseDate(paymentRecord.with_mentor_alert_updated_at) ?? fallbackUpdatedAt;
-  const successfulCustomerUpdatedAt =
-    parseDate(paymentRecord.successful_customer_logged_at) ?? fallbackUpdatedAt;
   const emailStatus = parsePaymentSideEffectStatus({
     status: paymentRecord.email_delivery_status,
     updatedAt: emailUpdatedAt,
@@ -270,18 +262,6 @@ const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
     status: paymentRecord.with_mentor_alert_status,
     updatedAt: alertUpdatedAt,
   });
-  const successfulCustomerStatus =
-    parsePaymentSideEffectStatus({
-      status: paymentRecord.successful_customer_log_status,
-      updatedAt: successfulCustomerUpdatedAt,
-    }) ??
-    (paymentRecord.successful_customer_logged_at.trim()
-      ? parsePaymentSideEffectStatus({
-          status: "sent",
-          updatedAt: successfulCustomerUpdatedAt,
-        })
-      : null);
-
   return [
     emailStatus
       ? {
@@ -297,14 +277,6 @@ const getPaymentSideEffects = (paymentRecord: PaymentSheetRecord) => {
           provider: "telegram" as const,
           ...alertStatus,
           updatedAt: alertUpdatedAt,
-        }
-      : null,
-    successfulCustomerStatus
-      ? {
-          kind: "successful_customer_export" as const,
-          provider: null,
-          ...successfulCustomerStatus,
-          updatedAt: successfulCustomerUpdatedAt,
         }
       : null,
   ].filter((sideEffect) => sideEffect !== null);
@@ -383,11 +355,9 @@ const createPaymentRecordHydrationLookups = ({
 const populatePurchaseFields = ({
   purchase,
   record,
-  successfulCustomerSideEffect,
 }: {
   purchase: PurchaseRow;
-  record: PaymentSheetRecord;
-  successfulCustomerSideEffect: SideEffectRow | undefined;
+  record: PaymentRecordSnapshot;
 }): void => {
   record.payment_intent_id = purchase.paymentIntentId;
   record.customer_email = purchase.customerEmailSnapshot ?? "";
@@ -410,7 +380,6 @@ const populatePurchaseFields = ({
   record.last_payment_error_code = purchase.lastPaymentErrorCode ?? "";
   record.last_payment_error_message = purchase.lastPaymentErrorMessage ?? "";
   record.first_seen_at = toIso(purchase.firstSeenAt);
-  record.successful_customer_logged_at = toIso(successfulCustomerSideEffect?.sentAt);
   record.updated_at = toIso(purchase.updatedAt);
   record.checkout_session_id = purchase.checkoutSessionId ?? "";
   record.purchase_item = purchase.purchaseItemSnapshot ?? "";
@@ -423,7 +392,7 @@ const populateAccessFields = ({
 }: {
   entitlement: EntitlementRow | undefined;
   purchase: PurchaseRow;
-  record: PaymentSheetRecord;
+  record: PaymentRecordSnapshot;
 }): void => {
   record.delivery_channel = entitlement?.deliveryChannel ?? "";
   record.access_workflow = entitlement?.accessWorkflow ?? "";
@@ -448,14 +417,12 @@ const populateDeliveryFields = ({
   invoice,
   purchase,
   record,
-  successfulCustomerSideEffect,
 }: {
   alertSideEffect: SideEffectRow | undefined;
   emailSideEffect: SideEffectRow | undefined;
   invoice: InvoiceRow | undefined;
   purchase: PurchaseRow;
-  record: PaymentSheetRecord;
-  successfulCustomerSideEffect: SideEffectRow | undefined;
+  record: PaymentRecordSnapshot;
 }): void => {
   record.email_delivery_status = serializePaymentSideEffectStatus(emailSideEffect);
   record.email_delivery_updated_at = toIso(emailSideEffect?.updatedAt);
@@ -466,16 +433,13 @@ const populateDeliveryFields = ({
   record.customer_postal_code = purchase.customerPostalCodeSnapshot ?? "";
   record.invoice_number = invoice?.invoiceNumber ?? "";
   record.invoice_issued_at = toIso(invoice?.issuedAt);
-  record.successful_customer_log_status = serializePaymentSideEffectStatus(
-    successfulCustomerSideEffect,
-  );
 };
 
 const hydratePaymentRecord = (
   purchase: PurchaseRow,
   lookups: PaymentRecordHydrationLookups,
-): PaymentSheetRecord => {
-  const record = emptyPaymentRecord();
+): PaymentRecordSnapshot => {
+  const record = createEmptyPaymentRecord();
   const entitlement = lookups.entitlementByPurchaseId.get(purchase.id);
   const invoice = lookups.invoiceByPurchaseId.get(purchase.id);
   const sideEffects = lookups.sideEffectsByPurchaseId.get(purchase.id) ?? [];
@@ -485,14 +449,10 @@ const hydratePaymentRecord = (
   const alertSideEffect = sideEffects.find(
     (sideEffect) => sideEffect.kind === "admin_telegram_alert",
   );
-  const successfulCustomerSideEffect = sideEffects.find(
-    (sideEffect) => sideEffect.kind === "successful_customer_export",
-  );
 
   populatePurchaseFields({
     purchase,
     record,
-    successfulCustomerSideEffect,
   });
   populateAccessFields({
     entitlement,
@@ -505,7 +465,6 @@ const hydratePaymentRecord = (
     invoice,
     purchase,
     record,
-    successfulCustomerSideEffect,
   });
 
   return record;
@@ -513,7 +472,7 @@ const hydratePaymentRecord = (
 
 const hydratePaymentRecords = async (
   purchaseRows: PurchaseRow[],
-): Promise<PaymentSheetRecord[]> => {
+): Promise<PaymentRecordSnapshot[]> => {
   if (purchaseRows.length === 0) {
     return [];
   }
@@ -529,7 +488,15 @@ const hydratePaymentRecords = async (
     db
       .select()
       .from(purchaseSideEffects)
-      .where(inArray(purchaseSideEffects.purchaseId, purchaseIds)),
+      .where(
+        and(
+          inArray(purchaseSideEffects.purchaseId, purchaseIds),
+          inArray(purchaseSideEffects.kind, [
+            "purchase_success_email",
+            "admin_telegram_alert",
+          ]),
+        ),
+      ),
   ]);
   const lookups = createPaymentRecordHydrationLookups({
     entitlementRows,
@@ -599,7 +566,7 @@ const upsertPaymentCustomer = async ({
 }: {
   normalizedEmail: string;
   now: Date;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   transaction: PaymentRecordTransaction;
 }): Promise<string> => {
   const [existingCustomer] = await transaction
@@ -680,7 +647,7 @@ const upsertPaymentPurchase = async ({
   normalizedEmail: string;
   offer: PaymentOfferReference | undefined;
   paymentIntentId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   productId: string | null;
   transaction: PaymentRecordTransaction;
 }): Promise<{
@@ -803,7 +770,7 @@ const upsertPaymentEntitlement = async ({
   customerId: string | null;
   now: Date;
   offer: PaymentOfferReference | undefined;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   productId: string | null;
   purchaseId: string;
   transaction: PaymentRecordTransaction;
@@ -867,7 +834,7 @@ const upsertPaymentInvoice = async ({
   normalizedEmail: string;
   now: Date;
   parsedInvoice: ParsedInvoice;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   purchaseId: string;
   transaction: PaymentRecordTransaction;
 }): Promise<void> => {
@@ -919,7 +886,7 @@ const upsertPaymentSideEffects = async ({
   purchaseId,
   transaction,
 }: {
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   purchaseId: string;
   transaction: PaymentRecordTransaction;
 }): Promise<void> => {
@@ -953,7 +920,7 @@ const upsertPaymentSideEffects = async ({
 };
 
 export const upsertPaymentRecordToDatabase = async (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ) => {
   const db = getDatabase();
   const now = new Date();
@@ -1031,58 +998,4 @@ export const upsertPaymentRecordToDatabase = async (
   return (
     (await findPaymentRecordByIntentIdFromDatabase(paymentIntentId)) ?? paymentRecord
   );
-};
-
-export const listSucceededPaymentRecordsFromDatabaseInUtcRange = async ({
-  endUtcIsoExclusive,
-  startUtcIso,
-}: {
-  endUtcIsoExclusive: string;
-  startUtcIso: string;
-}) => {
-  const startDate = new Date(startUtcIso);
-  const endDate = new Date(endUtcIsoExclusive);
-
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return [] as PaymentSheetRecord[];
-  }
-
-  const db = getDatabase();
-  const rows = await db
-    .select({
-      purchase: purchases,
-    })
-    .from(purchases)
-    .innerJoin(
-      stripeEvents,
-      and(
-        eq(stripeEvents.paymentIntentId, purchases.paymentIntentId),
-        eq(stripeEvents.eventType, "payment_intent.succeeded"),
-      ),
-    )
-    .where(
-      and(
-        eq(purchases.outcome, "succeeded"),
-        eq(purchases.source, "stripe"),
-        eq(stripeEvents.processingStatus, "processed"),
-        eq(stripeEvents.outcomeSnapshot, "succeeded"),
-        gte(stripeEvents.stripeCreatedAt, startDate),
-        lt(stripeEvents.stripeCreatedAt, endDate),
-      ),
-    )
-    .orderBy(asc(stripeEvents.stripeCreatedAt), asc(purchases.paymentIntentId));
-  const seenPaymentIntentIds = new Set<string>();
-  const purchasesByFirstSucceededEvent = rows
-    .map((row) => row.purchase)
-    .filter((purchase) => {
-      if (seenPaymentIntentIds.has(purchase.paymentIntentId)) {
-        return false;
-      }
-
-      seenPaymentIntentIds.add(purchase.paymentIntentId);
-      return true;
-    });
-  const records = await hydratePaymentRecords(purchasesByFirstSucceededEvent);
-
-  return records;
 };

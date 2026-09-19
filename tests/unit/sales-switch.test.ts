@@ -8,9 +8,9 @@ import {
 import { buildPurchaseAlertText } from "@/app/api/stripe/webhook/_lib/purchase-alert";
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 import { PaymentStore } from "@/stores/payment-store";
 
 const createReadyStore = () => {
@@ -38,11 +38,12 @@ const closeSalesFor = (productId: string) =>
     product.id === productId ? { ...product, salesEnabled: false } : product,
   );
 
-const createPaymentRecord = (overrides: Partial<PaymentSheetRecord>) =>
-  ({
-    ...Object.fromEntries(PAYMENT_SHEET_HEADERS.map((header) => [header, ""])),
-    ...overrides,
-  }) as PaymentSheetRecord;
+const createPaymentRecord = (
+  overrides: Partial<PaymentRecordSnapshot>,
+): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
+  ...overrides,
+});
 
 test("withholds the payment step for a product whose sales are switched off", () => {
   const store = createReadyStore();

@@ -1,14 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
+import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import {
-  EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS,
-  type EmailCampaignLeadSheetRecord,
-  MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS,
-  type MonthlySalesReportRunSheetRecord,
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import {
   type BusinessOperationReadDependencies,
@@ -20,18 +18,15 @@ import {
   listInvoicePaymentRecords,
 } from "./business-operation-read-runtime";
 
-const fromHeaders = <Header extends string>(headers: readonly Header[]) =>
-  Object.fromEntries(headers.map((header) => [header, ""])) as Record<Header, string>;
-
-const createInvoicePayment = (): PaymentSheetRecord => ({
-  ...fromHeaders(PAYMENT_SHEET_HEADERS),
+const createInvoicePayment = (): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
   invoice_issued_at: "2026-08-13T10:00:00.000Z",
   invoice_number: "FV/2026/08/001",
   payment_intent_id: "pi_invoice",
 });
 
-const createMonthlyReport = (): MonthlySalesReportRunSheetRecord => ({
-  ...fromHeaders(MONTHLY_SALES_REPORT_RUNS_SHEET_HEADERS),
+const createMonthlyReport = (): MonthlySalesReportRunRecord => ({
+  csv_sha256: "",
   delivered_at_utc: "2026-08-13T10:00:00.000Z",
   delivered_to: "owner@example.com",
   delivery_status: "sent",
@@ -43,15 +38,16 @@ const createMonthlyReport = (): MonthlySalesReportRunSheetRecord => ({
   row_count: "3",
 });
 
-const createCampaignLead = (): EmailCampaignLeadSheetRecord => ({
-  ...fromHeaders(EMAIL_CAMPAIGN_LEADS_SHEET_HEADERS),
+const createCampaignLead = (): EmailCampaignLeadRecord => ({
   campaign_key: "campaign_test",
   created_at: "2026-08-13T10:00:00.000Z",
   email: "customer@example.com",
   email_send_attempts: "0",
   email_send_status: "pending",
+  email_sent_at: "",
   full_name: "Customer",
   lead_id: "lead_test",
+  last_email_error: "",
   locale: "en",
   social_contact: "@customer",
 });
@@ -147,6 +143,29 @@ test("fails closed when a PostgreSQL business read fails", async () => {
 
   await assert.rejects(
     findMonthlyReportRunRecord("monthly_sales:test", options),
+    /database unavailable/u,
+  );
+});
+
+test("campaign reads fail closed without an empty audience fallback", async () => {
+  const fail = async () => {
+    throw new Error("database unavailable");
+  };
+  const options = {
+    dependencies: createDependencies({
+      findCampaignLead: fail,
+      listCampaignLeads: fail,
+    }),
+  };
+  await assert.rejects(
+    findEmailCampaignLeadRecord(
+      { campaignKey: "campaign", email: "fixture@example.test" },
+      options,
+    ),
+    /database unavailable/u,
+  );
+  await assert.rejects(
+    listEmailCampaignLeadReadRecords(options),
     /database unavailable/u,
   );
 });

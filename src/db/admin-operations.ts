@@ -60,7 +60,11 @@ export const listOutboxDeadLetters = async () => {
     .from(purchaseSideEffects)
     .where(
       sql`${purchaseSideEffects.status} = 'dead_letter'
-        AND ${purchaseSideEffects.payload} @> '{"_outboxVersion":1}'::jsonb`,
+        AND ${purchaseSideEffects.payload} @> '{"_outboxVersion":1}'::jsonb
+        AND ${purchaseSideEffects.kind} NOT IN (
+          'successful_customer_export',
+          'google_sheets_export'
+        )`,
     )
     .orderBy(desc(purchaseSideEffects.deadLetteredAt))
     .limit(DEAD_LETTER_LIST_LIMIT);

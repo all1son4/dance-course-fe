@@ -30,7 +30,6 @@ Investigate when any of these conditions persists beyond a normal worker interva
 - `staleLeases` is non-zero after at least one lease duration (two minutes);
 - `deadLetters` is non-zero;
 - `projection.unlinkedProcessedEvents` increases;
-- `projection.waitingSheetsExports` grows during the transitional export period;
 - access `linkFailed` or `manualPending` grows without an explained operator task;
 - report status totals differ from the expected scheduled runs.
 
@@ -109,7 +108,8 @@ npm run db:business-jobs:run
 Optional `DB_BUSINESS_JOBS_LIMIT` is capped at 100. Production requires both values to
 name `production`. Output contains aggregate counts only.
 
-The optional one-way export job is enabled while `DB_SHEETS_EXPORT_MODE` is unset,
+On revisions before the `DROP-04` exporter-code slice, the optional one-way export
+job is enabled while `DB_SHEETS_EXPORT_MODE` is unset,
 `legacy`, or `shadow`. It exports only the allowlisted `SuccessfulCustomers`
 projection; no provider payload, credential, access token, invite link, or raw outbox
 payload is sent to Sheets. A Google failure changes only that durable job to retry or
@@ -118,8 +118,24 @@ admin response. Daily maintenance recovers this queue independently from Stripe.
 
 Setting the mode to `database` stops creating new Sheet export jobs. An already queued
 versioned export is marked `skipped` without loading customer data or calling Google.
-This value is reserved for the later export-retirement step; do not use it as an
+Production has used this value since the morning `DROP-02` deployment on 2026-09-05;
+Preview, Development, and local development use it after the same-day follow-up. The
+owner waived the additional next-day hold after a fresh green preflight; see the
+[`production cutover runbook`](./production-cutover-runbook.md#drop-02-production-exporter-retirement--2026-09-05).
+`DROP-03` disabled the Google service-account key and removed the three Google env
+names from active Vercel/local configuration. Do not unset the export-disabled
+flag to recover missing Sheet rows after a DB-only purchase; keep
+PostgreSQL authoritative and use a forward fix. This is an exporter setting, not an
 admin-write cutover switch.
+
+The `DROP-04` dev slice removes that selector and all runtime export producers.
+`DB_SHEETS_EXPORT_MODE` cannot enable export in the new code. Keep it set to
+`database` for older production/rollback revisions; this development slice does not
+change production configuration. After both environments showed zero non-terminal
+versioned export jobs and zero leases, the `DROP-05` compatibility slice also removed
+the temporary provider-free retirement worker. Stripe recovery, daily maintenance,
+admin status, and admin replay now operate only on supported PostgreSQL jobs. Retained
+legacy rows remain untouched for the separately approved contract release.
 
 After deployment, verify one ordinary and one Online Group admin grant, one invoice,
 one report, one signup plus broadcast, and no duplicate invoice, campaign email,
@@ -169,21 +185,28 @@ old worker revision is still active, then inspect application logs by the row ID
 
 ## Reconciliation and export lag
 
-Use `npm run db:baseline:sheets` and `npm run db:compare:sheets` for detailed controlled
-reconciliation. The operational command only reports safe aggregate warning signals.
-`projection.waitingSheetsExports` counts only versioned jobs that the exporter can
-claim; historical unversioned migration markers are deliberately excluded. Investigate
-a growing count as an optional-sink problem. It must never be repaired by changing
-payment or access state.
+The historical `db:baseline:sheets` and `db:compare:sheets` commands were removed in
+`DROP-05` after their live Google credentials were retired; do not restore them or
+re-enable the service account. Use canonical DB health, schema/catalog,
+invariants, queue status, and accounting API/CSV checks. The final accepted live
+comparison and protected source archives are recorded in the cutover runbook.
+The operational command only reports safe aggregate warning signals. Retired export
+rows are excluded from active outbox and dead-letter counters and cannot be replayed
+from the admin UI. Use the read-only legacy-contract preflight to inspect their retained
+history until the contract release; never repair it by changing payment/access state or
+reinstating credentials.
 
 After database write mode has accepted events, do not roll back to a release that does
 not understand the inbox/outbox workers. Disable only through a DB-compatible release
 or deploy a forward fix; immutable inbox rows and versioned outbox jobs must remain
 claimable.
 
-The protected source backfill has its own checkpoint and recovery procedure in
-[`google-sheets-backfill.md`](./google-sheets-backfill.md). Resume the same source
-fingerprint; do not edit `data_backfill_runs` manually or start a second operator run.
+The protected source backfill and its checkpoint are completed historical migration
+evidence. Do not resume it, edit `data_backfill_runs`, or re-enable Google credentials.
+Before `DROP-05` removes the physical checkpoint and compatibility columns, use the
+PostgreSQL-only encrypted contract archive in
+[`data-source-snapshots.md`](./data-source-snapshots.md#drop-05-postgresql-only-contract-archive)
+and prove restoration in an isolated database.
 
 ## Backup and restore
 

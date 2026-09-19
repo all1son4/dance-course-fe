@@ -2,14 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-  TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
-  TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
-  type TelegramAccessTokenSheetRecord,
-  type TelegramUserBindingSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
+import type {
+  TelegramAccessTokenRecord,
+  TelegramUserBindingRecord,
+} from "@/lib/telegram/access-records";
 
+import {
+  createTelegramBindingFixture,
+  createTelegramTokenFixture,
+} from "../../../tests/helpers/telegram-records";
 import {
   findActiveTelegramUserBindings,
   findLatestTelegramAccessTokenRecordByPaymentIntentId,
@@ -24,16 +28,13 @@ import {
   type TelegramAccessReadSource,
 } from "./access-read-runtime";
 
-const fromHeaders = <Header extends string>(headers: readonly Header[]) =>
-  Object.fromEntries(headers.map((header) => [header, ""])) as Record<Header, string>;
-
-const createPaymentRecord = (): PaymentSheetRecord => ({
-  ...fromHeaders(PAYMENT_SHEET_HEADERS),
+const createPaymentRecord = (): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
   payment_intent_id: "pi_test",
 });
 
-const createTokenRecord = (): TelegramAccessTokenSheetRecord => ({
-  ...fromHeaders(TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS),
+const createTokenRecord = (): TelegramAccessTokenRecord => ({
+  ...createTelegramTokenFixture(),
   payment_intent_id: "pi_test",
   status: "issued",
   token_hash: "token_hash_test",
@@ -41,8 +42,8 @@ const createTokenRecord = (): TelegramAccessTokenSheetRecord => ({
   token_value: "bearer_test",
 });
 
-const createBindingRecord = (): TelegramUserBindingSheetRecord => ({
-  ...fromHeaders(TELEGRAM_USER_BINDINGS_SHEET_HEADERS),
+const createBindingRecord = (): TelegramUserBindingRecord => ({
+  ...createTelegramBindingFixture(),
   chat_id: "-1001",
   customer_email: "customer@example.com",
   payment_intent_id: "pi_test",

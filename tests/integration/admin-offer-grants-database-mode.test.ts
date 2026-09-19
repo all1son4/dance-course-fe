@@ -53,7 +53,7 @@ const configureDatabaseOnlyAdminOffers = (context: TestContext) => {
   });
 };
 
-test("[BEH-ADMIN-01] creates and reads one atomic admin grant and export job without a mode flag or Google credentials", async (t) => {
+test("[BEH-ADMIN-01] creates and reads one atomic admin grant without export even with a stale legacy flag", async (t) => {
   const suffix = randomUUID().replaceAll("-", "");
   const productExternalId = `prd_write05_${suffix}`;
   const offerExternalId = `off_write05_${suffix}`;
@@ -204,8 +204,8 @@ test("[BEH-ADMIN-01] creates and reads one atomic admin grant and export job wit
         entitlementCount: number;
         entitlementStatus: string;
         exportCount: number;
-        exportSource: string;
-        exportStatus: string;
+        exportSource: string | null;
+        exportStatus: string | null;
         outcome: string;
         purchaseCount: number;
         source: string;
@@ -237,20 +237,14 @@ test("[BEH-ADMIN-01] creates and reads one atomic admin grant and export job wit
     const historyRecord = history.find((record) => record.accessUrl === accessUrl);
 
     assert.equal(results.length, 8);
-    assert.ok(
-      results.every(
-        (record) =>
-          record.payment_intent_id === paymentIntentId &&
-          record.successful_customer_log_status === "pending",
-      ),
-    );
+    assert.ok(results.every((record) => record.payment_intent_id === paymentIntentId));
     assert.deepEqual(stored, {
       amountMinor: 0,
       entitlementCount: 1,
       entitlementStatus: "pending",
-      exportCount: 1,
-      exportSource: "admin_offer_link",
-      exportStatus: "pending",
+      exportCount: 0,
+      exportSource: null,
+      exportStatus: null,
       outcome: "succeeded",
       purchaseCount: 1,
       source: "admin_offer_link",
@@ -279,14 +273,14 @@ test("[BEH-ADMIN-01] creates and reads one atomic admin grant and export job wit
   }
 });
 
-test("creates a DB-native Online Group grant with the export retired", async (t) => {
+test("creates a DB-native Online Group grant without an export flag or Google credentials", async (t) => {
   const suffix = randomUUID().replaceAll("-", "");
   const productExternalId = `prd_write05_no_export_${suffix}`;
   const offerExternalId = `off_write05_no_export_${suffix}`;
   const paymentIntentId = `adm_offer_pi_no_export_${suffix}`;
 
   configureDatabaseOnlyAdminOffers(t);
-  process.env.DB_SHEETS_EXPORT_MODE = "database";
+  delete process.env.DB_SHEETS_EXPORT_MODE;
 
   try {
     const [product] = await client<{ id: string }[]>`
@@ -372,7 +366,6 @@ test("creates a DB-native Online Group grant with the export retired", async (t)
     `;
 
     assert.equal(paymentRecord.payment_intent_id, paymentIntentId);
-    assert.equal(paymentRecord.successful_customer_log_status, "");
     assert.deepEqual(stored, {
       accessWorkflow: "telegram-online-group",
       exportCount: 0,

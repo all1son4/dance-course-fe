@@ -8,6 +8,47 @@ change: all runtime switches remain separate, controlled `CUT-03` operations. Th
 document preserves the accepted user journeys and does not add Telegram verification
 outside the existing Online Group renewal flow.
 
+Later destructive cleanup is a separate `DROP-05` release, not part of this completed
+CUT runbook. Its [current preparation and approval checklist](roadmap.md#drop-05--apply-destructive-contract-migrations-in-a-separate-release)
+includes the September 11 read-only preflight: legacy export timestamps still affect
+invite-history dates, so empty queues alone do not authorize deleting that history.
+The September 23 retention boundary has not been waived by starting preparation.
+
+The additive change `0019_invite_history_created_at` preserves those dates without
+deleting exports. On September 13 it was applied to **dev only**, before deploying
+compatible reader revision `f7bcb33`. A fresh encrypted dev backup was restored locally;
+all 21 public tables and full history/order/limit fingerprints matched, with 22 dates
+preserved and zero remaining timestamp differences. See the
+[dev evidence and mandatory schema-before-application release order](roadmap.md#invite-history-date-preservation--done-dev-september-13).
+Production has not received this migration or code: do not merge/deploy the new Drizzle
+purchase model there before its separately approved schema migration and checks. Keep
+the old exports and use the previous application revision on the expanded schema if a
+rollback is needed; no destructive rollback is part of this step. This dev backup does
+not replace a fresh production backup or authorize early cleanup.
+
+Dev follow-up revision `86571a4` then removed the invite-history query's legacy export
+join. Its CI, browser smoke and authenticated history/sales GET parity checks passed;
+no export rows were deleted. Production still requires the same schema-first order:
+apply `0019`, prove preservation, and only then deploy this reader revision or a later
+contract-compatible revision.
+
+Dev revision `4483c67` also stopped runtime invoice queries from addressing the unused
+`pdf_storage_key` column. The physical dev/production columns remain untouched, and no
+contract migration is present in `drizzle/`. CI, deployed smoke, authenticated history
+and sales parity, and an isolated invoice read/write rehearsal with the column actually
+absent all passed.
+
+Dev revision `552e9f2` completes the application compatibility work and is the nominated
+rollback target for the future contract release. On September 18, the protected dev
+archive was restored into disposable PostgreSQL 17 databases and the guarded cleanup
+was rehearsed locally. All retained table/field fingerprints matched before and after
+cleanup, the post-contract-compatible integration selection passed, and a fresh
+post-cleanup restore reproduced the recovery fingerprint. The full evidence is in the
+[DROP-05 roadmap section](roadmap.md#contract-cleanup-and-restore-rehearsal--done-local-september-18).
+No dev/production schema or data was changed, and no contract migration is committed.
+The September 23 boundary, exact deletion approval, controlled production migration,
+and post-deploy verification remain open.
+
 ## Fixed rollback release (`CUT-01`)
 
 The DB-compatible rollback release is production revision
@@ -338,8 +379,176 @@ share that raw output; use only the duplicate and count summaries. Removing thos
 samples from routine operator output is tracked by the existing `HARD-02` PII-safe
 logging item.
 
+### DROP-01 accelerated production release — 2026-09-03
+
+The owner explicitly shortened the original September 7 hold while keeping the DROP
+sequence staged. Before release, production database health, all 19 migrations, the
+12-offer catalog, all 32 invariants, queue state, classified reconciliation, and the
+privacy-safe accounting control passed. The accounting control retained 28 August
+sales, separated the one September sale, and found no duplicate succeeded event.
+
+PR [52](https://github.com/all1son4/dance-course-fe/pull/52) released `DROP-01` as
+merge commit `b4be69c8198e89174a65d1afe73dcfc2a757d708`. Production CI
+[run 33800300748](https://github.com/all1son4/dance-course-fe/actions/runs/33800300748)
+and deployment smoke
+[run 33800356020](https://github.com/all1son4/dance-course-fe/actions/runs/33800356020)
+passed. Immediate read-only checks reproduced reconciliation fingerprint
+`d751d5f4487f2fc34d52c4f19da136a534a5fe82a94276f973e3fee31510c2f9`,
+with zero Sheet-only payments/events/access, zero matched financial-row differences,
+`81/81` SuccessfulCustomers, zero waiting exports, clean actionable queues, and all
+32 invariants passing.
+
+`DB_SHEETS_EXPORT_MODE` and Google credentials were deliberately left unchanged.
+The earliest accelerated `DROP-02` review is 24 hours after the successful production
+smoke: `2026-09-04T20:08:20Z` (`22:08:20` Europe/Warsaw). Do not combine exporter
+retirement or credential revocation with this release.
+
+### DROP-02 production exporter retirement — 2026-09-05
+
+Status: `DONE` — morning switch followed by an owner-approved same-day verification
+instead of the originally planned additional next-day hold.
+
+The fresh preflight after the owner-approved observation window passed health,
+schema, catalog, all 32 invariants, actionable queue checks, and classified
+reconciliation. Counts were 105 purchases, 308 Stripe events, 81 successful-customer
+projections, 42 invoices, and seven report runs. Shared financial records matched;
+all active Sheet access was represented in PostgreSQL. The 25 DB-only Payments,
+160 DB-only Stripe events, 15 DB-only invoices, two DB-only report runs, known legacy
+duplicate, newer access states, and historical skipped alert are classified
+post-cutover/history differences. No waiting Sheet export remained.
+
+Only `DB_SHEETS_EXPORT_MODE=database` was added to Production at
+`2026-09-05T10:50:29.683Z`. The source deployment
+`dpl_FnQJFxRW9MbzThy226YCmpJHHbWJ` was redeployed with the same Git revision
+`361fb9f48fd11488e87e9158a8f2232dd249587e` as
+`dpl_CSMhzgYpoSTmjpRv3XkaH5K6Rw5m`
+([deployment](https://anna-strok-ez773y8gr-dzmitrys-projects-82230603.vercel.app)).
+It became ready and was assigned to the production domains at
+`2026-09-05T10:52:20.568Z`. Development UI changes were not part of this deployment.
+Vercel confirmed the production setting and its presence in the new deployment.
+The value/metadata fingerprint of all 74 pre-existing variables across all three
+environments was identical before and after the change; Google credentials and
+Preview/Development configuration were unchanged.
+
+The unchanged revision already passed production CI
+[run 33910368661](https://github.com/all1son4/dance-course-fe/actions/runs/33910368661).
+The new deployment passed all nine browser checks in
+[run 33961802367](https://github.com/all1son4/dance-course-fe/actions/runs/33961802367),
+completed at `2026-09-05T10:53:40Z`. Five exporter/flag unit tests and 12 integration
+tests passed on matching persistence/exporter code in a disposable local PostgreSQL
+17 database. A fetch guard blocked Google and asserted zero attempts. Successful
+Stripe projection retained its purchase/email/alert jobs but created no export job;
+the retired-export Online Group grant also created no export. The local database was
+stopped after testing. No real production payment, grant, or outbound report email
+was generated for verification.
+
+Immediate production health, migrations, catalog, queues, and all 32 invariants
+passed. The `2026-09-05T10:54:56.706Z` reconciliation reproduced the preflight
+fingerprint `7c0fbaa80b83c2eda09fb937d3a87fcb66303b49411285662ab8e573db943b13`,
+with no new unexplained difference and `81/81` SuccessfulCustomers. Authenticated
+read-only requests to the production sales API returned HTTP 200 for August
+(28 sales) and September (one sale). The August CSV download returned HTTP 200 and
+the accepted SHA-256
+`cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
+The immediate Vercel log review, scoped to the new deployment since its ready time,
+returned zero HTTP 5xx requests and zero error-level records.
+
+The original next-day checkpoint at `2026-09-06T10:53:40Z` was explicitly waived
+by the owner on September 5 evening. The repeat preflight passed production health,
+schema/catalog, queues, and all 32 invariants. Reconciliation at
+`2026-09-05T21:24:34.953Z` reproduced the fingerprint above. Authenticated sales/CSV
+checks at `2026-09-05T21:24:38.284Z` returned the same 28 August / one September sale
+and identical accepted August CSV. No new real purchase occurred during these checks;
+the controlled non-production tests provide the no-export purchase evidence. New
+DB-only SuccessfulCustomers after the switch are expected; new queued exports,
+unexplained shared-row changes, or missing canonical access require investigation.
+Keep the protected snapshot; the September 23 destructive-cleanup boundary remains.
+
+The owner independently released PR 57 before this checkpoint: production revision
+`ef5fcd93e5934e216eb3f38ef2d2b910762a64cf` passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/33991999717) and
+[deployment smoke](https://github.com/all1son4/dance-course-fe/actions/runs/33992036414).
+Its persistence/exporter code matches the morning-tested code. The deployment log
+review since `21:05Z` returned no HTTP 5xx. Preview/Development received
+`DB_SHEETS_EXPORT_MODE=database` at `2026-09-05T21:25:48.546Z`; redeploying existing
+dev revision `cd7b4ef` as `dpl_rvqn7HBz6NdX9wUNYKx4jQ6doWKR` passed all 11
+[browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33993177599).
+Both environments had no waiting exports or actionable inbox/outbox jobs. Local
+development uses the same export-disabled setting.
+
+This waiver closes `DROP-02` but is not evidence of another 24 hours, a new production
+purchase, or a successful next nightly cron. Review the next natural maintenance run
+as a non-blocking follow-up; no cron was forced and no customer email was sent for
+these checks.
+
+### DROP-03 credential retirement — 2026-09-05
+
+Status: `DONE` — provider key disabled, archives restored, active Google configuration
+removed, and credential-free same-revision dev/prod deployments verified.
+
+The owner confirmed the service account has no consumers beyond this site's dev/prod.
+Before disabling its key, fresh encrypted production and development source archives
+were captured and successfully restored to disposable PostgreSQL 17 databases. Both
+had 21 public tables, 19 migrations, valid internal checksums, and no invalid indexes.
+See [archive IDs, hashes, and counts](./data-source-snapshots.md#drop-03-final-source-archives--2026-09-05).
+The temporary cleartext archives, Sheets exports, and restored database cluster were
+deleted after verification. Encrypted archives and their recovery key remain protected
+locally; the original Google worksheets were not changed or deleted.
+
+The configured private key was matched cryptographically to exactly one user-managed
+Google key (public SPKI SHA-256
+`905d7d2e4190dd8d4ee677f9102fefcf3a6b3b6b990dabff30f6420d1d280ee8`).
+The initial IAM `403 SERVICE_DISABLED` was resolved by enabling only
+`iam.googleapis.com` using existing permissions; no IAM roles were added. Google
+confirmed key `a0ff73ed08ca3bc338f10bf0683a3c90850d7772` as `disabled: true` at
+`2026-09-05T21:39:36.419Z`. A new OAuth exchange at `21:42:42.463Z` returned HTTP 400
+`invalid_grant`, without issuing a token. The key is disabled, not permanently deleted.
+[Google's documented behavior](https://docs.cloud.google.com/iam/docs/keys-disable-enable)
+allows later administrative re-enablement; already issued short-lived tokens expire
+naturally and are not immediately revoked by key disablement.
+
+Removed `GOOGLE_PRIVATE_KEY`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, and
+`GOOGLE_SHEETS_SPREADSHEET_ID` from all three Vercel environments and from
+`.env.local`/`.env.production.local`. At `21:43:58.907Z`, no project-level Google
+variables remained. All other 72 Vercel records, including both export-disabled
+settings, retained identical values/metadata (SHA-256
+`cb7ed69b0a2a51e670d1eb33e77ade624c65e820d7155bc579d44c4ee22730f6`).
+Local removal preserved every unrelated setting and retained line byte-for-byte.
+No replacement Google credential or extra secret copy was created.
+
+Credential-free releases used the existing source revisions, with no dev-to-prod merge:
+
+- Production `ef5fcd9`: `dpl_E6iPSwxs3zFqJZ8LCFNwQjgkLiZa`, ready at
+  `2026-09-05T21:45:42.833Z`; all nine
+  [browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33993972821)
+  passed against that deployment URL.
+- Preview `cd7b4ef`: `dpl_2ZDuGYo1Tk5k3uwAhmXttqv9Tm24`, ready at
+  `2026-09-05T21:46:49.405Z`; all 11
+  [browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33994023749)
+  passed against that deployment URL.
+
+Vercel reported no `GOOGLE_*` names and the export-disabled flag present in both
+deployment environments. The existing exact-revision CI runs remained green; 200
+local unit tests and TypeScript also passed after local credential removal. Read-only
+health checks and all 32 DB invariants passed in each environment. Production queue
+checks at `21:49:00.394Z` showed no ready/working/stale/dead-letter jobs and no waiting
+exports; historical retries/imported warnings were unchanged. Authenticated
+production sales/CSV checks at `21:48:59.561Z` returned HTTP 200, August 28 sales
+(EUR 800.00, PLN 735.00), September one sale (EUR 15.00), and the identical accepted
+August CSV SHA-256 above. Both new deployments had zero observed HTTP 5xx and zero
+error-level records during the immediate post-deploy review. No real payment or
+outbound report email was generated.
+
+Older deployments may retain their captured environment. Do not promote them as a
+rollback: redeploy a reviewed DB-compatible revision with current export-disabled,
+Google-free configuration. Live Sheet comparison/capture tools no longer authenticate;
+offline archive recovery remains available. Do not restore Google access merely to
+make a stale worksheet resemble the canonical database.
+
+### Historical CUT-03 flag sequence
+
 The numbered flag sequence below is retained as the historical `CUT-03` execution
-record. On the `DROP-01` development branch, `DB_TELEGRAM_ACCESS_MODE`,
+record. Since the `DROP-01` production release, `DB_TELEGRAM_ACCESS_MODE`,
 `DB_BUSINESS_OPERATIONS_MODE`, `DB_PAYMENT_EVENTS_MODE`, and
 `DB_SIDE_EFFECTS_MODE` are retired: Telegram access, the four business-operation
 families, Stripe ingestion/projection, and purchase side effects are PostgreSQL-only.

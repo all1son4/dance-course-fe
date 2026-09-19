@@ -1,7 +1,7 @@
 import { domainRepositories } from "@/db/domain-repositories";
-import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
-type PaymentRecord = PaymentSheetRecord | null;
+type PaymentRecord = PaymentRecordSnapshot | null;
 
 export type PaymentReadDependencies = {
   database: {

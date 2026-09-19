@@ -2,14 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-  TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS,
-  TELEGRAM_USER_BINDINGS_SHEET_HEADERS,
-  type TelegramAccessTokenSheetRecord,
-  type TelegramUserBindingSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
+import type {
+  TelegramAccessTokenRecord,
+  TelegramUserBindingRecord,
+} from "@/lib/telegram/access-records";
 
+import {
+  createTelegramBindingFixture,
+  createTelegramTokenFixture,
+} from "../../../tests/helpers/telegram-records";
 import {
   claimTelegramAccessTokenRecord,
   persistTelegramPaymentAccess,
@@ -18,27 +22,24 @@ import {
   upsertTelegramUserBindingRecord,
 } from "./access-persistence";
 
-const fromHeaders = <Header extends string>(headers: readonly Header[]) =>
-  Object.fromEntries(headers.map((header) => [header, ""])) as Record<Header, string>;
-
-const createPaymentRecord = (): PaymentSheetRecord => ({
-  ...fromHeaders(PAYMENT_SHEET_HEADERS),
+const createPaymentRecord = (): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
   access_workflow: "telegram-chat",
   delivery_channel: "telegram",
   payment_intent_id: "pi_test",
   telegram_access_status: "pending",
 });
 
-const createTokenRecord = (): TelegramAccessTokenSheetRecord => ({
-  ...fromHeaders(TELEGRAM_ACCESS_TOKENS_SHEET_HEADERS),
+const createTokenRecord = (): TelegramAccessTokenRecord => ({
+  ...createTelegramTokenFixture(),
   payment_intent_id: "pi_test",
   status: "issued",
   token_hash: "token_hash_test",
   token_id: "tga_test",
 });
 
-const createBindingRecord = (): TelegramUserBindingSheetRecord => ({
-  ...fromHeaders(TELEGRAM_USER_BINDINGS_SHEET_HEADERS),
+const createBindingRecord = (): TelegramUserBindingRecord => ({
+  ...createTelegramBindingFixture(),
   chat_id: "-1001",
   payment_intent_id: "pi_test",
   status: "active",

@@ -2,7 +2,7 @@ import type Stripe from "stripe";
 
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
-import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 import { toUtcIso } from "@/lib/time";
 
@@ -110,7 +110,7 @@ export type StripePaymentWebhookResult = {
   duplicate: boolean;
   eventId: string;
   eventType: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
   received: true;
   skipped: boolean;
 };
@@ -125,7 +125,7 @@ type StripeMetadata = Record<string, string>;
 
 type PaymentRecordMappingContext = {
   checkoutSession: Stripe.Checkout.Session | null;
-  existingRecord: PaymentSheetRecord | null;
+  existingRecord: PaymentRecordSnapshot | null;
   paymentIntent: Stripe.PaymentIntent;
   paymentIntentMetadata: StripeMetadata;
   sourceContext: StripePaymentSourceContext | null;
@@ -167,7 +167,7 @@ type PreservedAccessDetails = {
   telegramAccessStatus: string;
 };
 
-type CreatePaymentSheetRecordInput = {
+type CreatePaymentRecordInput = {
   access: ResolvedAccessDetails;
   checkout: ResolvedCheckoutDetails;
   context: PaymentRecordMappingContext;
@@ -443,7 +443,7 @@ const getDeliveryChannelByOfferId = (offerId: string) =>
 
 const createPaymentRecordMappingContext = (
   paymentIntent: Stripe.PaymentIntent,
-  existingRecord: PaymentSheetRecord | null,
+  existingRecord: PaymentRecordSnapshot | null,
   sourceContext: StripePaymentSourceContext | null,
 ): PaymentRecordMappingContext => ({
   checkoutSession: sourceContext?.checkoutSession ?? null,
@@ -644,7 +644,7 @@ const resolveAccessDetails = (
 
 const getExistingRecordValue = (
   context: PaymentRecordMappingContext,
-  field: keyof PaymentSheetRecord,
+  field: keyof PaymentRecordSnapshot,
 ): string => context.existingRecord?.[field] ?? "";
 
 const resolvePreservedAccessDetails = (
@@ -678,7 +678,7 @@ const resolvePreservedAccessDetails = (
   };
 };
 
-const createPaymentSheetRecord = ({
+const createPaymentRecord = ({
   access,
   checkout,
   context,
@@ -686,7 +686,7 @@ const createPaymentSheetRecord = ({
   event,
   snapshot,
   timestamp,
-}: CreatePaymentSheetRecordInput): PaymentSheetRecord => {
+}: CreatePaymentRecordInput): PaymentRecordSnapshot => {
   const preservedAccess = resolvePreservedAccessDetails(context, checkout, access);
 
   return {
@@ -711,10 +711,6 @@ const createPaymentSheetRecord = ({
     first_seen_at: getExistingRecordValue(context, "first_seen_at") || timestamp,
     invoice_issued_at: getExistingRecordValue(context, "invoice_issued_at"),
     invoice_number: getExistingRecordValue(context, "invoice_number"),
-    successful_customer_log_status: getExistingRecordValue(
-      context,
-      "successful_customer_log_status",
-    ),
     last_payment_error_code: emptyIfNull(snapshot.lastPaymentErrorCode),
     last_payment_error_message: emptyIfNull(snapshot.lastPaymentErrorMessage),
     latest_event_id: event.id,
@@ -731,10 +727,6 @@ const createPaymentSheetRecord = ({
       buildPurchaseItemLabel(checkout.productTitle, checkout.offerLabel) ||
       getExistingRecordValue(context, "purchase_item") ||
       "",
-    successful_customer_logged_at: getExistingRecordValue(
-      context,
-      "successful_customer_logged_at",
-    ),
     telegram_access_status: preservedAccess.telegramAccessStatus,
     telegram_token_expires_at: getExistingRecordValue(
       context,
@@ -779,9 +771,9 @@ const createPaymentSheetRecord = ({
 const mapPaymentIntentToPaymentRecord = (
   event: Stripe.Event,
   paymentIntent: Stripe.PaymentIntent,
-  existingRecord: PaymentSheetRecord | null,
+  existingRecord: PaymentRecordSnapshot | null,
   sourceContext: StripePaymentSourceContext | null,
-): PaymentSheetRecord => {
+): PaymentRecordSnapshot => {
   const snapshot = getManagedPaymentIntentSnapshot(paymentIntent);
   const timestamp = toUtcIso();
   const context = createPaymentRecordMappingContext(
@@ -793,7 +785,7 @@ const mapPaymentIntentToPaymentRecord = (
   const customer = resolveCustomerDetails(context);
   const access = resolveAccessDetails(context, checkout.offerId);
 
-  return createPaymentSheetRecord({
+  return createPaymentRecord({
     access,
     checkout,
     context,

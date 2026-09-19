@@ -10,7 +10,6 @@ import { deliverStripeOutboxJob } from "@/app/api/stripe/webhook/_lib/outbox-del
 import { getDatabaseClient } from "@/db/client";
 import { recordVerifiedStripeEvent } from "@/db/stripe-event-inbox";
 import { processNextOutboxJob } from "@/db/transactional-outbox";
-import { deliverSheetsExportOutboxJob } from "@/lib/sheets-export-outbox";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -109,7 +108,7 @@ const createStripeFixture = (paymentIntentId: string) =>
     },
   }) as unknown as Stripe;
 
-test("projects a verified success and its three outbox jobs atomically", async () => {
+test("projects a verified success and its two delivery jobs atomically", async () => {
   const runId = randomUUID();
   const eventId = `evt_write02_${runId}`;
   const paymentIntentId = `pi_write02_${runId}`;
@@ -172,10 +171,10 @@ test("projects a verified success and its three outbox jobs atomically", async (
     assert.deepEqual(stored, {
       event_status: "processed",
       outcome: "succeeded",
-      outbox_count: 3,
-      pending_count: 1,
+      outbox_count: 2,
+      pending_count: 0,
       skipped_count: 2,
-      versioned_count: 3,
+      versioned_count: 2,
     });
   } finally {
     await client`
@@ -231,13 +230,15 @@ test("marks unsupported verified events skipped instead of growing the queue", a
   }
 });
 
-test("isolates a blocked Sheets API from the completed purchase workflow", async (t) => {
+test("completes the purchase without any export despite a stale legacy flag", async (t) => {
   const previousExportMode = process.env.DB_SHEETS_EXPORT_MODE;
   const runId = randomUUID();
   const eventId = `evt_write07_blocked_${runId}`;
   const paymentIntentId = `pi_write07_blocked_${runId}`;
   const event = createSucceededEvent({ eventId, paymentIntentId });
-  let exportedProjection: Record<string, string> | null = null;
+  const fetch = t.mock.method(globalThis, "fetch", async () => {
+    throw new Error("Provider network is forbidden in this fixture");
+  });
 
   process.env.DB_SHEETS_EXPORT_MODE = "legacy";
   t.after(() => {
@@ -267,30 +268,19 @@ test("isolates a blocked Sheets API from the completed purchase workflow", async
       deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
       kinds: ["admin_telegram_alert"],
     });
-    const exportDelivery = await processNextOutboxJob({
-      deliver: (job) =>
-        deliverSheetsExportOutboxJob(job, {
-          appendSuccessfulCustomer: async (projection) => {
-            exportedProjection = projection;
-            throw new Error("blocked_google_sheets_api");
-          },
-          environment: { DB_SHEETS_EXPORT_MODE: "legacy" },
-        }),
-      kinds: ["successful_customer_export"],
-    });
     const [stored] = await client<
       {
         eventStatus: string;
-        exportStatus: string;
+        exportCount: number;
         otherSideEffectsFinal: number;
         outcome: string;
       }[]
     >`
       SELECT
         max(event.processing_status) AS "eventStatus",
-        max(effect.status) FILTER (
+        count(effect.id) FILTER (
           WHERE effect.kind = 'successful_customer_export'
-        ) AS "exportStatus",
+        )::int AS "exportCount",
         count(effect.id) FILTER (
           WHERE effect.kind IN ('purchase_success_email', 'admin_telegram_alert')
             AND effect.status IN ('sent', 'skipped')
@@ -305,26 +295,13 @@ test("isolates a blocked Sheets API from the completed purchase workflow", async
     assert.equal(inboxResult.status, "processed");
     assert.equal(emailDelivery.status, "skipped");
     assert.equal(alertDelivery.status, "skipped");
-    assert.equal(exportDelivery.status, "retry");
     assert.deepEqual(stored, {
       eventStatus: "processed",
-      exportStatus: "failed",
+      exportCount: 0,
       otherSideEffectsFinal: 2,
       outcome: "succeeded",
     });
-    assert.deepEqual(Object.keys(exportedProjection ?? {}).sort(), [
-      "customer_country",
-      "customer_email",
-      "customer_full_address",
-      "customer_full_name",
-      "customer_nickname",
-      "offer_id",
-      "offer_label",
-      "payment_intent_id",
-      "product_id",
-      "product_title",
-      "purchase_item",
-    ]);
+    assert.equal(fetch.mock.callCount(), 0);
   } finally {
     await client`
       DELETE FROM stripe_events
@@ -337,14 +314,14 @@ test("isolates a blocked Sheets API from the completed purchase workflow", async
   }
 });
 
-test("does not enqueue a Sheets export after the sink is retired", async (t) => {
+test("does not enqueue a Sheets export when no mode flag is configured", async (t) => {
   const previousExportMode = process.env.DB_SHEETS_EXPORT_MODE;
   const runId = randomUUID();
   const eventId = `evt_write07_retired_${runId}`;
   const paymentIntentId = `pi_write07_retired_${runId}`;
   const event = createSucceededEvent({ eventId, paymentIntentId });
 
-  process.env.DB_SHEETS_EXPORT_MODE = "database";
+  delete process.env.DB_SHEETS_EXPORT_MODE;
   t.after(() => {
     restoreEnvironmentVariable("DB_SHEETS_EXPORT_MODE", previousExportMode);
   });

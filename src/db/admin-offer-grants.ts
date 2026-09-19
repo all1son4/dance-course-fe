@@ -3,14 +3,12 @@ import { and, eq, sql } from "drizzle-orm";
 import { getDatabase } from "./client";
 import { findPaymentRecordByIntentIdFromDatabase } from "./payment-records";
 import { accessEntitlements, productOffers, products, purchases } from "./schema";
-import { enqueueOutboxJobInTransaction } from "./transactional-outbox";
 
 export type CreateAdminOfferGrantCommand = {
   accessWorkflow: string;
   adminLabel: string;
   checkoutSessionId: string;
   createdAt: Date;
-  enqueueSuccessfulCustomerExport: boolean;
   eventId: string;
   inspirationChatId?: string | null;
   lessonLanguage: "en" | "ru";
@@ -213,19 +211,6 @@ export const createAdminOfferGrantInDatabase = async (
       .onConflictDoNothing({
         target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
       });
-
-    if (command.enqueueSuccessfulCustomerExport) {
-      await enqueueOutboxJobInTransaction(transaction, {
-        deduplicationKey: `purchase:${purchaseId}:successful_customer_export`,
-        kind: "successful_customer_export",
-        payload: {
-          paymentIntentId,
-          source: "admin_offer_link",
-        },
-        provider: "google_sheets",
-        purchaseId,
-      });
-    }
   });
 
   const paymentRecord = await findPaymentRecordByIntentIdFromDatabase(paymentIntentId);

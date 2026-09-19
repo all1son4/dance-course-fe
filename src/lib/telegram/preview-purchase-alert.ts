@@ -5,9 +5,9 @@ import {
   buildPurchaseAlertText,
 } from "@/app/api/stripe/webhook/_lib/purchase-alert";
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import { sendTelegramMessage } from "./bot-api";
 import { getTelegramAlertsBotToken, getTelegramAlertsChatId } from "./config";
@@ -28,15 +28,9 @@ const USAGE = `
 `.trim();
 
 const EVENT_CREATED_AT_ISO = "2026-09-07T17:49:05.000Z";
-
-/** An all-empty record, built the way the rest of the suite on this branch does. */
-const createEmptyPaymentRecord = () =>
-  Object.fromEntries(
-    PAYMENT_SHEET_HEADERS.map((header) => [header, ""]),
-  ) as PaymentSheetRecord;
 const PROCESSED_AT_ISO = "2026-09-07T17:49:20.039Z";
 
-const SHARED_RECORD_FIELDS: Partial<PaymentSheetRecord> = {
+const SHARED_RECORD_FIELDS: Partial<PaymentRecordSnapshot> = {
   checkout_currency: "pln",
   checkout_locale: "pl",
   checkout_session_id: "541e0465-fefd-4c36-b458-0975a18ce6e0",
@@ -63,7 +57,7 @@ const ONLINE_GROUP_WITH_HUB_READY: OnlineGroupAccessState[] = [
 type PreviewScenario = {
   hasClosedSales?: boolean;
   onlineGroupAccessStates?: OnlineGroupAccessState[];
-  record: Partial<PaymentSheetRecord>;
+  record: Partial<PaymentRecordSnapshot>;
   title: string;
 };
 

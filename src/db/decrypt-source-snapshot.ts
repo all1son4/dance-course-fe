@@ -21,7 +21,8 @@ type PublicManifest = {
       sha256: string;
     };
   };
-  schemaVersion: 1;
+  schemaVersion: 1 | 2;
+  scope?: "database" | "sources";
 };
 
 const getArgumentValue = (name: string) => {
@@ -49,7 +50,7 @@ const parseManifest = (value: unknown): PublicManifest => {
   const manifest = value as Partial<PublicManifest>;
 
   if (
-    manifest.schemaVersion !== 1 ||
+    (manifest.schemaVersion !== 1 && manifest.schemaVersion !== 2) ||
     typeof manifest.captureId !== "string" ||
     manifest.encryption?.algorithm !== "aes-256-gcm" ||
     manifest.encryption.keyWrap !== "rsa-oaep-sha256" ||
@@ -60,6 +61,10 @@ const parseManifest = (value: unknown): PublicManifest => {
     typeof manifest.files.wrappedKey?.file !== "string" ||
     typeof manifest.files.wrappedKey.sha256 !== "string"
   ) {
+    throw new Error("Unsupported or incomplete snapshot manifest.");
+  }
+
+  if (manifest.schemaVersion === 2 && manifest.scope !== "database") {
     throw new Error("Unsupported or incomplete snapshot manifest.");
   }
 

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { toUtcIso } from "@/lib/time";
 
 import {
@@ -13,7 +14,6 @@ import {
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,
   findTelegramUserBindingsByTelegramUserIdAndChatId,
-  type PaymentSheetRecord,
   persistTelegramPaymentAccess,
   upsertTelegramAccessTokenRecord,
   upsertTelegramUserBindingRecord,
@@ -58,7 +58,7 @@ type TelegramAccessLinkResult =
 
 type ActivateTelegramStartTokenResult =
   | {
-      paymentRecord: PaymentSheetRecord;
+      paymentRecord: PaymentRecordSnapshot;
       status: "activated" | "already_activated";
     }
   | {
@@ -114,8 +114,8 @@ type TelegramJoinAccessContext = {
   accessExpiresAt: string;
   existingBinding: TelegramUserBindingRecord | null;
   hasTimedAccess: boolean;
-  paymentRecord: PaymentSheetRecord;
-  paymentRecordWithWindow: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
+  paymentRecordWithWindow: PaymentRecordSnapshot;
 };
 
 const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
@@ -221,11 +221,11 @@ const getStartTokenExpiryIso = (issuedAtIso: string) => {
   return toUtcIso(new Date(issuedAtTs + ttlMs));
 };
 
-const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentSheetRecord) => {
+const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentRecordSnapshot) => {
   return parseTimestamp(paymentRecord.telegram_token_used_at);
 };
 
-const getComputedAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) => {
+const getComputedAccessExpiresAtIso = (paymentRecord: PaymentRecordSnapshot) => {
   const accessStartedAtTs = getPaymentAccessWindowStartedAtTs(paymentRecord);
   const accessDurationMs = getTelegramChannelAccessDurationMs(paymentRecord.offer_id);
 
@@ -236,7 +236,7 @@ const getComputedAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) => {
   return toUtcIso(new Date(accessStartedAtTs + accessDurationMs));
 };
 
-const getPaymentAccessExpiresAtIso = (paymentRecord: PaymentSheetRecord) =>
+const getPaymentAccessExpiresAtIso = (paymentRecord: PaymentRecordSnapshot) =>
   paymentRecord.telegram_access_expires_at.trim() ||
   getComputedAccessExpiresAtIso(paymentRecord);
 
@@ -339,7 +339,7 @@ const markTokenAsExpired = async ({
   });
 };
 
-const updatePaymentAccessWindow = async (paymentRecord: PaymentSheetRecord) => {
+const updatePaymentAccessWindow = async (paymentRecord: PaymentRecordSnapshot) => {
   const computedAccessExpiresAt = getPaymentAccessExpiresAtIso(paymentRecord);
 
   if (!computedAccessExpiresAt) {
@@ -394,7 +394,7 @@ const trySyncPaymentByExistingActiveBinding = async ({
 }: {
   accessExpiresAt: string;
   chatId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }) => {
   const customerEmail = paymentRecord.customer_email.trim().toLowerCase();
 
@@ -483,11 +483,11 @@ export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
  * Who gets an access window that can run out. Lifetime offers must stay out of
  * this list - it is what the revocation sweep keys off.
  */
-const isPaymentTimedTelegramAccess = (paymentRecord: PaymentSheetRecord) =>
+const isPaymentTimedTelegramAccess = (paymentRecord: PaymentRecordSnapshot) =>
   isChoreoChannelOfferId(paymentRecord.offer_id) ||
   isFirstTouchOfferId(paymentRecord.offer_id);
 
-const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentSheetRecord) => {
+const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentRecordSnapshot) => {
   if (!isPaymentTimedTelegramAccess(paymentRecord)) {
     return {
       accessExpiresAt: "",
@@ -526,7 +526,7 @@ const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentSheetRecord) =
 };
 
 const prepareTelegramAccessLink = (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ):
   | {
       context: TelegramAccessLinkContext;
@@ -579,7 +579,7 @@ const resolveCachedOrExpiredAccessLink = async ({
   paymentRecord,
 }: {
   context: TelegramAccessLinkContext;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }): Promise<TelegramAccessLinkResult | null> => {
   const cachedAccessLink = getCachedAccessLink({
     chatId: context.normalizedChatId,
@@ -653,7 +653,7 @@ const resolveCurrentTelegramInvite = async ({
   paymentRecord,
 }: {
   normalizedChatId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }): Promise<{
   currentTokenRecord: TelegramAccessTokenRecord | null;
   resolvedResult: TelegramAccessLinkResult | null;
@@ -746,7 +746,7 @@ const trySyncExistingTelegramBinding = async ({
 }: {
   accessExpiresAt: string;
   normalizedChatId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }): Promise<void> => {
   try {
     await trySyncPaymentByExistingActiveBinding({
@@ -771,7 +771,7 @@ const persistTelegramAccessLinkFailure = async ({
   createdAt: string;
   error: unknown;
   normalizedChatId: string;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }): Promise<TelegramAccessLinkResult> => {
   telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
 
@@ -807,7 +807,7 @@ const createTelegramAccessLink = async ({
 }: {
   context: TelegramAccessLinkContext;
   currentTokenRecord: TelegramAccessTokenRecord | null;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }): Promise<TelegramAccessLinkResult> => {
   const tokenId = createTelegramTokenId("tgi");
   const createdAt = toUtcIso();
@@ -895,7 +895,7 @@ const createTelegramAccessLink = async ({
 };
 
 const ensureTelegramAccessLinkForPaymentInternal = async (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): Promise<TelegramAccessLinkResult> => {
   const preparation = prepareTelegramAccessLink(paymentRecord);
 
@@ -929,7 +929,7 @@ const ensureTelegramAccessLinkForPaymentInternal = async (
 };
 
 export const ensureTelegramAccessLinkForPayment = async (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ) => {
   const paymentIntentId = paymentRecord.payment_intent_id.trim();
 
@@ -1018,7 +1018,7 @@ const resolveTelegramJoinRecords = async ({
       tokenRecord: null;
     }
   | {
-      paymentRecord: PaymentSheetRecord;
+      paymentRecord: PaymentRecordSnapshot;
       resolvedResult: null;
       tokenRecord: TelegramAccessTokenRecord;
     }
@@ -1068,7 +1068,7 @@ const resolveTelegramJoinRecords = async ({
 };
 
 const prepareTelegramJoinAccess = async (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): Promise<TelegramJoinAccessContext> => {
   const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecord);
   const paymentRecordWithWindow = hasTimedAccess
@@ -1758,7 +1758,7 @@ export const getActivatedPaymentsByTelegramUserId = async (telegramUserId: strin
   );
 
   return payments.filter(
-    (payment): payment is PaymentSheetRecord =>
+    (payment): payment is PaymentRecordSnapshot =>
       payment !== null &&
       payment.outcome === "succeeded" &&
       isOfferEligibleForTelegramBotAccess(payment.offer_id),
@@ -1766,7 +1766,7 @@ export const getActivatedPaymentsByTelegramUserId = async (telegramUserId: strin
 };
 
 export const ensureLegacyTelegramBotStartLinkForPayment = async (
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ) => {
   if (!isOfferEligibleForTelegramBotAccess(paymentRecord.offer_id)) {
     return null;

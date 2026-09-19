@@ -3,6 +3,18 @@
 Status: `DONE`
 Implemented: 2026-08-11
 
+Operational update: live Google credentials were retired in `DROP-03` on 2026-09-05.
+This tool reads protected offline archives and does not need Google access. Retain it
+only as historical migration/recovery code until its `DROP-05` removal; do not start or
+resume it against dev or production and do not replay historical Sheets into the live
+canonical database as routine maintenance or rollback. Its completed
+`data_backfill_runs` row is immutable migration evidence, not an active runtime lease.
+Source archives and verified restore evidence are in
+[protected snapshots](./data-source-snapshots.md#drop-03-final-source-archives--2026-09-05).
+The executable and npm command were removed from the current dev revision on
+2026-09-14. Git history preserves their implementation; do not restore it to perform a
+new live run.
+
 ## Purpose
 
 `DATA-02` copies the six migration-owned legacy record sets from the immutable
@@ -50,6 +62,10 @@ The four outcomes are mutually exclusive per stage row. Detailed conflict decisi
 belong to `DATA-04`; DATA-02 never prints customer or provider identifiers.
 
 ## Controlled run
+
+The commands in this section document the completed 2026-08 migration. They are not
+authorized current operating procedures after credential retirement and database
+cutover.
 
 Decrypt one protected triplet into a newly created private temporary directory, then
 extract it there. The exact decrypt command is documented in

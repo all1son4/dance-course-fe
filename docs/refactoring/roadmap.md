@@ -117,6 +117,18 @@ A task can be marked `DONE` only when all applicable conditions hold:
 - no new runtime dependency on Google Sheets is introduced;
 - logs do not expose secrets or unnecessary personal data.
 
+## Reading historical task entries
+
+Each task records what it did when it was completed, so a finished entry may describe
+code that a later task has since removed. In particular, the domain mode selectors
+`DB_PAYMENT_EVENTS_MODE`, `DB_SIDE_EFFECTS_MODE`, `DB_TELEGRAM_ACCESS_MODE`,
+`DB_BUSINESS_OPERATIONS_MODE`, and their `legacy`/`shadow`/`database` values are
+described in the present tense by `DB-07`, `WRITE-02`, `WRITE-04`, `WRITE-05`, and
+`READ-02` through `READ-05`. All of them were removed by `DROP-01` and `DROP-04`; the
+runtime is unconditionally PostgreSQL-only and there is nothing left to set. Treat those
+passages as history, not as configuration instructions — the same way `WRITE-07` is
+marked for the retired exporter.
+
 ## Phase BASE: behavior and data baseline
 
 Status: `DONE`
@@ -901,8 +913,10 @@ enablement is reserved for `CUT-03` after the dependent READ cutovers.
 Export only non-secret projections asynchronously. Export failure must not affect any
 user request.
 
-Status: `DONE`. The only database-mode runtime write to Sheets is now the isolated
-[`Sheets export outbox`](../../src/lib/sheets-export-outbox.ts). It claims the existing
+Status: `DONE` (historical implementation; exporter retired by `DROP-02`/`DROP-04`).
+The isolated `sheets-export-outbox.ts` was the only database-mode runtime writer.
+The implementation below records the accepted WRITE-07 behavior, not instructions
+to reinstate it after retirement. It claimed the existing
 versioned `successful_customer_export` job independently from Stripe delivery, loads
 the canonical PostgreSQL purchase projection, and crosses the provider boundary
 through an explicit eleven-field allowlist. Raw Stripe payloads, outbox metadata,
@@ -1379,6 +1393,10 @@ cleanup eligibility after `2026-09-23T00:56:17Z`. These are earliest review time
 not automatic approvals; unexplained anomalies or insufficient natural traffic extend
 the applicable window.
 
+The owner-approved 2026-09-03 acceleration recorded under `DROP-01`/`DROP-02`
+replaces only the September 7 reader/exporter hold. The September 23 destructive
+cleanup boundary and backup requirements remain unchanged.
+
 ### Gate G6
 
 Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
@@ -1388,7 +1406,8 @@ Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
 - [x] All active legacy access is accounted for in PostgreSQL.
 - [x] Dead-letter, ready, working, and stale queues are empty; historical retries are
       terminal and explained.
-- [x] Critical runtime paths use PostgreSQL and the Sheets exporter remains disabled.
+- [x] Critical runtime paths use PostgreSQL; the optional one-way Sheets exporter
+      remains isolated until its separate `DROP-02` retirement.
 - [x] The corrected completed-month report matches bounded control SQL and regenerated
       CSV content exactly.
 - [x] The owner accepted automated production verification and reported no other
@@ -1397,13 +1416,27 @@ Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
 
 ## Phase DROP: remove dual-write and Google Sheets
 
-Status: `IN_PROGRESS` — development-only cleanup preparation started on 2026-09-01;
-no DROP change may reach production before the legacy reader/exporter review after
-`2026-09-07T00:56:17Z`.
+Status: `IN_PROGRESS` — cleanup preparation started on 2026-09-01. On 2026-09-03 the
+owner explicitly shortened the original `2026-09-07T00:56:17Z` hold after a fresh
+green production preflight. `DROP-01` is in production. After more than 24 hours of
+observation and a fresh preflight, `DROP-02` disabled the production exporter on
+2026-09-05. The owner waived the additional next-day hold that evening after another
+green preflight; `DROP-02` is complete. `DROP-03` is also complete: archives restored,
+Google key disabled, credentials removed, and same-revision dev/prod checks green.
+`DROP-04` started on dev with exporter-code retirement and completed on dev on
+2026-09-08; the September 23 destructive-cleanup boundary is unchanged.
+
+The owner decided on 2026-09-08 that the whole DROP phase ships to production as one
+batch once Gate G7 closes, rather than as separate per-slice releases. Until then
+production deliberately keeps running the pre-`DROP-04` code with its legacy adapters,
+and `main` stays behind `dev` by design. Two consequences are accepted: the production
+smoke suite exercises the journeys present on `main`, not the two added later on `dev`;
+and the eventual release is a single large one, so it needs its own preflight rather
+than being treated as a routine merge.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
-Status: `DONE (development)` — the development slices permanently route admin invite-link
+Status: `DONE (production)` — the released slices permanently route admin invite-link
 history, invoice, monthly-report, campaign, payment-access, and Telegram token/binding
 reads through PostgreSQL. Their legacy/shadow selectors and shadow comparators are
 removed; admin history and the payment access-link route also no longer have
@@ -1433,8 +1466,7 @@ notification eligibility, invoice generation, access preparation, provider
 idempotency, and response semantics of the active database path remain unchanged.
 The temporary SuccessfulCustomers exporter and offline
 snapshot/backfill/reconciliation tools are outside these slices and remain available
-through their documented windows. This development-only cleanup must not reach
-production before the `2026-09-07T00:56:17Z` retirement review.
+through their documented windows.
 
 The exact development tree is `e722797` (implementation `999386d` plus its
 integration-fixture ordering correction). It passed local format/lint/typecheck,
@@ -1448,36 +1480,701 @@ working inbox/outbox jobs, no stale leases or dead letters, no waiting Sheet exp
 and all 32 invariants passing. Its one historical inbox retry and imported
 unlinked/unverified evidence remain the previously classified development fixtures.
 
+The owner approved an accelerated, still staged release on 2026-09-03. The fresh
+production preflight passed health, all 19 migrations, the 12-offer catalog, 32
+invariants, queue checks, the classified reconciliation, and a privacy-safe accounting
+audit with 28 August sales, one September sale, and no duplicate succeeded event. PR
+[52](https://github.com/all1son4/dance-course-fe/pull/52) released merge commit
+`b4be69c`; production CI
+[run 33800300748](https://github.com/all1son4/dance-course-fe/actions/runs/33800300748)
+and Vercel smoke
+[run 33800356020](https://github.com/all1son4/dance-course-fe/actions/runs/33800356020)
+passed. The immediate post-release checks reproduced reconciliation fingerprint
+`d751d5f4487f2fc34d52c4f19da136a534a5fe82a94276f973e3fee31510c2f9`:
+zero Sheet-only or matched payment/event/customer differences, `81/81`
+SuccessfulCustomers, all active Sheet access represented in PostgreSQL, zero waiting
+exports, clean ready/working/stale/dead-letter queues, and all 32 invariants passing.
+
 ### DROP-02 — Disable the transitional exporter after the rollback window
 
-Status: `READY_FOR_REVIEW` — the isolated exporter already has a tested retirement
-switch: `DB_SHEETS_EXPORT_MODE=database` stops enqueueing new jobs and marks an
-already queued versioned export `skipped` before loading customer data or calling
-Google. The 2026-09-01 development preflight found zero waiting Sheet exports and no
-ready, working, stale, or dead-letter outbox jobs.
+Status: `DONE` — `DB_SHEETS_EXPORT_MODE=database`
+was initially added only to Production at `2026-09-05T10:50:29.683Z`. It stops new
+exports and marks queued versioned exports `skipped` before loading customer data or
+calling Google. The owner-approved earliest review time, `2026-09-04T20:08:20Z`,
+had passed. The fresh preflight found no unexplained difference or waiting export.
 
-Do not apply the switch before `2026-09-07T00:56:17Z`. At or after that review time:
+The existing production revision `361fb9f48fd11488e87e9158a8f2232dd249587e` was
+redeployed as `dpl_CSMhzgYpoSTmjpRv3XkaH5K6Rw5m`, ready and assigned to
+`annastrok.com` at `2026-09-05T10:52:20.568Z`. No development UI commit was included.
+All other 74 Vercel variables across Production, Preview, and Development retained
+the same values and metadata. Google credentials were unchanged at that checkpoint.
+Deployment smoke
+[run 33961802367](https://github.com/all1son4/dance-course-fe/actions/runs/33961802367)
+passed all nine browser checks; the unchanged production revision already passed CI
+[run 33910368661](https://github.com/all1son4/dance-course-fe/actions/runs/33910368661).
 
-1. repeat production health, schema, catalog, queue, invariant, and classified
-   reconciliation checks;
-2. confirm there is still no unexplained anomaly and no waiting Sheet export;
-3. set only `DB_SHEETS_EXPORT_MODE=database`, wait for the deployment, and run the
-   six critical journeys plus queue/invariant checks;
-4. confirm a new eligible purchase or controlled non-production projection creates
-   no export job and no Google API attempt;
-5. repeat the read-only production check the next day before marking `DROP-02` done.
+Five exporter/flag unit tests and 12 PostgreSQL integration tests passed, including
+successful Stripe projection and Online Group grants with zero export jobs. These
+tests ran against a disposable local database with Google fetch calls blocked and
+asserted absent. The tested persistence/exporter code matches the deployed revision.
+No real payment or production test grant was created.
 
-Rollback before any post-switch purchase is an environment revert. After a canonical
-purchase has been accepted without an export, keep PostgreSQL authoritative and use a
-forward fix; never reconstruct authority from the stale worksheet.
+Immediate production health, 19 migrations, 12-offer catalog, clean actionable
+queues, and all 32 invariants passed. Reconciliation at
+`2026-09-05T10:54:56.706Z` reproduced the preflight fingerprint
+`7c0fbaa80b83c2eda09fb937d3a87fcb66303b49411285662ab8e573db943b13`.
+All 80 shared unique Payments and 81 SuccessfulCustomers match, no Sheet-only payment
+or active access is missing in PostgreSQL, and classified historical/post-cutover
+differences remain unchanged. The authenticated production sales API returned August
+28 / September 1; the downloaded August CSV exactly matches the accepted report hash
+`cb4d1781d09562064716efdc423bd706569bc39d2e2488df58a58fc6bf848658`.
+
+The originally planned additional checkpoint at `2026-09-06T10:53:40Z` was waived
+by the owner on the evening of September 5. This is an explicit reduction of the
+observation period, not a claim that the next nightly cron or another 24 hours was
+observed. The same-day repeat passed health/schema/catalog, 32 invariants, clean
+actionable queues, and the same reconciliation fingerprint at
+`2026-09-05T21:24:34.953Z`. Admin sales and the accepted August CSV hash still match.
+The owner had independently released PR 57; its production revision `ef5fcd9` passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/33991999717) and
+[smoke](https://github.com/all1son4/dance-course-fe/actions/runs/33992036414), with no
+change to the persistence/exporter code and no observed deployment HTTP 5xx.
+Preview/Development also received `DB_SHEETS_EXPORT_MODE=database` at
+`2026-09-05T21:25:48.546Z`; same-revision Preview smoke
+[run 33993177599](https://github.com/all1son4/dance-course-fe/actions/runs/33993177599)
+passed all 11 checks. Local development uses the same setting.
+
+There were no new real purchases during these checks; the no-export purchase
+evidence is the controlled non-production projection above. The next natural daily
+maintenance run remains a useful follow-up, not a blocking date gate. After retirement,
+new DB-only SuccessfulCustomers rows are expected; a growing export backlog, changed
+shared financial rows, or missing canonical access is not.
+
+Before `DROP-03`, an environment revert was possible only before any post-switch
+purchase. After credential retirement, or after accepting a purchase without an
+export, keep PostgreSQL authoritative and use a DB-compatible forward fix; never
+reconstruct authority from the stale worksheet or re-enable the retired key as a
+routine rollback.
 
 ### DROP-03 — Revoke service-account credentials and archive Sheets securely
 
+Status: `DONE` — same-day owner waiver accepted; the owner confirmed that the
+Google service account is used only by this site's dev/prod. Fresh encrypted source
+archives for both environments passed isolated PostgreSQL 17 restores and Sheet
+checksum verification. Google confirmed the matching application key disabled at
+`2026-09-05T21:39:36.419Z`; a fresh OAuth exchange was rejected with `invalid_grant`.
+The three Google environment names were removed from Vercel Production, Preview,
+Development and the two local env files. All other Vercel/local settings were preserved.
+The same source revisions were redeployed without Google configuration: production
+`ef5fcd9` passed all nine
+[browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33993972821),
+dev `cd7b4ef` passed all 11
+[browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/33994023749).
+Both builds are ready; 200 local unit tests and TypeScript passed. Both databases
+passed health and 32 invariants with no actionable queue backlog. Post-deploy prod
+sales/CSV checks reproduce the accepted accounting figures and hash; no HTTP 5xx
+were observed on either new deployment. No live payment, grant, or report was created
+for testing. See the
+[execution record](./production-cutover-runbook.md#drop-03-credential-retirement--2026-09-05).
+
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
+
+Status: `DONE (DEV)` — every listed code slice is released to dev and verified there.
+Exporter retirement plus the independent payment, Telegram, monthly-report, campaign, and
+admin-history contracts are verified slices, and the legacy facade adapters, dual-read
+selector, and mixed database adapter are removed. Production/`main` still runs the
+previous code and ships with the single Gate G7 batch release described in the phase
+status above; Gate G7 stays `NOT PASSED` until `DROP-05`.
+Stripe success projection and ordinary/Online Group admin grants no longer enqueue
+`successful_customer_export`; the export-mode selector and provider-delivery adapter
+were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
+exports back on in this revision. After preflight confirmed zero non-terminal
+versioned exports and zero leases in both environments, the `DROP-05` compatibility
+slice removed the temporary provider-free drain as well. Active Stripe recovery,
+daily maintenance, operational counters and admin replay no longer claim or present
+retired exports. Historical rows and attempt evidence remain unchanged. No schema,
+production configuration, checkout, accounting period, email, or Telegram renewal
+flow changed.
+
+Local verification passed formatting, lint, TypeScript, 197 unit tests, all 52
+PostgreSQL integration tests in an isolated local PG17 database, and the production
+build. Tests cover no-export purchases with absent/stale flags, both admin grant
+flows, terminal retirement without a duplicate claim or network access, and untouched
+unversioned history. A transitive-import guard rejects application entry points that
+load the legacy Google client. Archived-source backfill and snapshot encryption tests
+remain in the passing suite. This slice is released to dev only, not production.
+
+The next dev-only slice separates the payment contract from the archive schema.
+[`PaymentRecordSnapshot`](../../src/lib/payment-record.ts) owns all 48 string fields
+and fresh empty defaults; PostgreSQL hydration no longer reads Sheet headers.
+Stripe mapping/alerts, invoice allocation/rendering, payment lookup, and Telegram
+access use this independent type. Field names, empty values, historical delivery
+markers, and archive compatibility are unchanged. Executable-body comparison across
+the 12 affected runtime modules found no changes beyond imports, the equivalent
+empty-record factory, and a local mapper rename. This protects `BEH-PAY-01`–`03`,
+`BEH-TG-01`–`03`, `BEH-OG-01`–`02`, `BEH-REN-01`–`02`, and `BEH-ACCESS-01`.
+The import guard now also forbids loading archive headers at runtime and using the
+old payment type in reachable application modules. Local verification: 200 unit
+tests, 52 isolated PostgreSQL integration tests, formatting, lint, TypeScript, and production build
+pass. No schema/data migration or environment update is needed; rollback is to the
+previous DB-compatible dev revision. Production is not included in this slice.
+
+Dev release `3d2b3b2` passed
+[CI including backup/restore rehearsal](https://github.com/all1son4/dance-course-fe/actions/runs/34120534178)
+and [11 deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34120588697).
+Vercel Preview `dpl_AmVEWGSAiUsqjXPogakRrLUBEX1s` is `READY` with no `GOOGLE_*`
+environment names. The `2026-09-07T12:13:31Z` post-deploy dev check passed all 32
+invariants, found no ready/working/stale/dead-letter jobs or waiting Sheets exports,
+and preserved the classified historical counters. The bounded runtime error-log
+query returned zero entries. Production/main remains at `ef5fcd9`.
+
+The Telegram-contract dev slice introduces independent
+[`TelegramAccessTokenRecord` and `TelegramUserBindingRecord`](../../src/lib/telegram/access-records.ts)
+with the same 17/14 string fields. Database mappers, readers, and persistence now
+use those contracts; no Telegram runtime module imports the archive schema, even
+for types. Unit fixtures no longer construct Telegram records from Sheet headers.
+Archive schemas, offline backfill, and restore inputs remain unchanged.
+Executable-body comparison confirms that all three affected runtime modules retain
+the same queries, normalization, atomic claims, and binding writes. No migration,
+environment change, production release, or alteration to ordinary/renewal checkout
+is included; rollback remains the previous DB-compatible dev revision.
+
+Local checks pass formatting, lint, TypeScript, build, 202 unit tests, and 54 isolated
+PostgreSQL integration tests. New tests check both archive type boundaries, complete
+empty/populated database projections, customer-snapshot precedence, large string
+identifiers, and the exact token-expiry boundary. Existing concurrency, owner reuse,
+join/leave, and access tests protect `BEH-TG-01`–`03`, `BEH-OG-01`–`02`,
+`BEH-REN-01`–`02`, and `BEH-ACCESS-01`.
+
+Dev release `456e230` passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/34124047709) and
+[deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34124102818).
+Vercel Preview `dpl_4Pv7o4abfL4JxqJdTpzknA4j7WZU` is `READY` with no `GOOGLE_*`
+environment names. The `2026-09-07T18:52:43Z` post-deploy dev check passed all 32
+invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
+The classified historical counters are unchanged; the last-15-minute runtime-error
+query returned zero entries. Production was not changed by this slice.
+
+The monthly-report contract slice introduces independent
+[`MonthlySalesReportRunRecord`](../../src/lib/monthly-sales-report-record.ts) with
+the same ten string fields. Report generation/delivery and database reads now use
+this contract instead of the archive DTO. Archive schemas and offline upsert inputs
+remain compatible. Executable-body comparison confirms no changes in the three
+affected runtime modules: accounting queries, CSV formatting, Warsaw month bounds,
+schedule, and durable delivery remain unchanged (`BEH-ADMIN-01`). No migration,
+environment update, production release, or real report/email is part of this slice;
+rollback remains the previous DB-compatible dev revision.
+
+Local verification passes formatting, lint, TypeScript, build, 203 unit tests, and
+56 isolated PostgreSQL integration tests. Added coverage checks all ten projected
+fields, empty/zero values, delivery statuses, exact CSV content and SHA-256, inclusion
+of the first/last sale within the Warsaw month, exclusion of adjacent-month sales,
+and deduplication of repeated successful Stripe events. The durable-delivery test
+also verifies the complete saved report record after one mocked provider call.
+The import guard rejects the old report type in reachable application modules and
+any archive-schema import in the report module or its independent contract.
+
+Dev release `c157998` passed
+[CI including backup/restore rehearsal](https://github.com/all1son4/dance-course-fe/actions/runs/34154875034)
+and [deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34154913950).
+Vercel Preview `dpl_AW2CY1w4H5ZrmDqYRuHxi1opE45H` is `READY` with no `GOOGLE_*`
+environment names. The `2026-09-07T19:16:56Z` post-deploy dev check passed all 32
+invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
+The classified historical counters are unchanged; the bounded last-15-minute
+runtime-error query returned zero entries. Production/main remains at `ef5fcd9`.
+
+The campaign-contract slice is `DONE (DEV)` on `2026-09-08`, not in production.
+[`EmailCampaignLeadRecord`](../../src/lib/email-campaign-record.ts) owns the same
+eleven string fields, including empty delivery evidence and string attempt counts.
+Campaign creation/delivery, business-operation reads, and the database mapper no
+longer import the archive campaign DTO. The business read module and its fixtures
+are now completely independent of the archive schema. Archive import/restore
+contracts remain compatible. All three affected runtime modules have identical
+executable bodies after removing type-only syntax/imports; normalization, duplicate
+handling, audience classification, exclusion rules, email content, and delivery
+remain unchanged (`BEH-ENTRY-01`, `BEH-ADMIN-01`).
+
+Local verification passed formatting, lint, TypeScript, production build, 213 unit
+tests, and 59 isolated PostgreSQL integration tests. New checks cover all eleven
+fields and six statuses, concurrent/later duplicate signups, fail-closed campaign
+reads, campaign-only exclusions, global blocks across existing/future campaigns,
+and retry/sent projections with one stable provider idempotency key and no resend
+after completion. Providers were blocked or mocked; no real email was sent.
+The `2026-09-08T05:53:19Z` read-only dev preflight passed all 32 invariants, found no
+actionable queue backlog, and preserved the classified historical counters.
+
+The owner initially held this slice locally during parallel birthday work, then
+authorized a dev release of migration-related changes only. A fresh isolated copy
+of dev plus only this slice's eleven files passed formatting, lint, TypeScript,
+build, 213 unit tests, and 59 PostgreSQL integration tests again. Birthday UI,
+sitemap, and the other session's browser-test edits are excluded from this release
+and remain local. No environment update, schema/data migration, or production
+release is included. Completing this slice does not close `DROP-04` or G7.
+
+Dev release `7661ed7` passed
+[CI including backup/restore rehearsal](https://github.com/all1son4/dance-course-fe/actions/runs/34193627306)
+and [deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34193666617).
+Vercel Preview `dpl_Dc1SbZ8kJ48qkDNAQiscckEXsRvx` is `READY` with no `GOOGLE_*`
+environment names. The `2026-09-08T06:13:48Z` post-deploy dev check passed all 32
+invariants and found no ready/working/stale/dead-letter jobs or waiting exports.
+The classified historical counters are unchanged; the bounded last-15-minute
+runtime-error query returned zero entries. Main remains at `9d28fd8`, unchanged by
+this release. All seven excluded birthday/sitemap/browser-test files retained their
+pre-commit content hashes and remain local.
+
+The final cleanup slice closes the remaining `DROP-04` code work. Admin invite-link
+history owns
+[`AdminInviteLinkHistoryRecord`](../../src/lib/admin-invite-link-history-record.ts)
+with the same nine string fields; the PostgreSQL reader and the read runtime no longer
+import archive headers, and empty `tokenUsedAt`/`adminLabel` values keep the meaning the
+admin route depends on (`BEH-ADMIN-01`).
+
+The archive facade lost every adapter no longer reachable from the offline tools: the
+retired live maintenance path `ensureGoogleSheetsSchema`, all Sheet write and mirror
+adapters, the per-record lookup caches, and the `source` selector with its database
+branch. `google-sheets.ts` was then a 1121-line offline
+archive reader with nine exports — seven values-only list readers, the protected source
+capture, and its snapshot type — and imports nothing from `src/db`. The last dual-read
+primitive, `explicit-read-source`, is deleted with it. The backfill tool reads protected
+offline archives only, as its runbook already documents, so its live read path and
+credential-dependent dry run are gone and a source archive is now required in every
+mode.
+
+The mixed `sheet-records` adapter is split by domain into
+[`record-values`](../../src/db/record-values.ts),
+[`purchase-lookups`](../../src/db/purchase-lookups.ts),
+[`telegram-access-token-records`](../../src/db/telegram-access-token-records.ts),
+[`telegram-user-binding-records`](../../src/db/telegram-user-binding-records.ts),
+[`monthly-report-run-records`](../../src/db/monthly-report-run-records.ts), and
+[`email-campaign-lead-records`](../../src/db/email-campaign-lead-records.ts).
+Executable-body comparison across the moved declarations found no change beyond
+Prettier reflow in two signatures. Thirteen declarations orphaned by the facade cleanup
+— the whole legacy Stripe-event record module, the legacy report and campaign upserts,
+and the unused list readers — were removed rather than moved. Offline archive
+decryption, restore, and the archive schema itself are untouched.
+
+Local verification passed formatting, lint, TypeScript, the production build, 211 unit
+tests, and 59 PostgreSQL integration tests in an isolated local PG17 cluster; the same
+59 integration tests passed before and after the split. The import guard now also
+rejects the retired admin-history archive type and reaches every new adapter module. No
+schema, data migration, environment update, or production release is part of this slice;
+rollback remains the previous DB-compatible dev revision.
+
+Dev release `9d30d08` passed
+[CI including backup/restore rehearsal](https://github.com/all1son4/dance-course-fe/actions/runs/34208194032)
+and [deployed browser checks](https://github.com/all1son4/dance-course-fe/actions/runs/34208246379)
+with 11 passed and one skipped journey. Vercel Preview deployment `6324296867`
+(`anna-strok-o6om5o368-dzmitrys-projects-82230603.vercel.app`) reported `success`. The
+`2026-09-08T09:08:57Z` post-deploy dev check passed health, all 19 migrations, and all 32
+invariants, and found no ready, working, stale, or dead-letter inbox/outbox jobs and zero
+waiting Sheets exports. The classified historical counters are unchanged: one inbox
+retry, 12 unlinked processed events, and 112 unverified imported events. Main remains at
+`1feb1bb`, unchanged by this release.
+
+Keep `DB_SHEETS_EXPORT_MODE=database` configured for older production/rollback revisions
+until their replacement is approved; it is inert only in the new code. No new calendar
+hold applies to this code-only work. `DROP-05` and Gate G7 are unchanged: the
+destructive contract migrations still need their own approval and release no earlier
+than the retained `2026-09-23T00:56:17Z` boundary.
 
 ### DROP-05 — Apply destructive contract migrations in a separate release
 
+Status: `IN PROGRESS (LOCAL CONTRACT REHEARSAL DONE)` — destructive changes still require a
+separate approval/release; no earlier than the retained
+`2026-09-23T00:56:17Z` boundary. Neither owner acceleration waived this data-retention
+window or authorized deleting production history.
+
+**Surveyed on 2026-09-08 (read-only, nothing applied).** These are cleanup candidates,
+not proof that deleting them preserves behavior. The September 11 compatibility check
+below identifies remaining consumers and supersedes that assumption:
+
+| Object                                                            | Production                                                                          | Development                                                             |
+| ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `purchase_side_effects` rows of kind `successful_customer_export` | 76 (16 versioned with provider `google_sheets`, 60 unversioned markers), all `sent` | 29 (2 versioned `sent`, 20 unversioned `sent`, 7 unversioned `pending`) |
+| `data_backfill_runs`                                              | 1 completed `DATA-02` run                                                           | 1                                                                       |
+| `invoices.pdf_storage_key`                                        | 44 invoices, 0 populated                                                            | 5 invoices, 0 populated                                                 |
+
+At that survey, the dev `pending` export markers were inert: the retired drain claims
+only versioned rows, and the operational export-lag counter reported zero waiting
+exports in both environments. An empty export queue does not establish that its retained
+history is unused.
+
+The contract release therefore covers: the retained `successful_customer_export` history
+and its `google_sheets` provider value, the `google_sheets_export` kind that was never
+used, the one-shot `data_backfill_runs` checkpoint table, and the never-populated
+`invoices.pdf_storage_key`. Narrow the `kind` and `provider` unions in
+[`schema.ts`](../../src/db/schema.ts) only in the same release, never before the rows
+are gone.
+
+**Write the SQL in the release that applies it, not earlier.** The runner requires every
+pending migration to declare the requested phase, so a committed but unapplied
+`-- migration-phase: contract` file makes every later `expand` run fail with
+`migration_phase_mismatch`. Preparing the file in advance would freeze all other schema
+work until this release lands.
+
+Deleting the retained export history is exactly what the retention window protects, so it
+needs the owner's explicit approval on top of the date. Preserve completed backfill
+checkpoint metadata in the protected backup and verify that `pdf_storage_key` is still
+empty before removing those objects; schema-only changes also require consumer and
+rollback compatibility checks.
+
+#### September 11 preparation — read-only preflight and history regression tests
+
+The owner approved starting gradual preparation before September 23, not early data
+deletion or a production release. That September 11 slice was local only: no committed migration,
+schema/data mutation in dev or production, environment change, push, or deployment.
+
+[`db:audit:legacy-contract`](../../src/db/audit-legacy-contract.ts) requires an explicit
+target and runs in a bounded `REPEATABLE READ, READ ONLY` transaction. Its output
+contains counts and blocker codes only, not payment identifiers, email addresses,
+tokens, PDF keys, or checkpoint source details:
+
+```bash
+DATABASE_ENV=development npm run db:audit:legacy-contract
+DATABASE_ENV=production npm run db:audit:legacy-contract
+```
+
+Exit `0` means only that the implemented **data** checks passed, never G7/release
+approval. Exit `2` reports preservation/work blockers; exit `1` means the inspection
+failed, including a missing pre-contract table/column, and must not be treated as an
+empty inventory. This is a pre-contract tool, not a post-contract health check.
+
+The read-only checks at `2026-09-11T19:32:26.021Z` (dev) and
+`2026-09-11T19:32:39.189Z` (production) both completed with expected exit `2`:
+
+| Check                                                                   | Dev   | Production |
+| ----------------------------------------------------------------------- | ----- | ---------- |
+| Retained `successful_customer_export` rows                              | 29    | 76         |
+| Export timestamps differing from purchase fallback                      | 21    | 68         |
+| Currently visible invite-history dates that naive deletion would change | 16    | 44         |
+| Non-terminal versioned export jobs / leases                             | 0 / 0 | 0 / 0      |
+| Inert non-terminal legacy export markers                                | 7     | 0          |
+| Unexpected `google_sheets` provider kinds / `google_sheets_export` rows | 0 / 0 | 0 / 0      |
+| Invoices / non-null `pdf_storage_key` values                            | 5 / 0 | 45 / 0     |
+| Backfill runs / incomplete runs                                         | 1 / 0 | 1 / 0      |
+
+These blockers are **not a current site incident**. They prevent a future destructive
+change from silently changing healthy behavior. In particular:
+
+- [`admin-invite-link-history.ts`](../../src/db/admin-invite-link-history.ts) currently
+  prefers the export's `sent_at` over purchase/token timestamps. Its dates, ordering,
+  limit, and reissued-link behavior are now protected by a PostgreSQL regression test.
+  Keep timestamps for all affected purchases, including those without a currently
+  visible link: reissuing one later must not change its historical date.
+- Invoice allocation and payment hydration use the full Drizzle invoice model;
+  implicit `SELECT`/`RETURNING` and generated `INSERT` columns still include
+  `pdf_storage_key`. An empty column is not sufficient evidence that it can be dropped.
+- Offline backfill still uses `data_backfill_runs`, and payment/archive projections
+  still expose historical export fields. Retain an explicit supported archive/restore
+  path and classify these fields before narrowing the schema.
+
+Next steps, in order:
+
+1. **DONE (DEV), September 13:** prepare and apply additive migration `0019` on dev
+   before deploying its compatible reader; preserve exact historical dates and verify
+   full timestamp/order/limit parity as described below. Production is not migrated.
+2. **DONE (DEV), September 13:** remove the reader's export-row dependency after the
+   preserved-date dev release. The separate compatibility revision and its evidence
+   are recorded below.
+3. **DONE (DEV/LOCAL), September 18:** invoice compatibility, the DB-only contract archive,
+   payment-export compatibility, historical maintenance retirement, and removal of
+   the retired export drain are released and verified on dev. Nominate a rollback
+   revision that works with the intended contracted schema. Then rehearse cleanup and
+   restore in an isolated database, verify retained business rows, and refresh
+   preflight/backup evidence. Revision `552e9f2` is the nominated application rollback
+   target; the isolated rehearsal and restore evidence are recorded below. No real
+   cleanup SQL is pending in `drizzle/`.
+4. Obtain separate owner approval for the exact deletions and production rollout;
+   the retained September 23 boundary still applies unless explicitly revised.
+   Apply the contract migration only in that controlled release, run post-deploy
+   checks, and only then consider G7 complete.
+
+Local verification: formatting, lint, TypeScript, 225 unit tests, all 61 PostgreSQL
+integration tests, and the production build passed. The new preflight test uses
+connection-local synthetic tables, checks that the inspection leaves all data intact,
+and exercises terminal/inert/leased exports, timestamp preservation, unexpected
+providers, PDF data, unfinished backfill, and failure on a missing column. No
+provider sends, job replays, browser purchases, or live DB writes were used.
+
+#### Invite-history date preservation — DONE (DEV), September 13
+
+[`0019_invite_history_created_at.sql`](../../drizzle/0019_invite_history_created_at.sql)
+is an **expand**, not a destructive migration. It adds the nullable
+`purchases.invite_history_created_at` timestamp and copies each non-null historical
+export `sent_at` directly inside PostgreSQL, including purchases without a visible
+invite. No JavaScript date conversion, precision loss, default current time, or
+modification of `first_seen_at`, `succeeded_at`, `created_at`, `updated_at`, invoice,
+amount, or currency fields is involved. No export rows are deleted.
+
+The backfill only fills null values. Repeating its data step updates zero already
+preserved rows; a conflicting preserved timestamp fails verification and rolls back
+the transaction instead of overwriting it. The migration runner keeps the additive
+DDL once-only through its journal.
+
+The first compatibility revision preferred the preserved date, then the old export
+timestamp, then the existing purchase/token fallbacks. After its dev backfill and
+parity checks passed, follow-up revision `86571a4` removed the legacy export join. The
+reader now uses the preserved date and existing purchase/token fallbacks only. DB-native
+purchases without an export keep a null preservation field and continue using their
+immutable `first_seen_at`; creating or reissuing a token does not assign a new history
+date.
+
+**Release order is mandatory.** The application schema now includes the new column,
+including implicit Drizzle purchase projections/inserts. The new application revision
+must not be deployed or used against a database before `0019` is applied. On dev:
+
+1. Refresh the read-only preflight and backup evidence; resolve any active export
+   jobs, leases or unexplained differences. Keep old exports and checkpoint data.
+2. Use the approved migration runner with `MIGRATION_TARGET=development`,
+   `MIGRATION_PHASE=expand` and its existing explicit target/ref approval guards.
+   Confirm that only `0019_invite_history_created_at` is pending before applying it.
+3. Require `inviteHistoryDateColumnPresent=true` and zero purchase/export and visible
+   history timestamp differences from `db:audit:legacy-contract`, then deploy the
+   compatible reader and check history ordering/limits and the normal dev smoke suite.
+4. If verification fails, stop the rollout. Keep the additive column and retained
+   export rows; the preceding application revision remains compatible with the
+   expanded schema. Do not "roll back" by dropping data or changing payment dates.
+
+The preflight itself supports both pre- and post-`0019` schemas. Its timestamp counters
+now account for the preserved date and still report conflicting values. At the earlier
+live read-only checks, `2026-09-11T19:51:16.063Z` (dev) and
+`2026-09-11T19:51:21.305Z` (production), the column was absent in both environments;
+the earlier 21/68 purchase and 16/44 visible-history differences were unchanged.
+Those earlier dev counters are superseded by the September 13 migration evidence
+below. No production migration is claimed by the dev release.
+
+Verification of this local slice passed:
+
+- formatting, lint, TypeScript, 225 unit tests, all 62 PostgreSQL integration tests,
+  production build, and Drizzle snapshot consistency;
+- exact microsecond preservation, mixed old/new reader parity, tie ordering and
+  limits, reissued links, no change to other purchase/export fields, repeatable
+  backfill, and atomic rejection of conflicting preserved dates;
+- deletion of **synthetic fixture exports only** leaves the full displayed history
+  unchanged; neither dev nor production history was deleted;
+- the actual guarded migration runner upgraded an isolated database from 19 to 20
+  migrations, with only `0019` pending; a repeat run had no pending work;
+- a local logical dump/restore of that synthetic upgraded database preserved the
+  exact timestamp, all purchase/export row fingerprints and 20 migration entries.
+  The restored copy passed the data preflight. This additive-schema rehearsal does
+  not replace the future destructive-cleanup rehearsal or a fresh production backup.
+
+**September 13 dev release:** code revision `f7bcb33` was deployed only after applying
+`0019` with the guarded runner (`development`, `expand`, release ref `dev`). Exactly
+that migration was pending; the journal advanced from 19 to 20 migrations. A 5-second
+lock timeout and 30-second statement timeout bounded the migration connection.
+
+- Fresh PostgreSQL-only backup: `development-drop05-0019-20260913T101844437Z`, captured
+  at `2026-09-13T10:18:44.438Z`. Encrypted archive SHA-256:
+  `d96ab269305c57a26c933fab0e28254b25e32464589679d65e942742a03f6399`.
+  The encrypted archive, wrapped key, public manifest and verification evidence are
+  retained in the ignored protected `.data-snapshots/development/` directory. Existing
+  recovery keys were reused, not replaced. No Google Sheets access was attempted.
+- Decryption and restoration into an isolated local PostgreSQL 17 database passed.
+  All 21 public-table fingerprints, all 31 visible history records across 7 workflows,
+  their order and per-workflow `limit=2` matched the consistent source snapshot.
+  Timestamp serialization was explicitly normalized to UTC for fingerprint comparison;
+  no stored dates or database/server time-zone settings were changed.
+- At `2026-09-13T10:20:28.758Z`, all 22 non-null export dates were preserved exactly.
+  Both timestamp-difference counters fell to zero; preflight passed with no blockers.
+  Fingerprints of every pre-existing business field matched the backup, including
+  payment/accounting fields; all 29 legacy export rows and the backfill checkpoint remain.
+  The actual application reader matched all baseline history/order/limit fingerprints.
+- All 32 invariant checks and both pooled/unpooled health checks passed, with 20 applied
+  migrations. This is additive preservation only, not a deletion/contract rehearsal.
+- Vercel dev deployment `dpl_F3ef6P7y73VDx56HFLm6A9SLEsjF` is `READY` for `f7bcb33`.
+  Authenticated GET checks at `2026-09-13T10:24:17.707Z` returned fresh HTTP 200 responses
+  for invite history and August/September purchases; their complete result payloads
+  matched the dev database. No purchase, provider send, email or replay was triggered.
+- [Dev CI](https://github.com/all1son4/dance-course-fe/actions/runs/34751671051)
+  passed formatting, lint, TypeScript, all 225 unit and 62 PostgreSQL integration tests,
+  logical backup/restore and the production build.
+  [Deployed browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/34751693138)
+  passed 11 tests with 1 conditional skip. The bounded post-deploy error-log query returned
+  zero entries. Operational counters at `2026-09-13T10:25:56.714Z` matched the pre-release
+  baseline: no ready/working/dead-letter jobs or stale leases; the already classified
+  11 pending access records, 1 historical inbox retry, 12 unlinked processed events and
+  112 unverified imported events were unchanged.
+- The temporary restore server was stopped and its plaintext dump/restored database
+  deleted after verification. The encrypted recovery archive and verification manifests
+  remain protected locally; no credentials or customer records were committed.
+- Follow-up dev revision `86571a4` removed `purchase_side_effects` from the actual
+  invite-history query. Its regression test proves that changing or deleting synthetic
+  legacy export rows cannot alter dates, ordering or limits once preservation is present.
+  Local verification again passed 225 unit tests, 62 PostgreSQL integration tests and
+  the production build. [Dev CI](https://github.com/all1son4/dance-course-fe/actions/runs/34765281729)
+  and [deployed browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/34765306824)
+  passed. Authenticated GET parity at `2026-09-13T15:22:19.632Z` matched the dev database
+  for invite history and August/September purchases; the deployment returned zero error
+  logs in the bounded post-release window. No legacy rows were removed.
+- Dev revision `4483c67` removed the unused `pdf_storage_key` mapping from the runtime
+  Drizzle invoice model while leaving the physical column and all database values intact.
+  Consequently ordinary invoice `SELECT`, `INSERT` and `RETURNING` queries no longer
+  address the future contract column. A guard test prevents that mapping from returning.
+  In an isolated PostgreSQL 17 test database, the physical column was then actually
+  dropped and all 13 invoice/read-write and adjacent durable-job integration scenarios
+  passed. Local formatting, lint, TypeScript, all 226 unit tests and the production build
+  also passed. No `0020`/contract migration was generated: committing it early would
+  block later expand migrations under the phase guard.
+- [Invoice compatibility CI](https://github.com/all1son4/dance-course-fe/actions/runs/34765613913)
+  and [deployed browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/34765637877)
+  passed on dev. Vercel deployment `dpl_zkRYvrWNNujhiaQysgViXYGmSJhn` is `READY`.
+  Authenticated GET parity at `2026-09-13T15:27:51.558Z` again matched dev DB history
+  and August/September sales exactly; the bounded deployment error-log query returned
+  zero entries. The temporary contracted-schema test database is not release evidence
+  for production and is removed after the test.
+
+No environment variables were edited. `main` and its production deployment remain at
+`e0c470a`; no production schema/data, push or release was changed by this step.
+`DROP-05` as a whole and Gate G7 remain open; the September 23 retention boundary and
+separate deletion/production approval remain in force. Archive/checkpoint consumers
+still need code retirement before the isolated contract rehearsal.
+
+#### Contract archive preparation — LOCAL, September 14
+
+A dedicated `db:snapshot:legacy-contract` mode now captures only PostgreSQL in one
+serializable, deferrable dump transaction. It dynamically avoids the retired Google
+adapter, rejects generic/non-targeted database variables, and requires dump contents
+for `purchases`, `purchase_side_effects`, `invoices`, and `data_backfill_runs` before
+encryption. Manifest schema version 2 distinguishes the two-file database archive from
+historical version-1 DB + Sheets archives; the existing decryptor accepts both.
+
+The implementation passed formatting, TypeScript and seven focused encryption/plan
+tests. A fully synthetic PostgreSQL 17 database with all 21 repository migrations and
+one row in each required contract table was captured, encrypted, decrypted and restored
+with `pg_restore --exit-on-error` into a separate database. The archive contained only
+`database.dump` and `manifest.json`; no Google import, credential, network request or
+live-environment write occurred. This is tooling proof only: no real dev/production
+archive or contract deletion is claimed yet, and Gate G7 remains open.
+
+#### Payment export compatibility — LOCAL, September 14
+
+The active PostgreSQL payment adapter no longer reads retained
+`successful_customer_export` rows into payment records and no longer creates or updates
+such rows from the two historical compatibility fields. Its side-effect hydration query
+now selects only purchase email and admin Telegram alert records. The two export-only
+fields are removed from the independent payment DTO in the later maintenance-retirement
+slice.
+
+A PostgreSQL regression test proves all three required states: populated legacy input
+cannot create a new export row; adding or changing a retained legacy row cannot alter
+the hydrated payment record; deleting that synthetic row also leaves the result
+identical. Adjacent payment monotonicity, Telegram access and admin-grant integration
+tests pass. No real export row, schema, environment or live database was changed.
+
+#### Historical maintenance retirement — DONE (DEV), September 14–16
+
+The obsolete Google client, DB/Sheets baseline and comparison engine, protected-source
+capture mode, resumable Sheets backfill executable and their dedicated tests/npm
+commands are removed. Historical encrypted version-1 archives remain decryptable; the
+only capture command left is the version-2 PostgreSQL contract archive. The independent
+Stripe settlement backfill is unrelated and remains available.
+
+The unused Drizzle `dataBackfillRuns` mapping is removed so application code can compile
+against the future contracted schema. The physical `data_backfill_runs` table and its
+completed row remain untouched, and the pre-contract audit plus current database
+invariant tests continue to inspect them with read-only/raw SQL until the contract
+release. No migration file was generated: this compatibility commit must remain usable
+against the existing expanded database and cannot authorize an early drop.
+
+The frozen Sheet schema and its last test-only imports are removed as well. Payment,
+Telegram, report, campaign and admin-history tests now validate their independent field
+sets directly. The two unused SuccessfulCustomers export fields leave the payment DTO;
+no business route consumed them, and the retained database rows remain available only
+to the pre-contract audit and protected archive.
+
+The temporary provider-free worker that marked old versioned export jobs `skipped` is
+also removed after both live preflights showed zero non-terminal versioned exports and
+zero leases. Stripe recovery, daily maintenance and admin replay now process only
+supported PostgreSQL jobs. Active queue/dead-letter counters exclude both retired
+export kinds, and the obsolete Google-export card and response fields are gone from the
+admin surface. No retained row was replayed, updated or deleted.
+
+Local verification passed formatting, lint, TypeScript, 222 unit tests, all 63
+remaining PostgreSQL integration tests and the production build. A fresh database with
+all 21 migrations still passed the raw checkpoint invariant and legacy preflight after
+the Drizzle mapping was removed. The simplified archive command then encrypted,
+decrypted and restored that database with `pg_restore --exit-on-error`; the archive had
+exactly `database.dump` and `manifest.json`. The disposable cluster and plaintext files
+were removed after verification. This remains code compatibility only, not a contract
+migration or live data deletion.
+
+Dev revision `552e9f2` passed
+[continuous integration](https://github.com/all1son4/dance-course-fe/actions/runs/35073268170),
+including formatting, lint, TypeScript, unit and PostgreSQL integration tests, logical
+backup/restore rehearsal, and the production build. The exact deployed revision then
+passed the
+[critical browser journeys](https://github.com/all1son4/dance-course-fe/actions/runs/35073349735).
+Both workflows completed successfully on 2026-09-16. No production deployment,
+contract migration, environment change, or live legacy-row mutation was part of this
+release.
+
+#### Contract cleanup and restore rehearsal — DONE (LOCAL), September 18
+
+The protected development archive
+`development-drop05-0019-20260913T101844437Z` was decrypted only inside a disposable
+local directory and restored with PostgreSQL 17 into two independent databases: a
+contract candidate and an untouched recovery control. The archive contained exactly
+`database.dump` and `manifest.json`. Current additive migration `0020` was then applied
+to both copies, bringing each journal to 21 migrations before any contract operation.
+
+The candidate's read-only preflight found the expected 29 retained
+`successful_customer_export` rows, two `google_sheets` provider rows, seven inert
+unversioned pending markers, five invoices with zero populated `pdf_storage_key`
+values, one completed backfill run, zero active versioned export jobs or leases, zero
+unexpected provider/kind rows, and zero preserved invite-history timestamp
+differences. These results match the classified dev state; none was treated as an
+empty or missing legacy object.
+
+A temporary, transaction-bounded contract script used a 5-second lock timeout and a
+30-second statement timeout. It failed closed unless the preserved history column was
+present, all versioned export work was terminal and lease-free, providers were
+expected, every invoice PDF key was null, the backfill was complete, and preserved
+history dates still matched. Only after those guards passed did it delete the 29
+legacy export rows, drop `data_backfill_runs`, and drop
+`invoices.pdf_storage_key`. No repository migration was created because committing a
+contract-phase file before the controlled release would block later expand work.
+
+Before and after cleanup, the same repeatable-read fingerprint covered every retained
+public table and field, excluding only the three intentional contract targets, plus
+the Drizzle migration journal. All 21 entries matched the untouched recovery control;
+the evidence SHA-256 was
+`fd83e74e9e67baa0f87ebb701cd954314c5976be2c5ef016b0b8d4eba5dcc0ac`.
+Post-contract assertions found 20 public tables, 21 migration records, zero legacy
+export rows and zero invalid indexes. Database verification, all 32 invariants,
+operational queue status, and both pooled and unpooled health checks passed against
+the local candidate.
+
+An independently initialized empty database received the same contract and the
+post-contract-compatible PostgreSQL integration selection exited successfully with 62
+reported tests and zero failures. The two tests that intentionally require the
+pre-contract checkpoint/export objects were excluded by exact test-name filters; they
+remain covered by the pre-contract CI run for `552e9f2`. Finally, after cleanup, the
+original encrypted archive was restored into a third fresh local database, advanced
+to the same 21 migrations, and reproduced the exact fingerprint above. This proves
+both retained-row preservation and the protected recovery path.
+
+No dev or production row, schema, environment variable, deployment, or Git branch was
+changed. One preliminary health invocation inherited the real dev unpooled URL because
+the local override used the wrong variable name; that subcheck executed connection
+metadata `SELECT`s only and made no mutation. The final health run explicitly bound
+both `DATABASE_DEV_DATABASE_URL` and `DATABASE_DEV_DATABASE_URL_UNPOOLED` to the local
+candidate and passed. All plaintext material, disposable databases, and temporary SQL
+are deleted after this rehearsal; the encrypted source archive remains protected.
+
+The application rollback target for the future contract release is `552e9f2`: its
+runtime no longer addresses any removed object and its CI/deployed-dev evidence is
+recorded above. This rehearsal does not authorize production deletion. The retained
+`2026-09-23T00:56:17Z` boundary and separate owner approval still govern the exact
+contract migration and production rollout.
+
 ### Gate G7
+
+Status: `NOT PASSED` — `DROP-04`, `DROP-05` application compatibility, and the isolated
+cleanup/restore rehearsal are complete. Destructive-release approval, the retained
+September 23 boundary, the controlled production contract migration, and its
+post-deploy verification remain open. Local rehearsal success alone cannot close this
+gate.
 
 - Runtime contains no Google Sheets network dependency.
 - Credentials are revoked.
@@ -1528,71 +2225,85 @@ Status: `TODO`
 
 ## Execution log
 
-| Date       | Item                        | Status        | Evidence                                                      |
-| ---------- | --------------------------- | ------------- | ------------------------------------------------------------- |
-| 2026-07-30 | Repository-wide audit       | `DONE`        | Audit discussion and local checks                             |
-| 2026-07-30 | Roadmap v1.3                | `DONE`        | This document                                                 |
-| 2026-07-30 | BASE-01                     | `DONE`        | ADR-001 accepted                                              |
-| 2026-07-30 | BASE-02                     | `DONE`        | Current behavior contract recorded                            |
-| 2026-07-30 | BASE-03                     | `DONE`        | Seven Sheets and all dependency classes inventoried           |
-| 2026-07-30 | BASE-05 Telegram scope      | `DONE`        | ADR-002 accepted                                              |
-| 2026-07-30 | BASE-04 tooling             | `DONE`        | Read-only command and privacy fixture tests                   |
-| 2026-07-30 | BASE-04 capture             | `SUPERSEDED`  | Initial blocked attempt; replaced by the completed capture    |
-| 2026-07-30 | BASE-05 decision draft      | `DONE`        | Defaults prepared before owner confirmation                   |
-| 2026-07-30 | BASE-05 owner decisions     | `DONE`        | Owner accepted all four migration decisions                   |
-| 2026-08-06 | BASE-04 capture             | `DONE`        | Stable dev/prod fingerprints; differences classified          |
-| 2026-08-06 | Gate G0                     | `PASSED`      | Behavior, dependency, data, and decision baselines accepted   |
-| 2026-08-06 | Gate G0 formal audit        | `DONE`        | All 26 Sheets components classified; documents reconciled     |
-| 2026-08-06 | SAFE-01                     | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality`   |
-| 2026-08-06 | SAFE-02                     | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed    |
-| 2026-08-07 | SAFE-03                     | `DONE`        | Migration-free release; dev/prod no-op controls passed        |
-| 2026-08-08 | SAFE-04                     | `DONE`        | Atomic terminal outcomes; race and deployed smoke tests pass  |
-| 2026-08-08 | SAFE-05                     | `DONE`        | Atomic claims, DB invariant, and eight-way race test passed   |
-| 2026-08-08 | SAFE-06                     | `DONE`        | Reuse characterized at accepted decision boundary             |
-| 2026-08-08 | SAFE-07                     | `DONE`        | DB-authorized catalog; remote CI and four browser tests pass  |
-| 2026-08-08 | SAFE-08                     | `DONE`        | Versioned consent evidence; CI, PostgreSQL, 5 browser tests   |
-| 2026-08-08 | SAFE-09                     | `DONE`        | Formula-safe CSV; CI and five deployed browser tests pass     |
-| 2026-08-08 | SAFE-10                     | `DONE`        | Verified result gate; CI and six browser tests pass           |
-| 2026-08-09 | SAFE-11                     | `DONE`        | Zero production advisories; CI and six browser tests pass     |
-| 2026-08-09 | Gate G1                     | `PASSED`      | SAFE-01 through SAFE-11 acceptance criteria verified          |
-| 2026-08-09 | Roadmap current-state audit | `DONE`        | Remaining phases reconciled with current code and schema      |
-| 2026-08-09 | DB-01                       | `DONE`        | PostgreSQL domain and transaction ownership recorded          |
-| 2026-08-09 | DB-02 development           | `DONE`        | Preflight, CI, dev migration, audit, and smoke passed         |
-| 2026-08-09 | DB-03 development           | `DONE`        | Inbox migration, CI, dev apply, audit, and smoke passed       |
-| 2026-08-11 | DATA-01                     | `DONE`        | Dev/prod encrypted captures and PG17 restores passed          |
-| 2026-08-11 | DATA-02 implementation      | `DONE`        | Snapshot validation, atomic checkpoints, resume tests pass    |
-| 2026-08-11 | DATA-02 development         | `DONE`        | Migration, pause/resume/replay, invariants, smoke passed      |
-| 2026-08-11 | DATA-02 production backfill | `DONE`        | 258 rows accounted; replay no-op; plaintext removed           |
-| 2026-08-11 | DATA-02 counter invariant   | `DONE`        | Dev/prod migration and zero-violation audits passed           |
-| 2026-08-11 | DATA-03                     | `DONE`        | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass  |
-| 2026-08-11 | DATA-04                     | `DONE`        | Every production/backfill conflict classified; no data write  |
-| 2026-08-11 | Gate G3                     | `PASSED`      | Stable finance/access/invoice/replay evidence; 32 audits pass |
-| 2026-08-11 | WRITE-01                    | `DONE`        | Pre-ack inbox gate; CI, PG17 and deployed dev smoke pass      |
-| 2026-08-11 | WRITE-02 implementation     | `DONE`        | Async inbox worker; CI, PG17 and deployed dev smoke pass      |
-| 2026-08-11 | WRITE-03 implementation     | `DONE`        | Durable delivery; CI, PG17 and deployed dev smoke pass        |
-| 2026-08-13 | WRITE-04 implementation     | `DONE`        | DB-only path; CI, PG17 and deployed dev smoke pass            |
-| 2026-08-13 | WRITE-05 implementation     | `DONE`        | Atomic grants; CI, PG17 and deployed dev smoke pass           |
-| 2026-08-13 | WRITE-06 implementation     | `DONE`        | Durable jobs; CI, PG17, dev migration and smoke pass          |
-| 2026-08-13 | WRITE-07 implementation     | `DONE`        | Isolated allowlisted export; blocked-provider tests pass      |
-| 2026-08-13 | Gate G4                     | `PASSED`      | DB write paths survive blocked Sheets; dev queues clean       |
-| 2026-08-13 | READ-02 implementation      | `DONE`        | DB-only reads; 78 unit, 48 PG17 and six journeys pass         |
-| 2026-08-13 | READ-03 implementation      | `DONE`        | DB-only reads; 87 unit, 48 PG17 and six journeys pass         |
-| 2026-08-13 | READ-04 implementation      | `DONE`        | DB-only reads; 94 unit, 48 PG17 and six journeys pass         |
-| 2026-08-13 | READ-05 implementation      | `DONE`        | DB-only reads; 102 unit, 48 PG17 and six journeys pass        |
-| 2026-08-13 | READ-06 implementation      | `DONE`        | Explicit sources; 105 unit, 48 PG17 and six journeys pass     |
-| 2026-08-13 | Gate G5                     | `PASSED`      | Stable audit, fail-closed, prod CI and six journeys pass      |
-| 2026-08-19 | CUT-01                      | `DONE`        | Fixed rollback release `3b9efdd`; prod CI/smoke green         |
-| 2026-08-19 | CUT-02                      | `DONE`        | Neon + encrypted restore evidence; stable delta; runbook      |
-| 2026-08-20 | CUT-03 preflight            | `DONE`        | Prod SHA/invariants/queues/stable delta verified; no switch   |
-| 2026-08-20 | CUT-03 dev rehearsal        | `DONE`        | Dev-only flags; smoke/audit green; one test retry classified  |
-| 2026-08-20 | CUT-03 production scope     | `PAUSED`      | Pre-CUT mode restored; no flags; production smoke green       |
-| 2026-08-24 | CUT-03 production cutover   | `DONE`        | Four DB flags; three prod smokes; audit/reconciliation green  |
-| 2026-08-24 | CUT-04 observation          | `DONE`        | Natural traffic through corrected Sep 1 report verified       |
-| 2026-08-24 | CUT-04 same-day check       | `DONE`        | Prod READY; 32 invariants and 6 journeys; stable fingerprint  |
-| 2026-08-25 | CUT-04 next-day check       | `DONE`        | 22 real purchases; Stripe 113/113; queues/invariants green    |
-| 2026-08-31 | CUT-04 seven-day checkpoint | `DONE`        | Automated checks green; report incident isolated and fixed    |
-| 2026-09-01 | Corrected August report     | `DONE`        | 28/28 rows; exact CSV hash; first-attempt provider acceptance |
-| 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete        |
-| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime and business writes are PostgreSQL-only               |
-| 2026-09-01 | DROP-01 implementation      | `DONE (DEV)`  | Runtime Google dependency isolated to exporter and tools      |
-| 2026-09-01 | DROP-02 preflight           | `READY`       | Switch tested; dev exports/queues clean; date gate remains    |
+| Date       | Item                        | Status        | Evidence                                                                 |
+| ---------- | --------------------------- | ------------- | ------------------------------------------------------------------------ |
+| 2026-07-30 | Repository-wide audit       | `DONE`        | Audit discussion and local checks                                        |
+| 2026-07-30 | Roadmap v1.3                | `DONE`        | This document                                                            |
+| 2026-07-30 | BASE-01                     | `DONE`        | ADR-001 accepted                                                         |
+| 2026-07-30 | BASE-02                     | `DONE`        | Current behavior contract recorded                                       |
+| 2026-07-30 | BASE-03                     | `DONE`        | Seven Sheets and all dependency classes inventoried                      |
+| 2026-07-30 | BASE-05 Telegram scope      | `DONE`        | ADR-002 accepted                                                         |
+| 2026-07-30 | BASE-04 tooling             | `DONE`        | Read-only command and privacy fixture tests                              |
+| 2026-07-30 | BASE-04 capture             | `SUPERSEDED`  | Initial blocked attempt; replaced by the completed capture               |
+| 2026-07-30 | BASE-05 decision draft      | `DONE`        | Defaults prepared before owner confirmation                              |
+| 2026-07-30 | BASE-05 owner decisions     | `DONE`        | Owner accepted all four migration decisions                              |
+| 2026-08-06 | BASE-04 capture             | `DONE`        | Stable dev/prod fingerprints; differences classified                     |
+| 2026-08-06 | Gate G0                     | `PASSED`      | Behavior, dependency, data, and decision baselines accepted              |
+| 2026-08-06 | Gate G0 formal audit        | `DONE`        | All 26 Sheets components classified; documents reconciled                |
+| 2026-08-06 | SAFE-01                     | `DONE`        | Clean/local and remote CI passed; `main` requires `Quality`              |
+| 2026-08-06 | SAFE-02                     | `DONE`        | 14 unit, 2 PostgreSQL, and 3 deployed browser tests passed               |
+| 2026-08-07 | SAFE-03                     | `DONE`        | Migration-free release; dev/prod no-op controls passed                   |
+| 2026-08-08 | SAFE-04                     | `DONE`        | Atomic terminal outcomes; race and deployed smoke tests pass             |
+| 2026-08-08 | SAFE-05                     | `DONE`        | Atomic claims, DB invariant, and eight-way race test passed              |
+| 2026-08-08 | SAFE-06                     | `DONE`        | Reuse characterized at accepted decision boundary                        |
+| 2026-08-08 | SAFE-07                     | `DONE`        | DB-authorized catalog; remote CI and four browser tests pass             |
+| 2026-08-08 | SAFE-08                     | `DONE`        | Versioned consent evidence; CI, PostgreSQL, 5 browser tests              |
+| 2026-08-08 | SAFE-09                     | `DONE`        | Formula-safe CSV; CI and five deployed browser tests pass                |
+| 2026-08-08 | SAFE-10                     | `DONE`        | Verified result gate; CI and six browser tests pass                      |
+| 2026-08-09 | SAFE-11                     | `DONE`        | Zero production advisories; CI and six browser tests pass                |
+| 2026-08-09 | Gate G1                     | `PASSED`      | SAFE-01 through SAFE-11 acceptance criteria verified                     |
+| 2026-08-09 | Roadmap current-state audit | `DONE`        | Remaining phases reconciled with current code and schema                 |
+| 2026-08-09 | DB-01                       | `DONE`        | PostgreSQL domain and transaction ownership recorded                     |
+| 2026-08-09 | DB-02 development           | `DONE`        | Preflight, CI, dev migration, audit, and smoke passed                    |
+| 2026-08-09 | DB-03 development           | `DONE`        | Inbox migration, CI, dev apply, audit, and smoke passed                  |
+| 2026-08-11 | DATA-01                     | `DONE`        | Dev/prod encrypted captures and PG17 restores passed                     |
+| 2026-08-11 | DATA-02 implementation      | `DONE`        | Snapshot validation, atomic checkpoints, resume tests pass               |
+| 2026-08-11 | DATA-02 development         | `DONE`        | Migration, pause/resume/replay, invariants, smoke passed                 |
+| 2026-08-11 | DATA-02 production backfill | `DONE`        | 258 rows accounted; replay no-op; plaintext removed                      |
+| 2026-08-11 | DATA-02 counter invariant   | `DONE`        | Dev/prod migration and zero-violation audits passed                      |
+| 2026-08-11 | DATA-03                     | `DONE`        | Schema-v3 per-key captures stable in dev/prod; CI/smoke pass             |
+| 2026-08-11 | DATA-04                     | `DONE`        | Every production/backfill conflict classified; no data write             |
+| 2026-08-11 | Gate G3                     | `PASSED`      | Stable finance/access/invoice/replay evidence; 32 audits pass            |
+| 2026-08-11 | WRITE-01                    | `DONE`        | Pre-ack inbox gate; CI, PG17 and deployed dev smoke pass                 |
+| 2026-08-11 | WRITE-02 implementation     | `DONE`        | Async inbox worker; CI, PG17 and deployed dev smoke pass                 |
+| 2026-08-11 | WRITE-03 implementation     | `DONE`        | Durable delivery; CI, PG17 and deployed dev smoke pass                   |
+| 2026-08-13 | WRITE-04 implementation     | `DONE`        | DB-only path; CI, PG17 and deployed dev smoke pass                       |
+| 2026-08-13 | WRITE-05 implementation     | `DONE`        | Atomic grants; CI, PG17 and deployed dev smoke pass                      |
+| 2026-08-13 | WRITE-06 implementation     | `DONE`        | Durable jobs; CI, PG17, dev migration and smoke pass                     |
+| 2026-08-13 | WRITE-07 implementation     | `DONE`        | Isolated allowlisted export; blocked-provider tests pass                 |
+| 2026-08-13 | Gate G4                     | `PASSED`      | DB write paths survive blocked Sheets; dev queues clean                  |
+| 2026-08-13 | READ-02 implementation      | `DONE`        | DB-only reads; 78 unit, 48 PG17 and six journeys pass                    |
+| 2026-08-13 | READ-03 implementation      | `DONE`        | DB-only reads; 87 unit, 48 PG17 and six journeys pass                    |
+| 2026-08-13 | READ-04 implementation      | `DONE`        | DB-only reads; 94 unit, 48 PG17 and six journeys pass                    |
+| 2026-08-13 | READ-05 implementation      | `DONE`        | DB-only reads; 102 unit, 48 PG17 and six journeys pass                   |
+| 2026-08-13 | READ-06 implementation      | `DONE`        | Explicit sources; 105 unit, 48 PG17 and six journeys pass                |
+| 2026-08-13 | Gate G5                     | `PASSED`      | Stable audit, fail-closed, prod CI and six journeys pass                 |
+| 2026-08-19 | CUT-01                      | `DONE`        | Fixed rollback release `3b9efdd`; prod CI/smoke green                    |
+| 2026-08-19 | CUT-02                      | `DONE`        | Neon + encrypted restore evidence; stable delta; runbook                 |
+| 2026-08-20 | CUT-03 preflight            | `DONE`        | Prod SHA/invariants/queues/stable delta verified; no switch              |
+| 2026-08-20 | CUT-03 dev rehearsal        | `DONE`        | Dev-only flags; smoke/audit green; one test retry classified             |
+| 2026-08-20 | CUT-03 production scope     | `PAUSED`      | Pre-CUT mode restored; no flags; production smoke green                  |
+| 2026-08-24 | CUT-03 production cutover   | `DONE`        | Four DB flags; three prod smokes; audit/reconciliation green             |
+| 2026-08-24 | CUT-04 observation          | `DONE`        | Natural traffic through corrected Sep 1 report verified                  |
+| 2026-08-24 | CUT-04 same-day check       | `DONE`        | Prod READY; 32 invariants and 6 journeys; stable fingerprint             |
+| 2026-08-25 | CUT-04 next-day check       | `DONE`        | 22 real purchases; Stripe 113/113; queues/invariants green               |
+| 2026-08-31 | CUT-04 seven-day checkpoint | `DONE`        | Automated checks green; report incident isolated and fixed               |
+| 2026-09-01 | Corrected August report     | `DONE`        | 28/28 rows; exact CSV hash; first-attempt provider acceptance            |
+| 2026-09-01 | Gate G6                     | `PASSED`      | CUT observation and classified reconciliation complete                   |
+| 2026-09-01 | DROP-01 development start   | `IN_PROGRESS` | Runtime and business writes are PostgreSQL-only                          |
+| 2026-09-01 | DROP-01 implementation      | `DONE (DEV)`  | Runtime Google dependency isolated to exporter and tools                 |
+| 2026-09-01 | DROP-02 preflight           | `READY`       | Switch tested; dev exports/queues clean; date gate remains               |
+| 2026-09-03 | DROP-01 early release       | `DONE`        | Owner waiver; prod CI/smoke/reconciliation/invariants green              |
+| 2026-09-03 | DROP-02 observation         | `IN_PROGRESS` | Exporter unchanged; review after 2026-09-04T20:08:20Z                    |
+| 2026-09-05 | DROP-02 production switch   | `OBSERVING`   | Morning checkpoint; next-day hold later superseded below                 |
+| 2026-09-05 | DROP-02 same-day closure    | `DONE`        | Owner waiver; repeat checks green; export off in all envs                |
+| 2026-09-05 | DROP-03 credentials/archive | `DONE`        | Verified restores; key disabled; Google-free prod/dev green              |
+| 2026-09-07 | DROP-04 exporter-code slice | `DONE (DEV)`  | No new exports; old jobs skip; 197 unit / 52 PG tests pass               |
+| 2026-09-07 | DROP-04 payment contract    | `DONE (DEV)`  | 48 fields; 200 unit / 52 PG; CI, 11 browser, 32 audits pass              |
+| 2026-09-07 | DROP-04 Telegram contracts  | `DONE (DEV)`  | 202 unit / 54 PG; CI/browser/32 audits; claim rules kept                 |
+| 2026-09-07 | DROP-04 report contract     | `DONE (DEV)`  | 203 unit / 56 PG; CI/browser/32 audits; accounting unchanged             |
+| 2026-09-08 | DROP-04 campaign contract   | `DONE (DEV)`  | 213 unit / 59 PG; CI/browser/32 audits; migration-only push              |
+| 2026-09-08 | DROP-04 final cleanup       | `DONE (DEV)`  | Facade/adapter split; 211 unit / 59 PG; CI, 11 browser, 32 audits        |
+| 2026-09-08 | DROP-05 survey              | `DONE`        | Read-only: destructive surface measured in dev and prod; nothing applied |
+| 2026-09-16 | DROP-05 compatibility prep  | `DONE (DEV)`  | CI/restore/build/browser green for `552e9f2`; no live deletion           |
+| 2026-09-18 | DROP-05 contract rehearsal  | `DONE`        | Local fingerprints/restore match; no live write                          |

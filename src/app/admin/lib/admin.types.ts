@@ -275,7 +275,6 @@ export type OperationsSnapshot = {
   projection: {
     unlinkedProcessedEvents: number;
     unverifiedEvents: number;
-    waitingSheetsExports: number;
   };
   reports: Record<string, number>;
 };

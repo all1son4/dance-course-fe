@@ -7,9 +7,9 @@ import {
 } from "@/app/api/stripe/webhook/_lib/purchase-alert";
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import {
-  PAYMENT_SHEET_HEADERS,
-  type PaymentSheetRecord,
-} from "@/lib/google-sheets-schema";
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access";
 
 // Every access workflow the webhook can persist, from the catalogue plus the
@@ -28,16 +28,10 @@ const RUNTIME_ACCESS_WORKFLOWS = [
 
 const PAYMENT_INTENT_ID = "pi_3UD6eeRuyo0v6xwT05ZULmar";
 
-/** An all-empty record, built the way the rest of the suite on this branch does. */
-const createEmptyPaymentRecord = () =>
-  Object.fromEntries(
-    PAYMENT_SHEET_HEADERS.map((header) => [header, ""]),
-  ) as PaymentSheetRecord;
-
 const renderAlert = ({
   onlineGroupAccessStates,
   ...overrides
-}: Partial<PaymentSheetRecord> & {
+}: Partial<PaymentRecordSnapshot> & {
   onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
 }) =>
   buildPurchaseAlertText({
@@ -109,7 +103,7 @@ test("never prints a catalogue identifier in the readable part", () => {
 });
 
 test("[BEH-TG-03] states the access term each offer actually grants", () => {
-  const accessLine = (overrides: Partial<PaymentSheetRecord>) =>
+  const accessLine = (overrides: Partial<PaymentRecordSnapshot>) =>
     asPlainText(renderAlert(overrides)).match(/^Доступ: +(.+)$/mu)?.[1];
 
   assert.equal(

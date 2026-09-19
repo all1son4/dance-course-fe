@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
+import { createEmptyPaymentRecord } from "@/lib/payment-record";
 
 import { ensureInvoiceNumberForPayment } from "./invoice-numbering";
 
 test("always allocates invoice numbers through the PostgreSQL command", async () => {
-  const marker = { invoice_number: "FV/2026/09/001" };
+  const marker = { ...createEmptyPaymentRecord(), invoice_number: "FV/2026/09/001" };
   let capturedPaymentIntentId = "";
   const allocateForPaymentIntent = (async ({
     paymentIntentId,
@@ -16,7 +16,7 @@ test("always allocates invoice numbers through the PostgreSQL command", async ()
   }) => {
     capturedPaymentIntentId = paymentIntentId;
     return marker;
-  }) as NonNullable<
+  }) satisfies NonNullable<
     NonNullable<
       Parameters<typeof ensureInvoiceNumberForPayment>[1]
     >["allocateForPaymentIntent"]
@@ -25,8 +25,9 @@ test("always allocates invoice numbers through the PostgreSQL command", async ()
     {
       issuedAt: new Date("2026-09-01T00:00:00.000Z"),
       paymentRecord: {
+        ...createEmptyPaymentRecord(),
         payment_intent_id: "pi_invoice_database_only",
-      } as PaymentSheetRecord,
+      },
     },
     { allocateForPaymentIntent },
   );

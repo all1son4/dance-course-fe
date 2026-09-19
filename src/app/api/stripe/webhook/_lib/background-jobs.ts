@@ -1,7 +1,6 @@
 import { after } from "next/server";
 
 import { processNextOutboxJob } from "@/db/transactional-outbox";
-import { runSheetsExportOutboxJobs } from "@/lib/sheets-export-outbox";
 
 import { getStripeServer } from "../../payment-intent/lib";
 import { processNextStripeWebhookInboxJob } from "./inbox-worker";
@@ -25,7 +24,7 @@ const increment = (counts: WorkerCounts, status: WorkerStatus) => {
 };
 
 const hasRetry = (result: Awaited<ReturnType<typeof runStripeBackgroundJobs>>) =>
-  result.inbox.retry > 0 || result.outbox.retry > 0 || result.sheetsExport.retry > 0;
+  result.inbox.retry > 0 || result.outbox.retry > 0;
 
 const wait = (delayMs: number) =>
   new Promise<void>((resolve) => {
@@ -74,9 +73,7 @@ export const runStripeBackgroundJobs = async ({
     }
   }
 
-  const sheetsExport = await runSheetsExportOutboxJobs({ limit: outboxLimit });
-
-  return { inbox, outbox, sheetsExport };
+  return { inbox, outbox };
 };
 
 const getSafeErrorName = (error: unknown) =>

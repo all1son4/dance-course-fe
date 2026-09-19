@@ -21,7 +21,7 @@ import {
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
 import { listEmailCampaignLeadReadRecords } from "@/lib/business-operation-read-runtime";
-import type { EmailCampaignLeadSheetRecord } from "@/lib/google-sheets-schema";
+import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
 
 export const FIRST_TOUCH_SALES_START_CAMPAIGN_KEY = "first_touch_sales_start";
 
@@ -36,11 +36,11 @@ export type CreateEmailCampaignLeadInput = {
 export type CreateEmailCampaignLeadResult =
   | {
       duplicate: true;
-      lead: EmailCampaignLeadSheetRecord;
+      lead: EmailCampaignLeadRecord;
     }
   | {
       duplicate: false;
-      lead: EmailCampaignLeadSheetRecord;
+      lead: EmailCampaignLeadRecord;
     };
 
 export type EmailCampaignStats = {
@@ -123,7 +123,7 @@ const createLeadId = ({ campaignKey, email }: { campaignKey: string; email: stri
 
 const mapEmailCampaignLeadFromDatabase = (
   lead: EmailCampaignLead,
-): EmailCampaignLeadSheetRecord => ({
+): EmailCampaignLeadRecord => ({
   campaign_key: lead.campaignKey,
   created_at: lead.createdAt.toISOString(),
   email: lead.email,
@@ -139,7 +139,7 @@ const mapEmailCampaignLeadFromDatabase = (
 
 const listEmailCampaignRecords = () => listEmailCampaignLeadReadRecords();
 
-const getGloballyBlockedEmails = (rows: EmailCampaignLeadSheetRecord[]) =>
+const getGloballyBlockedEmails = (rows: EmailCampaignLeadRecord[]) =>
   new Set(
     rows
       .filter((row) => row.email_send_status.trim() === "blocked")
@@ -152,7 +152,7 @@ const buildEmailCampaignAdminSnapshot = ({
   rows,
 }: {
   campaignKey: string;
-  rows: EmailCampaignLeadSheetRecord[];
+  rows: EmailCampaignLeadRecord[];
 }): EmailCampaignAdminSnapshot => {
   const normalizedCampaignKey = campaignKey.trim();
   const globallyBlockedEmails = getGloballyBlockedEmails(rows);
@@ -312,7 +312,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
   };
 };
 
-const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadSheetRecord) => {
+const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadRecord) => {
   const copy = getFirstTouchEmailCopy(lead.locale);
   const checkoutUrl = getFirstTouchCheckoutUrl();
   const safeCheckoutUrl = escapeHtml(checkoutUrl);

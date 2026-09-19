@@ -1,27 +1,27 @@
 import { domainRepositories } from "@/db/domain-repositories";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import type {
-  PaymentSheetRecord,
-  TelegramAccessTokenSheetRecord,
-  TelegramUserBindingSheetRecord,
-} from "@/lib/google-sheets-schema";
+  TelegramAccessTokenRecord,
+  TelegramUserBindingRecord,
+} from "@/lib/telegram/access-records";
 
-type PaymentRecord = PaymentSheetRecord | null;
-type TokenRecord = TelegramAccessTokenSheetRecord | null;
-type BindingRecord = TelegramUserBindingSheetRecord | null;
+type PaymentRecord = PaymentRecordSnapshot | null;
+type TokenRecord = TelegramAccessTokenRecord | null;
+type BindingRecord = TelegramUserBindingRecord | null;
 
 export type TelegramAccessReadSource = {
-  findActiveBindings: () => Promise<TelegramUserBindingSheetRecord[]>;
+  findActiveBindings: () => Promise<TelegramUserBindingRecord[]>;
   findBindingByPaymentIntentId: (paymentIntentId: string) => Promise<BindingRecord>;
   findBindingsByCustomerEmail: (
     customerEmail: string,
-  ) => Promise<TelegramUserBindingSheetRecord[]>;
+  ) => Promise<TelegramUserBindingRecord[]>;
   findBindingsByTelegramUserId: (
     telegramUserId: string,
-  ) => Promise<TelegramUserBindingSheetRecord[]>;
+  ) => Promise<TelegramUserBindingRecord[]>;
   findBindingsByTelegramUserIdAndChatId: (input: {
     chatId: string;
     telegramUserId: string;
-  }) => Promise<TelegramUserBindingSheetRecord[]>;
+  }) => Promise<TelegramUserBindingRecord[]>;
   findLatestTokenByPaymentIntentId: (paymentIntentId: string) => Promise<TokenRecord>;
   findPaymentByIntentId: (paymentIntentId: string) => Promise<PaymentRecord>;
   findTokenByHash: (tokenHash: string) => Promise<TokenRecord>;

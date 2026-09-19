@@ -1,14 +1,14 @@
+import { updateTelegramAccessInDatabase } from "@/db/telegram-access";
 import {
   claimTelegramAccessTokenRecordInDatabase,
   upsertTelegramAccessTokenRecordToDatabase,
-  upsertTelegramUserBindingRecordToDatabase,
-} from "@/db/sheet-records";
-import { updateTelegramAccessInDatabase } from "@/db/telegram-access";
+} from "@/db/telegram-access-token-records";
+import { upsertTelegramUserBindingRecordToDatabase } from "@/db/telegram-user-binding-records";
+import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import type {
-  PaymentSheetRecord,
-  TelegramAccessTokenSheetRecord,
-  TelegramUserBindingSheetRecord,
-} from "@/lib/google-sheets-schema";
+  TelegramAccessTokenRecord,
+  TelegramUserBindingRecord,
+} from "@/lib/telegram/access-records";
 
 type AccessStatus =
   | "activated"
@@ -24,7 +24,7 @@ type AccessStatus =
 
 export type TelegramPaymentAccessPatch = Partial<
   Pick<
-    PaymentSheetRecord,
+    PaymentRecordSnapshot,
     | "telegram_access_expires_at"
     | "telegram_access_revoked_at"
     | "telegram_access_status"
@@ -76,7 +76,7 @@ const parseOptionalDate = (value: string | undefined) => {
 
 const normalizeAccessStatus = (
   value: string,
-  paymentRecord: PaymentSheetRecord,
+  paymentRecord: PaymentRecordSnapshot,
 ): AccessStatus => {
   const normalizedValue = value.trim();
   const statuses = new Set<AccessStatus>([
@@ -107,7 +107,7 @@ const normalizeAccessStatus = (
   return "pending";
 };
 
-const getExternalTargetType = (paymentRecord: PaymentSheetRecord) => {
+const getExternalTargetType = (paymentRecord: PaymentRecordSnapshot) => {
   const workflow = paymentRecord.access_workflow.trim();
   const deliveryChannel = paymentRecord.delivery_channel.trim();
 
@@ -127,7 +127,7 @@ const getExternalTargetType = (paymentRecord: PaymentSheetRecord) => {
 };
 
 export const upsertTelegramAccessTokenRecord = (
-  record: TelegramAccessTokenSheetRecord,
+  record: TelegramAccessTokenRecord,
   dependencies: TelegramAccessPersistenceDependencies = defaultDependencies,
 ) => dependencies.upsertToken(record);
 
@@ -137,7 +137,7 @@ export const claimTelegramAccessTokenRecord = (
 ) => dependencies.claimToken(claim);
 
 export const upsertTelegramUserBindingRecord = (
-  record: TelegramUserBindingSheetRecord,
+  record: TelegramUserBindingRecord,
   dependencies: TelegramAccessPersistenceDependencies = defaultDependencies,
 ) => dependencies.upsertBinding(record);
 
@@ -148,7 +148,7 @@ export const persistTelegramPaymentAccess = async ({
 }: {
   dependencies?: TelegramAccessPersistenceDependencies;
   patch: TelegramPaymentAccessPatch;
-  paymentRecord: PaymentSheetRecord;
+  paymentRecord: PaymentRecordSnapshot;
 }) => {
   const updatedAtValue = patch.updated_at?.trim() || new Date().toISOString();
   const updatedAtTimestamp = Date.parse(updatedAtValue);
@@ -213,4 +213,3 @@ export {
   findTelegramUserBindingsByTelegramUserId,
   findTelegramUserBindingsByTelegramUserIdAndChatId,
 } from "./access-read-runtime";
-export type { PaymentSheetRecord } from "@/lib/google-sheets-schema";
