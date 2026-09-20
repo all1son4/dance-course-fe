@@ -126,9 +126,9 @@ npm run db:snapshot:legacy-contract -- \
 ```
 
 Production uses the corresponding explicit `production` target, confirmation and
-output directory, but only in the separately approved contract release. The selected
-database URL must come from an environment-specific variable containing `DEV` or
-`PROD`; common `DATABASE_URL` fallbacks are rejected even when `DATABASE_ENV` is set.
+output directory only as an owner-approved release operation. The selected database
+URL must come from an environment-specific variable containing `DEV` or `PROD`; common
+`DATABASE_URL` fallbacks are rejected even when `DATABASE_ENV` is set.
 
 This mode writes manifest schema version 2 with `scope: "database"`. Its encrypted
 archive has exactly `database.dump` and `manifest.json`; it cannot contain
@@ -137,6 +137,26 @@ contains table data for `purchases`, `purchase_side_effects`, `invoices`, and
 `data_backfill_runs`. The dump is captured in one serializable, deferrable PostgreSQL
 transaction. The existing decrypt command supports both historical version-1 source
 archives and version-2 database-only archives.
+
+### September 19 production compatibility capture
+
+Immediately before the approved non-destructive production compatibility rollout,
+capture `production-database-20260919T101949842Z-fefe405f9c39` completed at
+`2026-09-19T10:19:55.455Z`. Encrypted archive SHA-256:
+`76a5e4e3aebcf43be668ea18797aa980d14342eeecc13e46b50109b97983afad`.
+The existing recovery public key was reused.
+
+Checksum authentication and AES-GCM decryption passed. The archive contained exactly
+`database.dump` and `manifest.json` and restored with PostgreSQL 17 into a disposable
+local database. The restored pre-expand state had 19 migrations, 21 public tables,
+108 purchases, 76 retained legacy exports, 45 invoices, zero populated PDF keys, one
+completed backfill run, and zero invalid indexes. The local cluster and all plaintext
+files were deleted immediately after verification; the encrypted archive, wrapped key,
+and public manifest remain in the ignored protected production snapshot directory.
+
+This recovery evidence authorized only the additive `0019`/`0020` rollout. It does not
+authorize DROP-05 deletion and does not replace the fresh production snapshot required
+immediately before the later contract migration.
 
 ## Cut-off semantics
 

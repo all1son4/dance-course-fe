@@ -10,27 +10,25 @@ outside the existing Online Group renewal flow.
 
 Later destructive cleanup is a separate `DROP-05` release, not part of this completed
 CUT runbook. Its [current preparation and approval checklist](roadmap.md#drop-05--apply-destructive-contract-migrations-in-a-separate-release)
-includes the September 11 read-only preflight: legacy export timestamps still affect
-invite-history dates, so empty queues alone do not authorize deleting that history.
-The September 23 retention boundary has not been waived by starting preparation.
+includes the September 11 initial read-only preflight and the September 19 production
+compatibility rollout. Historical invite dates are now preserved independently, but
+empty queues and compatible code still do not authorize deleting retained history.
+The September 23 retention boundary has not been waived by completing preparation.
 
 The additive change `0019_invite_history_created_at` preserves those dates without
-deleting exports. On September 13 it was applied to **dev only**, before deploying
-compatible reader revision `f7bcb33`. A fresh encrypted dev backup was restored locally;
-all 21 public tables and full history/order/limit fingerprints matched, with 22 dates
-preserved and zero remaining timestamp differences. See the
+deleting exports. On September 13 it was first applied to dev before deploying compatible
+reader revision `f7bcb33`. A fresh encrypted dev backup was restored locally; all 21
+public tables and full history/order/limit fingerprints matched, with 22 dates preserved
+and zero remaining timestamp differences. See the
 [dev evidence and mandatory schema-before-application release order](roadmap.md#invite-history-date-preservation--done-dev-september-13).
-Production has not received this migration or code: do not merge/deploy the new Drizzle
-purchase model there before its separately approved schema migration and checks. Keep
-the old exports and use the previous application revision on the expanded schema if a
-rollback is needed; no destructive rollback is part of this step. This dev backup does
-not replace a fresh production backup or authorize early cleanup.
+Production received `0019` and additive `0020` on September 19 through the guarded
+expand workflow before the application deployment. All 76 legacy export rows remain;
+no destructive rollback is part of this step.
 
 Dev follow-up revision `86571a4` then removed the invite-history query's legacy export
 join. Its CI, browser smoke and authenticated history/sales GET parity checks passed;
-no export rows were deleted. Production still requires the same schema-first order:
-apply `0019`, prove preservation, and only then deploy this reader revision or a later
-contract-compatible revision.
+no export rows were deleted. Production followed the same schema-first order and proved
+zero timestamp differences before deploying the later contract-compatible revision.
 
 Dev revision `4483c67` also stopped runtime invoice queries from addressing the unused
 `pdf_storage_key` column. The physical dev/production columns remain untouched, and no
@@ -38,16 +36,25 @@ contract migration is present in `drizzle/`. CI, deployed smoke, authenticated h
 and sales parity, and an isolated invoice read/write rehearsal with the column actually
 absent all passed.
 
-Dev revision `552e9f2` completes the application compatibility work and is the nominated
-rollback target for the future contract release. On September 18, the protected dev
-archive was restored into disposable PostgreSQL 17 databases and the guarded cleanup
+Dev revision `552e9f2` completed the application compatibility work. On September 18,
+the protected dev archive was restored into disposable PostgreSQL 17 databases and the guarded cleanup
 was rehearsed locally. All retained table/field fingerprints matched before and after
 cleanup, the post-contract-compatible integration selection passed, and a fresh
 post-cleanup restore reproduced the recovery fingerprint. The full evidence is in the
 [DROP-05 roadmap section](roadmap.md#contract-cleanup-and-restore-rehearsal--done-local-september-18).
-No dev/production schema or data was changed, and no contract migration is committed.
-The September 23 boundary, exact deletion approval, controlled production migration,
-and post-deploy verification remain open.
+No live schema or data was changed by that rehearsal, and no contract migration is
+committed.
+
+On September 19, fresh protected production capture
+`production-database-20260919T101949842Z-fefe405f9c39` restored successfully before
+the expand release. Migration-only PR #72 merged as `196380d`; the guarded workflow
+applied exactly `0019` and `0020` and advanced production from 19 to 21 migrations.
+The preflight then passed with 76 retained exports and zero timestamp differences.
+Application PR #71 merged as `5782439`, which passed production CI, Vercel deployment,
+11 critical journeys, all 32 invariants, health, queue checks, and a next-day bounded
+log check with zero errors/5xx. Revision `5782439` is now the fixed application rollback
+target for the future contract release. The September 23 boundary, exact deletion
+approval, controlled contract migration, and its post-deploy verification remain open.
 
 ## Fixed rollback release (`CUT-01`)
 
