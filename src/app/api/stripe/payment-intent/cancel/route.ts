@@ -5,6 +5,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 
 import {
   getCheckoutOwnedPaymentIntent,
@@ -54,7 +55,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<CancelPaymentIntentBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<CancelPaymentIntentBody>(
+        request,
+        MAX_PAYMENT_CANCEL_BODY_BYTES,
+      );
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -82,7 +91,7 @@ export async function POST(request: Request) {
 
     return jsonNoStore(getManagedPaymentIntentSnapshot(canceledPaymentIntent));
   } catch (error) {
-    console.error("Failed to cancel Stripe PaymentIntent", error);
+    logSafeError("Failed to cancel Stripe PaymentIntent", error);
 
     return jsonErrorNoStore("payment_intent_cancel_failed", { status: 500 });
   }

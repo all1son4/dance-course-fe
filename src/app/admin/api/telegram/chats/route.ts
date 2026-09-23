@@ -1,6 +1,7 @@
 import { listActiveTelegramChats } from "@/db/renewal-campaigns";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
-    console.error("Failed to list Telegram chats", error);
+    logSafeError("Failed to list Telegram chats", error);
 
     return jsonErrorNoStore("telegram_chats_unavailable", { status: 500 });
   }

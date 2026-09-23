@@ -7,6 +7,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 import {
   ensureTelegramAccessLinkForPayment,
   isOfferEligibleForTelegramAccessLink,
@@ -48,9 +49,14 @@ export async function POST(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:reissue-access",
     limit: 10,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -60,7 +66,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<ReissueAccessBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<ReissueAccessBody>(request, MAX_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
     const paymentIntentId =
       typeof body?.paymentIntentId === "string" ? body.paymentIntentId.trim() : "";
 
@@ -126,7 +137,7 @@ export async function POST(request: Request) {
       status: "ready",
     });
   } catch (error) {
-    console.error("Failed to reissue access links from admin", error);
+    logSafeError("Failed to reissue access links from admin", error);
     return jsonErrorNoStore("reissue_access_failed", { status: 500 });
   }
 }

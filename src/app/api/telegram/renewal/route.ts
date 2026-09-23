@@ -12,6 +12,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 import { getTelegramChatMember, type TelegramChatMember } from "@/lib/telegram/bot-api";
 import {
   createTelegramLoginNonce,
@@ -231,11 +232,7 @@ const checkRenewalSourceChatMembership = async ({
       isMember: isActiveTelegramMember(member),
     };
   } catch (error) {
-    console.error("Failed to check renewal source chat membership", {
-      chatId,
-      error,
-      telegramUserId,
-    });
+    logSafeError("Failed to check renewal source chat membership", error);
 
     return {
       chatId,
@@ -273,7 +270,7 @@ const findRenewalCustomerProfileSafely = async ({
       telegramUserId,
     });
   } catch (error) {
-    console.error("Failed to load renewal customer profile", error);
+    logSafeError("Failed to load renewal customer profile", error);
     return null;
   }
 };
@@ -434,7 +431,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<RenewalVerifyBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<RenewalVerifyBody>(request, MAX_RENEWAL_VERIFY_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -442,7 +444,7 @@ export async function POST(request: Request) {
 
     return await verifyRenewalAccess(body);
   } catch (error) {
-    console.error("Failed to verify Telegram renewal access", error);
+    logSafeError("Failed to verify Telegram renewal access", error);
 
     return jsonErrorNoStore("telegram_renewal_verification_failed", {
       status: 500,

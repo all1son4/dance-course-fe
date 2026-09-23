@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import { logSafeError } from "@/lib/safe-error-log";
 import { toUtcIso } from "@/lib/time";
 
 import {
@@ -755,10 +756,7 @@ const trySyncExistingTelegramBinding = async ({
       paymentRecord,
     });
   } catch (syncError) {
-    console.error("Failed to sync Telegram binding by existing active record", {
-      error: syncError,
-      paymentIntentId: paymentRecord.payment_intent_id,
-    });
+    logSafeError("Failed to sync Telegram binding by existing active record", syncError);
   }
 };
 
@@ -775,11 +773,7 @@ const persistTelegramAccessLinkFailure = async ({
 }): Promise<TelegramAccessLinkResult> => {
   telegramAccessLinkCache.delete(paymentRecord.payment_intent_id);
 
-  console.error("Failed to create Telegram invite link", {
-    chatId: normalizedChatId,
-    error,
-    paymentIntentId: paymentRecord.payment_intent_id,
-  });
+  logSafeError("Failed to create Telegram invite link", error);
 
   try {
     await persistTelegramPaymentAccess({
@@ -791,10 +785,7 @@ const persistTelegramAccessLinkFailure = async ({
       paymentRecord,
     });
   } catch (statusError) {
-    console.error("Failed to persist Telegram link failure status", {
-      error: statusError,
-      paymentIntentId: paymentRecord.payment_intent_id,
-    });
+    logSafeError("Failed to persist Telegram link failure status", statusError);
   }
 
   return getUnavailableTelegramAccessLinkResult("telegram_api_failed");
@@ -1095,11 +1086,9 @@ const tryRemoveRejectedTelegramMember = async ({
   ignoreMissingMember,
   normalizedChatId,
   normalizedUserId,
-  paymentIntentId,
 }: Pick<TelegramMembershipIdentity, "normalizedChatId" | "normalizedUserId"> & {
   errorMessage: string;
   ignoreMissingMember?: boolean;
-  paymentIntentId: string;
 }): Promise<void> => {
   try {
     await tryKickTelegramMember({
@@ -1111,12 +1100,7 @@ const tryRemoveRejectedTelegramMember = async ({
       return;
     }
 
-    console.error(errorMessage, {
-      chatId: normalizedChatId,
-      error,
-      paymentIntentId,
-      telegramUserId: normalizedUserId,
-    });
+    logSafeError(errorMessage, error);
   }
 };
 
@@ -1167,7 +1151,6 @@ const revokeExpiredTelegramMembership = async ({
     ignoreMissingMember: true,
     normalizedChatId: identity.normalizedChatId,
     normalizedUserId: identity.normalizedUserId,
-    paymentIntentId: accessContext.paymentRecord.payment_intent_id,
   });
 
   await upsertTelegramAccessTokenRecord({
@@ -1242,7 +1225,6 @@ const activateTelegramMembership = async ({
       ignoreMissingMember: true,
       normalizedChatId: identity.normalizedChatId,
       normalizedUserId: identity.normalizedUserId,
-      paymentIntentId: accessContext.paymentRecord.payment_intent_id,
     });
 
     return {
@@ -1324,7 +1306,6 @@ const syncTelegramMemberJoined = async ({
   const rejectionContext = {
     normalizedChatId: identity.normalizedChatId,
     normalizedUserId: identity.normalizedUserId,
-    paymentIntentId: paymentRecord.payment_intent_id,
   };
 
   if (
@@ -1521,11 +1502,7 @@ export const revokeExpiredTelegramChannelAccess =
           canProceedWithRevocation = true;
         } else {
           failedGroups += 1;
-          console.error("Failed to revoke Telegram access for expired member", {
-            chatId: group.chatId,
-            error,
-            telegramUserId: group.telegramUserId,
-          });
+          logSafeError("Failed to revoke Telegram access for expired member", error);
         }
       }
 

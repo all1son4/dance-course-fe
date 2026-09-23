@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
+import { logSafeError } from "@/lib/safe-error-log";
 
 /** Cache tag for everything derived from the product catalogue; the admin sales switch expires it. */
 export const CATALOG_CACHE_TAG = "catalog";
@@ -74,7 +75,7 @@ const readCatalogSalesStateFailClosed = async (
       state: toCatalogSalesState(await read()),
     };
   } catch (error) {
-    console.error("Failed to read the sales state from the catalogue", { error });
+    logSafeError("Failed to read the sales state from the catalogue", error);
 
     return {
       available: false,

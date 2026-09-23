@@ -5,6 +5,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 
 import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
 import {
@@ -55,7 +56,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<PaymentIntentStatusBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<PaymentIntentStatusBody>(
+        request,
+        MAX_PAYMENT_STATUS_BODY_BYTES,
+      );
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -80,14 +89,14 @@ export async function POST(request: Request) {
         scheduleStripeBackgroundJobs();
       } catch (error) {
         console.error("Failed to schedule payment background recovery", {
-          errorName: error instanceof Error ? error.name : "UnknownError",
+          errorName: getSafeErrorCategory(error),
         });
       }
     }
 
     return jsonNoStore(snapshot);
   } catch (error) {
-    console.error("Failed to retrieve Stripe PaymentIntent status", error);
+    logSafeError("Failed to retrieve Stripe PaymentIntent status", error);
 
     return jsonErrorNoStore("payment_intent_status_failed", { status: 500 });
   }

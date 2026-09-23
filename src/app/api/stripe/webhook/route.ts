@@ -1,7 +1,8 @@
 import type Stripe from "stripe";
 
 import { getDatabaseEnvSelection } from "@/db/env";
-import { isPayloadTooLarge, jsonNoStore } from "@/lib/http-security";
+import { isPayloadTooLarge, jsonNoStore, readBoundedTextBody } from "@/lib/http-security";
+import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 
 import { getStripeServer } from "../payment-intent/lib";
 import { scheduleStripeBackgroundJobs } from "./_lib/background-jobs";
@@ -33,8 +34,7 @@ type VerifiedStripeEvent =
       response: Response;
     };
 
-const getSafeErrorName = (error: unknown): string =>
-  error instanceof Error ? error.name : "UnknownError";
+const getSafeErrorName = (error: unknown): string => getSafeErrorCategory(error);
 
 const createWebhookErrorResponse = (
   errorCode: WebhookErrorCode,
@@ -122,7 +122,17 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const payload = await request.text();
+    const payloadResult = await readBoundedTextBody(request, MAX_WEBHOOK_BODY_BYTES);
+
+    if (payloadResult.status === "too_large") {
+      return createWebhookErrorResponse("payload_too_large", 413);
+    }
+
+    if (payloadResult.status === "invalid") {
+      return createWebhookErrorResponse("stripe_webhook_failed", 500);
+    }
+
+    const payload = payloadResult.text;
     const verifiedEvent = verifyStripeWebhookEvent({
       payload,
       signature,
@@ -149,7 +159,7 @@ export async function POST(request: Request): Promise<Response> {
       type: verifiedEvent.event.type,
     });
   } catch (error) {
-    console.error("Failed to process Stripe webhook", error);
+    logSafeError("Failed to process Stripe webhook", error);
 
     return createWebhookErrorResponse("stripe_webhook_failed", 500);
   }

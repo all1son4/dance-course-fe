@@ -10,6 +10,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -36,9 +37,14 @@ export async function POST(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:resend-purchase-email",
     limit: 10,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -48,7 +54,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<ResendEmailBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<ResendEmailBody>(request, MAX_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
     const paymentIntentId =
       typeof body?.paymentIntentId === "string" ? body.paymentIntentId.trim() : "";
 
@@ -90,7 +101,7 @@ export async function POST(request: Request) {
 
     return jsonNoStore({ status: result.skipped ? "skipped" : "sent" });
   } catch (error) {
-    console.error("Failed to resend purchase email from admin", error);
+    logSafeError("Failed to resend purchase email from admin", error);
     return jsonErrorNoStore("resend_purchase_email_failed", { status: 500 });
   }
 }

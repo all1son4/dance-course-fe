@@ -3,6 +3,7 @@ import type Stripe from "stripe";
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import { logSafeError } from "@/lib/safe-error-log";
 import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
 import { toUtcIso } from "@/lib/time";
 
@@ -296,10 +297,7 @@ const getCheckoutSessionLineItemLabel = async (
 
     return trimString(lineItem?.description);
   } catch (error) {
-    console.error("Failed to retrieve Stripe Checkout Session line item", {
-      checkoutSessionId: checkoutSession.id,
-      error,
-    });
+    logSafeError("Failed to retrieve Stripe Checkout Session line item", error);
 
     return "";
   }
@@ -316,10 +314,7 @@ const getPaymentLink = async (checkoutSession: Stripe.Checkout.Session | null) =
   try {
     return await stripe.paymentLinks.retrieve(paymentLinkId);
   } catch (error) {
-    console.error("Failed to retrieve Stripe Payment Link", {
-      error,
-      paymentLinkId,
-    });
+    logSafeError("Failed to retrieve Stripe Payment Link", error);
 
     return null;
   }
@@ -342,10 +337,7 @@ const getCheckoutSessionForPaymentIntent = async (
 
     return sessions.data[0] ?? null;
   } catch (error) {
-    console.error("Failed to retrieve Stripe Checkout Session for PaymentIntent", {
-      error,
-      paymentIntentId: paymentIntent.id,
-    });
+    logSafeError("Failed to retrieve Stripe Checkout Session for PaymentIntent", error);
 
     return null;
   }

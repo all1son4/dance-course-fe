@@ -343,7 +343,7 @@ const validateStripeFinancialData = (saleRecords: MonthlySalesReportSaleRecord[]
 
   if (invalidPaymentIntentIds.length > 0) {
     console.error("Monthly sales report rejected incomplete Stripe financial data", {
-      affectedPaymentIntentIds: invalidPaymentIntentIds,
+      affectedCount: invalidPaymentIntentIds.length,
     });
     throw new Error("monthly_sales_report_stripe_data_incomplete");
   }

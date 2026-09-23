@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 
+import { logSafeError } from "@/lib/safe-error-log";
 import { hasClosedSalesAtFulfilment } from "@/lib/sales-availability";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
 import {
@@ -33,11 +34,9 @@ export class TelegramAlertDeliveryUncertainError extends Error {
 }
 
 const getOnlineGroupAccessStatesForAlert = async ({
-  eventId,
   offerId,
   paymentIntentId,
 }: {
-  eventId: string;
   offerId: string;
   paymentIntentId: string;
 }): Promise<OnlineGroupAccessState[] | null | undefined> => {
@@ -48,11 +47,7 @@ const getOnlineGroupAccessStatesForAlert = async ({
   try {
     return await listOnlineGroupAccessStatesForPayment(paymentIntentId);
   } catch (error) {
-    console.error("Failed to load Online Group access states for purchase alert", {
-      error,
-      eventId,
-      paymentIntentId,
-    });
+    logSafeError("Failed to load Online Group access states for purchase alert", error);
 
     return null;
   }
@@ -72,7 +67,6 @@ const buildAlertTextForPayment = async ({
   // Both reads swallow their own failures, so neither can reject the pair.
   const [onlineGroupAccessStates, hasClosedSales] = await Promise.all([
     getOnlineGroupAccessStatesForAlert({
-      eventId: handledEvent.eventId,
       offerId: paymentRecord.offer_id,
       paymentIntentId,
     }),

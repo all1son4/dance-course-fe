@@ -1,3 +1,5 @@
+import { createHmac } from "node:crypto";
+
 type RateLimitBucket = {
   count: number;
   resetAt: number;
@@ -7,6 +9,7 @@ type ConsumeRateLimitParams = {
   key: string;
   limit: number;
   windowMs: number;
+  onBackendUnavailable?: "local" | "deny";
 };
 
 type ConsumeRequestRateLimitParams = Omit<ConsumeRateLimitParams, "key"> & {
@@ -17,6 +20,7 @@ type ConsumeRequestRateLimitParams = Omit<ConsumeRateLimitParams, "key"> & {
 type ConsumeRateLimitResult = {
   limited: boolean;
   retryAfterSeconds: number;
+  backendUnavailable: boolean;
 };
 
 type UpstashConfig = {
@@ -80,6 +84,7 @@ const consumeLocalRateLimit = ({
     return {
       limited: false,
       retryAfterSeconds: getRetryAfterSeconds(resetAt),
+      backendUnavailable: false,
     };
   }
 
@@ -87,6 +92,7 @@ const consumeLocalRateLimit = ({
     return {
       limited: true,
       retryAfterSeconds: getRetryAfterSeconds(currentBucket.resetAt),
+      backendUnavailable: false,
     };
   }
 
@@ -95,6 +101,7 @@ const consumeLocalRateLimit = ({
   return {
     limited: false,
     retryAfterSeconds: getRetryAfterSeconds(currentBucket.resetAt),
+    backendUnavailable: false,
   };
 };
 
@@ -142,7 +149,7 @@ const parseUpstashScriptResult = (payload: unknown) => {
       : null;
 
   if (commandPayload?.error) {
-    throw new Error(`upstash_command_failed:${commandPayload.error}`);
+    throw new Error("upstash_command_failed");
   }
 
   const scriptResult = Array.isArray(commandResult)
@@ -156,7 +163,7 @@ const parseUpstashScriptResult = (payload: unknown) => {
   const limited = toNumber(scriptResult[0]);
   const ttlMs = toNumber(scriptResult[1]);
 
-  if (limited === null || ttlMs === null) {
+  if ((limited !== 0 && limited !== 1) || ttlMs === null) {
     throw new Error("upstash_invalid_rate_limit_result");
   }
 
@@ -176,7 +183,9 @@ const consumeDistributedRateLimit = async (
   }, UPSTASH_TIMEOUT_MS);
 
   try {
-    const redisKey = `${config.prefix}:${params.key}`;
+    // Keep the client's IP and other request identifiers out of Redis keys.
+    const opaqueKey = createHmac("sha256", config.token).update(params.key).digest("hex");
+    const redisKey = `${config.prefix}:${opaqueKey}`;
     const response = await fetch(`${config.url}/pipeline`, {
       method: "POST",
       headers: {
@@ -207,13 +216,14 @@ const consumeDistributedRateLimit = async (
     return {
       limited,
       retryAfterSeconds: getRetryAfterSecondsFromTtl(ttlMs, params.windowMs),
+      backendUnavailable: false,
     };
   } finally {
     clearTimeout(timeoutId);
   }
 };
 
-const logUpstashFailure = (error: unknown) => {
+const logUpstashFailure = () => {
   const now = getNow();
 
   if (now - lastUpstashErrorLogAt < 60_000) {
@@ -221,8 +231,19 @@ const logUpstashFailure = (error: unknown) => {
   }
 
   lastUpstashErrorLogAt = now;
-  console.error("Upstash rate limit backend failed, falling back to in-memory.", error);
+  // Provider errors may include URLs, tokens or request details.
+  console.error("Upstash rate limit backend unavailable.");
 };
+
+const backendUnavailableResult = (): ConsumeRateLimitResult => ({
+  limited: false,
+  retryAfterSeconds: 0,
+  backendUnavailable: true,
+});
+
+const shouldDenyOnBackendFailure = (params: ConsumeRateLimitParams) =>
+  params.onBackendUnavailable === "deny" &&
+  process.env.UPSTASH_RATE_LIMIT_ENFORCE_ADMIN === "1";
 
 export const getRequestIp = (request: Request) => {
   const forwardedFor = request.headers.get("x-forwarded-for")?.trim() ?? "";
@@ -236,49 +257,38 @@ export const getRequestIp = (request: Request) => {
   return realIp || "unknown";
 };
 
-export const consumeRateLimit = async ({
-  key,
-  limit,
-  windowMs,
-}: ConsumeRateLimitParams): Promise<ConsumeRateLimitResult> => {
+export const consumeRateLimit = async (
+  params: ConsumeRateLimitParams,
+): Promise<ConsumeRateLimitResult> => {
   const upstashConfig = getUpstashConfig();
 
   if (!upstashConfig) {
-    return consumeLocalRateLimit({
-      key,
-      limit,
-      windowMs,
-    });
+    return shouldDenyOnBackendFailure(params)
+      ? backendUnavailableResult()
+      : consumeLocalRateLimit(params);
   }
 
   try {
-    return await consumeDistributedRateLimit(
-      {
-        key,
-        limit,
-        windowMs,
-      },
-      upstashConfig,
-    );
-  } catch (error) {
-    logUpstashFailure(error);
+    return await consumeDistributedRateLimit(params, upstashConfig);
+  } catch {
+    logUpstashFailure();
 
-    return consumeLocalRateLimit({
-      key,
-      limit,
-      windowMs,
-    });
+    return shouldDenyOnBackendFailure(params)
+      ? backendUnavailableResult()
+      : consumeLocalRateLimit(params);
   }
 };
 
 export const consumeRequestRateLimit = ({
   keyPrefix,
   limit,
+  onBackendUnavailable,
   request,
   windowMs,
 }: ConsumeRequestRateLimitParams) =>
   consumeRateLimit({
     key: `${keyPrefix}:${getRequestIp(request)}`,
     limit,
+    onBackendUnavailable,
     windowMs,
   });

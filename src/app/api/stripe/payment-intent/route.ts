@@ -32,6 +32,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 import {
   getLocalizedSellableProductOfferLabel,
   getLocalizedSellableProductTitle,
@@ -161,10 +162,7 @@ const getCheckoutSelection = async ({
       throw error;
     }
 
-    console.error("Failed to authorize checkout selection from database", {
-      error,
-      productId: configuredProduct.id,
-    });
+    logSafeError("Failed to authorize checkout selection from database", error);
     throw new CatalogUnavailableError(503);
   }
 };
@@ -443,7 +441,15 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
-    const body = await parseJsonBody<CreatePaymentIntentBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<CreatePaymentIntentBody>(
+        request,
+        MAX_PAYMENT_INTENT_BODY_BYTES,
+      );
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -503,10 +509,7 @@ export async function POST(request: Request): Promise<Response> {
     try {
       await recordCheckoutConsentEvidence(consentEvidence);
     } catch (error) {
-      console.error("Failed to persist immutable checkout consent evidence", {
-        error,
-        paymentIntentId: paymentIntent.id,
-      });
+      logSafeError("Failed to persist immutable checkout consent evidence", error);
       throw new ConsentEvidenceUnavailableError();
     }
 
@@ -523,7 +526,7 @@ export async function POST(request: Request): Promise<Response> {
       return jsonErrorNoStore("consent_evidence_failed", { status: 503 });
     }
 
-    console.error("Failed to create Stripe PaymentIntent", error);
+    logSafeError("Failed to create Stripe PaymentIntent", error);
 
     return jsonErrorNoStore("payment_intent_failed", { status: 500 });
   }

@@ -1,4 +1,5 @@
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import { logSafeError } from "@/lib/safe-error-log";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
       standard,
     });
   } catch (error) {
-    console.error("Failed to revoke expired Telegram access", error);
+    logSafeError("Failed to revoke expired Telegram access", error);
 
     return jsonErrorNoStore("revoke_expired_access_failed", { status: 500 });
   }

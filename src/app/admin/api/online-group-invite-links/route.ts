@@ -17,6 +17,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
@@ -134,7 +135,7 @@ export async function GET(request: Request) {
 
     return jsonNoStore({ grants: grants.map(serializeGrant) });
   } catch (error) {
-    console.error("Failed to load admin Online Group invite links", error);
+    logSafeError("Failed to load admin Online Group invite links", error);
     return jsonErrorNoStore("online_group_invite_links_unavailable", { status: 500 });
   }
 }
@@ -156,9 +157,14 @@ export async function POST(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:online-group-invite-links",
     limit: 30,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -168,7 +174,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<GenerateOnlineGroupLinksBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<GenerateOnlineGroupLinksBody>(request, MAX_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -262,7 +273,7 @@ export async function POST(request: Request) {
       status,
     });
   } catch (error) {
-    console.error("Failed to generate admin Online Group invite links", error);
+    logSafeError("Failed to generate admin Online Group invite links", error);
 
     return jsonErrorNoStore("online_group_invite_links_failed", { status: 500 });
   }

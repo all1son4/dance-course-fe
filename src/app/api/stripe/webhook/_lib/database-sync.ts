@@ -5,6 +5,7 @@ import { getDatabase } from "@/db/client";
 import { type PaymentProjectionCommand } from "@/db/payment-projection";
 import { purchases } from "@/db/schema";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export type StripeSettlementSnapshot = {
   settlementAmountMinor: number | null;
@@ -277,11 +278,7 @@ const getStripeSettlementSnapshotFromCharge = async ({
       await stripe.balanceTransactions.retrieve(balanceTransaction),
     );
   } catch (error) {
-    console.error("Failed to retrieve Stripe balance transaction for charge", {
-      balanceTransactionId: balanceTransaction,
-      chargeId: charge.id,
-      error,
-    });
+    logSafeError("Failed to retrieve Stripe balance transaction for charge", error);
 
     return {
       settlementAmountMinor: null,
@@ -322,10 +319,7 @@ const getStripeSettlementSnapshot = async ({
 
     return getBalanceTransactionSnapshot(latestCharge.balance_transaction);
   } catch (error) {
-    console.error("Failed to load Stripe settlement amount for purchase", {
-      error,
-      paymentIntentId,
-    });
+    logSafeError("Failed to load Stripe settlement amount for purchase", error);
 
     return emptySnapshot;
   }

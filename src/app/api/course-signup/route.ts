@@ -11,6 +11,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -54,7 +55,12 @@ export async function POST(request: Request) {
     });
   }
 
-  const body = await parseJsonBody<CourseSignupBody>(request);
+  const { body, errorResponse: bodyErrorResponse } =
+    await parseJsonBody<CourseSignupBody>(request, MAX_COURSE_SIGNUP_BODY_BYTES);
+
+  if (bodyErrorResponse) {
+    return bodyErrorResponse;
+  }
 
   if (!body) {
     return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -94,7 +100,7 @@ export async function POST(request: Request) {
       status: "registered",
     });
   } catch (error) {
-    console.error("Failed to store course signup lead", error);
+    logSafeError("Failed to store course signup lead", error);
 
     return jsonErrorNoStore("course_signup_failed", { status: 500 });
   }

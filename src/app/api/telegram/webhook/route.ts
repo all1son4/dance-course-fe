@@ -6,6 +6,7 @@ import {
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
+import { logSafeError } from "@/lib/safe-error-log";
 import {
   activateTelegramStartToken,
   getActivatedPaymentsByTelegramUserId,
@@ -734,7 +735,7 @@ const handleTelegramWebhookError = async ({
   error: unknown;
   fallback: TelegramWebhookFallback;
 }): Promise<Response> => {
-  console.error("Failed to process Telegram webhook", error);
+  logSafeError("Failed to process Telegram webhook", error);
 
   if (fallback.chatId) {
     try {
@@ -743,7 +744,7 @@ const handleTelegramWebhookError = async ({
         text: getBotCopy(fallback.locale).temporaryIssue,
       });
     } catch (telegramError) {
-      console.error("Failed to send Telegram fallback error message", telegramError);
+      logSafeError("Failed to send Telegram fallback error message", telegramError);
     }
   }
 
@@ -765,7 +766,12 @@ export async function POST(request: Request) {
   };
 
   try {
-    const update = await parseJsonBody<TelegramUpdate>(request);
+    const { body: update, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<TelegramUpdate>(request, MAX_TELEGRAM_WEBHOOK_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
     const chatMemberUpdate = update?.chat_member;
 
     if (chatMemberUpdate) {

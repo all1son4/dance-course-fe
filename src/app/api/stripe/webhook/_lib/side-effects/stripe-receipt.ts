@@ -1,5 +1,7 @@
 import type Stripe from "stripe";
 
+import { logSafeError } from "@/lib/safe-error-log";
+
 import type { StripeReceiptData } from "./types";
 
 export const getReceiptData = async (
@@ -35,11 +37,7 @@ export const getReceiptData = async (
       recipientEmail: billingEmail,
     };
   } catch (error) {
-    console.error("Failed to retrieve Stripe receipt data", {
-      error,
-      latestChargeId,
-      paymentIntentId: paymentIntent.id,
-    });
+    logSafeError("Failed to retrieve Stripe receipt data", error);
 
     return {
       receiptKind: null,

@@ -11,6 +11,7 @@ import {
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
 import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
+import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
 
@@ -65,7 +66,7 @@ export async function GET(request: Request) {
     ]);
     accessRevocationResult = { onlineGroup, standard };
   } catch (error) {
-    console.error("Daily maintenance: failed to revoke expired Telegram access", error);
+    logSafeError("Daily maintenance: failed to revoke expired Telegram access", error);
     accessRevocationError =
       error instanceof Error ? error.message : "revoke_expired_access_failed";
   }
@@ -81,7 +82,7 @@ export async function GET(request: Request) {
 
       monthlySalesReportResult = toMonthlySalesReportDeliveryResponse(result);
     } catch (error) {
-      console.error("Daily maintenance: failed to generate monthly sales report", error);
+      logSafeError("Daily maintenance: failed to generate monthly sales report", error);
       monthlySalesReportError =
         error instanceof Error ? error.message : "monthly_sales_report_failed";
     }
@@ -110,7 +111,7 @@ export async function GET(request: Request) {
       }
     } catch (error) {
       console.error("Daily maintenance: failed to schedule Polish terminal reminder", {
-        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorName: getSafeErrorCategory(error),
       });
       polishTerminalReminderError = "polish_terminal_reminder_failed";
     }
@@ -120,7 +121,7 @@ export async function GET(request: Request) {
     businessJobsResult = await runBusinessOperationOutboxJobs();
   } catch (error) {
     console.error("Daily maintenance: business outbox recovery failed", {
-      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorName: getSafeErrorCategory(error),
     });
     businessJobsError = "business_outbox_recovery_failed";
   }
@@ -134,7 +135,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Daily maintenance: Stripe background recovery failed", {
-      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorName: getSafeErrorCategory(error),
     });
     paymentJobsError = "stripe_background_recovery_failed";
   }

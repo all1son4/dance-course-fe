@@ -118,11 +118,76 @@ export const getBrowserJsonRequestErrorResponse = (
   return null;
 };
 
-export const parseJsonBody = async <T>(request: Request): Promise<T | null> => {
+type BoundedTextBodyResult =
+  { status: "ok"; text: string } | { status: "too_large" } | { status: "invalid" };
+
+export const readBoundedTextBody = async (
+  request: Request,
+  maxBytes: number,
+): Promise<BoundedTextBodyResult> => {
+  if (!request.body) {
+    return { status: "ok", text: "" };
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
   try {
-    return (await request.json()) as T;
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      totalBytes += value.byteLength;
+
+      if (totalBytes > maxBytes) {
+        await reader.cancel().catch(() => undefined);
+        return { status: "too_large" };
+      }
+
+      chunks.push(value);
+    }
   } catch {
-    return null;
+    return { status: "invalid" };
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return { status: "ok", text: new TextDecoder().decode(bytes) };
+};
+
+export const parseJsonBody = async <T>(
+  request: Request,
+  maxBytes: number,
+): Promise<{ body: T | null; errorResponse: Response | null }> => {
+  const result = await readBoundedTextBody(request, maxBytes);
+
+  if (result.status === "too_large") {
+    return {
+      body: null,
+      errorResponse: jsonErrorNoStore("payload_too_large", { status: 413 }),
+    };
+  }
+
+  if (result.status === "invalid") {
+    return { body: null, errorResponse: null };
+  }
+
+  try {
+    return { body: JSON.parse(result.text) as T, errorResponse: null };
+  } catch {
+    return { body: null, errorResponse: null };
   }
 };
 

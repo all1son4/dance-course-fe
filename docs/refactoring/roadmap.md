@@ -2338,7 +2338,11 @@ settings changed. Continue with `HARD-02`.
   audit for the current two-person team. See the [agreed scope and acceptance
   criteria](hard-01-admin-access.md). Server-side individual session revocation is
   not claimed or included;
-- `HARD-02`: mandatory distributed rate limits, bounded request bodies, and PII-safe logs;
+- `HARD-02`: distributed rate limits, bounded request bodies, and PII-safe logs.
+  Status: `IN_PROGRESS` — local implementation and regression tests are in progress;
+  separate Upstash dev/Preview and Production credentials, staged activation, and
+  deployment smoke checks are still required. See
+  [rollout and failure policy](hard-02-security.md);
 - `HARD-03`: hash or encrypt bearer material and erase it after use or expiry;
 - `HARD-04`: finish remaining accessibility, locale, polling, and navigation
   correctness without redoing the verified payment-result gate from `SAFE-10`;

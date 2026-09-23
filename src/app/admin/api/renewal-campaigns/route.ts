@@ -13,6 +13,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -100,7 +101,7 @@ export async function GET(request: Request) {
       })),
     });
   } catch (error) {
-    console.error("Failed to list renewal campaigns", error);
+    logSafeError("Failed to list renewal campaigns", error);
 
     return jsonErrorNoStore("renewal_campaigns_unavailable", { status: 500 });
   }
@@ -123,9 +124,14 @@ export async function POST(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:renewal-campaigns",
     limit: 30,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -137,7 +143,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<CreateRenewalCampaignBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<CreateRenewalCampaignBody>(
+        request,
+        MAX_RENEWAL_CAMPAIGN_BODY_BYTES,
+      );
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -209,7 +223,7 @@ export async function POST(request: Request) {
       );
     }
 
-    console.error("Failed to create renewal campaign", error);
+    logSafeError("Failed to create renewal campaign", error);
 
     return jsonErrorNoStore("renewal_campaign_failed", { status: 500 });
   }
@@ -232,9 +246,14 @@ export async function DELETE(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:renewal-campaigns:archive",
     limit: 30,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -243,7 +262,13 @@ export async function DELETE(request: Request) {
     });
   }
 
-  const body = await parseJsonBody<{ slug?: string }>(request);
+  const { body, errorResponse: bodyErrorResponse } = await parseJsonBody<{
+    slug?: string;
+  }>(request, MAX_RENEWAL_CAMPAIGN_BODY_BYTES);
+
+  if (bodyErrorResponse) {
+    return bodyErrorResponse;
+  }
   const campaign = body?.slug
     ? await setRenewalCampaignStatus({
         slug: body.slug,
@@ -278,9 +303,14 @@ export async function PATCH(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:renewal-campaigns:status",
     limit: 30,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -289,7 +319,14 @@ export async function PATCH(request: Request) {
     });
   }
 
-  const body = await parseJsonBody<{ active?: boolean; slug?: string }>(request);
+  const { body, errorResponse: bodyErrorResponse } = await parseJsonBody<{
+    active?: boolean;
+    slug?: string;
+  }>(request, MAX_RENEWAL_CAMPAIGN_BODY_BYTES);
+
+  if (bodyErrorResponse) {
+    return bodyErrorResponse;
+  }
 
   if (!body?.slug || typeof body.active !== "boolean") {
     return jsonErrorNoStore("invalid_request_body", { status: 400 });

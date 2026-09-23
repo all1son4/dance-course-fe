@@ -11,6 +11,7 @@ import {
   telegramUserBindings,
 } from "@/db/schema";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import { logSafeError } from "@/lib/safe-error-log";
 
 import {
   banTelegramChatMember,
@@ -531,12 +532,7 @@ const createTargetInvite = async ({
       },
     };
   } catch (error) {
-    console.error("Failed to create Online Group Telegram invite", {
-      accessKey: context.accessKey,
-      chatId: context.chatId,
-      error,
-      paymentIntentId: context.purchase.paymentIntentId,
-    });
+    logSafeError("Failed to create Online Group Telegram invite", error);
     await upsertEntitlement({
       accessExpiresAt: context.accessExpiresAt,
       accessKey: context.accessKey,
@@ -772,11 +768,7 @@ const ensureTargetAccess = async ({
           inviteLink: generatedInviteLink,
         });
       } catch (revokeError) {
-        console.error("Failed to revoke an unpersisted Online Group invite", {
-          chatId,
-          error: revokeError,
-          paymentIntentId: purchase.paymentIntentId,
-        });
+        logSafeError("Failed to revoke an unpersisted Online Group invite", revokeError);
       }
     }
 
@@ -1210,11 +1202,7 @@ export const syncOnlineGroupMembership = async ({
       });
     } catch (error) {
       // Telegram's member limit already blocks reuse; revocation is defense in depth.
-      console.error("Failed to revoke a used Online Group invite", {
-        chatId: normalizedChatId,
-        error,
-        telegramUserId: normalizedUserId,
-      });
+      logSafeError("Failed to revoke a used Online Group invite", error);
     }
   }
 
@@ -1288,11 +1276,7 @@ export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
       } catch (error) {
         if (!shouldIgnoreKickFailure(error)) {
           failedGroups += 1;
-          console.error("Failed to revoke expired Online Group access", {
-            chatId: sample.binding.chatId,
-            error,
-            telegramUserId: sample.binding.telegramUserId,
-          });
+          logSafeError("Failed to revoke expired Online Group access", error);
 
           continue;
         }
