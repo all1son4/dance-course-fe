@@ -232,6 +232,32 @@ export const SidebarFooter = styled.div`
   }
 `;
 
+export const SidebarSessionStatus = styled.p<{ $unavailable: boolean }>`
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: ${({ $unavailable }) =>
+    $unavailable ? "rgba(151, 21, 29, 0.9)" : "rgba(21, 94, 48, 0.88)"};
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.35;
+
+  &::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  @media (max-width: 980px) {
+    justify-content: flex-end;
+    font-size: 10px;
+  }
+`;
+
 export const SidebarActionRow = styled.div`
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);

@@ -91,6 +91,34 @@ test("an expired session is reported as unauthorized, not as a generic failure",
   );
 });
 
+test("a 401 remains unauthorized when an upstream response is not JSON", async () => {
+  await withStubbedFetch(
+    () => new Response("<html>unauthorized</html>", { status: 401 }),
+    async () => {
+      const result = await requestAdminJson("/admin/api/sales");
+
+      assert.deepEqual(result, {
+        data: {},
+        errorCode: "unauthorized",
+        ok: false,
+        unauthorized: true,
+      });
+    },
+  );
+});
+
+test("a 401 with another error body still expires the admin session", async () => {
+  await withStubbedFetch(
+    () => jsonResponse({ errorCode: "upstream_unauthorized" }, 401),
+    async () => {
+      const result = await requestAdminJson("/admin/api/sales");
+
+      assert.equal(result.errorCode, "upstream_unauthorized");
+      assert.equal(result.unauthorized, true);
+    },
+  );
+});
+
 test("any other server error code reaches the call site unchanged", async () => {
   await withStubbedFetch(
     () => jsonResponse({ errorCode: "rate_limited" }, 429),

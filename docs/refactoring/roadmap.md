@@ -2327,10 +2327,16 @@ This closes the DROP phase; Phase HARD is separate follow-up work.
 
 ## Phase HARD: post-cutover hardening and cleanup
 
-Status: `TODO`
+Status: `IN_PROGRESS` — `HARD-01` narrowed with owner approval on 2026-09-23. A
+local-only candidate improves the existing shared-password login/logout experience;
+no environment, database, dev, or production change has been made.
 
-- `HARD-01`: after separate owner approval, per-user admin identity, MFA, roles, audit,
-  and revocable sessions;
+- `HARD-01`: keep one shared admin password, the current cookie lifetime and all
+  admin capabilities; make session expiry, network failure, recheck, and logout
+  states clear and reliable. No personal identities, MFA, roles, or admin-action
+  audit for the current two-person team. See the [agreed scope and acceptance
+  criteria](hard-01-admin-access.md). Server-side individual session revocation is
+  not claimed or included;
 - `HARD-02`: mandatory distributed rate limits, bounded request bodies, and PII-safe logs;
 - `HARD-03`: hash or encrypt bearer material and erase it after use or expiry;
 - `HARD-04`: finish remaining accessibility, locale, polling, and navigation
@@ -2456,3 +2462,4 @@ Status: `TODO`
 | 2026-09-23 | DROP-05 contract candidate  | `PREPARED`    | Fresh backup/restore and local fail-closed rehearsal; live approval open |
 | 2026-09-23 | DROP-05 live contract       | `DONE`        | Dev/prod guarded `0021`, restores, postflight and browser checks green   |
 | 2026-09-23 | Gate G7                     | `PASSED`      | Production contract and post-deploy checks complete                      |
+| 2026-09-23 | HARD-01 shared login UX     | `LOCAL READY` | One password kept; 230 unit, 2 mocked browser, check/type/build green    |

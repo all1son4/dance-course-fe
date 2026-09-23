@@ -64,9 +64,11 @@ export default function AdminPage() {
     isChecking,
     isLoggingOut,
     isRefreshingSession,
+    isSessionCheckUnavailable,
     isUnlocking,
     logout,
     refreshSession,
+    retrySessionCheck,
     setAuthPassword,
     submitUnlock,
   } = useAdminAuth();
@@ -159,8 +161,10 @@ export default function AdminPage() {
         authPassword={authPassword}
         authStatus={authStatus}
         isChecking={isChecking}
+        isSessionCheckUnavailable={isSessionCheckUnavailable}
         isUnlocking={isUnlocking}
         onPasswordChange={setAuthPassword}
+        onRetrySessionCheck={retrySessionCheck}
         onSubmit={submitUnlock}
       />
     );
@@ -173,6 +177,7 @@ export default function AdminPage() {
           activeFeatureId={activeFeature.id}
           isLoggingOut={isLoggingOut}
           isRefreshingSession={isRefreshingSession}
+          isSessionCheckUnavailable={isSessionCheckUnavailable}
           onFeatureSelect={setActiveFeatureId}
           onLogout={handleLogout}
           onRefreshSession={handleRefreshSession}

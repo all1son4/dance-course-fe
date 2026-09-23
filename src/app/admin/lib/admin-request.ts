@@ -31,14 +31,37 @@ export const requestAdminJson = async <TData>(
       headers: body === undefined ? undefined : { "Content-Type": "application/json" },
       method,
     });
-    const data = (await response.json()) as TData & { errorCode?: string };
-    const errorCode = data?.errorCode ?? "";
+    let data: TData & { errorCode?: string };
+
+    try {
+      data = (await response.json()) as TData & { errorCode?: string };
+    } catch {
+      // A proxy may replace an API's JSON 401 with HTML. It still means the
+      // session is no longer accepted, not that the connection disappeared.
+      return {
+        data: {} as TData,
+        errorCode: response.status === 401 ? "unauthorized" : ADMIN_NETWORK_ERROR_CODE,
+        ok: false,
+        unauthorized: response.status === 401,
+      };
+    }
+
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      return {
+        data: {} as TData,
+        errorCode: response.status === 401 ? "unauthorized" : ADMIN_NETWORK_ERROR_CODE,
+        ok: false,
+        unauthorized: response.status === 401,
+      };
+    }
+
+    const errorCode = data?.errorCode ?? (response.status === 401 ? "unauthorized" : "");
 
     return {
       data,
       errorCode,
       ok: response.ok,
-      unauthorized: errorCode === "unauthorized",
+      unauthorized: response.status === 401 || errorCode === "unauthorized",
     };
   } catch {
     return {
