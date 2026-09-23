@@ -29,6 +29,7 @@ import {
   SidebarItem,
   SidebarItemLabel,
   SidebarNav,
+  SidebarSessionStatus,
   SidebarTitle,
   SidebarTop,
   StatusText,
@@ -39,8 +40,10 @@ type AdminLoginProps = {
   authPassword: string;
   authStatus: StatusMessage;
   isChecking: boolean;
+  isSessionCheckUnavailable: boolean;
   isUnlocking: boolean;
   onPasswordChange: (value: string) => void;
+  onRetrySessionCheck: () => void | Promise<unknown>;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
 };
 
@@ -49,8 +52,10 @@ export const AdminLogin = ({
   authPassword,
   authStatus,
   isChecking,
+  isSessionCheckUnavailable,
   isUnlocking,
   onPasswordChange,
+  onRetrySessionCheck,
   onSubmit,
 }: AdminLoginProps) => (
   <AdminInvitePage>
@@ -70,6 +75,8 @@ export const AdminLogin = ({
               onChange={(event) => onPasswordChange(event.target.value)}
               placeholder="Введите пароль"
               disabled={isChecking || isUnlocking}
+              autoComplete="current-password"
+              enterKeyHint="go"
               width="100%"
             />
           </FormControl>
@@ -85,7 +92,20 @@ export const AdminLogin = ({
             />
           </ButtonRow>
           {authStatus && (
-            <StatusText $tone={authStatus.tone}>{authStatus.text}</StatusText>
+            <StatusText $tone={authStatus.tone} role="status" aria-live="polite">
+              {authStatus.text}
+            </StatusText>
+          )}
+          {isSessionCheckUnavailable && (
+            <Button
+              buttonText={isChecking ? "Проверяю..." : "Проверить сессию ещё раз"}
+              type="button"
+              onClick={onRetrySessionCheck}
+              disabled={isChecking || isUnlocking}
+              size="sm"
+              variant="secondary"
+              width="100%"
+            />
           )}
         </Form>
       </LockCard>
@@ -97,6 +117,7 @@ type AdminSidebarProps = {
   activeFeatureId: AdminFeatureId;
   isLoggingOut: boolean;
   isRefreshingSession: boolean;
+  isSessionCheckUnavailable: boolean;
   onFeatureSelect: (featureId: AdminFeatureId) => void;
   onLogout: () => void | Promise<void>;
   onRefreshSession: () => void | Promise<void>;
@@ -106,6 +127,7 @@ export const AdminSidebar = ({
   activeFeatureId,
   isLoggingOut,
   isRefreshingSession,
+  isSessionCheckUnavailable,
   onFeatureSelect,
   onLogout,
   onRefreshSession,
@@ -129,6 +151,11 @@ export const AdminSidebar = ({
     </SidebarTop>
 
     <SidebarFooter>
+      <SidebarSessionStatus $unavailable={isSessionCheckUnavailable} role="status">
+        {isSessionCheckUnavailable
+          ? "Не удалось проверить сессию"
+          : "Сессия подтверждена"}
+      </SidebarSessionStatus>
       <SidebarActionRow>
         <SidebarIconButton
           type="button"
