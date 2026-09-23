@@ -8,12 +8,12 @@ change: all runtime switches remain separate, controlled `CUT-03` operations. Th
 document preserves the accepted user journeys and does not add Telegram verification
 outside the existing Online Group renewal flow.
 
-Later destructive cleanup is a separate `DROP-05` release, not part of this completed
-CUT runbook. Its [current preparation and approval checklist](roadmap.md#drop-05--apply-destructive-contract-migrations-in-a-separate-release)
-includes the September 11 initial read-only preflight and the September 19 production
-compatibility rollout. Historical invite dates are now preserved independently, but
-empty queues and compatible code still do not authorize deleting retained history.
-The September 23 retention boundary has elapsed; exact deletion approval remains open.
+Later destructive cleanup was a separate `DROP-05` release, not part of this completed
+CUT runbook. Its [release evidence](roadmap.md#live-contract-release--done-september-23)
+includes the September 11 initial read-only preflight, the September 19 production
+compatibility rollout, and the owner-approved September 23 guarded dev/prod contract.
+Historical invite dates were preserved independently before the retained export rows
+were deleted. Gate G7 is passed; the CUT recovery evidence remains historical.
 
 The additive change `0019_invite_history_created_at` preserves those dates without
 deleting exports. On September 13 it was first applied to dev before deploying compatible
@@ -22,8 +22,8 @@ public tables and full history/order/limit fingerprints matched, with 22 dates p
 and zero remaining timestamp differences. See the
 [dev evidence and mandatory schema-before-application release order](roadmap.md#invite-history-date-preservation--done-dev-september-13).
 Production received `0019` and additive `0020` on September 19 through the guarded
-expand workflow before the application deployment. All 76 legacy export rows remain;
-no destructive rollback is part of this step.
+expand workflow before the application deployment. All 76 legacy export rows still
+remained at that September 19 checkpoint; no destructive rollback was part of it.
 
 Dev follow-up revision `86571a4` then removed the invite-history query's legacy export
 join. Its CI, browser smoke and authenticated history/sales GET parity checks passed;
@@ -51,10 +51,10 @@ applied exactly `0019` and `0020` and advanced production from 19 to 21 migratio
 The preflight then passed with 76 retained exports and zero timestamp differences.
 Application PR #71 merged as `5782439`, which passed production CI, Vercel deployment,
 11 critical journeys, all 32 invariants, health, queue checks, and a next-day bounded
-log check with zero errors/5xx. Revision `5782439` is now the fixed application rollback
-target for the future contract release. The September 23 boundary has now elapsed;
-exact deletion approval, controlled contract migration, and its post-deploy
-verification remain open.
+log check with zero errors/5xx. Revision `5782439` was the nominated pre-contract
+application rollback target. The later guarded contract is complete; do not treat
+that old revision as a guaranteed schema-compatible rollback without a separate
+compatibility verification against migration `0021`.
 
 On September 23 both live read-only preflights passed; a fresh encrypted production
 capture restored into PostgreSQL 17. Candidate migration `0021` then passed on that
@@ -63,7 +63,25 @@ blocker. The proposed live deletion covers the retired export rows, the complete
 backfill checkpoint table, and the empty invoice PDF-key column. The migration also
 rejects future retired kind/provider values. The full
 [candidate evidence and release order](roadmap.md#contract-release-candidate--prepared-september-23)
-is in the roadmap. Live dev and production migration approval is still open.
+is in the roadmap. This was candidate evidence before live approval, not the final
+contract release.
+
+The owner subsequently approved the exact deletion. On September 23, PR #73 deployed
+the contract-compatible revision to dev; guarded workflow
+[35837359355](https://github.com/all1son4/dance-course-fe/actions/runs/35837359355)
+applied `0021` after a fresh protected dev restore and green preflight. Postflight,
+health, all 32 invariants, queues, DB verification and post-SQL browser checks passed.
+PR #74 then merged to production as `26af475`; its CI, Vercel deployment and browser
+smoke passed before SQL. A new protected production capture
+`production-database-20260923T083812232Z-26af475fc85f` authenticated and restored
+locally, and the SQL succeeded on that copy. Fresh preflight found zero blockers.
+Guarded workflow
+[35838341936](https://github.com/all1son4/dance-course-fe/actions/runs/35838341936)
+applied `0021` from `main`. Production postflight, pooled/unpooled health, all 32
+invariants, queue/DB/catalog checks and post-SQL browser scenarios passed; bounded
+logs contained zero errors/5xx. The archived export rows, checkpoint table and
+empty PDF-key column are absent in both live environments. See the
+[G7 closeout](roadmap.md#gate-g7) for counts and conditional browser skips.
 
 ## Fixed rollback release (`CUT-01`)
 
