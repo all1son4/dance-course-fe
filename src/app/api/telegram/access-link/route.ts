@@ -10,6 +10,7 @@ import {
 } from "@/lib/http-security";
 import { findPaymentAccessRecord } from "@/lib/payment-read-runtime";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
@@ -100,7 +101,7 @@ const resolveTelegramAccessResponse = async (
 };
 
 const createAccessLinkErrorResponse = (error: unknown): AccessLinkResponse => {
-  console.error("Failed to resolve Telegram access link", error);
+  logSafeError("Failed to resolve Telegram access link", error);
 
   return jsonErrorNoStore("telegram_access_link_failed", { status: 500 });
 };
@@ -132,7 +133,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<TelegramAccessLinkBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<TelegramAccessLinkBody>(request, MAX_ACCESS_LINK_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body) {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });

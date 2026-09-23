@@ -6,6 +6,7 @@ import {
 import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
       problemEntitlements,
     });
   } catch (error) {
-    console.error("Failed to load admin operations snapshot", error);
+    logSafeError("Failed to load admin operations snapshot", error);
     return jsonErrorNoStore("operations_snapshot_failed", { status: 500 });
   }
 }

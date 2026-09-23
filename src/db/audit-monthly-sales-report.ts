@@ -23,16 +23,6 @@ type MonthCountRow = {
 
 type DuplicateSaleEventRow = {
   event_count: number;
-  payment_intent_id: string;
-};
-
-type SampleRow = {
-  customer_email_snapshot: string | null;
-  outcome: string;
-  payment_intent_id: string;
-  source: string;
-  stripe_created_at: string | null;
-  succeeded_at: string | null;
 };
 
 const client = postgres(
@@ -103,7 +93,6 @@ const loadMonthlySalesReportAuditRows = () =>
     `,
     client<DuplicateSaleEventRow[]>`
       select
-        p.payment_intent_id,
         count(*)::int as event_count
       from purchases p
       inner join stripe_events se
@@ -152,24 +141,6 @@ const loadMonthlySalesReportAuditRows = () =>
       group by month
       order by month desc
     `,
-    client<SampleRow[]>`
-      select
-        p.payment_intent_id,
-        p.customer_email_snapshot,
-        p.source,
-        p.outcome,
-        p.succeeded_at::text as succeeded_at,
-        se.stripe_created_at::text as stripe_created_at
-      from purchases p
-      left join stripe_events se
-        on se.payment_intent_id = p.payment_intent_id
-        and se.event_type = 'payment_intent.succeeded'
-        and se.processing_status = 'processed'
-        and se.outcome_snapshot = 'succeeded'
-      where p.outcome = 'succeeded'
-      order by coalesce(se.stripe_created_at, p.succeeded_at, p.updated_at) desc
-      limit 20
-    `,
   ]);
 
 const getCount = (rows: CountRow[]) => rows[0]?.count ?? 0;
@@ -179,7 +150,6 @@ const buildMonthlySalesReportAudit = ({
   reportEligiblePurchases,
   reportJoinRows,
   reportMonths,
-  reportSamples,
   reportUniqueRows,
   sourceCounts,
   succeededNonStripePurchases,
@@ -192,7 +162,6 @@ const buildMonthlySalesReportAudit = ({
   reportEligiblePurchases: number;
   reportJoinRows: number;
   reportMonths: MonthCountRow[];
-  reportSamples: SampleRow[];
   reportUniqueRows: number;
   sourceCounts: SourceCountRow[];
   succeededNonStripePurchases: number;
@@ -207,7 +176,6 @@ const buildMonthlySalesReportAudit = ({
     rawJoinRowCount: reportJoinRows,
     uniqueSaleCount: reportUniqueRows,
   },
-  samples: reportSamples,
   stripeEvents: {
     processedSucceededPaymentIntentEvents: succeededStripeEvents,
   },
@@ -234,7 +202,6 @@ const main = async () => {
     succeededStripeEventRows,
     sourceCounts,
     reportMonths,
-    reportSamples,
   ] = await loadMonthlySalesReportAuditRows();
 
   console.warn(
@@ -244,7 +211,6 @@ const main = async () => {
         reportEligiblePurchases: getCount(reportEligiblePurchaseRows),
         reportJoinRows: getCount(reportJoinCountRows),
         reportMonths,
-        reportSamples,
         reportUniqueRows: getCount(reportUniqueCountRows),
         sourceCounts,
         succeededNonStripePurchases: getCount(succeededNonStripePurchaseRows),
@@ -260,8 +226,8 @@ const main = async () => {
 };
 
 main()
-  .catch((error) => {
-    console.error(error);
+  .catch(() => {
+    console.error("monthly_sales_report_audit_failed");
     process.exitCode = 1;
   })
   .finally(async () => {

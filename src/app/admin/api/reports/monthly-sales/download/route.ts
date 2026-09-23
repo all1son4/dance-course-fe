@@ -1,6 +1,7 @@
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { API_NO_STORE_HEADERS, jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { generateMonthlySalesReportCsvForMonth } from "@/lib/monthly-sales-report";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
       );
     }
 
-    console.error("Failed to download monthly sales report from admin", error);
+    logSafeError("Failed to download monthly sales report from admin", error);
     return jsonErrorNoStore("monthly_sales_report_failed", { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { after } from "next/server";
 
 import { processNextOutboxJob } from "@/db/transactional-outbox";
+import { getSafeErrorCategory } from "@/lib/safe-error-log";
 
 import { getStripeServer } from "../../payment-intent/lib";
 import { processNextStripeWebhookInboxJob } from "./inbox-worker";
@@ -76,8 +77,7 @@ export const runStripeBackgroundJobs = async ({
   return { inbox, outbox };
 };
 
-const getSafeErrorName = (error: unknown) =>
-  error instanceof Error ? error.name : "UnknownError";
+const getSafeErrorName = (error: unknown) => getSafeErrorCategory(error);
 
 export const scheduleStripeBackgroundJobs = ({
   run = runStripeBackgroundJobs,

@@ -16,6 +16,8 @@ const UNLOCK_ERROR_MESSAGES: Record<string, string> = {
   auth_not_configured: AUTH_NOT_CONFIGURED_STATUS_TEXT,
   invalid_password: "Неверный пароль.",
   rate_limited: "Слишком много попыток. Подожди минуту и попробуй снова.",
+  rate_limit_unavailable:
+    "Вход временно недоступен. Попробуй позже; пароль менять не нужно.",
 };
 
 const RETURN_CHECK_INTERVAL_MS = 15_000;

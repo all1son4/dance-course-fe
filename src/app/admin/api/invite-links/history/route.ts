@@ -2,6 +2,7 @@ import { listAdminInviteLinkHistoryRecords } from "@/lib/admin-invite-link-histo
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
+import { getSafeErrorCategory } from "@/lib/safe-error-log";
 import {
   formatPurchaseLine,
   getAdminPurchaseLine,
@@ -172,7 +173,7 @@ export async function GET(request: Request) {
     }
 
     console.error("Failed to fetch admin invite-link history", {
-      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorName: getSafeErrorCategory(error),
     });
 
     return jsonErrorNoStore("admin_invite_link_history_failed", { status: 500 });

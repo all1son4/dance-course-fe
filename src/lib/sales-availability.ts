@@ -5,6 +5,7 @@ import { SELLABLE_PRODUCTS, type SellableProduct } from "@/constants/sellable-pr
 import { getActiveOnlineGroupCampaign } from "@/db/online-group-campaigns";
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
 import { getOpenPublicProductOffers } from "@/lib/public-sales";
+import { logSafeError } from "@/lib/safe-error-log";
 
 /** Cache tag for everything derived from the product catalogue; the admin sales switch expires it. */
 export const CATALOG_CACHE_TAG = "catalog";
@@ -81,7 +82,7 @@ const readCatalogSalesStateFailClosed = async (
       state: toCatalogSalesState(await read()),
     };
   } catch (error) {
-    console.error("Failed to read the sales state from the catalogue", { error });
+    logSafeError("Failed to read the sales state from the catalogue", error);
 
     return {
       available: false,
