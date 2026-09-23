@@ -71,7 +71,6 @@ export const readOperationalDatabaseStatus = async () => {
           ))::int AS "oldestReadyAgeSeconds"
         FROM purchase_side_effects
         WHERE payload @> '{"_outboxVersion":1}'::jsonb
-          AND kind NOT IN ('successful_customer_export', 'google_sheets_export')
       `,
       client<
         {

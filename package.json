@@ -20,6 +20,7 @@
     "db:generate": "drizzle-kit generate",
     "db:audit:invariants": "tsx src/db/audit-invariants.ts",
     "db:audit:legacy-contract": "tsx src/db/audit-legacy-contract.ts",
+    "db:audit:legacy-contract:postflight": "tsx src/db/audit-legacy-contract-postflight.ts",
     "db:audit:monthly-sales-report": "tsx src/db/audit-monthly-sales-report.ts",
     "db:backfill:stripe-settlement": "tsx src/db/backfill-stripe-settlement.ts",
     "db:backfill:stripe-settlement:dev": "env -u STRIPE_SECRET_KEY NODE_ENV=development DATABASE_ENV=development tsx src/db/backfill-stripe-settlement.ts",

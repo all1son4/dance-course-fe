@@ -373,81 +373,24 @@ test("keeps offer ownership coherent across products", async () => {
   }
 });
 
-test("keeps one validated checkpoint per backfill source", async () => {
-  const sourceFingerprint = randomUUID().replaceAll("-", "").padEnd(64, "0");
-  const [run] = await client<{ id: string }[]>`
-    INSERT INTO data_backfill_runs (
-      backfill_key,
-      target_environment,
-      source_capture_id,
-      source_fingerprint,
-      source_cut_off_at,
-      source_row_counts,
-      batch_size,
-      stage,
-      stats
-    ) VALUES (
-      'google-sheets-v1',
-      'development',
-      'development-test-capture',
-      ${sourceFingerprint},
-      '2026-08-11T11:25:02Z',
-      '{"payments":2}'::jsonb,
-      25,
-      'payments',
-      '{}'::jsonb
-    )
-    RETURNING id
+test("contracted schema rejects retired exports and has no checkpoint table", async () => {
+  const [state] = await client<{ checkpointAbsent: boolean; pdfKeyAbsent: boolean }[]>`
+    SELECT
+      to_regclass('public.data_backfill_runs') IS NULL AS "checkpointAbsent",
+      NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'invoices'
+          AND column_name = 'pdf_storage_key'
+      ) AS "pdfKeyAbsent"
   `;
+  assert.deepEqual(state, { checkpointAbsent: true, pdfKeyAbsent: true });
 
-  try {
-    await assert.rejects(
-      client`
-        INSERT INTO data_backfill_runs (
-          backfill_key,
-          target_environment,
-          source_capture_id,
-          source_fingerprint,
-          source_cut_off_at,
-          source_row_counts,
-          batch_size,
-          stage,
-          stats
-        ) VALUES (
-          'google-sheets-v1',
-          'development',
-          'development-test-capture-duplicate',
-          ${sourceFingerprint},
-          '2026-08-11T11:25:02Z',
-          '{}'::jsonb,
-          25,
-          'payments',
-          '{}'::jsonb
-        )
-      `,
-      (error: unknown) =>
-        Boolean(
-          error &&
-          typeof error === "object" &&
-          "code" in error &&
-          error.code === "23505" &&
-          "constraint_name" in error &&
-          error.constraint_name === "data_backfill_runs_source_idx",
-        ),
-    );
-
-    await assertConstraintViolation(
-      client`
-        UPDATE data_backfill_runs
-        SET status = 'completed'
-        WHERE id = ${run.id}
-      `,
-      "data_backfill_runs_state_check",
-    );
-  } finally {
-    await client`
-      DELETE FROM data_backfill_runs
-      WHERE id = ${run.id}
-    `;
-  }
+  await assertConstraintViolation(
+    client`
+      INSERT INTO purchase_side_effects (deduplication_key, kind, provider, status)
+      VALUES (${`retired-export:${randomUUID()}`}, 'successful_customer_export',
+        'google_sheets', 'sent')
+    `,
+    "purchase_side_effects_retired_values_check",
+  );
 });

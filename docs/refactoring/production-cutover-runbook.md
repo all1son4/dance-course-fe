@@ -13,7 +13,7 @@ CUT runbook. Its [current preparation and approval checklist](roadmap.md#drop-05
 includes the September 11 initial read-only preflight and the September 19 production
 compatibility rollout. Historical invite dates are now preserved independently, but
 empty queues and compatible code still do not authorize deleting retained history.
-The September 23 retention boundary has not been waived by completing preparation.
+The September 23 retention boundary has elapsed; exact deletion approval remains open.
 
 The additive change `0019_invite_history_created_at` preserves those dates without
 deleting exports. On September 13 it was first applied to dev before deploying compatible
@@ -31,8 +31,8 @@ no export rows were deleted. Production followed the same schema-first order and
 zero timestamp differences before deploying the later contract-compatible revision.
 
 Dev revision `4483c67` also stopped runtime invoice queries from addressing the unused
-`pdf_storage_key` column. The physical dev/production columns remain untouched, and no
-contract migration is present in `drizzle/`. CI, deployed smoke, authenticated history
+`pdf_storage_key` column. The physical dev/production columns remained untouched at
+that checkpoint. CI, deployed smoke, authenticated history
 and sales parity, and an isolated invoice read/write rehearsal with the column actually
 absent all passed.
 
@@ -42,8 +42,7 @@ was rehearsed locally. All retained table/field fingerprints matched before and 
 cleanup, the post-contract-compatible integration selection passed, and a fresh
 post-cleanup restore reproduced the recovery fingerprint. The full evidence is in the
 [DROP-05 roadmap section](roadmap.md#contract-cleanup-and-restore-rehearsal--done-local-september-18).
-No live schema or data was changed by that rehearsal, and no contract migration is
-committed.
+No live schema or data was changed by that rehearsal.
 
 On September 19, fresh protected production capture
 `production-database-20260919T101949842Z-fefe405f9c39` restored successfully before
@@ -53,8 +52,18 @@ The preflight then passed with 76 retained exports and zero timestamp difference
 Application PR #71 merged as `5782439`, which passed production CI, Vercel deployment,
 11 critical journeys, all 32 invariants, health, queue checks, and a next-day bounded
 log check with zero errors/5xx. Revision `5782439` is now the fixed application rollback
-target for the future contract release. The September 23 boundary, exact deletion
-approval, controlled contract migration, and its post-deploy verification remain open.
+target for the future contract release. The September 23 boundary has now elapsed;
+exact deletion approval, controlled contract migration, and its post-deploy
+verification remain open.
+
+On September 23 both live read-only preflights passed; a fresh encrypted production
+capture restored into PostgreSQL 17. Candidate migration `0021` then passed on that
+isolated copy, including a separate failure-and-rollback test with a synthetic PDF-key
+blocker. The proposed live deletion covers the retired export rows, the completed
+backfill checkpoint table, and the empty invoice PDF-key column. The migration also
+rejects future retired kind/provider values. The full
+[candidate evidence and release order](roadmap.md#contract-release-candidate--prepared-september-23)
+is in the roadmap. Live dev and production migration approval is still open.
 
 ## Fixed rollback release (`CUT-01`)
 
