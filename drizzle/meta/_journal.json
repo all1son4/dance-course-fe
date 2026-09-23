@@ -148,6 +148,13 @@
       "when": 1789318994570,
       "tag": "0020_polish_terminal_sales",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790146111609,
+      "tag": "0021_drop05_contract",
+      "breakpoints": true
     }
   ]
 }

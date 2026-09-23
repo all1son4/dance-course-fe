@@ -24,6 +24,8 @@ test("expand migration preserves exact dates, is non-overwriting and rejects con
     await client`CREATE TEMP TABLE purchases (LIKE public.purchases INCLUDING ALL)`;
     await client`ALTER TABLE pg_temp.purchases DROP COLUMN invite_history_created_at`;
     await client`CREATE TEMP TABLE purchase_side_effects (LIKE public.purchase_side_effects INCLUDING ALL)`;
+    await client`ALTER TABLE pg_temp.purchase_side_effects
+      DROP CONSTRAINT purchase_side_effects_retired_values_check`;
 
     const purchaseIds: string[] = [];
     for (const name of [

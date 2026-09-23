@@ -2223,6 +2223,47 @@ was part of this rollout. Production is now application- and schema-compatible w
 the rehearsed contract, but the retention boundary and separate destructive approval
 remain mandatory.
 
+#### Contract release candidate — PREPARED, September 23
+
+The minimum retention boundary passed at `2026-09-23T00:56:17Z`. Fresh read-only
+preflight at `2026-09-23T06:43Z` passed in both environments. Production still has 76
+retained successful-customer exports (16 with `google_sheets` provider), 45 invoices
+with zero PDF keys, and one completed backfill checkpoint; development has 29 exports
+(seven inert unversioned pending markers), five invoices with zero PDF keys, and one
+completed checkpoint. Both environments have zero active versioned legacy jobs, leases,
+unexpected provider rows, or preserved-date differences. Production health is green,
+with 21 applied migrations and no ready/working/dead-letter inbox or outbox jobs.
+
+Protected production capture
+`production-database-20260923T064357941Z-aff9a8bf1c35` completed at
+`2026-09-23T06:44:03.383Z`, with encrypted archive SHA-256
+`ff4d82f582c3c3001f03b4052c7010936861429ed3dd0bd10fe4dca4f4ff4049`.
+Its checksum/authentication passed, the archive contained only `database.dump` and
+`manifest.json`, and PostgreSQL 17 restored it into an isolated local database. The
+restored baseline has 21 migrations, 21 public tables, 108 purchases, 76 exports,
+45 invoices, one completed checkpoint and zero invalid indexes.
+
+Candidate migration `0021_drop05_contract` was applied only to that local copy. It
+deletes the 76 retired export rows, rejects future retired kind/provider values, drops
+the one-shot `data_backfill_runs` table and the empty `invoices.pdf_storage_key` column.
+It has short lock/statement timeouts and aborts before deletion if jobs or leases are
+active, unexpected legacy rows appear, preserved timestamps differ, a PDF key exists,
+or a backfill is incomplete. After rehearsal: 22 migrations, 20 public tables, 108
+purchases, 45 invoices, 138 remaining side effects, zero retired values, zero invalid
+indexes, all 32 invariants and read-only contract postflight passed. A second isolated
+restore with an artificial non-null PDF key rejected the migration atomically: 21
+migrations, 76 export rows, checkpoint table and PDF column remained intact.
+
+The candidate passed formatting, lint, TypeScript, 222 unit tests, all 63 PostgreSQL
+integration tests on a fresh contracted database, and the production build. No live
+dev/production row or schema has been removed. The next release requires separate
+owner approval of these exact deletions and the target rollout. Immediately before
+each live migration, repeat preflight and capture/verify a protected snapshot if the
+candidate capture is no longer immediate. Apply to development first, verify its
+postflight and behavior, then release from `main` to production through the guarded
+`contract` workflow and repeat health, invariants, queues and postflight. Gate G7
+remains `NOT PASSED` until the production checks pass.
+
 ### Gate G7
 
 Status: `NOT PASSED` — `DROP-04`, production `DROP-05` application/schema compatibility,
@@ -2362,3 +2403,4 @@ Status: `TODO`
 | 2026-09-16 | DROP-05 compatibility prep  | `DONE (DEV)`  | CI/restore/build/browser green for `552e9f2`; no live deletion           |
 | 2026-09-18 | DROP-05 contract rehearsal  | `DONE`        | Local fingerprints/restore match; no live write                          |
 | 2026-09-19 | DROP-05 production compat   | `DONE`        | Backup/restore, 0019/0020, app deploy, CI/smoke/audits green             |
+| 2026-09-23 | DROP-05 contract candidate  | `PREPARED`    | Fresh backup/restore and local fail-closed rehearsal; live approval open |

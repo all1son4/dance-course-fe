@@ -27,11 +27,28 @@ test("contract preflight inventories synthetic legacy data without modifying it"
       "access_entitlements",
       "telegram_access_tokens",
       "invoices",
-      "data_backfill_runs",
     ]) {
       await connection`CREATE TEMP TABLE ${connection(table)}
         (LIKE ${connection(`public.${table}`)} INCLUDING ALL)`;
     }
+    await connection`ALTER TABLE pg_temp.purchase_side_effects
+      DROP CONSTRAINT purchase_side_effects_retired_values_check`;
+    await connection`ALTER TABLE pg_temp.invoices ADD COLUMN pdf_storage_key text`;
+    await connection`
+      CREATE TEMP TABLE data_backfill_runs (
+        backfill_key text,
+        target_environment text,
+        source_capture_id text,
+        source_fingerprint text,
+        source_cut_off_at timestamptz,
+        source_row_counts jsonb,
+        batch_size integer,
+        stage text,
+        stats jsonb,
+        status text NOT NULL DEFAULT 'running',
+        completed_at timestamptz
+      )
+    `;
 
     const empty = await readLegacyContractPreflight(connection);
     assert.equal(empty.inviteHistoryDateColumnPresent, true);

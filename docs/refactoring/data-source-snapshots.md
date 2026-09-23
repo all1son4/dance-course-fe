@@ -158,6 +158,22 @@ This recovery evidence authorized only the additive `0019`/`0020` rollout. It do
 authorize DROP-05 deletion and does not replace the fresh production snapshot required
 immediately before the later contract migration.
 
+### September 23 contract candidate capture
+
+After the 30-day boundary, production capture
+`production-database-20260923T064357941Z-aff9a8bf1c35` completed at
+`2026-09-23T06:44:03.383Z`. Its encrypted archive SHA-256 is
+`ff4d82f582c3c3001f03b4052c7010936861429ed3dd0bd10fe4dca4f4ff4049`;
+the public key fingerprint remains
+`727e890bb14185efcb4a4d8150de5730653c19793a1ce249de1996ed5fdafa87`.
+Authentication, decryption, two-file inventory and PostgreSQL 17 restore passed.
+The isolated copy matched the live read-only audit: 21 migrations, 21 public tables,
+108 purchases, 76 retired export rows, 45 invoices, zero populated PDF keys, one
+completed backfill checkpoint and zero invalid indexes. Contract migration `0021`
+was rehearsed on that copy; a separate restore verified that a PDF-key blocker leaves
+the database unchanged. The encrypted archive remains protected locally. If the live
+release is delayed, repeat the capture and restore check immediately before deletion.
+
 ## Cut-off semantics
 
 PostgreSQL and Google Sheets cannot share a transaction. The public and internal
