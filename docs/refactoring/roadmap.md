@@ -1416,7 +1416,8 @@ Status: `PASSED` — all acceptance criteria were verified on 2026-09-01.
 
 ## Phase DROP: remove dual-write and Google Sheets
 
-Status: `IN_PROGRESS` — cleanup preparation started on 2026-09-01. On 2026-09-03 the
+Status: `DONE` — Gate G7 passed on 2026-09-23 after the guarded production contract
+release and post-migration checks. Cleanup preparation started on 2026-09-01. On 2026-09-03 the
 owner explicitly shortened the original `2026-09-07T00:56:17Z` hold after a fresh
 green production preflight. `DROP-01` is in production. After more than 24 hours of
 observation and a fresh preflight, `DROP-02` disabled the production exporter on
@@ -1424,15 +1425,14 @@ observation and a fresh preflight, `DROP-02` disabled the production exporter on
 green preflight; `DROP-02` is complete. `DROP-03` is also complete: archives restored,
 Google key disabled, credentials removed, and same-revision dev/prod checks green.
 `DROP-04` started on dev with exporter-code retirement and completed on dev on
-2026-09-08; the September 23 destructive-cleanup boundary is unchanged.
+2026-09-08. The September 23 retention boundary passed before `DROP-05` was applied
+to dev and production with explicit owner approval.
 
-The owner decided on 2026-09-08 that the whole DROP phase ships to production as one
-batch once Gate G7 closes, rather than as separate per-slice releases. Until then
-production deliberately keeps running the pre-`DROP-04` code with its legacy adapters,
-and `main` stays behind `dev` by design. Two consequences are accepted: the production
-smoke suite exercises the journeys present on `main`, not the two added later on `dev`;
-and the eventual release is a single large one, so it needs its own preflight rather
-than being treated as a routine merge.
+The owner decided on 2026-09-08 to batch the DROP code release rather than release
+every slice separately. The compatible code reached production on September 19;
+the separately approved destructive contract followed on September 23 only after
+the retention boundary, protected restores, dev verification, and fresh production
+preflight. The intervening dev/main difference was intentional, not a missing deploy.
 
 ### DROP-01 — Remove runtime reads, writes, fallback, and Sheets locks
 
@@ -1579,12 +1579,13 @@ for testing. See the
 
 ### DROP-04 — Remove legacy adapters, schemas, caches, and record mappings
 
-Status: `DONE (DEV)` — every listed code slice is released to dev and verified there.
+Status: `DONE (PRODUCTION)` — every listed code slice was verified on dev and released
+to production before the guarded contract migration.
 Exporter retirement plus the independent payment, Telegram, monthly-report, campaign, and
 admin-history contracts are verified slices, and the legacy facade adapters, dual-read
-selector, and mixed database adapter are removed. Production/`main` still runs the
-previous code and ships with the single Gate G7 batch release described in the phase
-status above; Gate G7 stays `NOT PASSED` until `DROP-05`.
+selector, and mixed database adapter are removed. Production/`main` ran the
+previous code until the compatible production release on September 19. Gate G7 then
+remained open only for the separately approved `DROP-05` contract.
 Stripe success projection and ordinary/Online Group admin grants no longer enqueue
 `successful_customer_export`; the export-mode selector and provider-delivery adapter
 were removed. Neither an absent flag nor a stale `legacy`/`shadow` setting can turn
@@ -1779,10 +1780,10 @@ than the retained `2026-09-23T00:56:17Z` boundary.
 
 ### DROP-05 — Apply destructive contract migrations in a separate release
 
-Status: `IN PROGRESS (PRODUCTION COMPATIBILITY DONE)` — destructive changes still require a
-separate approval/release; no earlier than the retained
-`2026-09-23T00:56:17Z` boundary. Neither owner acceleration waived this data-retention
-window or authorized deleting production history.
+Status: `DONE (DEV AND PRODUCTION)` — the owner explicitly approved the exact deletion
+after the retained `2026-09-23T00:56:17Z` boundary. Guarded migration `0021` and
+postflight passed in both environments on September 23. The survey and release
+preparation below remain as historical evidence.
 
 **Surveyed on 2026-09-08 (read-only, nothing applied).** These are cleanup candidates,
 not proof that deleting them preserves behavior. The September 11 compatibility check
@@ -1882,13 +1883,14 @@ Next steps, in order:
    the retired export drain are released and verified in production. Nominate a rollback
    revision that works with the intended contracted schema. Then rehearse cleanup and
    restore in an isolated database, verify retained business rows, and refresh
-   preflight/backup evidence. Production revision `5782439` is the nominated application
-   rollback target; the isolated rehearsal and restore evidence are recorded below.
-   No real cleanup SQL is pending in `drizzle/`.
-4. Obtain separate owner approval for the exact deletions and production rollout;
-   the retained September 23 boundary still applies unless explicitly revised.
-   Apply the contract migration only in that controlled release, run post-deploy
-   checks, and only then consider G7 complete.
+   preflight/backup evidence. Production revision `5782439` was the nominated
+   pre-contract application rollback target; after `0021`, its schema compatibility
+   must be checked before any rollback. The isolated rehearsal and restore evidence
+   are recorded below. At that checkpoint no cleanup SQL was pending in `drizzle/`.
+4. **DONE (DEV/PROD), September 23:** after explicit owner approval and the unchanged
+   retention boundary, apply the guarded contract on dev, verify its postflight and
+   browser behavior, then repeat the protected snapshot/preflight and release on
+   production. The live evidence and G7 result are recorded below.
 
 Local verification: formatting, lint, TypeScript, 225 unit tests, all 61 PostgreSQL
 integration tests, and the production build passed. The new preflight test uses
@@ -2255,21 +2257,69 @@ restore with an artificial non-null PDF key rejected the migration atomically: 2
 migrations, 76 export rows, checkpoint table and PDF column remained intact.
 
 The candidate passed formatting, lint, TypeScript, 222 unit tests, all 63 PostgreSQL
-integration tests on a fresh contracted database, and the production build. No live
-dev/production row or schema has been removed. The next release requires separate
-owner approval of these exact deletions and the target rollout. Immediately before
-each live migration, repeat preflight and capture/verify a protected snapshot if the
-candidate capture is no longer immediate. Apply to development first, verify its
-postflight and behavior, then release from `main` to production through the guarded
-`contract` workflow and repeat health, invariants, queues and postflight. Gate G7
-remains `NOT PASSED` until the production checks pass.
+integration tests on a fresh contracted database, and the production build. At this
+candidate stage no live row or schema had been removed. The live release followed
+only after the owner's separate approval, as recorded next.
+
+#### Live contract release — DONE, September 23
+
+The owner approved deleting the retired export rows, completed backfill checkpoint
+table, and empty invoice PDF-key column in dev and production. The retention boundary
+had elapsed. Dev preflight passed immediately before release: 29 expected exports,
+zero active versioned jobs, leases, unexpected provider rows, date differences, PDF
+keys, or incomplete backfills. Protected dev capture
+`development-database-20260923T082503175Z-067371319559` completed at
+`2026-09-23T08:25:08.841Z`; encrypted archive SHA-256:
+`02ae0fabca6913dd4ed54a5f357756c837f9066d758a17351104606790bf05b3`.
+It authenticated and restored in isolated PostgreSQL 17; the guarded SQL passed on
+that copy, deleting exactly 29 exports while preserving 43 purchases and five invoices.
+
+PR [#73](https://github.com/all1son4/dance-course-fe/pull/73) merged to dev as
+`1bb95aa` after candidate checks passed. The exact dev merge passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/35837144789),
+[Vercel browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/35837205605),
+and a repeated preflight. The guarded
+[dev contract workflow](https://github.com/all1son4/dance-course-fe/actions/runs/35837359355)
+applied `0021`. Postflight confirmed the retired rows and objects absent and the
+rejecting constraint valid; pooled/unpooled health reported 22 migrations, all 32
+invariants passed, queues had no ready/working/dead-letter jobs or stale leases,
+and all 43 purchases and five invoices remained. A second browser run after SQL
+passed 11 scenarios with one retired-campaign conditional skip.
+
+PR [#74](https://github.com/all1son4/dance-course-fe/pull/74) merged dev into main
+as `26af475` after its checks passed. The exact production merge passed
+[CI](https://github.com/all1son4/dance-course-fe/actions/runs/35837954276),
+[Vercel browser smoke](https://github.com/all1son4/dance-course-fe/actions/runs/35838024727),
+and production deployment before SQL. Fresh production preflight at
+`2026-09-23T08:39:14.999Z` again found 76 expected exports and zero blockers.
+Protected capture `production-database-20260923T083812232Z-26af475fc85f`
+completed at `2026-09-23T08:38:16.698Z`; encrypted archive SHA-256:
+`3f7e87c1f303558c70faf86b4343c623f46b52aa955f1f5b538aceedfa6f22f1`.
+It authenticated and restored in isolated PostgreSQL 17 with 21 migrations,
+108 purchases, 76 exports, 45 invoices and the completed checkpoint. SQL `0021`
+passed again on that copy, deleting 76 exports while preserving the 108 purchases
+and 45 invoices. Both temporary plaintext restores were removed; encrypted recovery
+triplets remain in the ignored protected snapshot directories.
+
+The guarded [production contract workflow](https://github.com/all1son4/dance-course-fe/actions/runs/35838341936)
+then applied `0021` from `main`. Production postflight confirmed zero retired rows,
+absent checkpoint table and PDF-key column, preserved invite-history field and valid
+retired-value constraint. Pooled/unpooled health reported 22 migrations; all 32
+invariants passed; operational status had zero ready/working/dead-letter jobs and
+stale leases; `db:verify` reported 108 purchases, 45 invoices and 138 supported
+side effects; catalog verification reported zero drift. The post-SQL production
+browser run passed 10 scenarios; the retired Birthday campaign and closed Online
+Group buy-button scenarios skipped by their explicit conditions. A bounded Vercel
+query from the production deployment time found zero error-level records and zero
+HTTP 5xx. No real payment or test purchase was made.
 
 ### Gate G7
 
-Status: `NOT PASSED` — `DROP-04`, production `DROP-05` application/schema compatibility,
-the protected production restore, and the isolated cleanup rehearsal are complete.
-Destructive-release approval, the retained September 23 boundary, the controlled
-production contract migration, and its post-deploy verification remain open.
+Status: `PASSED` — `DROP-04` is in production, Google access remains retired, the
+September 23 retention boundary and explicit deletion approval were respected,
+and `DROP-05` passed protected dev/prod restores, guarded migrations, production
+postflight, invariants, queue/health checks, browser smoke and bounded error/5xx logs.
+This closes the DROP phase; Phase HARD is separate follow-up work.
 
 - Runtime contains no Google Sheets network dependency.
 - Credentials are revoked.
@@ -2404,3 +2454,5 @@ Status: `TODO`
 | 2026-09-18 | DROP-05 contract rehearsal  | `DONE`        | Local fingerprints/restore match; no live write                          |
 | 2026-09-19 | DROP-05 production compat   | `DONE`        | Backup/restore, 0019/0020, app deploy, CI/smoke/audits green             |
 | 2026-09-23 | DROP-05 contract candidate  | `PREPARED`    | Fresh backup/restore and local fail-closed rehearsal; live approval open |
+| 2026-09-23 | DROP-05 live contract       | `DONE`        | Dev/prod guarded `0021`, restores, postflight and browser checks green   |
+| 2026-09-23 | Gate G7                     | `PASSED`      | Production contract and post-deploy checks complete                      |

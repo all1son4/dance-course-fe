@@ -174,6 +174,32 @@ was rehearsed on that copy; a separate restore verified that a PDF-key blocker l
 the database unchanged. The encrypted archive remains protected locally. If the live
 release is delayed, repeat the capture and restore check immediately before deletion.
 
+### September 23 live contract captures
+
+After explicit owner approval, development capture
+`development-database-20260923T082503175Z-067371319559` completed at
+`2026-09-23T08:25:08.841Z`. Its encrypted archive SHA-256 is
+`02ae0fabca6913dd4ed54a5f357756c837f9066d758a17351104606790bf05b3`.
+Authentication, two-file inventory and PostgreSQL 17 restore passed. The guarded
+contract SQL ran successfully on the restored copy: 29 retired exports removed,
+43 purchases and five invoices retained. The dev workflow applied `0021` only after
+the live preflight and deployed-code checks passed.
+
+Immediately before the production contract workflow, capture
+`production-database-20260923T083812232Z-26af475fc85f` completed at
+`2026-09-23T08:38:16.698Z`. Its encrypted archive SHA-256 is
+`3f7e87c1f303558c70faf86b4343c623f46b52aa955f1f5b538aceedfa6f22f1`;
+the recovery public key fingerprint remains
+`727e890bb14185efcb4a4d8150de5730653c19793a1ce249de1996ed5fdafa87`.
+Authentication, two-file inventory and PostgreSQL 17 restore passed with 21 migrations,
+108 purchases, 76 retired exports, 45 invoices and one completed checkpoint.
+Migration `0021` passed on that isolated copy, deleting 76 exports while preserving
+all 108 purchases and 45 invoices. The live production preflight again had zero
+blockers and the guarded workflow then applied the same contract. Both disposable
+plaintext restores and local PostgreSQL clusters were deleted after verification;
+the encrypted archives, wrapped keys, manifests and separate private key remain
+protected locally for recovery.
+
 ## Cut-off semantics
 
 PostgreSQL and Google Sheets cannot share a transaction. The public and internal
