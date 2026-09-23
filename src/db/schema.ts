@@ -353,6 +353,8 @@ export const purchases = pgTable(
     inviteHistoryCreatedAt: timestamp("invite_history_created_at", {
       withTimezone: true,
     }),
+    // Kept in the model so future migrations preserve the additive 0020 column.
+    terminalRecordedAt: timestamp("terminal_recorded_at", { withTimezone: true }),
     succeededAt: timestamp("succeeded_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -565,17 +567,13 @@ export const purchaseSideEffects = pgTable(
       .$type<
         | "purchase_success_email"
         | "admin_telegram_alert"
-        | "successful_customer_export"
         | "telegram_access_delivery"
         | "monthly_report_delivery"
         | "campaign_email_delivery"
         | "polish_terminal_recorded"
         | "polish_terminal_reminder"
-        | "google_sheets_export"
       >(),
-    provider: text("provider").$type<
-      "resend" | "telegram" | "google_sheets" | "internal"
-    >(),
+    provider: text("provider").$type<"resend" | "telegram" | "internal">(),
     payload: jsonb("payload")
       .notNull()
       .default(sql`'{}'::jsonb`)
@@ -601,6 +599,11 @@ export const purchaseSideEffects = pgTable(
   },
   (table) => [
     check("purchase_side_effects_attempt_count_check", sql`${table.attemptCount} >= 0`),
+    check(
+      "purchase_side_effects_retired_values_check",
+      sql`${table.kind} NOT IN ('successful_customer_export', 'google_sheets_export')
+        AND ${table.provider} IS DISTINCT FROM 'google_sheets'`,
+    ),
     check(
       "purchase_side_effects_lifecycle_check",
       sql`BTRIM(${table.deduplicationKey}) <> ''

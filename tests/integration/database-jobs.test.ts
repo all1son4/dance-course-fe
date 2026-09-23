@@ -136,15 +136,15 @@ test("deduplicates concurrent outbox enqueue and preserves the first payload", a
     const results = await Promise.all([
       enqueueOutboxJob({
         deduplicationKey,
-        kind: "google_sheets_export",
+        kind: "campaign_email_delivery",
         payload: { marker: "first" },
-        provider: "google_sheets",
+        provider: "resend",
       }),
       enqueueOutboxJob({
         deduplicationKey,
-        kind: "google_sheets_export",
+        kind: "campaign_email_delivery",
         payload: { marker: "duplicate" },
-        provider: "google_sheets",
+        provider: "resend",
       }),
     ]);
 
@@ -390,9 +390,9 @@ test("commits projection, outbox, and inbox completion atomically", async () => 
       project: async ({ event, transaction }) => {
         await enqueueOutboxJobInTransaction(transaction, {
           deduplicationKey: outboxKey,
-          kind: "google_sheets_export",
+          kind: "campaign_email_delivery",
           payload: { stripeEventId: event.stripeEventId },
-          provider: "google_sheets",
+          provider: "resend",
         });
 
         return {
@@ -561,8 +561,8 @@ test("rolls back projected jobs before scheduling an inbox retry", async () => {
       project: async ({ transaction }) => {
         await enqueueOutboxJobInTransaction(transaction, {
           deduplicationKey: outboxKey,
-          kind: "google_sheets_export",
-          provider: "google_sheets",
+          kind: "campaign_email_delivery",
+          provider: "resend",
         });
         throw new Error("projection_failed_after_outbox_enqueue");
       },

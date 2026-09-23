@@ -28,7 +28,7 @@ after(async () => {
   await Promise.all([client.end(), applicationClient.end()]);
 });
 
-test("payment persistence ignores retained legacy export fields and rows", async () => {
+test("payment persistence stays independent and rejects retired export rows", async () => {
   const suffix = randomUUID().replaceAll("-", "");
   const paymentIntentId = `pi_drop05_export_independence_${suffix}`;
 
@@ -63,49 +63,21 @@ test("payment persistence ignores retained legacy export fields and rows", async
 
     assert.equal(createdByRuntime?.count, 0);
 
-    await client`
-      INSERT INTO purchase_side_effects (
-        purchase_id,
-        deduplication_key,
-        kind,
-        provider,
-        status,
-        sent_at
-      ) VALUES (
-        ${purchase.id},
-        ${`${paymentIntentId}:successful_customer_export`},
-        'successful_customer_export',
-        'google_sheets',
-        'sent',
-        '2026-09-14T08:03:00.000Z'
-      )
-    `;
-
-    const withLegacyRow = await findPaymentRecordByIntentIdFromDatabase(paymentIntentId);
-
-    await client`
-      UPDATE purchase_side_effects
-      SET
-        sent_at = '2025-01-01T00:00:00.000Z',
-        status = 'failed'
-      WHERE purchase_id = ${purchase.id}
-        AND kind = 'successful_customer_export'
-    `;
-
-    const withChangedLegacyRow =
+    const beforeRejectedWrite =
       await findPaymentRecordByIntentIdFromDatabase(paymentIntentId);
-
-    await client`
-      DELETE FROM purchase_side_effects
-      WHERE purchase_id = ${purchase.id}
-        AND kind = 'successful_customer_export'
-    `;
-
-    const withoutLegacyRow =
-      await findPaymentRecordByIntentIdFromDatabase(paymentIntentId);
-
-    assert.deepEqual(withChangedLegacyRow, withLegacyRow);
-    assert.deepEqual(withoutLegacyRow, withLegacyRow);
+    await assert.rejects(
+      client`
+        INSERT INTO purchase_side_effects (purchase_id, deduplication_key, kind,
+          provider, status)
+        VALUES (${purchase.id}, ${`${paymentIntentId}:retired-export`},
+          'successful_customer_export', 'google_sheets', 'sent')
+      `,
+      { code: "23514", constraint_name: "purchase_side_effects_retired_values_check" },
+    );
+    assert.deepEqual(
+      await findPaymentRecordByIntentIdFromDatabase(paymentIntentId),
+      beforeRejectedWrite,
+    );
   } finally {
     await client`
       DELETE FROM purchases

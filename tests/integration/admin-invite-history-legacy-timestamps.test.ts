@@ -59,13 +59,6 @@ test("invite history uses preserved timestamps without export rows and keeps fal
           ${`https://t.me/+${tokenId}`}, 'channel_invite', 'issued',
           '2026-10-01T00:00:00Z', '2026-09-01T00:00:00Z')
       `;
-      if (fixture.name !== "b") {
-        await client`
-          INSERT INTO purchase_side_effects (purchase_id, deduplication_key, kind, status, sent_at)
-          VALUES (${purchase.id}, ${tokenId}, 'successful_customer_export',
-            ${fixture.sentAt ? "sent" : "pending"}, ${fixture.sentAt}::text::timestamptz)
-        `;
-      }
     }
 
     const list = (limit?: number) =>
@@ -92,17 +85,11 @@ test("invite history uses preserved timestamps without export rows and keeps fal
     );
     assert.deepEqual(await list(2), history.slice(0, 2));
 
-    // The compatibility release no longer reads export rows. Even a changed
-    // legacy timestamp must not affect the displayed date or ordering.
-    await client`UPDATE purchase_side_effects
-      SET sent_at = '2030-01-01T00:00:00Z'
-      WHERE kind = 'successful_customer_export' AND purchase_id = ${purchaseIds[0]}`;
-    assert.deepEqual(await list(), history);
-
-    // Synthetic fixtures only: prove the displayed values no longer depend on
-    // the existence of retired exports after preservation.
-    await client`DELETE FROM purchase_side_effects
-      WHERE kind = 'successful_customer_export' AND purchase_id IN ${client(purchaseIds)}`;
+    const [retiredRows] = await client<{ count: number }[]>`
+      SELECT count(*)::int AS count FROM purchase_side_effects
+      WHERE purchase_id IN ${client(purchaseIds)}
+    `;
+    assert.equal(retiredRows?.count, 0);
     assert.deepEqual(await list(), history);
     assert.deepEqual(await list(2), history.slice(0, 2));
 
