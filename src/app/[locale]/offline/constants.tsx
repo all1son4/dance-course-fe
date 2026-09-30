@@ -1,3 +1,5 @@
+import { Fragment } from "react";
+
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
 import { IMPRO_ROOM_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
 import { SmallClock, SmallMap } from "@/svg";
@@ -28,7 +30,7 @@ const buildPriceRow = (t: Translate, priceKey: string, suffixKey: string) => (
 
 const buildScheduleAndLocationContent = (
   t: Translate,
-  scheduleKeys: [string, string],
+  scheduleKeys: string[],
   {
     locationLabelKey = "cards.common.location",
     locationValueKey = "cards.common.locationValue",
@@ -46,12 +48,12 @@ const buildScheduleAndLocationContent = (
           <SmallClock />
         </IconCell>
         <DetailStrongText>{t(scheduleLabelKey)}</DetailStrongText>
-
-        <div />
-        <DetailText>{t(scheduleKeys[0])}</DetailText>
-
-        <div />
-        <DetailText>{t(scheduleKeys[1])}</DetailText>
+        {scheduleKeys.map((key) => (
+          <Fragment key={key}>
+            <div />
+            <DetailText>{t(key)}</DetailText>
+          </Fragment>
+        ))}
       </InfoGrid>
     </InfoSection>
 
@@ -127,7 +129,12 @@ export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] =>
         </ContentStack>
         {buildScheduleAndLocationContent(
           t,
-          ["cards.impro.schedule.1", "cards.impro.schedule.2"],
+          [
+            "cards.impro.schedule.1",
+            "cards.impro.schedule.2",
+            "cards.impro.schedule.3",
+            "cards.impro.schedule.4",
+          ],
           {
             locationLabelKey: "cards.impro.location",
             locationValueKey: "cards.impro.locationValue",
