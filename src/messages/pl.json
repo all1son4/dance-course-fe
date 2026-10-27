@@ -402,15 +402,15 @@
       },
       "impro": {
         "title": "Impro Room",
+        "occasions": {
+          "halloween": "Edycja Halloween"
+        },
         "description": "Te spotkania są dla osób, które chcą uczyć się improwizować, więcej ćwiczyć i przestać bać się improwizacji.",
         "note": "Ważne: Impro Room nie jest zajęciami, na których uczę, jak poprawnie improwizować. Wymyślam zadania, tworzę przestrzeń do praktyki i uczę się razem z wami.",
         "details": "Spotykamy się razem na sali i pracujemy z różnymi zadaniami i koncepcjami, próbujemy nowych podejść, jamujemy i po prostu dużo improwizujemy.",
-        "scheduleTitle": "Grafik na październik",
+        "scheduleTitle": "Grafik",
         "schedule": {
-          "1": "03.10 — 13:30–15:00",
-          "2": "10.10 — 13:30–15:00",
-          "3": "24.10 — 13:30–15:00",
-          "4": "31.10 — 13:30–15:00"
+          "1": "31.10 — 17:30–19:00"
         },
         "location": "Lokalizacja",
         "locationValue": "Warszawa, Wola",

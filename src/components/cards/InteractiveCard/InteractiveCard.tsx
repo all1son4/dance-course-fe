@@ -7,6 +7,8 @@ import Button from "@/components/common/Button";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { Chevron } from "@/svg";
 
+import { occasionArtwork } from "./InteractiveCard.occasion";
+import { CardOccasionContext } from "./InteractiveCard.occasion-context";
 import {
   BottomBlock,
   BottomInfoRow,
@@ -35,10 +37,14 @@ export default function InteractiveCard({
   defaultCollapseTopRow,
   frost = "static",
   isTopRowCollapsible,
+  occasion,
   title,
   topRowContent,
 }: InteractiveCardProps) {
   const t = useTranslations("Common");
+  const artwork = occasion ? occasionArtwork[occasion.theme] : undefined;
+  const OccasionHeaderArtwork = artwork?.header;
+  const OccasionBackgroundArtwork = artwork?.background;
   const hasTopRow = Boolean(topRowContent);
   const canCollapseTopRow = hasTopRow && Boolean(isTopRowCollapsible);
   const [isTopRowCollapsedInternal, setIsTopRowCollapsedInternal] = useState<boolean>(
@@ -72,61 +78,69 @@ export default function InteractiveCard({
   };
 
   return (
-    <CardContainer $frost={frost} $hasCollapseToggle={canCollapseTopRow}>
-      <TitleBlock>
-        <Title>{title}</Title>
-      </TitleBlock>
+    <CardOccasionContext value={occasion}>
+      <CardContainer
+        $frost={frost}
+        $hasCollapseToggle={canCollapseTopRow}
+        $occasion={occasion?.theme}
+      >
+        {OccasionBackgroundArtwork ? <OccasionBackgroundArtwork /> : null}
+        <TitleBlock $hasOccasion={Boolean(occasion)}>
+          {OccasionHeaderArtwork ? <OccasionHeaderArtwork /> : null}
+          <Title>{title}</Title>
+        </TitleBlock>
 
-      <ContentWrapper>
-        {hasTopRow ? (
-          <TopInfoRow id={topRowId} $isCollapsed={isTopRowCollapsed}>
-            <TopInfoRowContent $isCollapsed={isTopRowCollapsed}>
-              {topRowContent}
-            </TopInfoRowContent>
-          </TopInfoRow>
-        ) : null}
-
-        <BottomBlock>
+        <ContentWrapper>
           {hasTopRow ? (
-            <DividerReveal $isCollapsed={isTopRowCollapsed}>
-              <div>
-                <Divider $isCollapsed={isTopRowCollapsed} />
-              </div>
-            </DividerReveal>
+            <TopInfoRow id={topRowId} $isCollapsed={isTopRowCollapsed}>
+              <TopInfoRowContent $isCollapsed={isTopRowCollapsed}>
+                {topRowContent}
+              </TopInfoRowContent>
+            </TopInfoRow>
           ) : null}
-          {bottomRowContent && <BottomInfoRow>{bottomRowContent}</BottomInfoRow>}
-          {buttonText && (
-            <ButtonBox>
-              <Button
-                buttonText={buttonText}
-                analytics={
-                  analyticsId
-                    ? {
-                        id: "course_details",
-                        placement: `${analyticsCollection ?? "course"}:${analyticsId}`,
-                      }
-                    : undefined
-                }
-                // Same label on every card; the product name goes to assistive tech.
-                aria-label={`${buttonText} — ${title.replace(/\s+/gu, " ").trim()}`}
-                {...buttonLinkProps}
-              />
-            </ButtonBox>
-          )}
-        </BottomBlock>
-      </ContentWrapper>
-      {canCollapseTopRow ? (
-        <CollapseToggle
-          type="button"
-          aria-label={t("toggleDetails")}
-          aria-controls={topRowId}
-          aria-expanded={!isTopRowCollapsed}
-          onClick={onCollapseToggleClick}
-          $isCollapsed={isTopRowCollapsed}
-        >
-          <Chevron width={16} height={10} />
-        </CollapseToggle>
-      ) : null}
-    </CardContainer>
+
+          <BottomBlock>
+            {hasTopRow ? (
+              <DividerReveal $isCollapsed={isTopRowCollapsed}>
+                <div>
+                  <Divider $isCollapsed={isTopRowCollapsed} />
+                </div>
+              </DividerReveal>
+            ) : null}
+            {bottomRowContent && <BottomInfoRow>{bottomRowContent}</BottomInfoRow>}
+            {buttonText && (
+              <ButtonBox>
+                <Button
+                  buttonText={buttonText}
+                  analytics={
+                    analyticsId
+                      ? {
+                          id: "course_details",
+                          placement: `${analyticsCollection ?? "course"}:${analyticsId}`,
+                        }
+                      : undefined
+                  }
+                  // Same label on every card; the product name goes to assistive tech.
+                  aria-label={`${buttonText} — ${title.replace(/\s+/gu, " ").trim()}`}
+                  {...buttonLinkProps}
+                />
+              </ButtonBox>
+            )}
+          </BottomBlock>
+        </ContentWrapper>
+        {canCollapseTopRow ? (
+          <CollapseToggle
+            type="button"
+            aria-label={t("toggleDetails")}
+            aria-controls={topRowId}
+            aria-expanded={!isTopRowCollapsed}
+            onClick={onCollapseToggleClick}
+            $isCollapsed={isTopRowCollapsed}
+          >
+            <Chevron width={16} height={10} />
+          </CollapseToggle>
+        ) : null}
+      </CardContainer>
+    </CardOccasionContext>
   );
 }

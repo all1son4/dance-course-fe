@@ -402,15 +402,15 @@
       },
       "impro": {
         "title": "Impro Room",
+        "occasions": {
+          "halloween": "Halloween edition"
+        },
         "description": "These meetings are for anyone who wants to learn to improvise, practise more and stop being afraid of improvisation.",
         "note": "Important: Impro Room is not a class where I teach you how to improvise correctly. I come up with exercises, create space for practice and learn together with you.",
         "details": "We get together in the studio and work with different exercises and concepts, try new approaches, jam and simply improvise a lot.",
-        "scheduleTitle": "October schedule",
+        "scheduleTitle": "Schedule",
         "schedule": {
-          "1": "03.10 — 13:30–15:00",
-          "2": "10.10 — 13:30–15:00",
-          "3": "24.10 — 13:30–15:00",
-          "4": "31.10 — 13:30–15:00"
+          "1": "31.10 — 17:30–19:00"
         },
         "location": "Location",
         "locationValue": "Warsaw, Wola",
