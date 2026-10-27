@@ -1,6 +1,7 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
+import { OccasionScheduleLabel } from "@/components/cards/InteractiveCard/InteractiveCard.occasion-context";
 import { IMPRO_ROOM_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
 import { SmallClock, SmallMap } from "@/svg";
 
@@ -14,6 +15,7 @@ import {
   InfoSection,
   PriceFrequency,
   PriceRow,
+  ScheduleRow,
 } from "../_shared/interactive-card-content";
 
 type Translate = (key: string) => string;
@@ -35,10 +37,12 @@ const buildScheduleAndLocationContent = (
     locationLabelKey = "cards.common.location",
     locationValueKey = "cards.common.locationValue",
     scheduleLabelKey = "cards.common.schedule",
+    scheduleAnnotation,
   }: {
     locationLabelKey?: string;
     locationValueKey?: string;
     scheduleLabelKey?: string;
+    scheduleAnnotation?: ReactNode;
   } = {},
 ) => (
   <>
@@ -51,7 +55,14 @@ const buildScheduleAndLocationContent = (
         {scheduleKeys.map((key) => (
           <Fragment key={key}>
             <div />
-            <DetailText>{t(key)}</DetailText>
+            {scheduleAnnotation ? (
+              <ScheduleRow>
+                <DetailText>{t(key)}</DetailText>
+                {scheduleAnnotation}
+              </ScheduleRow>
+            ) : (
+              <DetailText>{t(key)}</DetailText>
+            )}
           </Fragment>
         ))}
       </InfoGrid>
@@ -119,6 +130,11 @@ export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] =>
   {
     id: "impro",
     title: t("cards.impro.title"),
+    // Remove this prop (or set it to undefined) to turn off the seasonal treatment.
+    occasion: {
+      theme: "halloween",
+      label: t("cards.impro.occasions.halloween"),
+    },
     topRowContent: (
       <ContentStack $gap="26px">
         <ContentStack $gap="16px">
@@ -127,20 +143,12 @@ export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] =>
           </DetailText>
           <DetailStrongText>{t("cards.impro.note")}</DetailStrongText>
         </ContentStack>
-        {buildScheduleAndLocationContent(
-          t,
-          [
-            "cards.impro.schedule.1",
-            "cards.impro.schedule.2",
-            "cards.impro.schedule.3",
-            "cards.impro.schedule.4",
-          ],
-          {
-            locationLabelKey: "cards.impro.location",
-            locationValueKey: "cards.impro.locationValue",
-            scheduleLabelKey: "cards.impro.scheduleTitle",
-          },
-        )}
+        {buildScheduleAndLocationContent(t, ["cards.impro.schedule.1"], {
+          locationLabelKey: "cards.impro.location",
+          locationValueKey: "cards.impro.locationValue",
+          scheduleLabelKey: "cards.impro.scheduleTitle",
+          scheduleAnnotation: <OccasionScheduleLabel />,
+        })}
       </ContentStack>
     ),
     bottomRowContent: buildPriceRow(t, "cards.impro.price", "cards.impro.priceSuffix"),

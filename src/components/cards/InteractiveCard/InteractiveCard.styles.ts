@@ -3,7 +3,11 @@ import { css, styled } from "styled-components";
 import { glass } from "@/styles/mixins/glass";
 import { chevronHint, gridRowReveal } from "@/styles/mixins/motion";
 
-import type { InteractiveCardFrost } from "./InteractiveCard.types";
+import { occasionStyles } from "./InteractiveCard.occasion.styles";
+import type {
+  InteractiveCardFrost,
+  InteractiveCardOccasionTheme,
+} from "./InteractiveCard.types";
 
 /**
  * A card pinned over scrolling content needs the real blur, otherwise the text
@@ -22,6 +26,7 @@ const frostStyles: Record<InteractiveCardFrost, ReturnType<typeof css>> = {
 export const CardContainer = styled.div<{
   $frost: InteractiveCardFrost;
   $hasCollapseToggle?: boolean;
+  $occasion?: InteractiveCardOccasionTheme;
 }>`
   display: flex;
   flex-direction: column;
@@ -33,25 +38,33 @@ export const CardContainer = styled.div<{
   padding-bottom: ${({ $hasCollapseToggle }) => ($hasCollapseToggle ? "8px" : "0")};
 
   ${({ $frost }) => frostStyles[$frost]}
+  ${({ $occasion }) => $occasion && occasionStyles[$occasion]}
 
   @media (max-width: 880px) {
     --glass-radius: var(--radius-panel);
   }
 `;
 
-export const TitleBlock = styled.div`
+export const TitleBlock = styled.div<{ $hasOccasion?: boolean }>`
   display: flex;
-  background: rgba(130, 135, 155, 0.2);
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  z-index: 0;
+  background: var(--card-title-background, rgba(130, 135, 155, 0.2));
   box-sizing: border-box;
   width: 100%;
   padding: 40px;
+  padding-right: ${({ $hasOccasion }) => ($hasOccasion ? "100px" : undefined)};
 
   @media (max-width: 880px) {
     padding: 30px;
+    padding-right: ${({ $hasOccasion }) => ($hasOccasion ? "100px" : undefined)};
   }
 
   @media (max-width: 550px) {
     padding: 20px 30px;
+    padding-right: ${({ $hasOccasion }) => ($hasOccasion ? "76px" : undefined)};
   }
 `;
 
@@ -137,7 +150,7 @@ export const DividerReveal = styled.div<{ $isCollapsed?: boolean }>`
 export const Divider = styled.div<{ $isCollapsed?: boolean }>`
   width: 100%;
   height: 1px;
-  background: rgba(209, 211, 218, 1);
+  background: var(--card-divider-background, rgba(209, 211, 218, 1));
   margin: 40px 0;
   opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
   transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
@@ -196,6 +209,10 @@ export const CollapseToggle = styled.button<{ $isCollapsed: boolean }>`
   & svg {
     transition: transform var(--motion-base, 220ms) var(--ease-standard, ease);
     transform: rotate(${({ $isCollapsed }) => ($isCollapsed ? "0deg" : "180deg")});
+  }
+
+  & svg [stroke] {
+    stroke: var(--card-icon-ink, black);
   }
 
   @media (hover: hover) and (pointer: fine) {

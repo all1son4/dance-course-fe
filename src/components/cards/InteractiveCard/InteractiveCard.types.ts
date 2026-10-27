@@ -7,11 +7,20 @@ import type { AnchorHTMLAttributes, HTMLAttributeAnchorTarget, ReactNode } from 
  */
 export type InteractiveCardFrost = "static" | "live";
 
+export type InteractiveCardOccasionTheme = "halloween";
+
+export type InteractiveCardOccasion = {
+  theme: InteractiveCardOccasionTheme;
+  label: string;
+};
+
 export type InteractiveCardProps = {
   analyticsCollection?: "offline_courses" | "online_courses";
   analyticsId?: string;
   title: string;
   frost?: InteractiveCardFrost;
+  /** Omit to restore the standard card, including its header and button. */
+  occasion?: InteractiveCardOccasion;
   topRowContent?: ReactNode;
   bottomRowContent?: ReactNode;
   buttonText?: string;
