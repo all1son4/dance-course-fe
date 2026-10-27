@@ -18,7 +18,7 @@ export const DetailText = styled.p`
   line-height: 1.5;
   letter-spacing: 0;
   margin: 0;
-  color: rgba(50, 49, 52, 1);
+  color: var(--card-detail-ink, rgba(50, 49, 52, 1));
 `;
 
 export const DetailStrongText = styled.p`
@@ -47,6 +47,13 @@ export const InfoSection = styled.div`
   gap: 10px;
 `;
 
+export const ScheduleRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+`;
+
 export const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: 18px 1fr;
@@ -58,6 +65,10 @@ export const IconCell = styled.div`
   display: flex;
   align-items: flex-start;
   padding-top: 2px;
+
+  & svg [stroke] {
+    stroke: var(--card-icon-ink, black);
+  }
 `;
 
 export const PriceRow = styled.div`
