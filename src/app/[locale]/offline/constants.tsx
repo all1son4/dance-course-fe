@@ -131,10 +131,7 @@ export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] =>
     id: "impro",
     title: t("cards.impro.title"),
     // Remove this prop (or set it to undefined) to turn off the seasonal treatment.
-    occasion: {
-      theme: "halloween",
-      label: t("cards.impro.occasions.halloween"),
-    },
+    occasion: undefined,
     topRowContent: (
       <ContentStack $gap="26px">
         <ContentStack $gap="16px">
