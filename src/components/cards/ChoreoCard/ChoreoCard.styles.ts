@@ -144,11 +144,11 @@ export const CardHighlights = styled.ul`
 `;
 
 export const CardHighlight = styled.li`
-  padding: 5px 11px;
+  padding: 3px 9px;
   border-radius: var(--radius-pill);
   background: rgba(0, 0, 0, 0.045);
   color: var(--ink-muted);
-  font-size: var(--text-caption);
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.3;
 `;
