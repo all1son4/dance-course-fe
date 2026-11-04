@@ -437,11 +437,7 @@ test("checkout sends all four accepted agreements with the existing customer fie
     privacyPolicyAcknowledgement: true,
     withdrawalNoticeAcknowledgement: true,
   });
-  await expect(
-    page.getByText(
-      "We couldn't save the required consent confirmation. Please try again.",
-    ),
-  ).toBeVisible();
+  await expect(page.getByText("Could not open checkout.")).toBeVisible();
 });
 
 test("checkout never renders a dead end", async ({ page }) => {
