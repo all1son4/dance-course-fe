@@ -67,8 +67,7 @@ const EMAIL_COPY = {
         pending:
           "Your personal Telegram channel invite link is being prepared. Material access is provided for {days} days from joining. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram channel",
-        mentorNote:
-          "For the mentor option, the admin will also contact you separately about feedback.",
+        mentorNote: "The admin will also contact you separately about feedback.",
       },
       telegramChannelLifetime: {
         title: "Access your materials",
@@ -158,8 +157,7 @@ const EMAIL_COPY = {
         pending:
           "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów otrzymujesz na {days} dni od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz kanał Telegram",
-        mentorNote:
-          "W opcji z mentorem administrator skontaktuje się z Tobą osobno w sprawie feedbacku.",
+        mentorNote: "Administrator skontaktuje się z Tobą osobno w sprawie feedbacku.",
       },
       telegramChannelLifetime: {
         title: "Dostęp do materiałów",
@@ -247,8 +245,7 @@ const EMAIL_COPY = {
         pending:
           "Личная ссылка-приглашение в Telegram-канал подготавливается. Доступ к материалам предоставляется на {days} дней с момента вступления. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
         cta: "Открыть Telegram-канал",
-        mentorNote:
-          "Для тарифа с куратором администратор также отдельно свяжется с вами по поводу обратной связи.",
+        mentorNote: "Администратор также свяжется с вами по поводу обратной связи.",
       },
       telegramChannelLifetime: {
         title: "Доступ к материалам",
@@ -340,6 +337,7 @@ export type BuildPurchaseSuccessEmailInput = {
   receiptKind?: "pdf" | "receipt" | null;
   receiptLink: string | null;
   showMentorFollowupNote?: boolean;
+  showOfferLabel?: boolean;
   accessKind: PurchaseSuccessEmailAccessKind;
   telegramAccessUrl?: string | null;
   telegramAccessLinks?: Array<{
@@ -658,6 +656,7 @@ const renderPurchaseSuccessEmailHtml = ({
   receiptButton,
   safeAmountLabel,
   safeOfferLabel,
+  showOfferLabel,
   safeProductTitle,
   safeSiteHomeUrl,
   safeSupportTelegramUrl,
@@ -673,6 +672,7 @@ const renderPurchaseSuccessEmailHtml = ({
   receiptButton: string;
   safeAmountLabel: string;
   safeOfferLabel: string;
+  showOfferLabel: boolean;
   safeProductTitle: string;
   safeSiteHomeUrl: string;
   safeSupportTelegramUrl: string;
@@ -694,10 +694,14 @@ const renderPurchaseSuccessEmailHtml = ({
               <td style="padding:0 14px 8px 0;color:#6f6f6f;font-size:14px;line-height:22px;width:92px;vertical-align:top;">${copy.productLabel}</td>
               <td style="padding:0 0 8px 0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeProductTitle}</td>
             </tr>
-            <tr>
+            ${
+              showOfferLabel
+                ? `<tr>
               <td style="padding:0 14px 8px 0;color:#6f6f6f;font-size:14px;line-height:22px;width:92px;vertical-align:top;">${copy.offerLabel}</td>
               <td style="padding:0 0 8px 0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeOfferLabel}</td>
-            </tr>
+            </tr>`
+                : ""
+            }
             <tr>
               <td style="padding:0 14px 0 0;color:#6f6f6f;font-size:14px;line-height:22px;width:92px;vertical-align:top;">${copy.amountLabel}</td>
               <td style="padding:0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeAmountLabel}</td>
@@ -772,6 +776,7 @@ const renderPurchaseSuccessEmailText = ({
   inspirationAccessText,
   limitedAccessValidityText,
   offerLabel,
+  showOfferLabel,
   productTitle,
   receiptButtonLabel,
   receiptLink,
@@ -786,6 +791,7 @@ const renderPurchaseSuccessEmailText = ({
   inspirationAccessText: string;
   limitedAccessValidityText: string;
   offerLabel: string;
+  showOfferLabel: boolean;
   productTitle: string;
   receiptButtonLabel: string;
   receiptLink: string | null;
@@ -796,7 +802,7 @@ const renderPurchaseSuccessEmailText = ({
   const textParts = [
     copy.paymentSucceededText,
     `${copy.productLabel}: ${productTitle}`,
-    `${copy.offerLabel}: ${offerLabel || copy.defaultOfferLabel}`,
+    showOfferLabel ? `${copy.offerLabel}: ${offerLabel || copy.defaultOfferLabel}` : "",
     `${copy.amountLabel}: ${amountLabel}`,
     accessContent.title,
     accessContent.description,
@@ -835,6 +841,7 @@ export const buildPurchaseSuccessEmail = ({
   receiptKind,
   receiptLink,
   showMentorFollowupNote = false,
+  showOfferLabel = true,
   telegramAccessUrl,
   telegramAccessLinks = [],
 }: BuildPurchaseSuccessEmailInput) => {
@@ -937,6 +944,7 @@ export const buildPurchaseSuccessEmail = ({
     receiptButton,
     safeAmountLabel,
     safeOfferLabel,
+    showOfferLabel,
     safeProductTitle,
     safeSiteHomeUrl,
     safeSupportTelegramUrl,
@@ -949,6 +957,7 @@ export const buildPurchaseSuccessEmail = ({
     inspirationAccessText,
     limitedAccessValidityText: limitedAccessValidity.text,
     offerLabel,
+    showOfferLabel,
     productTitle,
     receiptButtonLabel,
     receiptLink,

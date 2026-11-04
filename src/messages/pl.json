@@ -631,7 +631,7 @@
     "suggestions": {
       "1": {
         "title": "Samouczki choreograficzne dla poziomu średniozaawansowanego i zaawansowanego",
-        "text": "Otrzymujesz dostęp do wyrazistych sekwencji, techniki i ekspresji."
+        "text": "Szczegółowe wyjaśnienia po rosyjsku i angielsku: ruchy, technika i ekspresja."
       },
       "2": {
         "title": "Przejrzysta struktura i szczegółowe wyjaśnienia",
@@ -872,6 +872,7 @@
     "ariaLabel": "Przełącznik waluty"
   },
   "SellableProducts": {
+    "buyButton": "Kup",
     "firstTouch": {
       "title": "Kurs dla początkujących \"First Touch\"",
       "description": {
