@@ -615,6 +615,7 @@
   "ChoreoPage": {
     "hero": {
       "title": "Samouczki choreograficzne",
+      "stickyTitle": "Tutoriale",
       "description": {
         "1": "Samouczki online moich choreografii.",
         "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
@@ -964,6 +965,13 @@
       "offers": {
         "withoutMentor": "Bez mentora"
       }
+    },
+    "choreoCard": {
+      "highlights": {
+        "level": "Poziom średni+"
+      },
+      "priceFrom": "od",
+      "compareAtLabel": "Kupując osobno:"
     }
   },
   "PrivacyPolicyPage": {

@@ -5,13 +5,12 @@ import { useTranslations } from "next-intl";
 import { useMeaningfulImpression } from "@/components/common/Button/useMeaningfulImpression";
 import { useCookieConsent } from "@/components/common/CookieConsent";
 import { usePathname } from "@/i18n/navigation";
-import {
-  getSafeDestinationProperties,
-  trackAnalyticsEvent,
-} from "@/lib/mixpanel-analytics";
+import { getCtaEventProperties, trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import { Nav, NavLink } from "./TopMenu.styles";
 import { TopMenuItem } from "./TopMenu.types";
+
+const HEADER_NAVIGATION_PLACEMENT = "header_navigation";
 
 type TrackedNavLinkProps = {
   item: TopMenuItem;
@@ -21,11 +20,11 @@ type TrackedNavLinkProps = {
 
 const TrackedNavLink = ({ item, isSelected, setMenuIsOpen }: TrackedNavLinkProps) => {
   const { canUseAnalytics, isReady } = useCookieConsent();
-  const getEventProperties = () => ({
-    cta_id: item.analyticsId,
-    placement: "header_navigation",
-    ...getSafeDestinationProperties(item.href),
-  });
+  const getEventProperties = () =>
+    getCtaEventProperties(
+      { id: item.analyticsId, placement: HEADER_NAVIGATION_PLACEMENT },
+      item.href,
+    );
   const impressionTargetRef = useMeaningfulImpression({
     enabled: isReady && canUseAnalytics,
     impressionKey: `${item.analyticsId}:${item.href}`,
@@ -41,9 +40,11 @@ const TrackedNavLink = ({ item, isSelected, setMenuIsOpen }: TrackedNavLinkProps
       $selected={isSelected}
       onClick={(event) => {
         item.onClick?.(event);
+        // An item handler (the contacts scroll) may take over navigation with
+        // preventDefault; that is still a click on this item.
+        void trackAnalyticsEvent("cta_clicked", getEventProperties());
 
         if (!event.defaultPrevented) {
-          void trackAnalyticsEvent("cta_clicked", getEventProperties());
           setMenuIsOpen(false);
         }
       }}

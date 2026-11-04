@@ -260,6 +260,10 @@ export default function SuccessRedirectGuard({
             <Button
               buttonText={refreshButtonText}
               onClick={() => window.location.reload()}
+              analytics={{
+                id: "payment_status_refresh",
+                placement: "success_verification",
+              }}
             />
           )}
           {(isUnavailable || isCheckingSlow) && (
@@ -267,9 +271,18 @@ export default function SuccessRedirectGuard({
               buttonText={supportButtonText}
               href={SUPPORT_TELEGRAM_URL}
               target="_blank"
+              analytics={{
+                id: "payment_contact_support",
+                placement: "success_verification",
+              }}
             />
           )}
-          <Button buttonText={homeButtonText} href="/" variant="secondary" />
+          <Button
+            buttonText={homeButtonText}
+            href="/"
+            variant="secondary"
+            analytics={{ id: "back_home", placement: "success_verification" }}
+          />
         </ResultActions>
       )}
     </>

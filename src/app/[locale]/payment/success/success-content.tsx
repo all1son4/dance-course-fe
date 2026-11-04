@@ -160,7 +160,12 @@ export default function SuccessContent({
             onInspirationExpiryChange={setInspirationAccessExpiresAt}
           />
         ) : null}
-        <Button buttonText={homeButtonText} href="/" variant="secondary" />
+        <Button
+          buttonText={homeButtonText}
+          href="/"
+          variant="secondary"
+          analytics={{ id: "back_home", placement: "success_result" }}
+        />
       </ResultActions>
     </>
   );

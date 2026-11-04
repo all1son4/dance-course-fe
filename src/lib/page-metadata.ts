@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
-import { buildPageMetadata, seoTargetLocale } from "./seo";
+import { buildPageMetadata, PAGE_OG_IMAGE_PATHS, seoTargetLocale } from "./seo";
 
 type PageTranslator = (
   key: "title" | "description" | "ogImageAlt" | "keywords",
@@ -16,10 +16,12 @@ export const splitKeywords = (value: string): string[] =>
 
 /** The pure part of a page's metadata: everything except the translation lookup. */
 export const resolvePageMetadata = ({
+  ogImagePath,
   pageT,
   path,
   siteName,
 }: {
+  ogImagePath?: string;
   pageT: PageTranslator;
   path: string;
   siteName: string;
@@ -31,6 +33,7 @@ export const resolvePageMetadata = ({
     description: pageT("description"),
     siteName,
     ogImageAlt: pageT("ogImageAlt"),
+    ogImagePath,
     keywords: splitKeywords(pageT("keywords")),
   });
 
@@ -52,5 +55,10 @@ export const buildLocalizedPageMetadata = async ({
     getTranslations({ locale: seoTargetLocale, namespace: `Metadata.pages.${pageKey}` }),
   ]);
 
-  return resolvePageMetadata({ pageT, path, siteName: metadataT("siteName") });
+  return resolvePageMetadata({
+    ogImagePath: PAGE_OG_IMAGE_PATHS[pageKey],
+    pageT,
+    path,
+    siteName: metadataT("siteName"),
+  });
 };

@@ -166,6 +166,14 @@ export const StickyCtaCard = styled.div`
     gap: 12px;
     padding: 6px 6px 6px 18px;
   }
+
+  /* On 320-360px screens a long buy button ("Выбрать тариф") leaves the
+     title ~97px, and "Online Group by Anna Strok" lost its last word to the
+     two-line clamp. Tighter inner spacing gives the title back those pixels. */
+  @media (max-width: 360px) {
+    gap: 8px;
+    padding-left: 14px;
+  }
 `;
 
 export const StickyCtaText = styled.div`

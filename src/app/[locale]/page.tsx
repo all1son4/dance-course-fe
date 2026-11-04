@@ -6,6 +6,7 @@ import Button from "@/components/common/Button";
 import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
+import TrackedAnchor from "@/components/common/TrackedAnchor";
 import Contacts from "@/components/other/Contacts";
 import FAQ from "@/components/other/FAQ";
 import { getQuestionsArray } from "@/components/other/FAQ/FAQ.constants";
@@ -146,6 +147,7 @@ export default function Home() {
           title={t("about.instagram")}
           text={INSTAGRAM_PROFILE_HANDLE}
           link={INSTAGRAM_PROFILE_URL}
+          analytics={{ id: "contact_instagram", placement: "home_about" }}
         />
         <AboutMeParagraphs>
           <AboutMeParagraph>{t("about.bio.1")}</AboutMeParagraph>
@@ -155,34 +157,59 @@ export default function Home() {
         <AboutMeList>
           <li>
             {t("about.achievements.stage18Solo.prefix")}{" "}
-            <a href={INSTAGRAM_STAGE18_URL} target="_blank" rel="noopener noreferrer">
+            <TrackedAnchor
+              href={INSTAGRAM_STAGE18_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              analytics={{
+                id: "achievement_instagram",
+                placement: "home_about:stage18_solo",
+              }}
+            >
               @stage_18
-            </a>{" "}
+            </TrackedAnchor>{" "}
             {t("about.achievements.stage18Solo.suffix")}
           </li>
           <li>
             {t("about.achievements.stage18Team.prefix")}{" "}
-            <a href={INSTAGRAM_STAGE18_URL} target="_blank" rel="noopener noreferrer">
+            <TrackedAnchor
+              href={INSTAGRAM_STAGE18_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              analytics={{
+                id: "achievement_instagram",
+                placement: "home_about:stage18_team",
+              }}
+            >
               @stage_18
-            </a>{" "}
+            </TrackedAnchor>{" "}
             {t("about.achievements.stage18Team.suffix")}
           </li>
           <li>
             {t("about.achievements.wod.prefix")}{" "}
-            <a
+            <TrackedAnchor
               href={INSTAGRAM_WORLD_OF_DANCE_POLAND_URL}
               target="_blank"
               rel="noopener noreferrer"
+              analytics={{ id: "achievement_instagram", placement: "home_about:wod" }}
             >
               @worldofdancepoland
-            </a>{" "}
+            </TrackedAnchor>{" "}
             {t("about.achievements.wod.suffix")}
           </li>
           <li>
             {t("about.achievements.dib.prefix")}{" "}
-            <a href={INSTAGRAM_DIB_GALA_URL} target="_blank" rel="noopener noreferrer">
+            <TrackedAnchor
+              href={INSTAGRAM_DIB_GALA_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              analytics={{
+                id: "achievement_instagram",
+                placement: "home_about:dib_gala",
+              }}
+            >
               @dib.gala
-            </a>
+            </TrackedAnchor>
           </li>
         </AboutMeList>
       </AboutMeTextBox>

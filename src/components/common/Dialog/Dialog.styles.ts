@@ -290,13 +290,18 @@ export const Footer = styled.div`
   }
 `;
 
+/* The cross is painted 24px wide; the button box is the 44px tap target.
+   It sits 6px further out than the old 32px box so the cross itself stays
+   exactly where it was (centre 32px from the top and right edges). */
+const CLOSE_HIT_GROW_PX = 6;
+
 export const CloseButton = styled(RadixDialog.Close)`
   appearance: none;
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 32px;
-  height: 32px;
+  top: ${16 - CLOSE_HIT_GROW_PX}px;
+  right: ${16 - CLOSE_HIT_GROW_PX}px;
+  width: 44px;
+  height: 44px;
   border: none;
   display: inline-flex;
   align-items: center;
@@ -333,9 +338,10 @@ export const CloseButton = styled(RadixDialog.Close)`
     }
   }
 
+  /* Inset by the growth so the ring is drawn where it always was. */
   &:focus-visible {
     outline: var(--focus-ring);
-    outline-offset: 3px;
+    outline-offset: ${3 - CLOSE_HIT_GROW_PX}px;
   }
 
   @media (hover: none) and (pointer: coarse) {
@@ -345,7 +351,7 @@ export const CloseButton = styled(RadixDialog.Close)`
   }
 
   @media (max-width: 520px) {
-    top: 18px;
-    right: 18px;
+    top: ${18 - CLOSE_HIT_GROW_PX}px;
+    right: ${18 - CLOSE_HIT_GROW_PX}px;
   }
 `;

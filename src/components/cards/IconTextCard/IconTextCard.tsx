@@ -12,10 +12,11 @@ import {
   PanelTitle,
 } from "./IconTextCard.styles";
 import type { IconTextCardProps } from "./IconTextCard.types";
+import TrackedContactCardLink from "./TrackedContactCardLink";
 
 export default function IconTextCard(props: IconTextCardProps) {
   if (props.variant === "contact") {
-    const { icon, title, text, link } = props;
+    const { analytics, icon, title, text, link } = props;
     const content = (
       <>
         <ContactIconBox>{icon}</ContactIconBox>
@@ -25,6 +26,14 @@ export default function IconTextCard(props: IconTextCardProps) {
         </ContactBlockText>
       </>
     );
+
+    if (link && analytics) {
+      return (
+        <TrackedContactCardLink analytics={analytics} href={link}>
+          {content}
+        </TrackedContactCardLink>
+      );
+    }
 
     return link ? (
       <ContactCardLink target="_blank" rel="noopener noreferrer" href={link}>

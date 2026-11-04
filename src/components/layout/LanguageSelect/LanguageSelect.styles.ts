@@ -1,6 +1,7 @@
 import styled, { keyframes } from "styled-components";
 
 import { glass } from "@/styles/mixins/glass";
+import { hitArea } from "@/styles/mixins/hitArea";
 
 const menuShow = keyframes`
   from {
@@ -46,6 +47,8 @@ export const Trigger = styled.button<{ $isOpen: boolean }>`
   justify-content: center;
   gap: 10px;
   min-height: 32px;
+  /* Painted 32px tall; taps land on a 44px halo (6px each way). */
+  ${hitArea()}
 
   transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
 
@@ -178,6 +181,10 @@ export const Item = styled.button<{ $selected?: boolean }>`
   align-items: center;
   gap: 10px;
   min-height: 32px;
+  position: relative;
+  /* 32px rows 20px apart: the 44px halo reaches 6px into each gap, so
+     neighbouring options never share a tap point. */
+  ${hitArea()}
 
   padding: 0;
   margin: 0;

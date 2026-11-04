@@ -17,10 +17,7 @@ import {
   SELF_TARGET,
   shouldTrackRouteLoading,
 } from "@/lib/button-navigation";
-import {
-  getSafeDestinationProperties,
-  trackAnalyticsEvent,
-} from "@/lib/mixpanel-analytics";
+import { getCtaEventProperties, trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import {
   ButtonAnchorWrapper,
@@ -107,20 +104,8 @@ export default function Button<T extends ElementType = "button">({
   const linkRel = getLinkRel(target, relFromProps);
   const shouldDisableAutoScroll = href.includes(HASH_PREFIX) && target === SELF_TARGET;
   const isButtonLoading = isLoading || isRouteLoading;
-  const getSemanticEventProperties = () => {
-    if (!analytics) {
-      return null;
-    }
-
-    const { id, placement, ...commerceProperties } = analytics;
-
-    return {
-      cta_id: id,
-      ...(placement ? { placement } : {}),
-      ...commerceProperties,
-      ...getSafeDestinationProperties(href),
-    };
-  };
+  const getSemanticEventProperties = () =>
+    analytics ? getCtaEventProperties(analytics, href) : null;
   const analyticsImpressionKey = analytics
     ? JSON.stringify([
         analytics.id,
