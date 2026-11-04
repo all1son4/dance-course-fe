@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 
+import { shouldShowPurchasedOfferLabel } from "@/lib/choreo-offer-presentation";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
 import { ensureInvoiceNumberForPayment } from "@/lib/invoices/invoice-numbering";
 import { buildPurchaseInvoiceAttachment } from "@/lib/invoices/purchase-invoice";
@@ -187,6 +188,7 @@ const buildPreparedPurchaseSuccessEmail = ({
     receiptKind: receipt.receiptKind,
     receiptLink: receipt.receiptLink,
     showMentorFollowupNote: isWithMentorOfferId(paymentRecord.offer_id),
+    showOfferLabel: shouldShowPurchasedOfferLabel(paymentIntent.metadata),
     telegramAccessUrl:
       telegramAccessLink?.status === "ready" ? telegramAccessLink.accessUrl : null,
     telegramAccessLinks: onlineGroupAccess ?? [],
@@ -262,6 +264,7 @@ export const deliverPurchaseSuccessEmailFromOutbox = async ({
   const invoiceAttachment = await buildPurchaseInvoiceAttachment({
     issuedAt: invoiceIssuedAt,
     paymentRecord: invoicedPaymentRecord,
+    showOfferLabel: shouldShowPurchasedOfferLabel(paymentIntent.metadata),
   });
 
   try {

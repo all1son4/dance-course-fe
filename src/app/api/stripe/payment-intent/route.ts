@@ -27,6 +27,7 @@ import {
   parseCheckoutConsentEvidence,
   validateCheckoutCustomerAndConsent,
 } from "@/lib/checkout-consent";
+import { shouldShowOfferLabel } from "@/lib/choreo-offer-presentation";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -372,6 +373,7 @@ const createPaymentIntentMetadata = (
   ...getAccessMetadata(context),
   offer_id: context.offer.id,
   offer_label: offerLabel,
+  show_offer_label: String(shouldShowOfferLabel(context.product, context.offer.id)),
   customer_address: context.customerData.address,
   customer_city: context.customerData.city,
   customer_full_name: context.customerData.fullName,
@@ -393,7 +395,9 @@ const createPaymentIntentParams = (
   automatic_payment_methods: {
     enabled: true,
   },
-  description: `${localizedCheckout.productTitle} - ${localizedCheckout.offerLabel}`,
+  description: shouldShowOfferLabel(context.product, context.offer.id)
+    ? `${localizedCheckout.productTitle} - ${localizedCheckout.offerLabel}`
+    : localizedCheckout.productTitle,
   receipt_email: context.customerData.email || undefined,
   metadata: createPaymentIntentMetadata(context, localizedCheckout),
 });

@@ -5,6 +5,7 @@ import VideoPlayer from "@/components/other/VideoPlayer/VideoPlayer";
 import {
   ButtonBox,
   CardContainer,
+  CardPrice,
   CardSubtitle,
   CardSurface,
   CardText,
@@ -20,6 +21,7 @@ export default function ChoreoCard({
   firstButtonOptions,
   icon,
   posterSrc,
+  price,
   secondButtonOptions,
   specialOffer,
   subtitle,
@@ -53,10 +55,11 @@ export default function ChoreoCard({
           </PosterBox>
         )}
         <InteractiveBox>
-          {(title || subtitle) && (
-            <CardText>
+          {(title || subtitle || price) && (
+            <CardText $hasPrice={Boolean(price)}>
               {title && <CardTitle>{title}</CardTitle>}
               {subtitle && <CardSubtitle>{subtitle}</CardSubtitle>}
+              {price && <CardPrice>{price}</CardPrice>}
             </CardText>
           )}
           <ButtonBox>
