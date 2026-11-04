@@ -23,6 +23,19 @@ export const PreviewVideo = styled.video<{ $isVisible: boolean }>`
     background: transparent;
     pointer-events: none;
     opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
-    transition: opacity var(--motion-slow, 320ms) var(--ease-standard, ease);
+    /* Fade in like a focus pull (soft blur and a hair of zoom settling), fade
+       out a little quicker; PREVIEW_CLIP_FADE_OUT_MS mirrors the 480ms. */
+    filter: ${({ $isVisible }) => ($isVisible ? "blur(0)" : "blur(8px)")};
+    transform: ${({ $isVisible }) => ($isVisible ? "scale(1)" : "scale(1.04)")};
+    transition: ${({ $isVisible }) =>
+      $isVisible
+        ? "opacity 720ms cubic-bezier(0.22, 1, 0.36, 1), filter 900ms cubic-bezier(0.22, 1, 0.36, 1), transform 1100ms cubic-bezier(0.22, 1, 0.36, 1)"
+        : "opacity 480ms ease, filter 480ms ease, transform 480ms ease"};
+
+    @media (prefers-reduced-motion: reduce) {
+      filter: none;
+      transform: none;
+      transition: none;
+    }
   }
 `;
