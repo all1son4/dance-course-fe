@@ -5,7 +5,11 @@ import type {
   ChoreoCardProps,
 } from "@/components/cards/ChoreoCard";
 import SvgAsset from "@/components/common/SvgAsset";
-import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constants/links";
+import {
+  CHOREO_HER_LIES_REEL_URL,
+  CHOREO_LOVE_ME_IN_THE_MORNING_REEL_URL,
+  CHOREO_STILL_ALIVE_REEL_URL,
+} from "@/constants/links";
 import {
   buildCheckoutHref,
   CHOREO_CATALOGUE_PRODUCT_CODES,
@@ -63,6 +67,7 @@ const CHOREO_PRESENTATIONS = {
   },
   "choreo-love-me-in-the-morning": {
     posterSrc: "/images/love_me_in_the_morning_poster.webp",
+    videoSrc: CHOREO_LOVE_ME_IN_THE_MORNING_REEL_URL,
   },
 } satisfies Partial<
   Record<SellableProductCode, Pick<ChoreoCardProps, "posterSrc" | "videoSrc">>

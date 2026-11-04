@@ -24,7 +24,6 @@ export const CardContainer = styled.div`
 
 export const CardSurface = styled.div<CardSurfaceProps>`
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -85,14 +84,11 @@ export const PosterBox = styled.div`
 
 export const InteractiveBox = styled.div`
   display: flex;
-  flex: 1;
   flex-direction: column;
   box-sizing: border-box;
-  min-height: 300px;
   padding: 30px 22px 22px;
 
   @media (max-width: 880px) {
-    min-height: 270px;
     padding: 28px 20px 20px;
   }
 `;
@@ -131,5 +127,4 @@ export const ButtonBox = styled.div`
   width: 100%;
   flex-direction: column;
   gap: 20px;
-  margin-top: auto;
 `;
