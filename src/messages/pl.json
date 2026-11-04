@@ -102,7 +102,8 @@
       "retryButton": "Spróbuj ponownie",
       "backHome": "Wróć na stronę główną"
     },
-    "refresh": "Odśwież"
+    "refresh": "Odśwież",
+    "close": "Zamknij"
   },
   "OnlinePromoCard": {
     "title": "Online",
