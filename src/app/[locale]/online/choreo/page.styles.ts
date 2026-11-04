@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
+
 import {
   HeroMobileImagesBox,
   HeroSection,
@@ -184,13 +186,32 @@ export const ButtonBox = styled.div`
   }
 `;
 
-export const ChoreoSection = styled.section`
+/* The catalogue opens the page body, as the tariffs do on /online/group:
+   a section title, then the cards. */
+export const ChoreoCatalogue = styled.section`
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+  width: 100%;
+  padding: 0 0 150px;
+  box-sizing: border-box;
+
+  @media (max-width: 880px) {
+    gap: 30px;
+    padding: 0 0 60px;
+  }
+`;
+
+export const ChoreoCatalogueTitle = styled(SectionTitleBase)`
+  letter-spacing: 0;
+  color: var(--ink);
+`;
+
+export const ChoreoSection = styled.div`
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
-  padding: 100px 0 150px;
-  box-sizing: border-box;
   gap: 30px;
   align-items: stretch;
 
@@ -202,7 +223,6 @@ export const ChoreoSection = styled.section`
   }
 
   @media (max-width: 880px) {
-    padding: 40px 0;
     gap: 24px;
   }
 `;
