@@ -269,7 +269,18 @@ export const TileTitle = styled.span<CompactProps>`
 `;
 
 /* A plus that turns into a cross on a brand disc; compact layout only. */
-export const TileMark = styled.span<{ $isOpen: boolean }>`
+const markNudge = keyframes`
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 0, 2, 0);
+  }
+
+  40% {
+    box-shadow: 0 0 0 7px rgba(124, 0, 2, 0.16);
+  }
+`;
+
+export const TileMark = styled.span<{ $isOpen: boolean; $isNudging?: boolean }>`
   position: absolute;
   top: 16px;
   right: 16px;
@@ -282,6 +293,11 @@ export const TileMark = styled.span<{ $isOpen: boolean }>`
     transform ${OPEN_MS} ${EASE},
     background-color var(--motion-base, 220ms) var(--ease-standard, ease);
   pointer-events: none;
+  ${({ $isNudging }) =>
+    $isNudging &&
+    css`
+      animation: ${markNudge} 1100ms var(--ease-standard, ease) 2;
+    `}
 
   &::before,
   &::after {
@@ -499,5 +515,48 @@ export const DetailClose = styled.button`
   &:focus-visible {
     outline: var(--focus-ring);
     outline-offset: 2px;
+  }
+`;
+
+/* The one-time "tap to read more" bubble, above the first tile's "+". */
+export const TapHint = styled.span<{ $isVisible: boolean }>`
+  position: absolute;
+  right: 4px;
+  bottom: calc(100% + 2px);
+  z-index: 3;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: var(--ink-inverse);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  line-height: 1.25;
+  width: max-content;
+  max-width: min(240px, calc(100vw - 48px));
+  pointer-events: none;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  transform: translate3d(0, ${({ $isVisible }) => ($isVisible ? 0 : 6)}px, 0)
+    scale(${({ $isVisible }) => ($isVisible ? 1 : 0.96)});
+  transform-origin: calc(100% - 23px) 100%;
+  transition:
+    opacity 260ms var(--ease-standard, ease),
+    transform 360ms var(--ease-emphasized, ease);
+
+  /* Arrow pointing down at the "+" (which sits 16px from the tile's edge). */
+  &::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    right: 19px;
+    border: 6px solid transparent;
+    border-top-color: var(--ink);
+  }
+
+  &:empty {
+    padding: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 `;
