@@ -208,6 +208,7 @@ export const getChoreos = (
         id: code,
         analyticsId: code,
         price: singleOffer ? formatOfferPrice(singleOffer.prices) : undefined,
+        priceLabel: singleOffer ? t("priceLabel") : undefined,
         ...presentation,
         ...copy,
         firstButtonOptions: buildChoreoButtonOptions(product, t, withoutMentorOffer),

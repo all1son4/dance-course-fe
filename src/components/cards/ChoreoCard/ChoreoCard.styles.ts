@@ -24,10 +24,6 @@ export const CardContainer = styled.div`
     &:hover .choreoCardIconBox {
       transform: translateY(-10px);
     }
-
-    &:hover .choreoCardSurface {
-      transform: translateY(-4px);
-    }
   }
 `;
 
@@ -47,13 +43,6 @@ export const CardSurface = styled.div<CardSurfaceProps>`
   })}
 
   ${({ $isSpecialOffer }) => $isSpecialOffer && specialOfferStyles}
-
-  transform: translateY(0);
-  transition: transform var(--motion-slow, 320ms) var(--ease-emphasized, ease);
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
 `;
 
 export const IconBox = styled.div`
@@ -143,35 +132,42 @@ export const CardSubtitle = styled.p`
   letter-spacing: 0;
 `;
 
-/* Price and purchase button share one row and wrap onto two lines only when
-   the card is too narrow for both. */
+/* Mirrors the tariff cards on /online/group: a labelled price ("Price" /
+   "65 PLN / 15 €") with the purchase button under it. */
 export const CardFooter = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px 16px;
+  flex-direction: column;
+  gap: 20px;
   padding: 18px 0 0;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 `;
 
-export const CardPrice = styled.p`
-  flex: 0 1 auto;
-  margin: 0;
+export const CardPriceFact = styled.div`
+  display: flex;
+  flex-direction: column;
   padding: 0 0 0 4px;
-  color: var(--ink);
-  font-size: var(--text-card);
-  font-weight: 500;
-  line-height: 1.1;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-
-  @media (max-width: 880px) {
-    font-size: var(--text-lead);
-  }
 `;
 
-export const ButtonBox = styled.div<{ $isInline?: boolean }>`
+export const CardPriceLabel = styled.p`
+  margin: 0;
+  color: var(--ink-muted);
+  font-weight: 300;
+  font-size: var(--text-body);
+  line-height: 1.5;
+  letter-spacing: 0;
+`;
+
+export const CardPrice = styled.p`
+  margin: 0;
+  color: var(--ink);
+  font-weight: 400;
+  font-size: var(--text-fact);
+  line-height: 1.1;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+`;
+
+export const ButtonBox = styled.div`
   display: flex;
   width: 100%;
   flex-direction: column;
@@ -185,11 +181,4 @@ export const ButtonBox = styled.div<{ $isInline?: boolean }>`
       padding-inline: 16px;
     }
   }
-
-  ${({ $isInline }) =>
-    $isInline &&
-    css`
-      flex: 1 1 140px;
-      width: auto;
-    `}
 `;

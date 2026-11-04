@@ -14,6 +14,8 @@ export type ChoreoCardProps = {
   posterSrc?: string;
   title?: string;
   price?: string;
+  /** Caption above `price`, as on the tariff cards ("Price"). */
+  priceLabel?: string;
   subtitle?: string;
   firstButtonOptions?: ChoreoCardButtonProps;
   secondButtonOptions?: ChoreoCardButtonProps;

@@ -8,6 +8,8 @@ import {
   CardContainer,
   CardFooter,
   CardPrice,
+  CardPriceFact,
+  CardPriceLabel,
   CardSubtitle,
   CardSurface,
   CardText,
@@ -24,6 +26,7 @@ export default function ChoreoCard({
   icon,
   posterSrc,
   price,
+  priceLabel,
   secondButtonOptions,
   specialOffer,
   subtitle,
@@ -68,8 +71,13 @@ export default function ChoreoCard({
           )}
           {(price || hasFirstButton || hasSecondButton) && (
             <CardFooter>
-              {price && <CardPrice>{price}</CardPrice>}
-              <ButtonBox $isInline={Boolean(price) && !hasSecondButton}>
+              {price && (
+                <CardPriceFact>
+                  {priceLabel && <CardPriceLabel>{priceLabel}</CardPriceLabel>}
+                  <CardPrice>{price}</CardPrice>
+                </CardPriceFact>
+              )}
+              <ButtonBox>
                 {firstButtonOptions?.text && (
                   <Button
                     buttonText={firstButtonOptions.text}
