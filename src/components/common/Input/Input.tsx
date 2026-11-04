@@ -8,6 +8,10 @@ import { resolveMaskOptions } from "./Input.mask";
 import {
   ErrorMessage,
   ErrorReveal,
+  FieldControl,
+  FieldPrefix,
+  FieldTick,
+  HintText,
   InputBox,
   InputWrapper,
   Label,
@@ -36,6 +40,9 @@ export const Input: FC<TInput> = ({
   autoComplete,
   inputMode,
   enterKeyHint,
+  hint,
+  isComplete = false,
+  prefix,
 }) => {
   const hasError = Boolean(errorMessage);
   // The message stays in the collapsing row while it closes, so the text does
@@ -47,10 +54,12 @@ export const Input: FC<TInput> = ({
   const hasValue = String(value).length > 0;
   const inputId = id ?? name;
   const errorMessageId = hasError ? `${inputId}-error` : undefined;
+  const hintId = hint && !hasError ? `${inputId}-hint` : undefined;
   const isSelect = Boolean(selectOptions?.length);
+  const showsTick = isComplete && !hasError;
 
   const commonFieldProps = {
-    "aria-describedby": errorMessageId,
+    "aria-describedby": errorMessageId ?? hintId,
     "aria-invalid": hasError || undefined,
     autoComplete,
     disabled,
@@ -61,6 +70,8 @@ export const Input: FC<TInput> = ({
     onFocus,
     value,
     $hasError: hasError,
+    $hasPrefix: Boolean(prefix),
+    $isComplete: showsTick,
     $variant: variant,
   };
 
@@ -76,24 +87,40 @@ export const Input: FC<TInput> = ({
     <InputBox>
       <InputWrapper $width={width}>
         {label && <Label htmlFor={inputId}>{label}</Label>}
-        {isSelect ? (
-          <SelectField {...commonFieldProps} $hasValue={hasValue}>
-            <option value="" disabled hidden>
-              {placeholder || label}
-            </option>
-            {selectOptions?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+        <FieldControl>
+          {prefix ? <FieldPrefix aria-hidden="true">{prefix}</FieldPrefix> : null}
+          {isSelect ? (
+            <SelectField {...commonFieldProps} $hasValue={hasValue}>
+              <option value="" disabled hidden>
+                {placeholder || label}
               </option>
-            ))}
-          </SelectField>
-        ) : inputMask ? (
-          <MaskedInputField {...resolveMaskOptions(inputMask)} {...inputFieldProps} />
-        ) : (
-          <TextInputField {...inputFieldProps} />
-        )}
-        {!label && !hasValue && placeholder && <Placeholder text={placeholder} />}
+              {selectOptions?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </SelectField>
+          ) : inputMask ? (
+            <MaskedInputField {...resolveMaskOptions(inputMask)} {...inputFieldProps} />
+          ) : (
+            <TextInputField {...inputFieldProps} />
+          )}
+          <FieldTick aria-hidden="true" $isSelect={isSelect} $isVisible={showsTick}>
+            <svg viewBox="0 0 24 24" fill="none">
+              <path
+                d="M5 12.5l4.5 4.5L19 7.5"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.2"
+              />
+            </svg>
+          </FieldTick>
+          {/* A sibling of the field: the primary variant hides it on focus. */}
+          {!label && !hasValue && placeholder && <Placeholder text={placeholder} />}
+        </FieldControl>
       </InputWrapper>
+      {hint && !hasError ? <HintText id={hintId}>{hint}</HintText> : null}
       {/* Always in the DOM so the row can open and close smoothly instead of
           shoving the fields below down by a line. The field points at it via
           aria-describedby only while there is an error; `role="alert"`
