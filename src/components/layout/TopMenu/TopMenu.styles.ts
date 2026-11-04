@@ -1,6 +1,7 @@
 import styled from "styled-components";
 
 import { Link } from "@/i18n/navigation";
+import { hitArea } from "@/styles/mixins/hitArea";
 
 export const Nav = styled.nav`
   display: flex;
@@ -25,6 +26,10 @@ export const NavLink = styled(Link)<{ $selected: boolean }>`
   padding: 6px 0;
   display: inline-flex;
   align-items: center;
+  position: relative;
+  /* 39px tall in the phone menu, ~29px in the desktop pill: the halo makes
+     both 44px without moving anything (siblings are 20px+ apart). */
+  ${hitArea()}
 
   box-sizing: border-box;
   font-weight: 500;
