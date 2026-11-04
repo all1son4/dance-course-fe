@@ -658,10 +658,6 @@
     "pricing": {
       "withoutMentor": "Without mentor 65 PLN / 15 €",
       "withMentor": "With mentor 100 PLN / 25 €"
-    },
-    "paymentMethods": {
-      "label": "Payment methods",
-      "note": "Telegram access right after payment"
     }
   },
   "PaymentPage": {
