@@ -70,7 +70,7 @@ const buildAlertTextForPayment = async ({
       offerId: paymentRecord.offer_id,
       paymentIntentId,
     }),
-    hasClosedSalesAtFulfilment(paymentRecord.product_id),
+    hasClosedSalesAtFulfilment(paymentRecord.product_id, paymentRecord.offer_id),
   ]);
 
   return buildPurchaseAlertText({

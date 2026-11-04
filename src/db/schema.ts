@@ -74,6 +74,7 @@ export const productOffers = pgTable(
     accessWorkflow: text("access_workflow"),
     telegramAccessDurationDays: integer("telegram_access_duration_days"),
     isActive: boolean("is_active").notNull().default(true),
+    salesEnabled: boolean("sales_enabled").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -572,6 +573,7 @@ export const purchaseSideEffects = pgTable(
         | "campaign_email_delivery"
         | "polish_terminal_recorded"
         | "polish_terminal_reminder"
+        | "choreo_access_expiry_reminder"
       >(),
     provider: text("provider").$type<"resend" | "telegram" | "internal">(),
     payload: jsonb("payload")

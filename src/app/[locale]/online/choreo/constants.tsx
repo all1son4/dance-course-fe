@@ -8,8 +8,9 @@ import SvgAsset from "@/components/common/SvgAsset";
 import { CHOREO_HER_LIES_REEL_URL, CHOREO_STILL_ALIVE_REEL_URL } from "@/constants/links";
 import {
   buildCheckoutHref,
+  CHOREO_CATALOGUE_PRODUCT_CODES,
   formatOfferPrice,
-  SELLABLE_PRODUCTS_LIST,
+  isOfferSaleOpen,
   type SellableProduct,
   type SellableProductCode,
   type SellableProductOffer,
@@ -60,7 +61,7 @@ const CHOREO_PRESENTATIONS = {
   "choreo-bundle": {
     posterSrc: "/images/bundle_poster.webp",
   },
-  "choreo-birthday-drop": {
+  "choreo-love-me-in-the-morning": {
     posterSrc: "/images/love_me_in_the_morning_poster.webp",
   },
 } satisfies Partial<
@@ -170,47 +171,34 @@ export const getChoreoSuggestions = (
     tRich,
   });
 
-/**
- * The regular breakdowns are the ones sold with and without a mentor. The
- * The Birthday Drop is a choreo too, but it has its own section on this page, so it
- * is deliberately kept out of the catalogue instead of being listed twice.
- */
-const isRegularChoreoProduct = (product: SellableProduct) =>
-  product.type === "choreo" &&
-  product.offers.some((offer) => offer.code === "without-mentor");
-
-/**
- * `openProductIds` comes from the admin sales switch: a closed breakdown keeps
- * its card, its video and its copy, and only loses the buy buttons.
- */
+/** Show current breakdowns only while their product and at least one tariff are open. */
 export const getChoreos = (
   t: Translate,
-  openProductIds: ReadonlySet<string>,
+  catalogProducts: readonly SellableProduct[],
 ): ChoreoCardData[] =>
-  SELLABLE_PRODUCTS_LIST.filter(isRegularChoreoProduct).map((product) => {
-    const presentation = getChoreoPresentation(product.code);
-    const title = t(product.titleKey);
-    const copy = getChoreoCardCopy(product.code, title, t);
-    const isSaleOpen = openProductIds.has(product.id);
-    const withoutMentorOffer = product.offers.find(
-      (offer) => offer.code === "without-mentor",
-    );
-    const withMentorOffer = product.offers.find((offer) => offer.code === "with-mentor");
+  CHOREO_CATALOGUE_PRODUCT_CODES.flatMap((code): ChoreoCardData[] => {
+    const product = catalogProducts.find((candidate) => candidate.code === code);
+    if (!product || !product.salesEnabled) return [];
 
-    return {
-      id: product.code,
-      analyticsId: product.code,
-      ...presentation,
-      ...copy,
-      firstButtonOptions: buildChoreoButtonOptions(
-        product,
-        t,
-        isSaleOpen ? withoutMentorOffer : undefined,
-      ),
-      secondButtonOptions: buildChoreoButtonOptions(
-        product,
-        t,
-        isSaleOpen ? withMentorOffer : undefined,
-      ),
-    };
+    const withoutMentorOffer = product.offers.find(
+      (offer) => offer.code === "without-mentor" && isOfferSaleOpen(product, offer),
+    );
+    const withMentorOffer = product.offers.find(
+      (offer) => offer.code === "with-mentor" && isOfferSaleOpen(product, offer),
+    );
+    if (!withoutMentorOffer && !withMentorOffer) return [];
+
+    const presentation = getChoreoPresentation(code);
+    const copy = getChoreoCardCopy(code, t(product.titleKey), t);
+
+    return [
+      {
+        id: code,
+        analyticsId: code,
+        ...presentation,
+        ...copy,
+        firstButtonOptions: buildChoreoButtonOptions(product, t, withoutMentorOffer),
+        secondButtonOptions: buildChoreoButtonOptions(product, t, withMentorOffer),
+      },
+    ];
   });

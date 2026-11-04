@@ -24,7 +24,7 @@
       },
       "firstTouch": {
         "title": "First Touch — kurs dla początkujących",
-        "description": "Frame Up Strip od zera: technika, praca stóp, plastyka i emocje. W półtora miesiąca nauczysz się pierwszej choreografii. Dostęp do lekcji przez 4 miesiące.",
+        "description": "Frame Up Strip od zera: technika, praca stóp, plastyka i emocje. W półtora miesiąca nauczysz się pierwszej choreografii. Dostęp do lekcji przez 120 dni.",
         "ogImageAlt": "Kurs First Touch dla początkujących",
         "keywords": "First Touch kurs, kurs tańca dla początkujących online, frame up strip podstawy, Anna Strok First Touch"
       },
@@ -38,7 +38,7 @@
         "title": "Samouczki choreografii Frame Up Strip",
         "description": "Krok po kroku rozbiory autorskich choreografii: technika, wyraz i muzykalność. Powtarzaj lekcje tyle razy, ile potrzebujesz, by złożyć cały układ.",
         "ogImageAlt": "Samouczki choreograficzne Anny Strok",
-        "keywords": "samouczek choreografii online, still alive dance, her lies dance, pakiet choreografii, frame up choreography, anna strok choreography"
+        "keywords": "samouczek choreografii online, her lies dance, pakiet choreografii, frame up choreography, anna strok choreography"
       },
       "offline": {
         "title": "Zajęcia Frame Up Strip w Warszawie",
@@ -93,15 +93,16 @@
     "toggleDetails": "Pokaż lub ukryj szczegóły",
     "closeDialog": "Zamknij okno",
     "skipToContent": "Przejdź do treści",
-    "salesClosed": "Sprzedaż jest tymczasowo zamknięta",
-    "salesUnavailable": "Informacje o sprzedaży są chwilowo niedostępne. Spróbuj ponownie za moment.",
+    "salesClosed": "Sprzedaż niedostępna",
+    "salesUnavailable": "Sprzedaż niedostępna",
     "tryAgain": "Spróbuj ponownie",
     "errorPage": {
       "title": "Coś poszło nie tak",
       "description": "Nieoczekiwany błąd uniemożliwił wczytanie strony. Zwykle pomaga spróbować ponownie.",
       "retryButton": "Spróbuj ponownie",
       "backHome": "Wróć na stronę główną"
-    }
+    },
+    "refresh": "Odśwież"
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -334,7 +335,7 @@
           "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
         },
         "startLabel": "Start kolejnego cyklu",
-        "startValue": "Październik - listopad"
+        "startValue": "Listopad - grudzień"
       },
       "choreo": {
         "title": "Samouczki moich choreografii",
@@ -344,7 +345,8 @@
         },
         "startLabel": "Start",
         "startValue": "W dowolnym momencie",
-        "salesLabel": "Dostępność"
+        "salesLabel": "Dostępność",
+        "salesValue": "Sprzedaż otwarta"
       },
       "birthdayDrop": {
         "title": "The Birthday Drop",
@@ -505,7 +507,7 @@
       },
       "4": {
         "title": "Czas trwania kursu: 1,5 miesiąca",
-        "text": "Dostęp do lekcji przez 4 miesiące do samodzielnego przepracowania materiału. To wystarczająco dużo czasu, by przejść kurs we własnym tempie, wracać do materiałów i dopracować ruch."
+        "text": "Dostęp do lekcji przez 120 dni do samodzielnego przepracowania materiału. To wystarczająco dużo czasu, by przejść kurs we własnym tempie, wracać do materiałów i dopracować ruch."
       },
       "5": {
         "title": "Szybki dostęp przez zamknięte czaty Telegram",
@@ -527,7 +529,7 @@
         "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
       },
       "startLabel": "Start kolejnej grupy",
-      "startDate": "Październik - listopad",
+      "startDate": "Listopad - grudzień",
       "priceLabel": "Cena dla nowych uczestników",
       "buyButton": "Kup swoje miejsce",
       "offers": {
@@ -620,11 +622,11 @@
       "startLabel": "Start",
       "startValue": "W dowolnym momencie",
       "salesLabel": "Dostępność",
-      "salesValue": "Sprzedaż jest tymczasowo zamknięta",
+      "salesValue": "Sprzedaż otwarta",
       "button": "Wybierz choreografię"
     },
     "about": {
-      "title": "Co czeka Cię na kursie"
+      "title": "Co zawiera omówienie choreografii"
     },
     "suggestions": {
       "1": {
@@ -636,16 +638,16 @@
         "text": "Każdy ruch jest rozłożony krok po kroku, więc dokładnie wiesz, co robisz i dlaczego."
       },
       "3": {
-        "title": "Dostęp do materiałów przez 2 miesiące",
-        "text": "Wygodny format: masz czas, by przejść, powtórzyć i utrwalić materiał we własnym tempie."
+        "title": "Dostęp do materiałów przez 60 dni",
+        "text": "60 dni dostępu liczymy od dołączenia do kanału Telegram."
       },
       "4": {
         "title": "Szybki dostęp przez zamknięte kanały Telegram",
         "text": "Bez zbędnych platform - całe szkolenie w jednym miejscu od razu po płatności."
       },
       "5": {
-        "title": "Formaty udziału: z mentorem lub samodzielnie",
-        "text": "Wybierz to, co dla Ciebie najlepsze: wsparcie i feedback albo swobodne tempo bez opieki."
+        "title": "Samodzielna praktyka we własnym tempie",
+        "text": "Oglądaj wyjaśnienia, powtarzaj ruchy i wracaj do trudniejszych fragmentów w dogodnym momencie."
       },
       "6": {
         "title": "Płatność z dowolnego kraju",
@@ -653,22 +655,22 @@
       }
     },
     "pricing": {
-      "withoutMentor": "Bez mentora 60 PLN / 15 €",
+      "withoutMentor": "Bez mentora 65 PLN / 15 €",
       "withMentor": "Z mentorem 100 PLN / 25 €"
     }
   },
   "PaymentPage": {
     "title": "Płatność",
-    "description": "Sprawdź szczegóły zamówienia i dokończ płatność. Po zakupie otrzymasz dostęp oraz dalsze instrukcje.",
+    "description": "Sprawdź zamówienie i przejdź do płatności.",
     "personalDataTitle": "Dane kupującego",
     "salesClosed": {
-      "title": "Sprzedaż zamknięta",
-      "description": "Nabór na ten produkt jest obecnie zamknięty. Napisz do nas — powiemy, kiedy ruszy kolejny, i pomożemy wybrać odpowiedni format.",
+      "title": "Sprzedaż niedostępna",
+      "description": "Aktualne kursy i choreografie znajdziesz w katalogu.",
       "contactButton": "Napisz na Telegramie"
     },
     "catalogUnavailable": {
-      "title": "Płatność jest chwilowo niedostępna",
-      "description": "Nie udało się bezpiecznie potwierdzić produktu i aktualnej ceny. Spróbuj ponownie za chwilę lub napisz do nas."
+      "title": "Zakup niedostępny",
+      "description": "Odśwież stronę lub wybierz inny kurs."
     },
     "summary": {
       "currencyLabel": "Waluta płatności",
@@ -677,7 +679,7 @@
     },
     "renewal": {
       "title": "Potwierdź Telegram przed płatnością",
-      "description": "Aby przedłużyć ze zniżką, potwierdź konto Telegram: sprawdzimy udział w poprzednim czacie, a po płatności wyślemy osobisty link do nowej grupy.",
+      "description": "Aby przedłużyć dostęp, potwierdź konto Telegram.",
       "summaryCard": {
         "description": "Kontynuacja udziału w Online Group na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
@@ -700,8 +702,8 @@
         "failed": "Nie udało się potwierdzić Telegrama."
       },
       "unavailable": {
-        "title": "Ten link do przedłużenia jest już nieaktywny",
-        "description": "Wygląda na to, że ta kampania przedłużeń dobiegła końca lub link wygasł. Napisz do nas — pomożemy przedłużyć udział."
+        "title": "Przedłużenie niedostępne",
+        "description": "Napisz do nas — pomożemy przedłużyć dostęp."
       }
     },
     "inputs": {
@@ -749,14 +751,18 @@
       "digitalContentAgreement": "Akceptuję warunki i zawieram umowę o dostarczenie treści cyfrowych."
     },
     "staleLink": {
-      "title": "Link jest nieaktualny",
-      "description": "Ta oferta nie jest już dostępna. Zobacz aktualne kursy i materiały — tam znajdziesz wszystko, co jest teraz w sprzedaży.",
+      "title": "Oferta niedostępna",
+      "description": "Aktualne kursy i choreografie znajdziesz w katalogu.",
       "catalogButton": "Zobacz kursy"
     },
     "successVerification": {
       "preparing": "Prawie gotowe — potwierdzamy płatność i przygotowujemy dostęp. Może to potrwać jeszcze kilka sekund…"
     },
-    "paymentLockedHint": "Uzupełnij dane i zaznacz zgody — tutaj otworzy się formularz płatności."
+    "paymentLockedHint": "Uzupełnij dane i zaznacz zgody — tutaj otworzy się formularz płatności.",
+    "offerUnavailable": {
+      "title": "Ten wariant jest niedostępny.",
+      "selectButton": "Wybierz wariant"
+    }
   },
   "PaymentSuccessPage": {
     "title": "Płatność zakończona pomyślnie",
@@ -793,8 +799,8 @@
       }
     },
     "accessNotice": {
-      "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 4 miesiące od dołączenia.",
-      "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 2 miesiące od dołączenia.",
+      "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 120 dni od dołączenia.",
+      "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 60 dni od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
       "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
       "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze."
@@ -844,19 +850,19 @@
       "missingPublishableKey": "Płatność jest chwilowo niedostępna."
     },
     "errors": {
-      "missingClientSecret": "Nie udało się przygotować płatności. Spróbuj ponownie.",
-      "catalogUnavailable": "Sprzedaż jest tymczasowo niedostępna. Spróbuj ponownie później.",
-      "salesClosed": "Sprzedaż tego produktu jest obecnie zamknięta.",
-      "consentEvidenceFailed": "Nie udało się zapisać wymaganego potwierdzenia zgód. Spróbuj ponownie.",
+      "missingClientSecret": "Nie udało się otworzyć płatności.",
+      "catalogUnavailable": "Ten zakup jest obecnie niedostępny.",
+      "salesClosed": "Ten zakup jest obecnie niedostępny.",
+      "consentEvidenceFailed": "Nie udało się otworzyć płatności.",
       "invalidCustomerData": "Sprawdź dane klienta i spróbuj ponownie.",
-      "missingSecretKey": "Płatność jest chwilowo niedostępna. Spróbuj później lub napisz do nas.",
-      "paymentIntentFailed": "Nie udało się przygotować płatności. Spróbuj ponownie lub napisz do nas.",
-      "paymentIntentRequestFailed": "Nie udało się przygotować płatności. Spróbuj ponownie.",
+      "missingSecretKey": "Płatność niedostępna.",
+      "paymentIntentFailed": "Nie udało się otworzyć płatności.",
+      "paymentIntentRequestFailed": "Nie udało się otworzyć płatności.",
       "requiredConsentMissing": "Zaakceptuj wszystkie wymagane zgody, aby kontynuować.",
-      "onlineGroupCampaignNotConfigured": "Nowy cykl Online Group nie został jeszcze skonfigurowany. Skontaktuj się ze wsparciem.",
+      "onlineGroupCampaignNotConfigured": "Ten zakup jest obecnie niedostępny.",
       "telegramRenewalVerificationRequired": "Najpierw potwierdź Telegram dla tej kontynuacji.",
-      "renewalCampaignInactive": "Ten link kontynuacji nie jest już aktywny. Użyj aktualnego linku z grupy.",
-      "renewalPaymentContextMismatch": "Ten link kontynuacji nie pasuje do wybranego produktu.",
+      "renewalCampaignInactive": "Ten zakup jest obecnie niedostępny.",
+      "renewalPaymentContextMismatch": "Ten link do przedłużenia jest niedostępny.",
       "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie.",
       "paymentFormBlocked": "Nie udało się wczytać formularza płatności — może go blokować rozszerzenie lub sieć. Wyłącz blokowanie albo otwórz stronę w innej przeglądarce.",
       "rateLimited": "Zbyt wiele prób. Odczekaj minutę i spróbuj ponownie."
@@ -872,7 +878,7 @@
         "1": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czucia ciała, pewności siebie i ruchu.",
         "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
       },
-      "accessNote": "Kurs trwa 1,5 miesiąca, a dostęp do lekcji przez prywatny czat Telegram otrzymujesz na 4 miesiące.",
+      "accessNote": "Kurs trwa 1,5 miesiąca. Dostęp do lekcji: 120 dni od dołączenia do prywatnego czatu Telegram.",
       "offers": {
         "standard": "Dostęp standardowy"
       }
@@ -884,7 +890,7 @@
         "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
-      "accessNote": "Dostęp do materiałów przez 2 miesiące przez prywatny kanał Telegram.",
+      "accessNote": "Dostęp do materiałów przez 60 dni od dołączenia do prywatnego kanału Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"
@@ -895,9 +901,9 @@
       "description": {
         "1": "Tutorial online choreografii Her Lies dla osób, które chcą głębi, struktury i wyrazistego tańca.",
         "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
-        "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
+        "3": "Samodzielna nauka bez wsparcia mentora i informacji zwrotnej."
       },
-      "accessNote": "Dostęp do materiałów przez 2 miesiące przez prywatny kanał Telegram.",
+      "accessNote": "Dostęp do materiałów przez 60 dni od dołączenia do prywatnego kanału Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"
@@ -911,7 +917,7 @@
         "2": "W bundle znajdują się Still Alive i Her Lies: możesz przechodzić materiał we własnym tempie, wracać do lekcji i składać obie choreografie do muzyki.",
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
-      "accessNote": "Dostęp do materiałów przez 2 miesiące przez prywatny kanał Telegram z dwiema choreografiami.",
+      "accessNote": "Obie choreografie są dostępne przez 60 dni od dołączenia do prywatnego kanału Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora",
         "withMentor": "Z mentorem"
@@ -943,6 +949,18 @@
         "libraryAccess": "Plus",
         "renewalDiscount": "Kontynuacja Standard",
         "renewalLibraryAccess": "Kontynuacja Plus"
+      }
+    },
+    "choreoLoveMeInTheMorning": {
+      "title": "Wideo z omówieniem choreografii \"Love me in the morning\"",
+      "description": {
+        "1": "Omówienie choreografii Love me in the morning online ze szczegółowym wyjaśnieniem ruchów i przejść.",
+        "2": "Sam materiał z choreografią: ucz się, odtwarzaj i ćwicz we własnym tempie.",
+        "3": "Samodzielna nauka bez wsparcia mentora i informacji zwrotnej."
+      },
+      "accessNote": "Dostęp do materiałów przez 60 dni od dołączenia do prywatnego kanału Telegram.",
+      "offers": {
+        "withoutMentor": "Bez mentora"
       }
     }
   },

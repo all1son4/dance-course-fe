@@ -1,5 +1,9 @@
 import type { ReactNode } from "react";
 
+import {
+  DEFAULT_CHECKOUT_PRODUCT,
+  type SellableProduct,
+} from "@/constants/sellable-products";
 import { prefersReducedMotion } from "@/lib/reveal";
 import type { usePaymentStore } from "@/stores";
 
@@ -339,4 +343,23 @@ export const focusNextCheckoutControl = ({
       block: "center",
     });
   }
+};
+
+/** Check the requested IDs before showing the store's fallback selection. */
+export const isCheckoutLinkStale = ({
+  products,
+  productId,
+  offerId,
+}: {
+  products: readonly SellableProduct[];
+  productId: string;
+  offerId: string;
+}) => {
+  const product = products.find(
+    (candidate) => candidate.id === (productId || DEFAULT_CHECKOUT_PRODUCT.id),
+  );
+  return (
+    (Boolean(productId) && !product) ||
+    (Boolean(offerId) && !product?.offers.some((offer) => offer.id === offerId))
+  );
 };

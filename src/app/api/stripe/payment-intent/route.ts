@@ -5,8 +5,10 @@ import {
   getResolvedCheckoutCurrency,
   getSellableProductById,
   getSellableProductOfferById,
+  isOfferSaleOpen,
   isOnlineGroupLibraryOfferId,
   isOnlineGroupNewOfferId,
+  LOVE_ME_IN_THE_MORNING_PRODUCT_ID,
   type SellableProduct,
   type SellableProductOffer,
   type SupportedCheckoutCurrency,
@@ -37,6 +39,7 @@ import {
   getLocalizedSellableProductOfferLabel,
   getLocalizedSellableProductTitle,
 } from "@/lib/sellable-products-localization";
+import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
 
 import {
   createPaymentIntentIdempotencyKey,
@@ -134,11 +137,16 @@ const getCheckoutSelection = async ({
   offerId?: string;
   productId?: string;
 }): Promise<CheckoutSelection> => {
-  const configuredProduct = getSellableProductById(productId) ?? DEFAULT_CHECKOUT_PRODUCT;
+  const configuredProduct = productId?.trim()
+    ? getSellableProductById(productId)
+    : DEFAULT_CHECKOUT_PRODUCT;
+  if (!configuredProduct) throw new CatalogUnavailableError(409);
+
   const authoritativeOfferId = getSellableProductOfferById(
     configuredProduct,
     offerId,
   )?.id;
+  if (offerId?.trim() && !authoritativeOfferId) throw new CatalogUnavailableError(409);
 
   try {
     const selection = await getCheckoutSelectionFromDatabase({
@@ -251,9 +259,21 @@ const getRenewalContextErrorResponse = ({
 
 const getSalesAvailabilityErrorResponse = ({
   product,
+  offer,
+  customerData,
 }: PaymentIntentContext): Response | null => {
-  if (!product.salesEnabled) {
+  if (!isOfferSaleOpen(product, offer)) {
     return jsonErrorNoStore("sales_closed", { status: 409 });
+  }
+
+  if (
+    product.id === LOVE_ME_IN_THE_MORNING_PRODUCT_ID &&
+    !getTelegramChannelTargetByOfferId({
+      offerId: offer.id,
+      lessonLanguage: customerData.lessonLanguage,
+    })
+  ) {
+    return jsonErrorNoStore("catalog_unavailable", { status: 409 });
   }
 
   return null;

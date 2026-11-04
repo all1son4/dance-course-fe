@@ -1,4 +1,5 @@
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
+import type { ProductSaleState } from "@/lib/sales-availability";
 
 import {
   ContentStack,
@@ -14,6 +15,7 @@ type InteractiveCourseCard = InteractiveCardProps & {
 export const getOnlineCoursesArray = (
   t: Translate,
   commonT: Translate,
+  choreoSaleState: ProductSaleState = "closed",
 ): InteractiveCourseCard[] => [
   // The Birthday Drop is retired (see BIRTHDAY_CAMPAIGN_ENABLED); its page
   // answers 404, so the card stays out until the campaign returns.
@@ -66,8 +68,18 @@ export const getOnlineCoursesArray = (
     ),
     bottomRowContent: (
       <ContentStack>
-        <DetailText>{t("cards.choreo.salesLabel")}</DetailText>
-        <DetailValueText>{commonT("salesClosed")}</DetailValueText>
+        <DetailText>
+          {t(
+            choreoSaleState === "open"
+              ? "cards.choreo.startLabel"
+              : "cards.choreo.salesLabel",
+          )}
+        </DetailText>
+        <DetailValueText>
+          {choreoSaleState === "open"
+            ? t("cards.choreo.startValue")
+            : commonT("salesUnavailable")}
+        </DetailValueText>
       </ContentStack>
     ),
     buttonText: commonT("details"),
