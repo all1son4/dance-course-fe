@@ -3,8 +3,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
-import behaviorContractCases from "../fixtures/behavior-contract-cases.json";
-
 import {
   INITIAL_AGREEMENTS,
   PAYMENT_CHECKBOXES,
@@ -14,6 +12,8 @@ import {
   getDefaultCheckoutCurrencyByLocale,
   SELLABLE_PRODUCTS_LIST,
 } from "@/constants/sellable-products";
+
+import behaviorContractCases from "../fixtures/behavior-contract-cases.json";
 
 test("[BEH-TG-02] keeps the accepted product, offer, price, and access-duration matrix", () => {
   const actualMatrix = SELLABLE_PRODUCTS_LIST.flatMap((product) =>
