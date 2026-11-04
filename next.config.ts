@@ -59,7 +59,13 @@ const nextConfig = {
   },
   async headers() {
     return [
-      ...["/svg/:path*", "/images/:path*", "/videos/:path*"].map((source) => ({
+      ...[
+        "/svg/:path*",
+        "/images/:path*",
+        "/videos/:path*",
+        "/icons/:path*",
+        "/apple-touch-icon.png",
+      ].map((source) => ({
         source,
         headers: [{ key: "Cache-Control", value: publicAssetCacheControl }],
       })),
