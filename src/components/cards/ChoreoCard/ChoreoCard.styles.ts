@@ -93,11 +93,11 @@ export const InteractiveBox = styled.div`
   }
 `;
 
-export const CardText = styled.div`
+export const CardText = styled.div<{ $hasPrice?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin: 0 0 36px 0;
+  margin: 0 0 ${({ $hasPrice }) => ($hasPrice ? "24px" : "36px")} 0;
 `;
 
 export const CardTitle = styled.p`
@@ -120,6 +120,15 @@ export const CardSubtitle = styled.p`
   font-size: var(--text-lead);
   line-height: 1.2;
   letter-spacing: 0;
+`;
+
+export const CardPrice = styled.p`
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: var(--text-lead);
+  font-weight: 500;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
 `;
 
 export const ButtonBox = styled.div`

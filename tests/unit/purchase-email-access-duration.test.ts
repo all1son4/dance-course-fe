@@ -48,3 +48,41 @@ test("purchase email reports the exact configured access days in every language 
   assert.match(lifetime.text, /навсегда/u);
   assert.doesNotMatch(lifetime.text, /60 дней|0 дней/u);
 });
+
+test("single-tariff purchase emails omit the tariff row in HTML and text in every language", () => {
+  const labels = { ru: "Без куратора", en: "Without mentor", pl: "Bez mentora" };
+  for (const [checkoutLocale, offerLabel] of Object.entries(labels)) {
+    for (const showOfferLabel of [false, true]) {
+      const email = buildPurchaseSuccessEmail({
+        checkoutLocale,
+        accessKind: "telegram-channel",
+        accessDurationDays: 60,
+        telegramAccessUrl: "https://example.com/invite",
+        productTitle: "Her Lies",
+        offerLabel,
+        showOfferLabel,
+        amountMinor: "6500",
+        checkoutCurrency: "pln",
+        receiptLink: null,
+      });
+      assert.equal(email.html.includes(offerLabel), showOfferLabel);
+      assert.equal(email.text.includes(offerLabel), showOfferLabel);
+      assert.match(email.text, /60/u);
+      assert.match(email.text, /example.com\/invite/u);
+      assert.match(email.text, /65/u);
+    }
+    const mentored = buildPurchaseSuccessEmail({
+      checkoutLocale,
+      accessKind: "telegram-channel",
+      productTitle: "Her Lies",
+      offerLabel: "MENTOR_LABEL",
+      showOfferLabel: false,
+      showMentorFollowupNote: true,
+      amountMinor: "10000",
+      checkoutCurrency: "pln",
+      receiptLink: null,
+    });
+    assert.doesNotMatch(mentored.text, /MENTOR_LABEL|с куратором|mentor/iu);
+    assert.match(mentored.text, /обратной связи|feedback/u);
+  }
+});

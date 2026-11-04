@@ -49,6 +49,7 @@ export type PurchaseInvoiceAttachment = {
 export type BuildPurchaseInvoiceAttachmentInput = {
   issuedAt: Date;
   paymentRecord: PaymentRecordSnapshot;
+  showOfferLabel?: boolean;
 };
 
 type PurchaseInvoiceDocumentProps = {
@@ -292,7 +293,10 @@ const getInvoiceNumber = (paymentRecord: PaymentRecordSnapshot) => {
 const getInvoiceFilename = (invoiceNumber: string) =>
   `${invoiceNumber.replace(/[^A-Za-z0-9_-]+/gu, "-")}.pdf`;
 
-const getPurchaseDescription = (paymentRecord: PaymentRecordSnapshot) => {
+export const getPurchaseDescription = (
+  paymentRecord: PaymentRecordSnapshot,
+  showOfferLabel = true,
+) => {
   const englishOfferMetadata = getLocalizedOfferMetadataByOfferId(
     paymentRecord.offer_id,
     "en",
@@ -300,12 +304,16 @@ const getPurchaseDescription = (paymentRecord: PaymentRecordSnapshot) => {
 
   if (englishOfferMetadata) {
     return stripUnsupportedPdfCharacters(
-      `${englishOfferMetadata.productTitle} - ${englishOfferMetadata.offerLabel}`,
+      showOfferLabel
+        ? `${englishOfferMetadata.productTitle} - ${englishOfferMetadata.offerLabel}`
+        : englishOfferMetadata.productTitle,
     );
   }
 
   const productTitle = stripUnsupportedPdfCharacters(paymentRecord.product_title);
   const offerLabel = stripUnsupportedPdfCharacters(paymentRecord.offer_label);
+
+  if (!showOfferLabel && productTitle) return productTitle;
 
   if (productTitle && offerLabel) {
     return `${productTitle} - ${offerLabel}`;
@@ -433,6 +441,7 @@ const PurchaseInvoiceDocument = ({
 export const buildPurchaseInvoiceAttachment = async ({
   issuedAt,
   paymentRecord,
+  showOfferLabel = true,
 }: BuildPurchaseInvoiceAttachmentInput): Promise<PurchaseInvoiceAttachment> => {
   const invoiceNumber = getInvoiceNumber(paymentRecord);
   const amountLabel = formatInvoiceAmount({
@@ -447,7 +456,7 @@ export const buildPurchaseInvoiceAttachment = async ({
       buyerAddressLines={getBuyerAddressLines(paymentRecord)}
       buyerEmail={trimAndCollapseSpaces(paymentRecord.customer_email)}
       buyerName={trimAndCollapseSpaces(paymentRecord.customer_full_name)}
-      description={getPurchaseDescription(paymentRecord)}
+      description={getPurchaseDescription(paymentRecord, showOfferLabel)}
       dueDateLabel={dueDateLabel}
       invoiceNumber={invoiceNumber}
       issueDateLabel={issueDateLabel}

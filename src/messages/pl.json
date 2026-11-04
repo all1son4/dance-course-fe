@@ -872,6 +872,7 @@
     "ariaLabel": "Przełącznik waluty"
   },
   "SellableProducts": {
+    "buyButton": "Kup",
     "firstTouch": {
       "title": "Kurs dla początkujących \"First Touch\"",
       "description": {

@@ -19,6 +19,7 @@ import {
   type SellableProductCode,
   type SellableProductOffer,
 } from "@/constants/sellable-products";
+import { shouldShowOfferLabel } from "@/lib/choreo-offer-presentation";
 import {
   OnlineCalendar,
   OnlineCreditCard,
@@ -162,7 +163,9 @@ const buildChoreoButtonOptions = (
           product_code: product.code,
           product_id: product.id,
         },
-        text: formatOfferButtonText(t, offer),
+        text: shouldShowOfferLabel(product, offer.id)
+          ? formatOfferButtonText(t, offer)
+          : t("buyButton"),
       }
     : undefined;
 
@@ -193,6 +196,10 @@ export const getChoreos = (
     );
     if (!withoutMentorOffer && !withMentorOffer) return [];
 
+    const singleOffer =
+      withoutMentorOffer && withMentorOffer
+        ? undefined
+        : (withoutMentorOffer ?? withMentorOffer);
     const presentation = getChoreoPresentation(code);
     const copy = getChoreoCardCopy(code, t(product.titleKey), t);
 
@@ -200,6 +207,7 @@ export const getChoreos = (
       {
         id: code,
         analyticsId: code,
+        price: singleOffer ? formatOfferPrice(singleOffer.prices) : undefined,
         ...presentation,
         ...copy,
         firstButtonOptions: buildChoreoButtonOptions(product, t, withoutMentorOffer),
