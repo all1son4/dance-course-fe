@@ -4,7 +4,9 @@ import VideoPlayer from "@/components/other/VideoPlayer/VideoPlayer";
 
 import {
   ButtonBox,
+  CARD_MEDIA_RADIUS,
   CardContainer,
+  CardFooter,
   CardPrice,
   CardSubtitle,
   CardSurface,
@@ -28,10 +30,13 @@ export default function ChoreoCard({
   title,
   videoSrc,
 }: ChoreoCardProps) {
+  const hasFirstButton = Boolean(firstButtonOptions?.text);
+  const hasSecondButton = Boolean(secondButtonOptions?.text);
+
   return (
     <CardContainer>
       {icon && <IconBox className="choreoCardIconBox">{icon}</IconBox>}
-      <CardSurface $isSpecialOffer={specialOffer}>
+      <CardSurface className="choreoCardSurface" $isSpecialOffer={specialOffer}>
         {videoSrc && (
           <VideoPlayer
             analyticsId={analyticsId}
@@ -39,7 +44,7 @@ export default function ChoreoCard({
             poster={posterSrc}
             iconSize="40px"
             buttonSize="80px"
-            radius="0"
+            radius={CARD_MEDIA_RADIUS}
             aspectRatio="1 / 0.67"
           />
         )}
@@ -55,33 +60,38 @@ export default function ChoreoCard({
           </PosterBox>
         )}
         <InteractiveBox>
-          {(title || subtitle || price) && (
-            <CardText $hasPrice={Boolean(price)}>
+          {(title || subtitle) && (
+            <CardText>
               {title && <CardTitle>{title}</CardTitle>}
               {subtitle && <CardSubtitle>{subtitle}</CardSubtitle>}
-              {price && <CardPrice>{price}</CardPrice>}
             </CardText>
           )}
-          <ButtonBox>
-            {firstButtonOptions?.text && (
-              <Button
-                buttonText={firstButtonOptions.text}
-                href={firstButtonOptions.href}
-                prefetch={false}
-                rel="nofollow"
-                analytics={firstButtonOptions.analytics}
-              />
-            )}
-            {secondButtonOptions?.text && (
-              <Button
-                buttonText={secondButtonOptions.text}
-                href={secondButtonOptions.href}
-                prefetch={false}
-                rel="nofollow"
-                analytics={secondButtonOptions.analytics}
-              />
-            )}
-          </ButtonBox>
+          {(price || hasFirstButton || hasSecondButton) && (
+            <CardFooter>
+              {price && <CardPrice>{price}</CardPrice>}
+              <ButtonBox $isInline={Boolean(price) && !hasSecondButton}>
+                {firstButtonOptions?.text && (
+                  <Button
+                    buttonText={firstButtonOptions.text}
+                    href={firstButtonOptions.href}
+                    prefetch={false}
+                    rel="nofollow"
+                    analytics={firstButtonOptions.analytics}
+                  />
+                )}
+                {secondButtonOptions?.text && (
+                  <Button
+                    variant={hasFirstButton ? "secondary" : "primary"}
+                    buttonText={secondButtonOptions.text}
+                    href={secondButtonOptions.href}
+                    prefetch={false}
+                    rel="nofollow"
+                    analytics={secondButtonOptions.analytics}
+                  />
+                )}
+              </ButtonBox>
+            </CardFooter>
+          )}
         </InteractiveBox>
       </CardSurface>
     </CardContainer>
