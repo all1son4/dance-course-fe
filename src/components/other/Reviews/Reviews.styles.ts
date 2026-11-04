@@ -114,6 +114,10 @@ export const ReviewsSlider = styled.div`
      only hint on a phone that there is more than one review. */
   & .swiper-pagination {
     position: static;
+    /* Swiper's identity translate3d() would make this row its own stacking
+       context, trapping the dots' hit areas (below) under .swiper-wrapper
+       (z-index 1). Without it they can sit at z-index 2 over the card edge. */
+    transform: none;
     display: none;
     justify-content: center;
     align-items: center;
@@ -129,6 +133,7 @@ export const ReviewsSlider = styled.div`
   /* Quiet, small dots in the site's muted ink; the active one stretches into
      a short pill in the brand red. */
   & .swiper-pagination-bullet {
+    position: relative;
     width: 5px;
     height: 5px;
     margin: 0;
@@ -138,6 +143,25 @@ export const ReviewsSlider = styled.div`
     transition:
       width var(--motion-base, 220ms) var(--ease-emphasized, ease),
       background-color var(--motion-base, 220ms) var(--ease-standard, ease);
+  }
+
+  /* Hit area, painted size unchanged. Horizontally each dot owns exactly its
+     share of the row - itself plus half the space to either neighbour (5px
+     flex gap + Swiper's 4px side margins) - so adjacent dots tile without
+     overlapping. Vertically it can only grow upwards (.swiper clips below
+     the dots), and the nearest control above, a card's "Read more" button,
+     ends 36px above the dots at every width where they show: the halo stops
+     4px short of it. That is 37px, the most this row has room for without
+     moving anything. */
+  & .swiper-pagination-bullet::after {
+    content: "";
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: 0;
+    width: calc(100% + 5px + 2 * var(--swiper-pagination-bullet-horizontal-gap, 4px));
+    height: calc(100% + 32px);
+    transform: translateX(-50%);
   }
 
   & .swiper-pagination-bullet-active {
