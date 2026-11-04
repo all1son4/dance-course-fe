@@ -6,7 +6,7 @@ import { getStorefrontSellableProducts } from "@/lib/sales-availability";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import { getChoreos, getChoreoStartingPrice } from "./constants";
-import { ChoreoPaymentMethods, ChoreoSection } from "./page.styles";
+import { ChoreoSection } from "./page.styles";
 
 export default async function ChoreoCatalogueSection() {
   // Every string the cards need - product titles, offer labels, the bundle's
@@ -28,10 +28,6 @@ export default async function ChoreoCatalogueSection() {
       {choreos.map(({ id, ...choreo }) => (
         <ChoreoCard key={id} {...choreo} />
       ))}
-      <ChoreoPaymentMethods
-        label={pageT("paymentMethods.label")}
-        note={pageT("paymentMethods.note")}
-      />
       {/* Mirrors the hero's "choose a choreography" button. */}
       <StickyCta
         analytics={{ id: "select_choreo", placement: "choreo_sticky" }}
