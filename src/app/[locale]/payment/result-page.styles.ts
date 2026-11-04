@@ -156,10 +156,7 @@ export const ResultReceipt = styled.p`
 
   & span {
     min-width: 0;
-    overflow: hidden;
     color: var(--ink-muted);
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   & b {
