@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import type { Options as PlyrOptions } from "plyr";
 import { type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 
+import PreviewClip from "@/components/other/PreviewClip";
 import { INSTAGRAM_BASE_URL } from "@/constants/links";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 import { Play } from "@/svg";
@@ -170,6 +171,7 @@ const shouldIgnorePauseShortcut = (
 export default function VideoPlayer({
   analyticsId,
   src,
+  previewSrc,
   type = "video/mp4",
   poster,
   preload = "none",
@@ -516,6 +518,7 @@ export default function VideoPlayer({
           aria-hidden
         />
       )}
+      {previewSrc && <PreviewClip src={previewSrc} disabled={hasStarted} />}
       <CenterButton
         type="button"
         aria-label={resolvedPlayLabel}

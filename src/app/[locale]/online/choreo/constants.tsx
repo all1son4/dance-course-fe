@@ -55,6 +55,19 @@ const getCompactChoreoTitle = (title: string) => {
   return title;
 };
 
+/**
+ * Poster, Instagram reel and optional hover/in-view preview per card.
+ *
+ * Preview clips: add `previewSrc: "/videos/choreo/<slug>-preview.mp4"` and put
+ * the file in `public/videos/choreo/`. Keep it short and light - about 5 s,
+ * 720 px wide, H.264, no audio track, under ~600 KB, first frame close to the
+ * poster - e.g.
+ *   ffmpeg -ss <start> -t 5 -i reel.mp4 -map 0:v:0 -an -map_metadata -1
+ *     -vf "scale=720:-2,fps=30" -c:v libx264 -profile:v high -crf 28
+ *     -preset slow -pix_fmt yuv420p -movflags +faststart
+ *     public/videos/choreo/<slug>-preview.mp4
+ * Without one, the card shows its poster exactly as before.
+ */
 const CHOREO_PRESENTATIONS = {
   "choreo-still-alive": {
     posterSrc: "/images/still_alive_poster.webp",
@@ -72,7 +85,10 @@ const CHOREO_PRESENTATIONS = {
     videoSrc: CHOREO_LOVE_ME_IN_THE_MORNING_REEL_URL,
   },
 } satisfies Partial<
-  Record<SellableProductCode, Pick<ChoreoCardProps, "posterSrc" | "videoSrc">>
+  Record<
+    SellableProductCode,
+    Pick<ChoreoCardProps, "posterSrc" | "previewSrc" | "videoSrc">
+  >
 >;
 
 /** The tutorials a bundle contains, for its "bought separately" price. */
