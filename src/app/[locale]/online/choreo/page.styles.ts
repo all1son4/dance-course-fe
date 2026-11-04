@@ -207,10 +207,12 @@ export const ChoreoCatalogueTitle = styled(SectionTitleBase)`
   color: var(--ink);
 `;
 
+/* Cards are capped at 480px, so two of them never fill the row: centred,
+   a short catalogue sits in the middle of the slab instead of hugging its left. */
 export const ChoreoSection = styled.div`
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-start;
+  justify-content: center;
   width: 100%;
   gap: 30px;
   align-items: stretch;

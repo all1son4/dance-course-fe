@@ -24,8 +24,20 @@ export type PaymentAgreementState = Record<PaymentAgreementFieldName, boolean>;
 
 export type PaymentInputMode = "email" | "numeric" | "text";
 
+/**
+ * The checkout asks in two groups: where the access goes (it is sent to these
+ * contacts) and what the invoice needs. Agreements and the payment itself are
+ * the third step.
+ */
+export type PaymentFieldStep = "access" | "billing";
+
+export const PAYMENT_STEPS = ["access", "billing", "payment"] as const;
+export type PaymentStep = (typeof PAYMENT_STEPS)[number];
+
 export type PaymentInputConfig = {
   autoComplete?: string;
+  /** Why the field is asked, shown under it. */
+  hintKey?: string;
   id: PaymentCustomerFieldName;
   /** Virtual keyboard hint; every field is a plain text control otherwise. */
   inputMode?: PaymentInputMode;
@@ -33,6 +45,7 @@ export type PaymentInputConfig = {
   layout?: "full" | "half";
   name: PaymentCustomerFieldName;
   placeholderKey: string;
+  step: PaymentFieldStep;
   type?: "text" | "email";
 };
 
@@ -60,40 +73,54 @@ export const INITIAL_AGREEMENTS: PaymentAgreementState = {
   digitalContentAgreement: false,
 };
 
+/* Rendered in this order: the access group first, then the invoice group with
+   the country ahead of the address it shapes. */
 export const PAYMENT_INPUTS: PaymentInputConfig[] = [
   {
-    autoComplete: "name",
-    id: "fullName",
-    labelKey: "inputs.fullName.label",
-    name: "fullName",
-    placeholderKey: "inputs.fullName.placeholder",
-  },
-  {
     autoComplete: "email",
+    hintKey: "inputs.email.hint",
     id: "email",
     inputMode: "email",
     labelKey: "inputs.email.label",
     name: "email",
     placeholderKey: "inputs.email.placeholder",
+    step: "access",
     type: "email",
   },
   {
     // A Telegram handle is not a browser-known identity field; keep autofill
     // from guessing a username into it.
     autoComplete: "off",
+    hintKey: "inputs.nickname.hint",
     id: "nickname",
     labelKey: "inputs.nickname.label",
     name: "nickname",
     placeholderKey: "inputs.nickname.placeholder",
+    step: "access",
     type: "text",
   },
   {
-    autoComplete: "street-address",
-    id: "address",
-    labelKey: "inputs.address.label",
-    name: "address",
-    placeholderKey: "inputs.address.placeholder",
-    type: "text",
+    id: "lessonLanguage",
+    labelKey: "inputs.lessonLanguage.label",
+    name: "lessonLanguage",
+    placeholderKey: "inputs.lessonLanguage.placeholder",
+    step: "access",
+  },
+  {
+    autoComplete: "name",
+    id: "fullName",
+    labelKey: "inputs.fullName.label",
+    name: "fullName",
+    placeholderKey: "inputs.fullName.placeholder",
+    step: "billing",
+  },
+  {
+    autoComplete: "country",
+    id: "country",
+    labelKey: "inputs.country.label",
+    name: "country",
+    placeholderKey: "inputs.country.placeholder",
+    step: "billing",
   },
   {
     autoComplete: "address-level2",
@@ -102,6 +129,7 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     layout: "half",
     name: "city",
     placeholderKey: "inputs.city.placeholder",
+    step: "billing",
     type: "text",
   },
   {
@@ -114,20 +142,17 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     layout: "half",
     name: "postalCode",
     placeholderKey: "inputs.postalCode.placeholder",
+    step: "billing",
     type: "text",
   },
   {
-    autoComplete: "country",
-    id: "country",
-    labelKey: "inputs.country.label",
-    name: "country",
-    placeholderKey: "inputs.country.placeholder",
-  },
-  {
-    id: "lessonLanguage",
-    labelKey: "inputs.lessonLanguage.label",
-    name: "lessonLanguage",
-    placeholderKey: "inputs.lessonLanguage.placeholder",
+    autoComplete: "street-address",
+    id: "address",
+    labelKey: "inputs.address.label",
+    name: "address",
+    placeholderKey: "inputs.address.placeholder",
+    step: "billing",
+    type: "text",
   },
 ];
 

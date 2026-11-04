@@ -103,6 +103,79 @@ export const ResultCard = styled.div`
   }
 `;
 
+/**
+ * The failed result's mark: a quiet "!" in the brand ink on a pale ring. It
+ * says "this needs another try", where a glossy red cross read as an alarm.
+ */
+export const ResultNoticeMark = styled.span`
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 84px;
+  height: 84px;
+  box-sizing: border-box;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid rgba(124, 0, 2, 0.32);
+  background: rgba(124, 0, 2, 0.05);
+  color: var(--brand);
+  animation: ${resultPop} 520ms ${POP_EASE} var(--motion-settle, 40ms) both;
+
+  & svg {
+    width: 40%;
+    height: 40%;
+  }
+
+  @media ${PHONE} {
+    width: 60px;
+    height: 60px;
+  }
+
+  @media ${SMALL_PHONE} {
+    width: 52px;
+    height: 52px;
+  }
+`;
+
+/** What was bought and for how much, in one line - a receipt, not a paragraph. */
+export const ResultReceipt = styled.p`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 14px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--ink);
+  font-size: var(--text-small);
+  line-height: 1.3;
+  animation: ${resultRise} ${RISE}
+    calc(var(--motion-settle, 40ms) + var(--result-enter-delay, 0ms) + 160ms) both;
+
+  & span {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--ink-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  & b {
+    flex: 0 0 auto;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media ${PHONE} {
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+`;
+
 /* Header and footer are hidden on result pages, so this is the page's heading. */
 export const ResultTitle = styled.h1`
   font-weight: 400;

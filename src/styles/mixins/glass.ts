@@ -1,6 +1,6 @@
 import { css } from "styled-components";
 
-type GlassVariant = "surface" | "chrome" | "control" | "dialog";
+type GlassVariant = "surface" | "raised" | "chrome" | "control" | "dialog";
 
 /**
  * Tone of the backdrop the glass sits on. It only drives the opaque fallbacks
@@ -85,6 +85,20 @@ const GLASS_VARIANTS: Record<GlassVariant, GlassPreset> = {
     sparkleAngleDeg: -40,
     sparkleBoost: 1.12,
   },
+  /**
+   * A surface panel resting on the white slab. White glass on white loses its
+   * edge there, so this one keeps the same white fill but more depth: a
+   * darker side to the rim and a deeper shadow give the edge back.
+   */
+  raised: {
+    bgParam: "rgba(255, 255, 255, 0.4)",
+    frostPx: 12,
+    depth: 48,
+    borderWidthPx: 1,
+    borderOpacity: 1,
+    sparkleAngleDeg: -40,
+    sparkleBoost: 1.16,
+  },
   chrome: {
     bgParam: "rgba(255, 255, 255, 0.36)",
     frostPx: 14,
@@ -113,6 +127,16 @@ const GLASS_VARIANTS: Record<GlassVariant, GlassPreset> = {
     sparkleBoost: 1.22,
   },
 };
+
+/**
+ * The hairline a raised panel needs on a white backdrop, where its own white
+ * rim cannot draw the edge. An outline, so it follows the radius and leaves
+ * the glass's layered shadows alone.
+ */
+export const raisedGlassEdge = css`
+  outline: 1px solid rgba(16, 18, 24, 0.1);
+  outline-offset: -1px;
+`;
 
 type GlassToneBase = {
   channel: number;
