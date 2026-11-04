@@ -14,12 +14,16 @@ import {
   ResultMeta,
   ResultParagraph,
   ResultParagraphs,
+  ResultReceipt,
   ResultTitle,
 } from "../result-page.styles";
+import type { ResultReceiptLine } from "../result-receipt";
 import TelegramAccessButton from "./telegram-access-button";
 
 type SuccessContentProps = {
   accessNotice: string;
+  /** What was paid for, shown under the title; absent when the link lacks it. */
+  receipt?: ResultReceiptLine | null;
   checkoutSessionId: string;
   dateLocale: string;
   descriptionLine1: string;
@@ -49,6 +53,7 @@ type SuccessContentProps = {
 
 export default function SuccessContent({
   accessNotice,
+  receipt,
   checkoutSessionId,
   dateLocale,
   descriptionLine1,
@@ -133,6 +138,12 @@ export default function SuccessContent({
   return (
     <>
       <ResultTitle>{title}</ResultTitle>
+      {receipt ? (
+        <ResultReceipt>
+          <span>{receipt.title}</span>
+          <b>{receipt.amount}</b>
+        </ResultReceipt>
+      ) : null}
       <ResultParagraphs>
         {descriptionLine1 ? <ResultParagraph>{descriptionLine1}</ResultParagraph> : null}
         {descriptionLine2 ? <ResultParagraph>{descriptionLine2}</ResultParagraph> : null}
