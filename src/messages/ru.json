@@ -658,6 +658,9 @@
     "pricing": {
       "withoutMentor": "Без куратора 65 PLN / 15 €",
       "withMentor": "С куратором 100 PLN / 25 €"
+    },
+    "catalogue": {
+      "title": "Что танцуем?"
     }
   },
   "PaymentPage": {

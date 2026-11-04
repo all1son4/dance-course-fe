@@ -1,6 +1,8 @@
 import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
+import PreviewClip from "@/components/other/PreviewClip";
 import VideoPlayer from "@/components/other/VideoPlayer/VideoPlayer";
+import { previewClipRootProps } from "@/lib/preview-clip";
 
 import {
   ButtonBox,
@@ -32,7 +34,9 @@ export default function ChoreoCard({
   firstButtonOptions,
   highlights,
   icon,
+  posterColor,
   posterSrc,
+  previewSrc,
   price,
   priceAnchor,
   priceLabel,
@@ -53,14 +57,16 @@ export default function ChoreoCard({
   );
 
   return (
-    <CardContainer>
+    <CardContainer {...(previewSrc ? previewClipRootProps : {})}>
       {icon && <IconBox className="choreoCardIconBox">{icon}</IconBox>}
       <CardSurface className="choreoCardSurface" $isSpecialOffer={specialOffer}>
         {videoSrc && (
           <VideoPlayer
             analyticsId={analyticsId}
             src={videoSrc}
+            previewSrc={previewSrc}
             poster={posterSrc}
+            posterColor={posterColor}
             iconSize="40px"
             buttonSize="80px"
             radius={CARD_MEDIA_RADIUS}
@@ -68,7 +74,7 @@ export default function ChoreoCard({
           />
         )}
         {!videoSrc && posterSrc && (
-          <PosterBox>
+          <PosterBox style={posterColor ? { backgroundColor: posterColor } : undefined}>
             <SvgAsset
               src={posterSrc}
               width={1290}
@@ -76,6 +82,7 @@ export default function ChoreoCard({
               sizes="(max-width: 767px) 100vw, (max-width: 1200px) 50vw, 390px"
               unoptimized
             />
+            {previewSrc && <PreviewClip src={previewSrc} />}
           </PosterBox>
         )}
         <InteractiveBox>
