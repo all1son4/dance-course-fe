@@ -46,6 +46,7 @@ export default function Contacts({ bgColor, layout = "bare" }: ContactsProps) {
             title={contact.title}
             text={contact.text}
             link={contact.link}
+            analytics={{ id: contact.analyticsId, placement: "contacts" }}
             key={contact.id}
           />
         ))}

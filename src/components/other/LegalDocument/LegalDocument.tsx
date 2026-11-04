@@ -7,7 +7,6 @@ import {
   LegalContactLine,
   LegalContent,
   LegalDescription,
-  LegalEmail,
   LegalItem,
   LegalItems,
   LegalItemText,
@@ -15,6 +14,7 @@ import {
   LegalSection,
   LegalTitle,
 } from "./LegalDocument.styles";
+import TrackedLegalEmail from "./TrackedLegalEmail";
 
 export const LEGAL_CONTACT_EMAIL = "kroxxxxx92@gmail.com";
 
@@ -41,9 +41,9 @@ const renderTextWithEmail = (text: string): ReactNode =>
     <Fragment key={`${part}-${index}`}>
       {part}
       {index < parts.length - 1 && (
-        <LegalEmail href={`mailto:${LEGAL_CONTACT_EMAIL}`}>
+        <TrackedLegalEmail href={`mailto:${LEGAL_CONTACT_EMAIL}`}>
           {LEGAL_CONTACT_EMAIL}
-        </LegalEmail>
+        </TrackedLegalEmail>
       )}
     </Fragment>
   ));
