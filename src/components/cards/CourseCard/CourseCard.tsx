@@ -25,10 +25,11 @@ export default function CourseCard({
   cardContent,
   icon,
   subtitle,
+  surface = "default",
   title,
 }: CourseCardProps) {
   return (
-    <CardContainer $bgColor={bgColor} className="courseCardContainer">
+    <CardContainer $bgColor={bgColor} $surface={surface} className="courseCardContainer">
       <IconBox className="courseCardIconBox">{icon}</IconBox>
       <TitleBox>
         <Title className="courseCardTitle">{title}</Title>

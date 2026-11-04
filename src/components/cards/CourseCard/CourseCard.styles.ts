@@ -1,16 +1,31 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
-import { glass } from "@/styles/mixins/glass";
+import { glass, raisedGlassEdge } from "@/styles/mixins/glass";
 
-export const CardContainer = styled.div<{ $bgColor?: string }>`
-  ${({ $bgColor }) =>
-    glass({
-      frost: "static",
-      variant: "surface",
-      radius: "var(--radius-slab)",
-      bgParam: $bgColor ?? "rgba(255, 255, 255, 0.4)",
-      hoverEffect: false,
-    })}
+export const CardContainer = styled.div<{
+  $bgColor?: string;
+  $surface: "default" | "raised";
+}>`
+  ${({ $bgColor, $surface }) =>
+    $surface === "raised"
+      ? css`
+          ${glass({
+            frost: "static",
+            variant: "raised",
+            radius: "var(--radius-slab)",
+            bgParam: $bgColor,
+            hoverEffect: false,
+            shadowStrength: 1.5,
+          })}
+          ${raisedGlassEdge}
+        `
+      : glass({
+          frost: "static",
+          variant: "surface",
+          radius: "var(--radius-slab)",
+          bgParam: $bgColor ?? "rgba(255, 255, 255, 0.4)",
+          hoverEffect: false,
+        })}
 
   min-width: 460px;
   width: 100%;
