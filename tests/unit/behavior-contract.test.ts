@@ -3,6 +3,8 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 
+import behaviorContractCases from "../fixtures/behavior-contract-cases.json";
+
 import {
   INITIAL_AGREEMENTS,
   PAYMENT_CHECKBOXES,
@@ -146,8 +148,6 @@ test("keeps locale currency defaults and internal checkout context", () => {
   );
 });
 
-const CONTRACT_PATH = join(process.cwd(), "docs/refactoring/behavior-contract.md");
-
 const testFilesUnder = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
@@ -155,12 +155,10 @@ const testFilesUnder = (directory: string): string[] =>
     return /\.(?:test|spec)\.tsx?$/u.test(path) ? [path] : [];
   });
 
-// Each case of the behavior contract must be claimed by a test title, so deleting
+// Each registered behavior case must be claimed by a test title, so deleting
 // or renaming that test is a failure here instead of a silent loss of coverage.
 test("every behavior-contract case names the test that protects it", () => {
-  const contractIds = new Set(
-    readFileSync(CONTRACT_PATH, "utf8").match(/BEH-[A-Z]+-\d+/gu) ?? [],
-  );
+  const contractIds = new Set(behaviorContractCases);
 
   assert.ok(contractIds.size > 0, "The behavior contract lists no case identifiers.");
 
