@@ -1,5 +1,6 @@
 import { css, styled } from "styled-components";
 
+import { visuallyHidden } from "@/styles/mixins/a11y";
 import { glass } from "@/styles/mixins/glass";
 
 type CardSurfaceProps = {
@@ -130,6 +131,68 @@ export const CardSubtitle = styled.p`
   font-size: var(--text-body);
   line-height: 1.4;
   letter-spacing: 0;
+`;
+
+/* Quiet facts under the title: they inform, the price and CTA still lead. */
+export const CardHighlights = styled.ul`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+`;
+
+export const CardHighlight = styled.li`
+  padding: 5px 11px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.045);
+  color: var(--ink-muted);
+  font-size: var(--text-caption);
+  font-weight: 400;
+  line-height: 1.3;
+`;
+
+/* "Bought separately" anchor for bundles: struck-through sum, then the
+   bundle price. */
+export const PriceAnchorRow = styled.p`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin: 4px 0 0;
+  font-variant-numeric: tabular-nums;
+`;
+
+export const PriceAnchorCurrent = styled.span`
+  color: var(--brand);
+  font-size: var(--text-lead);
+  font-weight: 500;
+  line-height: 1.2;
+`;
+
+export const CompareAtPrice = styled.span`
+  color: var(--ink-muted);
+  font-size: var(--text-body-sm);
+  font-weight: 300;
+  line-height: 1.2;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+
+  & s {
+    text-decoration-thickness: 1px;
+  }
+`;
+
+export const PriceAnchorLabel = styled.span`
+  ${visuallyHidden}
+`;
+
+export const CardPriceLine = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
 `;
 
 /* Mirrors the tariff cards on /online/group: a labelled price ("Price" /

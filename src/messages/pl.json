@@ -615,6 +615,7 @@
   "ChoreoPage": {
     "hero": {
       "title": "Samouczki choreograficzne",
+      "stickyTitle": "Tutoriale",
       "description": {
         "1": "Samouczki online moich choreografii.",
         "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
@@ -657,6 +658,10 @@
     "pricing": {
       "withoutMentor": "Bez mentora 65 PLN / 15 €",
       "withMentor": "Z mentorem 100 PLN / 25 €"
+    },
+    "paymentMethods": {
+      "label": "Metody płatności",
+      "note": "Dostęp w Telegramie zaraz po płatności"
     }
   },
   "PaymentPage": {
@@ -964,6 +969,14 @@
       "offers": {
         "withoutMentor": "Bez mentora"
       }
+    },
+    "choreoCard": {
+      "highlights": {
+        "level": "Poziom średni+",
+        "languages": "Wyjaśnienia RU · EN"
+      },
+      "priceFrom": "od",
+      "compareAtLabel": "Kupując osobno:"
     }
   },
   "PrivacyPolicyPage": {

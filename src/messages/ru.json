@@ -615,6 +615,7 @@
   "ChoreoPage": {
     "hero": {
       "title": "Видео-разборы моих хореографий",
+      "stickyTitle": "Разборы",
       "description": {
         "1": "Онлайн-разборы моих хореографий.",
         "2": "Учим вместе онлайн: можно пересматривать и повторять столько раз, сколько нужно, чтобы уверенно собрать все в музыку."
@@ -657,6 +658,10 @@
     "pricing": {
       "withoutMentor": "Без куратора 65 PLN / 15 €",
       "withMentor": "С куратором 100 PLN / 25 €"
+    },
+    "paymentMethods": {
+      "label": "Способы оплаты",
+      "note": "Доступ в Telegram сразу после оплаты"
     }
   },
   "PaymentPage": {
@@ -964,6 +969,14 @@
       "offers": {
         "withoutMentor": "Без куратора"
       }
+    },
+    "choreoCard": {
+      "highlights": {
+        "level": "Средний уровень+",
+        "languages": "Объяснения RU · EN"
+      },
+      "priceFrom": "от",
+      "compareAtLabel": "Если покупать по отдельности:"
     }
   },
   "PrivacyPolicyPage": {

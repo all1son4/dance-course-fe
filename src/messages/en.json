@@ -615,6 +615,7 @@
   "ChoreoPage": {
     "hero": {
       "title": "Video tutorials of my choreographies",
+      "stickyTitle": "Tutorials",
       "description": {
         "1": "Online video tutorials of my choreographies.",
         "2": "Learn online with replay support to confidently assemble choreography into music."
@@ -657,6 +658,10 @@
     "pricing": {
       "withoutMentor": "Without mentor 65 PLN / 15 €",
       "withMentor": "With mentor 100 PLN / 25 €"
+    },
+    "paymentMethods": {
+      "label": "Payment methods",
+      "note": "Telegram access right after payment"
     }
   },
   "PaymentPage": {
@@ -964,6 +969,14 @@
       "offers": {
         "withoutMentor": "Without mentor"
       }
+    },
+    "choreoCard": {
+      "highlights": {
+        "level": "Intermediate+",
+        "languages": "Explained in RU · EN"
+      },
+      "priceFrom": "from",
+      "compareAtLabel": "Bought separately:"
     }
   },
   "PrivacyPolicyPage": {
