@@ -1,3 +1,3 @@
-import PreviewClip from "./PreviewClip";
+import LazyPreviewClip from "./LazyPreviewClip";
 
-export default PreviewClip;
+export default LazyPreviewClip;
