@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+import PaymentMethods from "@/components/other/PaymentMethods";
+
 import {
   HeroMobileImagesBox,
   HeroSection,
@@ -204,6 +206,15 @@ export const ChoreoSection = styled.section`
   @media (max-width: 880px) {
     padding: 40px 0;
     gap: 24px;
+  }
+`;
+
+/* Spans the whole catalogue row under the cards (the section's own rule
+   sizes every child like a card, hence the doubled selector). */
+export const ChoreoPaymentMethods = styled(PaymentMethods)`
+  && {
+    flex: 1 1 100%;
+    max-width: none;
   }
 `;
 

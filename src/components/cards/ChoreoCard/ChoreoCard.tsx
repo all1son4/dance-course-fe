@@ -7,25 +7,34 @@ import {
   CARD_MEDIA_RADIUS,
   CardContainer,
   CardFooter,
+  CardHighlight,
+  CardHighlights,
   CardPrice,
   CardPriceFact,
   CardPriceLabel,
+  CardPriceLine,
   CardSubtitle,
   CardSurface,
   CardText,
   CardTitle,
+  CompareAtPrice,
   IconBox,
   InteractiveBox,
   PosterBox,
+  PriceAnchorCurrent,
+  PriceAnchorLabel,
+  PriceAnchorRow,
 } from "./ChoreoCard.styles";
 import type { ChoreoCardProps } from "./ChoreoCard.types";
 
 export default function ChoreoCard({
   analyticsId,
   firstButtonOptions,
+  highlights,
   icon,
   posterSrc,
   price,
+  priceAnchor,
   priceLabel,
   secondButtonOptions,
   specialOffer,
@@ -35,6 +44,13 @@ export default function ChoreoCard({
 }: ChoreoCardProps) {
   const hasFirstButton = Boolean(firstButtonOptions?.text);
   const hasSecondButton = Boolean(secondButtonOptions?.text);
+  const hasHighlights = Boolean(highlights?.length);
+  const compareAt = priceAnchor && (
+    <CompareAtPrice>
+      <PriceAnchorLabel>{priceAnchor.label}</PriceAnchorLabel>
+      <s>{priceAnchor.compareAt}</s>
+    </CompareAtPrice>
+  );
 
   return (
     <CardContainer>
@@ -63,10 +79,23 @@ export default function ChoreoCard({
           </PosterBox>
         )}
         <InteractiveBox>
-          {(title || subtitle) && (
+          {(title || subtitle || hasHighlights) && (
             <CardText>
               {title && <CardTitle>{title}</CardTitle>}
               {subtitle && <CardSubtitle>{subtitle}</CardSubtitle>}
+              {!price && priceAnchor?.current && (
+                <PriceAnchorRow>
+                  {compareAt}
+                  <PriceAnchorCurrent>{priceAnchor.current}</PriceAnchorCurrent>
+                </PriceAnchorRow>
+              )}
+              {hasHighlights && (
+                <CardHighlights>
+                  {highlights?.map((highlight) => (
+                    <CardHighlight key={highlight}>{highlight}</CardHighlight>
+                  ))}
+                </CardHighlights>
+              )}
             </CardText>
           )}
           {(price || hasFirstButton || hasSecondButton) && (
@@ -74,7 +103,10 @@ export default function ChoreoCard({
               {price && (
                 <CardPriceFact>
                   {priceLabel && <CardPriceLabel>{priceLabel}</CardPriceLabel>}
-                  <CardPrice>{price}</CardPrice>
+                  <CardPriceLine>
+                    <CardPrice>{price}</CardPrice>
+                    {compareAt}
+                  </CardPriceLine>
                 </CardPriceFact>
               )}
               <ButtonBox>

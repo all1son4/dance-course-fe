@@ -13,6 +13,7 @@ import {
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { getProductsSaleState } from "@/lib/sales-availability";
 import { buildBreadcrumbStructuredData } from "@/lib/seo";
+import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import { createRichText } from "../_shared/content";
 import ProductHero from "../_shared/product-hero";
@@ -106,7 +107,12 @@ export default async function ChoreoPage() {
         </InfoBoxGroup>
         {hasOpenSales && (
           <ButtonBox>
-            <Button buttonText={t("hero.button")} href="#choreo-section" />
+            <Button
+              buttonText={t("hero.button")}
+              href="#choreo-section"
+              analytics={{ id: "select_choreo", placement: "choreo_hero" }}
+              {...stickyCtaAnchorProps}
+            />
           </ButtonBox>
         )}
       </ProductHero>
