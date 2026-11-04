@@ -82,6 +82,8 @@ export const PosterBox = styled.div`
   overflow: hidden;
   flex-shrink: 0;
   border-radius: ${CARD_MEDIA_RADIUS};
+  /* Keeps a preview clip's z-index inside the box, under the card's badge. */
+  isolation: isolate;
 
   & img {
     width: 100%;
