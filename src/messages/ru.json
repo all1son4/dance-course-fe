@@ -873,6 +873,7 @@
   },
   "SellableProducts": {
     "buyButton": "Купить",
+    "priceLabel": "Стоимость",
     "firstTouch": {
       "title": "Курс для начинающих \"First Touch\"",
       "description": {
