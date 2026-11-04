@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 import { CookieConsentProvider } from "@/components/common/CookieConsent/CookieConsentProvider";
 import DeferredClientFeatures from "@/components/common/DeferredClientFeatures";
+import PageTransition from "@/components/layout/PageTransition";
 import SiteComingSoon from "@/components/maintenance/SiteComingSoon";
 import StyledComponentsRegistry from "@/lib/StyledComponentsRegistry";
 
@@ -30,6 +31,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <body className={manrope.variable}>
         <CookieConsentProvider>
           <DeferredClientFeatures />
+          {/* In the root layout, not the locale one: a locale switch swaps the
+              whole [locale] segment, and must not count as a page change. */}
+          <PageTransition />
           <StyledComponentsRegistry>
             {showSite ? children : <SiteComingSoon />}
           </StyledComponentsRegistry>
