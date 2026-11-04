@@ -33,7 +33,7 @@ export const TextBox = styled(HeroTextBox)`
   max-width: 450px;
 
   & p:last-of-type {
-    font-weight: 300;
+    font-weight: var(--weight-text);
     font-style: normal;
     font-size: var(--text-body);
     line-height: 1.5;
@@ -390,7 +390,7 @@ export const Paragraphs = styled.div`
 `;
 
 export const Paragraph = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

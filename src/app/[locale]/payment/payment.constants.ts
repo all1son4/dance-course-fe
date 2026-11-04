@@ -107,9 +107,9 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
   {
     autoComplete: "postal-code",
     id: "postalCode",
-    // Most codes in the shop's markets are digits; letters (GB, NL, CA) are
-    // still allowed by validation, the hint only picks the first keyboard.
-    inputMode: "numeric",
+    // A plain text keyboard on purpose: Polish codes carry a hyphen ("00-950")
+    // and others letters (GB, NL, CA), and iOS's numeric pad has neither.
+    inputMode: "text",
     labelKey: "inputs.postalCode.label",
     layout: "half",
     name: "postalCode",

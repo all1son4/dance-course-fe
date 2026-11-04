@@ -313,6 +313,14 @@ export const TarifContentBox = styled.div`
   width: 100%;
 `;
 
+export const TariffIncludes = styled.p`
+  margin: 0 0 -8px;
+  font-weight: 500;
+  font-size: var(--text-body);
+  line-height: 1.4;
+  color: var(--ink);
+`;
+
 export const TariffContentList = styled.ul`
   list-style-position: outside;
   padding: 0 0 0 22px;
@@ -322,7 +330,7 @@ export const TariffContentList = styled.ul`
   flex-direction: column;
   gap: 10px;
 
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

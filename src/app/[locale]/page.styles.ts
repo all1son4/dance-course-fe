@@ -177,7 +177,7 @@ export const DescriptionTitle = styled.p`
 `;
 
 export const DescriptionText = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-size: var(--text-body);
   line-height: 1.5;
   letter-spacing: 0;
@@ -193,7 +193,7 @@ export const InteractiveBox = styled.div`
 `;
 
 export const InteractiveHint = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-size: var(--text-body);
   line-height: 1.5;
   letter-spacing: 0;
@@ -277,7 +277,7 @@ export const AboutMeParagraphs = styled.div`
 `;
 
 export const AboutMeParagraph = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -299,7 +299,7 @@ export const AboutMeList = styled.ul`
   flex-direction: column;
   gap: 10px;
 
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

@@ -9,7 +9,7 @@ export const CourseList = styled.ul`
   flex-direction: column;
   gap: 10px;
 
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

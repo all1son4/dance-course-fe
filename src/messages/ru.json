@@ -102,7 +102,9 @@
       "retryButton": "Попробовать снова",
       "backHome": "Вернуться на главную"
     },
-    "refresh": "Обновить"
+    "refresh": "Обновить",
+    "close": "Закрыть",
+    "tapToReadMore": "Нажми, чтобы узнать подробнее"
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -575,8 +577,11 @@
           "8": "Дополнительные упражнения",
           "9": "Плейлисты, moodboards, видео для вдохновения",
           "10": "Полезные рекомендации"
-        }
-      }
+        },
+        "includesStandard": "Всё из Standard, а также:"
+      },
+      "popular": "Популярный",
+      "switchLabel": "Выбор тарифа"
     },
     "about": {
       "title": "Что ждёт тебя в Online Group"
