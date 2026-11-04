@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import type { ComponentType, ReactNode } from "react";
 
 import type { IconTextPanelProps } from "@/components/cards/IconTextCard";
@@ -27,18 +28,24 @@ type SuggestionGridProps = {
  * "What you get" block: a sticky title next to a column of icon + text
  * panels; on narrower screens a title above a grid of tiles that open on tap.
  */
-export default function SuggestionGrid({
+export default async function SuggestionGrid({
   compactBelow = 880,
   components: { Cards, Section, Title },
   id,
   items,
   title,
 }: SuggestionGridProps) {
+  const commonT = await getTranslations("Common");
+
   return (
     <Section id={id}>
       <Title>{title}</Title>
       <Cards>
-        <SuggestionTiles compactBelow={compactBelow} items={items} />
+        <SuggestionTiles
+          closeLabel={commonT("close")}
+          compactBelow={compactBelow}
+          items={items}
+        />
       </Cards>
     </Section>
   );
