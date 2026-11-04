@@ -426,6 +426,28 @@ test("a fresh intent is not minted twice", async (t) => {
   assert.equal(store.stripeClientSecrets.pln, "secret_pln");
 });
 
+for (const errorCode of [
+  "sales_closed",
+  "catalog_unavailable",
+  "online_group_campaign_not_configured",
+  "missing_secret_key",
+] as const) {
+  test(`withholds checkout when the server reports ${errorCode} during payment preparation`, async (t) => {
+    const store = new PaymentStore();
+    fillValidCheckout(store);
+    const customerData = { ...store.customerData };
+    installJsonFetchFixture(t, [{ status: 409, body: { errorCode } }]);
+    await store.ensureStripePaymentIntent("pln");
+    assert.equal(store.canShowStripe, false);
+    assert.equal(
+      store.catalogStatus,
+      errorCode === "sales_closed" ? "closed" : "unavailable",
+    );
+    assert.equal(store.stripeClientSecret, "");
+    assert.deepEqual(store.customerData, customerData);
+  });
+}
+
 test("checkout currency initializes once and only accepts supported values", () => {
   const store = new PaymentStore();
 

@@ -4,6 +4,7 @@ import {
   enqueuePolishTerminalReminder,
   runBusinessOperationOutboxJobs,
 } from "@/lib/business-operation-outbox";
+import { enqueueDueChoreoAccessReminders } from "@/lib/choreo-access-reminder-delivery";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import {
   generateAndDeliverMonthlySalesReport,
@@ -42,6 +43,10 @@ export async function GET(request: Request) {
     standard: Awaited<ReturnType<typeof revokeExpiredTelegramChannelAccess>>;
   } | null = null;
   let accessRevocationError: string | null = null;
+  let choreoRemindersResult: Awaited<
+    ReturnType<typeof enqueueDueChoreoAccessReminders>
+  > | null = null;
+  let choreoRemindersError: string | null = null;
   let businessJobsError: string | null = null;
   let businessJobsResult: Awaited<
     ReturnType<typeof runBusinessOperationOutboxJobs>
@@ -118,7 +123,20 @@ export async function GET(request: Request) {
   }
 
   try {
-    businessJobsResult = await runBusinessOperationOutboxJobs();
+    choreoRemindersResult = await enqueueDueChoreoAccessReminders(now);
+  } catch (error) {
+    logSafeError(
+      "Daily maintenance: failed to schedule choreography access reminders",
+      error,
+    );
+    choreoRemindersError = "choreo_access_reminders_failed";
+  }
+
+  try {
+    businessJobsResult = await runBusinessOperationOutboxJobs({
+      limit: 100,
+      timeBudgetMs: 90_000,
+    });
   } catch (error) {
     console.error("Daily maintenance: business outbox recovery failed", {
       errorName: getSafeErrorCategory(error),
@@ -142,6 +160,7 @@ export async function GET(request: Request) {
 
   const hasFailure = Boolean(
     accessRevocationError ||
+    choreoRemindersError ||
     businessJobsError ||
     monthlySalesReportError ||
     polishTerminalReminderError ||
@@ -152,6 +171,8 @@ export async function GET(request: Request) {
     {
       accessRevocationError,
       accessRevocationResult,
+      choreoRemindersError,
+      choreoRemindersResult,
       businessJobsError,
       businessJobsResult,
       monthlySalesReportError,

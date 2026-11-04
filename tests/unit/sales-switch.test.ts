@@ -57,12 +57,11 @@ test("withholds the payment step for a product whose sales are switched off", ()
   assert.equal(store.catalogStatus, "closed");
   assert.equal(store.isSalesClosed, true);
   assert.equal(store.canShowStripe, false);
-  // A closed product is not a broken catalogue - the page must say "closed"
-  // rather than "temporarily unavailable".
+  // Keep closure distinct from a failed catalogue read for recovery and analytics.
   assert.equal(store.isCatalogUnavailable, false);
 });
 
-test("keeps a closed product's price so the summary still renders", () => {
+test("retains a closed product's price and identity for historical context", () => {
   const store = createReadyStore();
 
   store.setSellableProducts(SELLABLE_PRODUCTS_LIST);
@@ -86,6 +85,43 @@ test("drops a client secret minted before sales were closed", () => {
 
   assert.deepEqual(store.stripeClientSecrets, {});
   assert.equal(store.stripeClientSecret, "");
+});
+
+test("blocks a disabled tariff's direct link while keeping the other tariff available", () => {
+  const store = createReadyStore();
+  const catalog = structuredClone(SELLABLE_PRODUCTS_LIST);
+  const product = catalog.find((item) => item.code === "choreo-her-lies")!;
+  product.salesEnabled = true;
+  store.setSellableProducts(catalog);
+  store.configureCheckoutSelection({
+    productId: product.id,
+    offerId: product.offers[0].id,
+  });
+  assert.equal(store.canShowStripe, true);
+  store.stripeClientSecrets = { pln: "pi_old_secret" };
+
+  store.configureCheckoutSelection({
+    productId: product.id,
+    offerId: product.offers[1].id,
+  });
+  assert.equal(store.isSalesClosed, true);
+  assert.equal(store.canShowStripe, false);
+  assert.deepEqual(store.stripeClientSecrets, {});
+  assert.equal(store.selectedPrice, 100);
+
+  store.applyCheckoutDraft({
+    ...store.getCheckoutDraftSnapshot(),
+    selectedProductId: product.id,
+    selectedOfferId: product.offers[1].id,
+  });
+  assert.equal(store.isSalesClosed, true);
+  product.offers[1].salesEnabled = true;
+  store.setSellableProducts(catalog);
+  assert.equal(store.canShowStripe, true);
+
+  product.offers[1].salesEnabled = false;
+  store.setSellableProducts(catalog);
+  assert.equal(store.isSalesClosed, true);
 });
 
 test("flags a purchase that settled after sales were closed", () => {

@@ -24,7 +24,7 @@
       },
       "firstTouch": {
         "title": "First Touch — Frame Up Strip for Beginners",
-        "description": "Frame Up Strip from scratch: technique, footwork, body control and emotion. In 1.5 months you learn your first choreography. Lesson access for four months.",
+        "description": "Frame Up Strip from scratch: technique, footwork, body control and emotion. In 1.5 months you learn your first choreography. Lesson access for 120 days.",
         "ogImageAlt": "First Touch beginner course by Anna Strok",
         "keywords": "First Touch course, beginner dance course online, frame up strip basics, Anna Strok First Touch, dance training for beginners"
       },
@@ -38,7 +38,7 @@
         "title": "Frame Up Strip Choreography Tutorials",
         "description": "Step-by-step breakdowns of original choreographies: technique, delivery and musicality. Replay the lessons as often as you need to build the full routine.",
         "ogImageAlt": "Anna Strok choreography tutorials",
-        "keywords": "choreography tutorial online, still alive dance, her lies dance, choreography bundle, frame up choreography, anna strok choreography"
+        "keywords": "choreography tutorial online, her lies dance, frame up choreography, anna strok choreography"
       },
       "offline": {
         "title": "Frame Up Strip Classes in Warsaw",
@@ -93,15 +93,16 @@
     "toggleDetails": "Show or hide details",
     "closeDialog": "Close dialog",
     "skipToContent": "Skip to content",
-    "salesClosed": "Sales are temporarily closed",
-    "salesUnavailable": "Sales information is temporarily unavailable. Please try again shortly.",
+    "salesClosed": "Currently unavailable",
+    "salesUnavailable": "Currently unavailable",
     "tryAgain": "Try again",
     "errorPage": {
       "title": "Something went wrong",
       "description": "An unexpected error kept this page from loading. Trying again usually fixes it.",
       "retryButton": "Try again",
       "backHome": "Back to home"
-    }
+    },
+    "refresh": "Refresh"
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -334,7 +335,7 @@
           "2": "If you cannot attend my offline classes, you can gain new knowledge, practise at home and stay in touch with me wherever you are."
         },
         "startLabel": "Next cycle starts",
-        "startValue": "October - November"
+        "startValue": "November - December"
       },
       "choreo": {
         "title": "Video tutorials of my choreographies",
@@ -344,7 +345,8 @@
         },
         "startLabel": "Start",
         "startValue": "Anytime",
-        "salesLabel": "Availability"
+        "salesLabel": "Availability",
+        "salesValue": "Sales are open"
       },
       "birthdayDrop": {
         "title": "The Birthday Drop",
@@ -505,7 +507,7 @@
       },
       "4": {
         "title": "Course duration: 1.5 months",
-        "text": "Access to the lessons for 4 months for your independent practice. Enough time to study at your own pace, revisit the materials and polish movement quality."
+        "text": "Access to the lessons for 120 days for your independent practice. Enough time to study at your own pace, revisit the materials and polish movement quality."
       },
       "5": {
         "title": "Instant access via private Telegram chats",
@@ -527,7 +529,7 @@
         "2": "Suitable for intermediate and advanced dancers."
       },
       "startLabel": "Next group starts",
-      "startDate": "October - November",
+      "startDate": "November - December",
       "priceLabel": "Price for new participants",
       "buyButton": "Buy your place",
       "offers": {
@@ -620,11 +622,11 @@
       "startLabel": "Start",
       "startValue": "Anytime",
       "salesLabel": "Availability",
-      "salesValue": "Sales are temporarily closed",
+      "salesValue": "Sales are open",
       "button": "Choose choreography"
     },
     "about": {
-      "title": "What awaits you in this course"
+      "title": "What is included in the tutorial"
     },
     "suggestions": {
       "1": {
@@ -636,16 +638,16 @@
         "text": "Every movement is broken down clearly so you understand what to do, how and why."
       },
       "3": {
-        "title": "Access to materials for 2 months",
-        "text": "A convenient format that gives you time to learn, repeat and consolidate everything at your own pace."
+        "title": "Access to materials for 60 days",
+        "text": "Your 60 days begin when you join the Telegram channel."
       },
       "4": {
         "title": "Instant access via private Telegram channels",
         "text": "No extra platforms - all course materials in one place right after payment."
       },
       "5": {
-        "title": "Participation formats: mentored or self-paced",
-        "text": "Choose what fits you: guidance and feedback, or a free self-paced format."
+        "title": "Independent practice at your own pace",
+        "text": "Watch the explanations, repeat the movements and return to tricky sections whenever it suits you."
       },
       "6": {
         "title": "Pay from any country",
@@ -653,22 +655,22 @@
       }
     },
     "pricing": {
-      "withoutMentor": "Without mentor 60 PLN / 15 €",
+      "withoutMentor": "Without mentor 65 PLN / 15 €",
       "withMentor": "With mentor 100 PLN / 25 €"
     }
   },
   "PaymentPage": {
     "title": "Checkout",
-    "description": "Review your order details and complete payment. After purchase, you will receive access and further instructions.",
+    "description": "Review your order and complete your purchase.",
     "personalDataTitle": "Customer details",
     "salesClosed": {
-      "title": "Sales are closed",
-      "description": "Enrolment for this product is closed right now. Message us and we will tell you when the next one opens and help you pick the right format.",
+      "title": "Currently unavailable",
+      "description": "Find current courses and tutorials in the catalogue.",
       "contactButton": "Message on Telegram"
     },
     "catalogUnavailable": {
-      "title": "Checkout is temporarily unavailable",
-      "description": "We could not safely confirm the current product and price. Please try again shortly or message us for help."
+      "title": "Purchase unavailable",
+      "description": "Refresh the page or choose another course."
     },
     "summary": {
       "currencyLabel": "Payment currency",
@@ -677,7 +679,7 @@
     },
     "renewal": {
       "title": "Confirm Telegram before payment",
-      "description": "To renew with the discount, confirm Telegram: we will check the previous chat membership and send a personal invite to the new group after payment.",
+      "description": "Confirm your Telegram account to renew.",
       "summaryCard": {
         "description": "Renew your online group access for the next cycle at the special price.",
         "accessNote": "After payment, you will receive a personal one-time invite to the new Telegram chat.",
@@ -700,8 +702,8 @@
         "failed": "Could not confirm Telegram."
       },
       "unavailable": {
-        "title": "This renewal link is no longer active",
-        "description": "It looks like this renewal campaign has ended or the link has expired. Message us and we will help you renew."
+        "title": "Renewal unavailable",
+        "description": "Message us for help renewing your access."
       }
     },
     "inputs": {
@@ -749,14 +751,18 @@
       "digitalContentAgreement": "I accept the terms and conclude the agreement for the delivery of digital content."
     },
     "staleLink": {
-      "title": "This link is out of date",
-      "description": "This offer is no longer available. Take a look at the current courses and materials to see what is on now.",
+      "title": "Offer unavailable",
+      "description": "Find current courses and tutorials in the catalogue.",
       "catalogButton": "Browse courses"
     },
     "successVerification": {
       "preparing": "Almost there — confirming your payment and preparing your access. This can take a few more seconds…"
     },
-    "paymentLockedHint": "Fill in the details and accept the agreements — the payment form will open here."
+    "paymentLockedHint": "Fill in the details and accept the agreements — the payment form will open here.",
+    "offerUnavailable": {
+      "title": "This plan is unavailable.",
+      "selectButton": "Choose a plan"
+    }
   },
   "PaymentSuccessPage": {
     "title": "Payment successful",
@@ -793,8 +799,8 @@
       }
     },
     "accessNotice": {
-      "firstTouch": "Invite valid for 30 days. Lesson access: 4 months after joining.",
-      "choreo": "Invite valid for 30 days. Material access: 2 months after joining.",
+      "firstTouch": "Invite valid for 30 days. Lesson access: 120 days after joining.",
+      "choreo": "Invite valid for 30 days. Material access: 60 days after joining.",
       "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
       "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration Hub access is provided for the duration of the cycle.",
       "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever."
@@ -844,19 +850,19 @@
       "missingPublishableKey": "Payment is temporarily unavailable."
     },
     "errors": {
-      "missingClientSecret": "We could not prepare the payment. Please try again.",
-      "catalogUnavailable": "Sales are temporarily unavailable. Please try again later.",
-      "salesClosed": "Sales for this product are currently closed.",
-      "consentEvidenceFailed": "We couldn't save the required consent confirmation. Please try again.",
+      "missingClientSecret": "Could not open checkout.",
+      "catalogUnavailable": "This purchase is currently unavailable.",
+      "salesClosed": "This purchase is currently unavailable.",
+      "consentEvidenceFailed": "Could not open checkout.",
       "invalidCustomerData": "Please check the customer details and try again.",
-      "missingSecretKey": "Payment is temporarily unavailable. Please try again later or message support.",
-      "paymentIntentFailed": "We could not prepare the payment. Please try again or message support.",
-      "paymentIntentRequestFailed": "Failed to prepare the payment. Please try again.",
+      "missingSecretKey": "Checkout unavailable.",
+      "paymentIntentFailed": "Could not open checkout.",
+      "paymentIntentRequestFailed": "Could not open checkout.",
       "requiredConsentMissing": "Please accept all required agreements to continue.",
-      "onlineGroupCampaignNotConfigured": "The new Online Group cycle is not configured yet. Please contact support.",
+      "onlineGroupCampaignNotConfigured": "This purchase is currently unavailable.",
       "telegramRenewalVerificationRequired": "Confirm Telegram for this renewal first.",
-      "renewalCampaignInactive": "This renewal link is no longer active. Use the current link from the group.",
-      "renewalPaymentContextMismatch": "This renewal link does not match the selected product.",
+      "renewalCampaignInactive": "This purchase is currently unavailable.",
+      "renewalPaymentContextMismatch": "This renewal link is unavailable.",
       "confirmPaymentFailed": "Failed to complete the payment. Please try again.",
       "paymentFormBlocked": "We could not load the payment form — an extension or your network may be blocking it. Turn the blocker off or open the page in another browser.",
       "rateLimited": "Too many attempts. Wait a minute and try again."
@@ -872,7 +878,7 @@
         "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
         "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
       },
-      "accessNote": "Course duration is 1.5 months, with 4 months of access to the lessons via a private Telegram chat.",
+      "accessNote": "Course duration: 1.5 months. Access to lessons: 120 days from joining the private Telegram chat.",
       "offers": {
         "standard": "Standard access"
       }
@@ -884,7 +890,7 @@
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
-      "accessNote": "Access to materials for 2 months via a private Telegram channel.",
+      "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
@@ -895,9 +901,9 @@
       "description": {
         "1": "An online tutorial for the Her Lies choreography for dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
-        "3": "Choose between a self-paced format or participation with mentor support and feedback."
+        "3": "Self-paced learning without mentor support or feedback."
       },
-      "accessNote": "Access to materials for 2 months via a private Telegram channel.",
+      "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
@@ -911,7 +917,7 @@
         "2": "Inside the bundle are Still Alive and Her Lies: you can move through the material at your own pace, replay the lessons and assemble both choreographies to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
-      "accessNote": "Access to materials for 2 months via a private Telegram channel with both choreographies.",
+      "accessNote": "Both tutorials are available for 60 days from joining the private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor",
         "withMentor": "With mentor"
@@ -943,6 +949,18 @@
         "libraryAccess": "Plus",
         "renewalDiscount": "Standard renewal",
         "renewalLibraryAccess": "Plus renewal"
+      }
+    },
+    "choreoLoveMeInTheMorning": {
+      "title": "Video tutorial for \"Love me in the morning\"",
+      "description": {
+        "1": "An online tutorial for Love me in the morning with detailed explanations of movements and transitions.",
+        "2": "The choreography tutorial only: study, replay and practise at your own pace.",
+        "3": "Self-paced learning without mentor support or feedback."
+      },
+      "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
+      "offers": {
+        "withoutMentor": "Without mentor"
       }
     }
   },

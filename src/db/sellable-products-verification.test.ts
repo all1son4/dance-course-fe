@@ -51,10 +51,11 @@ test("reports a database price mismatch", () => {
   );
 });
 
-test("ignores the operator-owned sales switch", () => {
+test("ignores the operator-owned product and offer sales switches", () => {
   const actualProducts: SellableProduct[] = cloneCatalog();
 
   actualProducts[0].salesEnabled = !actualProducts[0].salesEnabled;
+  actualProducts[0].offers[0].salesEnabled = !actualProducts[0].offers[0].salesEnabled;
 
   assert.deepEqual(
     getCommercialCatalogDrift({
