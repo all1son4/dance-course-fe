@@ -22,6 +22,7 @@ import {
   DetailRow,
   DetailStack,
   DetailTitle,
+  TapHint,
   Tile,
   TileBody,
   TileButton,
@@ -45,11 +46,35 @@ type SuggestionTilesProps = {
   compactBelow: number;
   /** Close button label in the detail panel. */
   closeLabel?: string;
+  /** One-time nudge shown at the first tile's "+" ("Tap to read more"). */
+  hintLabel?: string;
 };
 
 type TileRow = { index: number; keys: string[] };
 
 const SINGLE_COLUMN_QUERY = "(max-width: 360px)";
+/* The tap hint: after the grid has been in view this long without a tap it
+   appears once per visit (session storage), then fades away on its own or
+   on any tap. */
+const HINT_DELAY_MS = 2000;
+const HINT_VISIBLE_MS = 4000;
+const HINT_SEEN_KEY = "suggestion-tiles-hint-seen";
+
+const hasSeenHint = () => {
+  try {
+    return window.sessionStorage.getItem(HINT_SEEN_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+const rememberHint = () => {
+  try {
+    window.sessionStorage.setItem(HINT_SEEN_KEY, "1");
+  } catch {
+    // Storage blocked: the hint may show again on another page; harmless.
+  }
+};
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 /* Matches OPEN_MS / EASE in the styles. */
 const RESIZE_MS = 420;
@@ -76,11 +101,15 @@ const buildRows = (keys: string[], columns: number): TileRow[] => {
  */
 export default function SuggestionTiles({
   closeLabel = "Close",
+  hintLabel,
   compactBelow,
   items,
 }: SuggestionTilesProps) {
   const baseId = useId();
   const [openKey, setOpenKey] = useState<string | null>(null);
+  const [isHintVisible, setIsHintVisible] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const hasTapped = useRef(false);
   const [isCompact, setIsCompact] = useState(false);
   const [columns, setColumns] = useState(2);
   // What each row's panel last showed, so a closing panel keeps its text
@@ -157,8 +186,40 @@ export default function SuggestionTiles({
     }, RESIZE_MS);
   };
 
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!hintLabel || !isCompact || !grid || hasSeenHint()) return;
+
+    let showTimer: number | undefined;
+    let hideTimer: number | undefined;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        window.clearTimeout(showTimer);
+        if (!entry?.isIntersecting) return;
+        showTimer = window.setTimeout(() => {
+          if (hasTapped.current || hasSeenHint()) return;
+          rememberHint();
+          setIsHintVisible(true);
+          hideTimer = window.setTimeout(() => setIsHintVisible(false), HINT_VISIBLE_MS);
+          observer.disconnect();
+        }, HINT_DELAY_MS);
+      },
+      // Most of the grid on screen, not just its edge scrolling past.
+      { threshold: 0.5 },
+    );
+
+    observer.observe(grid);
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(showTimer);
+      window.clearTimeout(hideTimer);
+    };
+  }, [hintLabel, isCompact]);
+
   const toggle = (key: string) => {
     if (!isCompact) return;
+    hasTapped.current = true;
+    setIsHintVisible(false);
 
     if (openKey === key) {
       setOpenKey(null);
@@ -206,11 +267,15 @@ export default function SuggestionTiles({
     );
   };
 
+  // The bubble opens leftwards from a "+", so it sits on the right-hand tile
+  // of the first row, where it has the whole row width to use.
+  const hintKey = columns > 1 && keys.length > 1 ? keys[1] : keys[0];
+
   const loneKey =
     columns > 1 && keys.length % columns === 1 ? keys[keys.length - 1] : undefined;
 
   return (
-    <TilesGrid $compactBelow={compactBelow}>
+    <TilesGrid ref={gridRef} $compactBelow={compactBelow}>
       {rows.map((row) => {
         const isRowOpen = isCompact && openRow === row.index;
         const shownKey = isRowOpen ? openKey : rowContent[row.index];
@@ -244,9 +309,20 @@ export default function SuggestionTiles({
                     >
                       <TileIcon $compactBelow={compactBelow}>{item?.icon}</TileIcon>
                       <TileTitle $compactBelow={compactBelow}>{item?.title}</TileTitle>
-                      {isCompact && <TileMark aria-hidden $isOpen={isOpen} />}
+                      {isCompact && (
+                        <TileMark
+                          aria-hidden
+                          $isOpen={isOpen}
+                          $isNudging={isHintVisible && key === hintKey}
+                        />
+                      )}
                     </TileButton>
                   </TileHeading>
+                  {hintLabel && key === hintKey && isCompact && (
+                    <TapHint role="status" $isVisible={isHintVisible}>
+                      {isHintVisible ? hintLabel : ""}
+                    </TapHint>
+                  )}
                   <TileBody $compactBelow={compactBelow}>
                     <PanelText>{item?.text}</PanelText>
                   </TileBody>

@@ -43,6 +43,7 @@ export default async function SuggestionGrid({
       <Cards>
         <SuggestionTiles
           closeLabel={commonT("close")}
+          hintLabel={commonT("tapToReadMore")}
           compactBelow={compactBelow}
           items={items}
         />
