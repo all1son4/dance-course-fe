@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type {
   SalesProductEntry,
+  SalesProductOffer,
   SalesStateResponse,
   StatusMessage,
 } from "../lib/admin.types";
@@ -18,9 +19,12 @@ const LOAD_FALLBACK_ERROR_TEXT = "Не удалось загрузить сос�
 const TOGGLE_FALLBACK_ERROR_TEXT = "Не удалось переключить продажи. Попробуй еще раз.";
 
 const TOGGLE_ERROR_MESSAGES: Record<string, string> = {
+  choreo_channels_required:
+    "Сначала настрой русский и английский Telegram-каналы этого разбора.",
   network_error: TOGGLE_FALLBACK_ERROR_TEXT,
   online_group_campaign_required:
     "Сначала запусти поток Online Group — без активного потока продавать нечего.",
+  offer_not_found: "Тариф не найден. Обнови список и попробуй снова.",
   product_not_found: "Продукт не найден. Обнови список и попробуй снова.",
   rate_limited: "Слишком часто. Подожди минуту и попробуй снова.",
 };
@@ -63,12 +67,12 @@ export const useSalesAdmin = ({
   }, [applySalesState, onUnauthorized]);
 
   const toggle = useCallback(
-    async (product: SalesProductEntry) => {
+    async (product: SalesProductEntry, offer?: SalesProductOffer) => {
       if (updatingProductId) {
         return;
       }
 
-      const nextSalesEnabled = !product.salesEnabled;
+      const nextSalesEnabled = !(offer ?? product).salesEnabled;
 
       setUpdatingProductId(product.productId);
       setStatus(null);
@@ -78,6 +82,7 @@ export const useSalesAdmin = ({
         {
           body: {
             productId: product.productId,
+            ...(offer ? { offerId: offer.offerId } : {}),
             salesEnabled: nextSalesEnabled,
           },
           method: "POST",
@@ -94,9 +99,11 @@ export const useSalesAdmin = ({
       } else {
         applySalesState(result.data);
         setStatus({
-          text: nextSalesEnabled
-            ? `Продажи «${product.title}» включены.`
-            : `Продажи «${product.title}» выключены. Оплатить продукт больше нельзя, в том числе по прямой ссылке.`,
+          text: offer
+            ? `Тариф «${offer.label}» для «${product.title}» ${nextSalesEnabled ? "включён" : "выключен"}.${nextSalesEnabled && !product.salesEnabled ? " Чтобы начать продажи, включи общий переключатель продукта." : ""}`
+            : nextSalesEnabled
+              ? `Продажи «${product.title}» включены.`
+              : `Продажи «${product.title}» выключены. Оплатить продукт больше нельзя, в том числе по прямой ссылке.`,
           tone: nextSalesEnabled ? "success" : "info",
         });
       }

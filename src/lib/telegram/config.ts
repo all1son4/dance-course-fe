@@ -14,6 +14,7 @@ export type TelegramLessonSource = {
   sourceMessageId: number;
 };
 export type TelegramChannelTarget = {
+  materialsUrl?: string;
   chatId: string;
   lessonLanguage: TelegramLessonLanguage | null;
   offerId: string;
@@ -27,6 +28,7 @@ type ParsedTelegramLessonSource = {
   sourceMessageId: number;
 };
 type ParsedTelegramChannelTarget = {
+  materialsUrl?: string;
   chatId: string;
   lessonLanguage: TelegramLessonLanguage | null;
   offerId: string;
@@ -229,6 +231,7 @@ const parseChannelTarget = (
 
   const candidate = value as {
     chatId?: unknown;
+    materialsUrl?: unknown;
     lessonLanguage?: unknown;
     offerId?: unknown;
   };
@@ -249,7 +252,25 @@ const parseChannelTarget = (
     return null;
   }
 
+  let materialsUrl: string | undefined;
+  if (typeof candidate.materialsUrl === "string") {
+    try {
+      const url = new URL(candidate.materialsUrl);
+      const match = url.pathname.match(/^\/c\/(\d+)\/([1-9]\d*)$/u);
+      if (
+        url.protocol === "https:" &&
+        url.hostname === "t.me" &&
+        match &&
+        `-100${match[1]}` === chatId
+      ) {
+        materialsUrl = url.toString();
+      }
+    } catch {
+      /* Invalid optional links never change the access target. */
+    }
+  }
   return {
+    ...(materialsUrl ? { materialsUrl } : {}),
     chatId,
     lessonLanguage,
     offerId,
@@ -427,6 +448,7 @@ export const getTelegramChannelTargetByOfferId = ({
   }
 
   return {
+    ...(target.materialsUrl ? { materialsUrl: target.materialsUrl } : {}),
     chatId: target.chatId,
     lessonLanguage: target.lessonLanguage ?? resolvedLessonLanguage ?? null,
     offerId: target.offerId,

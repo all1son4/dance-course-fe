@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import InteractiveCard from "@/components/cards/InteractiveCard";
@@ -6,8 +6,13 @@ import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
 import Contacts from "@/components/other/Contacts";
 import { HERO_MEDIA } from "@/constants/hero-media";
+import {
+  CHOREO_CATALOGUE_PRODUCT_CODES,
+  SELLABLE_PRODUCTS,
+} from "@/constants/sellable-products";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { imageFadeProps } from "@/lib/reveal";
+import { getProductsSaleState } from "@/lib/sales-availability";
 import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
 import { toPlainTitle } from "./_shared/content";
@@ -35,12 +40,20 @@ import {
 export const generateMetadata = () =>
   buildLocalizedPageMetadata({ pageKey: "online", path: "/online" });
 
-export default function Online() {
-  const t = useTranslations("OnlinePage");
-  const commonT = useTranslations("Common");
+export const dynamic = "force-dynamic";
+
+export default async function Online() {
+  const [t, commonT, choreoSaleState] = await Promise.all([
+    getTranslations("OnlinePage"),
+    getTranslations("Common"),
+    getProductsSaleState(
+      CHOREO_CATALOGUE_PRODUCT_CODES.map((code) => SELLABLE_PRODUCTS[code].id),
+    ),
+  ]);
   const onlineCoursesArray = getOnlineCoursesArray(
     (key) => t(key),
     (key) => commonT(key),
+    choreoSaleState,
   );
   const onlineCoursesStructuredData = {
     "@context": "https://schema.org",
