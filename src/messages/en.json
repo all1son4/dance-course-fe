@@ -872,6 +872,7 @@
     "ariaLabel": "Currency switch"
   },
   "SellableProducts": {
+    "buyButton": "Buy",
     "firstTouch": {
       "title": "Beginner course \"First Touch\"",
       "description": {

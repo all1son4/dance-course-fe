@@ -13,6 +13,7 @@ export type ChoreoCardProps = {
   videoSrc?: string;
   posterSrc?: string;
   title?: string;
+  price?: string;
   subtitle?: string;
   firstButtonOptions?: ChoreoCardButtonProps;
   secondButtonOptions?: ChoreoCardButtonProps;

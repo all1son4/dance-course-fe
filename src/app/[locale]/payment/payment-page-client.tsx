@@ -31,6 +31,10 @@ import {
   isBirthdayOfferId,
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
+import {
+  isChoreoTutorialProduct,
+  shouldShowOfferLabel,
+} from "@/lib/choreo-offer-presentation";
 import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
@@ -707,12 +711,17 @@ const PaymentPage = observer(function PaymentPage({
         ),
     amountLabel: t("summary.amountLabel"),
     currencyLabel: t("summary.currencyLabel"),
-    descriptionParagraphs: paymentStore.selectedProduct.descriptionKeys.map(
-      (paragraphKey) => ({
+    // Format/choice copy belongs to the selected offer, not the shared tutorial description.
+    descriptionParagraphs: paymentStore.selectedProduct.descriptionKeys
+      .filter(
+        (key) =>
+          !isChoreoTutorialProduct(paymentStore.selectedProduct) ||
+          !key.endsWith(".description.3"),
+      )
+      .map((paragraphKey) => ({
         key: paragraphKey,
         text: productT(paragraphKey),
-      }),
-    ),
+      })),
     formattedPrice: formatCheckoutPrice(
       paymentStore.selectedPrice,
       paymentStore.selectedCurrency,
@@ -720,11 +729,14 @@ const PaymentPage = observer(function PaymentPage({
     isCurrencyLocked: isPaymentSubmitting,
     isLoading: paymentStore.catalogStatus === "loading",
     isRenewalCheckout,
-    offerSummary: isOnlineGroupCheckout
-      ? t("summary.offerLabel", {
-          offer: productT(paymentStore.selectedOffer.labelKey),
-        })
-      : null,
+    offerSummary:
+      isOnlineGroupCheckout ||
+      (isChoreoTutorialProduct(paymentStore.selectedProduct) &&
+        shouldShowOfferLabel(paymentStore.selectedProduct, paymentStore.selectedOffer.id))
+        ? t("summary.offerLabel", {
+            offer: productT(paymentStore.selectedOffer.labelKey),
+          })
+        : null,
     onCurrencyChange: handleCurrencyChange,
     renewalDescription: t("renewal.summaryCard.description"),
     selectedCurrency: paymentStore.selectedCurrency,

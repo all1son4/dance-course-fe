@@ -2,9 +2,13 @@ import { expect, type Page, test } from "@playwright/test";
 
 import {
   buildCheckoutHref,
+  CHOREO_CATALOGUE_PRODUCT_CODES,
+  formatOfferPrice,
   SELLABLE_PRODUCTS,
+  type SellableProduct,
 } from "../../src/constants/sellable-products";
 import { BIRTHDAY_CAMPAIGN_ENABLED } from "../../src/lib/birthday-popup/config";
+import { getLocalizedSellableProductOfferLabel } from "../../src/lib/sellable-products-localization";
 
 /**
  * The checkout receives its catalogue with the server render, so these specs
@@ -20,15 +24,52 @@ const readAuthoritativeCatalog = async (page: Page) => {
   expect(catalogResponse.ok()).toBe(true);
 
   const catalog = (await catalogResponse.json()) as {
-    products: Array<{
-      id: string;
-      salesEnabled: boolean;
-      offers: Array<{ id: string; code: string; salesEnabled: boolean }>;
-    }>;
+    products: SellableProduct[];
   };
 
   return catalog.products;
 };
+
+test("choreo cards show a separate price and Buy CTA only for a single available tariff", async ({
+  page,
+}) => {
+  const products = await readAuthoritativeCatalog(page);
+  const currentProducts = products.filter((product) =>
+    CHOREO_CATALOGUE_PRODUCT_CODES.includes(product.code),
+  );
+  const openProducts = currentProducts.filter(
+    (product) =>
+      product.salesEnabled && product.offers.some((offer) => offer.salesEnabled),
+  );
+  await page.goto("/online/choreo");
+  const section = page.locator("#choreo-section");
+  if (openProducts.length === 0) {
+    await expect(page.getByText("Currently unavailable", { exact: true })).toBeVisible();
+    await expect(section).toHaveCount(0);
+    return;
+  }
+  let buttonCount = 0;
+  for (const product of openProducts) {
+    const openOffers = product.offers.filter((offer) => offer.salesEnabled);
+    buttonCount += openOffers.length;
+    for (const offer of openOffers) {
+      const link = section.locator(`a[href*="offer=${offer.id}"]`);
+      const price = formatOfferPrice(offer.prices);
+      if (openOffers.length === 1) {
+        await expect(link).toHaveText("Buy");
+        // The price belongs to the card, outside its purchase link.
+        await expect(
+          link.locator("xpath=../..").getByText(price, { exact: true }),
+        ).toBeVisible();
+      } else {
+        await expect(link).toHaveText(
+          `${getLocalizedSellableProductOfferLabel(offer, "en")} ${price}`,
+        );
+      }
+    }
+  }
+  await expect(section.locator('a[href*="/payment?"]')).toHaveCount(buttonCount);
+});
 
 test("[BEH-ENTRY-01] First Touch entry remains a lead dialog instead of direct checkout", async ({
   page,
