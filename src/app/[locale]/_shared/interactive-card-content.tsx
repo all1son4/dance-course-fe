@@ -12,7 +12,7 @@ export const ContentStack = styled.div<StackProps>`
 `;
 
 export const DetailText = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -78,7 +78,7 @@ export const PriceRow = styled.div`
 `;
 
 export const PriceFrequency = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body-sm);
   line-height: 1.5;

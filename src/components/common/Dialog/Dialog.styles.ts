@@ -270,7 +270,7 @@ export const Description = styled(RadixDialog.Description)`
   margin: 0;
   color: var(--ink-muted);
   font-size: var(--text-body-sm);
-  font-weight: 300;
+  font-weight: var(--weight-text);
   line-height: 1.5;
   letter-spacing: 0;
 `;

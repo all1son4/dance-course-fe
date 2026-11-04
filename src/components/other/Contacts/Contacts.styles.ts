@@ -59,7 +59,7 @@ export const ParagraphsBox = styled.div`
 `;
 
 export const Paragraph = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

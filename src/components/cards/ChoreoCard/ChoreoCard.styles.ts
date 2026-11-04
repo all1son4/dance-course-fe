@@ -129,7 +129,7 @@ export const CardTitle = styled.p`
 export const CardSubtitle = styled.p`
   margin: 0;
   color: var(--ink-muted);
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-size: var(--text-body);
   line-height: 1.4;
   letter-spacing: 0;
@@ -176,7 +176,7 @@ export const PriceAnchorCurrent = styled.span`
 export const CompareAtPrice = styled.span`
   color: var(--ink-muted);
   font-size: var(--text-body-sm);
-  font-weight: 300;
+  font-weight: var(--weight-text);
   line-height: 1.2;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
@@ -216,7 +216,7 @@ export const CardPriceFact = styled.div`
 export const CardPriceLabel = styled.p`
   margin: 0;
   color: var(--ink-muted);
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-size: var(--text-body);
   line-height: 1.5;
   letter-spacing: 0;

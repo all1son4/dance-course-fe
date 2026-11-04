@@ -102,7 +102,9 @@
       "retryButton": "Try again",
       "backHome": "Back to home"
     },
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "close": "Close",
+    "tapToReadMore": "Tap to read more"
   },
   "OnlinePromoCard": {
     "title": "Online",
@@ -575,8 +577,11 @@
           "8": "Additional exercises",
           "9": "Playlists, moodboards and inspiration videos",
           "10": "Helpful recommendations"
-        }
-      }
+        },
+        "includesStandard": "Everything in Standard, plus:"
+      },
+      "popular": "Popular",
+      "switchLabel": "Choose a plan"
     },
     "about": {
       "title": "What to expect in the Online Group"

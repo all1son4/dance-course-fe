@@ -215,7 +215,7 @@ export const IconBox = styled.div`
 `;
 
 export const StartNote = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-small);
   line-height: 1.5;
