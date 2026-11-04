@@ -30,7 +30,12 @@ export default async function NotFound() {
           priority
         />
         <h1 className={styles.errorText}>{t("title")}</h1>
-        <Button buttonText={t("backHome")} width="300px" href="/" />
+        <Button
+          buttonText={t("backHome")}
+          width="300px"
+          href="/"
+          analytics={{ id: "back_home", placement: "not_found" }}
+        />
       </div>
     </div>
   );

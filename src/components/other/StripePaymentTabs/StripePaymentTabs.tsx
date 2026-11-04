@@ -13,7 +13,7 @@ import { useEffect, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
-import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { trackAnalyticsEvent, trackCtaClick } from "@/lib/mixpanel-analytics";
 
 import {
   createElementsOptions,
@@ -597,7 +597,17 @@ export const StripePaymentTabs = ({
     updatingText: t("button.updating"),
     verificationUnresolvedText: t.rich("status.verificationUnresolved", {
       link: (chunks) => (
-        <StatusLink href={SUPPORT_TELEGRAM_URL} rel="noopener noreferrer" target="_blank">
+        <StatusLink
+          href={SUPPORT_TELEGRAM_URL}
+          rel="noopener noreferrer"
+          target="_blank"
+          onClick={() => {
+            void trackCtaClick(
+              { id: "payment_contact_support", placement: "payment_status" },
+              SUPPORT_TELEGRAM_URL,
+            );
+          }}
+        >
           {chunks}
         </StatusLink>
       ),

@@ -22,6 +22,16 @@ export const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
 export const seoImagePath = "/images/og_default.jpg";
 export const seoImageWidth = 1200;
 export const seoImageHeight = 630;
+
+/** Per-page share previews (1200x630); pages not listed use `seoImagePath`. */
+export const PAGE_OG_IMAGE_PATHS: Partial<Record<string, string>> = {
+  home: "/images/og/home.jpg",
+  online: "/images/og/online.jpg",
+  choreo: "/images/og/choreo.jpg",
+  onlineGroup: "/images/og/onlineGroup.jpg",
+  firstTouch: "/images/og/firstTouch.jpg",
+  offline: "/images/og/offline.jpg",
+};
 const instagramUrl = INSTAGRAM_PROFILE_URL;
 const telegramUrl = PERSONAL_TELEGRAM_URL;
 export const seoTargetLocale = "en" as const;
@@ -46,6 +56,7 @@ export const buildPageMetadata = ({
   keywords,
   locale,
   ogImageAlt,
+  ogImagePath = seoImagePath,
   path,
   siteName,
   title,
@@ -54,6 +65,7 @@ export const buildPageMetadata = ({
   keywords: string[];
   locale: string;
   ogImageAlt: string;
+  ogImagePath?: string;
   path: string;
   siteName: string;
   title: string;
@@ -73,7 +85,7 @@ export const buildPageMetadata = ({
     url: `${normalizedSiteUrl}${path}`,
     images: [
       {
-        url: seoImagePath,
+        url: ogImagePath,
         alt: ogImageAlt,
         width: seoImageWidth,
         height: seoImageHeight,
@@ -85,7 +97,7 @@ export const buildPageMetadata = ({
     card: "summary_large_image",
     title,
     description,
-    images: [seoImagePath],
+    images: [ogImagePath],
   },
 });
 

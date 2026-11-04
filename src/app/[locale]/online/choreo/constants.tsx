@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import type {
   ChoreoCardButtonProps,
+  ChoreoCardPriceAnchor,
   ChoreoCardProps,
 } from "@/components/cards/ChoreoCard";
 import SvgAsset from "@/components/common/SvgAsset";
@@ -73,6 +74,65 @@ const CHOREO_PRESENTATIONS = {
 } satisfies Partial<
   Record<SellableProductCode, Pick<ChoreoCardProps, "posterSrc" | "videoSrc">>
 >;
+
+/** The tutorials a bundle contains, for its "bought separately" price. */
+const CHOREO_BUNDLE_PARTS: Partial<
+  Record<SellableProductCode, readonly SellableProductCode[]>
+> = {
+  "choreo-bundle": ["choreo-still-alive", "choreo-her-lies"],
+};
+
+const CHOREO_CARD_HIGHLIGHT_KEYS = ["choreoCard.highlights.level"] as const;
+
+/**
+ * The sum of the bundled tutorials' prices for the same tariff, when every
+ * part is in the catalogue and the sum really is higher in both currencies.
+ */
+const getBundleCompareAtPrices = (
+  code: SellableProductCode,
+  offer: SellableProductOffer,
+  catalogProducts: readonly SellableProduct[],
+) => {
+  const parts = CHOREO_BUNDLE_PARTS[code];
+  if (!parts) return undefined;
+
+  const partOffers = parts.map((partCode) =>
+    catalogProducts
+      .find((candidate) => candidate.code === partCode)
+      ?.offers.find((candidate) => candidate.code === offer.code),
+  );
+  if (partOffers.some((partOffer) => !partOffer)) return undefined;
+
+  const sum = (currency: keyof SellableProductOffer["prices"]) =>
+    partOffers.reduce(
+      (total, partOffer) => total + (partOffer?.prices[currency] ?? 0),
+      0,
+    );
+  const prices = { pln: sum("pln"), eur: sum("eur") };
+
+  return prices.pln > offer.prices.pln && prices.eur > offer.prices.eur
+    ? prices
+    : undefined;
+};
+
+const getChoreoPriceAnchor = (
+  code: SellableProductCode,
+  t: Translate,
+  catalogProducts: readonly SellableProduct[],
+  anchorOffer: SellableProductOffer,
+  hasSingleOffer: boolean,
+): ChoreoCardPriceAnchor | undefined => {
+  const compareAtPrices = getBundleCompareAtPrices(code, anchorOffer, catalogProducts);
+  if (!compareAtPrices) return undefined;
+
+  return {
+    label: t("choreoCard.compareAtLabel"),
+    compareAt: formatOfferPrice(compareAtPrices),
+    current: hasSingleOffer
+      ? undefined
+      : `${t("choreoCard.priceFrom")} ${formatOfferPrice(anchorOffer.prices)}`,
+  };
+};
 
 const getChoreoPresentation = (code: SellableProductCode) => {
   if (code in CHOREO_PRESENTATIONS) {
@@ -194,7 +254,8 @@ export const getChoreos = (
     const withMentorOffer = product.offers.find(
       (offer) => offer.code === "with-mentor" && isOfferSaleOpen(product, offer),
     );
-    if (!withoutMentorOffer && !withMentorOffer) return [];
+    const anchorOffer = withoutMentorOffer ?? withMentorOffer;
+    if (!anchorOffer) return [];
 
     const singleOffer =
       withoutMentorOffer && withMentorOffer
@@ -209,6 +270,14 @@ export const getChoreos = (
         analyticsId: code,
         price: singleOffer ? formatOfferPrice(singleOffer.prices) : undefined,
         priceLabel: singleOffer ? t("priceLabel") : undefined,
+        highlights: CHOREO_CARD_HIGHLIGHT_KEYS.map((key) => t(key)),
+        priceAnchor: getChoreoPriceAnchor(
+          code,
+          t,
+          catalogProducts,
+          anchorOffer,
+          Boolean(singleOffer),
+        ),
         ...presentation,
         ...copy,
         firstButtonOptions: buildChoreoButtonOptions(product, t, withoutMentorOffer),
@@ -216,3 +285,34 @@ export const getChoreos = (
       },
     ];
   });
+
+const getOpenChoreoOffers = (catalogProducts: readonly SellableProduct[]) =>
+  CHOREO_CATALOGUE_PRODUCT_CODES.flatMap((code) => {
+    const product = catalogProducts.find((candidate) => candidate.code === code);
+    if (!product || !product.salesEnabled) return [];
+
+    return product.offers.filter(
+      (offer) =>
+        (offer.code === "without-mentor" || offer.code === "with-mentor") &&
+        isOfferSaleOpen(product, offer),
+    );
+  });
+
+/** "from 65 PLN / 15 €" for the sticky bar: the cheapest open catalogue tariff. */
+export const getChoreoStartingPrice = (
+  t: Translate,
+  catalogProducts: readonly SellableProduct[],
+) => {
+  const offers = getOpenChoreoOffers(catalogProducts);
+  if (offers.length === 0) return undefined;
+
+  const cheapest = offers.reduce((min, offer) =>
+    offer.prices.pln < min.prices.pln ? offer : min,
+  );
+  const hasSeveralPrices = offers.some(
+    (offer) => offer.prices.pln !== cheapest.prices.pln,
+  );
+  const price = formatOfferPrice(cheapest.prices);
+
+  return hasSeveralPrices ? `${t("choreoCard.priceFrom")} ${price}` : price;
+};

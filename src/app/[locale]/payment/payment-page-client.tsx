@@ -37,7 +37,7 @@ import {
 } from "@/lib/choreo-offer-presentation";
 import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
-import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { trackAnalyticsEvent, trackCtaClick } from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 import { getAlternativeTariffHref } from "@/lib/public-sales";
 import { StoreProvider, usePaymentStore } from "@/stores";
@@ -687,7 +687,13 @@ const PaymentPage = observer(function PaymentPage({
                   href="/privacy-policy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void trackCtaClick(
+                      { id: "privacy_policy", placement: "checkout_agreement" },
+                      "/privacy-policy",
+                    );
+                  }}
                   onMouseDown={(event) => event.stopPropagation()}
                 >
                   {chunks}

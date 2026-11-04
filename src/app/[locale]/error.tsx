@@ -38,13 +38,19 @@ export default function LocaleError({
       <h1 className={styles.title}>{t("title")}</h1>
       <p className={styles.description}>{t("description")}</p>
       <div className={styles.actions}>
-        <Button buttonText={t("retryButton")} width="300px" onClick={() => retry()} />
+        <Button
+          buttonText={t("retryButton")}
+          width="300px"
+          onClick={() => retry()}
+          analytics={{ id: "error_retry", placement: "error_page" }}
+        />
         <Button
           buttonText={t("backHome")}
           variant="secondary"
           width="300px"
           href="/"
           prefetch={false}
+          analytics={{ id: "back_home", placement: "error_page" }}
         />
       </div>
     </section>

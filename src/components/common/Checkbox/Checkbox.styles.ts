@@ -1,5 +1,6 @@
 import styled from "styled-components";
 
+import { hitArea } from "@/styles/mixins/hitArea";
 import { gridRowReveal } from "@/styles/mixins/motion";
 
 type MarkStyleProps = {
@@ -73,9 +74,13 @@ export const Mark = styled.div<MarkStyleProps>`
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
   width: 21px;
   height: 21px;
   margin-top: 2px;
+  /* The box is the obvious thing to aim at; its 44px halo sits inside the
+     label, so a tap on it toggles like a tap on the text. */
+  ${hitArea()}
   box-sizing: border-box;
   background: transparent;
   border: 1px solid
