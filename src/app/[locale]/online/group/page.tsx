@@ -178,13 +178,13 @@ export default async function OnlineGroupPage() {
       {saleState !== "open" && <ClosedSalesNotice text={commonT("salesUnavailable")} />}
       <TariffTabs
         ariaLabel={t("tariffs.switchLabel")}
-        defaultKey={plusOffer ? "plus" : "standard"}
         tabs={[
           ...(standardOffer
             ? [
                 {
                   key: "standard",
                   label: t("tariffs.standard.title"),
+                  note: formatOfferPrice(standardOffer.prices),
                   panel: (
                     <CourseCard
                       analyticsId={`${product.code}:${standardOffer.code}`}
@@ -240,6 +240,7 @@ export default async function OnlineGroupPage() {
                 {
                   key: "plus",
                   label: t("tariffs.plus.title"),
+                  note: formatOfferPrice(plusOffer.prices),
                   badge: t("tariffs.popular"),
                   panel: (
                     <CourseCard
