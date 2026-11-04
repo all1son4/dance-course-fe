@@ -95,7 +95,7 @@ export const ResultReason = styled.p`
   margin: -12px 0 0;
   color: var(--danger);
   font-size: var(--text-body);
-  font-weight: 300;
+  font-weight: var(--weight-text);
   line-height: 1.5;
   max-width: 520px;
   animation: ${resultRise} 480ms var(--ease-standard, ease)

@@ -70,7 +70,7 @@ export const PaymentTitle = styled.h1`
 `;
 
 export const PaymentDescription = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -449,7 +449,7 @@ export const SummaryBoxParahraphs = styled.div`
   margin: 0 0 40px 0;
 
   & p {
-    font-weight: 300;
+    font-weight: var(--weight-text);
     font-style: normal;
     font-size: var(--text-body);
     line-height: 1.5;

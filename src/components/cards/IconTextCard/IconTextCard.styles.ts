@@ -61,7 +61,7 @@ export const PanelTitle = styled.h3`
 `;
 
 export const PanelText = styled.div`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -167,7 +167,7 @@ export const ContactTitle = styled.p`
 
 export const ContactText = styled.p`
   font-family: Manrope;
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

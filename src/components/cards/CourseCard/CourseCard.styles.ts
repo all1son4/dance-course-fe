@@ -45,7 +45,7 @@ export const Title = styled.h3`
 `;
 
 export const Subtitle = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

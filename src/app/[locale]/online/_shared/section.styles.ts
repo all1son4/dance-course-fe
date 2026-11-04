@@ -97,7 +97,7 @@ export const Description = styled.div`
 `;
 
 export const DescriptionParagraph = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -119,7 +119,7 @@ export const DateBox = styled.div`
 `;
 
 export const From = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

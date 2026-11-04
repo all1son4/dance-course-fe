@@ -57,7 +57,7 @@ export const Title = styled(HeroTitle)`
   margin: 0;
 
   & p {
-    font-weight: 300;
+    font-weight: var(--weight-text);
     font-style: normal;
     font-size: var(--text-body);
     line-height: 1.5;
@@ -279,7 +279,7 @@ export const StudioDanceParagraphs = styled.div`
 `;
 
 export const StudioDanceParagraph = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

@@ -134,7 +134,7 @@ export const ResultParagraphs = styled.div`
 `;
 
 export const ResultParagraph = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -150,7 +150,7 @@ export const ResultParagraph = styled.p`
 
 /** Small print under the copy: how long the invite lasts, until when an access runs. */
 export const ResultMeta = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: 14px;
   line-height: 1.4;

@@ -53,7 +53,7 @@ export const LegalTitle = styled.h1`
 `;
 
 export const LegalDescription = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -109,7 +109,7 @@ export const LegalItemTitle = styled.p`
 `;
 
 export const LegalItemText = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -120,7 +120,7 @@ export const LegalItemText = styled.p`
 `;
 
 export const LegalContactLine = styled.p`
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;

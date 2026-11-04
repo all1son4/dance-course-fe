@@ -331,7 +331,7 @@ export const ReviewTitle = styled.p`
   color: var(--ink);
   font-size: var(--text-lead);
   font-style: normal;
-  font-weight: 300;
+  font-weight: var(--weight-text);
   letter-spacing: 0;
   line-height: 1.5;
 
@@ -353,7 +353,7 @@ export const ReviewParagraph = styled.p`
   color: var(--ink);
   font-size: var(--text-body);
   font-style: normal;
-  font-weight: 300;
+  font-weight: var(--weight-text);
   letter-spacing: 0;
   line-height: 1.5;
 
