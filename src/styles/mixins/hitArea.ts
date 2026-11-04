@@ -27,7 +27,11 @@ type HitAreaOptions = {
  * must not clip its own overflow, and must not already use the chosen
  * pseudo-element.
  */
-export const hitArea = ({ pseudo = "after", maxWidth, maxHeight }: HitAreaOptions = {}) => {
+export const hitArea = ({
+  pseudo = "after",
+  maxWidth,
+  maxHeight,
+}: HitAreaOptions = {}) => {
   const minWidth = maxWidth
     ? `min(${MIN_TAP_TARGET_PX}px, ${maxWidth})`
     : `${MIN_TAP_TARGET_PX}px`;

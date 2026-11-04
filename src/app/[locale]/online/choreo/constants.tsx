@@ -76,10 +76,11 @@ const CHOREO_PRESENTATIONS = {
 >;
 
 /** The tutorials a bundle contains, for its "bought separately" price. */
-const CHOREO_BUNDLE_PARTS: Partial<Record<SellableProductCode, readonly SellableProductCode[]>> =
-  {
-    "choreo-bundle": ["choreo-still-alive", "choreo-her-lies"],
-  };
+const CHOREO_BUNDLE_PARTS: Partial<
+  Record<SellableProductCode, readonly SellableProductCode[]>
+> = {
+  "choreo-bundle": ["choreo-still-alive", "choreo-her-lies"],
+};
 
 const CHOREO_CARD_HIGHLIGHT_KEYS = ["choreoCard.highlights.level"] as const;
 
@@ -103,7 +104,10 @@ const getBundleCompareAtPrices = (
   if (partOffers.some((partOffer) => !partOffer)) return undefined;
 
   const sum = (currency: keyof SellableProductOffer["prices"]) =>
-    partOffers.reduce((total, partOffer) => total + (partOffer?.prices[currency] ?? 0), 0);
+    partOffers.reduce(
+      (total, partOffer) => total + (partOffer?.prices[currency] ?? 0),
+      0,
+    );
   const prices = { pln: sum("pln"), eur: sum("eur") };
 
   return prices.pln > offer.prices.pln && prices.eur > offer.prices.eur
