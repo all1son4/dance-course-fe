@@ -25,6 +25,8 @@ export const CHOREO_STILL_ALIVE_REEL_URL =
   "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2";
 export const CHOREO_HER_LIES_REEL_URL =
   "https://www.instagram.com/reel/DKw36jmNp5D/?igsh=MWg4NDA0cWx6dnpnNQ==";
+export const CHOREO_LOVE_ME_IN_THE_MORNING_REEL_URL =
+  "https://www.instagram.com/reel/DbLsw9eNbai/";
 
 export const CONTACT_PHONE_HREF = "tel:+48571571214";
 
