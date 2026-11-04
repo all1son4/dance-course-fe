@@ -8,6 +8,8 @@ import type { InputVariant } from "./Input.types";
 type InputFieldStyleProps = {
   $variant: InputVariant;
   $hasError: boolean;
+  $hasPrefix?: boolean;
+  $isComplete?: boolean;
 };
 
 type SelectFieldStyleProps = InputFieldStyleProps & {
@@ -22,9 +24,16 @@ const inputFieldStyles = css<InputFieldStyleProps>`
   width: 100%;
   box-sizing: border-box;
   padding: 14px 20px;
+  ${({ $hasPrefix }) => ($hasPrefix ? "padding-left: 37px;" : "")}
+  ${({ $isComplete }) => ($isComplete ? "padding-right: 48px;" : "")}
   border-radius: var(--radius-control);
   border: 1px solid
-    ${({ $hasError }) => ($hasError ? "rgba(213, 0, 4, 1)" : "rgba(72, 72, 72, 0.6)")};
+    ${({ $hasError, $isComplete }) =>
+      $hasError
+        ? "rgba(213, 0, 4, 1)"
+        : $isComplete
+          ? "rgba(24, 112, 58, 0.5)"
+          : "rgba(72, 72, 72, 0.6)"};
   background: transparent;
   color: var(--ink);
   caret-color: var(--brand);
@@ -114,6 +123,57 @@ export const InputWrapper = styled.div<InputWrapperStyleProps>`
   box-sizing: border-box;
 `;
 
+/* Holds the control with its in-field adornments, so the prefix and the tick
+   centre on the field itself rather than on the label above it. */
+export const FieldControl = styled.div`
+  position: relative;
+`;
+
+export const FieldPrefix = styled.span`
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-muted);
+  font-weight: 400;
+  font-size: var(--text-body);
+  line-height: 1;
+  pointer-events: none;
+`;
+
+export const FieldTick = styled.span<{ $isSelect: boolean; $isVisible: boolean }>`
+  position: absolute;
+  right: ${({ $isSelect }) => ($isSelect ? "44px" : "16px")};
+  top: 50%;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  color: var(--success);
+  pointer-events: none;
+  opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
+  transform: translateY(-50%) scale(${({ $isVisible }) => ($isVisible ? 1 : 0.6)});
+  transition:
+    opacity var(--motion-base, 220ms) var(--ease-standard, ease),
+    transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+
+  & svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
+export const HintText = styled.p`
+  margin: 6px 0 0 2px;
+  color: rgba(72, 72, 72, 0.86);
+  font-weight: 400;
+  font-size: 12.5px;
+  line-height: 1.35;
+`;
+
 export const TextInputField = styled.input<InputFieldStyleProps>`
   ${inputFieldStyles}
 `;
@@ -125,7 +185,7 @@ export const MaskedInputField = styled(InputMask)<InputFieldStyleProps>`
 export const SelectField = styled.select<SelectFieldStyleProps>`
   ${inputFieldStyles}
   appearance: none;
-  padding-right: 52px;
+  padding-right: ${({ $isComplete }) => ($isComplete ? "72px" : "52px")};
   color: ${({ $hasValue }) => ($hasValue ? "rgba(0, 0, 0, 1)" : "rgba(72, 72, 72, 0.8)")};
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23000000' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-position: right 20px center;

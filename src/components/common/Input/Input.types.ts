@@ -3,6 +3,7 @@ import type {
   FocusEventHandler,
   HTMLInputTypeAttribute,
   InputHTMLAttributes,
+  ReactNode,
 } from "react";
 
 export type InputElement = HTMLInputElement | HTMLSelectElement;
@@ -37,4 +38,10 @@ export type TInput = {
   inputMode?: InputHTMLAttributes<HTMLInputElement>["inputMode"];
   /** Labels the phone keyboard's return key ("next", "done"). */
   enterKeyHint?: InputHTMLAttributes<HTMLInputElement>["enterKeyHint"];
+  /** Quiet line under the field (why it is asked); an error takes its place. */
+  hint?: ReactNode;
+  /** The value is valid: a small tick at the field's end and a calmer border. */
+  isComplete?: boolean;
+  /** Fixed text inside the field before the value ("@" for a handle). */
+  prefix?: string;
 };

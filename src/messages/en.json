@@ -684,7 +684,13 @@
     "summary": {
       "currencyLabel": "Payment currency",
       "amountLabel": "Payment amount",
-      "offerLabel": "Plan: {offer}"
+      "offerLabel": "Plan: {offer}",
+      "eyebrow": "Your order",
+      "eyebrowRenewal": "Renewal",
+      "support": {
+        "title": "Questions before buying?",
+        "label": "Message us on Telegram"
+      }
     },
     "renewal": {
       "title": "Confirm Telegram before payment",
@@ -718,15 +724,18 @@
     "inputs": {
       "fullName": {
         "label": "Full name",
-        "placeholder": "Full name"
+        "placeholder": "Anna Kowalska"
       },
       "email": {
         "label": "Email",
-        "placeholder": "emailname@mail.com"
+        "placeholder": "name@gmail.com",
+        "hint": "Your access link and receipt will arrive here",
+        "suggestion": "Did you mean"
       },
       "nickname": {
         "label": "Telegram username",
-        "placeholder": "@yournickname"
+        "placeholder": "yournickname",
+        "hint": "We use it to open your access in Telegram"
       },
       "address": {
         "label": "Address",
@@ -734,11 +743,11 @@
       },
       "city": {
         "label": "City",
-        "placeholder": "City"
+        "placeholder": "Warsaw"
       },
       "postalCode": {
         "label": "Postal code",
-        "placeholder": "Postal code"
+        "placeholder": "00-950"
       },
       "country": {
         "label": "Country",
@@ -757,7 +766,13 @@
       "immediateAccessConsent": "I agree to the start of the service / delivery of access to digital content (online course) immediately after payment and before the 14-day withdrawal period expires.",
       "withdrawalNoticeAcknowledgement": "I acknowledge that after receiving immediate access to digital content, I lose the right to withdraw from the agreement within 14 days.",
       "privacyPolicyAcknowledgement": "I declare that I have read the <link>privacy policy</link>.",
-      "digitalContentAgreement": "I accept the terms and conclude the agreement for the delivery of digital content."
+      "digitalContentAgreement": "I accept the terms and conclude the agreement for the delivery of digital content.",
+      "acceptAll": {
+        "title": "I accept the purchase terms",
+        "summary": "I want access right after payment and understand that I then lose the right to withdraw from the purchase within 14 days. I accept the terms for the delivery of digital content and have read the <link>privacy policy</link>.",
+        "show": "Show all {count} items",
+        "hide": "Collapse"
+      }
     },
     "staleLink": {
       "title": "Offer unavailable",
@@ -771,6 +786,30 @@
     "offerUnavailable": {
       "title": "This plan is unavailable.",
       "selectButton": "Choose a plan"
+    },
+    "steps": {
+      "access": {
+        "title": "Where to send your access"
+      },
+      "billing": {
+        "title": "Receipt details"
+      },
+      "payment": {
+        "title": "Confirm and pay",
+        "meta": "via Stripe",
+        "summary": "Terms accepted"
+      },
+      "continue": "Continue",
+      "edit": "Edit"
+    },
+    "progress": {
+      "step": "Step {current} of {total}",
+      "ready": "All filled in, just pay",
+      "duration": "about a minute"
+    },
+    "paymentLocked": {
+      "title": "Payment opens here",
+      "text": "Fill in your details and accept the terms, and the payment form appears right away. Payments are secured by Stripe."
     }
   },
   "PaymentSuccessPage": {
@@ -833,12 +872,12 @@
   "PaymentFailedPage": {
     "title": "Payment failed",
     "description": {
-      "line1": "We could not complete the payment. Your bank may have declined the card, or a technical issue occurred.",
-      "line2": "Try again or choose another payment method. If it happens again, contact support."
+      "line1": "Your bank may have declined the card, or the payment was interrupted by a technical issue.",
+      "line2": "Try again or choose another payment method. If it still does not work, message us and we will help."
     },
     "buttons": {
-      "backToPayment": "Back to payment",
-      "contactSupport": "Contact support"
+      "backToPayment": "Try again",
+      "contactSupport": "Message support"
     }
   },
   "StripePaymentTabs": {
@@ -886,10 +925,10 @@
     "firstTouch": {
       "title": "Beginner course \"First Touch\"",
       "description": {
-        "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
+        "1": "For those who have never danced but want to learn body awareness, confidence and movement.",
         "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
       },
-      "accessNote": "Course duration: 1.5 months. Access to lessons: 120 days from joining the private Telegram chat.",
+      "accessNote": "The course runs for 1.5 months. Lessons stay available for 120 days after joining the private Telegram chat.",
       "offers": {
         "standard": "Standard access"
       }
@@ -897,7 +936,7 @@
     "choreoStillAlive": {
       "title": "Choreography tutorial \"Still Alive\"",
       "description": {
-        "1": "An online tutorial for the Still Alive choreography for dancers who want depth, structure and expressive movement.",
+        "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
@@ -910,7 +949,7 @@
     "choreoHerLies": {
       "title": "Choreography tutorial \"Her Lies\"",
       "description": {
-        "1": "An online tutorial for the Her Lies choreography for dancers who want depth, structure and expressive movement.",
+        "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
         "3": "Self-paced learning without mentor support or feedback."
       },
@@ -924,8 +963,8 @@
       "title": "Bundle tutorial \"Still Alive\" + \"Her Lies\"",
       "cardTitle": "Two video tutorials",
       "description": {
-        "1": "Two online choreography tutorials in one access for dancers who want to work with different dynamics, performance qualities and musicality right away.",
-        "2": "Inside the bundle are Still Alive and Her Lies: you can move through the material at your own pace, replay the lessons and assemble both choreographies to music.",
+        "1": "Two tutorials in one access for dancers who want to work with different dynamics, performance qualities and musicality right away.",
+        "2": "Move through the material at your own pace, replay the lessons and assemble both choreographies to music.",
         "3": "Choose between a self-paced format or participation with mentor support and feedback."
       },
       "accessNote": "Both tutorials are available for 60 days from joining the private Telegram channel.",
@@ -938,9 +977,9 @@
       "title": "The Birthday Drop “Love me in the morning”",
       "checkoutTitle": "The Birthday Drop",
       "description": {
-        "1": "An online breakdown of the Love me in the morning choreography, put together as a separate drop: The Birthday Drop.",
+        "1": "An online breakdown of the Love me in the morning choreography, put together as a separate drop.",
         "2": "Inside: the breakdown itself, a playlist, a moodboard and a YouTube link to the “34 questions for my 34th” interview.",
-        "3": "Access to the materials stays forever: come back and repeat at your own pace."
+        "3": "Come back to the materials and repeat at your own pace."
       },
       "accessNote": "Lifetime access to the materials through a private Telegram channel.",
       "offers": {
@@ -965,8 +1004,8 @@
     "choreoLoveMeInTheMorning": {
       "title": "Video tutorial for \"Love me in the morning\"",
       "description": {
-        "1": "An online tutorial for Love me in the morning with detailed explanations of movements and transitions.",
-        "2": "The choreography tutorial only: study, replay and practise at your own pace.",
+        "1": "Detailed explanations of movements and transitions.",
+        "2": "Study, replay and practise at your own pace.",
         "3": "Self-paced learning without mentor support or feedback."
       },
       "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
