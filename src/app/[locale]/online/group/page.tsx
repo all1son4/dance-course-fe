@@ -5,7 +5,6 @@ import CourseCard from "@/components/cards/CourseCard";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
 import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
-import RefreshButton from "@/components/other/ClosedSalesNotice/RefreshButton";
 import Contacts from "@/components/other/Contacts";
 import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
@@ -16,7 +15,12 @@ import {
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
-import { getProductSaleState, type ProductSaleState } from "@/lib/sales-availability";
+import { getOpenPublicProductOffers } from "@/lib/public-sales";
+import {
+  getProductSaleState,
+  getStorefrontSellableProducts,
+  type ProductSaleState,
+} from "@/lib/sales-availability";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -62,19 +66,24 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function OnlineGroupPage() {
-  const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
+  const configuredProduct = SELLABLE_PRODUCTS["online-group-anna-strok"];
   // The tariff section carries the #tariffs anchor the hero button and deep
   // links point at, so the sales switch is read before anything renders.
   // Streamed in behind the shell (see SaleStateGate) the whole section landed
   // 150-300ms after the page on Vercel: everything below it jumped down,
   // "Choose a plan" was a dead click until then and /online/group#tariffs
   // missed its target.
-  const [locale, t, commonT, saleState] = await Promise.all([
+  const [locale, t, commonT, saleState, catalogProducts] = await Promise.all([
     getLocale(),
     getTranslations("OnlineGroupPage"),
     getTranslations("Common"),
-    getProductSaleState(product.id),
+    getProductSaleState(configuredProduct.id),
+    getStorefrontSellableProducts(),
   ]);
+  const product =
+    catalogProducts.find((candidate) => candidate.id === configuredProduct.id) ??
+    configuredProduct;
+  const availableOffers = getOpenPublicProductOffers(product);
   const onlineSuggestions = getGroupSuggestions((key) => t(key));
   const purchaseOffers = product.offers.filter(
     (offer) => offer.code === "standard" || offer.code === "library-access",
@@ -98,6 +107,7 @@ export default async function OnlineGroupPage() {
       buildCourseOffersStructuredData({
         landingPath: "/online/group#tariffs",
         offer,
+        isAvailable: saleState === "open" && offer.salesEnabled,
         offerName:
           offer.code === "standard"
             ? t("tariffs.standard.title")
@@ -137,46 +147,34 @@ export default async function OnlineGroupPage() {
         <ProductFact label={t("hero.startLabel")} value={t("hero.startDate")} />
       </InfoBoxGroup>
 
-      <ButtonBox>
-        <Button
-          buttonText={t("tariffs.selectButton")}
-          href="#tariffs"
-          analytics={{ id: "select_tariff", placement: "online_group_hero" }}
-          {...stickyCtaAnchorProps}
-        />
-        {/* Only while there is something to buy: a floating "choose a plan"
+      {saleState === "open" && (
+        <ButtonBox>
+          <Button
+            buttonText={t("tariffs.selectButton")}
+            href="#tariffs"
+            analytics={{ id: "select_tariff", placement: "online_group_hero" }}
+            {...stickyCtaAnchorProps}
+          />
+          {/* Only while there is something to buy: a floating "choose a plan"
             pointing at a closed tariff section would be noise. */}
-        {saleState === "open" ? (
           <StickyCta
             analytics={{ id: "select_tariff", placement: "online_group_sticky" }}
             label={t("tariffs.selectButton")}
             href="#tariffs"
             title={t("hero.titlePlain")}
-            note={standardOffer ? formatOfferPrice(standardOffer.prices) : undefined}
+            note={
+              availableOffers[0] ? formatOfferPrice(availableOffers[0].prices) : undefined
+            }
           />
-        ) : null}
-      </ButtonBox>
+        </ButtonBox>
+      )}
     </ProductHero>
   );
 
   const renderTariffSection = (saleState: ProductSaleState) => (
     <TariffSection id="tariffs">
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
-      {saleState === "open" ? null : (
-        <ClosedSalesNotice
-          text={
-            saleState === "closed" ? commonT("salesClosed") : commonT("salesUnavailable")
-          }
-          action={
-            saleState === "unavailable" ? (
-              <RefreshButton
-                label={commonT("tryAgain")}
-                placement="online_group_tariffs"
-              />
-            ) : undefined
-          }
-        />
-      )}
+      {saleState !== "open" && <ClosedSalesNotice text={commonT("salesUnavailable")} />}
       <TariffOptionsBox>
         {standardOffer ? (
           <CourseCard
@@ -199,7 +197,11 @@ export default async function OnlineGroupPage() {
                 />
               </TarifContentBox>
             }
-            buttonText={saleState === "open" ? t("tariffs.buyButton") : undefined}
+            buttonText={
+              saleState === "open" && standardOffer.salesEnabled
+                ? t("tariffs.buyButton")
+                : undefined
+            }
             buttonAnalytics={{
               id: "buy_online_group",
               offer_code: standardOffer.code,
@@ -212,7 +214,7 @@ export default async function OnlineGroupPage() {
             buttonRel="nofollow"
             buttonIsStickyAnchor
             buttonHref={
-              saleState === "open"
+              saleState === "open" && standardOffer.salesEnabled
                 ? buildCheckoutHref({
                     offerId: standardOffer.id,
                     productId: product.id,
@@ -246,7 +248,11 @@ export default async function OnlineGroupPage() {
                 />
               </TarifContentBox>
             }
-            buttonText={saleState === "open" ? t("tariffs.buyButton") : undefined}
+            buttonText={
+              saleState === "open" && plusOffer.salesEnabled
+                ? t("tariffs.buyButton")
+                : undefined
+            }
             buttonAnalytics={{
               id: "buy_online_group",
               offer_code: plusOffer.code,
@@ -259,7 +265,7 @@ export default async function OnlineGroupPage() {
             buttonRel="nofollow"
             buttonIsStickyAnchor
             buttonHref={
-              saleState === "open"
+              saleState === "open" && plusOffer.salesEnabled
                 ? buildCheckoutHref({
                     offerId: plusOffer.id,
                     productId: product.id,

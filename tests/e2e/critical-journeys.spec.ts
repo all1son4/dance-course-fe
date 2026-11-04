@@ -20,7 +20,11 @@ const readAuthoritativeCatalog = async (page: Page) => {
   expect(catalogResponse.ok()).toBe(true);
 
   const catalog = (await catalogResponse.json()) as {
-    products: Array<{ id: string; salesEnabled: boolean }>;
+    products: Array<{
+      id: string;
+      salesEnabled: boolean;
+      offers: Array<{ id: string; code: string; salesEnabled: boolean }>;
+    }>;
   };
 
   return catalog.products;
@@ -50,12 +54,17 @@ test("[BEH-ENTRY-02] Online Group entry follows the authoritative sales switch",
   page,
 }) => {
   const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
-  const expectedOfferIds = product.offers
-    .filter((offer) => offer.code === "standard" || offer.code === "library-access")
-    .map((offer) => offer.id)
-    .sort();
   const catalogProducts = await readAuthoritativeCatalog(page);
   const catalogProduct = catalogProducts.find((item) => item.id === product.id);
+  const expectedOfferIds =
+    catalogProduct?.offers
+      .filter(
+        (offer) =>
+          (offer.code === "standard" || offer.code === "library-access") &&
+          offer.salesEnabled,
+      )
+      .map((offer) => offer.id)
+      .sort() ?? [];
 
   expect(catalogProduct).toBeDefined();
 
@@ -65,20 +74,16 @@ test("[BEH-ENTRY-02] Online Group entry follows the authoritative sales switch",
   // so screen readers can tell the two apart.
   const purchaseLinks = page.getByRole("link", { name: /^Buy(?: — .+)?$/u });
 
-  if (!catalogProduct?.salesEnabled) {
+  if (!catalogProduct?.salesEnabled || expectedOfferIds.length === 0) {
     // The notice streams in behind the shell; once it is visible the sales
     // state has resolved and the absence of buy links is meaningful.
-    await expect(
-      page.getByText(
-        /Sales are temporarily closed|Sales information is temporarily unavailable/,
-      ),
-    ).toBeVisible();
+    await expect(page.getByText(/Currently unavailable/)).toBeVisible();
     await expect(purchaseLinks).toHaveCount(0);
     await expect(page.locator('a[href*="/payment?"]')).toHaveCount(0);
     return;
   }
 
-  await expect(purchaseLinks).toHaveCount(2);
+  await expect(purchaseLinks).toHaveCount(expectedOfferIds.length);
 
   const checkoutContexts = await purchaseLinks.evaluateAll((links) =>
     links.map((link) => {
@@ -128,8 +133,7 @@ test("Birthday Drop entry carries the sales switch in its first render", async (
   const shell = (await response.text())
     .split('<div hidden id="S:')[0]
     .replace(/<script[\s\S]*?<\/script>/g, "");
-  const closedNotice =
-    /Sales are temporarily closed|Sales information is temporarily unavailable/;
+  const closedNotice = /Currently unavailable/;
 
   await page.goto("/online/birthday-drop");
 
@@ -279,7 +283,7 @@ test("ordinary checkout has four fresh agreements and no Telegram verification",
 
   if (!authoritativeProduct?.salesEnabled) {
     // Closed sales must render as an explicit state on the checkout too.
-    await expect(page.getByText("Sales are closed")).toBeVisible();
+    await expect(page.getByText("Currently unavailable")).toBeVisible();
     await expect(page.locator('form input[type="checkbox"]')).toHaveCount(0);
     return;
   }
@@ -453,7 +457,7 @@ test("checkout never renders a dead end", async ({ page }) => {
   // notice, never a blank interactive area.
   const checkoutForm = page.locator("form");
   const blockedNotice = page.getByText(
-    /Checkout is temporarily unavailable|Sales are closed|This link is out of date/,
+    /Purchase unavailable|Currently unavailable|Offer unavailable/,
   );
 
   await expect(checkoutForm.or(blockedNotice).first()).toBeVisible();
@@ -468,7 +472,7 @@ test("a checkout link to an unknown product shows the stale-link notice", async 
 }) => {
   await page.goto("/payment?product=product-that-never-existed");
 
-  await expect(page.getByText("This link is out of date")).toBeVisible();
+  await expect(page.getByText("Offer unavailable")).toBeVisible();
   await expect(page.getByRole("link", { name: "Browse courses" })).toBeVisible();
   await expect(page.locator('form input[type="checkbox"]')).toHaveCount(0);
   await expect(page.locator("#payment-element")).toHaveCount(0);
@@ -479,7 +483,9 @@ const assertCheckoutContexts = (
   productId: string,
   expectedOfferIds: string[],
 ) => {
-  expect(contexts.map((context) => context.productId)).toEqual([productId, productId]);
+  expect(contexts.map((context) => context.productId)).toEqual(
+    expectedOfferIds.map(() => productId),
+  );
   expect(
     contexts
       .map((context) => context.offerId)

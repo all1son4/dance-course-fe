@@ -4,6 +4,7 @@ export type SellableProductCode =
   | "first-touch"
   | "choreo-still-alive"
   | "choreo-her-lies"
+  | "choreo-love-me-in-the-morning"
   | "choreo-bundle"
   | "choreo-birthday-drop"
   | "online-group-anna-strok";
@@ -25,6 +26,8 @@ export type SellableProductOffer = {
   id: string;
   label: string;
   labelKey: string;
+  /** Operator-owned sales switch; closed offers remain available to past buyers. */
+  salesEnabled: boolean;
   prices: SellableProductPrices;
   telegramAccessDurationDays: number;
 };
@@ -61,6 +64,10 @@ export const ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID =
 export const BIRTHDAY_DROP_PRODUCT_ID = "prd_choreo_birthday_drop";
 export const BIRTHDAY_DROP_OFFER_ID = "off_choreo_birthday_drop_standard";
 
+export const LOVE_ME_IN_THE_MORNING_PRODUCT_ID = "prd_choreo_love_me_in_the_morning";
+export const LOVE_ME_IN_THE_MORNING_OFFER_ID =
+  "off_choreo_love_me_in_the_morning_without_mentor";
+
 export const ONLINE_GROUP_NEW_OFFER_IDS = [
   ONLINE_GROUP_STANDARD_OFFER_ID,
   ONLINE_GROUP_LIBRARY_OFFER_ID,
@@ -89,7 +96,7 @@ type CheckoutHrefOptions = {
 export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
   "first-touch": {
     accessNote:
-      "Продолжительность курса - 1,5 месяца, доступ к урокам - 4 месяца через приватный Telegram-чат.",
+      "Продолжительность курса — 1,5 месяца. Доступ к урокам — 120 дней с момента вступления в приватный Telegram-чат.",
     accessNoteKey: "firstTouch.accessNote",
     code: "first-touch",
     description: [
@@ -110,6 +117,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_4BcM9pR6tH1x",
         label: "Стандартный доступ",
         labelKey: "firstTouch.offers.standard",
+        salesEnabled: true,
         prices: {
           pln: 250,
           eur: 50,
@@ -119,7 +127,8 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
   },
   "choreo-still-alive": {
-    accessNote: "Доступ к материалам 2 месяца через приватный Telegram-канал.",
+    accessNote:
+      "Доступ к материалам — 60 дней с момента вступления в приватный Telegram-канал.",
     accessNoteKey: "choreoStillAlive.accessNote",
     code: "choreo-still-alive",
     description: [
@@ -133,7 +142,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "choreoStillAlive.description.3",
     ],
     id: "prd_2QfH8nW5cK3y",
-    salesEnabled: true,
+    salesEnabled: false,
     slug: "still-alive",
     title: 'Видео-разбор хореографии "Still Alive"',
     titleKey: "choreoStillAlive.title",
@@ -145,6 +154,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_5DxR2mL8qJ4v",
         label: "Без куратора",
         labelKey: "choreoStillAlive.offers.withoutMentor",
+        salesEnabled: true,
         prices: {
           pln: 60,
           eur: 15,
@@ -156,6 +166,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_8KtP6zN3bS7c",
         label: "С куратором",
         labelKey: "choreoStillAlive.offers.withMentor",
+        salesEnabled: true,
         prices: {
           pln: 100,
           eur: 25,
@@ -165,13 +176,14 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
   },
   "choreo-her-lies": {
-    accessNote: "Доступ к материалам 2 месяца через приватный Telegram-канал.",
+    accessNote:
+      "Доступ к материалам — 60 дней с момента вступления в приватный Telegram-канал.",
     accessNoteKey: "choreoHerLies.accessNote",
     code: "choreo-her-lies",
     description: [
       "Онлайн-разбор хореографии Her Lies для тех, кто хочет глубины, структуры и выразительного танца.",
       "Урок доступен в удобном онлайн-формате: можно пересматривать и повторять материал столько раз, сколько нужно, чтобы уверенно собрать все в музыку.",
-      "Доступен формат самостоятельного прохождения или участие с куратором и обратной связью.",
+      "Самостоятельное прохождение без куратора и обратной связи, в удобном темпе.",
     ],
     descriptionKeys: [
       "choreoHerLies.description.1",
@@ -191,8 +203,9 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_3HbC8xP2mV6q",
         label: "Без куратора",
         labelKey: "choreoHerLies.offers.withoutMentor",
+        salesEnabled: true,
         prices: {
-          pln: 60,
+          pln: 65,
           eur: 15,
         },
         telegramAccessDurationDays: 60,
@@ -202,6 +215,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_6ZrN1kL5wT8d",
         label: "С куратором",
         labelKey: "choreoHerLies.offers.withMentor",
+        salesEnabled: false,
         prices: {
           pln: 100,
           eur: 25,
@@ -212,7 +226,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
   },
   "choreo-bundle": {
     accessNote:
-      "Доступ к материалам 2 месяца через приватный Telegram-канал с двумя хореографиями.",
+      "Оба разбора доступны 60 дней с момента вступления в приватный Telegram-канал.",
     accessNoteKey: "choreoBundle.accessNote",
     code: "choreo-bundle",
     description: [
@@ -226,7 +240,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "choreoBundle.description.3",
     ],
     id: "prd_choreo_bundle_duo",
-    salesEnabled: true,
+    salesEnabled: false,
     slug: "still-alive-her-lies-bundle",
     title: 'Бандл разборов "Still Alive" + "Her Lies"',
     titleKey: "choreoBundle.title",
@@ -238,6 +252,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_choreo_bundle_duo_without_mentor",
         label: "Без куратора",
         labelKey: "choreoBundle.offers.withoutMentor",
+        salesEnabled: true,
         prices: {
           pln: 85,
           eur: 20,
@@ -249,6 +264,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_choreo_bundle_duo_with_mentor",
         label: "С куратором",
         labelKey: "choreoBundle.offers.withMentor",
+        salesEnabled: true,
         prices: {
           pln: 170,
           eur: 40,
@@ -273,7 +289,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "choreoBirthdayDrop.description.3",
     ],
     id: "prd_choreo_birthday_drop",
-    salesEnabled: true,
+    salesEnabled: false,
     slug: "birthday-drop",
     title: 'The Birthday Drop "Love me in the morning"',
     titleKey: "choreoBirthdayDrop.title",
@@ -292,6 +308,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: "off_choreo_birthday_drop_standard",
         label: "Стандартный доступ",
         labelKey: "choreoBirthdayDrop.offers.standard",
+        salesEnabled: true,
         prices: {
           pln: 65,
           eur: 15,
@@ -299,6 +316,41 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         // Unused for this offer - access never expires - but the field is
         // required by the catalogue and the database check demands >= 0.
         telegramAccessDurationDays: 0,
+      },
+    ],
+  },
+  "choreo-love-me-in-the-morning": {
+    accessNote:
+      "Доступ к материалам — 60 дней с момента вступления в приватный Telegram-канал.",
+    accessNoteKey: "choreoLoveMeInTheMorning.accessNote",
+    code: "choreo-love-me-in-the-morning",
+    description: [
+      "Онлайн-разбор хореографии Love me in the morning с подробными объяснениями движений и переходов.",
+      "Только разбор хореографии: изучай материал, пересматривай и повторяй в удобном темпе.",
+      "Самостоятельное прохождение без куратора и обратной связи.",
+    ],
+    descriptionKeys: [
+      "choreoLoveMeInTheMorning.description.1",
+      "choreoLoveMeInTheMorning.description.2",
+      "choreoLoveMeInTheMorning.description.3",
+    ],
+    id: LOVE_ME_IN_THE_MORNING_PRODUCT_ID,
+    // Configure the RU/EN Telegram targets before opening sales in admin.
+    salesEnabled: false,
+    slug: "love-me-in-the-morning",
+    title: 'Видео-разбор хореографии "Love me in the morning"',
+    titleKey: "choreoLoveMeInTheMorning.title",
+    type: "choreo",
+    defaultOfferId: LOVE_ME_IN_THE_MORNING_OFFER_ID,
+    offers: [
+      {
+        code: "without-mentor",
+        id: LOVE_ME_IN_THE_MORNING_OFFER_ID,
+        label: "Без куратора",
+        labelKey: "choreoLoveMeInTheMorning.offers.withoutMentor",
+        salesEnabled: true,
+        prices: { pln: 65, eur: 15 },
+        telegramAccessDurationDays: 60,
       },
     ],
   },
@@ -330,6 +382,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: ONLINE_GROUP_STANDARD_OFFER_ID,
         label: "Standard",
         labelKey: "onlineGroupAnnaStrok.offers.standard",
+        salesEnabled: true,
         prices: {
           pln: 220,
           eur: 50,
@@ -343,6 +396,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: ONLINE_GROUP_LIBRARY_OFFER_ID,
         label: "Plus",
         labelKey: "onlineGroupAnnaStrok.offers.libraryAccess",
+        salesEnabled: true,
         prices: {
           pln: 280,
           eur: 65,
@@ -356,6 +410,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: ONLINE_GROUP_RENEWAL_OFFER_ID,
         label: "Standard renewal",
         labelKey: "onlineGroupAnnaStrok.offers.renewalDiscount",
+        salesEnabled: true,
         prices: {
           pln: 175,
           eur: 40,
@@ -369,6 +424,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         id: ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
         label: "Plus renewal",
         labelKey: "onlineGroupAnnaStrok.offers.renewalLibraryAccess",
+        salesEnabled: true,
         prices: {
           pln: 220,
           eur: 50,
@@ -378,6 +434,11 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     ],
   },
 };
+
+export const CHOREO_CATALOGUE_PRODUCT_CODES: readonly SellableProductCode[] = [
+  "choreo-her-lies",
+  "choreo-love-me-in-the-morning",
+];
 
 export const SELLABLE_PRODUCTS_LIST = Object.values(SELLABLE_PRODUCTS);
 export const DEFAULT_CHECKOUT_PRODUCT = SELLABLE_PRODUCTS["first-touch"];
@@ -444,3 +505,7 @@ export const buildCheckoutHref = ({ offerId, productId }: CheckoutHrefOptions) =
 
   return `/payment?${searchParams.toString()}`;
 };
+
+/** Both switches must be open before a new payment may be created. */
+export const isOfferSaleOpen = (product: SellableProduct, offer: SellableProductOffer) =>
+  product.salesEnabled && offer.salesEnabled;

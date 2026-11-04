@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import type {
   SellableProduct,
@@ -82,6 +82,7 @@ const mapOfferFromDatabase = ({
     id: offer.externalOfferId,
     label: fallbackOffer?.label ?? offer.label,
     labelKey: fallbackOffer?.labelKey ?? offer.labelKey ?? "",
+    salesEnabled: offer.salesEnabled,
     prices: {
       eur: eurPrice,
       pln: plnPrice,
@@ -320,6 +321,39 @@ export const setProductSalesEnabled = async ({
       salesEnabled: products.salesEnabled,
       updatedAt: products.updatedAt,
     });
+
+  return updatedRow ?? null;
+};
+
+export const setOfferSalesEnabled = async ({
+  productId,
+  offerId,
+  salesEnabled,
+}: {
+  productId: string;
+  offerId: string;
+  salesEnabled: boolean;
+}) => {
+  const db = getDatabase();
+  const [product] = await db
+    .select({ id: products.id })
+    .from(products)
+    .where(eq(products.externalProductId, productId.trim()))
+    .limit(1);
+
+  if (!product) return null;
+
+  const [updatedRow] = await db
+    .update(productOffers)
+    .set({ salesEnabled, updatedAt: new Date() })
+    .where(
+      and(
+        eq(productOffers.productId, product.id),
+        eq(productOffers.externalOfferId, offerId.trim()),
+        eq(productOffers.isActive, true),
+      ),
+    )
+    .returning({ externalOfferId: productOffers.externalOfferId });
 
   return updatedRow ?? null;
 };

@@ -8,6 +8,7 @@ import {
 import { getActiveOnlineGroupCampaign } from "@/db/online-group-campaigns";
 import {
   getSellableProductsWithDatabaseCommercialData,
+  setOfferSalesEnabled,
   setProductSalesEnabled,
 } from "@/db/sellable-products";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
@@ -19,6 +20,7 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { CATALOG_CACHE_TAG } from "@/lib/sales-availability";
+import { getMissingChoreoLessonLanguages } from "@/lib/telegram/choreo-sales";
 
 export const runtime = "nodejs";
 
@@ -27,6 +29,7 @@ const MAX_BODY_BYTES = 8 * 1024;
 const ONLINE_GROUP_PRODUCT = SELLABLE_PRODUCTS["online-group-anna-strok"];
 
 type ToggleSalesBody = {
+  offerId?: unknown;
   productId?: string;
   salesEnabled?: unknown;
 };
@@ -46,9 +49,12 @@ const serializeProduct = ({
 }) => ({
   code: product.code,
   hasActiveCampaign,
+  missingLessonLanguages: getMissingChoreoLessonLanguages(product),
   offers: product.offers.map((offer) => ({
+    code: offer.code,
     label: offer.label,
     offerId: offer.id,
+    salesEnabled: offer.salesEnabled,
     price: `${formatCheckoutPrice(offer.prices.pln, "pln")} / ${formatCheckoutPrice(
       offer.prices.eur,
       "eur",
@@ -128,6 +134,13 @@ export async function POST(request: Request) {
 
     const productId = (body.productId ?? "").trim();
     const salesEnabled = body.salesEnabled;
+    if (
+      body.offerId !== undefined &&
+      (typeof body.offerId !== "string" || !body.offerId.trim())
+    ) {
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
+    }
+    const offerId = typeof body.offerId === "string" ? body.offerId.trim() : "";
     // The serialized state already answers both questions the guard asks, so it
     // is read once instead of querying the catalogue and the campaign again.
     const product = (await loadSalesState()).products.find(
@@ -138,11 +151,30 @@ export async function POST(request: Request) {
       return jsonErrorNoStore("product_not_found", { status: 404 });
     }
 
-    if (salesEnabled && product.requiresActiveCampaign && !product.hasActiveCampaign) {
+    if (
+      !offerId &&
+      salesEnabled &&
+      product.requiresActiveCampaign &&
+      !product.hasActiveCampaign
+    ) {
       return jsonErrorNoStore("online_group_campaign_required", { status: 409 });
     }
 
-    const updatedRow = await setProductSalesEnabled({ productId, salesEnabled });
+    if (!offerId && salesEnabled && product.missingLessonLanguages.length > 0) {
+      return jsonErrorNoStore("choreo_channels_required", { status: 409 });
+    }
+
+    if (
+      offerId &&
+      (product.type !== "choreo" ||
+        !product.offers.some((offer) => offer.offerId === offerId))
+    ) {
+      return jsonErrorNoStore("offer_not_found", { status: 404 });
+    }
+
+    const updatedRow = offerId
+      ? await setOfferSalesEnabled({ productId, offerId, salesEnabled })
+      : await setProductSalesEnabled({ productId, salesEnabled });
 
     if (!updatedRow) {
       return jsonErrorNoStore("product_not_found", { status: 404 });
@@ -155,6 +187,7 @@ export async function POST(request: Request) {
 
     console.warn("Product sales switch changed", {
       productId,
+      ...(offerId ? { offerId } : {}),
       salesEnabled,
     });
 

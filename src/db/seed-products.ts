@@ -25,7 +25,7 @@ const buildProductInsertValues = (product: SellableProductSeed) => ({
   descriptionKeys: product.descriptionKeys,
   externalProductId: product.id,
   isActive: true,
-  salesEnabled: true,
+  salesEnabled: product.salesEnabled,
   slug: product.slug,
   title: product.title,
   titleKey: product.titleKey,
@@ -65,6 +65,7 @@ const buildOfferInsertValues = ({
   deliveryChannel: offer.deliveryChannel ?? null,
   externalOfferId: offer.id,
   isActive: true,
+  salesEnabled: offer.salesEnabled,
   label: offer.label,
   labelKey: offer.labelKey,
   productId,
@@ -73,6 +74,7 @@ const buildOfferInsertValues = ({
   updatedAt: new Date(),
 });
 
+// Offer sales switches are operator-owned too; re-seeding preserves them.
 const buildOfferUpdateValues = ({
   offer,
   productId,

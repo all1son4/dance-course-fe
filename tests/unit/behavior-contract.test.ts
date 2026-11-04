@@ -50,7 +50,7 @@ test("[BEH-TG-02] keeps the accepted product, offer, price, and access-duration 
       durationDays: 60,
       eur: 15,
       offer: "without-mentor",
-      pln: 60,
+      pln: 65,
       product: "choreo-her-lies",
     },
     {
@@ -80,6 +80,13 @@ test("[BEH-TG-02] keeps the accepted product, offer, price, and access-duration 
       offer: "standard",
       pln: 65,
       product: "choreo-birthday-drop",
+    },
+    {
+      durationDays: 60,
+      eur: 15,
+      offer: "without-mentor",
+      pln: 65,
+      product: "choreo-love-me-in-the-morning",
     },
     {
       durationDays: 0,

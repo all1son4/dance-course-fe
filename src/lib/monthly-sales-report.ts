@@ -22,6 +22,7 @@ import {
 } from "@/lib/business-operation-outbox";
 import { findMonthlyReportRunRecord } from "@/lib/business-operation-read-runtime";
 import { escapeSpreadsheetCsvCell } from "@/lib/csv";
+import { formatEmailDate } from "@/lib/email/dates";
 import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
@@ -397,12 +398,6 @@ const formatReportPeriodLabel = ({
   endUtcIso: string;
   startUtcIso: string;
 }) => {
-  const formatter = new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    timeZone: ACCOUNTING_TIME_ZONE,
-    year: "numeric",
-  });
   const startDate = new Date(startUtcIso);
   const endDateExclusive = new Date(endUtcIso);
   const inclusiveEndDate = new Date(endDateExclusive.getTime() - 1);
@@ -412,10 +407,10 @@ const formatReportPeriodLabel = ({
     Number.isNaN(endDateExclusive.getTime()) ||
     inclusiveEndDate.getTime() < startDate.getTime()
   ) {
-    return `${startUtcIso} - ${endUtcIso}`;
+    throw new Error("monthly_sales_report_period_invalid");
   }
 
-  return `${formatter.format(startDate)} - ${formatter.format(inclusiveEndDate)}`;
+  return `${formatEmailDate(startDate, "ru")} - ${formatEmailDate(inclusiveEndDate, "ru")}`;
 };
 
 const buildEmailSubject = ({ month }: { month: string }) =>

@@ -14,6 +14,7 @@ import {
   processOutboxJobByDeduplicationKey,
   replayOutboxJob,
 } from "@/db/transactional-outbox";
+import { deliverChoreoAccessReminder } from "@/lib/choreo-access-reminder-delivery";
 import { sendResendEmail, type SendResendEmailInput } from "@/lib/email/resend";
 import { formatReportMonthLabel } from "@/lib/monthly-sales-report";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
@@ -27,6 +28,7 @@ export const BUSINESS_OPERATION_OUTBOX_KINDS = [
   "monthly_report_delivery",
   "campaign_email_delivery",
   "polish_terminal_reminder",
+  "choreo_access_expiry_reminder",
 ] as const;
 
 type MonthlyReportDeliveryPayload = {
@@ -341,6 +343,8 @@ const deliverPolishTerminalReminder = async (job: ClaimedOutboxJob) => {
 };
 
 export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
+  if (job.kind === "choreo_access_expiry_reminder")
+    return deliverChoreoAccessReminder(job);
   if (job.kind === "campaign_email_delivery") {
     return deliverCampaignEmail(job);
   }
@@ -419,9 +423,12 @@ export const processBusinessOperationOutboxJob = (deduplicationKey: string) =>
 
 export const runBusinessOperationOutboxJobs = async ({
   limit = 24,
+  timeBudgetMs = 80_000,
 }: {
   limit?: number;
+  timeBudgetMs?: number;
 } = {}) => {
+  const deadline = Date.now() + timeBudgetMs;
   const counts = {
     dead_letter: 0,
     empty: 0,
@@ -431,6 +438,7 @@ export const runBusinessOperationOutboxJobs = async ({
   };
 
   for (let index = 0; index < limit; index += 1) {
+    if (Date.now() >= deadline) break;
     const result = await processNextOutboxJob({
       deliver: deliverBusinessOperationOutboxJob,
       kinds: [...BUSINESS_OPERATION_OUTBOX_KINDS],

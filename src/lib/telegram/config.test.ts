@@ -9,9 +9,28 @@ process.env.TELEGRAM_CHANNEL_TARGETS_JSON = JSON.stringify({
     ru: { chatId: "-100200000001" },
   },
   off_single: { chatId: "-100200000003" },
+  off_materials: {
+    ru: { chatId: "-1004323567965", materialsUrl: "https://t.me/c/4323567965/6" },
+  },
+  off_wrong_materials: {
+    chatId: "-100200000003",
+    materialsUrl: "https://t.me/c/4323567965/6",
+  },
 });
 
 const loadTelegramConfig = () => import("./config");
+
+test("material links belong to the configured private channel", async () => {
+  const { getTelegramChannelTargetByOfferId } = await loadTelegramConfig();
+  assert.equal(
+    getTelegramChannelTargetByOfferId({ offerId: "off_materials", lessonLanguage: "ru" })
+      ?.materialsUrl,
+    "https://t.me/c/4323567965/6",
+  );
+  const wrong = getTelegramChannelTargetByOfferId({ offerId: "off_wrong_materials" });
+  assert.equal(wrong?.chatId, "-100200000003");
+  assert.equal(wrong?.materialsUrl, undefined);
+});
 
 test("[BEH-CHECKOUT-02] sends each lesson language to its own Telegram channel", async () => {
   const { getTelegramChannelTargetByOfferId } = await loadTelegramConfig();

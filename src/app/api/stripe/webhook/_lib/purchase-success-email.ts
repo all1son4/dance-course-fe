@@ -5,12 +5,12 @@ import {
   PERSONAL_TELEGRAM_HANDLE,
   SUPPORT_TELEGRAM_URL,
 } from "@/constants/links";
+import { formatEmailDate } from "@/lib/email/dates";
 
 const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
   DEFAULT_SITE_HOME_URL;
-const ACCESS_EXPIRY_TIME_ZONE = "Europe/Warsaw";
 const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
 
 const EMAIL_COPY = {
@@ -63,9 +63,9 @@ const EMAIL_COPY = {
       telegramChannel: {
         title: "Access your materials",
         ready:
-          "Use the button below to open your personal one-use invite link to the private Telegram channel. Access to the materials is provided for 2 months.",
+          "Use the button below to open your personal one-use invite link to the private Telegram channel. Access to the materials is provided for {days} days from joining.",
         pending:
-          "Your personal Telegram channel invite link is being prepared. Material access is provided for 2 months from joining. If the button is missing, contact support and we will send access manually.",
+          "Your personal Telegram channel invite link is being prepared. Material access is provided for {days} days from joining. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram channel",
         mentorNote:
           "For the mentor option, the admin will also contact you separately about feedback.",
@@ -81,9 +81,9 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Access your course",
         ready:
-          "Use the button below to open your personal one-use invite link to the private Telegram chat with the course materials. Access to the lessons is provided for 4 months from joining.",
+          "Use the button below to open your personal one-use invite link to the private Telegram chat with the course materials. Access to the lessons is provided for {days} days from joining.",
         pending:
-          "Your personal Telegram chat invite link is being prepared. Lesson access is provided for 4 months from joining. If the button is missing, contact support and we will send access manually.",
+          "Your personal Telegram chat invite link is being prepared. Lesson access is provided for {days} days from joining. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram chat",
       },
       telegramOnlineGroup: {
@@ -154,9 +154,9 @@ const EMAIL_COPY = {
       telegramChannel: {
         title: "Dostęp do materiałów",
         ready:
-          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów otrzymujesz na 2 miesiące.",
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów otrzymujesz na {days} dni od dołączenia.",
         pending:
-          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów otrzymujesz na 2 miesiące od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów otrzymujesz na {days} dni od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz kanał Telegram",
         mentorNote:
           "W opcji z mentorem administrator skontaktuje się z Tobą osobno w sprawie feedbacku.",
@@ -172,9 +172,9 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Dostęp do kursu",
         ready:
-          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na 4 miesiące od dołączenia.",
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na {days} dni od dołączenia.",
         pending:
-          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Dostęp do lekcji otrzymujesz na 4 miesiące od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Dostęp do lekcji otrzymujesz na {days} dni od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz czat Telegram",
       },
       telegramOnlineGroup: {
@@ -243,9 +243,9 @@ const EMAIL_COPY = {
       telegramChannel: {
         title: "Доступ к материалам",
         ready:
-          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам предоставляется на 2 месяца.",
+          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам предоставляется на {days} дней с момента вступления.",
         pending:
-          "Личная ссылка-приглашение в Telegram-канал подготавливается. Доступ к материалам предоставляется на 2 месяца с момента вступления. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+          "Личная ссылка-приглашение в Telegram-канал подготавливается. Доступ к материалам предоставляется на {days} дней с момента вступления. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
         cta: "Открыть Telegram-канал",
         mentorNote:
           "Для тарифа с куратором администратор также отдельно свяжется с вами по поводу обратной связи.",
@@ -261,9 +261,9 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Доступ к курсу",
         ready:
-          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на 4 месяца с момента вступления.",
+          "Нажмите кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на {days} дней с момента вступления.",
         pending:
-          "Личная ссылка-приглашение в Telegram-чат подготавливается. Доступ к урокам предоставляется на 4 месяца с момента вступления. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
+          "Личная ссылка-приглашение в Telegram-чат подготавливается. Доступ к урокам предоставляется на {days} дней с момента вступления. Если кнопки нет, свяжитесь с поддержкой, и мы отправим доступ вручную.",
         cta: "Открыть Telegram-чат",
       },
       telegramOnlineGroup: {
@@ -384,12 +384,7 @@ const formatAccessExpiry = (value: string, locale: EmailLocale): string => {
     return "";
   }
 
-  const intlLocale = locale === "pl" ? "pl-PL" : locale === "en" ? "en-GB" : "ru-RU";
-
-  return new Intl.DateTimeFormat(intlLocale, {
-    dateStyle: "long",
-    timeZone: ACCESS_EXPIRY_TIME_ZONE,
-  }).format(date);
+  return formatEmailDate(date, locale);
 };
 
 const resolveAccessContent = ({
@@ -865,13 +860,28 @@ export const buildPurchaseSuccessEmail = ({
   // A private lesson unlocks no materials, so the default intro would point the
   // buyer at access they are not waiting for.
   const intro = accessKind === "private-lesson" ? copy.introPrivateLesson : copy.intro;
-  const accessContent = resolveAccessContent({
+  const resolvedAccessDurationDays =
+    accessDurationDays > 0
+      ? accessDurationDays
+      : accessKind === "telegram-channel"
+        ? 60
+        : accessKind === "telegram-chat"
+          ? 120
+          : 0;
+  const resolvedAccessContent = resolveAccessContent({
     accessKind,
     copy,
     hasOnlineGroupAccess,
     showMentorFollowupNote,
     telegramLink,
   });
+  const accessContent = {
+    ...resolvedAccessContent,
+    description: resolvedAccessContent.description.replace(
+      "{days}",
+      String(resolvedAccessDurationDays),
+    ),
+  };
   const resolvedReceiptKind = resolveReceiptKind({
     receiptKind,
     receiptLink,

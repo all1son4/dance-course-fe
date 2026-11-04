@@ -79,14 +79,17 @@ phase must also verify that active PostgreSQL catalog rows match it.
 | First Touch                   | Standard       | 250 |  50 | Personal one-use invite to a private Telegram chat; 120 days of lesson access from joining                                                 |
 | Still Alive                   | Without mentor |  60 |  15 | Personal one-use invite to the language-specific private Telegram channel; 60 days from joining                                            |
 | Still Alive                   | With mentor    | 100 |  25 | Same channel access plus separate mentor/admin follow-up                                                                                   |
-| Her Lies                      | Without mentor |  60 |  15 | Personal one-use invite to the language-specific private Telegram channel; 60 days from joining                                            |
+| Her Lies                      | Without mentor |  65 |  15 | Personal one-use invite to the language-specific private Telegram channel; 60 days from joining                                            |
 | Her Lies                      | With mentor    | 100 |  25 | Same channel access plus separate mentor/admin follow-up                                                                                   |
 | Still Alive + Her Lies bundle | Without mentor |  85 |  20 | Personal one-use invite to the language-specific private Telegram channel with both choreographies; 60 days from joining                   |
 | Still Alive + Her Lies bundle | With mentor    | 170 |  40 | Same bundle access plus separate mentor/admin follow-up                                                                                    |
+| Love me in the morning        | Without mentor |  65 |  15 | Personal one-use invite to its own language-specific private Telegram channel; 60 days from joining                                        |
 | Online Group                  | Standard       | 220 |  50 | Personal one-use invite to the current main Telegram group                                                                                 |
 | Online Group                  | Plus           | 280 |  65 | Main group plus Inspiration Hub; the main group has no automatic deadline and Inspiration Hub lasts until the configured next-stream start |
 | Online Group renewal          | Standard       | 175 |  40 | Renewal of main-group access after renewal-only Telegram verification                                                                      |
 | Online Group renewal          | Plus           | 220 |  50 | Renewal of main-group access plus Inspiration Hub under the current campaign rules                                                         |
+
+The current public choreography catalogue contains only Her Lies and Love me in the morning. Both launch without mentor support. Product and offer sales switches are independent, operator-owned runtime state; a new payment requires both. Historical offers and the separate lifetime Birthday Drop remain available for purchase history and fulfilment.
 
 For choreography products, the selected material language is `RU` or `EN` and controls
 the Telegram target. First Touch and Online Group do not show the material-language

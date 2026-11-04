@@ -23,6 +23,7 @@ import {
   getDefaultProductOffer,
   getProductPrice,
   getResolvedCheckoutCurrency,
+  isOfferSaleOpen,
   SELLABLE_PRODUCTS_LIST,
   type SellableProduct,
   type SupportedCheckoutCurrency,
@@ -358,7 +359,7 @@ export class PaymentStore {
 
     // A closed product stays in the catalogue so its title and price still render;
     // only the payment step is withheld.
-    if (!nextProduct.salesEnabled) {
+    if (!isOfferSaleOpen(nextProduct, nextOffer)) {
       this.setSalesClosed();
       return;
     }
@@ -413,7 +414,7 @@ export class PaymentStore {
     this.customerErrors = {};
     this.touchedFields = {};
     if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
-      this.catalogStatus = nextProduct.salesEnabled ? "ready" : "closed";
+      this.catalogStatus = isOfferSaleOpen(nextProduct, nextOffer) ? "ready" : "closed";
     }
     this.clearStripeIntentState(false);
   }
@@ -443,7 +444,7 @@ export class PaymentStore {
     this.selectedProductId = nextProduct.id;
     this.selectedOfferId = nextOffer.id;
     if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
-      this.catalogStatus = nextProduct.salesEnabled ? "ready" : "closed";
+      this.catalogStatus = isOfferSaleOpen(nextProduct, nextOffer) ? "ready" : "closed";
     }
     this.clearStripeIntentState(true);
   }
@@ -779,6 +780,12 @@ export class PaymentStore {
       // state instead of leaving a live-looking form behind an error line.
       if (errorCode === "sales_closed") {
         this.setSalesClosed();
+      } else if (
+        errorCode === "catalog_unavailable" ||
+        errorCode === "online_group_campaign_not_configured" ||
+        errorCode === "missing_secret_key"
+      ) {
+        this.setCatalogUnavailable();
       }
     });
   }

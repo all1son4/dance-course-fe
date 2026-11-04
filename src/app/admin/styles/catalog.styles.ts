@@ -25,11 +25,11 @@ export const SalesTable = styled.table`
   }
 
   td:nth-child(3) {
-    width: 130px;
+    width: 108px;
   }
 
   td:last-child {
-    width: 172px;
+    width: 150px;
     vertical-align: middle;
   }
 
@@ -54,6 +54,24 @@ export const SalesTable = styled.table`
       padding-bottom: 0;
       border-bottom: 0;
     }
+
+    td > * {
+      grid-column: 2;
+    }
+
+    td[data-label="Продукт"],
+    td[data-label="Тарифы"] {
+      display: block;
+    }
+
+    td[data-label="Продукт"]::before {
+      display: none;
+    }
+
+    td[data-label="Тарифы"]::before {
+      display: block;
+      margin-bottom: 4px;
+    }
   }
 `;
 
@@ -62,17 +80,24 @@ export const SalesOfferList = styled.ul`
   padding: 0;
   list-style: none;
   display: grid;
-  gap: 4px;
+  gap: 10px;
 
   li {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 10px;
     color: rgba(48, 48, 48, 0.8);
-    font-size: 10px;
+    font-size: 11px;
   }
 
-  li span:last-child {
+  li > span {
+    display: grid;
+    gap: 4px;
+  }
+
+  li strong {
     color: rgba(24, 24, 24, 0.9);
     font-weight: 600;
     white-space: nowrap;
@@ -89,25 +114,34 @@ export const SalesToggle = styled.button<{ $isOn: boolean }>`
   ${focusRing}
   position: relative;
   flex: 0 0 auto;
-  width: 42px;
-  height: 24px;
+  width: 52px;
+  height: 44px;
   padding: 0;
-  border: 1px solid
-    ${({ $isOn }) => ($isOn ? "rgba(30, 108, 74, 0.32)" : "rgba(24, 24, 24, 0.14)")};
-  border-radius: 999px;
-  background: ${({ $isOn }) =>
-    $isOn ? "rgba(30, 108, 74, 0.55)" : "rgba(24, 24, 24, 0.12)"};
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
   cursor: pointer;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    opacity 0.2s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 10px 5px;
+    border: 1px solid
+      ${({ $isOn }) => ($isOn ? "rgba(30, 108, 74, 0.32)" : "rgba(24, 24, 24, 0.14)")};
+    border-radius: 999px;
+    background: ${({ $isOn }) =>
+      $isOn ? "rgba(30, 108, 74, 0.55)" : "rgba(24, 24, 24, 0.12)"};
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      opacity 0.2s ease;
+  }
 
   &::after {
     content: "";
     position: absolute;
-    top: 2px;
-    left: ${({ $isOn }) => ($isOn ? "20px" : "2px")};
+    top: 13px;
+    left: ${({ $isOn }) => ($isOn ? "26px" : "8px")};
     width: 18px;
     height: 18px;
     border-radius: 50%;
@@ -119,6 +153,53 @@ export const SalesToggle = styled.button<{ $isOn: boolean }>`
   &:disabled {
     cursor: not-allowed;
     opacity: 0.45;
+  }
+`;
+
+export const SalesArchive = styled.details`
+  margin-top: 18px;
+  border-top: 1px solid rgba(24, 24, 24, 0.08);
+  padding-top: 12px;
+
+  > summary {
+    ${focusRing}
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(48, 48, 48, 0.8);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+    border-radius: 8px;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+    &::before {
+      content: "›";
+      font-size: 20px;
+      line-height: 1;
+      transition: transform 0.2s ease;
+    }
+
+    > span {
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: rgba(24, 24, 24, 0.055);
+      font-size: 10px;
+    }
+  }
+
+  &[open] > summary::before {
+    transform: rotate(90deg);
+  }
+  > p {
+    margin: 0 0 8px;
+    color: rgba(66, 66, 66, 0.68);
+    font-size: 11px;
+    line-height: 1.45;
   }
 `;
 

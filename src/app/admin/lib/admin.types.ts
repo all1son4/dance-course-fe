@@ -322,15 +322,18 @@ export type ResendPurchaseEmailResponse = {
 };
 
 export type SalesProductOffer = {
+  code: string;
   label: string;
   offerId: string;
   price: string;
+  salesEnabled: boolean;
 };
 
 export type SalesProductEntry = {
   code: string;
   hasActiveCampaign: boolean;
   offers: SalesProductOffer[];
+  missingLessonLanguages: string[];
   productId: string;
   requiresActiveCampaign: boolean;
   salesEnabled: boolean;
