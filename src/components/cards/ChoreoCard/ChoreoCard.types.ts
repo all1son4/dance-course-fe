@@ -30,6 +30,8 @@ export type ChoreoCardProps = {
    * a card without a video.
    */
   previewSrc?: string;
+  /** Average colour of the poster, shown while it loads (see VideoPlayer). */
+  posterColor?: string;
   title?: string;
   price?: string;
   /** Caption above `price`, as on the tariff cards ("Price"). */

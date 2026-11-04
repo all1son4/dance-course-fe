@@ -130,6 +130,7 @@ export default async function BirthdayDropSection() {
             analyticsId="birthday-drop-preview"
             src={BIRTHDAY_DROP_VIDEO_SRC}
             poster="/images/love_me_in_the_morning_poster.webp"
+            posterColor="#160d0d"
             height="100%"
             radius="0px"
             buttonSize="80px"

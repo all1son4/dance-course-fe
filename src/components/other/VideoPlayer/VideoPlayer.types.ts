@@ -18,6 +18,12 @@ export type TVideoPlayerProps = {
   height?: string;
   aspectRatio?: string;
   radius?: string;
+  /**
+   * Average colour of `poster`, painted behind it while it loads so the box
+   * starts in the poster's own tone instead of black. A few bytes of CSS, no
+   * extra image.
+   */
+  posterColor?: string;
   buttonSize?: string;
   iconSize?: string;
   playLabel?: string;

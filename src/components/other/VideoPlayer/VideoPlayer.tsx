@@ -174,6 +174,7 @@ export default function VideoPlayer({
   previewSrc,
   type = "video/mp4",
   poster,
+  posterColor,
   preload = "none",
   className,
   maxWidth = "100%",
@@ -509,6 +510,7 @@ export default function VideoPlayer({
       $radius={radius}
       $buttonSize={buttonSize}
       $iconSize={iconSize}
+      $posterColor={posterColor}
       aria-busy={isBuffering || undefined}
     >
       {poster && (isYoutube || isInstagram) && (
