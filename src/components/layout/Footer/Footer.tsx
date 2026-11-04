@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { COOKIE_CONSENT_OPEN_SETTINGS_EVENT } from "@/lib/cookie-consent";
+import { trackCtaClick } from "@/lib/mixpanel-analytics";
 import { Logo, SmallMail, SmallPhone } from "@/svg";
 
 import {
@@ -26,6 +27,7 @@ import {
   TopRow,
 } from "./Footer.styles";
 
+const PRIVACY_POLICY_HREF = "/privacy-policy";
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
 const isPaymentResultPathname = (pathname: string) => {
   const normalizedPathname = trimTrailingSlash(pathname);
@@ -45,6 +47,7 @@ export default function Footer() {
   }
 
   const openCookieSettings = () => {
+    void trackCtaClick({ id: "cookie_settings", placement: "footer" });
     window.dispatchEvent(new Event(COOKIE_CONSENT_OPEN_SETTINGS_EVENT));
   };
 
@@ -86,7 +89,17 @@ export default function Footer() {
       <BottomRow>
         <CopyRight>{t("copyright")}</CopyRight>
         <BottomLinks>
-          <PrivacyPolicy href="/privacy-policy">{t("privacyPolicy")}</PrivacyPolicy>
+          <PrivacyPolicy
+            href={PRIVACY_POLICY_HREF}
+            onClick={() => {
+              void trackCtaClick(
+                { id: "privacy_policy", placement: "footer" },
+                PRIVACY_POLICY_HREF,
+              );
+            }}
+          >
+            {t("privacyPolicy")}
+          </PrivacyPolicy>
           <CookieSettingsButton type="button" onClick={openCookieSettings}>
             {t("cookieSettings")}
           </CookieSettingsButton>

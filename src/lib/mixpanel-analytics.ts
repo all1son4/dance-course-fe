@@ -605,8 +605,13 @@ export const trackAnalyticsEvent = async <EventName extends AnalyticsEventName>(
   }
 };
 
-export const getSafeDestinationProperties = (href: string) => {
-  if (!href || typeof window === "undefined") {
+export const getSafeDestinationProperties = (
+  href: string,
+  origin: string | undefined = typeof window === "undefined"
+    ? undefined
+    : window.location.origin,
+) => {
+  if (!href || !origin) {
     return {};
   }
 
@@ -615,13 +620,18 @@ export const getSafeDestinationProperties = (href: string) => {
   }
 
   try {
-    const destination = new URL(href, window.location.origin);
+    const destination = new URL(href, origin);
 
-    if (destination.origin === window.location.origin) {
+    if (destination.origin === origin) {
       return {
         destination_path: destination.pathname,
         ...(destination.hash ? { destination_hash: destination.hash } : {}),
       };
+    }
+
+    // `mailto:`/`tel:` carry the address itself; the CTA id already names the channel.
+    if (destination.protocol !== "http:" && destination.protocol !== "https:") {
+      return {};
     }
 
     return { destination_domain: destination.hostname };
@@ -629,6 +639,25 @@ export const getSafeDestinationProperties = (href: string) => {
     return {};
   }
 };
+
+/**
+ * The single shape of `cta_clicked`/`cta_impression`: a stable semantic id and
+ * placement plus a query-free destination. Labels and full URLs never leave.
+ */
+export const getCtaEventProperties = (
+  { id, placement, ...commerceProperties }: ButtonAnalyticsMetadata,
+  href = "",
+  origin?: string,
+): CtaEventProperties => ({
+  cta_id: id,
+  ...(placement ? { placement } : {}),
+  ...commerceProperties,
+  ...getSafeDestinationProperties(href, origin),
+});
+
+/** Click tracking for links and controls that cannot use the shared Button. */
+export const trackCtaClick = (analytics: ButtonAnalyticsMetadata, href?: string) =>
+  trackAnalyticsEvent("cta_clicked", getCtaEventProperties(analytics, href));
 
 const getSessionDedupeKey = async (eventName: string, rawKey: string) => {
   if (!window.crypto?.subtle) {

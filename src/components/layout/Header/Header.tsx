@@ -7,7 +7,7 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "rea
 import { usePathname, useRouter } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { getLocaleCookieName } from "@/lib/cookie-consent";
-import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { trackAnalyticsEvent, trackCtaClick } from "@/lib/mixpanel-analytics";
 import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation-events";
 import {
   getHashTargetFromLocation,
@@ -40,6 +40,7 @@ const HASH_SCROLL_RETRY_DELAY_MS = 40;
 const PREFETCH_IDLE_TIMEOUT_MS = 1_200;
 const PREFETCH_FALLBACK_DELAY_MS = 280;
 const CONTACTS_HASH_TARGET_ID = "contacts";
+const HEADER_NAVIGATION_PLACEMENT = "header_navigation";
 /** Only if `transitionend` never arrives (e.g. reduced motion makes it ~0ms and it fires early). */
 const MENU_COLLAPSE_FALLBACK_MS = 450;
 // Only the routes the header itself links to. Every page is server-rendered
@@ -295,6 +296,7 @@ export default function Header() {
   };
 
   const onBrandClick = (event: ReactMouseEvent<HTMLAnchorElement>) => {
+    void trackCtaClick({ id: "nav_home", placement: HEADER_NAVIGATION_PLACEMENT }, "/");
     setMenuIsOpen(false);
 
     if (pathname !== "/") {
@@ -414,7 +416,16 @@ export default function Header() {
           aria-controls={MOBILE_MENU_ID}
           aria-expanded={menuIsOpen}
           aria-label={t("menu.ariaLabel")}
-          onClick={() => setMenuIsOpen(!menuIsOpen)}
+          onClick={() => {
+            if (!menuIsOpen) {
+              void trackCtaClick({
+                id: "nav_menu_open",
+                placement: HEADER_NAVIGATION_PLACEMENT,
+              });
+            }
+
+            setMenuIsOpen(!menuIsOpen);
+          }}
           $isOpen={menuIsOpen}
         >
           <MenuButton />

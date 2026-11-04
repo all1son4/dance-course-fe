@@ -14,6 +14,7 @@ type Translate = (key: string) => string;
 export const getContactsArray = (t: Translate): TContact[] => [
   {
     id: 1,
+    analyticsId: "contact_phone",
     icon: <Phone />,
     title: t("cards.phone"),
     text: "+48 571 571 214",
@@ -21,6 +22,7 @@ export const getContactsArray = (t: Translate): TContact[] => [
   },
   {
     id: 2,
+    analyticsId: "contact_instagram",
     icon: <Insta />,
     title: t("cards.instagram"),
     text: INSTAGRAM_PROFILE_HANDLE,
@@ -28,6 +30,7 @@ export const getContactsArray = (t: Translate): TContact[] => [
   },
   {
     id: 3,
+    analyticsId: "contact_telegram",
     icon: <Telegram />,
     title: t("cards.telegram"),
     text: PERSONAL_TELEGRAM_HANDLE,
