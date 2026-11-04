@@ -4,9 +4,11 @@ import test from "node:test";
 import {
   getApiErrorAnalyticsProperties,
   getAppErrorAnalyticsProperties,
+  getCtaEventProperties,
   getInitialMixpanelAttributionProperties,
   getMixpanelAttributionProperties,
   getMixpanelPageProperties,
+  getSafeDestinationProperties,
   getWebVitalAnalyticsProperties,
   MIXPANEL_BROWSER_CONFIG,
   MIXPANEL_EU_API_HOST,
@@ -188,4 +190,48 @@ test("page properties contain only the normalized path and supported locale", ()
     page_path: "/online",
     locale: "ru",
   });
+});
+
+test("CTA properties carry a semantic id and a query-free destination only", () => {
+  const origin = "https://annastrok.com";
+
+  assert.deepEqual(
+    getCtaEventProperties(
+      { id: "contact_instagram", placement: "contacts" },
+      "https://www.instagram.com/reel/abc/?igsh=private",
+      origin,
+    ),
+    {
+      cta_id: "contact_instagram",
+      destination_domain: "www.instagram.com",
+      placement: "contacts",
+    },
+  );
+  assert.deepEqual(
+    getCtaEventProperties(
+      { id: "buy_online_group", offer_id: "offer-1", placement: "tariff_plus" },
+      "/payment?productId=private#form",
+      origin,
+    ),
+    {
+      cta_id: "buy_online_group",
+      destination_hash: "#form",
+      destination_path: "/payment",
+      offer_id: "offer-1",
+      placement: "tariff_plus",
+    },
+  );
+  assert.deepEqual(getCtaEventProperties({ id: "cookie_settings" }, undefined, origin), {
+    cta_id: "cookie_settings",
+  });
+  assert.deepEqual(getSafeDestinationProperties("tel:+48571571214", origin), {});
+  assert.deepEqual(
+    getSafeDestinationProperties("mailto:person@example.com?subject=private", origin),
+    {},
+  );
+  assert.deepEqual(getSafeDestinationProperties("#contacts", origin), {
+    destination_hash: "#contacts",
+  });
+  // Without a browser origin (server render) nothing is derived.
+  assert.deepEqual(getSafeDestinationProperties("https://t.me/support"), {});
 });
