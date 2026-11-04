@@ -16,7 +16,9 @@ import {
 import { PreviewVideo } from "./PreviewClip.styles";
 
 /** Covers the fade-out (`--motion-slow`) before the clip rewinds to its start. */
-const PREVIEW_CLIP_REWIND_DELAY_MS = 360;
+/* Keep in sync with the fade-out in PreviewClip.styles: the clip keeps
+   playing while it dissolves, then pauses (and rewinds) once it is gone. */
+const PREVIEW_CLIP_FADE_OUT_MS = 480;
 
 type NetworkInformationLike = EventTarget & { saveData?: boolean };
 type VideoWithFrameCallback = HTMLVideoElement & {
@@ -143,15 +145,14 @@ export default function PreviewClip({ src, disabled = false }: PreviewClipProps)
     const stop = (rewind: boolean) => {
       wantsPlayback = false;
       cancelFrameCallback();
-      video.pause();
       setIsVisible(false);
 
-      if (rewind) {
-        window.clearTimeout(rewindTimeoutId);
-        rewindTimeoutId = window.setTimeout(() => {
-          if (!wantsPlayback) video.currentTime = 0;
-        }, PREVIEW_CLIP_REWIND_DELAY_MS);
-      }
+      window.clearTimeout(rewindTimeoutId);
+      rewindTimeoutId = window.setTimeout(() => {
+        if (wantsPlayback) return;
+        video.pause();
+        if (rewind) video.currentTime = 0;
+      }, PREVIEW_CLIP_FADE_OUT_MS);
     };
 
     // `playing` can fire before the first frame is composited; where the
