@@ -9,6 +9,7 @@ import {
 } from "react";
 
 import {
+  canAffordPageTransitions,
   isPageTransitionPath,
   PAGE_TRANSITION_MARKER_CLASS,
   PAGE_TRANSITIONS_ENABLED,
@@ -53,6 +54,24 @@ const subscribeToReducedMotion = (onChange: () => void): (() => void) => {
 };
 const getReducedMotion = (): boolean => window.matchMedia(REDUCED_MOTION_QUERY).matches;
 const getReducedMotionOnServer = (): boolean => false;
+
+type NavigatorHints = Navigator & {
+  deviceMemory?: number;
+  connection?: { saveData?: boolean };
+};
+
+/* Device capability never changes during a visit. */
+const subscribeToNothing = (): (() => void) => () => undefined;
+const getIsCapableDevice = (): boolean => {
+  const nav = navigator as NavigatorHints;
+
+  return canAffordPageTransitions({
+    cores: nav.hardwareConcurrency || undefined,
+    memoryGb: nav.deviceMemory,
+    saveData: nav.connection?.saveData,
+  });
+};
+const getIsCapableDeviceOnServer = (): boolean => false;
 
 /** Set by a back/forward the browser has already animated; consumed by the next transition. */
 let skipNextTransition = false;
@@ -137,6 +156,11 @@ function PageTransitionMarker() {
     getReducedMotion,
     getReducedMotionOnServer,
   );
+  const isCapableDevice = useSyncExternalStore(
+    subscribeToNothing,
+    getIsCapableDevice,
+    getIsCapableDeviceOnServer,
+  );
 
   useTraversalSkip();
   useRootSnapshot();
@@ -146,9 +170,10 @@ function PageTransitionMarker() {
   }
 
   // Mounting any <ViewTransition> makes React start a transition, even with
-  // its classes set to "none" - under reduced motion the marker is a plain
-  // element, so a navigation commits exactly as it would without the feature.
-  if (prefersReducedMotion) {
+  // its classes set to "none" - under reduced motion, and on low-end devices
+  // or with Save-Data on, the marker is a plain element, so a navigation
+  // commits exactly as it would without the feature.
+  if (prefersReducedMotion || !isCapableDevice) {
     return <span aria-hidden style={markerStyle} />;
   }
 
