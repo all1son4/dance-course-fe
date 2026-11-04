@@ -24,6 +24,14 @@ export type ChoreoCardProps = {
   analyticsId?: string;
   videoSrc?: string;
   posterSrc?: string;
+  /**
+   * Short muted loop played over the poster on hover / when in view (see
+   * PreviewClip). Shown over `videoSrc`'s poster, or over the plain poster of
+   * a card without a video.
+   */
+  previewSrc?: string;
+  /** Average colour of the poster, shown while it loads (see VideoPlayer). */
+  posterColor?: string;
   title?: string;
   price?: string;
   /** Caption above `price`, as on the tariff cards ("Price"). */

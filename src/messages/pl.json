@@ -658,6 +658,9 @@
     "pricing": {
       "withoutMentor": "Bez mentora 65 PLN / 15 €",
       "withMentor": "Z mentorem 100 PLN / 25 €"
+    },
+    "catalogue": {
+      "title": "Co tańczymy?"
     }
   },
   "PaymentPage": {

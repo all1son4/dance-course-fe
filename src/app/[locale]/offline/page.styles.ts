@@ -292,9 +292,10 @@ export const PromoteOnlineSection = styled.section`
     padding: 50px;
   }
 
+  /* Same 50px side padding as the contacts slab under it (and the white
+     slabs on the other pages) until both drop to 20px at 880px. */
   @media (max-width: 1024px) {
     gap: 40px;
-    padding: 50px 20px;
   }
 
   @media (max-width: 880px) {

@@ -89,7 +89,8 @@ export default async function ChoreoPage() {
       >
         <Title>{t("hero.title")}</Title>
         <Description>
-          <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
+          {/* description.1 repeated the title ("online tutorials of my
+              choreographies"), so the hero keeps only the explanatory line. */}
           <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
         </Description>
 
@@ -118,6 +119,7 @@ export default async function ChoreoPage() {
       </ProductHero>
 
       <SpecialWrapper>
+        {hasOpenSales && <ChoreoCatalogueSection />}
         <SuggestionGrid
           components={{
             Section: AboutChoreoSection,
@@ -127,7 +129,6 @@ export default async function ChoreoPage() {
           title={t("about.title")}
           items={onlineSuggestions}
         />
-        {hasOpenSales && <ChoreoCatalogueSection />}
         <Contacts />
       </SpecialWrapper>
     </>

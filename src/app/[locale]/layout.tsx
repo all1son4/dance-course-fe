@@ -21,13 +21,19 @@ import {
   seoTargetLocale,
   seoTargetOpenGraphLocale,
 } from "@/lib/seo";
+import { SITE_APP_ICONS, SITE_THEME_COLORS } from "@/lib/site-chrome";
 import { STICKY_CTA_DOCK_ID } from "@/lib/sticky-cta";
 import { LogoSymbol } from "@/svg";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#d8dade",
+  // Browser bar colour per scheme, matched to the page background - see
+  // lib/site-chrome for the measurement and why dark stays light.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: SITE_THEME_COLORS.light },
+    { media: "(prefers-color-scheme: dark)", color: SITE_THEME_COLORS.dark },
+  ],
   viewportFit: "cover",
 };
 
@@ -85,8 +91,13 @@ export async function generateMetadata({
       images: [seoImagePath],
     },
     icons: {
-      icon: [{ url: "/svg/favicon.svg", type: "image/svg+xml" }],
-      shortcut: ["/svg/favicon.svg"],
+      icon: [
+        { url: SITE_APP_ICONS.svg, type: "image/svg+xml" },
+        { url: SITE_APP_ICONS.png192, sizes: "192x192", type: "image/png" },
+        { url: SITE_APP_ICONS.png512, sizes: "512x512", type: "image/png" },
+      ],
+      shortcut: [SITE_APP_ICONS.svg],
+      apple: [{ url: SITE_APP_ICONS.apple, sizes: "180x180", type: "image/png" }],
     },
     robots: {
       index: true,

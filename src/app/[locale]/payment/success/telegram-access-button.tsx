@@ -7,6 +7,7 @@ import { useCookieConsent } from "@/components/common/CookieConsent";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import { StatusCard, StatusMark, StatusSpinner, StatusText } from "../result-page.styles";
+import { AccessReadyAction } from "./success-entrance.styles";
 
 type TelegramAccessButtonProps = {
   /** Names the access in a notice, where a button label would read as an order. */
@@ -396,17 +397,19 @@ export default function TelegramAccessButton({
 
   if (accessUrl) {
     return (
-      <Button
-        buttonText={buttonText}
-        href={accessUrl}
-        target="_blank"
-        analytics={{
-          id: "post_purchase_access_opened",
-          offer_id: offerId,
-          placement: "legacy_access",
-          product_id: productId,
-        }}
-      />
+      <AccessReadyAction>
+        <Button
+          buttonText={buttonText}
+          href={accessUrl}
+          target="_blank"
+          analytics={{
+            id: "post_purchase_access_opened",
+            offer_id: offerId,
+            placement: "legacy_access",
+            product_id: productId,
+          }}
+        />
+      </AccessReadyAction>
     );
   }
 
@@ -426,18 +429,19 @@ export default function TelegramAccessButton({
     return (
       <>
         {readyAccesses.map((access) => (
-          <Button
-            key={access.accessKey}
-            buttonText={labelOf(access)}
-            href={access.accessUrl}
-            target="_blank"
-            analytics={{
-              id: "post_purchase_access_opened",
-              offer_id: offerId,
-              placement: access.accessKey,
-              product_id: productId,
-            }}
-          />
+          <AccessReadyAction key={access.accessKey}>
+            <Button
+              buttonText={labelOf(access)}
+              href={access.accessUrl}
+              target="_blank"
+              analytics={{
+                id: "post_purchase_access_opened",
+                offer_id: offerId,
+                placement: access.accessKey,
+                product_id: productId,
+              }}
+            />
+          </AccessReadyAction>
         ))}
         {otherAccesses.map((access) =>
           renderNotice(

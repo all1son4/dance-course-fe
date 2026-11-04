@@ -1,9 +1,10 @@
-import styled, { keyframes } from "styled-components";
+import styled, { css, keyframes } from "styled-components";
 
 import { Ring } from "@/components/common/Spinner/Spinner.styles";
 import { glass } from "@/styles/mixins/glass";
 
 type VideoWrapProps = {
+  $posterColor?: string;
   $maxWidth: string;
   $width: string;
   $height: string;
@@ -152,6 +153,20 @@ export const VideoWrap = styled.div<VideoWrapProps>`
   aspect-ratio: ${({ $aspectRatio }) => $aspectRatio};
   --vp-button-size: ${({ $buttonSize }) => $buttonSize};
   --vp-icon-size: ${({ $iconSize }) => $iconSize};
+  --vp-poster-color: ${({ $posterColor }) => $posterColor ?? "var(--ink)"};
+
+  /* Until the poster arrives the box shows the poster's average colour, not
+     Plyr's / the fallback's black. Without a colour nothing changes. */
+  ${({ $posterColor }) =>
+    $posterColor &&
+    css`
+      &,
+      .plyr--video,
+      .plyr__video-wrapper,
+      video {
+        background-color: var(--vp-poster-color);
+      }
+    `}
 
   .plyr,
   .plyr__video-wrapper,
@@ -183,7 +198,7 @@ export const VideoWrap = styled.div<VideoWrapProps>`
     width: 100%;
     height: 100%;
     display: block;
-    background: var(--ink);
+    background: var(--vp-poster-color);
     border-radius: ${({ $radius }) => $radius};
   }
 

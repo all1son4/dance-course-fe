@@ -55,24 +55,44 @@ const getCompactChoreoTitle = (title: string) => {
   return title;
 };
 
+/**
+ * Poster, Instagram reel and optional hover/in-view preview per card.
+ *
+ * Preview clips: add `previewSrc: "/videos/choreo/<slug>-preview.mp4"` and put
+ * the file in `public/videos/choreo/`. Keep it short and light - about 5 s,
+ * 720 px wide, H.264, no audio track, under ~600 KB, first frame close to the
+ * poster - e.g.
+ *   ffmpeg -ss <start> -t 5 -i reel.mp4 -map 0:v:0 -an -map_metadata -1
+ *     -vf "scale=720:-2,fps=30" -c:v libx264 -profile:v high -crf 28
+ *     -preset slow -pix_fmt yuv420p -movflags +faststart
+ *     public/videos/choreo/<slug>-preview.mp4
+ * Without one, the card shows its poster exactly as before.
+ */
 const CHOREO_PRESENTATIONS = {
   "choreo-still-alive": {
     posterSrc: "/images/still_alive_poster.webp",
+    posterColor: "#4a7391",
     videoSrc: CHOREO_STILL_ALIVE_REEL_URL,
   },
   "choreo-her-lies": {
     posterSrc: "/images/her_lies_poster.webp",
+    posterColor: "#27170b",
     videoSrc: CHOREO_HER_LIES_REEL_URL,
   },
   "choreo-bundle": {
     posterSrc: "/images/bundle_poster.webp",
+    posterColor: "#40434c",
   },
   "choreo-love-me-in-the-morning": {
     posterSrc: "/images/love_me_in_the_morning_poster.webp",
+    posterColor: "#160d0d",
     videoSrc: CHOREO_LOVE_ME_IN_THE_MORNING_REEL_URL,
   },
 } satisfies Partial<
-  Record<SellableProductCode, Pick<ChoreoCardProps, "posterSrc" | "videoSrc">>
+  Record<
+    SellableProductCode,
+    Pick<ChoreoCardProps, "posterColor" | "posterSrc" | "previewSrc" | "videoSrc">
+  >
 >;
 
 /** The tutorials a bundle contains, for its "bought separately" price. */
