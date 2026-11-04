@@ -187,6 +187,7 @@ export default function FirstTouch() {
             analyticsId="first-touch-introduction"
             src={t("hero.introductionVideoSrc")}
             poster="/images/first_touch_poster.webp"
+            posterColor="#4f444c"
             radius="0px"
           />
         </VideoSection>

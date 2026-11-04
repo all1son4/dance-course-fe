@@ -301,6 +301,7 @@ export default async function OnlineGroupPage() {
             analyticsId="online-group-example"
             src="/videos/online_example.mp4"
             poster="/images/online_example_poster.webp"
+            posterColor="#6d6266"
             radius="0px"
           />
         </VideoSection>

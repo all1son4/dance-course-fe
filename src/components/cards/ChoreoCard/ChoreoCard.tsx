@@ -34,6 +34,7 @@ export default function ChoreoCard({
   firstButtonOptions,
   highlights,
   icon,
+  posterColor,
   posterSrc,
   previewSrc,
   price,
@@ -65,6 +66,7 @@ export default function ChoreoCard({
             src={videoSrc}
             previewSrc={previewSrc}
             poster={posterSrc}
+            posterColor={posterColor}
             iconSize="40px"
             buttonSize="80px"
             radius={CARD_MEDIA_RADIUS}
@@ -72,7 +74,7 @@ export default function ChoreoCard({
           />
         )}
         {!videoSrc && posterSrc && (
-          <PosterBox>
+          <PosterBox style={posterColor ? { backgroundColor: posterColor } : undefined}>
             <SvgAsset
               src={posterSrc}
               width={1290}

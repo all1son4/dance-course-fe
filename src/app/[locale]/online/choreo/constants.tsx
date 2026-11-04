@@ -71,23 +71,27 @@ const getCompactChoreoTitle = (title: string) => {
 const CHOREO_PRESENTATIONS = {
   "choreo-still-alive": {
     posterSrc: "/images/still_alive_poster.webp",
+    posterColor: "#4a7391",
     videoSrc: CHOREO_STILL_ALIVE_REEL_URL,
   },
   "choreo-her-lies": {
     posterSrc: "/images/her_lies_poster.webp",
+    posterColor: "#27170b",
     videoSrc: CHOREO_HER_LIES_REEL_URL,
   },
   "choreo-bundle": {
     posterSrc: "/images/bundle_poster.webp",
+    posterColor: "#40434c",
   },
   "choreo-love-me-in-the-morning": {
     posterSrc: "/images/love_me_in_the_morning_poster.webp",
+    posterColor: "#160d0d",
     videoSrc: CHOREO_LOVE_ME_IN_THE_MORNING_REEL_URL,
   },
 } satisfies Partial<
   Record<
     SellableProductCode,
-    Pick<ChoreoCardProps, "posterSrc" | "previewSrc" | "videoSrc">
+    Pick<ChoreoCardProps, "posterColor" | "posterSrc" | "previewSrc" | "videoSrc">
   >
 >;
 
