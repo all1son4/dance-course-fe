@@ -81,10 +81,7 @@ const CHOREO_BUNDLE_PARTS: Partial<Record<SellableProductCode, readonly Sellable
     "choreo-bundle": ["choreo-still-alive", "choreo-her-lies"],
   };
 
-const CHOREO_CARD_HIGHLIGHT_KEYS = [
-  "choreoCard.highlights.level",
-  "choreoCard.highlights.languages",
-] as const;
+const CHOREO_CARD_HIGHLIGHT_KEYS = ["choreoCard.highlights.level"] as const;
 
 /**
  * The sum of the bundled tutorials' prices for the same tariff, when every
