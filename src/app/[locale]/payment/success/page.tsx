@@ -14,10 +14,11 @@ import {
   isOnlineGroupAccessOfferId,
   isRenewalDiscountOfferId,
 } from "@/lib/telegram/offer-access";
-import { Success } from "@/svg";
 
 import { ResultCard, ResultContainer } from "../result-page.styles";
+import SuccessCheckMark from "./success-check-mark";
 import SuccessContent from "./success-content";
+import { SuccessEntrance } from "./success-entrance.styles";
 import SuccessRedirectGuard from "./success-redirect-guard";
 
 const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
@@ -138,45 +139,47 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
           supportButtonText={t("telegram.contactSupport")}
           unavailableText={t("verification.unavailable")}
         >
-          <Success />
-          <SuccessContent
-            accessNotice={accessNotice}
-            checkoutSessionId={checkoutSessionId}
-            descriptionLine1={t(`description.${successCase}.line1`)}
-            descriptionLine2={t(`description.${successCase}.line2`)}
-            dateLocale={locale}
-            homeButtonText={t("buttons.home")}
-            isTelegramAccessPurchase={isTelegramAccessPurchase}
-            isRenewalPurchase={isRenewalPurchase}
-            offerId={offerId}
-            offerCode={selectedOffer.code}
-            paymentIntentId={paymentIntentId}
-            productId={productId}
-            productCode={selectedProduct.code}
-            purchaseCurrency={
-              currencyParam === "eur" || currencyParam === "pln"
-                ? currencyParam
-                : undefined
-            }
-            purchaseValue={
-              currencyParam === "eur" || currencyParam === "pln"
-                ? selectedOffer.prices[currencyParam]
-                : undefined
-            }
-            telegramAccessActiveText={t("telegram.active")}
-            telegramAccessNames={{
-              inspiration: t("telegram.nameInspiration"),
-              main: t("telegram.nameMainGroup"),
-            }}
-            telegramContactSupportText={t("telegram.contactSupport")}
-            telegramInspirationLinkText={t("telegram.openInspiration")}
-            telegramInspirationUntilLabel={t("telegram.inspirationUntil")}
-            telegramMainGroupLinkText={t("telegram.openMainGroup")}
-            telegramOpenLinkText={t("telegram.openLink")}
-            telegramPendingText={t("telegram.pending")}
-            telegramUnavailableText={t("telegram.unavailable")}
-            title={t("title")}
-          />
+          <SuccessEntrance>
+            <SuccessCheckMark />
+            <SuccessContent
+              accessNotice={accessNotice}
+              checkoutSessionId={checkoutSessionId}
+              descriptionLine1={t(`description.${successCase}.line1`)}
+              descriptionLine2={t(`description.${successCase}.line2`)}
+              dateLocale={locale}
+              homeButtonText={t("buttons.home")}
+              isTelegramAccessPurchase={isTelegramAccessPurchase}
+              isRenewalPurchase={isRenewalPurchase}
+              offerId={offerId}
+              offerCode={selectedOffer.code}
+              paymentIntentId={paymentIntentId}
+              productId={productId}
+              productCode={selectedProduct.code}
+              purchaseCurrency={
+                currencyParam === "eur" || currencyParam === "pln"
+                  ? currencyParam
+                  : undefined
+              }
+              purchaseValue={
+                currencyParam === "eur" || currencyParam === "pln"
+                  ? selectedOffer.prices[currencyParam]
+                  : undefined
+              }
+              telegramAccessActiveText={t("telegram.active")}
+              telegramAccessNames={{
+                inspiration: t("telegram.nameInspiration"),
+                main: t("telegram.nameMainGroup"),
+              }}
+              telegramContactSupportText={t("telegram.contactSupport")}
+              telegramInspirationLinkText={t("telegram.openInspiration")}
+              telegramInspirationUntilLabel={t("telegram.inspirationUntil")}
+              telegramMainGroupLinkText={t("telegram.openMainGroup")}
+              telegramOpenLinkText={t("telegram.openLink")}
+              telegramPendingText={t("telegram.pending")}
+              telegramUnavailableText={t("telegram.unavailable")}
+              title={t("title")}
+            />
+          </SuccessEntrance>
         </SuccessRedirectGuard>
       </ResultCard>
     </ResultContainer>

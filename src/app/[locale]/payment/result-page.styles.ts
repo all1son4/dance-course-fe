@@ -13,7 +13,9 @@ import { glass } from "@/styles/mixins/glass";
 
 /* Entrance of a settled result: the icon pops, then title, copy and actions
    rise one after another. Runs on mount, i.e. the moment verification settles
-   on the success page and on first paint of the failed page. */
+   on the success page and on first paint of the failed page. The confirmed
+   success page draws its check first and pushes the text back by
+   --result-enter-delay (success/success-entrance.styles). */
 const resultPop = keyframes`
   from {
     opacity: 0;
@@ -110,7 +112,8 @@ export const ResultTitle = styled.h1`
   letter-spacing: 0;
   margin: 24px 0 12px;
   color: var(--ink);
-  animation: ${resultRise} ${RISE} calc(var(--motion-settle, 40ms) + 120ms) both;
+  animation: ${resultRise} ${RISE}
+    calc(var(--motion-settle, 40ms) + var(--result-enter-delay, 0ms) + 120ms) both;
 
   @media ${PHONE} {
     font-size: 22px;
@@ -126,7 +129,8 @@ export const ResultParagraphs = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  animation: ${resultRise} ${RISE} calc(var(--motion-settle, 40ms) + 200ms) both;
+  animation: ${resultRise} ${RISE}
+    calc(var(--motion-settle, 40ms) + var(--result-enter-delay, 0ms) + 200ms) both;
 `;
 
 export const ResultParagraph = styled.p`
@@ -255,7 +259,8 @@ export const ResultActions = styled.div`
   gap: 10px;
   width: 100%;
   margin: 24px 0 0;
-  animation: ${resultRise} ${RISE} calc(var(--motion-settle, 40ms) + 280ms) both;
+  animation: ${resultRise} ${RISE}
+    calc(var(--motion-settle, 40ms) + var(--result-enter-delay, 0ms) + 280ms) both;
 
   @media ${PHONE} {
     gap: 8px;
