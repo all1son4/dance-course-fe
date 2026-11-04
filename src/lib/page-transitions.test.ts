@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  canAffordPageTransitions,
   isPageTransitionPath,
   shouldSkipTraversalTransition,
 } from "@/lib/page-transitions";
@@ -19,4 +20,15 @@ test("a traversal is cross-faded only when the browser says it did not animate i
   assert.equal(shouldSkipTraversalTransition(false), false);
   assert.equal(shouldSkipTraversalTransition(true), true);
   assert.equal(shouldSkipTraversalTransition(undefined), true);
+});
+
+test("page transitions skip low-end devices and Save-Data", () => {
+  assert.equal(canAffordPageTransitions({}), true);
+  assert.equal(canAffordPageTransitions({ cores: 8, memoryGb: 8 }), true);
+  assert.equal(canAffordPageTransitions({ cores: 2 }), false);
+  assert.equal(canAffordPageTransitions({ cores: 8, memoryGb: 2 }), false);
+  assert.equal(
+    canAffordPageTransitions({ cores: 8, memoryGb: 8, saveData: true }),
+    false,
+  );
 });

@@ -15,6 +15,34 @@ export const PAGE_TRANSITIONS_ENABLED = true;
  */
 export const PAGE_TRANSITION_MARKER_CLASS = "page-route-marker";
 
+type DeviceHints = {
+  /** `navigator.hardwareConcurrency`; undefined where the browser hides it. */
+  cores?: number;
+  /** `navigator.deviceMemory` in GB (Chromium only); undefined elsewhere. */
+  memoryGb?: number;
+  /** `navigator.connection.saveData`. */
+  saveData?: boolean;
+};
+
+/* Below these the whole-page snapshot is not free: budget Android phones
+   (2-4 GB, 4 slow cores) can drop a frame or two taking it, so they navigate
+   instantly as before. Unknown values (Safari, Firefox) count as capable:
+   those browsers only report on hardware that runs the fade smoothly. */
+const MIN_CORES = 4;
+const MIN_MEMORY_GB = 4;
+
+/** Whether this device should get the cross-fade at all. */
+export const canAffordPageTransitions = ({
+  cores,
+  memoryGb,
+  saveData,
+}: DeviceHints): boolean => {
+  if (saveData) return false;
+  if (cores !== undefined && cores < MIN_CORES) return false;
+  if (memoryGb !== undefined && memoryGb < MIN_MEMORY_GB) return false;
+  return true;
+};
+
 const ADMIN_PATH_PATTERN = /^\/admin(?:\/|$)/u;
 
 /** Only the public site cross-fades; the admin area navigates as before. */
