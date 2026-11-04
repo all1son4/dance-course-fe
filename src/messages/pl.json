@@ -575,8 +575,11 @@
           "8": "Dodatkowe ćwiczenia",
           "9": "Playlisty, moodboardy i filmy dla inspiracji",
           "10": "Przydatne rekomendacje"
-        }
-      }
+        },
+        "includesStandard": "Wszystko ze Standard, a także:"
+      },
+      "popular": "Popularny",
+      "switchLabel": "Wybór pakietu"
     },
     "about": {
       "title": "Co czeka Cię w Online Group"
