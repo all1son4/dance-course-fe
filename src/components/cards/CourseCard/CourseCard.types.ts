@@ -17,4 +17,6 @@ export type CourseCardProps = {
   /** Marks the button as an anchor the page's sticky CTA mirrors. */
   buttonIsStickyAnchor?: boolean;
   bgColor?: string;
+  /** "raised" for cards resting on the white slab, where plain glass loses its edge. */
+  surface?: "default" | "raised";
 };
