@@ -148,6 +148,7 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
     resultOfferId,
     resultProductCode,
     resultProductId,
+    resultRenewalSlug,
     resultValue,
     updatingText,
     verificationUnresolvedText,
@@ -183,6 +184,7 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
     resultCurrency,
     resultOfferId,
     resultProductId,
+    resultRenewalSlug,
   };
   const analyticsCurrency: "eur" | "pln" | undefined =
     resultCurrency === "eur" || resultCurrency === "pln" ? resultCurrency : undefined;
@@ -479,6 +481,7 @@ export const StripePaymentTabs = ({
   resultOfferId,
   resultProductCode,
   resultProductId,
+  resultRenewalSlug,
   resultValue,
   publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
 }: StripePaymentTabsProps) => {
@@ -593,6 +596,7 @@ export const StripePaymentTabs = ({
     resultOfferId,
     resultProductCode,
     resultProductId,
+    resultRenewalSlug,
     resultValue,
     updatingText: t("button.updating"),
     verificationUnresolvedText: t.rich("status.verificationUnresolved", {

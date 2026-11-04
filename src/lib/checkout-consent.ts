@@ -10,14 +10,16 @@ import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
 
 // These identifiers are historical evidence. Bump the affected version when its
 // visible agreement or linked policy meaning changes; never reuse a prior identifier.
+// v2 of the agreements: accepted through one "purchase terms" box whose summary
+// names all four, with each full v1 wording one tap away under it.
 export const CHECKOUT_CONSENT_SCHEMA_VERSION = "checkout-consent-v1";
 export const CHECKOUT_CONSENT_SOURCE = "internal-checkout";
 export const CHECKOUT_PRIVACY_POLICY_VERSION = "privacy-policy-v1";
 export const CHECKOUT_AGREEMENT_VERSIONS = {
-  digitalContentAgreement: "digital-content-agreement-v1",
-  immediateAccessConsent: "immediate-access-consent-v1",
-  privacyPolicyAcknowledgement: "privacy-policy-acknowledgement-v1",
-  withdrawalNoticeAcknowledgement: "withdrawal-notice-acknowledgement-v1",
+  digitalContentAgreement: "digital-content-agreement-v2",
+  immediateAccessConsent: "immediate-access-consent-v2",
+  privacyPolicyAcknowledgement: "privacy-policy-acknowledgement-v2",
+  withdrawalNoticeAcknowledgement: "withdrawal-notice-acknowledgement-v2",
 } as const;
 export const CHECKOUT_CONSENT_VERSION_KEY = [
   CHECKOUT_CONSENT_SCHEMA_VERSION,

@@ -124,10 +124,19 @@ export type RenewalVerificationFailure =
 
 export type PaymentStoreInstance = ReturnType<typeof usePaymentStore>;
 
+/**
+ * The short product name: what the title puts in quotes, every name of a
+ * bundle included ("Still Alive + Her Lies"), or else its first line.
+ */
 export const getCompactSummaryTitle = (fullTitle: string) => {
-  const quotedNameMatch = fullTitle.match(/["“”«»]([^"“”«»]+)["“”«»]/u);
+  const quotedNames = Array.from(
+    fullTitle.matchAll(/["“”«»„]([^"“”«»„]+)["“”«»„]/gu),
+    (match) => match[1].trim(),
+  ).filter(Boolean);
 
-  return quotedNameMatch?.[1]?.trim() || fullTitle;
+  return quotedNames.length > 0
+    ? quotedNames.join(" + ")
+    : (fullTitle.split("\n")[0] ?? fullTitle).trim();
 };
 
 export const formatTelegramUsernameInput = (value: string) => {
@@ -329,9 +338,8 @@ export const focusNextCheckoutControl = ({
   const nextField = inputs.find(
     ({ name }) => name !== "nickname" && !customerData[name].trim(),
   );
-  const nextControl = nextField
-    ? document.getElementById(nextField.id)
-    : document.querySelector<HTMLInputElement>('input[name="immediate_access_consent"]');
+  // Nothing left to fill: the step the buyer is moved to takes it from there.
+  const nextControl = nextField ? document.getElementById(nextField.id) : null;
 
   if (
     nextControl instanceof HTMLInputElement ||

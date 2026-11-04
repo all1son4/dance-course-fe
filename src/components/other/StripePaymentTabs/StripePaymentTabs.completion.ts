@@ -37,7 +37,11 @@ type PaymentIntentStatusResponse = {
 
 export type ResultPageContext = Pick<
   StripePaymentTabsProps,
-  "checkoutSessionId" | "resultCurrency" | "resultOfferId" | "resultProductId"
+  | "checkoutSessionId"
+  | "resultCurrency"
+  | "resultOfferId"
+  | "resultProductId"
+  | "resultRenewalSlug"
 >;
 
 export type PaymentRedirectCompletion = {
@@ -199,6 +203,7 @@ export const createResultPageUrl = (
     resultCurrency,
     resultOfferId,
     resultProductId,
+    resultRenewalSlug,
   }: ResultPageContext,
   nextPaymentIntentId?: string,
 ): string => {
@@ -210,6 +215,7 @@ export const createResultPageUrl = (
   setResultSearchParam(url, "currency", resultCurrency);
   setResultSearchParam(url, "checkout", checkoutSessionId);
   setResultSearchParam(url, "payment_intent", nextPaymentIntentId);
+  setResultSearchParam(url, "renewal", resultRenewalSlug);
 
   return url.toString();
 };

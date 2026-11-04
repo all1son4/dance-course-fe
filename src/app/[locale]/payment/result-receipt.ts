@@ -3,6 +3,7 @@ import {
   type SellableProduct,
   type SellableProductOffer,
 } from "@/constants/sellable-products";
+import { shouldNameOfferAtCheckout } from "@/lib/choreo-offer-presentation";
 
 import { getCompactSummaryTitle } from "./payment.helpers";
 
@@ -10,7 +11,8 @@ export type ResultReceiptLine = { amount: string; title: string };
 
 /**
  * The one-line receipt of a result page: the product under the short name the
- * checkout bar uses, and the amount in the currency of the attempt. Null when
+ * checkout bar uses, its tariff where it has one, and the amount in the
+ * currency of the attempt. Null when
  * the link does not say what was bought or in which currency.
  */
 export const getResultReceipt = ({
@@ -32,5 +34,10 @@ export const getResultReceipt = ({
     ? translateProduct(product.checkoutTitleKey)
     : getCompactSummaryTitle(translateProduct(product.titleKey));
 
-  return { amount: formatCheckoutPrice(offer.prices[currency], currency), title };
+  return {
+    amount: formatCheckoutPrice(offer.prices[currency], currency),
+    title: shouldNameOfferAtCheckout(product, offer.id)
+      ? `${title} · ${translateProduct(offer.labelKey)}`
+      : title,
+  };
 };

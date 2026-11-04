@@ -15,6 +15,11 @@ export const shouldShowOfferLabel = (product: SellableProduct, offerId: string) 
   return enabledOffers.length !== 1 || enabledOffers[0].id !== offerId;
 };
 
+/** Whether checkout and its result pages name the tariff next to the product. */
+export const shouldNameOfferAtCheckout = (product: SellableProduct, offerId: string) =>
+  product.code === "online-group-anna-strok" ||
+  (isChoreoTutorialProduct(product) && shouldShowOfferLabel(product, offerId));
+
 /** Stored with the payment so later catalogue switches cannot rewrite its presentation. */
 export const shouldShowPurchasedOfferLabel = (metadata: Record<string, string>) =>
   metadata.show_offer_label !== "false";
