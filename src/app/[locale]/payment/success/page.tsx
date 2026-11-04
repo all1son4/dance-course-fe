@@ -16,12 +16,13 @@ import {
 } from "@/lib/telegram/offer-access";
 
 import { ResultCard, ResultContainer } from "../result-page.styles";
+import { getResultReceipt } from "../result-receipt";
 import SuccessCheckMark from "./success-check-mark";
 import SuccessContent from "./success-content";
 import { SuccessEntrance } from "./success-entrance.styles";
 import SuccessRedirectGuard from "./success-redirect-guard";
 
-const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
+const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency", "renewal"] as const;
 
 type SuccessPageSearchParams = Record<string, string | string[] | undefined>;
 type SuccessPageProps = {
@@ -44,10 +45,11 @@ const getParamValue = (searchParams: SuccessPageSearchParams, key: string): stri
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const [locale, t, paymentT] = await Promise.all([
+  const [locale, t, paymentT, productT] = await Promise.all([
     getLocale(),
     getTranslations("PaymentSuccessPage"),
     getTranslations("PaymentPage"),
+    getTranslations("SellableProducts"),
   ]);
   const productId = getParamValue(resolvedSearchParams, "product");
   const offerId = getParamValue(resolvedSearchParams, "offer");
@@ -124,6 +126,15 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             )
           : "";
 
+  const purchaseCurrency =
+    currencyParam === "eur" || currencyParam === "pln" ? currencyParam : undefined;
+  const receipt = getResultReceipt({
+    currency: purchaseCurrency,
+    offer: selectedOffer,
+    product: selectedProduct,
+    translateProduct: (key) => productT(key),
+  });
+
   return (
     <ResultContainer>
       <ResultCard>
@@ -143,6 +154,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             <SuccessCheckMark />
             <SuccessContent
               accessNotice={accessNotice}
+              receipt={receipt}
               checkoutSessionId={checkoutSessionId}
               descriptionLine1={t(`description.${successCase}.line1`)}
               descriptionLine2={t(`description.${successCase}.line2`)}

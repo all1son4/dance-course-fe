@@ -126,6 +126,9 @@ export type AnalyticsEventProperties = {
     agreement_name: string;
     is_accepted: boolean;
   };
+  checkout_step_completed: CommerceEventProperties & {
+    step: string;
+  };
   checkout_validation_failed: CommerceEventProperties & {
     invalid_agreements: string[];
     invalid_fields: string[];

@@ -242,9 +242,9 @@ test("the checkout says what opens the payment form", async ({ page }) => {
     buildCheckoutHref({ offerId: product.defaultOfferId, productId: product.id }),
   );
 
-  // An empty form has no payment card: without this line the step is missing
-  // with nothing to explain it, and the buyer has no idea what to do next.
-  await expect(page.getByText(/payment form will open here/i)).toBeVisible();
+  // An empty form has no payment card: without this placeholder the step is
+  // missing with nothing to explain it, and the buyer has no idea what to do next.
+  await expect(page.getByText(/payment opens here/i)).toBeVisible();
 });
 
 test("a loading buy button never moves the UI around it", async ({ page }) => {
@@ -331,7 +331,10 @@ test("ordinary checkout has four fresh agreements and no Telegram verification",
 
   await expect(page.getByRole("button", { name: "Confirm Telegram" })).toHaveCount(0);
 
-  const agreements = page.locator('form input[type="checkbox"]');
+  // The four agreements behind the one "accept the purchase terms" box.
+  const agreements = page.locator(
+    'form input[type="checkbox"]:not([name="checkout-accept-all"])',
+  );
   await expect(agreements).toHaveCount(4);
 
   const agreementState = await agreements.evaluateAll((inputs) =>
@@ -448,13 +451,20 @@ test("checkout sends all four accepted agreements with the existing customer fie
   await page.goto(`/payment?product=${product.id}&offer=${offer.id}`);
   await page.getByRole("button", { name: "Reject" }).click();
 
-  await page.getByRole("textbox", { name: "Full name" }).fill("Anna Test");
+  // The checkout opens one step at a time: access contacts, then receipt details.
   await page.getByRole("textbox", { name: "Email" }).fill("buyer@example.com");
   await page.getByRole("textbox", { name: "Telegram username" }).fill("@anna_test");
-  await page.getByRole("textbox", { name: "Address" }).fill("Main Street 1");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  await page.getByRole("textbox", { name: "Full name" }).fill("Anna Test");
+  await page.getByRole("combobox", { name: "Country" }).selectOption("PL");
   await page.getByRole("textbox", { name: "City" }).fill("Warsaw");
   await page.getByRole("textbox", { name: "Postal code" }).fill("00-001");
-  await page.getByRole("combobox", { name: "Country" }).selectOption("PL");
+  await page.getByRole("textbox", { name: "Address" }).fill("Main Street 1");
+  await page.getByRole("button", { name: "Continue" }).click();
+
+  // Each agreement is still ticked on its own once the full list is shown.
+  await page.getByRole("button", { name: "Show all 4 items" }).click();
 
   const agreementNames = [
     "immediate_access_consent",

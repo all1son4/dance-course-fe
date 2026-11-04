@@ -191,6 +191,7 @@ export default async function OnlineGroupPage() {
                   panel: (
                     <CourseCard
                       analyticsId={`${product.code}:${standardOffer.code}`}
+                      surface="raised"
                       title={t("tariffs.standard.title")}
                       subtitle={t("tariffs.standard.subtitle")}
                       cardContent={
@@ -248,6 +249,7 @@ export default async function OnlineGroupPage() {
                   panel: (
                     <CourseCard
                       analyticsId={`${product.code}:${plusOffer.code}`}
+                      surface="raised"
                       title={t("tariffs.plus.title")}
                       subtitle={t("tariffs.plus.subtitle")}
                       cardContent={

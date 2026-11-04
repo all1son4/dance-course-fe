@@ -235,6 +235,19 @@ export class PaymentStore {
     return this.customerSchema.isValidSync(this.normalizedCustomerData);
   }
 
+  /**
+   * Whether one field already holds an acceptable value - the tick next to it
+   * and the step progress read this, without touching the field's error state.
+   */
+  isCustomerFieldValid(fieldName: PaymentCustomerFieldName) {
+    try {
+      this.customerSchema.validateSyncAt(fieldName, this.normalizedCustomerData);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   get canShowStripe() {
     return (
       this.catalogStatus === "ready" &&

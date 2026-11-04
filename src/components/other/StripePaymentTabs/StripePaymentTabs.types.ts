@@ -24,6 +24,8 @@ export type StripePaymentTabsProps = {
   resultOfferId?: string | null;
   resultProductCode?: string | null;
   resultProductId?: string | null;
+  /** The renewal link's campaign: a failed attempt has to find its way back to it. */
+  resultRenewalSlug?: string | null;
   resultValue?: number | null;
   publishableKey?: string;
 };

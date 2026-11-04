@@ -1,7 +1,7 @@
 import { css, styled } from "styled-components";
 
 import { visuallyHidden } from "@/styles/mixins/a11y";
-import { glass } from "@/styles/mixins/glass";
+import { glass, raisedGlassEdge } from "@/styles/mixins/glass";
 
 type CardSurfaceProps = {
   $isSpecialOffer?: boolean;
@@ -36,12 +36,16 @@ export const CardSurface = styled.div<CardSurfaceProps>`
   overflow: hidden;
   padding: ${CARD_INSET};
 
+  /* The catalogue sits on the white slab: the raised glass keeps its edge there. */
   ${glass({
     frost: "static",
+    variant: "raised",
     radius: "var(--radius-panel)",
     hoverEffect: false,
     elevation: 1.6,
+    shadowStrength: 1.5,
   })}
+  ${raisedGlassEdge}
 
   ${({ $isSpecialOffer }) => $isSpecialOffer && specialOfferStyles}
 `;

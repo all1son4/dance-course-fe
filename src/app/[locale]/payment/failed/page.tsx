@@ -6,19 +6,21 @@ import {
   getSellableProductById,
   getSellableProductOfferById,
 } from "@/constants/sellable-products";
-import { Failed } from "@/svg";
 
 import {
   ResultActions,
   ResultCard,
   ResultContainer,
+  ResultNoticeMark,
   ResultParagraph,
   ResultParagraphs,
+  ResultReceipt,
   ResultTitle,
 } from "../result-page.styles";
+import { getResultReceipt } from "../result-receipt";
 import FailedPageGuard from "./failed-page-guard";
 
-const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
+const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency", "renewal"] as const;
 type FailedPageSearchParams = Record<string, string | string[] | undefined>;
 type FailedPageProps = {
   searchParams?: Promise<FailedPageSearchParams> | FailedPageSearchParams;
@@ -40,7 +42,10 @@ const getParamValue = (searchParams: FailedPageSearchParams, key: string): strin
 
 export default async function FailedPage({ searchParams }: FailedPageProps) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const t = await getTranslations("PaymentFailedPage");
+  const [t, productT] = await Promise.all([
+    getTranslations("PaymentFailedPage"),
+    getTranslations("SellableProducts"),
+  ]);
   const productId = getParamValue(resolvedSearchParams, "product");
   const offerId = getParamValue(resolvedSearchParams, "offer");
   const currencyParam = getParamValue(resolvedSearchParams, "currency").toLowerCase();
@@ -65,6 +70,12 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
   contextParams.set("resume", "1");
 
   const paymentPath = `/payment?${contextParams.toString()}`;
+  const receipt = getResultReceipt({
+    currency,
+    offer: selectedOffer,
+    product: selectedProduct,
+    translateProduct: (key) => productT(key),
+  });
 
   return (
     <ResultContainer>
@@ -77,8 +88,24 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
           productId={selectedProduct?.id}
           value={currency && selectedOffer ? selectedOffer.prices[currency] : undefined}
         />
-        <Failed />
+        <ResultNoticeMark aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 5v9"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeWidth="2.4"
+            />
+            <circle cx="12" cy="19" r="1.6" fill="currentColor" />
+          </svg>
+        </ResultNoticeMark>
         <ResultTitle>{t("title")}</ResultTitle>
+        {receipt ? (
+          <ResultReceipt>
+            <span>{receipt.title}</span>
+            <b>{receipt.amount}</b>
+          </ResultReceipt>
+        ) : null}
         <ResultParagraphs>
           <ResultParagraph>{t("description.line1")}</ResultParagraph>
           <ResultParagraph>{t("description.line2")}</ResultParagraph>

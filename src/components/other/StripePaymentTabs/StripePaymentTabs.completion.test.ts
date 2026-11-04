@@ -49,6 +49,15 @@ test("result URL keeps a stable parameter order and skips empty values", () => {
   assert.equal(sparseUrl, "https://dance.example/payment/failed?product=prd_test");
 });
 
+test("a renewal's result URL keeps its campaign, so a retry can return to it", () => {
+  const renewalUrl = createResultPageUrl(PAYMENT_RESULT_PATHS.failed, {
+    ...RESULT_PAGE_CONTEXT,
+    resultRenewalSlug: "autumn-renewal",
+  });
+
+  assert.equal(new URL(renewalUrl).searchParams.get("renewal"), "autumn-renewal");
+});
+
 test("a server-confirmed success redirects and cancels unused intents", async (t) => {
   const calls = installJsonFetchFixture(t, [
     {
