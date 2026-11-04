@@ -44,7 +44,7 @@ export const Title = styled.h3`
 export const Description = styled.p`
   margin: 0;
   color: var(--ink-muted);
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: var(--text-body);
   line-height: 1.5;
@@ -72,7 +72,7 @@ export const PaymentElementShell = styled.div`
 export const StatusText = styled.p`
   margin: 0;
   color: var(--ink-muted);
-  font-weight: 300;
+  font-weight: var(--weight-text);
   font-style: normal;
   font-size: 14px;
   line-height: 1.4;

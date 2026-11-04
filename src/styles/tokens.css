@@ -25,6 +25,10 @@
   --text-h2: 40px;
   --text-display: 55px;
 
+  /* Running-text weight: light on wide screens, regular on phones and
+     tablets, where 300 at 15-17px reads thin on glass and in daylight. */
+  --weight-text: 300;
+
   /* Radii */
   --radius-slab: 100px;
   --radius-card: 60px;
@@ -39,4 +43,10 @@
   --header-clearance: 116px;
   /* Under 768px the pill is 59px tall and sits 10px from the top. */
   --header-clearance-mobile: 82px;
+}
+
+@media (max-width: 880px) {
+  :root {
+    --weight-text: 400;
+  }
 }
