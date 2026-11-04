@@ -192,6 +192,7 @@ export default function FirstTouch() {
           />
         </VideoSection>
         <SuggestionGrid
+          compactBelow={920}
           components={{
             Section: AboutCourseSection,
             Title: AboutCourseTitle,
