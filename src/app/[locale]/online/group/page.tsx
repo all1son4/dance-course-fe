@@ -51,12 +51,13 @@ import {
   MobileImagesBox,
   TarifContentBox,
   TariffContentList,
-  TariffOptionsBox,
+  TariffIncludes,
   TariffSection,
   TariffTitle,
   TextBox,
   Title,
 } from "./page.styles";
+import TariffTabs from "./tariff-tabs";
 
 export const generateMetadata = () =>
   buildLocalizedPageMetadata({ pageKey: "onlineGroup", path: "/online/group" });
@@ -175,106 +176,126 @@ export default async function OnlineGroupPage() {
     <TariffSection id="tariffs">
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
       {saleState !== "open" && <ClosedSalesNotice text={commonT("salesUnavailable")} />}
-      <TariffOptionsBox>
-        {standardOffer ? (
-          <CourseCard
-            analyticsId={`${product.code}:${standardOffer.code}`}
-            title={t("tariffs.standard.title")}
-            subtitle={t("tariffs.standard.subtitle")}
-            cardContent={
-              <TarifContentBox>
-                <TariffContentList>
-                  <li>{t("tariffs.standard.features.1")}</li>
-                  <li>{t("tariffs.standard.features.2")}</li>
-                  <li>{t("tariffs.standard.features.3")}</li>
-                  <li>{t("tariffs.standard.features.4")}</li>
-                  <li>{t("tariffs.standard.features.5")}</li>
-                  <li>{t("tariffs.standard.features.6")}</li>
-                </TariffContentList>
-                <ProductFact
-                  label={t("tariffs.priceLabel")}
-                  value={formatOfferPrice(standardOffer.prices)}
-                />
-              </TarifContentBox>
-            }
-            buttonText={
-              saleState === "open" && standardOffer.salesEnabled
-                ? t("tariffs.buyButton")
-                : undefined
-            }
-            buttonAnalytics={{
-              id: "buy_online_group",
-              offer_code: standardOffer.code,
-              offer_id: standardOffer.id,
-              placement: "tariff_standard",
-              product_code: product.code,
-              product_id: product.id,
-            }}
-            buttonPrefetch={false}
-            buttonRel="nofollow"
-            buttonIsStickyAnchor
-            buttonHref={
-              saleState === "open" && standardOffer.salesEnabled
-                ? buildCheckoutHref({
-                    offerId: standardOffer.id,
-                    productId: product.id,
-                  })
-                : undefined
-            }
-          />
-        ) : null}
-        {plusOffer ? (
-          <CourseCard
-            analyticsId={`${product.code}:${plusOffer.code}`}
-            title={t("tariffs.plus.title")}
-            subtitle={t("tariffs.plus.subtitle")}
-            cardContent={
-              <TarifContentBox>
-                <TariffContentList>
-                  <li>{t("tariffs.plus.features.1")}</li>
-                  <li>{t("tariffs.plus.features.2")}</li>
-                  <li>{t("tariffs.plus.features.3")}</li>
-                  <li>{t("tariffs.plus.features.4")}</li>
-                  <li>{t("tariffs.plus.features.5")}</li>
-                  <li>{t("tariffs.plus.features.6")}</li>
-                  <li>{t("tariffs.plus.features.7")}</li>
-                  <li>{t("tariffs.plus.features.8")}</li>
-                  <li>{t("tariffs.plus.features.9")}</li>
-                  <li>{t("tariffs.plus.features.10")}</li>
-                </TariffContentList>
-                <ProductFact
-                  label={t("tariffs.priceLabel")}
-                  value={formatOfferPrice(plusOffer.prices)}
-                />
-              </TarifContentBox>
-            }
-            buttonText={
-              saleState === "open" && plusOffer.salesEnabled
-                ? t("tariffs.buyButton")
-                : undefined
-            }
-            buttonAnalytics={{
-              id: "buy_online_group",
-              offer_code: plusOffer.code,
-              offer_id: plusOffer.id,
-              placement: "tariff_plus",
-              product_code: product.code,
-              product_id: product.id,
-            }}
-            buttonPrefetch={false}
-            buttonRel="nofollow"
-            buttonIsStickyAnchor
-            buttonHref={
-              saleState === "open" && plusOffer.salesEnabled
-                ? buildCheckoutHref({
-                    offerId: plusOffer.id,
-                    productId: product.id,
-                  })
-                : undefined
-            }
-          />
-        ) : null}
-      </TariffOptionsBox>
+      <TariffTabs
+        ariaLabel={t("tariffs.switchLabel")}
+        defaultKey={plusOffer ? "plus" : "standard"}
+        tabs={[
+          ...(standardOffer
+            ? [
+                {
+                  key: "standard",
+                  label: t("tariffs.standard.title"),
+                  panel: (
+                    <CourseCard
+                      analyticsId={`${product.code}:${standardOffer.code}`}
+                      title={t("tariffs.standard.title")}
+                      subtitle={t("tariffs.standard.subtitle")}
+                      cardContent={
+                        <TarifContentBox>
+                          <TariffContentList>
+                            <li>{t("tariffs.standard.features.1")}</li>
+                            <li>{t("tariffs.standard.features.2")}</li>
+                            <li>{t("tariffs.standard.features.3")}</li>
+                            <li>{t("tariffs.standard.features.4")}</li>
+                            <li>{t("tariffs.standard.features.5")}</li>
+                            <li>{t("tariffs.standard.features.6")}</li>
+                          </TariffContentList>
+                          <ProductFact
+                            label={t("tariffs.priceLabel")}
+                            value={formatOfferPrice(standardOffer.prices)}
+                          />
+                        </TarifContentBox>
+                      }
+                      buttonText={
+                        saleState === "open" && standardOffer.salesEnabled
+                          ? t("tariffs.buyButton")
+                          : undefined
+                      }
+                      buttonAnalytics={{
+                        id: "buy_online_group",
+                        offer_code: standardOffer.code,
+                        offer_id: standardOffer.id,
+                        placement: "tariff_standard",
+                        product_code: product.code,
+                        product_id: product.id,
+                      }}
+                      buttonPrefetch={false}
+                      buttonRel="nofollow"
+                      buttonIsStickyAnchor
+                      buttonHref={
+                        saleState === "open" && standardOffer.salesEnabled
+                          ? buildCheckoutHref({
+                              offerId: standardOffer.id,
+                              productId: product.id,
+                            })
+                          : undefined
+                      }
+                    />
+                  ),
+                },
+              ]
+            : []),
+          ...(plusOffer
+            ? [
+                {
+                  key: "plus",
+                  label: t("tariffs.plus.title"),
+                  badge: t("tariffs.popular"),
+                  panel: (
+                    <CourseCard
+                      analyticsId={`${product.code}:${plusOffer.code}`}
+                      title={t("tariffs.plus.title")}
+                      subtitle={t("tariffs.plus.subtitle")}
+                      cardContent={
+                        <TarifContentBox>
+                          {/* Features 1-5 of Plus repeat Standard word for word. */}
+                          <TariffIncludes>
+                            {t("tariffs.plus.includesStandard")}
+                          </TariffIncludes>
+                          <TariffContentList>
+                            <li>{t("tariffs.plus.features.6")}</li>
+                            <li>{t("tariffs.plus.features.7")}</li>
+                            <li>{t("tariffs.plus.features.8")}</li>
+                            <li>{t("tariffs.plus.features.9")}</li>
+                            <li>{t("tariffs.plus.features.10")}</li>
+                          </TariffContentList>
+                          <ProductFact
+                            label={t("tariffs.priceLabel")}
+                            value={formatOfferPrice(plusOffer.prices)}
+                          />
+                        </TarifContentBox>
+                      }
+                      buttonText={
+                        saleState === "open" && plusOffer.salesEnabled
+                          ? t("tariffs.buyButton")
+                          : undefined
+                      }
+                      buttonAnalytics={{
+                        id: "buy_online_group",
+                        offer_code: plusOffer.code,
+                        offer_id: plusOffer.id,
+                        placement: "tariff_plus",
+                        product_code: product.code,
+                        product_id: product.id,
+                      }}
+                      buttonPrefetch={false}
+                      buttonRel="nofollow"
+                      buttonIsStickyAnchor
+                      buttonHref={
+                        saleState === "open" && plusOffer.salesEnabled
+                          ? buildCheckoutHref({
+                              offerId: plusOffer.id,
+                              productId: product.id,
+                            })
+                          : undefined
+                      }
+                    />
+                  ),
+                },
+              ]
+            : []),
+        ]}
+      />
     </TariffSection>
   );
 
@@ -307,6 +328,7 @@ export default async function OnlineGroupPage() {
         </VideoSection>
         {renderTariffSection(saleState)}
         <SuggestionGrid
+          compactBelow={920}
           components={{
             Section: AboutCourseSection,
             Title: AboutCourseTitle,
