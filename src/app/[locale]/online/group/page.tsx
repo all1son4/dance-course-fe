@@ -173,7 +173,10 @@ export default async function OnlineGroupPage() {
   );
 
   const renderTariffSection = (saleState: ProductSaleState) => (
-    <TariffSection id="tariffs">
+    // The whole tariff section is a sticky-CTA anchor: while any part of it
+    // is on screen the floating "Choose a plan" bar has nothing to add (on
+    // phones the visible card's button may be off to the side of the track).
+    <TariffSection id="tariffs" {...stickyCtaAnchorProps}>
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
       {saleState !== "open" && <ClosedSalesNotice text={commonT("salesUnavailable")} />}
       <TariffTabs
