@@ -873,6 +873,7 @@
   },
   "SellableProducts": {
     "buyButton": "Kup",
+    "priceLabel": "Cena",
     "firstTouch": {
       "title": "Kurs dla początkujących \"First Touch\"",
       "description": {
