@@ -119,6 +119,7 @@ const ChevronDownIcon = () => (
 );
 
 export type CheckoutStepView = {
+  canContinue: boolean;
   id: PaymentStep;
   isOpen: boolean;
   meta: string;
@@ -468,19 +469,21 @@ export const CheckoutForm = ({
                     <Inputs>
                       {fields.filter((field) => field.step === step.id).map(renderInput)}
                     </Inputs>
-                    <StepActions>
-                      <Button
-                        analytics={{
-                          id: `checkout_step_${step.id}_continue`,
-                          placement: "checkout",
-                        }}
-                        buttonText={stepCopy.continue}
-                        onClick={() => onStepContinue(step.id)}
-                        size="sm"
-                        type="button"
-                        width="fit-content"
-                      />
-                    </StepActions>
+                    {step.canContinue ? (
+                      <StepActions>
+                        <Button
+                          analytics={{
+                            id: `checkout_step_${step.id}_continue`,
+                            placement: "checkout",
+                          }}
+                          buttonText={stepCopy.continue}
+                          onClick={() => onStepContinue(step.id)}
+                          size="sm"
+                          type="button"
+                          width="fit-content"
+                        />
+                      </StepActions>
+                    ) : null}
                   </>
                 )}
               </StepBodyContent>

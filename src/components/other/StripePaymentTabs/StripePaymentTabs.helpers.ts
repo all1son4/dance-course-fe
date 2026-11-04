@@ -32,6 +32,7 @@ export type StripePaymentFormProps = {
   resultOfferId?: string | null;
   resultProductCode?: string | null;
   resultProductId?: string | null;
+  resultRenewalSlug?: string | null;
   resultValue?: number | null;
   updatingText: string;
   verificationUnresolvedText: ReactNode;

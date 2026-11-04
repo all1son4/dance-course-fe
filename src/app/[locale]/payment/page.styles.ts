@@ -787,7 +787,7 @@ export const SummaryBoxDesktop = styled.div`
   max-width: 480px;
   height: fit-content;
   position: sticky;
-  top: 200px;
+  top: calc(var(--header-clearance) + 14px);
   right: 0;
 
   @media (max-width: 1140px) {
@@ -894,6 +894,12 @@ export const SummaryBoxParahraphs = styled.div`
     letter-spacing: 0;
     margin: 0;
     color: var(--ink-muted);
+  }
+
+  /* The pinned card has to keep its price on a laptop screen. The buyer read
+     this copy on the course page; the tariff, terms and amount stay. */
+  @media (min-width: 921px) and (max-height: 860px) {
+    display: none;
   }
 `;
 
@@ -1005,13 +1011,11 @@ export const SummaryBarHead = styled.button`
   }
 `;
 
+/* Product and tariff together can take two lines; neither may be cut off. */
 export const SummaryBarTitle = styled.span`
-  overflow: hidden;
   font-size: var(--text-body-sm);
   font-weight: 600;
   line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 `;
 
 export const SummaryBarStep = styled.span`
@@ -1060,11 +1064,14 @@ export const SummaryBarChevron = styled.span`
 `;
 
 export const SummaryBarDropdown = styled.div<{ $isOpen: boolean }>`
+  /* Dense enough that the form and its buttons do not bleed through the copy. */
   ${glass({
+    variant: "dialog",
     frost: "live",
     radius: "24px",
+    bgParam: "rgba(244, 245, 248, 0.94)",
+    fillPercent: 92,
     hoverEffect: false,
-    fillPercent: 88,
   })}
 
   position: absolute;

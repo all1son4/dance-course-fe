@@ -33,7 +33,7 @@ import {
 } from "@/lib/birthday-popup";
 import {
   isChoreoTutorialProduct,
-  shouldShowOfferLabel,
+  shouldNameOfferAtCheckout,
 } from "@/lib/choreo-offer-presentation";
 import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { getEmailSuggestion } from "@/lib/email-suggestion";
@@ -765,12 +765,19 @@ const PaymentPage = observer(function PaymentPage({
   const firstIncompleteField = checkoutInputFields.find(
     (field) => !paymentStore.isCustomerFieldValid(field.name),
   );
-  const isStepComplete = (stepId: (typeof PAYMENT_STEPS)[number]) =>
-    stepId === "payment"
+  const isStepComplete = (stepId: (typeof PAYMENT_STEPS)[number]) => {
+    // A renewal is locked until Telegram confirms the account, whatever the
+    // fields hold: the verify button lives in this step, so it stays open.
+    if (stepId === "access" && !isRenewalVerified) {
+      return false;
+    }
+
+    return stepId === "payment"
       ? paymentStore.areAllAgreementsAccepted && !firstIncompleteField
       : checkoutInputFields
           .filter((field) => field.step === stepId)
           .every((field) => paymentStore.isCustomerFieldValid(field.name));
+  };
   const isCheckoutReady = PAYMENT_STEPS.every(isStepComplete);
   // Until the buyer touches the form the open step follows the data - a
   // restored draft lands straight on the payment step. From the first focus on
@@ -797,6 +804,8 @@ const PaymentPage = observer(function PaymentPage({
     return values.join(" · ");
   };
   const checkoutSteps: CheckoutStepView[] = PAYMENT_STEPS.map((stepId, index) => ({
+    // Before Telegram confirms a renewal there is nowhere to continue to.
+    canContinue: stepId !== "access" || isRenewalVerified,
     id: stepId,
     isOpen: stepId === openStep,
     meta: stepId === "payment" ? t("steps.payment.meta") : "",
@@ -849,6 +858,14 @@ const PaymentPage = observer(function PaymentPage({
   };
 
   const handleStepContinue = (stepId: PaymentStep) => {
+    if (stepId === "access" && !isRenewalVerified) {
+      // Every other field is locked until the blue button is pressed: the only
+      // thing to point at is the handle it verifies.
+      paymentStore.touchCustomerField("nickname");
+      document.getElementById("nickname")?.focus();
+      return;
+    }
+
     const invalidFields = checkoutInputFields.filter(
       (field) => field.step === stepId && !paymentStore.isCustomerFieldValid(field.name),
     );
@@ -860,7 +877,12 @@ const PaymentPage = observer(function PaymentPage({
       return;
     }
 
-    const nextStep = PAYMENT_STEPS[PAYMENT_STEPS.indexOf(stepId) + 1] ?? "payment";
+    // Coming back through "Edit", steps that are already done are not walked
+    // through again.
+    const nextStep =
+      PAYMENT_STEPS.slice(PAYMENT_STEPS.indexOf(stepId) + 1).find(
+        (laterStep) => !isStepComplete(laterStep),
+      ) ?? "payment";
 
     if (canUseAnalytics) {
       void trackAnalyticsEvent("checkout_step_completed", {
@@ -877,6 +899,26 @@ const PaymentPage = observer(function PaymentPage({
     setOpenedStep(stepId);
     revealStep(stepId);
   };
+
+  // Telegram has just confirmed a renewal and may have filled the profile in:
+  // the buyer is asked to check it, so the receipt details open rather than
+  // jumping past them to the payment.
+  const previousRenewalStatusRef = useRef(renewalStatus);
+  useEffect(() => {
+    const previousStatus = previousRenewalStatusRef.current;
+    previousRenewalStatusRef.current = renewalStatus;
+
+    if (previousStatus !== "verifying" || renewalStatus !== "verified") {
+      return;
+    }
+
+    const isAccessFilled = checkoutInputFields
+      .filter((field) => field.step === "access")
+      .every((field) => paymentStore.isCustomerFieldValid(field.name));
+
+    setOpenedStep(isAccessFilled ? "billing" : "access");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the status change only
+  }, [renewalStatus]);
   const privacyPolicyLink = (chunks: ReactNode) => (
     <AgreementLink
       href="/privacy-policy"
@@ -927,6 +969,12 @@ const PaymentPage = observer(function PaymentPage({
           ? "onlineGroupAnnaStrok.accessNotePlus"
           : paymentStore.selectedProduct.accessNoteKey,
       );
+  const namedOfferLabel = shouldNameOfferAtCheckout(
+    paymentStore.selectedProduct,
+    paymentStore.selectedOffer.id,
+  )
+    ? productT(paymentStore.selectedOffer.labelKey)
+    : "";
   const summaryProps: Omit<CheckoutSummaryCardProps, "title"> = {
     amountLabel: t("summary.amountLabel"),
     currencyLabel: t("summary.currencyLabel"),
@@ -954,14 +1002,9 @@ const PaymentPage = observer(function PaymentPage({
     isCurrencyLocked: isPaymentSubmitting,
     isLoading: paymentStore.catalogStatus === "loading",
     isRenewalCheckout,
-    offerSummary:
-      isOnlineGroupCheckout ||
-      (isChoreoTutorialProduct(paymentStore.selectedProduct) &&
-        shouldShowOfferLabel(paymentStore.selectedProduct, paymentStore.selectedOffer.id))
-        ? t("summary.offerLabel", {
-            offer: productT(paymentStore.selectedOffer.labelKey),
-          })
-        : null,
+    offerSummary: namedOfferLabel
+      ? t("summary.offerLabel", { offer: namedOfferLabel })
+      : null,
     onCurrencyChange: handleCurrencyChange,
     renewalDescription: t("renewal.summaryCard.description"),
     selectedCurrency: paymentStore.selectedCurrency,
@@ -991,6 +1034,7 @@ const PaymentPage = observer(function PaymentPage({
     resultOfferCode: paymentStore.selectedOffer.code,
     resultProductId: paymentStore.selectedProductId,
     resultProductCode: paymentStore.selectedProduct.code,
+    resultRenewalSlug: renewalSlug || undefined,
     resultValue: paymentStore.selectedPrice,
     isRenewalCheckout,
   };
@@ -1029,7 +1073,11 @@ const PaymentPage = observer(function PaymentPage({
               {...summaryProps}
               progressRatio={progressRatio}
               stepText={stepText}
-              title={selectedProductCompactTitle}
+              title={
+                namedOfferLabel
+                  ? `${selectedProductCompactTitle} · ${namedOfferLabel}`
+                  : selectedProductCompactTitle
+              }
             />
           </SummaryBoxMobile>
         )}

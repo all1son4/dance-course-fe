@@ -22,7 +22,7 @@ import SuccessContent from "./success-content";
 import { SuccessEntrance } from "./success-entrance.styles";
 import SuccessRedirectGuard from "./success-redirect-guard";
 
-const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
+const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency", "renewal"] as const;
 
 type SuccessPageSearchParams = Record<string, string | string[] | undefined>;
 type SuccessPageProps = {

@@ -20,7 +20,7 @@ import {
 import { getResultReceipt } from "../result-receipt";
 import FailedPageGuard from "./failed-page-guard";
 
-const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency"] as const;
+const CHECKOUT_CONTEXT_KEYS = ["product", "offer", "currency", "renewal"] as const;
 type FailedPageSearchParams = Record<string, string | string[] | undefined>;
 type FailedPageProps = {
   searchParams?: Promise<FailedPageSearchParams> | FailedPageSearchParams;
