@@ -226,6 +226,51 @@ a {
   }
 }
 
+/* Page transitions (components/layout/PageTransition; off switch:
+   PAGE_TRANSITIONS_ENABLED in lib/page-transitions.ts). A route change
+   cross-fades the whole page as one snapshot (`root`): the fixed header pill,
+   the sticky CTA and any open banner are pixel-identical in the old and new
+   picture, and the plus-lighter blend of a cross-fade keeps identical pixels
+   exactly as they are - nothing in the chrome moves or flickers. Only these
+   pseudo-elements are styled, and they exist only while a transition runs;
+   browsers without view transitions never see any of this. */
+::view-transition {
+  /* Clicks during the fade reach the live page instead of being swallowed. */
+  pointer-events: none;
+}
+
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--motion-slow);
+  animation-timing-function: var(--ease-standard);
+}
+
+/* The invisible marker that triggers the transition has nothing to show and
+   must not keep the transition alive past the page's own fade. */
+::view-transition-group(.page-route-marker) {
+  display: none;
+  animation: none;
+}
+
+::view-transition-old(.page-route-marker),
+::view-transition-new(.page-route-marker) {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* PageTransition starts no transition under reduced motion; this is the
+     backstop should one run anyway. Zero, not `animation: none`: without
+     their fill the old and new snapshots would sit stacked in plus-lighter
+     for a frame (a white flash). */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
 @media print {
   [data-reveal],
   [data-fade] {
