@@ -1,5 +1,25 @@
 import Link from "next/link";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
+
+/*
+ * The two legal links are 14px-tall caption text, 12px apart - on phones they
+ * wrap onto two lines. Their hit areas grow without moving anything: ±6px
+ * (half the gap) towards each other, and 24px outwards into the empty divider
+ * margin above / the space before the copyright below. Both arrangements
+ * (side by side, stacked) end up >= 44px tall with no shared tap point.
+ */
+const legalLinkHitArea = (outward: "up" | "down") => css`
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: -6px;
+    right: -6px;
+    top: ${outward === "up" ? "-24px" : "-6px"};
+    bottom: ${outward === "down" ? "-24px" : "-6px"};
+  }
+`;
 
 export const FooterBox = styled.footer`
   display: flex;
@@ -193,6 +213,7 @@ export const PrivacyPolicy = styled(Link)`
   margin: 0;
   color: var(--ink-muted);
   transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
+  ${legalLinkHitArea("up")}
 
   &:focus-visible {
     outline: var(--focus-ring);
@@ -230,6 +251,7 @@ export const CookieSettingsButton = styled.button`
   padding: 0;
   color: var(--ink-muted);
   transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
+  ${legalLinkHitArea("down")}
 
   &:focus-visible {
     outline: var(--focus-ring);

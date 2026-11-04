@@ -363,11 +363,31 @@ export const Inputs = styled.div`
     column-gap: 12px;
     row-gap: 20px;
   }
+
+  /* Below the 375px phones a half-width field is too narrow for its own
+     placeholder ("Почтовый код", "Kod pocztowy" are cut mid-word), so city
+     and postal code stack like every other field. */
+  @media (max-width: 374px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 `;
 
 export const InputField = styled.div<{ $layout: "full" | "half" }>`
   grid-column: ${({ $layout }) => ($layout === "half" ? "span 1" : "1 / -1")};
   min-width: 0;
+
+  /* Side by side on 375-420px phones the postal-code placeholder is a few px
+     wider than the field. The right padding only reserves room for the text
+     end, so trimming it changes nothing visible but lets the hint fit. */
+  ${({ $layout }) =>
+    $layout === "half" &&
+    `
+    @media (max-width: 420px) {
+      & input {
+        padding-right: 10px;
+      }
+    }
+  `}
 `;
 
 export const Checkboxes = styled.div`
