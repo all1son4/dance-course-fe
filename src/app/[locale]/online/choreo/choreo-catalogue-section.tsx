@@ -6,7 +6,7 @@ import { getStorefrontSellableProducts } from "@/lib/sales-availability";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import { getChoreos, getChoreoStartingPrice } from "./constants";
-import { ChoreoSection } from "./page.styles";
+import { ChoreoCatalogue, ChoreoCatalogueTitle, ChoreoSection } from "./page.styles";
 
 export default async function ChoreoCatalogueSection() {
   // Every string the cards need - product titles, offer labels, the bundle's
@@ -24,10 +24,13 @@ export default async function ChoreoCatalogueSection() {
   return (
     // The whole catalogue counts as the sticky bar's anchor: while any card is
     // on screen there is nothing to "choose" further down.
-    <ChoreoSection id="choreo-section" {...stickyCtaAnchorProps}>
-      {choreos.map(({ id, ...choreo }) => (
-        <ChoreoCard key={id} {...choreo} />
-      ))}
+    <ChoreoCatalogue id="choreo-section" {...stickyCtaAnchorProps}>
+      <ChoreoCatalogueTitle>{pageT("catalogue.title")}</ChoreoCatalogueTitle>
+      <ChoreoSection>
+        {choreos.map(({ id, ...choreo }) => (
+          <ChoreoCard key={id} {...choreo} />
+        ))}
+      </ChoreoSection>
       {/* Mirrors the hero's "choose a choreography" button. */}
       <StickyCta
         analytics={{ id: "select_choreo", placement: "choreo_sticky" }}
@@ -36,6 +39,6 @@ export default async function ChoreoCatalogueSection() {
         title={pageT("hero.stickyTitle")}
         note={getChoreoStartingPrice(translate, catalogProducts)}
       />
-    </ChoreoSection>
+    </ChoreoCatalogue>
   );
 }
