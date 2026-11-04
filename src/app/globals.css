@@ -258,44 +258,6 @@ a {
   animation: none;
 }
 
-/* Tap-to-open tiles (components/cards/SuggestionTiles). Each tile's box
-   morphs to its new place and size; inside a clipped, rounded box the old
-   and new pictures stay at their own size (no stretched text) and
-   cross-fade. Only the compositor works: no layout runs during the morph. */
-::view-transition-group(.suggestion-tile) {
-  animation-duration: 420ms;
-  animation-timing-function: var(--ease-standard);
-  overflow: clip;
-  border-radius: 28px;
-}
-
-::view-transition-old(.suggestion-tile),
-::view-transition-new(.suggestion-tile) {
-  width: 100%;
-  height: 100%;
-  object-fit: none;
-  object-position: left top;
-}
-
-::view-transition-old(.suggestion-tile) {
-  animation-duration: 200ms;
-}
-
-::view-transition-new(.suggestion-tile) {
-  animation-duration: 340ms;
-}
-
-/* The rest of the page only shifts below the grid; cross-fading it would
-   ghost the text there, so during a tile morph it switches at once. */
-:root.tiles-morphing::view-transition-old(root) {
-  animation: none;
-  opacity: 0;
-}
-
-:root.tiles-morphing::view-transition-new(root) {
-  animation: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* PageTransition starts no transition under reduced motion; this is the
      backstop should one run anyway. Zero, not `animation: none`: without

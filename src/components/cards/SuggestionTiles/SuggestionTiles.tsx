@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   type ReactNode,
   useEffect,
   useId,
@@ -8,11 +9,19 @@ import {
   useRef,
   useState,
 } from "react";
-import { flushSync } from "react-dom";
 
 import { PanelText } from "@/components/cards/IconTextCard/IconTextCard.styles";
 
 import {
+  DetailCaret,
+  DetailClip,
+  DetailClose,
+  DetailContent,
+  DetailHeader,
+  DetailPanel,
+  DetailRow,
+  DetailStack,
+  DetailTitle,
   Tile,
   TileBody,
   TileButton,
@@ -34,171 +43,253 @@ type SuggestionTilesProps = {
   items: SuggestionTileItem[];
   /** Widest viewport (px) that gets the compact, tap-to-open grid. */
   compactBelow: number;
+  /** Close button label in the detail panel. */
+  closeLabel?: string;
 };
 
-const MOVE_DURATION_MS = 360;
-const MOVE_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-/** `view-transition-class` of every tile; the morph is styled in globals.css. */
-const TILE_TRANSITION_CLASS = "suggestion-tile";
-/** On <html> while tiles morph: the page around them switches without a fade. */
-const MORPHING_ROOT_CLASS = "tiles-morphing";
+type TileRow = { index: number; keys: string[] };
 
-type ViewTransitionDocument = Document & {
-  startViewTransition?: (update: () => void) => { finished: Promise<void> };
+const SINGLE_COLUMN_QUERY = "(max-width: 360px)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+/* Matches OPEN_MS / EASE in the styles. */
+const RESIZE_MS = 420;
+const RESIZE_EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+/* Space kept above an opened tile when the page scrolls the panel into view
+   (the fixed header pill sits there). */
+const TOP_CLEARANCE_PX = 110;
+
+const buildRows = (keys: string[], columns: number): TileRow[] => {
+  const rows: TileRow[] = [];
+  for (let start = 0; start < keys.length; start += columns) {
+    rows.push({ index: rows.length, keys: keys.slice(start, start + columns) });
+  }
+  return rows;
 };
 
 /**
- * "What you get" items: a glass column on wide screens, a two-column grid of
- * icon + title tiles below `compactBelow`. Tapping a tile opens it across the
- * row (one at a time) and the neighbours glide to their new places.
- *
- * Where the browser has view transitions every tile morphs - position and
- * size together - from its old box to its new one, the content cross-fading
- * inside a clipped, rounded box (globals.css, "Tap-to-open tiles"). Elsewhere
- * a transform-only FLIP moves the tiles and CSS grows the opened text.
+ * "What you get" items: a glass column on wide screens, a grid of icon +
+ * title tiles below `compactBelow`. Tapping a tile opens a full-width panel
+ * with its text right under the tile's row; tiles never move sideways, the
+ * rows below just slide down. Choosing the other tile of the same row keeps
+ * the panel open, slides its caret across and eases the height to the new
+ * text; choosing a tile in another row closes one panel while the other opens.
  */
-export default function SuggestionTiles({ compactBelow, items }: SuggestionTilesProps) {
+export default function SuggestionTiles({
+  closeLabel = "Close",
+  compactBelow,
+  items,
+}: SuggestionTilesProps) {
   const baseId = useId();
-  const gridRef = useRef<HTMLDivElement>(null);
-  const previousRects = useRef<Map<string, DOMRect> | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openKey, setOpenKey] = useState<string | null>(null);
   const [isCompact, setIsCompact] = useState(false);
-  const [canMorph, setCanMorph] = useState(false);
-  const transitionPrefix = `st${baseId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const [columns, setColumns] = useState(2);
+  // What each row's panel last showed, so a closing panel keeps its text
+  // while it folds away.
+  const [rowContent, setRowContent] = useState<Record<number, string>>({});
+  const clipRefs = useRef(new Map<number, HTMLDivElement>());
+  const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
+  const pendingResize = useRef<{ row: number; height: number } | null>(null);
+  // The text that is fading out on a same-row switch.
+  const [leaving, setLeaving] = useState<{ row: number; key: string } | null>(null);
+  const leaveTimer = useRef<number | undefined>(undefined);
+  const scrollTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    setCanMorph(
-      typeof (document as ViewTransitionDocument).startViewTransition === "function",
-    );
-  }, []);
-
-  useEffect(() => {
-    const query = window.matchMedia(`(max-width: ${compactBelow}px)`);
+    const compactQuery = window.matchMedia(`(max-width: ${compactBelow}px)`);
+    const singleQuery = window.matchMedia(SINGLE_COLUMN_QUERY);
     const sync = () => {
-      setIsCompact(query.matches);
-      if (!query.matches) setOpenId(null);
+      setIsCompact(compactQuery.matches);
+      setColumns(singleQuery.matches ? 1 : 2);
+      if (!compactQuery.matches) setOpenKey(null);
     };
 
     sync();
-    query.addEventListener("change", sync);
-    return () => query.removeEventListener("change", sync);
+    compactQuery.addEventListener("change", sync);
+    singleQuery.addEventListener("change", sync);
+    return () => {
+      compactQuery.removeEventListener("change", sync);
+      singleQuery.removeEventListener("change", sync);
+      window.clearTimeout(scrollTimer.current);
+      window.clearTimeout(leaveTimer.current);
+    };
   }, [compactBelow]);
 
+  const keys = items.map(({ id }) => String(id));
+  const rows = buildRows(keys, columns);
+  const rowOf = (key: string) => rows.find((row) => row.keys.includes(key))?.index ?? -1;
+  const itemByKey = new Map(items.map((item) => [String(item.id), item]));
+  const openRow = openKey ? rowOf(openKey) : -1;
+
+  // Same-row switch: the panel stays open but its text changes, so ease its
+  // height from the old text to the new one.
   useLayoutEffect(() => {
-    const before = previousRects.current;
-    const grid = gridRef.current;
-    previousRects.current = null;
-    if (!before || !grid) return;
+    const pending = pendingResize.current;
+    pendingResize.current = null;
+    if (!pending) return;
 
-    for (const tile of Array.from(grid.children) as HTMLElement[]) {
-      const previous = before.get(tile.dataset.tileId ?? "");
-      if (!previous) continue;
+    const clip = clipRefs.current.get(pending.row);
+    if (!clip) return;
+    const next = clip.getBoundingClientRect().height;
+    if (Math.abs(next - pending.height) < 1) return;
 
-      const next = tile.getBoundingClientRect();
-      const dx = previous.left - next.left;
-      const dy = previous.top - next.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+    clip.animate([{ height: `${pending.height}px` }, { height: `${next}px` }], {
+      duration: RESIZE_MS,
+      easing: RESIZE_EASING,
+    });
+  }, [openKey]);
 
-      tile.animate(
-        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }],
-        {
-          duration: MOVE_DURATION_MS,
-          easing: MOVE_EASING,
-        },
-      );
-    }
-  }, [openId]);
+  const revealPanel = (key: string) => {
+    window.clearTimeout(scrollTimer.current);
+    scrollTimer.current = window.setTimeout(() => {
+      const clip = clipRefs.current.get(rowOf(key));
+      const button = buttonRefs.current.get(key);
+      if (!clip || !button) return;
 
-  const toggle = (id: string) => {
+      const overflow = clip.getBoundingClientRect().bottom - window.innerHeight + 16;
+      const room = button.getBoundingClientRect().top - TOP_CLEARANCE_PX;
+      const distance = Math.min(overflow, room);
+      if (distance > 0) {
+        window.scrollBy({
+          top: distance,
+          behavior: window.matchMedia(REDUCED_MOTION_QUERY).matches ? "auto" : "smooth",
+        });
+      }
+    }, RESIZE_MS);
+  };
+
+  const toggle = (key: string) => {
     if (!isCompact) return;
 
-    const next = (current: string | null) => (current === id ? null : id);
-    const grid = gridRef.current;
-    const reduceMotion = window.matchMedia(REDUCED_MOTION_QUERY).matches;
-    const doc = document as ViewTransitionDocument;
-
-    if (grid && !reduceMotion && canMorph && doc.startViewTransition) {
-      const tiles = Array.from(grid.children) as HTMLElement[];
-      tiles.forEach((tile, index) => {
-        tile.style.setProperty("view-transition-name", `${transitionPrefix}-${index}`);
-        tile.style.setProperty("view-transition-class", TILE_TRANSITION_CLASS);
-      });
-      document.documentElement.classList.add(MORPHING_ROOT_CLASS);
-      const transition = doc.startViewTransition(() => {
-        flushSync(() => setOpenId(next));
-      });
-      void transition.finished.finally(() => {
-        document.documentElement.classList.remove(MORPHING_ROOT_CLASS);
-        tiles.forEach((tile) => {
-          tile.style.removeProperty("view-transition-name");
-          tile.style.removeProperty("view-transition-class");
-        });
-      });
+    if (openKey === key) {
+      setOpenKey(null);
       return;
     }
 
-    if (grid && !reduceMotion) {
-      previousRects.current = new Map(
-        (Array.from(grid.children) as HTMLElement[]).map((tile) => [
-          tile.dataset.tileId ?? "",
-          tile.getBoundingClientRect(),
-        ]),
-      );
+    const row = rowOf(key);
+    if (openKey && openRow === row && !window.matchMedia(REDUCED_MOTION_QUERY).matches) {
+      const clip = clipRefs.current.get(row);
+      if (clip)
+        pendingResize.current = { row, height: clip.getBoundingClientRect().height };
+      setLeaving({ row, key: openKey });
+      window.clearTimeout(leaveTimer.current);
+      leaveTimer.current = window.setTimeout(() => setLeaving(null), RESIZE_MS);
     }
 
-    setOpenId(next);
+    setRowContent((current) => ({ ...current, [row]: key }));
+    setOpenKey(key);
+    revealPanel(key);
   };
 
-  // Closed tiles pair up two per row; with an odd count the last one would
-  // sit alone, so it takes the full row instead (dense flow keeps the order).
-  const closedKeys = items
-    .map(({ id }) => String(id))
-    .filter((key) => !(isCompact && openId === key));
-  const loneKey = closedKeys.length % 2 === 1 ? closedKeys.at(-1) : undefined;
+  const close = () => {
+    const key = openKey;
+    setOpenKey(null);
+    if (key) buttonRefs.current.get(key)?.focus();
+  };
+
+  const renderDetail = (key: string, withClose: boolean) => {
+    const item = itemByKey.get(key);
+    return (
+      <>
+        <DetailHeader>
+          <span aria-hidden>{item?.icon}</span>
+          <DetailTitle>{item?.title}</DetailTitle>
+          {withClose ? (
+            <DetailClose type="button" aria-label={closeLabel} onClick={close}>
+              <span aria-hidden />
+            </DetailClose>
+          ) : (
+            <span />
+          )}
+        </DetailHeader>
+        <PanelText>{item?.text}</PanelText>
+      </>
+    );
+  };
+
+  const loneKey =
+    columns > 1 && keys.length % columns === 1 ? keys[keys.length - 1] : undefined;
 
   return (
-    <TilesGrid ref={gridRef} $compactBelow={compactBelow}>
-      {items.map(({ icon, id, text, title }) => {
-        const key = String(id);
-        const isOpen = isCompact && openId === key;
-        const bodyId = `${baseId}-${key}`;
+    <TilesGrid $compactBelow={compactBelow}>
+      {rows.map((row) => {
+        const isRowOpen = isCompact && openRow === row.index;
+        const shownKey = isRowOpen ? openKey : rowContent[row.index];
+        const shown = shownKey ? itemByKey.get(shownKey) : undefined;
+        const column = shownKey ? row.keys.indexOf(shownKey) : 0;
+        const caretAt = row.keys.length === 1 ? 50 : ((column + 0.5) / columns) * 100;
+        const panelId = `${baseId}-row-${row.index}`;
 
         return (
-          <Tile
-            key={key}
-            data-tile-id={key}
-            $compactBelow={compactBelow}
-            $isFullRow={isOpen || key === loneKey}
-          >
-            <TileHeading $compactBelow={compactBelow}>
-              <TileButton
-                type="button"
-                $compactBelow={compactBelow}
-                onClick={() => toggle(key)}
-                tabIndex={isCompact ? undefined : -1}
-                aria-expanded={isCompact ? isOpen : undefined}
-                aria-controls={isCompact ? bodyId : undefined}
-              >
-                <TileIcon $compactBelow={compactBelow}>{icon}</TileIcon>
-                <TileTitle $compactBelow={compactBelow}>{title}</TileTitle>
-              </TileButton>
-            </TileHeading>
-            <TileMark aria-hidden $compactBelow={compactBelow} $isOpen={isOpen} />
-            <TileBody
-              id={bodyId}
+          <Fragment key={row.index}>
+            {row.keys.map((key) => {
+              const item = itemByKey.get(key);
+              const isOpen = isCompact && openKey === key;
+
+              return (
+                <Tile key={key} $compactBelow={compactBelow} $isFullRow={key === loneKey}>
+                  <TileHeading $compactBelow={compactBelow}>
+                    <TileButton
+                      ref={(node) => {
+                        if (node) buttonRefs.current.set(key, node);
+                        else buttonRefs.current.delete(key);
+                      }}
+                      type="button"
+                      id={`${baseId}-tile-${key}`}
+                      $compactBelow={compactBelow}
+                      $isOpen={isOpen}
+                      onClick={() => toggle(key)}
+                      tabIndex={isCompact ? undefined : -1}
+                      aria-expanded={isCompact ? isOpen : undefined}
+                      aria-controls={isCompact ? panelId : undefined}
+                    >
+                      <TileIcon $compactBelow={compactBelow}>{item?.icon}</TileIcon>
+                      <TileTitle $compactBelow={compactBelow}>{item?.title}</TileTitle>
+                      {isCompact && <TileMark aria-hidden $isOpen={isOpen} />}
+                    </TileButton>
+                  </TileHeading>
+                  <TileBody $compactBelow={compactBelow}>
+                    <PanelText>{item?.text}</PanelText>
+                  </TileBody>
+                </Tile>
+              );
+            })}
+            <DetailRow
               $compactBelow={compactBelow}
-              $isOpen={isOpen}
-              $isInstant={canMorph}
-              aria-hidden={isCompact && !isOpen ? true : undefined}
+              $isOpen={isRowOpen}
+              id={panelId}
+              role={isCompact ? "region" : undefined}
+              aria-labelledby={shownKey ? `${baseId}-tile-${shownKey}` : undefined}
+              aria-hidden={isRowOpen ? undefined : true}
+              inert={!isRowOpen}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") close();
+              }}
             >
-              <div>
-                <div>
-                  <PanelText>{text}</PanelText>
-                </div>
-              </div>
-            </TileBody>
-          </Tile>
+              <DetailClip
+                ref={(node) => {
+                  if (node) clipRefs.current.set(row.index, node);
+                  else clipRefs.current.delete(row.index);
+                }}
+              >
+                {shown && (
+                  <DetailPanel $isOpen={isRowOpen}>
+                    <DetailCaret aria-hidden $notchAt={caretAt} />
+                    <DetailStack>
+                      {leaving?.row === row.index && leaving.key !== shownKey && (
+                        <DetailContent key={`out-${leaving.key}`} $isLeaving aria-hidden>
+                          {renderDetail(leaving.key, false)}
+                        </DetailContent>
+                      )}
+                      {/* Keyed by item: new text plays its entrance again. */}
+                      <DetailContent key={shownKey}>
+                        {renderDetail(shownKey as string, true)}
+                      </DetailContent>
+                    </DetailStack>
+                  </DetailPanel>
+                )}
+              </DetailClip>
+            </DetailRow>
+          </Fragment>
         );
       })}
     </TilesGrid>
