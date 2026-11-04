@@ -6,21 +6,18 @@ import styled, { keyframes } from "styled-components";
  * unavailable never play it. Timeline from the moment the payment is
  * confirmed (all offsets after --motion-settle):
  *
- *   0ms     brand-tinted disc pops in (same stamp as the failed page's icon)
- *   0ms     ring draws clockwise from the top            (560ms)
- *   380ms   check mark draws                             (380ms)
- *   760ms   one soft halo breathes out of the ring       (640ms)
- *   +360ms  title, copy and actions rise as before, just later, so the
- *           check is half drawn when the heading lands
+ *   0ms     the green success icon pops in (like the failed page's icon)
+ *   360ms   one soft green halo breathes out of it       (640ms)
+ *   +160ms  title, copy and actions rise as before, just a beat later
  *   ready   the Telegram access button rises and gets one brand glow - the
  *           next step (it usually arrives a moment later than the rest)
  *
  * Every animated part's resting style is its final pose, and reduced motion
- * drops the animations outright, so it is simply a static check.
+ * drops the animations outright, so it is simply the static icon.
  */
 
 /** How much later the title/copy/actions rise on the success page. */
-const SUCCESS_TEXT_DELAY = "360ms";
+const SUCCESS_TEXT_DELAY = "160ms";
 
 const DRAW_EASE = "var(--ease-standard, cubic-bezier(0.22, 1, 0.36, 1))";
 const POP_EASE = "cubic-bezier(0.34, 1.4, 0.64, 1)";
@@ -30,14 +27,6 @@ const discPop = keyframes`
   from {
     opacity: 0;
     transform: scale(0.6);
-  }
-`;
-
-/* With a 1-on/2-off dash over a path of length 1, an offset just past 1
-   puts the whole path in the gap, round caps included. */
-const strokeDraw = keyframes`
-  from {
-    stroke-dashoffset: 1.05;
   }
 `;
 
@@ -81,57 +70,34 @@ export const SuccessEntrance = styled.div`
   --result-enter-delay: ${SUCCESS_TEXT_DELAY};
 `;
 
-/** Same box as the status icon it replaces (84 / 60 / 52px), so nothing moves. */
-export const SuccessMarkSvg = styled.svg`
+/**
+ * The confirmed-payment mark keeps the site's green glass icon (the same PNG
+ * as before); it pops in like the failed page's icon and breathes out one soft
+ * green halo. Same box as before (84 / 60 / 52px), so nothing moves.
+ */
+export const SuccessMarkBox = styled.span`
+  position: relative;
   flex: 0 0 auto;
   display: block;
   width: 84px;
   height: 84px;
-  overflow: visible;
-  color: var(--brand);
+  animation: ${discPop} 520ms ${POP_EASE} ${SETTLE} backwards;
 
-  .success-mark__disc,
-  .success-mark__halo {
-    transform-box: fill-box;
-    transform-origin: center;
+  & img {
+    display: block;
+    width: 100%;
+    height: 100%;
   }
 
-  .success-mark__disc {
-    fill: currentColor;
-    fill-opacity: 0.07;
-    animation: ${discPop} 520ms ${POP_EASE} ${SETTLE} backwards;
-  }
-
-  .success-mark__ring,
-  .success-mark__check,
-  .success-mark__halo {
-    fill: none;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-  }
-
-  .success-mark__ring,
-  .success-mark__check {
-    stroke-dasharray: 1 2;
-    stroke-dashoffset: 0;
-  }
-
-  .success-mark__ring {
-    stroke-width: 3;
-    animation: ${strokeDraw} 560ms ${DRAW_EASE} ${SETTLE} backwards;
-  }
-
-  .success-mark__check {
-    stroke-width: 5;
-    animation: ${strokeDraw} 380ms var(--ease-emphasized, ease-out)
-      calc(${SETTLE} + 380ms) backwards;
-  }
-
-  .success-mark__halo {
-    stroke-width: 2;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 4%;
+    border-radius: 50%;
+    border: 2px solid var(--success);
     opacity: 0;
-    animation: ${haloBreathe} 640ms ${DRAW_EASE} calc(${SETTLE} + 760ms) both;
+    pointer-events: none;
+    animation: ${haloBreathe} 640ms ${DRAW_EASE} calc(${SETTLE} + 360ms) both;
   }
 
   @media (max-width: 520px) {
@@ -145,10 +111,9 @@ export const SuccessMarkSvg = styled.svg`
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .success-mark__disc,
-    .success-mark__ring,
-    .success-mark__check,
-    .success-mark__halo {
+    animation: none;
+
+    &::after {
       animation: none;
     }
   }
