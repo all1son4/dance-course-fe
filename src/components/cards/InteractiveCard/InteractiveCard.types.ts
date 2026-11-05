@@ -18,6 +18,8 @@ export type InteractiveCardProps = {
   analyticsCollection?: "offline_courses" | "online_courses";
   analyticsId?: string;
   title: string;
+  /** A photo in place of the tinted header; the title then sits on the photo. */
+  headerPhoto?: string;
   frost?: InteractiveCardFrost;
   /** Omit to restore the standard card, including its header and button. */
   occasion?: InteractiveCardOccasion;

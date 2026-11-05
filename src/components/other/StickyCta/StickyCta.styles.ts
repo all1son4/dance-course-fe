@@ -150,6 +150,8 @@ export const StickyCtaCard = styled.div`
        on a phone. */
     frost: "static",
     bgParam: "rgba(255, 255, 255, 0.92)",
+    /* Without this the mixin dilutes the fill to about 50%. */
+    fillPercent: 80,
     saturatePercent: 135,
     hoverEffect: false,
   })}

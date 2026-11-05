@@ -79,7 +79,7 @@ test("[BEH-ENTRY-01] First Touch entry remains a lead dialog instead of direct c
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: 'Course "First Touch"',
+      name: "Course “First Touch”",
     }),
   ).toBeVisible();
   await expect(page.locator('a[href*="/payment?"]')).toHaveCount(0);

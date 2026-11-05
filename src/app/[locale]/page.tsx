@@ -32,7 +32,6 @@ import { Insta, Logo, Quote } from "@/svg";
 import {
   AboutMeImageBox,
   AboutMeImageFrame,
-  AboutMeList,
   AboutMeParagraph,
   AboutMeParagraphs,
   AboutMeSection,
@@ -40,6 +39,12 @@ import {
   AboutMeTitle,
   AbsolutePageImage,
   AbsolutePageLogo,
+  AchievementInfo,
+  AchievementItem,
+  AchievementMeta,
+  AchievementName,
+  AchievementResult,
+  AchievementsList,
   ButtonsBox,
   CourseOptionsBox,
   CourseSection,
@@ -62,6 +67,33 @@ import {
 
 export const generateMetadata = () =>
   buildLocalizedPageMetadata({ pageKey: "home", path: "/" });
+
+const ACHIEVEMENTS = [
+  {
+    id: "stage18Solo",
+    handle: "@stage_18",
+    href: INSTAGRAM_STAGE18_URL,
+    placement: "home_about:stage18_solo",
+  },
+  {
+    id: "stage18Team",
+    handle: "@stage_18",
+    href: INSTAGRAM_STAGE18_URL,
+    placement: "home_about:stage18_team",
+  },
+  {
+    id: "wod",
+    handle: "@worldofdancepoland",
+    href: INSTAGRAM_WORLD_OF_DANCE_POLAND_URL,
+    placement: "home_about:wod",
+  },
+  {
+    id: "dib",
+    handle: "@dib.gala",
+    href: INSTAGRAM_DIB_GALA_URL,
+    placement: "home_about:dib_gala",
+  },
+] as const;
 
 export default function Home() {
   const t = useTranslations("HomePage");
@@ -154,64 +186,29 @@ export default function Home() {
           <AboutMeParagraph>{t("about.bio.2")}</AboutMeParagraph>
         </AboutMeParagraphs>
 
-        <AboutMeList>
-          <li>
-            {t("about.achievements.stage18Solo.prefix")}{" "}
-            <TrackedAnchor
-              href={INSTAGRAM_STAGE18_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              analytics={{
-                id: "achievement_instagram",
-                placement: "home_about:stage18_solo",
-              }}
-            >
-              @stage_18
-            </TrackedAnchor>{" "}
-            {t("about.achievements.stage18Solo.suffix")}
-          </li>
-          <li>
-            {t("about.achievements.stage18Team.prefix")}{" "}
-            <TrackedAnchor
-              href={INSTAGRAM_STAGE18_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              analytics={{
-                id: "achievement_instagram",
-                placement: "home_about:stage18_team",
-              }}
-            >
-              @stage_18
-            </TrackedAnchor>{" "}
-            {t("about.achievements.stage18Team.suffix")}
-          </li>
-          <li>
-            {t("about.achievements.wod.prefix")}{" "}
-            <TrackedAnchor
-              href={INSTAGRAM_WORLD_OF_DANCE_POLAND_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              analytics={{ id: "achievement_instagram", placement: "home_about:wod" }}
-            >
-              @worldofdancepoland
-            </TrackedAnchor>{" "}
-            {t("about.achievements.wod.suffix")}
-          </li>
-          <li>
-            {t("about.achievements.dib.prefix")}{" "}
-            <TrackedAnchor
-              href={INSTAGRAM_DIB_GALA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              analytics={{
-                id: "achievement_instagram",
-                placement: "home_about:dib_gala",
-              }}
-            >
-              @dib.gala
-            </TrackedAnchor>
-          </li>
-        </AboutMeList>
+        <AchievementsList>
+          {ACHIEVEMENTS.map(({ id, handle, href, placement }) => (
+            <AchievementItem key={id}>
+              <AchievementResult>
+                {t(`about.achievements.${id}.result`)}
+              </AchievementResult>
+              <AchievementInfo>
+                <AchievementName>{t(`about.achievements.${id}.title`)}</AchievementName>
+                <AchievementMeta>
+                  <TrackedAnchor
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    analytics={{ id: "achievement_instagram", placement }}
+                  >
+                    {handle}
+                  </TrackedAnchor>
+                  {` · ${t(`about.achievements.${id}.city`)}`}
+                </AchievementMeta>
+              </AchievementInfo>
+            </AchievementItem>
+          ))}
+        </AchievementsList>
       </AboutMeTextBox>
       <AboutMeImageBox>
         <AboutMeImageFrame>

@@ -185,6 +185,11 @@ export const IconBox = styled.div`
     top: 240px;
   }
 
+  /* The page gutter ends here: any negative offset scrolls the page sideways. */
+  @media (max-width: 1024px) {
+    right: 0;
+  }
+
   @media (max-width: 920px) {
     max-width: 250px;
     top: 250px;

@@ -1,10 +1,12 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { imageFadeProps } from "@/lib/reveal";
 import { Chevron } from "@/svg";
 
 import { occasionArtwork } from "./InteractiveCard.occasion";
@@ -36,6 +38,7 @@ export default function InteractiveCard({
   buttonText,
   defaultCollapseTopRow,
   frost = "static",
+  headerPhoto,
   isTopRowCollapsible,
   occasion,
   title,
@@ -85,9 +88,18 @@ export default function InteractiveCard({
         $occasion={occasion?.theme}
       >
         {OccasionBackgroundArtwork ? <OccasionBackgroundArtwork /> : null}
-        <TitleBlock $hasOccasion={Boolean(occasion)}>
+        <TitleBlock $hasOccasion={Boolean(occasion)} $hasPhoto={Boolean(headerPhoto)}>
+          {headerPhoto ? (
+            <Image
+              {...imageFadeProps}
+              src={headerPhoto}
+              alt=""
+              fill
+              sizes="(max-width: 880px) 100vw, (max-width: 1240px) 50vw, 430px"
+            />
+          ) : null}
           {OccasionHeaderArtwork ? <OccasionHeaderArtwork /> : null}
-          <Title>{title}</Title>
+          <Title $onPhoto={Boolean(headerPhoto)}>{title}</Title>
         </TitleBlock>
 
         <ContentWrapper>

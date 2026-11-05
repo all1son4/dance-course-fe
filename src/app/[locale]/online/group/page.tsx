@@ -343,6 +343,7 @@ export default async function OnlineGroupPage() {
           id="course-program"
           title={t("about.title")}
           items={onlineSuggestions}
+          photo="/images/photos/about_online_group.webp"
         />
         <Contacts layout="spaced" />
       </SpecialWrapper>

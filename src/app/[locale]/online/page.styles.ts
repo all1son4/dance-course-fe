@@ -267,7 +267,7 @@ export const StudioDanceTitle = styled.h2`
   color: var(--ink);
 
   @media (max-width: 880px) {
-    font-size: var(--text-h2);
+    font-size: var(--text-section);
   }
 `;
 

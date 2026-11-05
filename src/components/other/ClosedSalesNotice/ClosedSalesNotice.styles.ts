@@ -45,8 +45,7 @@ export const NoticeText = styled.p<{ $tone: ClosedSalesNoticeTone }>`
   line-height: 1.45;
   letter-spacing: 0;
   margin: 0;
-  color: ${({ $tone }) =>
-    $tone === "dark" ? "rgba(255, 255, 255, 0.94)" : "var(--brand)"};
+  color: ${({ $tone }) => ($tone === "dark" ? "rgba(255, 255, 255, 0.94)" : "var(--ink)")};
 `;
 
 export const NoticeIconBox = styled.div`
