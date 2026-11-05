@@ -291,40 +291,62 @@ export const AboutMeParagraph = styled.p`
   }
 `;
 
-/* Results read first: a fixed column for the place, then the category and
-   where it was won. The rows keep the width and rhythm of the text above. */
+/* Two by two while each cell still holds "@worldofdancepoland · Город" without
+   squeezing; a single column of rows as soon as the block gets narrower. Sized
+   by the block itself, because its width does not follow the screen. */
+export const AchievementsBox = styled.div`
+  width: 100%;
+  container-type: inline-size;
+`;
+
 export const AchievementsList = styled.ul`
   list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   width: 100%;
   padding: 0;
   margin: 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+
+  @container (min-width: 400px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+  }
 `;
 
 export const AchievementItem = styled.li`
   display: grid;
-  grid-template-columns: 122px minmax(0, 1fr);
-  column-gap: 16px;
+  grid-template-columns: 104px minmax(0, 1fr);
+  column-gap: 12px;
   align-items: baseline;
   padding: 13px 0;
   margin: 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
 
-  @media (max-width: 1110px) {
-    grid-template-columns: 104px minmax(0, 1fr);
-    column-gap: 12px;
+  &:last-child {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  @container (min-width: 400px) {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+    align-content: start;
+    padding: 16px 0;
+
+    &:nth-last-child(-n + 2) {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
   }
 `;
 
 export const AchievementResult = styled.p`
   margin: 0;
   color: var(--ink);
-  font-size: var(--text-lead);
+  font-size: 18px;
   font-weight: 400;
   line-height: 1.25;
 
-  @media (max-width: 1110px) {
-    font-size: 18px;
+  @container (min-width: 400px) {
+    font-size: var(--text-lead);
   }
 `;
 
