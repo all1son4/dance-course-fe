@@ -54,7 +54,8 @@ export default function Offline() {
             photo={{
               asset: HERO_MEDIA.offline,
               alt: metadataT("pages.offline.heroImageAlt"),
-              mobileSizes: "(max-width: 767px) 100vw, 0px",
+              mobileSizes:
+                "(max-width: 420px) calc(100vw - 40px), (max-width: 767px) 380px, 0px",
               desktopSizes:
                 "(max-width: 767px) 0px, (max-width: 880px) 400px, (max-width: 960px) 460px, (max-width: 1240px) 500px, 558px",
             }}

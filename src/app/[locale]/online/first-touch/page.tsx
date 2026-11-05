@@ -83,13 +83,13 @@ export default function FirstTouch() {
           photo={{
             asset: HERO_MEDIA.firstTouch,
             alt: metadataT("pages.firstTouch.heroImageAlt"),
-            mobileSizes: "(max-width: 450px) 100vw, (max-width: 767px) 90vw, 0px",
+            mobileSizes: "(max-width: 767px) calc((100vw - 40px) * 0.9), 0px",
             desktopSizes:
               "(max-width: 767px) 0px, (max-width: 920px) 380px, (max-width: 1100px) 470px, (max-width: 1240px) 500px, 660px",
           }}
           icon={{
             asset: HERO_MEDIA.firstTouchTelegram,
-            mobileSizes: "(max-width: 767px) 50vw, 0px",
+            mobileSizes: "(max-width: 767px) calc((100vw - 40px) * 0.5), 0px",
             desktopSizes:
               "(max-width: 767px) 0px, (max-width: 920px) 210px, (max-width: 1100px) 250px, (max-width: 1240px) 280px, 356px",
           }}

@@ -118,13 +118,13 @@ export default async function OnlineGroupPage() {
           photo={{
             asset: HERO_MEDIA.online,
             alt: metadataT("pages.online.heroImageAlt"),
-            mobileSizes: "(max-width: 767px) 100vw, 0px",
+            mobileSizes: "(max-width: 767px) calc((100vw - 40px) * 0.9), 0px",
             desktopSizes:
               "(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px",
           }}
           icon={{
             asset: HERO_MEDIA.onlineTelegram,
-            mobileSizes: "(max-width: 767px) 65vw, 0px",
+            mobileSizes: "(max-width: 767px) calc((100vw - 40px) * 0.5), 0px",
             desktopSizes:
               "(max-width: 767px) 0px, (max-width: 920px) 250px, (max-width: 1140px) 350px, 453px",
           }}

@@ -77,7 +77,7 @@ export default async function ChoreoPage() {
             photo={{
               asset: HERO_MEDIA.choreo,
               alt: metadataT("pages.choreo.heroImageAlt"),
-              mobileSizes: "(max-width: 767px) 100vw, 0px",
+              mobileSizes: "(max-width: 767px) calc(100vw - 40px), 0px",
               desktopSizes:
                 "(max-width: 767px) 0px, (max-width: 880px) 490px, (max-width: 1140px) 540px, (max-width: 1240px) 640px, 794px",
             }}
