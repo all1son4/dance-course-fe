@@ -358,8 +358,8 @@
       "birthdayDrop": {
         "title": "The Birthday Drop",
         "description": {
-          "1": "Kończę 34 lata i chcę uczcić ten dzień razem z wami.",
-          "2": "Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
+          "1": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą.",
+          "2": "Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
         },
         "salesLabel": "Sprzedaż otwarta do 7 września",
         "salesValue": "Dostęp na zawsze!"
@@ -1129,7 +1129,7 @@
   },
   "BirthdayPopup": {
     "title": "Happy Birthday to me!",
-    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "cta": "Dowiedz się więcej",
     "close": "Zamknij"
   },
@@ -1137,7 +1137,7 @@
     "title": "The Birthday Drop<br></br>„Love me in the morning”",
     "titlePlain": "The Birthday Drop „Love me in the morning”",
     "titleShort": "The Birthday Drop",
-    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z wami. Dlatego przygotowałam dla was samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "buyButton": "Kup za {price}",
     "detailsButton": "Dowiedz się więcej",
     "aboutTitle": "Co czeka Cię w The Birthday Drop",
