@@ -5,10 +5,13 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
   isPreviewClipInView,
   PREVIEW_CLIP_HOVER_QUERY,
+  PREVIEW_CLIP_IN_VIEW_ROOT_MARGIN,
   PREVIEW_CLIP_IN_VIEW_THRESHOLDS,
+  PREVIEW_CLIP_MAX_PLAY_RETRIES,
   PREVIEW_CLIP_NEAR_ROOT_MARGIN,
   PREVIEW_CLIP_REDUCED_MOTION_QUERY,
   PREVIEW_CLIP_ROOT_ATTRIBUTE,
+  PREVIEW_CLIP_START_DELAY_MS,
   type PreviewClipMode,
   resolvePreviewClipMode,
 } from "@/lib/preview-clip";
@@ -19,6 +22,11 @@ import { PreviewVideo } from "./PreviewClip.styles";
 /* Keep in sync with the fade-out in PreviewClip.styles: the clip keeps
    playing while it dissolves, then pauses (and rewinds) once it is gone. */
 const PREVIEW_CLIP_FADE_OUT_MS = 480;
+/** If the browser never reports a presented frame, show the clip anyway. */
+const PREVIEW_CLIP_FRAME_FALLBACK_MS = 400;
+/** One network hiccup should not cost the clip for the rest of the visit. */
+const PREVIEW_CLIP_ERROR_RETRY_MS = 1_500;
+const PREVIEW_CLIP_PLAY_RETRY_MS = 300;
 
 type NetworkInformationLike = EventTarget & { saveData?: boolean };
 type VideoWithFrameCallback = HTMLVideoElement & {
@@ -66,12 +74,16 @@ type PreviewClipProps = {
 
 /**
  * A muted loop over a card's poster: plays while the card is hovered (mouse)
- * or mostly on screen (touch), pauses otherwise. Never fetched before the
- * card comes near the viewport, never under reduced motion or data saver,
- * and only faded in once a frame is really on screen - until then, and
- * whenever anything fails, the poster underneath is what shows. Purely
- * decorative: hidden from assistive tech and from pointer events, so the
- * player's own button keeps doing exactly what it did.
+ * or its media is mostly on screen (touch), after a short delay, and pauses
+ * otherwise. Never fetched before the card comes near the viewport, never
+ * under reduced motion or data saver, and only faded in once a frame is really
+ * on screen - until then, and whenever anything fails, the poster underneath
+ * is what shows. Purely decorative: hidden from assistive tech and from pointer
+ * events, so the player's own button keeps doing exactly what it did.
+ *
+ * Playback can be taken away at any moment (a backgrounded tab, a page restored
+ * from history, iOS Low Power Mode refusing autoplay until the next tap), so it
+ * is treated as something to keep asking for while the clip is wanted.
  */
 export default function PreviewClip({ src, disabled = false }: PreviewClipProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -83,7 +95,24 @@ export default function PreviewClip({ src, disabled = false }: PreviewClipProps)
   const [hasFailed, setHasFailed] = useState(false);
   const [isNear, setIsNear] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const mode: PreviewClipMode = disabled || hasFailed ? "off" : environmentMode;
+  // Some touch devices report a hover-capable pointer (stylus phones, tablets
+  // with a trackpad). The first finger on the screen settles which one it is.
+  const [hasSeenTouch, setHasSeenTouch] = useState(false);
+  const resolvedMode: PreviewClipMode =
+    environmentMode === "hover" && hasSeenTouch ? "in-view" : environmentMode;
+  const mode: PreviewClipMode = disabled || hasFailed ? "off" : resolvedMode;
+
+  useEffect(() => {
+    if (environmentMode !== "hover" || hasSeenTouch) return undefined;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.pointerType === "touch") setHasSeenTouch(true);
+    };
+
+    window.addEventListener("pointerdown", handlePointerDown, { passive: true });
+
+    return () => window.removeEventListener("pointerdown", handlePointerDown);
+  }, [environmentMode, hasSeenTouch]);
 
   // Set `src` only once the card comes near the viewport. preload="none"
   // keeps even that from downloading anything until playback is asked for.
@@ -122,29 +151,108 @@ export default function PreviewClip({ src, disabled = false }: PreviewClipProps)
     video.defaultMuted = true;
 
     let wantsPlayback = false;
+    let startTimeoutId: number | undefined;
     let rewindTimeoutId: number | undefined;
+    let retryTimeoutId: number | undefined;
+    let revealTimeoutId: number | undefined;
     let frameCallbackId: number | undefined;
+    let playRetries = 0;
+    let hasRetriedError = false;
 
-    const cancelFrameCallback = () => {
+    const cancelReveal = () => {
+      window.clearTimeout(revealTimeoutId);
       if (frameCallbackId !== undefined) {
         video.cancelVideoFrameCallback?.(frameCallbackId);
         frameCallbackId = undefined;
       }
     };
 
+    // `playing` can fire before the first frame is composited; where the
+    // browser can say when a frame is actually presented, wait for that, but
+    // not forever: some browsers stop reporting frames for a transparent video.
+    const reveal = () => {
+      cancelReveal();
+      if (!wantsPlayback || video.paused) return;
+
+      const show = () => {
+        cancelReveal();
+        if (wantsPlayback && !video.paused) setIsVisible(true);
+      };
+
+      if (video.requestVideoFrameCallback) {
+        frameCallbackId = video.requestVideoFrameCallback(() => {
+          frameCallbackId = undefined;
+          show();
+        });
+        revealTimeoutId = window.setTimeout(show, PREVIEW_CLIP_FRAME_FALLBACK_MS);
+        return;
+      }
+
+      show();
+    };
+
+    const removeGestureRetry = () => {
+      document.removeEventListener("touchend", handleGesture, true);
+      document.removeEventListener("click", handleGesture, true);
+    };
+
+    // A browser that refuses muted autoplay (iOS Low Power Mode) still allows
+    // playback inside a user gesture, so the next tap brings the clip back.
+    function handleGesture() {
+      removeGestureRetry();
+      requestPlayback();
+    }
+
+    function requestPlayback() {
+      if (!wantsPlayback || document.hidden) return;
+
+      const result = video?.play();
+      result?.then(reveal).catch((error: unknown) => {
+        if (!wantsPlayback) return;
+
+        if (error instanceof DOMException && error.name === "NotAllowedError") {
+          document.addEventListener("touchend", handleGesture, {
+            capture: true,
+            passive: true,
+          });
+          document.addEventListener("click", handleGesture, { capture: true });
+          return;
+        }
+
+        // Interrupted by a load or a pause it did not ask for: ask again.
+        if (playRetries < PREVIEW_CLIP_MAX_PLAY_RETRIES) {
+          playRetries += 1;
+          window.clearTimeout(retryTimeoutId);
+          retryTimeoutId = window.setTimeout(requestPlayback, PREVIEW_CLIP_PLAY_RETRY_MS);
+        }
+      });
+    }
+
     const start = () => {
       if (wantsPlayback) return;
       wantsPlayback = true;
+      playRetries = 0;
       window.clearTimeout(rewindTimeoutId);
-      const result = video.play();
-      // Refused (autoplay policy, Low Power Mode) or interrupted by a pause:
-      // the poster simply stays.
-      result?.catch(() => undefined);
+
+      // Coming back during the fade-out: it never stopped, so no delay and no
+      // `playing` event either - it only has to fade back in.
+      if (!video.paused) {
+        reveal();
+        return;
+      }
+
+      // Buffer during the delay, so the clip starts the moment it ends.
+      video.preload = "auto";
+      window.clearTimeout(startTimeoutId);
+      startTimeoutId = window.setTimeout(requestPlayback, PREVIEW_CLIP_START_DELAY_MS);
     };
 
     const stop = (rewind: boolean) => {
       wantsPlayback = false;
-      cancelFrameCallback();
+      window.clearTimeout(startTimeoutId);
+      window.clearTimeout(retryTimeoutId);
+      cancelReveal();
+      removeGestureRetry();
       setIsVisible(false);
 
       window.clearTimeout(rewindTimeoutId);
@@ -155,28 +263,46 @@ export default function PreviewClip({ src, disabled = false }: PreviewClipProps)
       }, PREVIEW_CLIP_FADE_OUT_MS);
     };
 
-    // `playing` can fire before the first frame is composited; where the
-    // browser can say when a frame is actually presented, wait for that.
-    const handlePlaying = () => {
-      if (!wantsPlayback) return;
-      if (video.requestVideoFrameCallback) {
-        cancelFrameCallback();
-        frameCallbackId = video.requestVideoFrameCallback(() => {
-          frameCallbackId = undefined;
-          if (wantsPlayback && !video.paused) setIsVisible(true);
-        });
-        return;
-      }
-      setIsVisible(true);
+    const handlePlaying = () => reveal();
+
+    // Paused from outside (the system, another media session) while still wanted.
+    const handlePause = () => {
+      if (!wantsPlayback || document.hidden) return;
+      if (playRetries >= PREVIEW_CLIP_MAX_PLAY_RETRIES) return;
+      playRetries += 1;
+      window.clearTimeout(retryTimeoutId);
+      retryTimeoutId = window.setTimeout(requestPlayback, PREVIEW_CLIP_PLAY_RETRY_MS);
+    };
+
+    // Back from another tab or app, or restored from the back/forward cache:
+    // the browser paused the clip and will not resume it on its own.
+    const handleResume = () => {
+      if (!wantsPlayback || document.hidden) return;
+      playRetries = 0;
+      window.clearTimeout(startTimeoutId);
+      requestPlayback();
     };
 
     const handleError = () => {
-      stop(false);
-      setHasFailed(true);
+      if (hasRetriedError) {
+        stop(false);
+        setHasFailed(true);
+        return;
+      }
+
+      hasRetriedError = true;
+      window.clearTimeout(retryTimeoutId);
+      retryTimeoutId = window.setTimeout(() => {
+        video.load();
+        requestPlayback();
+      }, PREVIEW_CLIP_ERROR_RETRY_MS);
     };
 
     video.addEventListener("playing", handlePlaying);
+    video.addEventListener("pause", handlePause);
     video.addEventListener("error", handleError);
+    document.addEventListener("visibilitychange", handleResume);
+    window.addEventListener("pageshow", handleResume);
 
     let detachTrigger: () => void;
 
@@ -193,6 +319,10 @@ export default function PreviewClip({ src, disabled = false }: PreviewClipProps)
         root.removeEventListener("pointerleave", handleLeave);
       };
     } else if (typeof IntersectionObserver !== "undefined") {
+      // The media box, not the card: what matters is that the clip can be seen.
+      // Measured on the card, media sitting fully on screen at the bottom of a
+      // tall card counted as out of view, and media scrolled away as in view.
+      const media = video.parentElement ?? root;
       const observer = new IntersectionObserver(
         (entries) => {
           const entry = entries[entries.length - 1];
@@ -210,9 +340,12 @@ export default function PreviewClip({ src, disabled = false }: PreviewClipProps)
             stop(false);
           }
         },
-        { threshold: PREVIEW_CLIP_IN_VIEW_THRESHOLDS },
+        {
+          rootMargin: PREVIEW_CLIP_IN_VIEW_ROOT_MARGIN,
+          threshold: PREVIEW_CLIP_IN_VIEW_THRESHOLDS,
+        },
       );
-      observer.observe(root);
+      observer.observe(media);
       detachTrigger = () => observer.disconnect();
     } else {
       detachTrigger = () => undefined;
@@ -221,9 +354,13 @@ export default function PreviewClip({ src, disabled = false }: PreviewClipProps)
     return () => {
       detachTrigger();
       video.removeEventListener("playing", handlePlaying);
+      video.removeEventListener("pause", handlePause);
       video.removeEventListener("error", handleError);
-      window.clearTimeout(rewindTimeoutId);
+      document.removeEventListener("visibilitychange", handleResume);
+      window.removeEventListener("pageshow", handleResume);
       stop(false);
+      window.clearTimeout(rewindTimeoutId);
+      video.pause();
     };
   }, [isNear, mode]);
 

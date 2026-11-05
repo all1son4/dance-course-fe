@@ -1105,26 +1105,31 @@ export const SummaryBarPanel = styled.div`
   overscroll-behavior: contain;
 `;
 
+/* Two columns over two rows: the labels share one line, the switch and the
+   amount share the next one, centred on the same axis. */
 export const SummaryBottomContent = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto minmax(44px, auto);
   justify-content: space-between;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
   width: 100%;
   padding-top: 22px;
   border-top: 1px solid rgba(0, 0, 0, 0.09);
 
-  @media (max-width: 365px) {
-    flex-direction: column;
-    align-items: flex-start;
+  @media (max-width: 920px) {
+    grid-template-rows: auto minmax(40px, auto);
   }
 `;
 
 export const CurrencyBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-start;
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  align-items: center;
+  justify-items: start;
 
   @media (max-width: 920px) {
     & [role="radiogroup"] {
@@ -1138,8 +1143,9 @@ export const CurrencyBox = styled.div`
     }
   }
 `;
-
+/* Sits right above its value even when the neighbour wraps on a narrow phone. */
 export const MoneyTitle = styled.p`
+  align-self: end;
   font-weight: 500;
   font-style: normal;
   font-size: var(--text-small);
@@ -1150,14 +1156,13 @@ export const MoneyTitle = styled.p`
 `;
 
 export const PriceBox = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-
-  @media (max-width: 365px) {
-    align-items: flex-start;
-  }
+  display: grid;
+  grid-row: 1 / -1;
+  grid-template-rows: subgrid;
+  align-items: center;
+  justify-items: end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
 `;
 
 const summaryShimmer = keyframes`
