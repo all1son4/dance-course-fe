@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { imageFadeProps } from "@/lib/reveal";
 import { Chevron } from "@/svg";
 
 import { getQuestionsArray } from "./FAQ.constants";
@@ -11,6 +13,8 @@ import {
   Answer,
   AnswerWrap,
   FAQContainer,
+  FAQPhotoFrame,
+  FAQSide,
   Question,
   QuestionBox,
   QuestionItem,
@@ -34,7 +38,18 @@ export default function FAQ() {
 
   return (
     <FAQContainer>
-      <Title>{t("title")}</Title>
+      <FAQSide>
+        <Title>{t("title")}</Title>
+        <FAQPhotoFrame>
+          <Image
+            {...imageFadeProps}
+            src="/images/photos/about_faq.webp"
+            alt=""
+            fill
+            sizes="(max-width: 880px) 0px, 400px"
+          />
+        </FAQPhotoFrame>
+      </FAQSide>
 
       <QuestionsList>
         {questionsArray.map((q, index) => {

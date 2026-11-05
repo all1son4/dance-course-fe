@@ -130,6 +130,7 @@ export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] =>
   {
     id: "impro",
     title: t("cards.impro.title"),
+    headerPhoto: "/images/photos/card_impro_room.webp",
     // Remove this prop (or set it to undefined) to turn off the seasonal treatment.
     occasion: undefined,
     topRowContent: (

@@ -112,7 +112,7 @@
     "items": {
       "1": {
         "prefix": "Beginner course",
-        "highlight": "First Touch"
+        "highlight": "“First Touch”"
       },
       "2": {
         "prefix": "Online Group",
@@ -162,7 +162,7 @@
     "items": {
       "1": {
         "question": "Is Frame Up suitable if I have never danced before?",
-        "answer": "Yes, this style is beginner-friendly. In the offline beginner group, we move step by step and focus on technique, body flow, and confidence. You can also begin gradually with the online beginner course \"First Touch\". The main thing is your willingness to try and enjoy the process."
+        "answer": "Yes, this style is beginner-friendly. In the offline beginner group, we move step by step and focus on technique, body flow, and confidence. You can also begin gradually with the online beginner course “First Touch”. The main thing is your willingness to try and enjoy the process."
       },
       "2": {
         "question": "What should I bring to class?",
@@ -170,7 +170,7 @@
       },
       "3": {
         "question": "Can I join in the middle of a month or course?",
-        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the \"Contact\" section."
+        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the “Contact” section."
       },
       "4": {
         "question": "Is Frame Up right for me if I feel shy or afraid to move?",
@@ -266,19 +266,24 @@
       },
       "achievements": {
         "stage18Solo": {
-          "prefix": "2nd place Frame Solo Pro at",
-          "suffix": "in Prague."
+          "result": "2nd place",
+          "title": "Frame Solo Pro",
+          "city": "Prague"
         },
         "stage18Team": {
-          "prefix": "2nd place Frame Up Team at",
-          "suffix": "in Prague."
+          "result": "2nd place",
+          "title": "Frame Up Team",
+          "city": "Prague"
         },
         "wod": {
-          "prefix": "Top 10 Team at",
-          "suffix": "in Krakow."
+          "result": "Top 10",
+          "title": "Team",
+          "city": "Krakow"
         },
         "dib": {
-          "prefix": "Grand Prix Solo at"
+          "result": "Grand Prix",
+          "title": "Solo",
+          "city": "Tallinn"
         }
       },
       "quote": {
@@ -321,14 +326,14 @@
     },
     "cards": {
       "firstTouch": {
-        "title": "Beginner course\n\"First Touch\"",
+        "title": "Beginner course\n“First Touch”",
         "description": {
           "1": "Your first touch with Frame Up Strip.",
           "2": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
           "3": "We work on basic technique, feet, emotions, and by the end you will learn your first choreography."
         },
         "startLabel": "Course starts",
-        "startValue": "Winter 2026-2027 or once the group is full"
+        "startValue": "Winter 2026–2027 or once the group is full"
       },
       "onlineGroup": {
         "title": "Online Group\nby Anna Strok",
@@ -337,7 +342,7 @@
           "2": "If you cannot attend my offline classes, you can gain new knowledge, practise at home and stay in touch with me wherever you are."
         },
         "startLabel": "Next cycle starts",
-        "startValue": "November - December"
+        "startValue": "November – December"
       },
       "choreo": {
         "title": "Video tutorials of my choreographies",
@@ -364,7 +369,7 @@
       "title": "Dancing in a studio feels completely different",
       "paragraphs": {
         "1": "In the studio you feel the energy of people around you, catch rhythm faster and open up with more confidence. Every movement becomes stronger when the group supports and inspires you.",
-        "2": "Offline classes help you feel your body deeper, improve technique and get the emotional charge that online often misses. You do not just repeat movements - you live the dance.",
+        "2": "Offline classes help you feel your body deeper, improve technique and get the emotional charge that online often misses. You do not just repeat movements – you live the dance.",
         "3": "Join studio classes and allow yourself more sensations, freedom and strength."
       },
       "button": "More about groups",
@@ -388,8 +393,8 @@
         "title": "Beginners",
         "description": "Ideal if you are just starting. We focus on basic technique, body flow, posture, rhythm and confidence in movement.",
         "schedule": {
-          "1": "Monday 20:30-22:00",
-          "2": "Friday 19:00-20:30"
+          "1": "Monday 20:30–22:00",
+          "2": "Friday 19:00–20:30"
         },
         "price": "500 PLN",
         "priceSuffix": "/ per month"
@@ -398,8 +403,8 @@
         "title": "Advanced group",
         "description": "For dancers who strive for detail, dynamics and deeper style understanding, and want to improve musicality while working on technique, performance quality and memorizing more advanced choreographies.",
         "schedule": {
-          "1": "Monday 19:00-20:30",
-          "2": "Wednesday 19:00-20:30"
+          "1": "Monday 19:00–20:30",
+          "2": "Wednesday 19:00–20:30"
         },
         "price": "500 PLN",
         "priceSuffix": "/ per month"
@@ -432,7 +437,7 @@
   },
   "FirstTouchPage": {
     "hero": {
-      "title": "Course \"First Touch\"",
+      "title": "Course “First Touch”",
       "subtitle": "Your first touch with Frame Up Strip.",
       "description": {
         "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
@@ -440,7 +445,7 @@
       },
       "startLabel": "Course starts",
       "priceLabel": "Course price",
-      "startDate": "Winter 2026-2027 or once the group is full",
+      "startDate": "Winter 2026–2027 or once the group is full",
       "startNote": "You can reserve a place in the next group now. When the course start gets closer and the group is ready to launch, we will email you the payment link.",
       "buyButton": "Buy for 250 PLN / 50 €",
       "enrollButton": "Sign up",
@@ -497,7 +502,7 @@
     "suggestions": {
       "1": {
         "title": "Online group with my personal guidance",
-        "text": "You do not learn alone - I guide you step by step, correct technique and help you develop body expression."
+        "text": "You do not learn alone – I guide you step by step, correct technique and help you develop body expression."
       },
       "2": {
         "title": "Homework with feedback",
@@ -505,7 +510,7 @@
       },
       "3": {
         "title": "5 well-designed lessons that build your foundation",
-        "text": "From feet and waves to performance and first choreography - you get a complete base for confident movement in Frame Up and related styles."
+        "text": "From feet and waves to performance and first choreography – you get a complete base for confident movement in Frame Up and related styles."
       },
       "4": {
         "title": "Course duration: 1.5 months",
@@ -531,7 +536,7 @@
         "2": "Suitable for intermediate and advanced dancers."
       },
       "startLabel": "Next group starts",
-      "startDate": "November - December",
+      "startDate": "November – December",
       "priceLabel": "Price for new participants",
       "buyButton": "Buy your place",
       "offers": {
@@ -649,7 +654,7 @@
       },
       "4": {
         "title": "Instant access via private Telegram channels",
-        "text": "No extra platforms - all course materials in one place right after payment."
+        "text": "No extra platforms – all course materials in one place right after payment."
       },
       "5": {
         "title": "Independent practice at your own pace",
@@ -923,7 +928,7 @@
     "buyButton": "Buy",
     "priceLabel": "Price",
     "firstTouch": {
-      "title": "Beginner course \"First Touch\"",
+      "title": "Beginner course “First Touch”",
       "description": {
         "1": "For those who have never danced but want to learn body awareness, confidence and movement.",
         "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
@@ -934,7 +939,7 @@
       }
     },
     "choreoStillAlive": {
-      "title": "Choreography tutorial \"Still Alive\"",
+      "title": "Choreography tutorial “Still Alive”",
       "description": {
         "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
@@ -947,7 +952,7 @@
       }
     },
     "choreoHerLies": {
-      "title": "Choreography tutorial \"Her Lies\"",
+      "title": "Choreography tutorial “Her Lies”",
       "description": {
         "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
@@ -960,7 +965,7 @@
       }
     },
     "choreoBundle": {
-      "title": "Bundle tutorial \"Still Alive\" + \"Her Lies\"",
+      "title": "Bundle tutorial “Still Alive” + “Her Lies”",
       "cardTitle": "Two video tutorials",
       "description": {
         "1": "Two tutorials in one access for dancers who want to work with different dynamics, performance qualities and musicality right away.",
@@ -1002,7 +1007,7 @@
       }
     },
     "choreoLoveMeInTheMorning": {
-      "title": "Video tutorial for \"Love me in the morning\"",
+      "title": "Video tutorial for “Love me in the morning”",
       "description": {
         "1": "Detailed explanations of movements and transitions.",
         "2": "Study, replay and practise at your own pace.",

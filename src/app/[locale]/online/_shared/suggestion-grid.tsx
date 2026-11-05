@@ -3,6 +3,9 @@ import type { ComponentType, ReactNode } from "react";
 
 import type { IconTextPanelProps } from "@/components/cards/IconTextCard";
 import SuggestionTiles from "@/components/cards/SuggestionTiles";
+import { imageFadeProps } from "@/lib/reveal";
+
+import { SuggestionPhoto, SuggestionPhotoFrame, SuggestionSide } from "./section.styles";
 
 type SuggestionItem = IconTextPanelProps & { id: number | string };
 
@@ -22,6 +25,8 @@ type SuggestionGridProps = {
    * own section breakpoint (880 on choreo, 920 on the course pages).
    */
   compactBelow?: 880 | 920;
+  /** Wide screens only: a photo under the title, filling the empty half. */
+  photo?: string;
 };
 
 /**
@@ -33,13 +38,29 @@ export default async function SuggestionGrid({
   components: { Cards, Section, Title },
   id,
   items,
+  photo,
   title,
 }: SuggestionGridProps) {
   const commonT = await getTranslations("Common");
 
   return (
     <Section id={id}>
-      <Title>{title}</Title>
+      {photo ? (
+        <SuggestionSide $compactBelow={compactBelow}>
+          <Title>{title}</Title>
+          <SuggestionPhotoFrame $compactBelow={compactBelow}>
+            <SuggestionPhoto
+              {...imageFadeProps}
+              src={photo}
+              alt=""
+              fill
+              sizes={`(max-width: ${compactBelow}px) 0px, (max-width: 1240px) 360px, 420px`}
+            />
+          </SuggestionPhotoFrame>
+        </SuggestionSide>
+      ) : (
+        <Title>{title}</Title>
+      )}
       <Cards>
         <SuggestionTiles
           closeLabel={commonT("close")}

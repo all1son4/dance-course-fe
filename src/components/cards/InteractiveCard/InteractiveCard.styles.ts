@@ -45,7 +45,7 @@ export const CardContainer = styled.div<{
   }
 `;
 
-export const TitleBlock = styled.div<{ $hasOccasion?: boolean }>`
+export const TitleBlock = styled.div<{ $hasOccasion?: boolean; $hasPhoto?: boolean }>`
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -58,17 +58,73 @@ export const TitleBlock = styled.div<{ $hasOccasion?: boolean }>`
   padding-right: ${({ $hasOccasion }) => ($hasOccasion ? "100px" : undefined)};
 
   @media (max-width: 880px) {
-    padding: 30px;
+    padding: 30px 20px;
     padding-right: ${({ $hasOccasion }) => ($hasOccasion ? "100px" : undefined)};
   }
 
   @media (max-width: 550px) {
-    padding: 20px 30px;
+    padding: 20px;
     padding-right: ${({ $hasOccasion }) => ($hasOccasion ? "76px" : undefined)};
   }
+
+  ${({ $hasPhoto }) =>
+    $hasPhoto &&
+    css`
+      justify-content: flex-end;
+      min-height: 208px;
+      padding-block: 20px;
+      background: none;
+      overflow: hidden;
+
+      & img {
+        object-fit: cover;
+        z-index: -2;
+      }
+
+      /* The photo melts into a soft blur under the title: readable on light
+         and dark photos, with no hard edge and the upper part left sharp. */
+      &::after {
+        content: "";
+        position: absolute;
+        inset: auto 0 0;
+        height: 78%;
+        z-index: -1;
+        background: linear-gradient(
+          180deg,
+          rgba(0, 0, 0, 0) 0%,
+          rgba(0, 0, 0, 0.42) 100%
+        );
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 55%);
+        mask-image: linear-gradient(180deg, transparent 0%, #000 55%);
+
+        @supports not (
+          (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+        ) {
+          background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0) 0%,
+            rgba(0, 0, 0, 0.68) 100%
+          );
+        }
+      }
+
+      @media (max-width: 880px) {
+        min-height: 172px;
+      }
+
+      @media (max-width: 880px) {
+        padding-block: 16px;
+      }
+
+      @media (max-width: 550px) {
+        min-height: 148px;
+      }
+    `}
 `;
 
-export const Title = styled.h2`
+export const Title = styled.h2<{ $onPhoto?: boolean }>`
   font-weight: 400;
   font-style: normal;
   font-size: var(--text-h3);
@@ -76,6 +132,14 @@ export const Title = styled.h2`
   margin: 0;
   color: var(--ink);
   white-space: pre-line;
+
+  ${({ $onPhoto }) =>
+    $onPhoto &&
+    css`
+      font-size: var(--text-card);
+      color: var(--ink-inverse);
+      text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+    `}
 
   @media (max-width: 880px) {
     font-size: var(--text-card);

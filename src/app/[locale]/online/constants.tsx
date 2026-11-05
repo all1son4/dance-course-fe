@@ -3,8 +3,8 @@ import type { ProductSaleState } from "@/lib/sales-availability";
 
 import {
   ContentStack,
+  DetailFactText,
   DetailText,
-  DetailValueText,
 } from "../_shared/interactive-card-content";
 
 type Translate = (key: string) => string;
@@ -39,27 +39,9 @@ export const getOnlineCoursesArray = (
   //   buttonPrefetch: false,
   // },
   {
-    id: "online-group",
-    title: t("cards.onlineGroup.title"),
-    topRowContent: (
-      <ContentStack $gap="16px">
-        <DetailText>{t("cards.onlineGroup.description.1")}</DetailText>
-        <DetailText>{t("cards.onlineGroup.description.2")}</DetailText>
-      </ContentStack>
-    ),
-    bottomRowContent: (
-      <ContentStack>
-        <DetailText>{t("cards.onlineGroup.startLabel")}</DetailText>
-        <DetailValueText>{t("cards.onlineGroup.startValue")}</DetailValueText>
-      </ContentStack>
-    ),
-    buttonText: commonT("details"),
-    buttonHref: "/online/group",
-    buttonPrefetch: false,
-  },
-  {
     id: "choreo",
     title: t("cards.choreo.title"),
+    headerPhoto: "/images/photos/card_choreo.webp",
     topRowContent: (
       <ContentStack $gap="16px">
         <DetailText>{t("cards.choreo.description.1")}</DetailText>
@@ -75,19 +57,40 @@ export const getOnlineCoursesArray = (
               : "cards.choreo.salesLabel",
           )}
         </DetailText>
-        <DetailValueText>
+        <DetailFactText>
           {choreoSaleState === "open"
             ? t("cards.choreo.startValue")
             : commonT("salesUnavailable")}
-        </DetailValueText>
+        </DetailFactText>
       </ContentStack>
     ),
     buttonText: commonT("details"),
     buttonHref: "/online/choreo",
   },
   {
+    id: "online-group",
+    title: t("cards.onlineGroup.title"),
+    headerPhoto: "/images/photos/card_online_group.webp",
+    topRowContent: (
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.onlineGroup.description.1")}</DetailText>
+        <DetailText>{t("cards.onlineGroup.description.2")}</DetailText>
+      </ContentStack>
+    ),
+    bottomRowContent: (
+      <ContentStack>
+        <DetailText>{t("cards.onlineGroup.startLabel")}</DetailText>
+        <DetailFactText>{t("cards.onlineGroup.startValue")}</DetailFactText>
+      </ContentStack>
+    ),
+    buttonText: commonT("details"),
+    buttonHref: "/online/group",
+    buttonPrefetch: false,
+  },
+  {
     id: "first-touch",
     title: t("cards.firstTouch.title"),
+    headerPhoto: "/images/photos/card_first_touch.webp",
     topRowContent: (
       <ContentStack $gap="16px">
         <DetailText>{t("cards.firstTouch.description.1")}</DetailText>
@@ -98,7 +101,7 @@ export const getOnlineCoursesArray = (
     bottomRowContent: (
       <ContentStack>
         <DetailText>{t("cards.firstTouch.startLabel")}</DetailText>
-        <DetailValueText>{t("cards.firstTouch.startValue")}</DetailValueText>
+        <DetailFactText>{t("cards.firstTouch.startValue")}</DetailFactText>
       </ContentStack>
     ),
     buttonText: commonT("details"),

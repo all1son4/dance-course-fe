@@ -221,7 +221,7 @@ export const StartNote = styled.p`
   line-height: 1.5;
   letter-spacing: 0;
   margin: 10px 0 0;
-  color: var(--ink-muted);
+  color: rgba(12, 12, 12, 1);
 `;
 
 export const ButtonBox = styled.div`
@@ -312,7 +312,7 @@ export const CourseProgramTitle = styled.h2`
   }
 
   @media (max-width: 880px) {
-    font-size: var(--text-h2);
+    font-size: var(--text-section);
   }
 `;
 

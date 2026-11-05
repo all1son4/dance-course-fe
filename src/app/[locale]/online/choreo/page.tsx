@@ -128,6 +128,7 @@ export default async function ChoreoPage() {
           }}
           title={t("about.title")}
           items={onlineSuggestions}
+          photo="/images/photos/about_choreo.webp"
         />
         <Contacts />
       </SpecialWrapper>
