@@ -34,12 +34,10 @@ export const PAGE_OG_IMAGE_PATHS: Partial<Record<string, string>> = {
 };
 const instagramUrl = INSTAGRAM_PROFILE_URL;
 const telegramUrl = PERSONAL_TELEGRAM_URL;
-export const seoTargetLocale = "en" as const;
-export const seoTargetOpenGraphLocale = "en_US" as const;
 const websiteStructuredDataId = `${normalizedSiteUrl}/#website`;
 export const annaStrokStructuredDataId = `${normalizedSiteUrl}/#anna-strok`;
 
-const getOpenGraphLocale = (locale: string) => {
+export const getOpenGraphLocale = (locale: string) => {
   if (locale === "en") {
     return "en_US";
   }
@@ -53,7 +51,6 @@ const getOpenGraphLocale = (locale: string) => {
 
 export const buildPageMetadata = ({
   description,
-  keywords,
   locale,
   ogImageAlt,
   ogImagePath = seoImagePath,
@@ -62,7 +59,6 @@ export const buildPageMetadata = ({
   title,
 }: {
   description: string;
-  keywords: string[];
   locale: string;
   ogImageAlt: string;
   ogImagePath?: string;
@@ -72,7 +68,6 @@ export const buildPageMetadata = ({
 }): Metadata => ({
   title,
   description,
-  keywords,
   alternates: {
     canonical: path,
   },
@@ -125,7 +120,7 @@ export const buildWebsiteStructuredData = (
       url: `${normalizedSiteUrl}/`,
       name: "Anna Strok",
       alternateName: siteName,
-      inLanguage: seoTargetLocale,
+      inLanguage: ["en", "ru", "pl"],
       publisher: {
         "@id": annaStrokStructuredDataId,
       },
@@ -134,9 +129,15 @@ export const buildWebsiteStructuredData = (
       "@type": "Person",
       "@id": annaStrokStructuredDataId,
       name: "Anna Strok",
+      alternateName: "Анна Строк",
       url: `${normalizedSiteUrl}/`,
       image: `${normalizedSiteUrl}${seoImagePath}`,
-      jobTitle: "Professional dancer and Frame Up Strip instructor",
+      jobTitle: "Frame Up Strip dancer and teacher",
+      knowsAbout: ["Frame Up Strip"],
+      homeLocation: {
+        "@type": "City",
+        name: "Warsaw",
+      },
       sameAs: [instagramUrl, telegramUrl],
     },
   ],

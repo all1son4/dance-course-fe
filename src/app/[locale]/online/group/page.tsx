@@ -1,4 +1,4 @@
-import { getLocale, getTranslations } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 
 import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import CourseCard from "@/components/cards/CourseCard";
@@ -21,11 +21,7 @@ import {
   getStorefrontSellableProducts,
   type ProductSaleState,
 } from "@/lib/sales-availability";
-import {
-  annaStrokStructuredDataId,
-  buildBreadcrumbStructuredData,
-  normalizedSiteUrl,
-} from "@/lib/seo";
+import { buildBreadcrumbStructuredData } from "@/lib/seo";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import ProductFact from "../_shared/product-fact";
@@ -39,7 +35,10 @@ import {
   SpecialWrapper,
   VideoSection,
 } from "../_shared/section.styles";
-import { buildCourseOffersStructuredData } from "../_shared/structured-data";
+import {
+  buildCourseOffersStructuredData,
+  buildCourseStructuredData,
+} from "../_shared/structured-data";
 import SuggestionGrid from "../_shared/suggestion-grid";
 import { getGroupSuggestions } from "./constants";
 import {
@@ -74,9 +73,10 @@ export default async function OnlineGroupPage() {
   // 150-300ms after the page on Vercel: everything below it jumped down,
   // "Choose a plan" was a dead click until then and /online/group#tariffs
   // missed its target.
-  const [locale, t, commonT, saleState, catalogProducts] = await Promise.all([
-    getLocale(),
+  const [t, metadataT, onlineT, commonT, saleState, catalogProducts] = await Promise.all([
     getTranslations("OnlineGroupPage"),
+    getTranslations("Metadata"),
+    getTranslations("OnlinePage"),
     getTranslations("Common"),
     getProductSaleState(configuredProduct.id),
     getStorefrontSellableProducts(),
@@ -91,31 +91,23 @@ export default async function OnlineGroupPage() {
   );
   const standardOffer = product.offers.find((offer) => offer.code === "standard");
   const plusOffer = product.offers.find((offer) => offer.code === "library-access");
-  const courseStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "Course",
+  const courseStructuredData = buildCourseStructuredData({
     name: t("hero.titlePlain"),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
-    inLanguage: locale,
-    provider: {
-      "@type": "Person",
-      "@id": annaStrokStructuredDataId,
-      name: "Anna Strok",
-      url: normalizedSiteUrl,
-    },
-    url: `${normalizedSiteUrl}/online/group`,
+    path: "/online/group",
     offers: purchaseOffers.flatMap((offer) =>
       buildCourseOffersStructuredData({
         landingPath: "/online/group#tariffs",
         offer,
-        isAvailable: saleState === "open" && offer.salesEnabled,
+        availability:
+          saleState === "open" && offer.salesEnabled ? "InStock" : "OutOfStock",
         offerName:
           offer.code === "standard"
             ? t("tariffs.standard.title")
             : t("tariffs.plus.title"),
       }),
     ),
-  };
+  });
 
   const renderIntroductionSection = () => (
     <ProductHero
@@ -125,6 +117,7 @@ export default async function OnlineGroupPage() {
           boxes={{ MobileImagesBox, ImageBox, IconBox }}
           photo={{
             asset: HERO_MEDIA.online,
+            alt: metadataT("pages.online.heroImageAlt"),
             mobileSizes: "(max-width: 767px) 100vw, 0px",
             desktopSizes:
               "(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px",
@@ -310,8 +303,8 @@ export default async function OnlineGroupPage() {
       <StructuredData
         data={[
           buildBreadcrumbStructuredData([
-            { name: "Home", path: "/" },
-            { name: "Online classes", path: "/online" },
+            { name: metadataT("breadcrumbHome"), path: "/" },
+            { name: onlineT("hero.title"), path: "/online" },
             {
               name: t("hero.titlePlain"),
               path: "/online/group",

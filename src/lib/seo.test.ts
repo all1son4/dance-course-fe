@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { resolvePageMetadata, splitKeywords } from "./page-metadata";
+import { resolvePageMetadata } from "./page-metadata";
 import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
@@ -14,7 +14,6 @@ import {
 describe("buildPageMetadata", () => {
   const input = {
     description: "Desc",
-    keywords: ["a", "b"],
     locale: "en",
     ogImageAlt: "Alt",
     path: "/online/group",
@@ -27,7 +26,6 @@ describe("buildPageMetadata", () => {
 
     assert.equal(metadata.title, "Title");
     assert.equal(metadata.description, "Desc");
-    assert.deepEqual(metadata.keywords, ["a", "b"]);
     assert.deepEqual(metadata.alternates, { canonical: "/online/group" });
     assert.equal(metadata.openGraph?.url, `${normalizedSiteUrl}/online/group`);
     assert.equal(metadata.openGraph?.title, "Title");
@@ -104,31 +102,21 @@ describe("buildWebsiteStructuredData", () => {
 });
 
 describe("page metadata helper", () => {
-  it("splits and trims keyword lists", () => {
-    assert.deepEqual(splitKeywords(" dance, frame up ,, strip "), [
-      "dance",
-      "frame up",
-      "strip",
-    ]);
-    assert.deepEqual(splitKeywords(""), []);
-  });
-
-  it("assembles a page's metadata from its translations in the SEO locale", () => {
+  it("assembles a page's metadata from its translations in the given locale", () => {
     const strings: Record<string, string> = {
       title: "First Touch",
       description: "Course",
       ogImageAlt: "Photo",
-      keywords: "a, b",
     };
     const metadata = resolvePageMetadata({
+      locale: "pl",
       pageT: (key) => strings[key],
       path: "/online/first-touch",
       siteName: "Site",
     });
 
     assert.equal(metadata.title, "First Touch");
-    assert.deepEqual(metadata.keywords, ["a", "b"]);
-    assert.equal((metadata.openGraph as { locale?: string }).locale, "en_US");
+    assert.equal((metadata.openGraph as { locale?: string }).locale, "pl_PL");
     assert.deepEqual(metadata.alternates, { canonical: "/online/first-touch" });
   });
 });

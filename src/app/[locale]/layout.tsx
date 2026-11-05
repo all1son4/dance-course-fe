@@ -14,12 +14,11 @@ import BirthdayPopup from "@/components/other/BirthdayPopup";
 import { GLOBAL_CLIENT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
 import { routing } from "@/i18n/routing";
 import {
+  getOpenGraphLocale,
   normalizedSiteUrl,
   seoImageHeight,
   seoImagePath,
   seoImageWidth,
-  seoTargetLocale,
-  seoTargetOpenGraphLocale,
 } from "@/lib/seo";
 import { SITE_APP_ICONS, SITE_THEME_COLORS } from "@/lib/site-chrome";
 import { STICKY_CTA_DOCK_ID } from "@/lib/sticky-cta";
@@ -49,12 +48,8 @@ export function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: Omit<LocaleLayoutProps, "children">): Promise<Metadata> {
-  await params;
-  const t = await getTranslations({ locale: seoTargetLocale, namespace: "Metadata" });
-  const keywords = t("keywords")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "Metadata" });
 
   return {
     title: {
@@ -64,16 +59,12 @@ export async function generateMetadata({
     description: t("description"),
     applicationName: t("applicationName"),
     metadataBase: new URL(normalizedSiteUrl),
-    keywords,
-    alternates: {
-      canonical: "./",
-    },
     openGraph: {
       type: "website",
       siteName: t("siteName"),
       title: t("title.default"),
       description: t("description"),
-      locale: seoTargetOpenGraphLocale,
+      locale: getOpenGraphLocale(locale),
       images: [
         {
           url: seoImagePath,
@@ -99,16 +90,12 @@ export async function generateMetadata({
       shortcut: [SITE_APP_ICONS.svg],
       apple: [{ url: SITE_APP_ICONS.apple, sizes: "180x180", type: "image/png" }],
     },
+    // Indexing is the default. Stating it here would sit next to the `noindex`
+    // Next adds to a 404, giving such a page two conflicting robots tags.
     robots: {
-      index: true,
-      follow: true,
-      googleBot: {
-        index: true,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-        "max-video-preview": -1,
-      },
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
     },
     authors: [{ name: "Anna Strok" }],
     creator: "Anna Strok",
