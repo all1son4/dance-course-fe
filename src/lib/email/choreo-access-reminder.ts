@@ -7,12 +7,12 @@ const COPY = {
   ru: {
     subject: (title: string) => `Доступ к «${title}» скоро завершится`,
     heading: "Доступ скоро завершится",
-    intro: (title: string) => `Ваш разбор — «${title}»`,
+    intro: (title: string) => `Твой разбор — «${title}»`,
     dateLabel: "Доступ до",
     timeZone: "Время Варшавы",
-    body: "Вернитесь к урокам, чтобы повторить хореографию.",
+    body: "Вернись к урокам, чтобы повторить хореографию.",
     button: "Открыть разбор",
-    support: "Нужна помощь? Напишите нам",
+    support: "Нужна помощь? Напиши нам",
   },
   en: {
     subject: (title: string) => `Your access to “${title}” ends soon`,

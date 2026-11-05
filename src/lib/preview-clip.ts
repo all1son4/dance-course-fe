@@ -3,7 +3,7 @@
  * `components/other/PreviewClip`.
  *
  * A preview clip is a short, silent, looping MP4 that plays over a card's
- * poster - on hover where there is a mouse, while the card is mostly on screen
+ * poster - on hover where there is a mouse, while the media is mostly on screen
  * on touch devices - and is never fetched for visitors who asked for less
  * motion or less data.
  */
@@ -42,7 +42,22 @@ export const PREVIEW_CLIP_REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduc
  */
 export const PREVIEW_CLIP_NEAR_ROOT_MARGIN = "300px 0px";
 
-/** Share of the card that must be on screen for a touch preview to play. */
+/**
+ * How long a card must stay hovered or in view before its clip starts. Passing
+ * over a card or flicking past it should leave the poster alone.
+ */
+export const PREVIEW_CLIP_START_DELAY_MS = 700;
+
+/**
+ * Top inset for the in-view check, so media sliding under the fixed header
+ * does not count as seen.
+ */
+export const PREVIEW_CLIP_IN_VIEW_ROOT_MARGIN = "-72px 0px 0px 0px";
+
+/** A refused or interrupted `play()` is tried again this many times per view. */
+export const PREVIEW_CLIP_MAX_PLAY_RETRIES = 3;
+
+/** Share of the clip's own media box that must be on screen for a touch preview. */
 export const PREVIEW_CLIP_IN_VIEW_RATIO = 0.6;
 
 /** Intersection thresholds fine enough to notice crossing the in-view ratio. */
@@ -61,18 +76,18 @@ export const resolvePreviewClipMode = ({
 };
 
 export type PreviewClipVisibility = {
-  /** `IntersectionObserverEntry.intersectionRatio` of the card. */
+  /** `IntersectionObserverEntry.intersectionRatio` of the media box. */
   ratio: number;
-  /** Visible height of the card, px (`intersectionRect.height`). */
+  /** Visible height of the media box, px (`intersectionRect.height`). */
   visibleHeight: number;
   /** Viewport height, px (`rootBounds.height`, or `innerHeight`). */
   viewportHeight: number;
 };
 
 /**
- * Whether a touch preview should be playing. A card taller than the viewport
- * can never be 60% visible, so a card that fills 60% of the screen counts as
- * in view as well.
+ * Whether a touch preview should be playing. Media taller than the viewport
+ * can never be 60% visible, so media that fills 60% of the screen counts as in
+ * view as well.
  */
 export const isPreviewClipInView = ({
   ratio,
