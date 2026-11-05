@@ -1,6 +1,7 @@
 import "./globals.css";
 
 import { Manrope } from "next/font/google";
+import { getLocale } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { CookieConsentProvider } from "@/components/common/CookieConsent/CookieConsentProvider";
@@ -23,11 +24,12 @@ const isSiteVisible = () => {
   return !["0", "false", "no", "off"].includes(normalizedValue);
 };
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
   const showSite = isSiteVisible();
+  const locale = await getLocale();
 
   return (
-    <html lang="en">
+    <html lang={locale}>
       <body className={manrope.variable}>
         <CookieConsentProvider>
           <DeferredClientFeatures />

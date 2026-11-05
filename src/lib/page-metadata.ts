@@ -1,47 +1,40 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
-import { buildPageMetadata, PAGE_OG_IMAGE_PATHS, seoTargetLocale } from "./seo";
+import { buildPageMetadata, PAGE_OG_IMAGE_PATHS } from "./seo";
 
-type PageTranslator = (
-  key: "title" | "description" | "ogImageAlt" | "keywords",
-) => string;
-
-/** "a, b ,c" -> ["a", "b", "c"]; empty entries dropped. */
-export const splitKeywords = (value: string): string[] =>
-  value
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
+type PageTranslator = (key: "title" | "description" | "ogImageAlt") => string;
 
 /** The pure part of a page's metadata: everything except the translation lookup. */
 export const resolvePageMetadata = ({
+  locale,
   ogImagePath,
   pageT,
   path,
   siteName,
 }: {
+  locale: string;
   ogImagePath?: string;
   pageT: PageTranslator;
   path: string;
   siteName: string;
 }): Metadata =>
   buildPageMetadata({
-    locale: seoTargetLocale,
+    locale,
     path,
     title: pageT("title"),
     description: pageT("description"),
     siteName,
     ogImageAlt: pageT("ogImageAlt"),
     ogImagePath,
-    keywords: splitKeywords(pageT("keywords")),
   });
 
 /**
- * `generateMetadata` for a public page: the SEO locale's `Metadata.pages.<key>`
- * strings plus the shared site name, shaped by `buildPageMetadata`. Public
- * pages are indexed in one language (see `seoTargetLocale`), so the visitor's
- * locale is deliberately not consulted here.
+ * `generateMetadata` for a public page: the request locale's
+ * `Metadata.pages.<key>` strings plus the shared site name, shaped by
+ * `buildPageMetadata`. URLs carry no locale, so a crawler that sends no
+ * language gets the default locale and a Russian visitor gets a Russian tab
+ * title - the same language as the page body in both cases.
  */
 export const buildLocalizedPageMetadata = async ({
   pageKey,
@@ -50,12 +43,14 @@ export const buildLocalizedPageMetadata = async ({
   pageKey: string;
   path: string;
 }): Promise<Metadata> => {
+  const locale = await getLocale();
   const [metadataT, pageT] = await Promise.all([
-    getTranslations({ locale: seoTargetLocale, namespace: "Metadata" }),
-    getTranslations({ locale: seoTargetLocale, namespace: `Metadata.pages.${pageKey}` }),
+    getTranslations({ locale, namespace: "Metadata" }),
+    getTranslations({ locale, namespace: `Metadata.pages.${pageKey}` }),
   ]);
 
   return resolvePageMetadata({
+    locale,
     ogImagePath: PAGE_OG_IMAGE_PATHS[pageKey],
     pageT,
     path,

@@ -43,8 +43,9 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function Online() {
-  const [t, commonT, choreoSaleState] = await Promise.all([
+  const [t, metadataT, commonT, choreoSaleState] = await Promise.all([
     getTranslations("OnlinePage"),
+    getTranslations("Metadata"),
     getTranslations("Common"),
     getProductsSaleState(
       CHOREO_CATALOGUE_PRODUCT_CODES.map((code) => SELLABLE_PRODUCTS[code].id),
@@ -72,7 +73,7 @@ export default async function Online() {
       <StructuredData
         data={[
           buildBreadcrumbStructuredData([
-            { name: "Home", path: "/" },
+            { name: metadataT("breadcrumbHome"), path: "/" },
             { name: t("hero.title"), path: "/online" },
           ]),
           onlineCoursesStructuredData,
@@ -85,6 +86,7 @@ export default async function Online() {
             boxes={{ MobileImagesBox, ImageBox, IconBox }}
             photo={{
               asset: HERO_MEDIA.online,
+              alt: metadataT("pages.online.heroImageAlt"),
               mobileSizes: "(max-width: 767px) 100vw, 0px",
               desktopSizes:
                 "(max-width: 767px) 0px, (max-width: 920px) 400px, (max-width: 1140px) 550px, 598px",

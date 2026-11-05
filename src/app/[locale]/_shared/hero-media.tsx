@@ -11,6 +11,8 @@ type HeroMediaImage = {
   mobileSizes: string;
   /** `sizes` for the copy shown from 768px. */
   desktopSizes: string;
+  /** What the image shows, for the page's photo; art stays decorative. */
+  alt?: string;
 };
 
 type HeroMediaProps = {
@@ -46,6 +48,7 @@ export default function HeroMedia({
             asset={photo.asset}
             media={MOBILE_MEDIA}
             sizes={photo.mobileSizes}
+            alt={photo.alt}
             priority
           />
         </ImageBox>
@@ -58,6 +61,7 @@ export default function HeroMedia({
           asset={photo.asset}
           media={DESKTOP_MEDIA}
           sizes={photo.desktopSizes}
+          alt={photo.alt}
           priority
         />
       </ImageBox>

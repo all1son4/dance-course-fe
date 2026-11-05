@@ -35,13 +35,14 @@ export const generateMetadata = () =>
 
 export default function Offline() {
   const t = useTranslations("OfflinePage");
+  const metadataT = useTranslations("Metadata");
   const offlineCoursesArray = getOfflineCoursesArray((key) => t(key));
 
   return (
     <>
       <StructuredData
         data={buildBreadcrumbStructuredData([
-          { name: "Home", path: "/" },
+          { name: metadataT("breadcrumbHome"), path: "/" },
           { name: t("hero.title"), path: "/offline" },
         ])}
       />
@@ -52,6 +53,7 @@ export default function Offline() {
             boxes={{ MobileImagesBox, ImageBox, IconBox }}
             photo={{
               asset: HERO_MEDIA.offline,
+              alt: metadataT("pages.offline.heroImageAlt"),
               mobileSizes: "(max-width: 767px) 100vw, 0px",
               desktopSizes:
                 "(max-width: 767px) 0px, (max-width: 880px) 400px, (max-width: 960px) 460px, (max-width: 1240px) 500px, 558px",

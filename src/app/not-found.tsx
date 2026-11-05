@@ -1,1 +1,1 @@
-export { default } from "./[locale]/not-found";
+export { default, generateMetadata } from "./[locale]/not-found";

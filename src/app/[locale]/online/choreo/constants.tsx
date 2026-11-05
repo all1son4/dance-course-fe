@@ -308,6 +308,25 @@ export const getChoreos = (
     ];
   });
 
+/** Open tutorials with their open tariffs, for structured data. */
+export const getOpenChoreoCourses = (
+  t: Translate,
+  catalogProducts: readonly SellableProduct[],
+) =>
+  CHOREO_CATALOGUE_PRODUCT_CODES.flatMap((code) => {
+    const product = catalogProducts.find((candidate) => candidate.code === code);
+    if (!product || !product.salesEnabled) return [];
+
+    const offers = product.offers.filter(
+      (offer) =>
+        (offer.code === "without-mentor" || offer.code === "with-mentor") &&
+        isOfferSaleOpen(product, offer),
+    );
+    if (offers.length === 0) return [];
+
+    return [{ name: getCompactChoreoTitle(t(product.titleKey)), offers }];
+  });
+
 const getOpenChoreoOffers = (catalogProducts: readonly SellableProduct[]) =>
   CHOREO_CATALOGUE_PRODUCT_CODES.flatMap((code) => {
     const product = catalogProducts.find((candidate) => candidate.code === code);

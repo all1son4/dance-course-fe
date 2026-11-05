@@ -7,6 +7,8 @@ type HeroPictureProps = {
   /** Media query for the breakpoint range this copy of the photo is shown in. */
   media: string;
   sizes: string;
+  /** What the photo shows. Empty for purely decorative art. */
+  alt?: string;
   priority?: boolean;
   className?: string;
 };
@@ -17,7 +19,7 @@ const TRANSPARENT_PIXEL =
   "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
 /**
- * A decorative hero photo that exists in two copies (mobile and desktop layout
+ * A hero photo that exists in two copies (mobile and desktop layout
  * boxes). `sizes="… 0px"` on a plain <img> still downloads the smallest
  * candidate, so each copy is a <picture> whose only <source> is gated by
  * `media`; the picture is `display: contents`, which leaves the <img> in the
@@ -27,6 +29,7 @@ export default function HeroPicture({
   asset,
   media,
   sizes,
+  alt = "",
   priority = false,
   className,
 }: HeroPictureProps) {
@@ -49,8 +52,8 @@ export default function HeroPicture({
       <source media={media} sizes={sizes} srcSet={srcSet} type="image/webp" />
       <img
         src={TRANSPARENT_PIXEL}
-        alt=""
-        aria-hidden
+        alt={alt}
+        aria-hidden={alt ? undefined : true}
         width={asset.width}
         height={asset.height}
         className={className}

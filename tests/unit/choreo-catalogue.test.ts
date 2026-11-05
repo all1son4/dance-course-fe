@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getChoreos } from "@/app/[locale]/online/choreo/constants";
+import { getChoreos, getOpenChoreoCourses } from "@/app/[locale]/online/choreo/constants";
 import {
   BIRTHDAY_DROP_OFFER_ID,
   LOVE_ME_IN_THE_MORNING_OFFER_ID,
@@ -16,6 +16,31 @@ import {
 import en from "@/messages/en.json";
 import pl from "@/messages/pl.json";
 import ru from "@/messages/ru.json";
+
+test("structured data lists only open tutorials with their open tariffs", () => {
+  const products = structuredClone(SELLABLE_PRODUCTS_LIST);
+  const herLies = products.find((product) => product.code === "choreo-her-lies")!;
+  const love = products.find(
+    (product) => product.code === "choreo-love-me-in-the-morning",
+  )!;
+  herLies.salesEnabled = true;
+  love.salesEnabled = false;
+
+  const courses = getOpenChoreoCourses((key) => key, products);
+
+  assert.equal(courses.length, 1);
+  assert.deepEqual(
+    courses[0].offers.map((offer) => offer.id),
+    herLies.offers
+      .filter((offer) => offer.salesEnabled && offer.code === "without-mentor")
+      .concat(
+        herLies.offers.filter(
+          (offer) => offer.salesEnabled && offer.code === "with-mentor",
+        ),
+      )
+      .map((offer) => offer.id),
+  );
+});
 
 test("shows only the two current tutorials and the database-enabled tariffs and prices", () => {
   const products = structuredClone(SELLABLE_PRODUCTS_LIST);

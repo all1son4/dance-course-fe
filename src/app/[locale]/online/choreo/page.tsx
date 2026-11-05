@@ -48,8 +48,10 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function ChoreoPage() {
-  const [t, commonT, saleState] = await Promise.all([
+  const [t, metadataT, onlineT, commonT, saleState] = await Promise.all([
     getTranslations("ChoreoPage"),
+    getTranslations("Metadata"),
+    getTranslations("OnlinePage"),
     getTranslations("Common"),
     getProductsSaleState(
       CHOREO_CATALOGUE_PRODUCT_CODES.map((code) => SELLABLE_PRODUCTS[code].id),
@@ -62,8 +64,8 @@ export default async function ChoreoPage() {
     <>
       <StructuredData
         data={buildBreadcrumbStructuredData([
-          { name: "Home", path: "/" },
-          { name: "Online classes", path: "/online" },
+          { name: metadataT("breadcrumbHome"), path: "/" },
+          { name: onlineT("hero.title"), path: "/online" },
           { name: t("hero.title"), path: "/online/choreo" },
         ])}
       />
@@ -74,6 +76,7 @@ export default async function ChoreoPage() {
             boxes={{ MobileImagesBox, ImageBox, IconBox }}
             photo={{
               asset: HERO_MEDIA.choreo,
+              alt: metadataT("pages.choreo.heroImageAlt"),
               mobileSizes: "(max-width: 767px) 100vw, 0px",
               desktopSizes:
                 "(max-width: 767px) 0px, (max-width: 880px) 490px, (max-width: 1140px) 540px, (max-width: 1240px) 640px, 794px",
