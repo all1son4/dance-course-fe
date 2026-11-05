@@ -1,6 +1,13 @@
 import styled from "styled-components";
 
 import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
+import {
+  stickyPhotoBox,
+  stickyPhotoColumn,
+  stickyPhotoColumnWithoutPhoto,
+  stickyPhotoPair,
+  stickyPhotoSlot,
+} from "@/styles/mixins/stickyPhoto";
 
 export const FAQContainer = styled.div`
   display: grid;
@@ -11,9 +18,11 @@ export const FAQContainer = styled.div`
     gap: 40px;
   }
 
+  /* No photo from here down: a narrow column wraps the title onto two lines and
+     leaves the questions more room. */
   @media (max-width: 880px) {
-    grid-template-columns: 320px 1fr;
-    gap: 20px;
+    grid-template-columns: 260px 1fr;
+    gap: 30px;
   }
 
   @media (max-width: 680px) {
@@ -23,14 +32,16 @@ export const FAQContainer = styled.div`
   }
 `;
 
-/* The title and the photo stick together beside the questions. */
 export const FAQSide = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 36px;
-  position: sticky;
-  top: calc(var(--header-clearance) + var(--safe-area-top));
-  align-self: start;
+  ${stickyPhotoColumn}
+
+  @media (max-width: 880px) {
+    ${stickyPhotoColumnWithoutPhoto}
+  }
+`;
+
+export const FAQPair = styled.div`
+  ${stickyPhotoPair}
 
   @media (max-width: 767px) {
     top: calc(84px + var(--safe-area-top));
@@ -38,7 +49,6 @@ export const FAQSide = styled.div`
 
   @media (max-width: 680px) {
     position: static;
-    top: auto;
   }
 `;
 
@@ -46,21 +56,16 @@ export const Title = styled(SectionTitleBase)`
   color: var(--ink);
 `;
 
-export const FAQPhotoFrame = styled.div`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  max-height: calc(100svh - var(--header-clearance) - 200px);
-  border-radius: var(--radius-card);
-  overflow: hidden;
-
-  & img {
-    object-fit: cover;
-  }
+export const FAQPhotoSlot = styled.div`
+  ${stickyPhotoSlot}
 
   @media (max-width: 880px) {
     display: none;
   }
+`;
+
+export const FAQPhotoBox = styled.div`
+  ${stickyPhotoBox}
 `;
 
 export const QuestionsList = styled.ul`

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import type { ComponentType, ReactNode } from "react";
 
@@ -5,7 +6,12 @@ import type { IconTextPanelProps } from "@/components/cards/IconTextCard";
 import SuggestionTiles from "@/components/cards/SuggestionTiles";
 import { imageFadeProps } from "@/lib/reveal";
 
-import { SuggestionPhoto, SuggestionPhotoFrame, SuggestionSide } from "./section.styles";
+import {
+  SuggestionPair,
+  SuggestionPhotoBox,
+  SuggestionPhotoSlot,
+  SuggestionSide,
+} from "./section.styles";
 
 type SuggestionItem = IconTextPanelProps & { id: number | string };
 
@@ -47,16 +53,20 @@ export default async function SuggestionGrid({
     <Section id={id}>
       {photo ? (
         <SuggestionSide $compactBelow={compactBelow}>
-          <Title>{title}</Title>
-          <SuggestionPhotoFrame $compactBelow={compactBelow}>
-            <SuggestionPhoto
-              {...imageFadeProps}
-              src={photo}
-              alt=""
-              fill
-              sizes={`(max-width: ${compactBelow}px) 0px, (max-width: 1240px) 360px, 420px`}
-            />
-          </SuggestionPhotoFrame>
+          <SuggestionPair $compactBelow={compactBelow}>
+            <Title>{title}</Title>
+            <SuggestionPhotoSlot $compactBelow={compactBelow}>
+              <SuggestionPhotoBox>
+                <Image
+                  {...imageFadeProps}
+                  src={photo}
+                  alt=""
+                  fill
+                  sizes={`(max-width: ${compactBelow}px) 0px, (max-width: 1240px) 360px, 420px`}
+                />
+              </SuggestionPhotoBox>
+            </SuggestionPhotoSlot>
+          </SuggestionPair>
         </SuggestionSide>
       ) : (
         <Title>{title}</Title>
