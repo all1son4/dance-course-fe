@@ -204,8 +204,8 @@ export const BottomInfoRow = styled.div`
   display: flex;
 `;
 
-/* The divider and its 40px margins collapse on the same track curve as the
-   top row, so the two halves of the card move as one. */
+/* The divider and its margins collapse on the same track curve as the top row,
+   so the two halves of the card move as one. */
 export const DividerReveal = styled.div<{ $isCollapsed?: boolean }>`
   width: 100%;
   ${({ $isCollapsed }) => gridRowReveal(!$isCollapsed, "var(--motion-slow, 320ms)")}
@@ -215,13 +215,13 @@ export const Divider = styled.div<{ $isCollapsed?: boolean }>`
   width: 100%;
   height: 1px;
   background: var(--card-divider-background, rgba(209, 211, 218, 1));
-  margin: 40px 0;
+  margin: 26px 0;
   opacity: ${({ $isCollapsed }) => ($isCollapsed ? 0 : 1)};
   transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
   transition-delay: ${({ $isCollapsed }) => ($isCollapsed ? "0ms" : "var(--motion-settle, 40ms)")};
 
   @media (max-width: 880px) {
-    margin: 30px 0;
+    margin: 22px 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
