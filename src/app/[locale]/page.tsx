@@ -44,6 +44,7 @@ import {
   AchievementMeta,
   AchievementName,
   AchievementResult,
+  AchievementsBox,
   AchievementsList,
   ButtonsBox,
   CourseOptionsBox,
@@ -186,29 +187,31 @@ export default function Home() {
           <AboutMeParagraph>{t("about.bio.2")}</AboutMeParagraph>
         </AboutMeParagraphs>
 
-        <AchievementsList>
-          {ACHIEVEMENTS.map(({ id, handle, href, placement }) => (
-            <AchievementItem key={id}>
-              <AchievementResult>
-                {t(`about.achievements.${id}.result`)}
-              </AchievementResult>
-              <AchievementInfo>
-                <AchievementName>{t(`about.achievements.${id}.title`)}</AchievementName>
-                <AchievementMeta>
-                  <TrackedAnchor
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    analytics={{ id: "achievement_instagram", placement }}
-                  >
-                    {handle}
-                  </TrackedAnchor>
-                  {` · ${t(`about.achievements.${id}.city`)}`}
-                </AchievementMeta>
-              </AchievementInfo>
-            </AchievementItem>
-          ))}
-        </AchievementsList>
+        <AchievementsBox>
+          <AchievementsList>
+            {ACHIEVEMENTS.map(({ id, handle, href, placement }) => (
+              <AchievementItem key={id}>
+                <AchievementResult>
+                  {t(`about.achievements.${id}.result`)}
+                </AchievementResult>
+                <AchievementInfo>
+                  <AchievementName>{t(`about.achievements.${id}.title`)}</AchievementName>
+                  <AchievementMeta>
+                    <TrackedAnchor
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      analytics={{ id: "achievement_instagram", placement }}
+                    >
+                      {handle}
+                    </TrackedAnchor>
+                    {` · ${t(`about.achievements.${id}.city`)}`}
+                  </AchievementMeta>
+                </AchievementInfo>
+              </AchievementItem>
+            ))}
+          </AchievementsList>
+        </AchievementsBox>
       </AboutMeTextBox>
       <AboutMeImageBox>
         <AboutMeImageFrame>
