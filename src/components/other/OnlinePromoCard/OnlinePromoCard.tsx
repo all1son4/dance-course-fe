@@ -28,8 +28,7 @@ export default function OnlinePromoCard({ bgColor, icon }: OnlinePromoCardProps)
       cardContent={
         <CourseList>
           <li>
-            {t("items.1.prefix")}{" "}
-            <HighlightText>&quot;{t("items.1.highlight")}&quot;</HighlightText>
+            {t("items.1.prefix")} <HighlightText>{t("items.1.highlight")}</HighlightText>
           </li>
           <li>
             {t("items.2.prefix")} <HighlightText>{t("items.2.highlight")}</HighlightText>

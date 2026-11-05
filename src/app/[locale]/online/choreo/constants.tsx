@@ -59,11 +59,11 @@ const getCompactChoreoTitle = (title: string) => {
  * Poster, Instagram reel and optional hover/in-view preview per card.
  *
  * Preview clips: add `previewSrc: "/videos/choreo/<slug>-preview.mp4"` and put
- * the file in `public/videos/choreo/`. Keep it short and light - about 5 s,
- * 720 px wide, H.264, no audio track, under ~600 KB, first frame close to the
- * poster - e.g.
- *   ffmpeg -ss <start> -t 5 -i reel.mp4 -map 0:v:0 -an -map_metadata -1
- *     -vf "scale=720:-2,fps=30" -c:v libx264 -profile:v high -crf 28
+ * the file in `public/videos/choreo/`. Keep it short and light - 7-10 s,
+ * 720 px wide and cropped to the card's 3:2 box, H.264, no audio track, under
+ * ~1 MB, first frame close to the poster - e.g.
+ *   ffmpeg -ss <start> -t 8 -i reel.mp4 -map 0:v:0 -an -map_metadata -1
+ *     -vf "crop=720:483:0:<top>,fps=30" -c:v libx264 -profile:v high -crf 27
  *     -preset slow -pix_fmt yuv420p -movflags +faststart
  *     public/videos/choreo/<slug>-preview.mp4
  * Without one, the card shows its poster exactly as before.
@@ -77,6 +77,7 @@ const CHOREO_PRESENTATIONS = {
   "choreo-her-lies": {
     posterSrc: "/images/her_lies_poster.webp",
     posterColor: "#27170b",
+    previewSrc: "/videos/choreo/her-lies-preview.mp4",
     videoSrc: CHOREO_HER_LIES_REEL_URL,
   },
   "choreo-bundle": {
@@ -86,6 +87,7 @@ const CHOREO_PRESENTATIONS = {
   "choreo-love-me-in-the-morning": {
     posterSrc: "/images/love_me_in_the_morning_poster.webp",
     posterColor: "#160d0d",
+    previewSrc: "/videos/choreo/love-me-in-the-morning-preview.mp4",
     videoSrc: CHOREO_LOVE_ME_IN_THE_MORNING_REEL_URL,
   },
 } satisfies Partial<

@@ -63,7 +63,10 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
     variant: "chrome",
     radius: "var(--radius-slab)",
     bgParam: "rgba(255, 255, 255, 0.4)",
-    frostPx: 12,
+    /* Text and dark video pass under the pill: a 32% fill and more frost keep
+       the logo readable; the rim and highlights stay, so it is still glass. */
+    fillPercent: 80,
+    frostPx: 21,
     hoverEffect: false,
   })}
 
@@ -85,9 +88,17 @@ export const Pill = styled.div<{ $isOpen: boolean }>`
       variant: "chrome",
       radius: "var(--radius-panel)",
       bgParam: "rgba(255, 255, 255, 0.4)",
-      frostPx: 12,
+      fillPercent: 80,
+      frostPx: 21,
       hoverEffect: false,
     })}
+
+    /* The mixin caps phone blur at 9px to spare large panels; this pill is
+       small, and 9px still lets the words under it show through. */
+    && {
+      backdrop-filter: saturate(1.7) contrast(1.02) blur(16px);
+      -webkit-backdrop-filter: saturate(1.7) contrast(1.02) blur(16px);
+    }
   }
 `;
 

@@ -67,7 +67,7 @@ Overall just happy to be there. And I would love to join online courses with you
  * `min-width` queries on the window, like the CSS ones).
  */
 export const REVIEW_SLIDER_LAYOUT = {
-  base: { slidesPerView: 1, spaceBetween: 14 },
+  base: { slidesPerView: 1.08, spaceBetween: 12 },
   breakpoints: {
     600: { slidesPerView: 2, spaceBetween: 18 },
     1024: { slidesPerView: 3, spaceBetween: 20 },

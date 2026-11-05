@@ -25,10 +25,25 @@ export const DetailStrongText = styled.p`
   font-weight: 600;
   font-style: normal;
   font-size: var(--text-body);
-  line-height: 1.1;
+  line-height: 1.3;
   letter-spacing: 0;
   margin: 0;
   color: var(--ink);
+`;
+
+/* A date or a period in a card: smaller than a price, it can run long. */
+export const DetailFactText = styled.p`
+  font-weight: 400;
+  font-style: normal;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0;
+  margin: 0;
+  color: var(--ink);
+
+  @media (max-width: 550px) {
+    font-size: var(--text-lead);
+  }
 `;
 
 export const DetailValueText = styled.p`

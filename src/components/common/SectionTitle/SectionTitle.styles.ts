@@ -11,6 +11,6 @@ export const SectionTitleBase = styled.h2`
   margin: 0;
 
   @media (max-width: 880px) {
-    font-size: var(--text-h2);
+    font-size: var(--text-section);
   }
 `;

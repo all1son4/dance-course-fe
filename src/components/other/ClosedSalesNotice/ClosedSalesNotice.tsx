@@ -25,7 +25,7 @@ type ClosedSalesNoticeProps = {
 /**
  * The one way "sales are closed" looks on a product page: a compact status
  * line with the exclamation badge - visibly quieter than a button, so it
- * never reads as one.
+ * never reads as one. The text stays in plain ink so it does not read as an error.
  */
 export default function ClosedSalesNotice({
   text,

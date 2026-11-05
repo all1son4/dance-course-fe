@@ -214,7 +214,7 @@ export const CardFooter = styled.div`
 export const CardPriceFact = styled.div`
   display: flex;
   flex-direction: column;
-  padding: 0 0 0 4px;
+  padding: 0;
 `;
 
 export const CardPriceLabel = styled.p`

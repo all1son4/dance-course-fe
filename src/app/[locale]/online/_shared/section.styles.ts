@@ -1,3 +1,4 @@
+import Image from "next/image";
 import styled, { css } from "styled-components";
 
 import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
@@ -85,6 +86,45 @@ export const AboutChoreoTitle = styled(SectionTitleBase)`
     position: static;
     top: auto;
   }
+`;
+
+/* The title and photo travel together beside the column of cards, so the pair
+   is what sticks; the photo never outgrows a short laptop screen. */
+export const SuggestionSide = styled.div<{ $compactBelow: number }>`
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  flex: none;
+  width: 420px;
+  align-self: flex-start;
+  position: sticky;
+  top: calc(var(--header-clearance) + var(--safe-area-top));
+
+  @media (max-width: 1240px) {
+    width: 360px;
+  }
+
+  @media (max-width: ${({ $compactBelow }) => $compactBelow}px) {
+    width: 100%;
+    position: static;
+  }
+`;
+
+export const SuggestionPhotoFrame = styled.div<{ $compactBelow: number }>`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: calc(100svh - var(--header-clearance) - 200px);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+
+  @media (max-width: ${({ $compactBelow }) => $compactBelow}px) {
+    display: none;
+  }
+`;
+
+export const SuggestionPhoto = styled(Image)`
+  object-fit: cover;
 `;
 
 /* ---------- hero text column, shared by the course/choreo pages ---------- */

@@ -263,6 +263,10 @@ export const TileTitle = styled.span<CompactProps>`
       css`
         font-size: var(--text-small);
         line-height: 1.3;
+        /* Two narrow columns on phones: long words wrap with a hyphen. The
+           word-level break stays only as the last resort for 320px. */
+        hyphens: auto;
+        -webkit-hyphens: auto;
         overflow-wrap: anywhere;
       `,
     )}
