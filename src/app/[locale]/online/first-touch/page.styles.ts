@@ -321,6 +321,13 @@ export const CourseProgramImage = styled(Image)`
   max-width: 473px;
   border-radius: var(--radius-slab);
   height: fit-content;
+  position: sticky;
+  top: calc(var(--header-clearance) + var(--safe-area-top));
+  align-self: flex-start;
+  /* The whole photo stays on a short screen while it sticks. */
+  max-height: calc(100svh - var(--header-clearance) - var(--safe-area-top) - 24px);
+  object-fit: cover;
+  object-position: center top;
 
   @media (max-width: 1240px) {
     max-width: 380px;
@@ -329,6 +336,9 @@ export const CourseProgramImage = styled(Image)`
   @media (max-width: 920px) {
     max-width: 550px;
     margin: 0 auto;
+    position: static;
+    align-self: auto;
+    max-height: none;
   }
 
   @media (max-width: 767px) {
