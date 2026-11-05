@@ -4,70 +4,66 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Ucz się Frame Up Strip z profesjonalną tancerką Anną Strok: kursy online, regularne treningi z feedbackiem i zajęcia offline w Warszawie.",
+    "description": "Frame Up Strip z Anną Strok: kursy online na Telegramie z feedbackiem i praktyka Impro Room w Warszawie.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
-    "ogImageAlt": "Anna Strok podczas zajęć Frame Up Strip",
-    "keywords": "Anna Strok, Frame Up Strip, taniec Warszawa, kurs tańca online, zajęcia taneczne offline, tutorial choreografii, high heels dance",
+    "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
     "pages": {
       "home": {
-        "title": "Frame Up Strip w Warszawie i online",
-        "description": "Frame Up Strip z Anną Strok: kursy online w Telegramie z indywidualnym feedbackiem i zajęcia stacjonarne w Warszawie. Zacznij od zera lub rozwijaj się dalej.",
-        "ogImageAlt": "Anna Strok i uczestniczki podczas zajęć Frame Up Strip",
-        "keywords": "Anna Strok taniec, Frame Up Strip Warszawa, kurs tańca online, zajęcia taneczne Warszawa, high heels dance"
+        "title": "Anna Strok: Frame Up Strip online i w Warszawie",
+        "description": "Kursy Frame Up Strip online na Telegramie z feedbackiem do Twoich nagrań i praktyka Impro Room w Warszawie. Kurs od zera, treningi i samouczki choreografii.",
+        "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
+        "heroImageAlt": "Anna Strok w butach strip na wysokim stołku, z głową odchyloną do tyłu"
       },
       "online": {
-        "title": "Kursy Frame Up Strip online w Telegramie",
-        "description": "Wszystkie formaty online Anny Strok: kurs First Touch dla początkujących, Online Group z feedbackiem i samouczki choreografii. Trenuj z dowolnego kraju.",
-        "ogImageAlt": "Kursy online Frame Up Strip prowadzone przez Annę Strok",
-        "keywords": "kurs frame up online, first touch kurs, tutorial choreografii online, telegram kurs tańca, Anna Strok online"
+        "title": "Kursy Frame Up Strip online na Telegramie",
+        "description": "Samouczki choreografii, Online Group dla średniozaawansowanych i zaawansowanych oraz First Touch dla osób, które nigdy nie tańczyły. Z dowolnego kraju.",
+        "ogImageAlt": "Anna Strok: kursy Frame Up Strip online",
+        "heroImageAlt": "Anna Strok w butach strip, z ugiętymi kolanami i dłońmi złączonymi przed sobą"
       },
       "firstTouch": {
-        "title": "First Touch — kurs dla początkujących",
-        "description": "Frame Up Strip od zera: technika, praca stóp, plastyka i emocje. W półtora miesiąca nauczysz się pierwszej choreografii. Dostęp do lekcji przez 120 dni.",
-        "ogImageAlt": "Kurs First Touch dla początkujących",
-        "keywords": "First Touch kurs, kurs tańca dla początkujących online, frame up strip podstawy, Anna Strok First Touch"
+        "title": "First Touch: kurs Frame Up Strip online od zera",
+        "description": "Dla osób, które nigdy nie tańczyły: podstawy, praca stóp i pierwsza choreografia. 5 lekcji online w półtora miesiąca, zadania z feedbackiem, 120 dni dostępu.",
+        "ogImageAlt": "First Touch: kurs Frame Up Strip dla początkujących",
+        "heroImageAlt": "Anna Strok na stołku w butach strip, z szeroko rozstawionymi nogami"
       },
       "onlineGroup": {
-        "title": "Online Group — regularne treningi online",
-        "description": "Cotygodniowe lekcje Frame Up Strip, zadania z indywidualnym feedbackiem i prywatny czat na Telegramie. Trenuj w domu we własnym tempie.",
-        "ogImageAlt": "Grupa regularnych treningów online Anny Strok",
-        "keywords": "online group anna strok, treningi tańca online, frame up online, taniec telegram"
+        "title": "Online Group: treningi Frame Up Strip online",
+        "description": "Sześciotygodniowy cykl na Telegramie dla średniozaawansowanych i zaawansowanych: 5 nowych lekcji, zadania z feedbackiem do nagrań i zamknięty czat grupy.",
+        "ogImageAlt": "Online Group: treningi online z Anną Strok"
       },
       "choreo": {
         "title": "Samouczki choreografii Frame Up Strip",
-        "description": "Krok po kroku rozbiory autorskich choreografii: technika, wyraz i muzykalność. Powtarzaj lekcje tyle razy, ile potrzebujesz, by złożyć cały układ.",
-        "ogImageAlt": "Samouczki choreograficzne Anny Strok",
-        "keywords": "samouczek choreografii online, her lies dance, pakiet choreografii, frame up choreography, anna strok choreography"
+        "description": "Choreografie Anny Strok krok po kroku, z wyjaśnieniami po rosyjsku i angielsku: ruchy, technika i ekspresja. Dla średniozaawansowanych i zaawansowanych.",
+        "ogImageAlt": "Samouczki choreografii Anny Strok",
+        "heroImageAlt": "Anna Strok w głębokim przysiadzie w butach strip, z dłońmi między kolanami"
       },
       "offline": {
-        "title": "Zajęcia Frame Up Strip w Warszawie",
-        "description": "Treningi w studiu z Anną Strok w Warszawie: praktyka improwizacji w Impro Room i zajęcia indywidualne. Korekty na żywo i praca nad wyrazem scenicznym.",
-        "ogImageAlt": "Zajęcia offline Frame Up Strip w Warszawie",
-        "keywords": "frame up strip warszawa, zajęcia taneczne warszawa, high heels warszawa"
+        "title": "Frame Up Strip w Warszawie: Impro Room",
+        "description": "Spotkania Impro Room z Anną Strok na warszawskiej Woli: zadania, jam i dużo improwizacji, 50 PLN za zajęcia. Dostępne są też zajęcia indywidualne.",
+        "ogImageAlt": "Anna Strok: Impro Room w Warszawie",
+        "heroImageAlt": "Anna Strok na stołku w butach strip, z jedną ręką uniesioną"
       },
       "privacyPolicy": {
         "title": "Polityka prywatności",
         "description": "Polityka prywatności strony Anna Strok: zasady przetwarzania danych osobowych, podstawa prawna i dane kontaktowe.",
-        "ogImageAlt": "Strona polityki prywatności Anna Strok",
-        "keywords": "polityka prywatności anna strok, przetwarzanie danych osobowych, privacy policy dance website"
+        "ogImageAlt": "Strona polityki prywatności Anna Strok"
       },
       "cookiePolicy": {
         "title": "Polityka cookies",
         "description": "Polityka cookies serwisu Anna Strok: jakie technologie przechowywania są używane, w jakim celu i jak zarządzać zgodą.",
-        "ogImageAlt": "Polityka cookies Anna Strok",
-        "keywords": "polityka cookies anna strok, zgoda na cookies, ustawienia cookies, pliki cookies serwisu"
+        "ogImageAlt": "Polityka cookies Anna Strok"
       },
       "birthdayDrop": {
         "title": "The Birthday Drop „Love me in the morning”",
         "description": "Rozbiór choreografii „Love me in the morning”, playlista, moodboard i link do wywiadu „34 pytania” na YouTube. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
-        "ogImageAlt": "The Birthday Drop „Love me in the morning” od Anny Strok",
-        "keywords": "birthday drop, love me in the morning, tutorial choreografii online, frame up tutorial, Anna Strok choreografia"
+        "ogImageAlt": "The Birthday Drop „Love me in the morning” od Anny Strok"
       },
       "payment": {
         "title": "Bezpieczna płatność"
       }
-    }
+    },
+    "breadcrumbHome": "Strona główna"
   },
   "Header": {
     "aria": {
@@ -342,7 +338,7 @@
           "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
         },
         "startLabel": "Start kolejnego cyklu",
-        "startValue": "Listopad – grudzień"
+        "startValue": "Listopad"
       },
       "choreo": {
         "title": "Samouczki moich choreografii",
@@ -536,7 +532,7 @@
         "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
       },
       "startLabel": "Start kolejnej grupy",
-      "startDate": "Listopad – grudzień",
+      "startDate": "Listopad",
       "priceLabel": "Cena dla nowych uczestników",
       "buyButton": "Kup swoje miejsce",
       "offers": {

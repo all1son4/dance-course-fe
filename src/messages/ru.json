@@ -4,70 +4,66 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Изучай Frame Up Strip с профессиональной танцовщицей Анной Строк: онлайн-курсы, регулярные тренировки с обратной связью и офлайн-занятия в Варшаве.",
+    "description": "Frame Up Strip с Анной Строк: онлайн-курсы в Telegram с обратной связью и встречи Impro Room в Варшаве.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
-    "ogImageAlt": "Анна Строк на занятии Frame Up Strip",
-    "keywords": "Анна Строк, Frame Up Strip, танцы Варшава, онлайн курс танцев, офлайн занятия танцами, choreography tutorial, dance classes Warsaw",
+    "ogImageAlt": "Анна Строк, танцовщица и преподаватель Frame Up Strip",
     "pages": {
       "home": {
-        "title": "Frame Up Strip в Варшаве и онлайн",
-        "description": "Занятия Frame Up Strip с Анной Строк: онлайн-курсы в Telegram с обратной связью и офлайн-практика в Варшаве. Начни с нуля или продолжи развитие.",
-        "ogImageAlt": "Анна Строк и ученицы на тренировке Frame Up Strip",
-        "keywords": "frame up strip варшава, anna strok, курсы танцев онлайн, занятия танцами варшава, high heels варшава"
+        "title": "Анна Строк: Frame Up Strip онлайн и в Варшаве",
+        "description": "Онлайн-курсы Frame Up Strip в Telegram с обратной связью по видео и практика Impro Room в Варшаве. Курс с нуля, тренировки и разборы хореографий.",
+        "ogImageAlt": "Анна Строк, танцовщица и преподаватель Frame Up Strip",
+        "heroImageAlt": "Анна Строк в стрипах на высоком стуле, голова запрокинута назад"
       },
       "online": {
         "title": "Онлайн-курсы Frame Up Strip в Telegram",
-        "description": "Все онлайн-форматы Анны Строк: курс First Touch для новичков, Online Group с обратной связью и видео-разборы хореографий. Занимайся из любой страны.",
-        "ogImageAlt": "Онлайн курсы Frame Up Strip от Анны Строк",
-        "keywords": "онлайн курс frame up, first touch курс, видео разбор хореографии, танцы в telegram, anna strok online"
+        "description": "Видео-разборы хореографий, Online Group для среднего и продолжающего уровня и курс First Touch для тех, кто никогда не танцевал. Из любой страны.",
+        "ogImageAlt": "Анна Строк: онлайн-курсы Frame Up Strip",
+        "heroImageAlt": "Анна Строк в стрипах, колени согнуты, руки сложены перед собой"
       },
       "firstTouch": {
-        "title": "First Touch — курс для начинающих",
-        "description": "Frame Up Strip с нуля: техника, работа со стопами, пластика и эмоции. За 1,5 месяца ты выучишь первую хореографию. Доступ к урокам — 120 дней.",
-        "ogImageAlt": "Курс First Touch для начинающих в стиле Frame Up Strip",
-        "keywords": "first touch, курс для начинающих танцы, frame up strip база, anna strok first touch, онлайн танцы для новичков"
+        "title": "First Touch: онлайн-курс Frame Up Strip с нуля",
+        "description": "Онлайн-курс для тех, кто никогда не танцевал: база, стопы и первая хореография. 5 уроков за 1,5 месяца, задания с обратной связью, доступ 120 дней.",
+        "ogImageAlt": "Курс First Touch: Frame Up Strip для начинающих",
+        "heroImageAlt": "Анна Строк на стуле в стрипах, ноги широко расставлены"
       },
       "onlineGroup": {
-        "title": "Online Group — регулярные онлайн-тренировки",
-        "description": "Еженедельные уроки Frame Up Strip, задания с личной обратной связью и закрытый Telegram-чат. Занимайся дома в своём темпе и оставайся на связи.",
-        "ogImageAlt": "Онлайн-группа танцевальных тренировок Анны Строк",
-        "keywords": "online group anna strok, онлайн тренировки танцы, frame up онлайн, танцы telegram"
+        "title": "Online Group: онлайн-тренировки Frame Up Strip",
+        "description": "Шестинедельный поток в Telegram для среднего и продолжающего уровня: 5 новых уроков, домашние задания с обратной связью по видео и закрытый чат группы.",
+        "ogImageAlt": "Online Group: онлайн-тренировки Анны Строк"
       },
       "choreo": {
         "title": "Видео-разборы хореографий Frame Up Strip",
-        "description": "Пошаговые разборы авторских хореографий: техника, подача и музыкальность. Пересматривай уроки столько раз, сколько нужно, чтобы собрать связку целиком.",
+        "description": "Хореографии Анны Строк по шагам, с объяснениями на русском и английском: движения, техника, подача. Для среднего и продолжающего уровня.",
         "ogImageAlt": "Видео-разборы хореографий Анны Строк",
-        "keywords": "разбор хореографии онлайн, her lies dance, bundle хореографий, frame up choreography, anna strok choreography"
+        "heroImageAlt": "Анна Строк в глубоком приседе в стрипах, руки между коленей"
       },
       "offline": {
-        "title": "Офлайн-занятия Frame Up Strip в Варшаве",
-        "description": "Тренировки в студии с Анной Строк: практика импровизации в Impro Room и индивидуальные занятия. Живой контакт, разбор техники и работа над подачей.",
-        "ogImageAlt": "Офлайн тренировки Frame Up Strip в Варшаве",
-        "keywords": "frame up strip варшава офлайн, танцы варшава для девушек, high heels classes warsaw"
+        "title": "Frame Up Strip в Варшаве: Impro Room",
+        "description": "Встречи Impro Room с Анной Строк в районе Воля: задания, концепты, джем и много импровизации, 50 PLN за занятие. Также есть индивидуальные занятия.",
+        "ogImageAlt": "Анна Строк: Impro Room в Варшаве",
+        "heroImageAlt": "Анна Строк на стуле в стрипах, одна рука поднята вверх"
       },
       "privacyPolicy": {
         "title": "Политика конфиденциальности",
         "description": "Политика конфиденциальности Anna Strok: порядок обработки персональных данных, контакты и правовые основания.",
-        "ogImageAlt": "Политика конфиденциальности Anna Strok",
-        "keywords": "политика конфиденциальности anna strok, защита персональных данных, privacy policy dance platform"
+        "ogImageAlt": "Политика конфиденциальности Anna Strok"
       },
       "cookiePolicy": {
         "title": "Политика cookies",
         "description": "Политика cookies сайта Anna Strok: какие технологии хранения используются, для чего они нужны и как управлять согласием.",
-        "ogImageAlt": "Политика cookies Anna Strok",
-        "keywords": "cookie policy anna strok, политика cookies, согласие на cookie, настройки cookies сайта"
+        "ogImageAlt": "Политика cookies Anna Strok"
       },
       "birthdayDrop": {
         "title": "The Birthday Drop «Love me in the morning»",
         "description": "Разбор хореографии «Love me in the morning», плейлист, мудборд и YouTube-ссылка на интервью «34 вопроса». Доступ ко всем материалам навсегда, оплата из любой страны.",
-        "ogImageAlt": "The Birthday Drop «Love me in the morning» от Анны Строк",
-        "keywords": "birthday drop, love me in the morning, разбор хореографии онлайн, frame up choreography, anna strok choreography"
+        "ogImageAlt": "The Birthday Drop «Love me in the morning» от Анны Строк"
       },
       "payment": {
         "title": "Безопасная оплата"
       }
-    }
+    },
+    "breadcrumbHome": "Главная"
   },
   "Header": {
     "aria": {
@@ -342,7 +338,7 @@
           "2": "Если у тебя нет возможности посещать мои офлайн-занятия, ты сможешь получать новые знания, практиковаться дома и быть на связи со мной, где бы ты ни находилась."
         },
         "startLabel": "Старт следующего потока",
-        "startValue": "Ноябрь — декабрь"
+        "startValue": "Ноябрь"
       },
       "choreo": {
         "title": "Видео-разборы моих хореографий",
@@ -536,7 +532,7 @@
         "2": "Подходит для среднего и продолжающего уровня."
       },
       "startLabel": "Старт следующей группы",
-      "startDate": "Ноябрь — декабрь",
+      "startDate": "Ноябрь",
       "priceLabel": "Стоимость для новых участников",
       "buyButton": "Купить своё место",
       "offers": {

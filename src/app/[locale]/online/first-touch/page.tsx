@@ -1,4 +1,4 @@
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 
 import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import Button from "@/components/common/Button";
@@ -16,11 +16,7 @@ import CourseSignupDialog from "@/features/course-signup";
 import PageClientMessages from "@/i18n/PageClientMessages";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { imageFadeProps } from "@/lib/reveal";
-import {
-  annaStrokStructuredDataId,
-  buildBreadcrumbStructuredData,
-  normalizedSiteUrl,
-} from "@/lib/seo";
+import { buildBreadcrumbStructuredData } from "@/lib/seo";
 
 import ProductFact from "../_shared/product-fact";
 import ProductHero from "../_shared/product-hero";
@@ -33,7 +29,10 @@ import {
   SpecialWrapper,
   VideoSection,
 } from "../_shared/section.styles";
-import { buildCourseOffersStructuredData } from "../_shared/structured-data";
+import {
+  buildCourseOffersStructuredData,
+  buildCourseStructuredData,
+} from "../_shared/structured-data";
 import SuggestionGrid from "../_shared/suggestion-grid";
 import { getFirstTouchSuggestions } from "./constants";
 import {
@@ -57,29 +56,23 @@ export const generateMetadata = () =>
   buildLocalizedPageMetadata({ pageKey: "firstTouch", path: "/online/first-touch" });
 
 export default function FirstTouch() {
-  const locale = useLocale();
   const t = useTranslations("FirstTouchPage");
+  const metadataT = useTranslations("Metadata");
+  const onlineT = useTranslations("OnlinePage");
   const onlineSuggestions = getFirstTouchSuggestions((key) => t(key));
   const defaultOffer = getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT);
   const coursePrice = formatOfferPrice(defaultOffer.prices);
-  const courseStructuredData = {
-    "@context": "https://schema.org",
-    "@type": "Course",
+  const courseStructuredData = buildCourseStructuredData({
     name: t("hero.title"),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
-    inLanguage: locale,
-    provider: {
-      "@type": "Person",
-      "@id": annaStrokStructuredDataId,
-      name: "Anna Strok",
-      url: normalizedSiteUrl,
-    },
-    url: `${normalizedSiteUrl}/online/first-touch`,
+    path: "/online/first-touch",
     offers: buildCourseOffersStructuredData({
       landingPath: "/online/first-touch",
       offer: defaultOffer,
+      // Places are taken through the sign-up list; payment comes before the start.
+      availability: "PreOrder",
     }),
-  };
+  });
 
   const renderIntroductionSection = () => (
     <ProductHero
@@ -89,6 +82,7 @@ export default function FirstTouch() {
           boxes={{ MobileImagesBox, ImageBox, IconBox }}
           photo={{
             asset: HERO_MEDIA.firstTouch,
+            alt: metadataT("pages.firstTouch.heroImageAlt"),
             mobileSizes: "(max-width: 450px) 100vw, (max-width: 767px) 90vw, 0px",
             desktopSizes:
               "(max-width: 767px) 0px, (max-width: 920px) 380px, (max-width: 1100px) 470px, (max-width: 1240px) 500px, 660px",
@@ -172,8 +166,8 @@ export default function FirstTouch() {
       <StructuredData
         data={[
           buildBreadcrumbStructuredData([
-            { name: "Home", path: "/" },
-            { name: "Online classes", path: "/online" },
+            { name: metadataT("breadcrumbHome"), path: "/" },
+            { name: onlineT("hero.title"), path: "/online" },
             { name: t("hero.title"), path: "/online/first-touch" },
           ]),
           courseStructuredData,
