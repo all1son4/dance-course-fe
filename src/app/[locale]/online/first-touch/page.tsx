@@ -200,6 +200,7 @@ export default function FirstTouch() {
           }}
           title={t("about.title")}
           items={onlineSuggestions}
+          photo="/images/photos/about_first_touch.webp"
         />
         {renderCourseProgramSection()}
         <Contacts layout="spaced" />

@@ -3,6 +3,7 @@ import styled from "styled-components";
 
 import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
 import { glass } from "@/styles/mixins/glass";
+import { hitArea } from "@/styles/mixins/hitArea";
 
 export const IntroduceSection = styled.section`
   position: relative;
@@ -261,7 +262,7 @@ export const AboutMeTitle = styled.h2`
   color: var(--ink);
 
   @media (max-width: 880px) {
-    font-size: var(--text-h2);
+    font-size: var(--text-section);
     margin: 0 0 30px 0;
   }
 `;
@@ -290,35 +291,80 @@ export const AboutMeParagraph = styled.p`
   }
 `;
 
-export const AboutMeList = styled.ul`
-  list-style: disc;
-  padding-left: 22px;
+/* Results read first: a fixed column for the place, then the category and
+   where it was won. The rows keep the width and rhythm of the text above. */
+export const AchievementsList = styled.ul`
+  list-style: none;
+  width: 100%;
+  padding: 0;
   margin: 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+`;
 
+export const AchievementItem = styled.li`
+  display: grid;
+  grid-template-columns: 122px minmax(0, 1fr);
+  column-gap: 16px;
+  align-items: baseline;
+  padding: 13px 0;
+  margin: 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 1110px) {
+    grid-template-columns: 104px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+`;
+
+export const AchievementResult = styled.p`
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-lead);
+  font-weight: 400;
+  line-height: 1.25;
+
+  @media (max-width: 1110px) {
+    font-size: 18px;
+  }
+`;
+
+export const AchievementInfo = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
+  min-width: 0;
+`;
 
-  font-weight: var(--weight-text);
-  font-style: normal;
-  font-size: var(--text-body);
-  line-height: 1.5;
-  letter-spacing: 0;
+export const AchievementName = styled.p`
+  margin: 0;
   color: var(--ink);
+  font-size: var(--text-body);
+  font-weight: 500;
+  line-height: 1.3;
+`;
 
-  & > li {
-    & a {
-      text-underline-offset: 2px;
-      text-decoration: underline;
-      transition: color 0.2s ease;
+export const AchievementMeta = styled.p`
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: var(--text-small);
+  font-weight: 400;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 
-      @media (hover: hover) and (pointer: fine) {
-        &:hover {
-          color: var(--brand);
-        }
+  & a {
+    position: relative;
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
+
+    ${hitArea({ maxHeight: "36px" })}
+
+    @media (hover: hover) and (pointer: fine) {
+      &:hover {
+        color: var(--brand);
       }
     }
-    margin: 0;
   }
 `;
 

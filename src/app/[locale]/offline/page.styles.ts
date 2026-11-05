@@ -38,7 +38,7 @@ export const TextBox = styled(HeroTextBox)`
     font-size: var(--text-body);
     line-height: 1.5;
     letter-spacing: 0;
-    color: var(--ink-muted);
+    color: rgba(12, 12, 12, 1);
   }
 
   @media (max-width: 1024px) {
@@ -379,7 +379,7 @@ export const PromoteTitle = styled.h2`
   word-wrap: break-word;
 
   @media (max-width: 880px) {
-    font-size: var(--text-h2);
+    font-size: var(--text-section);
   }
 `;
 

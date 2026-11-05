@@ -14,6 +14,7 @@ import styles from "./not-found.module.css";
 
 export default async function NotFound() {
   const t = await getTranslations("NotFoundPage");
+  const destinations = await getTranslations("HomePage.hero.buttons");
 
   return (
     <div className={styles.container}>
@@ -36,6 +37,20 @@ export default async function NotFound() {
           href="/"
           analytics={{ id: "back_home", placement: "not_found" }}
         />
+        <div className={styles.secondary}>
+          <Button
+            buttonText={destinations("online")}
+            variant="secondary"
+            href="/online"
+            analytics={{ id: "explore_online", placement: "not_found" }}
+          />
+          <Button
+            buttonText={destinations("offline")}
+            variant="secondary"
+            href="/offline"
+            analytics={{ id: "explore_offline", placement: "not_found" }}
+          />
+        </div>
       </div>
     </div>
   );

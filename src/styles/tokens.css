@@ -24,6 +24,9 @@
   --text-h3: 36px;
   --text-h2: 40px;
   --text-display: 55px;
+  /* Section headings (h2) below 880px. Always a step under the page title
+     (h1): 40px at tablet width, 38px on phones. */
+  --text-section: 36px;
 
   /* Running-text weight: light on wide screens, regular on phones and
      tablets, where 300 at 15-17px reads thin on glass and in daylight. */
@@ -48,5 +51,14 @@
 @media (max-width: 880px) {
   :root {
     --weight-text: 400;
+  }
+}
+
+/* Phones: h1 38 > h2 32 > card title and key fact 26 > running text 15-17. */
+@media (max-width: 550px) {
+  :root {
+    --text-section: 32px;
+    --text-card: 26px;
+    --text-fact: 26px;
   }
 }

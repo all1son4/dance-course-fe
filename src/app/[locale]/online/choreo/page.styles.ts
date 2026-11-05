@@ -144,7 +144,7 @@ export const ImageBox = styled.div`
   @media (max-width: 880px) {
     max-width: 490px;
     bottom: 30px;
-    right: -10px;
+    right: 0;
   }
 `;
 
@@ -171,7 +171,7 @@ export const IconBox = styled.div`
 
   @media (max-width: 880px) {
     top: 180px;
-    right: -4px;
+    right: 0;
     max-width: 240px;
   }
 `;

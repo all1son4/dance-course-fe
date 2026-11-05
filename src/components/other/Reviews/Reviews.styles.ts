@@ -75,11 +75,23 @@ export const ReviewsSlider = styled.div`
   min-width: 0;
   overflow: hidden;
 
+  /* Phones: one card at a time with the next one showing at the screen edge,
+     the plainest hint that the row can be swiped. */
+  @media (max-width: 599px) {
+    width: calc(100% + 40px);
+    max-width: calc(100% + 40px);
+    margin-inline: -20px;
+  }
+
   & .swiper {
     box-sizing: border-box;
     width: 100%;
     max-width: 100%;
     min-width: 0;
+
+    @media (max-width: 599px) {
+      padding-inline: 20px;
+    }
   }
 
   /* Only the slide transform animates. The container no longer resizes per
@@ -121,8 +133,8 @@ export const ReviewsSlider = styled.div`
     display: none;
     justify-content: center;
     align-items: center;
-    gap: 5px;
-    margin-top: 14px;
+    gap: 6px;
+    margin-top: 16px;
     line-height: 0;
 
     @media (max-width: 880px) {
@@ -134,8 +146,8 @@ export const ReviewsSlider = styled.div`
      a short pill in the brand red. */
   & .swiper-pagination-bullet {
     position: relative;
-    width: 5px;
-    height: 5px;
+    width: 6px;
+    height: 6px;
     margin: 0;
     border-radius: 3px;
     background: rgba(11, 11, 11, 0.16);
@@ -159,13 +171,13 @@ export const ReviewsSlider = styled.div`
     z-index: 2;
     left: 50%;
     bottom: 0;
-    width: calc(100% + 5px + 2 * var(--swiper-pagination-bullet-horizontal-gap, 4px));
+    width: calc(100% + 6px + 2 * var(--swiper-pagination-bullet-horizontal-gap, 4px));
     height: calc(100% + 32px);
     transform: translateX(-50%);
   }
 
   & .swiper-pagination-bullet-active {
-    width: 14px;
+    width: 16px;
     background: rgba(124, 0, 2, 0.85);
   }
 `;
@@ -191,7 +203,6 @@ export const ReviewTextClamp = styled.div<{
   $isExpanded: boolean;
   $isClampable: boolean;
 }>`
-  --review-clamp: calc(6 * 17px * 1.5);
   /* Where the fade into transparency starts: over the last lines while
      clamped, past the end (no fade) once expanded. It transitions together
      with max-height, so the fade slides away as the text opens instead of
@@ -221,10 +232,6 @@ export const ReviewTextClamp = styled.div<{
         transparent 100%
       );
     `}
-
-  @media (max-width: 450px) {
-    --review-clamp: calc(6 * 15px * 1.5);
-  }
 `;
 
 export const ReadMoreButton = styled.button<{ $isHidden: boolean; $isReserved: boolean }>`
@@ -296,6 +303,12 @@ export const ReviewCard = styled.article`
     hoverEffect: false,
   })}
 
+  /* Lines of text a closed review shows, and what a card needs around them:
+     padding, the author row (30px), two 20px gaps and the "read in full" row
+     (32px, pulled up by 6px). Short reviews get the same height as the rest,
+     so a row of cards keeps one top and one bottom edge. */
+  --review-clamp: calc(6 * 17px * 1.5);
+  --review-pad: clamp(32px, 3vw, 48px);
   box-sizing: border-box;
   position: relative;
   display: flex;
@@ -303,11 +316,16 @@ export const ReviewCard = styled.article`
   gap: 20px;
   width: 100%;
   max-width: 100%;
-  padding: clamp(32px, 3vw, 48px);
+  min-height: calc(2 * var(--review-pad) + 30px + 40px + var(--review-clamp) + 26px);
+  padding: var(--review-pad);
 
   @media (max-width: 767px) {
-    padding: 30px;
+    --review-pad: 24px;
     --glass-radius: var(--radius-panel);
+  }
+
+  @media (max-width: 450px) {
+    --review-clamp: calc(6 * 15px * 1.5);
   }
 `;
 

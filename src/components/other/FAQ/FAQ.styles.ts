@@ -23,8 +23,11 @@ export const FAQContainer = styled.div`
   }
 `;
 
-export const Title = styled(SectionTitleBase)`
-  color: var(--ink);
+/* The title and the photo stick together beside the questions. */
+export const FAQSide = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
   position: sticky;
   top: calc(var(--header-clearance) + var(--safe-area-top));
   align-self: start;
@@ -36,6 +39,27 @@ export const Title = styled(SectionTitleBase)`
   @media (max-width: 680px) {
     position: static;
     top: auto;
+  }
+`;
+
+export const Title = styled(SectionTitleBase)`
+  color: var(--ink);
+`;
+
+export const FAQPhotoFrame = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: calc(100svh - var(--header-clearance) - 200px);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+
+  & img {
+    object-fit: cover;
+  }
+
+  @media (max-width: 880px) {
+    display: none;
   }
 `;
 
@@ -67,6 +91,7 @@ export const QuestionsList = styled.ul`
 `;
 
 export const QuestionItem = styled.li`
+  --faq-row-pad: 32px;
   display: flex;
   flex-direction: column;
   padding: 32px 0;
@@ -75,6 +100,7 @@ export const QuestionItem = styled.li`
   border-bottom: 1px solid rgba(0, 0, 0, 0.15);
 
   @media (max-width: 880px) {
+    --faq-row-pad: 20px;
     padding: 20px 0;
   }
 `;
@@ -92,6 +118,19 @@ export const QuestionBox = styled.button<{ $isOpened: boolean }>`
   margin: 0;
   cursor: pointer;
   text-align: left;
+  position: relative;
+
+  /* The row looks 72-92px tall, the button is only its text: taps on the
+     padding above and below used to do nothing. The halo reaches into that
+     padding (downwards only while closed, the answer needs its own taps). */
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(-1 * var(--faq-row-pad));
+    bottom: ${({ $isOpened }) => ($isOpened ? "0" : "calc(-1 * var(--faq-row-pad))")};
+  }
 
   & > p {
     transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
@@ -137,7 +176,7 @@ export const Question = styled.p`
   font-weight: 400;
   font-style: normal;
   font-size: var(--text-lead);
-  line-height: 1.1;
+  line-height: 1.3;
   margin: 0;
   color: var(--ink);
 
@@ -174,7 +213,7 @@ export const Answer = styled.p`
   font-size: var(--text-body);
   line-height: 1.5;
   margin: 0;
-  color: rgba(56, 56, 56, 1);
+  color: rgba(36, 36, 36, 1);
 
   @media (max-width: 880px) {
     font-size: var(--text-small);

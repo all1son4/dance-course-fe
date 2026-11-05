@@ -1,4 +1,7 @@
-import { styled } from "styled-components";
+import { css, styled } from "styled-components";
+
+/** Where lessons collapse to a title and two lines (the page goes one-column). */
+export const COMPACT_ROADMAP_MEDIA_QUERY = "(max-width: 880px)";
 
 export const RoadmapContainer = styled.div`
   display: flex;
@@ -23,10 +26,77 @@ export const ItemTitle = styled.p`
   font-weight: 600;
   font-style: normal;
   font-size: var(--text-body);
-  line-height: 1.1;
+  line-height: 1.3;
   letter-spacing: 0;
   margin: 0;
   color: var(--ink);
+`;
+
+export const ItemTitleToggle = styled.button`
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: default;
+
+  @media ${COMPACT_ROADMAP_MEDIA_QUERY} {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 14px;
+    column-gap: 12px;
+    align-items: start;
+    cursor: pointer;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -10px 0;
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+`;
+
+export const ItemTitleChevron = styled.span<{ $isOpen: boolean }>`
+  display: none;
+
+  @media ${COMPACT_ROADMAP_MEDIA_QUERY} {
+    display: inline-flex;
+    margin-top: 8px;
+    transform: rotate(${({ $isOpen }) => ($isOpen ? "180deg" : "0deg")});
+    transition: transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  }
+`;
+
+/* Two lines and a soft fade while closed; opens to the measured height. */
+export const ItemDescriptionClamp = styled.div<{ $isOpen: boolean }>`
+  @media ${COMPACT_ROADMAP_MEDIA_QUERY} {
+    max-height: calc(2 * 1.5 * var(--text-body));
+    overflow: hidden;
+    transition: max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+
+    ${({ $isOpen }) =>
+      !$isOpen &&
+      css`
+        cursor: pointer;
+        mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to bottom, #000 45%, transparent 100%);
+      `}
+  }
+
+  @media (min-width: 881px) {
+    max-height: none !important;
+  }
 `;
 
 export const ItemDescription = styled.p`
@@ -98,7 +168,7 @@ export const RoadmapItem = styled.div`
       }
 
       ${ItemTitle},
-      ${ItemDescription} {
+      ${ItemDescriptionClamp} {
         opacity: 0;
         transform: translate3d(0, 10px, 0);
       }
@@ -119,15 +189,21 @@ export const RoadmapItem = styled.div`
       }
 
       ${ItemTitle},
-      ${ItemDescription} {
+      ${ItemDescriptionClamp} {
         opacity: 1;
         transform: translate3d(0, 0, 0);
         transition:
           opacity 360ms var(--ease-standard, ease),
-          transform 420ms var(--ease-emphasized, ease);
-        transition-delay: calc(
-          var(--motion-settle, 40ms) + var(--reveal-delay, 0ms) + ${STEP_TEXT_DELAY}
-        );
+          transform 420ms var(--ease-emphasized, ease),
+          max-height var(--motion-slow, 320ms) var(--ease-emphasized, ease);
+        transition-delay:
+          calc(
+            var(--motion-settle, 40ms) + var(--reveal-delay, 0ms) + ${STEP_TEXT_DELAY}
+          ),
+          calc(
+            var(--motion-settle, 40ms) + var(--reveal-delay, 0ms) + ${STEP_TEXT_DELAY}
+          ),
+          0ms;
       }
 
       &::before {
