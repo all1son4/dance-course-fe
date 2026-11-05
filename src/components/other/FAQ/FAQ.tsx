@@ -13,7 +13,9 @@ import {
   Answer,
   AnswerWrap,
   FAQContainer,
-  FAQPhotoFrame,
+  FAQPair,
+  FAQPhotoBox,
+  FAQPhotoSlot,
   FAQSide,
   Question,
   QuestionBox,
@@ -39,16 +41,20 @@ export default function FAQ() {
   return (
     <FAQContainer>
       <FAQSide>
-        <Title>{t("title")}</Title>
-        <FAQPhotoFrame>
-          <Image
-            {...imageFadeProps}
-            src="/images/photos/about_faq.webp"
-            alt=""
-            fill
-            sizes="(max-width: 880px) 0px, 400px"
-          />
-        </FAQPhotoFrame>
+        <FAQPair>
+          <Title>{t("title")}</Title>
+          <FAQPhotoSlot>
+            <FAQPhotoBox>
+              <Image
+                {...imageFadeProps}
+                src="/images/photos/about_faq.webp"
+                alt=""
+                fill
+                sizes="(max-width: 880px) 0px, 400px"
+              />
+            </FAQPhotoBox>
+          </FAQPhotoSlot>
+        </FAQPair>
       </FAQSide>
 
       <QuestionsList>

@@ -1,7 +1,13 @@
-import Image from "next/image";
 import styled, { css } from "styled-components";
 
 import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
+import {
+  stickyPhotoBox,
+  stickyPhotoColumn,
+  stickyPhotoColumnWithoutPhoto,
+  stickyPhotoPair,
+  stickyPhotoSlot,
+} from "@/styles/mixins/stickyPhoto";
 
 /**
  * The white rounded slab and the about-cards grid inside it. Shared by the
@@ -88,17 +94,10 @@ export const AboutChoreoTitle = styled(SectionTitleBase)`
   }
 `;
 
-/* The title and photo travel together beside the column of cards, so the pair
-   is what sticks; the photo never outgrows a short laptop screen. */
 export const SuggestionSide = styled.div<{ $compactBelow: number }>`
-  display: flex;
-  flex-direction: column;
-  gap: 36px;
+  ${stickyPhotoColumn}
   flex: none;
   width: 420px;
-  align-self: flex-start;
-  position: sticky;
-  top: calc(var(--header-clearance) + var(--safe-area-top));
 
   @media (max-width: 1240px) {
     width: 360px;
@@ -106,25 +105,28 @@ export const SuggestionSide = styled.div<{ $compactBelow: number }>`
 
   @media (max-width: ${({ $compactBelow }) => $compactBelow}px) {
     width: 100%;
+    ${stickyPhotoColumnWithoutPhoto}
+  }
+`;
+
+export const SuggestionPair = styled.div<{ $compactBelow: number }>`
+  ${stickyPhotoPair}
+
+  @media (max-width: ${({ $compactBelow }) => $compactBelow}px) {
     position: static;
   }
 `;
 
-export const SuggestionPhotoFrame = styled.div<{ $compactBelow: number }>`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  max-height: calc(100svh - var(--header-clearance) - 200px);
-  border-radius: var(--radius-card);
-  overflow: hidden;
+export const SuggestionPhotoSlot = styled.div<{ $compactBelow: number }>`
+  ${stickyPhotoSlot}
 
   @media (max-width: ${({ $compactBelow }) => $compactBelow}px) {
     display: none;
   }
 `;
 
-export const SuggestionPhoto = styled(Image)`
-  object-fit: cover;
+export const SuggestionPhotoBox = styled.div`
+  ${stickyPhotoBox}
 `;
 
 /* ---------- hero text column, shared by the course/choreo pages ---------- */
