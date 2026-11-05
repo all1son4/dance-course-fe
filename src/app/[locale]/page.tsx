@@ -122,6 +122,7 @@ export default function Home() {
           asset={HERO_MEDIA.home}
           media="(min-width: 1241px)"
           sizes="(max-width: 1240px) 0px, (max-width: 1440px) 52vw, 775px"
+          alt={metadataT("pages.home.heroImageAlt")}
           priority
         />
       </AbsolutePageImage>
@@ -161,6 +162,7 @@ export default function Home() {
           media="(max-width: 1240px)"
           sizes="(max-width: 450px) calc(100vw - 40px), (max-width: 680px) 80vw, (max-width: 767px) 65vw, (max-width: 920px) 420px, (max-width: 1110px) 480px, (max-width: 1240px) 550px, 0px"
           className="hero-mobile-bg"
+          alt={metadataT("pages.home.heroImageAlt")}
           priority
         />
         <div className="hero-brand-logo">

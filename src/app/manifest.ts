@@ -18,7 +18,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Anna Strok",
     short_name: "Anna Strok",
     description:
-      "Frame Up Strip with Anna Strok: online courses, training with feedback and classes in Warsaw.",
+      "Frame Up Strip with Anna Strok: online courses with feedback and Impro Room practice in Warsaw.",
     id: "/",
     start_url: "/",
     scope: "/",

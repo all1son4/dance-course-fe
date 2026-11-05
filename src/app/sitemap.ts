@@ -24,7 +24,5 @@ const indexableRoutes = [
 export default function sitemap(): MetadataRoute.Sitemap {
   return indexableRoutes.map((route) => ({
     url: `${normalizedSiteUrl}${route}`,
-    changeFrequency: route === "/" ? "weekly" : "monthly",
-    priority: route === "/" ? 1 : 0.7,
   }));
 }

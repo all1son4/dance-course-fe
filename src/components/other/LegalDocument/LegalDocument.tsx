@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { Fragment, type ReactNode } from "react";
 
 import StructuredData from "@/components/common/StructuredData";
@@ -120,11 +121,13 @@ export default function LegalDocument({
   path,
   title,
 }: LegalDocumentProps) {
+  const metadataT = useTranslations("Metadata");
+
   return (
     <>
       <StructuredData
         data={buildBreadcrumbStructuredData([
-          { name: "Home", path: "/" },
+          { name: metadataT("breadcrumbHome"), path: "/" },
           { name: title, path },
         ])}
       />

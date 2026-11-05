@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 
@@ -11,6 +12,12 @@ import { Logo } from "@/svg";
  * for server-only components are dropped on hydration there.
  */
 import styles from "./not-found.module.css";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("NotFoundPage");
+
+  return { title: t("title") };
+}
 
 export default async function NotFound() {
   const t = await getTranslations("NotFoundPage");
