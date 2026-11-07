@@ -18,6 +18,10 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import {
+  formatPurchaseLine,
+  getAdminPurchaseLine,
+} from "@/lib/sellable-products-localization";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
 export const runtime = "nodejs";
@@ -61,7 +65,8 @@ const buildPurchaseItemLabel = ({
 }: {
   adminLabel: string;
   offer: SellableProductOffer;
-}) => `${ONLINE_GROUP_PRODUCT.title} — ${offer.label} (${adminLabel})`;
+}) =>
+  `${getAdminPurchaseLine(offer.id) ?? formatPurchaseLine(ONLINE_GROUP_PRODUCT.shortTitle, offer.label)} (${adminLabel})`;
 
 const createAdminOnlineGroupGrantCommand = ({
   adminLabel,

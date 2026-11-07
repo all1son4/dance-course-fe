@@ -6,9 +6,12 @@ export const isChoreoTutorialProduct = (product: SellableProduct) =>
     (offer) => offer.code === "without-mentor" || offer.code === "with-mentor",
   );
 
-/** Preserve the identity of a historical/closed selection when another tariff is open. */
+/**
+ * The tariff is named to the buyer only when there was a choice: a product with
+ * one tariff, or one open tariff, stays neutral. A closed tariff keeps its name
+ * so a historical or exceptional selection is still recognisable.
+ */
 export const shouldShowOfferLabel = (product: SellableProduct, offerId: string) => {
-  if (!isChoreoTutorialProduct(product)) return true;
   if (product.offers.length === 1) return false;
 
   const enabledOffers = product.offers.filter((offer) => offer.salesEnabled);

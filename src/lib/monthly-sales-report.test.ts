@@ -67,7 +67,7 @@ test("monthly report groups countries with gross, fee and net PLN totals", () =>
   );
   assert.equal(
     rows[2],
-    ",,,DE,Итого по стране Германия (1 продажа),,260.00 PLN,10.00 PLN,250.00 PLN",
+    ",,,DE,Total for Germany (1 sale),,260.00 PLN,10.00 PLN,250.00 PLN",
   );
   assert.equal(
     rows[3],
@@ -79,7 +79,7 @@ test("monthly report groups countries with gross, fee and net PLN totals", () =>
   );
   assert.equal(
     rows[5],
-    ",,,PL,Итого по стране Польша (2 продажи),,440.00 PLN,18.00 PLN,422.00 PLN",
+    ",,,PL,Total for Poland (2 sales),,440.00 PLN,18.00 PLN,422.00 PLN",
   );
 });
 

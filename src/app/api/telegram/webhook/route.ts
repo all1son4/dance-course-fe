@@ -8,6 +8,10 @@ import {
 } from "@/lib/http-security";
 import { logSafeError } from "@/lib/safe-error-log";
 import {
+  getBuyerPurchaseLine,
+  shouldShowOfferToBuyerByOfferId,
+} from "@/lib/sellable-products-localization";
+import {
   activateTelegramStartToken,
   getActivatedPaymentsByTelegramUserId,
   syncTelegramChannelMembership,
@@ -283,6 +287,15 @@ const sendPurchasedLessons = async ({
       lessonLanguage: payment.lesson_language,
     });
     const copy = getBotCopy(locale);
+    // The stored purchase line is Russian for the admin; the buyer gets her own language.
+    const purchaseLine =
+      getBuyerPurchaseLine({
+        locale,
+        offerId: payment.offer_id,
+        showOfferLabel: shouldShowOfferToBuyerByOfferId(payment.offer_id),
+      }) ||
+      payment.product_title ||
+      payment.purchase_item;
     const lessonSource = getTelegramLessonSourceByOfferId({
       lessonLanguage: payment.lesson_language,
       locale,
@@ -292,7 +305,7 @@ const sendPurchasedLessons = async ({
     if (!lessonSource) {
       await sendTelegramMessage({
         chatId,
-        text: `${copy.sourceMissing}\n\n${payment.purchase_item || payment.product_title}`,
+        text: `${copy.sourceMissing}\n\n${purchaseLine}`,
       });
       continue;
     }
@@ -318,7 +331,7 @@ const sendPurchasedLessons = async ({
       });
       await sendTelegramMessage({
         chatId,
-        text: `${copy.lessonDeliveryFailed}\n\n${payment.purchase_item || payment.product_title}`,
+        text: `${copy.lessonDeliveryFailed}\n\n${purchaseLine}`,
       });
     }
   }

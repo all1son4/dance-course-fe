@@ -141,13 +141,13 @@ test("flags a purchase that settled after sales were closed", () => {
   };
 
   assert.equal(
-    buildPurchaseAlertText(alertArguments).includes("Продажи этого продукта выключены"),
+    buildPurchaseAlertText(alertArguments).includes("после закрытия продаж"),
     false,
   );
-  assert.equal(
-    buildPurchaseAlertText({ ...alertArguments, hasClosedSales: true }).includes(
-      "Продажи этого продукта выключены",
-    ),
-    true,
-  );
+  const closedSalesAlert = buildPurchaseAlertText({
+    ...alertArguments,
+    hasClosedSales: true,
+  });
+  assert.equal(closedSalesAlert.includes("Оплата прошла после закрытия продаж"), true);
+  assert.match(closedSalesAlert.split("\n")[1] ?? "", /продажи были закрыты/u);
 });
