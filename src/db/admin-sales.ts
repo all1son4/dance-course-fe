@@ -8,6 +8,7 @@ import {
   getPreviousAccountingMonthValue,
 } from "@/lib/accounting-month";
 import { formatMinorAmount } from "@/lib/minor-amount";
+import { getAdminPurchaseLine } from "@/lib/sellable-products-localization";
 
 import { getDatabase } from "./client";
 import {
@@ -27,6 +28,42 @@ import {
 } from "./stripe-sales";
 
 const PRODUCT_BREAKDOWN_LIMIT = 8;
+
+type ProductBreakdownRow = {
+  eurTotalMinor: number;
+  itemTitle: string;
+  plnTotalMinor: number;
+  salesCount: number;
+};
+
+/** Rows of one offer may carry different legacy snapshots; one name is one row. */
+const mergeProductRowsByTitle = (rows: ProductBreakdownRow[]) => {
+  const merged = new Map<string, ProductBreakdownRow>();
+
+  for (const row of rows) {
+    const current = merged.get(row.itemTitle);
+
+    merged.set(
+      row.itemTitle,
+      current
+        ? {
+            eurTotalMinor: current.eurTotalMinor + row.eurTotalMinor,
+            itemTitle: row.itemTitle,
+            plnTotalMinor: current.plnTotalMinor + row.plnTotalMinor,
+            salesCount: current.salesCount + row.salesCount,
+          }
+        : row,
+    );
+  }
+
+  return [...merged.values()].sort(
+    (left, right) =>
+      right.salesCount - left.salesCount ||
+      right.plnTotalMinor +
+        right.eurTotalMinor -
+        (left.plnTotalMinor + left.eurTotalMinor),
+  );
+};
 
 type PurchaseOutcome = typeof purchases.$inferSelect.outcome;
 
@@ -209,6 +246,11 @@ export const getAdminPurchasesOverview = async ({
     NULLIF(BTRIM(${purchases.offerLabelSnapshot}), ''),
     'Без названия'
   )`;
+  // Known offers are named by the code catalogue ("Разбор «Her Lies» · Без
+  // куратора"); the column above stays the name for anything it does not know.
+  const offerKeyColumn = sql<string>`COALESCE(${productOffers.externalOfferId}, ${purchases.offerExternalId}, '')`;
+  const getItemTitle = (offerKey: string, fallbackTitle: string) =>
+    (offerKey ? getAdminPurchaseLine(offerKey) : null) ?? fallbackTitle;
 
   const [
     listRows,
@@ -226,6 +268,7 @@ export const getAdminPurchasesOverview = async ({
         customerName: purchases.customerFullNameSnapshot,
         invoiceNumber: invoices.invoiceNumber,
         isPolish: isPolishPurchaseCountry,
+        offerKey: offerKeyColumn,
         outcome: purchases.outcome,
         paymentIntentId: purchases.paymentIntentId,
         purchaseItem: productItemColumn,
@@ -302,6 +345,7 @@ export const getAdminPurchasesOverview = async ({
           .select({
             eurTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'eur'), 0)::text`,
             itemTitle: productItemColumn,
+            offerKey: offerKeyColumn,
             plnTotalMinor: sql<string>`COALESCE(SUM(${purchases.amountMinor}) FILTER (WHERE ${purchases.currency} = 'pln'), 0)::text`,
             salesCount: sql<number>`COUNT(*)::int`,
           })
@@ -319,9 +363,8 @@ export const getAdminPurchasesOverview = async ({
               ...timestampWithinRange(canonicalSoldAtColumn, monthRange),
             ),
           )
-          .groupBy(productItemColumn)
+          .groupBy(offerKeyColumn, productItemColumn)
           .orderBy(desc(sql`COUNT(*)`), desc(sql`SUM(${purchases.amountMinor})`))
-          .limit(PRODUCT_BREAKDOWN_LIMIT)
       : Promise.resolve([]),
     monthRange
       ? db
@@ -403,19 +446,23 @@ export const getAdminPurchasesOverview = async ({
             stripeFinancialDataComplete: previousStripeFinancialDataComplete,
           }
         : null,
-    products: productRows.map((row) => {
-      const plnTotalMinor = parseMinorTotal(row.plnTotalMinor);
-      const eurTotalMinor = parseMinorTotal(row.eurTotalMinor);
-
-      return {
+    products: mergeProductRowsByTitle(
+      productRows.map((row) => ({
+        eurTotalMinor: parseMinorTotal(row.eurTotalMinor),
+        itemTitle: getItemTitle(row.offerKey, row.itemTitle),
+        plnTotalMinor: parseMinorTotal(row.plnTotalMinor),
+        salesCount: row.salesCount,
+      })),
+    )
+      .slice(0, PRODUCT_BREAKDOWN_LIMIT)
+      .map(({ eurTotalMinor, itemTitle, plnTotalMinor, salesCount }) => ({
         amountLabels: [
           ...(plnTotalMinor > 0 ? [formatMinorAmount(plnTotalMinor, "pln")] : []),
           ...(eurTotalMinor > 0 ? [formatMinorAmount(eurTotalMinor, "eur")] : []),
         ],
-        itemTitle: row.itemTitle,
-        salesCount: row.salesCount,
-      };
-    }),
+        itemTitle,
+        salesCount,
+      })),
     purchases: listRows.map((row) => ({
       amountLabel: formatMinorAmount(row.amountMinor, row.currency),
       customerEmail: row.customerEmail ?? "",
@@ -424,7 +471,7 @@ export const getAdminPurchasesOverview = async ({
       isPolish: row.isPolish,
       outcome: row.outcome,
       paymentIntentId: row.paymentIntentId,
-      purchaseItem: row.purchaseItem,
+      purchaseItem: getItemTitle(row.offerKey, row.purchaseItem),
       soldAtIso: new Date(row.soldAt).toISOString(),
       terminalRecordedAtIso: row.terminalRecordedAt?.toISOString() ?? "",
     })),

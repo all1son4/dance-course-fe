@@ -46,6 +46,9 @@ export type SellableProduct = {
    * the value here is the code-level default and never closes sales on its own.
    */
   salesEnabled: boolean;
+  /** One-line name for subjects, Stripe, Telegram and reports: "Разбор «Her Lies»". */
+  shortTitle: string;
+  shortTitleKey: string;
   slug: string;
   title: string;
   titleKey: string;
@@ -107,7 +110,9 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     id: "prd_7VnL4kX2mQ8s",
     salesEnabled: true,
     slug: "first-touch",
-    title: 'Курс для начинающих "First Touch"',
+    shortTitle: "Курс «First Touch»",
+    shortTitleKey: "firstTouch.shortTitle",
+    title: "Курс для начинающих «First Touch»",
     titleKey: "firstTouch.title",
     type: "course",
     defaultOfferId: "off_4BcM9pR6tH1x",
@@ -144,7 +149,9 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     id: "prd_2QfH8nW5cK3y",
     salesEnabled: false,
     slug: "still-alive",
-    title: 'Видео-разбор хореографии "Still Alive"',
+    shortTitle: "Разбор «Still Alive»",
+    shortTitleKey: "choreoStillAlive.shortTitle",
+    title: "Онлайн-разбор хореографии «Still Alive»",
     titleKey: "choreoStillAlive.title",
     type: "choreo",
     defaultOfferId: "off_5DxR2mL8qJ4v",
@@ -193,7 +200,9 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     id: "prd_9MwT3aF7rD6n",
     salesEnabled: true,
     slug: "her-lies",
-    title: 'Видео-разбор хореографии "Her Lies"',
+    shortTitle: "Разбор «Her Lies»",
+    shortTitleKey: "choreoHerLies.shortTitle",
+    title: "Онлайн-разбор хореографии «Her Lies»",
     titleKey: "choreoHerLies.title",
     type: "choreo",
     defaultOfferId: "off_3HbC8xP2mV6q",
@@ -242,7 +251,9 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     id: "prd_choreo_bundle_duo",
     salesEnabled: false,
     slug: "still-alive-her-lies-bundle",
-    title: 'Бандл разборов "Still Alive" + "Her Lies"',
+    shortTitle: "Бандл «Still Alive» + «Her Lies»",
+    shortTitleKey: "choreoBundle.shortTitle",
+    title: "Бандл онлайн-разборов «Still Alive» + «Her Lies»",
     titleKey: "choreoBundle.title",
     type: "choreo",
     defaultOfferId: "off_choreo_bundle_duo_without_mentor",
@@ -291,7 +302,9 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     id: "prd_choreo_birthday_drop",
     salesEnabled: false,
     slug: "birthday-drop",
-    title: 'The Birthday Drop "Love me in the morning"',
+    shortTitle: "The Birthday Drop",
+    shortTitleKey: "choreoBirthdayDrop.shortTitle",
+    title: "The Birthday Drop «Love me in the morning»",
     titleKey: "choreoBirthdayDrop.title",
     type: "choreo",
     defaultOfferId: "off_choreo_birthday_drop_standard",
@@ -338,7 +351,9 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     // Configure the RU/EN Telegram targets before opening sales in admin.
     salesEnabled: false,
     slug: "love-me-in-the-morning",
-    title: 'Видео-разбор хореографии "Love me in the morning"',
+    shortTitle: "Разбор «Love me in the morning»",
+    shortTitleKey: "choreoLoveMeInTheMorning.shortTitle",
+    title: "Онлайн-разбор хореографии «Love me in the morning»",
     titleKey: "choreoLoveMeInTheMorning.title",
     type: "choreo",
     defaultOfferId: LOVE_ME_IN_THE_MORNING_OFFER_ID,
@@ -358,6 +373,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     accessNote:
       "После оплаты мы отправим персональную одноразовую ссылку для входа в Telegram-группу.",
     accessNoteKey: "onlineGroupAnnaStrok.accessNote",
+    checkoutTitleKey: "onlineGroupAnnaStrok.checkoutTitle",
     code: "online-group-anna-strok",
     description: [
       "Формат регулярных тренировок для тех, кто хочет продолжать развиваться, поддерживать форму и работать с телом.",
@@ -370,6 +386,8 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     id: "prd_L9aK3mT7qP2x",
     salesEnabled: true,
     slug: "online-group-anna-strok",
+    shortTitle: "Online Group",
+    shortTitleKey: "onlineGroupAnnaStrok.shortTitle",
     title: "Online Group by Anna Strok",
     titleKey: "onlineGroupAnnaStrok.title",
     type: "course",
@@ -408,7 +426,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         code: "renewal-discount",
         deliveryChannel: "telegram",
         id: ONLINE_GROUP_RENEWAL_OFFER_ID,
-        label: "Standard renewal",
+        label: "Продление Standard",
         labelKey: "onlineGroupAnnaStrok.offers.renewalDiscount",
         salesEnabled: true,
         prices: {
@@ -422,7 +440,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         code: "renewal-library-access",
         deliveryChannel: "telegram",
         id: ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
-        label: "Plus renewal",
+        label: "Продление Plus",
         labelKey: "onlineGroupAnnaStrok.offers.renewalLibraryAccess",
         salesEnabled: true,
         prices: {

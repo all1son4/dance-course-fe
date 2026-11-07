@@ -4,7 +4,11 @@ import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
-import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
+import {
+  formatPurchaseLine,
+  getAdminPurchaseLine,
+  getLocalizedOfferMetadataByOfferId,
+} from "@/lib/sellable-products-localization";
 import { toUtcIso } from "@/lib/time";
 
 import {
@@ -178,16 +182,16 @@ type CreatePaymentRecordInput = {
   timestamp: string;
 };
 
-const buildPurchaseItemLabel = (productTitle: string, offerLabel: string) => {
-  const normalizedProductTitle = productTitle.trim();
-  const normalizedOfferLabel = offerLabel.trim();
-
-  if (normalizedProductTitle && normalizedOfferLabel) {
-    return `${normalizedProductTitle} — ${normalizedOfferLabel}`;
-  }
-
-  return normalizedProductTitle || normalizedOfferLabel;
-};
+/**
+ * The stored purchase line is for the admin, the reports and accounting, so it
+ * is the canonical Russian name whatever language the buyer checked out in.
+ * Unknown offers keep the names that came with the payment.
+ */
+const buildPurchaseItemLabel = (
+  offerId: string,
+  productTitle: string,
+  offerLabel: string,
+) => getAdminPurchaseLine(offerId) ?? formatPurchaseLine(productTitle, offerLabel);
 
 const trimString = (value: string | null | undefined) => value?.trim() ?? "";
 
@@ -716,7 +720,11 @@ const createPaymentRecord = ({
     lesson_language: customer.lessonLanguage,
     checkout_locale: checkout.checkoutLocale,
     purchase_item:
-      buildPurchaseItemLabel(checkout.productTitle, checkout.offerLabel) ||
+      buildPurchaseItemLabel(
+        checkout.offerId,
+        checkout.productTitle,
+        checkout.offerLabel,
+      ) ||
       getExistingRecordValue(context, "purchase_item") ||
       "",
     telegram_access_status: preservedAccess.telegramAccessStatus,

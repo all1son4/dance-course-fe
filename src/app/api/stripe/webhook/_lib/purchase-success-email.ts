@@ -5,6 +5,7 @@ import {
   PERSONAL_TELEGRAM_HANDLE,
   SUPPORT_TELEGRAM_URL,
 } from "@/constants/links";
+import { formatPrice } from "@/constants/sellable-products";
 import { formatEmailDate } from "@/lib/email/dates";
 
 const SITE_HOME_URL =
@@ -13,8 +14,24 @@ const SITE_HOME_URL =
   DEFAULT_SITE_HOME_URL;
 const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
 
+const getRussianDays = (days: number) => {
+  const lastTwoDigits = days % 100;
+  const lastDigit = days % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "дней";
+  if (lastDigit === 1) return "день";
+  return lastDigit >= 2 && lastDigit <= 4 ? "дня" : "дней";
+};
+
 const EMAIL_COPY = {
   en: {
+    accessLabel: "Access",
+    accessSummary: {
+      days: (days: number) => `${days} days from joining`,
+      lifetime: "forever",
+      onlineGroup: "no end date",
+      privateLesson: "we will agree on the date and time",
+    },
     accessUntil: "Access until",
     amountLabel: "Amount",
     autoReplyNote:
@@ -22,9 +39,7 @@ const EMAIL_COPY = {
     backToSite: "Back to website",
     defaultOfferLabel: "Standard access",
     heading: "Thank you, your payment was successful",
-    intro: "We have prepared your access to the materials and the receipt details.",
-    introPrivateLesson:
-      "We have received your payment. Below are the purchase details and the receipt.",
+    intro: "Below you will find your purchase details, the next step and your receipt.",
     invoiceAttached: "The PDF invoice is attached to this email.",
     limitedAccessValidity:
       "Access to the materials is provided for {days} days from joining.",
@@ -34,7 +49,7 @@ const EMAIL_COPY = {
     accessAlreadyActive: "Access is already active",
     accessExpired: "The access period has ended",
     accessNeedsSupport: "The invite could not be prepared. Please contact support",
-    offerLabel: "Offer",
+    offerLabel: "Plan",
     paymentSucceededText: "Payment successful",
     productLabel: "Product",
     receiptLinkCta: "Open Stripe receipt",
@@ -86,7 +101,7 @@ const EMAIL_COPY = {
         cta: "Open Telegram chat",
       },
       telegramOnlineGroup: {
-        title: "Access your online group",
+        title: "Join Online Group",
         ready:
           "Use the button below to join your Telegram group. The personal invite is valid for 30 days; after joining, your group access has no automatic expiry.",
         pending:
@@ -94,7 +109,7 @@ const EMAIL_COPY = {
         cta: "Open Telegram group",
       },
       telegramRenewal: {
-        title: "Access the next online group",
+        title: "Join the new Online Group cycle",
         ready:
           "Use the button below to join your new Telegram group. The personal invite is valid for 30 days; after joining, your group access has no automatic expiry.",
         pending:
@@ -104,6 +119,13 @@ const EMAIL_COPY = {
     },
   },
   pl: {
+    accessLabel: "Dostęp",
+    accessSummary: {
+      days: (days: number) => `${days} dni od dołączenia`,
+      lifetime: "na zawsze",
+      onlineGroup: "bez limitu czasowego",
+      privateLesson: "ustalimy datę i godzinę",
+    },
     accessUntil: "Dostęp do",
     amountLabel: "Kwota",
     autoReplyNote:
@@ -111,9 +133,7 @@ const EMAIL_COPY = {
     backToSite: "Wróć na stronę",
     defaultOfferLabel: "Dostęp standardowy",
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
-    intro: "Przygotowaliśmy dostęp do materiałów oraz potwierdzenie płatności.",
-    introPrivateLesson:
-      "Otrzymaliśmy Twoją płatność. Poniżej znajdziesz szczegóły zakupu i potwierdzenie.",
+    intro: "Poniżej znajdziesz szczegóły zakupu, kolejny krok i potwierdzenie płatności.",
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
     limitedAccessValidity:
       "Dostęp do materiałów jest przyznawany na {days} dni od dołączenia.",
@@ -176,7 +196,7 @@ const EMAIL_COPY = {
         cta: "Otwórz czat Telegram",
       },
       telegramOnlineGroup: {
-        title: "Dostęp do grupy online",
+        title: "Dostęp do Online Group",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
         pending:
@@ -184,7 +204,7 @@ const EMAIL_COPY = {
         cta: "Otwórz grupę Telegram",
       },
       telegramRenewal: {
-        title: "Dostęp do kolejnej grupy online",
+        title: "Dostęp do nowego cyklu Online Group",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do nowej grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
         pending:
@@ -194,6 +214,13 @@ const EMAIL_COPY = {
     },
   },
   ru: {
+    accessLabel: "Доступ",
+    accessSummary: {
+      days: (days: number) => `${days} ${getRussianDays(days)} с момента вступления`,
+      lifetime: "навсегда",
+      onlineGroup: "без ограничения по сроку",
+      privateLesson: "дату и время согласуем",
+    },
     accessUntil: "Доступ до",
     amountLabel: "Сумма",
     autoReplyNote:
@@ -201,8 +228,7 @@ const EMAIL_COPY = {
     backToSite: "Вернуться на сайт",
     defaultOfferLabel: "Стандартный доступ",
     heading: "Спасибо, оплата прошла успешно",
-    intro: "Мы подготовили доступ к материалам и данные по чеку.",
-    introPrivateLesson: "Мы получили твою оплату. Ниже — детали покупки и чек.",
+    intro: "Ниже ты найдёшь детали покупки, следующий шаг и чек.",
     invoiceAttached: "PDF-инвойс прикреплен к этому письму.",
     limitedAccessValidity:
       "Доступ к материалам предоставляется на {days} дней с момента вступления.",
@@ -272,7 +298,7 @@ const EMAIL_COPY = {
         cta: "Открыть Telegram-группу",
       },
       telegramRenewal: {
-        title: "Доступ в следующую онлайн-группу",
+        title: "Доступ в новый поток Online Group",
         ready:
           "Нажми кнопку ниже, чтобы вступить в новую Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
         pending:
@@ -316,6 +342,17 @@ const formatCheckoutAmount = ({
     return `${amountMinor} ${currency.toUpperCase()}`;
   }
 
+  const amount = parsedAmountMinor / 100;
+  const normalizedCurrency = currency.toLowerCase();
+
+  // Whole amounts are written the way the site writes prices: "65 PLN", "15 €".
+  if (
+    Number.isInteger(amount) &&
+    (normalizedCurrency === "pln" || normalizedCurrency === "eur")
+  ) {
+    return formatPrice(amount, normalizedCurrency);
+  }
+
   const intlLocale = locale === "pl" ? "pl-PL" : locale === "en" ? "en-US" : "ru-RU";
 
   return new Intl.NumberFormat(intlLocale, {
@@ -338,6 +375,8 @@ export type BuildPurchaseSuccessEmailInput = {
   receiptLink: string | null;
   showMentorFollowupNote?: boolean;
   showOfferLabel?: boolean;
+  /** One-line name for the subject: "Разбор «Her Lies»"; the product title when absent. */
+  subjectLine?: string;
   accessKind: PurchaseSuccessEmailAccessKind;
   telegramAccessUrl?: string | null;
   telegramAccessLinks?: Array<{
@@ -644,6 +683,35 @@ const getLimitedAccessValidity = ({
   };
 };
 
+/** The "Access" row of the summary; manual and support cases have nothing to state. */
+const getAccessSummary = ({
+  accessDurationDays,
+  accessKind,
+  copy,
+  offerLabel,
+}: {
+  accessDurationDays: number;
+  accessKind: PurchaseSuccessEmailAccessKind;
+  copy: EmailCopy;
+  offerLabel: string;
+}): string => {
+  switch (accessKind) {
+    case "telegram-channel":
+    case "telegram-chat":
+      return accessDurationDays > 0 ? copy.accessSummary.days(accessDurationDays) : "";
+    case "telegram-channel-lifetime":
+      return copy.accessSummary.lifetime;
+    case "telegram-online-group":
+    case "telegram-renewal":
+      return copy.accessSummary.onlineGroup;
+    case "private-lesson":
+      return [offerLabel, copy.accessSummary.privateLesson].filter(Boolean).join(", ");
+    case "manual-admin":
+    case "support":
+      return "";
+  }
+};
+
 const renderPurchaseSuccessEmailHtml = ({
   accessButton,
   accessContent,
@@ -654,6 +722,7 @@ const renderPurchaseSuccessEmailHtml = ({
   mentorFollowupParagraph,
   onlineGroupAccessButtons,
   receiptButton,
+  safeAccessSummary,
   safeAmountLabel,
   safeOfferLabel,
   showOfferLabel,
@@ -662,6 +731,7 @@ const renderPurchaseSuccessEmailHtml = ({
   safeSupportTelegramUrl,
 }: {
   accessButton: string;
+  safeAccessSummary: string;
   accessContent: AccessContent;
   copy: EmailCopy;
   inspirationAccessParagraph: string;
@@ -679,7 +749,7 @@ const renderPurchaseSuccessEmailHtml = ({
 }): string => `
     <div style="margin:0;padding:32px 12px;background:#f3f2ef;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#121212;">
       <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid rgba(18,18,18,0.08);border-radius:28px;padding:32px;">
-        <p style="margin:0 0 10px 0;font-size:12px;line-height:18px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7064;font-weight:700;">Frame Up Strip</p>
+        <p style="margin:0 0 10px 0;font-size:12px;line-height:18px;letter-spacing:0.1em;text-transform:uppercase;color:#7a7064;font-weight:700;">Anna Strok · Frame Up Strip</p>
         <h1 style="margin:0 0 12px 0;font-size:28px;line-height:34px;font-weight:700;color:#121212;">
           ${copy.heading}
         </h1>
@@ -703,9 +773,17 @@ const renderPurchaseSuccessEmailHtml = ({
                 : ""
             }
             <tr>
-              <td style="padding:0 14px 0 0;color:#6f6f6f;font-size:14px;line-height:22px;width:92px;vertical-align:top;">${copy.amountLabel}</td>
-              <td style="padding:0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeAmountLabel}</td>
+              <td style="padding:0 14px ${safeAccessSummary ? "8px" : "0"} 0;color:#6f6f6f;font-size:14px;line-height:22px;width:92px;vertical-align:top;">${copy.amountLabel}</td>
+              <td style="padding:0 0 ${safeAccessSummary ? "8px" : "0"} 0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeAmountLabel}</td>
             </tr>
+            ${
+              safeAccessSummary
+                ? `<tr>
+              <td style="padding:0 14px 0 0;color:#6f6f6f;font-size:14px;line-height:22px;width:92px;vertical-align:top;">${copy.accessLabel}</td>
+              <td style="padding:0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeAccessSummary}</td>
+            </tr>`
+                : ""
+            }
           </table>
         </div>
 
@@ -770,6 +848,7 @@ const renderTelegramAccessTextLines = ({
 
 const renderPurchaseSuccessEmailText = ({
   accessContent,
+  accessSummary,
   accessKind,
   amountLabel,
   copy,
@@ -786,6 +865,7 @@ const renderPurchaseSuccessEmailText = ({
 }: {
   accessContent: AccessContent;
   accessKind: PurchaseSuccessEmailAccessKind;
+  accessSummary: string;
   amountLabel: string;
   copy: EmailCopy;
   inspirationAccessText: string;
@@ -804,6 +884,7 @@ const renderPurchaseSuccessEmailText = ({
     `${copy.productLabel}: ${productTitle}`,
     showOfferLabel ? `${copy.offerLabel}: ${offerLabel || copy.defaultOfferLabel}` : "",
     `${copy.amountLabel}: ${amountLabel}`,
+    accessSummary ? `${copy.accessLabel}: ${accessSummary}` : "",
     accessContent.title,
     accessContent.description,
     telegramLink && isTelegramAccessKind(accessKind)
@@ -842,6 +923,7 @@ export const buildPurchaseSuccessEmail = ({
   receiptLink,
   showMentorFollowupNote = false,
   showOfferLabel = true,
+  subjectLine,
   telegramAccessUrl,
   telegramAccessLinks = [],
 }: BuildPurchaseSuccessEmailInput) => {
@@ -864,9 +946,7 @@ export const buildPurchaseSuccessEmail = ({
   const formattedInspirationExpiry = inspirationAccessExpiresAt
     ? formatAccessExpiry(inspirationAccessExpiresAt, locale)
     : "";
-  // A private lesson unlocks no materials, so the default intro would point the
-  // buyer at access they are not waiting for.
-  const intro = accessKind === "private-lesson" ? copy.introPrivateLesson : copy.intro;
+  const intro = copy.intro;
   const resolvedAccessDurationDays =
     accessDurationDays > 0
       ? accessDurationDays
@@ -895,7 +975,13 @@ export const buildPurchaseSuccessEmail = ({
   });
   const receiptButtonLabel =
     resolvedReceiptKind === "pdf" ? copy.receiptPdfCta : copy.receiptLinkCta;
-  const subject = `${copy.subjectPrefix}: ${productTitle}`;
+  const subject = `${copy.subjectPrefix}: ${subjectLine || productTitle}`;
+  const accessSummary = getAccessSummary({
+    accessDurationDays: resolvedAccessDurationDays,
+    accessKind,
+    copy,
+    offerLabel,
+  });
   const receiptButton = renderReceiptButton({
     copy,
     receiptButtonLabel,
@@ -942,6 +1028,7 @@ export const buildPurchaseSuccessEmail = ({
     mentorFollowupParagraph,
     onlineGroupAccessButtons,
     receiptButton,
+    safeAccessSummary: escapeHtml(accessSummary),
     safeAmountLabel,
     safeOfferLabel,
     showOfferLabel,
@@ -952,6 +1039,7 @@ export const buildPurchaseSuccessEmail = ({
   const text = renderPurchaseSuccessEmailText({
     accessContent,
     accessKind,
+    accessSummary,
     amountLabel,
     copy,
     inspirationAccessText,

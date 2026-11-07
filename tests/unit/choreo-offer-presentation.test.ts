@@ -30,20 +30,23 @@ test("single active choreo tariff hides its label, while other selections retain
   }
 });
 
-test("a tutorial with one configured tariff stays neutral even with sales paused", () => {
+test("a product with one configured tariff stays neutral even with sales paused", () => {
   const product = structuredClone(SELLABLE_PRODUCTS["choreo-love-me-in-the-morning"]);
   for (const salesEnabled of [false, true]) {
     product.salesEnabled = salesEnabled;
     product.offers[0].salesEnabled = salesEnabled;
     assert.equal(shouldShowOfferLabel(product, product.offers[0].id), false);
   }
-  for (const code of [
-    "first-touch",
-    "online-group-anna-strok",
-    "choreo-birthday-drop",
-  ] as const) {
-    const otherProduct = SELLABLE_PRODUCTS[code];
-    assert.equal(shouldShowOfferLabel(otherProduct, otherProduct.offers[0].id), true);
+  for (const code of ["first-touch", "choreo-birthday-drop"] as const) {
+    const singleTariffProduct = SELLABLE_PRODUCTS[code];
+    assert.equal(
+      shouldShowOfferLabel(singleTariffProduct, singleTariffProduct.offers[0].id),
+      false,
+    );
+  }
+  const onlineGroup = SELLABLE_PRODUCTS["online-group-anna-strok"];
+  for (const offer of onlineGroup.offers) {
+    assert.equal(shouldShowOfferLabel(onlineGroup, offer.id), true);
   }
 });
 

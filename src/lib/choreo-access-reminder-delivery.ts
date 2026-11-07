@@ -5,7 +5,10 @@ import {
 import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
 import { buildChoreoAccessReminderEmail } from "@/lib/email/choreo-access-reminder";
 import { sendResendEmail } from "@/lib/email/resend";
-import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
+import {
+  getBuyerPurchaseLine,
+  shouldShowOfferToBuyerByOfferId,
+} from "@/lib/sellable-products-localization";
 import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
 
 const isProduction = () =>
@@ -58,17 +61,20 @@ export const deliverChoreoAccessReminder = async (job: ClaimedOutboxJob) => {
       retryable: false,
     });
   }
-  const metadata = getLocalizedOfferMetadataByOfferId(reminder.offerId, reminder.locale);
-  const productTitle = metadata?.productTitle || reminder.productTitle || "Choreography";
-  const quotedTitles = [...productTitle.matchAll(/["“”«»]([^"“”«»]+)["“”«»]/gu)].map(
-    (match) => match[1],
-  );
+  const purchaseLine =
+    getBuyerPurchaseLine({
+      locale: reminder.locale,
+      offerId: reminder.offerId,
+      showOfferLabel: shouldShowOfferToBuyerByOfferId(reminder.offerId),
+    }) ||
+    reminder.productTitle ||
+    "Choreography";
   const target = getTelegramChannelTargetByOfferId({
     offerId: reminder.offerId,
     lessonLanguage: reminder.lessonLanguage,
   });
   const email = buildChoreoAccessReminderEmail({
-    title: quotedTitles.length ? quotedTitles.join(" + ") : productTitle,
+    title: purchaseLine,
     expiresAt: reminder.expiresAt,
     locale: reminder.locale,
     materialsUrl: target?.chatId === reminder.chatId ? target.materialsUrl : undefined,

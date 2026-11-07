@@ -141,6 +141,8 @@ const mapProductFromDatabase = ({
     id: productRow.externalProductId,
     offers,
     salesEnabled: productRow.salesEnabled,
+    shortTitle: fallbackProduct?.shortTitle ?? productRow.title,
+    shortTitleKey: fallbackProduct?.shortTitleKey ?? "",
     slug: fallbackProduct?.slug ?? productRow.slug,
     title: fallbackProduct?.title ?? productRow.title,
     titleKey: fallbackProduct?.titleKey ?? productRow.titleKey ?? "",
@@ -289,6 +291,12 @@ const loadCheckoutSelectionFromDatabase = async ({
       id: productRow.externalProductId,
       offers,
       salesEnabled: productRow.salesEnabled,
+      shortTitle:
+        fallbackProductByExternalId.get(productRow.externalProductId)?.shortTitle ??
+        productRow.title,
+      shortTitleKey:
+        fallbackProductByExternalId.get(productRow.externalProductId)?.shortTitleKey ??
+        "",
       slug: productRow.slug,
       title: productRow.title,
       titleKey: productRow.titleKey ?? "",

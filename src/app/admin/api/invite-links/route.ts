@@ -18,6 +18,10 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import {
+  formatPurchaseLine,
+  getAdminPurchaseLine,
+} from "@/lib/sellable-products-localization";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
 
@@ -104,20 +108,17 @@ const resolveAdminInviteSelection = (
 
 const buildPurchaseItemLabel = ({
   adminLabel,
+  offerId,
   offerLabel,
   productTitle,
 }: {
   adminLabel: string;
+  offerId: string;
   offerLabel: string;
   productTitle: string;
 }) => {
-  const normalizedProductTitle = productTitle.trim();
-  const normalizedOfferLabel = offerLabel.trim();
-
   const baseLabel =
-    normalizedProductTitle && normalizedOfferLabel
-      ? `${normalizedProductTitle} — ${normalizedOfferLabel}`
-      : normalizedProductTitle || normalizedOfferLabel;
+    getAdminPurchaseLine(offerId) ?? formatPurchaseLine(productTitle, offerLabel);
   const normalizedAdminLabel = adminLabel.trim();
 
   if (baseLabel && normalizedAdminLabel) {
@@ -149,6 +150,7 @@ const createAdminOfferGrantCommand = ({
     productTitle: product.title,
     purchaseItem: buildPurchaseItemLabel({
       adminLabel,
+      offerId: offer.id,
       offerLabel: offer.label,
       productTitle: product.title,
     }),

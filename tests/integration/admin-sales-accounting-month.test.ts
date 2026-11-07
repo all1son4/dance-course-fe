@@ -239,7 +239,7 @@ test("uses the exact report ledger for monthly Stripe gross, fee and net", async
     assert.equal(overview.purchases.length, 3);
     assert.match(
       report.csv,
-      /Итого по стране Польша \(2 продажи\),,318\.00 PLN,12\.00 PLN,306\.00 PLN/u,
+      /Total for Poland \(2 sales\),,318\.00 PLN,12\.00 PLN,306\.00 PLN/u,
     );
   } finally {
     await client`

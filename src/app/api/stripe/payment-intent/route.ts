@@ -37,7 +37,9 @@ import {
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import {
+  formatPurchaseLine,
   getLocalizedSellableProductOfferLabel,
+  getLocalizedSellableProductShortTitle,
   getLocalizedSellableProductTitle,
 } from "@/lib/sellable-products-localization";
 import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
@@ -106,6 +108,7 @@ type PaymentIntentContext = CheckoutSelection & {
 
 type LocalizedCheckout = {
   offerLabel: string;
+  productShortTitle: string;
   productTitle: string;
 };
 
@@ -308,6 +311,7 @@ const getLocalizedCheckout = ({
   product,
 }: PaymentIntentContext): LocalizedCheckout => ({
   productTitle: getLocalizedSellableProductTitle(product, checkoutLocale),
+  productShortTitle: getLocalizedSellableProductShortTitle(product, checkoutLocale),
   offerLabel: getLocalizedSellableProductOfferLabel(offer, checkoutLocale),
 });
 
@@ -371,6 +375,7 @@ const createPaymentIntentMetadata = (
   checkout_session_id: context.checkoutSessionId,
   ...createCheckoutConsentMetadata(context.consentAcceptance),
   ...getAccessMetadata(context),
+  offer_code: context.offer.code,
   offer_id: context.offer.id,
   offer_label: offerLabel,
   show_offer_label: String(shouldShowOfferLabel(context.product, context.offer.id)),
@@ -382,6 +387,7 @@ const createPaymentIntentMetadata = (
   customer_postal_code: context.customerData.postalCode,
   lesson_language:
     context.product.type === "choreo" ? context.customerData.lessonLanguage : "",
+  product_code: context.product.code,
   product_id: context.product.id,
   product_title: productTitle,
 });
@@ -395,9 +401,13 @@ const createPaymentIntentParams = (
   automatic_payment_methods: {
     enabled: true,
   },
-  description: shouldShowOfferLabel(context.product, context.offer.id)
-    ? `${localizedCheckout.productTitle} - ${localizedCheckout.offerLabel}`
-    : localizedCheckout.productTitle,
+  // Shown in the Stripe receipt and dashboard: one line in the buyer's language.
+  description: formatPurchaseLine(
+    localizedCheckout.productShortTitle,
+    shouldShowOfferLabel(context.product, context.offer.id)
+      ? localizedCheckout.offerLabel
+      : null,
+  ),
   receipt_email: context.customerData.email || undefined,
   metadata: createPaymentIntentMetadata(context, localizedCheckout),
 });
