@@ -925,6 +925,7 @@
     "priceLabel": "Price",
     "firstTouch": {
       "title": "Beginner course “First Touch”",
+      "shortTitle": "“First Touch” course",
       "description": {
         "1": "For those who have never danced but want to learn body awareness, confidence and movement.",
         "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
@@ -935,7 +936,8 @@
       }
     },
     "choreoStillAlive": {
-      "title": "Choreography tutorial “Still Alive”",
+      "title": "Online choreography breakdown “Still Alive”",
+      "shortTitle": "“Still Alive” breakdown",
       "description": {
         "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
@@ -948,7 +950,8 @@
       }
     },
     "choreoHerLies": {
-      "title": "Choreography tutorial “Her Lies”",
+      "title": "Online choreography breakdown “Her Lies”",
+      "shortTitle": "“Her Lies” breakdown",
       "description": {
         "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
@@ -961,8 +964,9 @@
       }
     },
     "choreoBundle": {
-      "title": "Bundle tutorial “Still Alive” + “Her Lies”",
-      "cardTitle": "Two video tutorials",
+      "title": "Choreography breakdown bundle “Still Alive” + “Her Lies”",
+      "shortTitle": "“Still Alive” + “Her Lies” bundle",
+      "cardTitle": "Two choreography breakdowns",
       "description": {
         "1": "Two tutorials in one access for dancers who want to work with different dynamics, performance qualities and musicality right away.",
         "2": "Move through the material at your own pace, replay the lessons and assemble both choreographies to music.",
@@ -976,6 +980,7 @@
     },
     "choreoBirthdayDrop": {
       "title": "The Birthday Drop “Love me in the morning”",
+      "shortTitle": "The Birthday Drop",
       "checkoutTitle": "The Birthday Drop",
       "description": {
         "1": "An online breakdown of the Love me in the morning choreography, put together as a separate drop.",
@@ -988,7 +993,9 @@
       }
     },
     "onlineGroupAnnaStrok": {
-      "title": "Online Group\nby Anna Strok",
+      "title": "Online Group by Anna Strok",
+      "shortTitle": "Online Group",
+      "checkoutTitle": "Online Group",
       "description": {
         "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body.",
         "2": "If you cannot attend my offline classes, you can gain new knowledge, practise at home and stay in touch with me wherever you are."
@@ -1003,7 +1010,8 @@
       }
     },
     "choreoLoveMeInTheMorning": {
-      "title": "Video tutorial for “Love me in the morning”",
+      "title": "Online choreography breakdown “Love me in the morning”",
+      "shortTitle": "“Love me in the morning” breakdown",
       "description": {
         "1": "Detailed explanations of movements and transitions.",
         "2": "Study, replay and practise at your own pace.",
@@ -1012,6 +1020,13 @@
       "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor"
+      }
+    },
+    "privateLesson": {
+      "title": "Private lesson with Anna Strok",
+      "shortTitle": "Private lesson",
+      "offers": {
+        "sixtyMinutes": "60 minutes"
       }
     },
     "choreoCard": {

@@ -1,10 +1,13 @@
 import type Stripe from "stripe";
 
-import { shouldShowPurchasedOfferLabel } from "@/lib/choreo-offer-presentation";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
 import { ensureInvoiceNumberForPayment } from "@/lib/invoices/invoice-numbering";
 import { buildPurchaseInvoiceAttachment } from "@/lib/invoices/purchase-invoice";
-import { getLocalizedOfferMetadataByOfferId } from "@/lib/sellable-products-localization";
+import {
+  formatPurchaseLine,
+  getLocalizedOfferMetadataByOfferId,
+  shouldShowOfferToBuyer,
+} from "@/lib/sellable-products-localization";
 import {
   ensureTelegramAccessLinkForPayment,
   isOfferEligibleForTelegramAccessLink,
@@ -162,8 +165,25 @@ const buildPreparedPurchaseSuccessEmail = ({
   paymentRecord: PurchasePaymentRecord;
   receipt: PurchaseEmailReceipt;
   telegramAccessLink: PurchaseEmailAccess["telegramAccessLink"];
-}): PurchaseEmailContent =>
-  buildPurchaseSuccessEmail({
+}): PurchaseEmailContent => {
+  // The catalogue names the purchase in the buyer's language; the snapshot from
+  // the payment is the fallback for offers the catalogue does not know.
+  const productTitle =
+    localizedOfferMetadata?.productTitle ||
+    paymentRecord.product_title ||
+    paymentIntent.description ||
+    DEFAULT_PRODUCT_TITLE_BY_LOCALE[checkoutLocale];
+  const offerLabel =
+    localizedOfferMetadata?.offerLabel ||
+    paymentRecord.offer_label ||
+    paymentIntent.metadata.offer_label ||
+    "";
+  const showOfferLabel = shouldShowOfferToBuyer(
+    paymentIntent.metadata,
+    paymentRecord.offer_id,
+  );
+
+  return buildPurchaseSuccessEmail({
     accessDurationDays: getOfferAccessDurationDaysByOfferId(paymentRecord.offer_id) ?? 0,
     accessKind: getPurchaseSuccessEmailAccessKind({
       accessWorkflow: paymentRecord.access_workflow,
@@ -175,24 +195,21 @@ const buildPreparedPurchaseSuccessEmail = ({
     inspirationAccessExpiresAt: onlineGroupAccess?.find(
       (access) => access.accessKey === "inspiration-hub",
     )?.accessExpiresAt,
-    offerLabel:
-      paymentRecord.offer_label ||
-      paymentIntent.metadata.offer_label ||
-      localizedOfferMetadata?.offerLabel ||
-      "",
-    productTitle:
-      paymentRecord.product_title ||
-      paymentIntent.description ||
-      localizedOfferMetadata?.productTitle ||
-      DEFAULT_PRODUCT_TITLE_BY_LOCALE[checkoutLocale],
+    offerLabel,
+    productTitle,
     receiptKind: receipt.receiptKind,
     receiptLink: receipt.receiptLink,
     showMentorFollowupNote: isWithMentorOfferId(paymentRecord.offer_id),
-    showOfferLabel: shouldShowPurchasedOfferLabel(paymentIntent.metadata),
+    showOfferLabel,
+    subjectLine: formatPurchaseLine(
+      localizedOfferMetadata?.productShortTitle || productTitle,
+      showOfferLabel ? offerLabel : null,
+    ),
     telegramAccessUrl:
       telegramAccessLink?.status === "ready" ? telegramAccessLink.accessUrl : null,
     telegramAccessLinks: onlineGroupAccess ?? [],
   });
+};
 
 export const deliverPurchaseSuccessEmailFromOutbox = async ({
   event,
@@ -264,7 +281,10 @@ export const deliverPurchaseSuccessEmailFromOutbox = async ({
   const invoiceAttachment = await buildPurchaseInvoiceAttachment({
     issuedAt: invoiceIssuedAt,
     paymentRecord: invoicedPaymentRecord,
-    showOfferLabel: shouldShowPurchasedOfferLabel(paymentIntent.metadata),
+    showOfferLabel: shouldShowOfferToBuyer(
+      paymentIntent.metadata,
+      paymentRecord.offer_id,
+    ),
   });
 
   try {

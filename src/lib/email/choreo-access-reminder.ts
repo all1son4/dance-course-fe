@@ -5,9 +5,9 @@ import { formatEmailDate } from "./dates";
 
 const COPY = {
   ru: {
-    subject: (title: string) => `Доступ к «${title}» скоро завершится`,
+    subject: (title: string) => `Скоро закончится доступ: ${title}`,
     heading: "Доступ скоро завершится",
-    intro: (title: string) => `Твой разбор — «${title}»`,
+    intro: (title: string) => title,
     dateLabel: "Доступ до",
     timeZone: "Время Варшавы",
     body: "Вернись к урокам, чтобы повторить хореографию.",
@@ -15,23 +15,23 @@ const COPY = {
     support: "Нужна помощь? Напиши нам",
   },
   en: {
-    subject: (title: string) => `Your access to “${title}” ends soon`,
+    subject: (title: string) => `Access ending soon: ${title}`,
     heading: "Your access ends soon",
-    intro: (title: string) => `Your tutorial — “${title}”`,
+    intro: (title: string) => title,
     dateLabel: "Access until",
     timeZone: "Warsaw time",
     body: "Come back to the lessons and practise the choreography.",
-    button: "Open tutorial",
+    button: "Open the breakdown",
     support: "Need help? Message us",
   },
   pl: {
-    subject: (title: string) => `Twój dostęp do „${title}” wkrótce się kończy`,
+    subject: (title: string) => `Dostęp wkrótce się kończy: ${title}`,
     heading: "Twój dostęp wkrótce się kończy",
-    intro: (title: string) => `Twoja choreografia — „${title}”`,
+    intro: (title: string) => title,
     dateLabel: "Dostęp do",
     timeZone: "Czas warszawski",
     body: "Wróć do lekcji i powtórz choreografię.",
-    button: "Otwórz choreografię",
+    button: "Otwórz tutorial",
     support: "Potrzebujesz pomocy? Napisz do nas",
   },
 } as const;

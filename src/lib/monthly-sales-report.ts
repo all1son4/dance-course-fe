@@ -24,6 +24,7 @@ import { findMonthlyReportRunRecord } from "@/lib/business-operation-read-runtim
 import { escapeSpreadsheetCsvCell } from "@/lib/csv";
 import { formatEmailDate } from "@/lib/email/dates";
 import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
+import { getAdminPurchaseLine } from "@/lib/sellable-products-localization";
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
 const MONTHLY_SALES_REPORT_RECIPIENT = process.env.RESEND_REPLY_TO?.trim() ?? "";
@@ -178,15 +179,15 @@ const getMonthlySalesReportPeriod = ({
 
 const buildCsv = (rows: string[][]) => {
   const headerRow = [
-    `Дата продажи (${ACCOUNTING_TIME_ZONE})`,
-    "Номер инвойса",
-    "ФИО / Email",
-    "Страна покупки",
-    "Что купили",
-    "Оригинальная сумма (до конвертации Stripe)",
-    "Сумма продажи (после конвертации Stripe)",
-    "Комиссия Stripe",
-    "Сумма после комиссии",
+    `Sale date (${ACCOUNTING_TIME_ZONE})`,
+    "Invoice number",
+    "Name / Email",
+    "Country of purchase",
+    "Item",
+    "Original amount (before Stripe conversion)",
+    "Sale amount (after Stripe conversion)",
+    "Stripe fee",
+    "Net amount (after Stripe fee)",
   ];
   const csvRows = [headerRow, ...rows];
 
@@ -211,8 +212,11 @@ const formatAccountingSaleTimestamp = (saleTimestampIso: string) => {
     : getAccountingDateTimeValue(saleDate);
 };
 
+// The CSV goes to accounting and is always in English.
+const COUNTRY_NOT_SPECIFIED = "Not specified";
+
 const formatCountry = (country: string) =>
-  country.trim().toLocaleUpperCase("ru-RU") || "Не указана";
+  country.trim().toLocaleUpperCase("en-US") || COUNTRY_NOT_SPECIFIED;
 
 const formatCountryName = (country: string) => {
   if (!/^[A-Z]{2}$/u.test(country)) {
@@ -220,7 +224,7 @@ const formatCountryName = (country: string) => {
   }
 
   try {
-    return new Intl.DisplayNames(["ru"], { type: "region" }).of(country) ?? country;
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(country) ?? country;
   } catch {
     return country;
   }
@@ -233,15 +237,15 @@ const compareCountrySaleRecords = (
   const leftCountry = formatCountry(left.customerCountry);
   const rightCountry = formatCountry(right.customerCountry);
 
-  if (leftCountry === "Не указана" && rightCountry !== "Не указана") {
+  if (leftCountry === COUNTRY_NOT_SPECIFIED && rightCountry !== COUNTRY_NOT_SPECIFIED) {
     return 1;
   }
 
-  if (rightCountry === "Не указана" && leftCountry !== "Не указана") {
+  if (rightCountry === COUNTRY_NOT_SPECIFIED && leftCountry !== COUNTRY_NOT_SPECIFIED) {
     return -1;
   }
 
-  const countryDiff = leftCountry.localeCompare(rightCountry, "ru-RU");
+  const countryDiff = leftCountry.localeCompare(rightCountry, "en-US");
 
   return countryDiff || compareSaleRecords(left, right);
 };
@@ -258,24 +262,7 @@ const formatSaleCsvRow = (saleRecord: MonthlySalesReportSaleRecord) => [
   formatAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
 ];
 
-const formatSaleCount = (count: number) => {
-  const mod100 = count % 100;
-  const mod10 = count % 10;
-
-  if (mod100 >= 11 && mod100 <= 14) {
-    return `${count} продаж`;
-  }
-
-  if (mod10 === 1) {
-    return `${count} продажа`;
-  }
-
-  if (mod10 >= 2 && mod10 <= 4) {
-    return `${count} продажи`;
-  }
-
-  return `${count} продаж`;
-};
+const formatSaleCount = (count: number) => `${count} ${count === 1 ? "sale" : "sales"}`;
 
 const buildCountryTotalCsvRow = (
   country: string,
@@ -300,7 +287,7 @@ const buildCountryTotalCsvRow = (
     "",
     "",
     country,
-    `Итого по стране ${countryName} (${formatSaleCount(saleRecords.length)})`,
+    `Total for ${countryName} (${formatSaleCount(saleRecords.length)})`,
     "",
     formatAmount(totals.grossMinor, "pln"),
     formatAmount(totals.feeMinor, "pln"),
@@ -697,6 +684,7 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
       customerEmailSnapshot: purchases.customerEmailSnapshot,
       customerFullNameSnapshot: purchases.customerFullNameSnapshot,
       invoiceNumber: invoices.invoiceNumber,
+      offerExternalId: purchases.offerExternalId,
       offerLabelSnapshot: purchases.offerLabelSnapshot,
       paymentIntentId: purchases.paymentIntentId,
       productTitleSnapshot: purchases.productTitleSnapshot,
@@ -733,7 +721,9 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
       customerFullName: row.customerFullNameSnapshot ?? "",
       invoiceNumber: row.invoiceNumber ?? "",
       paymentIntentId: row.paymentIntentId,
+      // One English name per offer, whatever language the buyer used.
       purchaseItem:
+        (row.offerExternalId ? getAdminPurchaseLine(row.offerExternalId, "en") : null) ??
         row.purchaseItemSnapshot ??
         row.productTitleSnapshot ??
         row.offerLabelSnapshot ??
