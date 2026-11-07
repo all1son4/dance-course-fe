@@ -64,9 +64,8 @@ const renderAlert = ({
 const getReadablePart = (alertText: string) =>
   alertText.slice(0, alertText.indexOf("🧾"));
 
-/** The message as a reader sees it: no tags, label padding as plain spaces. */
-const asPlainText = (alertText: string) =>
-  alertText.replaceAll(/<[^>]+>/gu, "").replaceAll("\u00a0", " ");
+/** The message as a reader sees it: no tags. */
+const asPlainText = (alertText: string) => alertText.replaceAll(/<[^>]+>/gu, "");
 
 test("never prints an access workflow identifier in the readable part", () => {
   for (const accessWorkflow of RUNTIME_ACCESS_WORKFLOWS) {
@@ -104,18 +103,25 @@ test("never prints a catalogue identifier in the readable part", () => {
 
 test("[BEH-TG-03] states the access term each offer actually grants", () => {
   const accessLine = (overrides: Partial<PaymentRecordSnapshot>) =>
-    asPlainText(renderAlert(overrides)).match(/^Доступ: +(.+)$/mu)?.[1];
+    asPlainText(renderAlert(overrides)).match(/^🔑 (.+)$/mu)?.[1];
 
   assert.equal(
     accessLine({ access_workflow: "telegram-chat", offer_id: "off_4BcM9pR6tH1x" }),
-    "Telegram-чат (4 месяца после входа)",
+    "Telegram-чат, 120 дней после входа",
   );
   assert.equal(
     accessLine({
       access_workflow: "telegram-channel-lifetime",
       offer_id: "off_choreo_birthday_drop_standard",
     }),
-    "Telegram-канал (навсегда)",
+    "Telegram-канал навсегда",
+  );
+  assert.equal(
+    accessLine({
+      access_workflow: "private-lesson",
+      offer_id: "off_private_lesson_standard",
+    }),
+    "Индивидуальное занятие, 60 минут",
   );
   assert.equal(
     accessLine({
@@ -127,30 +133,32 @@ test("[BEH-TG-03] states the access term each offer actually grants", () => {
 });
 
 test("shows the materials language only when the buyer chose one", () => {
-  assert.equal(
-    renderAlert({ access_workflow: "telegram-chat" }).includes("Материалы"),
-    false,
+  assert.match(
+    asPlainText(renderAlert({ access_workflow: "telegram-chat" })),
+    /^🌐 Сайт на польском$/mu,
   );
   assert.match(
     asPlainText(
       renderAlert({ access_workflow: "telegram-channel", lesson_language: "ru" }),
     ),
-    /Материалы: +Русский/u,
+    /^🌐 Сайт на польском · материалы на русском$/mu,
   );
 });
 
 test("[BEH-OG-01] reports every step as done only when nothing is left open", () => {
   const cleanAlert = renderAlert({});
 
-  assert.match(cleanAlert, /✅ Все этапы выполнены/u);
-  assert.match(cleanAlert, /✅ Инвойс: создан и отправлен — FV\/2026\/09\/002/u);
+  assert.match(cleanAlert, /^<b>✅ /u);
+  assert.match(cleanAlert, /^<i>Всё выполнено<\/i>$/mu);
+  assert.match(cleanAlert, /✅ Инвойс: FV\/2026\/09\/002 отправлен/u);
   assert.match(cleanAlert, /✅ Telegram-канал: ссылка подготовлена/u);
   assert.equal(cleanAlert.includes("Учёт продажи"), false);
 
   const failedAlert = renderAlert({ email_delivery_status: "failed" });
 
-  assert.match(failedAlert, /❌ Обработка с ошибками/u);
-  assert.match(failedAlert, /❌ Email: не отправлен/u);
+  assert.match(failedAlert, /^<b>❌ /u);
+  assert.match(failedAlert, /^<i>Ошибка · Письмо: не отправлено/mu);
+  assert.match(failedAlert, /❌ Письмо: не отправлено/u);
 });
 
 test("treats a leased in-flight status the same as the bare one", () => {
@@ -162,7 +170,7 @@ test("treats a leased in-flight status the same as the bare one", () => {
   ]) {
     assert.match(
       renderAlert({ email_delivery_status: status }),
-      /⏳ Email: отправка ещё выполняется/u,
+      /⏳ Письмо: отправка ещё идёт/u,
       `status "${status}" should read as in flight`,
     );
   }

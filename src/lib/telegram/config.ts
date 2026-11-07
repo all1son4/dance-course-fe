@@ -1,6 +1,9 @@
 import {
+  formatPurchaseLine,
+  getBuyerPurchaseLine,
   getLocalizedOfferMetadataByOfferId,
   resolveSellableProductsLocale,
+  shouldShowOfferToBuyerByOfferId,
 } from "@/lib/sellable-products-localization";
 
 import { getOfferMetadataById } from "./offer-access";
@@ -82,7 +85,13 @@ const getLessonTitleFallback = (offerId: string, locale: string | null | undefin
     return "Урок танца";
   }
 
-  return `${offerMetadata.productTitle} — ${offerMetadata.offerLabel}`;
+  return (
+    getBuyerPurchaseLine({
+      locale: resolvedLocale,
+      offerId,
+      showOfferLabel: shouldShowOfferToBuyerByOfferId(offerId),
+    }) ?? formatPurchaseLine(offerMetadata.productTitle, offerMetadata.offerLabel)
+  );
 };
 
 const parseLessonSource = (
