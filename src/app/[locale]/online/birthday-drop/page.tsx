@@ -25,9 +25,11 @@ export default async function BirthdayDropPage() {
     notFound();
   }
 
-  const [locale, t] = await Promise.all([
+  const [locale, t, metadataT, onlineT] = await Promise.all([
     getLocale(),
     getTranslations("BirthdayDropPage"),
+    getTranslations("Metadata"),
+    getTranslations("OnlinePage"),
   ]);
   // `title` carries a <br> for the visual line break; `titlePlain` is the
   // same heading as one line, for places that cannot render markup.
@@ -52,8 +54,8 @@ export default async function BirthdayDropPage() {
       <StructuredData
         data={[
           buildBreadcrumbStructuredData([
-            { name: "Home", path: "/" },
-            { name: "Online classes", path: "/online" },
+            { name: metadataT("breadcrumbHome"), path: "/" },
+            { name: onlineT("hero.title"), path: "/online" },
             { name: plainTitle, path: PAGE_PATH },
           ]),
           birthdayDropStructuredData,

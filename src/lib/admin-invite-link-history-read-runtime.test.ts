@@ -15,6 +15,7 @@ const createHistoryRecord = (
   adminLabel: "Admin label",
   createdAt: "2026-08-13T10:00:00.000Z",
   lessonLanguage: "en",
+  offerId: "off_test",
   offerLabel: "Standard",
   productTitle: "Course",
   purchaseItem: "Course — Standard",

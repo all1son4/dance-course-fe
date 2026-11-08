@@ -21,7 +21,7 @@ const COPY = {
     dateLabel: "Access until",
     timeZone: "Warsaw time",
     body: "Come back to the lessons and practise the choreography.",
-    button: "Open the breakdown",
+    button: "Open the tutorial",
     support: "Need help? Message us",
   },
   pl: {

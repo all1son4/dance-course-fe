@@ -161,7 +161,7 @@ export const useInviteLinksAdmin = ({
       const selectionLabel =
         kind === "choreo" && resolvedChoreoSelection
           ? resolvedChoreoSelection.label
-          : "Первый курс (First Touch)";
+          : "Курс «First Touch»";
 
       setGeneratedLink(accessUrl);
       setStatus({

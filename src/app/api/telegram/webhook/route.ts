@@ -151,7 +151,7 @@ const BOT_COPY = {
     lessonDeliveryFailed: `Nie udało się automatycznie wysłać lekcji. Skontaktuj się ze wsparciem, pomożemy: ${SUPPORT_TELEGRAM_URL}`,
     myLessonsCommand: "/my_lessons - pobierz swoje lekcje ponownie",
     noPurchases:
-      "Nie znaleziono jeszcze aktywowanych zakupów. Upewnij się, że otworzyłeś bota przez osobisty link z e-maila.",
+      "Nie znaleziono jeszcze aktywowanych zakupów. Upewnij się, że otworzyłaś bota przez osobisty link z e-maila.",
     notAvailable: `Nie udało się potwierdzić dostępu tym linkiem. Skontaktuj się ze wsparciem: ${SUPPORT_TELEGRAM_URL}`,
     sourceMissing: `Dostęp aktywowany, ale źródło lekcji nie jest jeszcze skonfigurowane. Skontaktuj się ze wsparciem: ${SUPPORT_TELEGRAM_URL}`,
     startCommand: "/start <kod> - aktywuj dostęp po zakupie",

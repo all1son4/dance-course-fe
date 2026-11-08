@@ -11,13 +11,13 @@
     "pages": {
       "home": {
         "title": "Anna Strok: Frame Up Strip online i w Warszawie",
-        "description": "Kursy Frame Up Strip online na Telegramie z feedbackiem do Twoich nagrań i praktyka Impro Room w Warszawie. Kurs od zera, treningi i samouczki choreografii.",
+        "description": "Kursy Frame Up Strip online na Telegramie z feedbackiem do Twoich nagrań i praktyka Impro Room w Warszawie. Kurs od zera, treningi i tutoriale choreografii.",
         "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
         "heroImageAlt": "Anna Strok w butach strip na wysokim stołku, z głową odchyloną do tyłu"
       },
       "online": {
         "title": "Kursy Frame Up Strip online na Telegramie",
-        "description": "Samouczki choreografii, Online Group dla średniozaawansowanych i zaawansowanych oraz First Touch dla osób, które nigdy nie tańczyły. Z dowolnego kraju.",
+        "description": "Tutoriale choreografii, Online Group dla średniozaawansowanych i zaawansowanych oraz First Touch dla osób, które nigdy nie tańczyły. Z dowolnego kraju.",
         "ogImageAlt": "Anna Strok: kursy Frame Up Strip online",
         "heroImageAlt": "Anna Strok w butach strip, z ugiętymi kolanami i dłońmi złączonymi przed sobą"
       },
@@ -33,9 +33,9 @@
         "ogImageAlt": "Online Group: treningi online z Anną Strok"
       },
       "choreo": {
-        "title": "Samouczki choreografii Frame Up Strip",
+        "title": "Tutoriale choreografii Frame Up Strip",
         "description": "Choreografie Anny Strok krok po kroku, z wyjaśnieniami po rosyjsku i angielsku: ruchy, technika i ekspresja. Dla średniozaawansowanych i zaawansowanych.",
-        "ogImageAlt": "Samouczki choreografii Anny Strok",
+        "ogImageAlt": "Tutoriale choreografii Anny Strok",
         "heroImageAlt": "Anna Strok w głębokim przysiadzie w butach strip, z dłońmi między kolanami"
       },
       "offline": {
@@ -56,7 +56,7 @@
       },
       "birthdayDrop": {
         "title": "The Birthday Drop „Love me in the morning”",
-        "description": "Rozbiór choreografii „Love me in the morning”, playlista, moodboard i link do wywiadu „34 pytania” na YouTube. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
+        "description": "Tutorial choreografii „Love me in the morning”, playlista, moodboard i link do wywiadu „34 pytania” na YouTube. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
         "ogImageAlt": "The Birthday Drop „Love me in the morning” od Anny Strok"
       },
       "payment": {
@@ -114,7 +114,7 @@
         "prefix": "Grupa online",
         "highlight": "by Anna Strok"
       },
-      "3": "Samouczki choreograficzne",
+      "3": "Tutoriale choreografii",
       "4": "The Birthday Drop"
     }
   },
@@ -341,9 +341,9 @@
         "startValue": "Listopad"
       },
       "choreo": {
-        "title": "Samouczki moich choreografii",
+        "title": "Tutoriale moich choreografii",
         "description": {
-          "1": "Samouczki online moich choreografii.",
+          "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku lub angielsku.",
           "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
         },
         "startLabel": "Start",
@@ -355,7 +355,7 @@
         "title": "The Birthday Drop",
         "description": {
           "1": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą.",
-          "2": "Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
+          "2": "Dlatego przygotowałam dla Ciebie tutorial jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
         },
         "salesLabel": "Sprzedaż otwarta do 7 września",
         "salesValue": "Dostęp na zawsze!"
@@ -620,10 +620,10 @@
   },
   "ChoreoPage": {
     "hero": {
-      "title": "Samouczki choreograficzne",
+      "title": "Tutoriale moich choreografii",
       "stickyTitle": "Tutoriale",
       "description": {
-        "1": "Samouczki online moich choreografii.",
+        "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku lub angielsku.",
         "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
       },
       "startLabel": "Start",
@@ -633,11 +633,11 @@
       "button": "Wybierz choreografię"
     },
     "about": {
-      "title": "Co zawiera omówienie choreografii"
+      "title": "Co zawiera tutorial"
     },
     "suggestions": {
       "1": {
-        "title": "Samouczki choreograficzne dla poziomu średniozaawansowanego i zaawansowanego",
+        "title": "Tutoriale choreografii dla poziomu średniozaawansowanego i zaawansowanego",
         "text": "Szczegółowe wyjaśnienia po rosyjsku i angielsku: ruchy, technika i ekspresja."
       },
       "2": {
@@ -983,8 +983,8 @@
       "shortTitle": "The Birthday Drop",
       "checkoutTitle": "The Birthday Drop",
       "description": {
-        "1": "Rozbiór choreografii Love me in the morning, przygotowany jako osobny drop.",
-        "2": "W środku: rozbiór kombinacji, playlista, moodboard i link do wywiadu „34 pytania do moich 34” na YouTube.",
+        "1": "Tutorial choreografii „Love me in the morning”, przygotowany jako osobny drop.",
+        "2": "W środku: tutorial kombinacji, playlista, moodboard i link do wywiadu „34 pytania do moich 34” na YouTube.",
         "3": "Możesz wracać do materiałów i powtarzać we własnym tempie."
       },
       "accessNote": "Dostęp do materiałów na zawsze, przez prywatny kanał na Telegramie.",
@@ -1023,8 +1023,8 @@
       }
     },
     "privateLesson": {
-      "title": "Lekcja indywidualna z Anną Strok",
-      "shortTitle": "Lekcja indywidualna",
+      "title": "Zajęcia indywidualne z Anną Strok",
+      "shortTitle": "Zajęcia indywidualne",
       "offers": {
         "sixtyMinutes": "60 minut"
       }
@@ -1140,7 +1140,7 @@
   },
   "BirthdayPopup": {
     "title": "Happy Birthday to me!",
-    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie tutorial jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "cta": "Dowiedz się więcej",
     "close": "Zamknij"
   },
@@ -1148,14 +1148,14 @@
     "title": "The Birthday Drop<br></br>„Love me in the morning”",
     "titlePlain": "The Birthday Drop „Love me in the morning”",
     "titleShort": "The Birthday Drop",
-    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie tutorial jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "buyButton": "Kup za {price}",
     "detailsButton": "Dowiedz się więcej",
     "aboutTitle": "Co czeka Cię w The Birthday Drop",
     "suggestions": {
       "video": {
-        "title": "Rozbiór choreografii „Love me in the morning”",
-        "text": "Otrzymujesz dostęp do samouczka tej choreografii w dwóch językach: rosyjskim i angielskim."
+        "title": "Tutorial choreografii „Love me in the morning”",
+        "text": "Otrzymujesz dostęp do tutorialu tej choreografii w dwóch językach: rosyjskim i angielskim."
       },
       "playlist": {
         "title": "Birthday Playlist",
