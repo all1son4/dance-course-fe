@@ -136,9 +136,9 @@
     },
     "support": {
       "title": "Masz pytanie? Jesteśmy tu dla Ciebie",
-      "button": "Napisz do wsparcia"
+      "button": "Napisz do nas"
     },
-    "copyright": "© 2026 Dance Platform. Wszelkie prawa zastrzeżone",
+    "copyright": "© 2026 Anna Strok. Wszelkie prawa zastrzeżone",
     "privacyPolicy": "Polityka prywatności",
     "cookieSettings": "Ustawienia cookies"
   },
@@ -158,7 +158,7 @@
     "items": {
       "1": {
         "question": "Czy Frame Up jest dla mnie, jeśli nigdy nie tańczyłam?",
-        "answer": "Tak, ten styl jest odpowiedni dla początkujących. Na zajęciach w początkującej grupie offline pracujemy stopniowo i skupiamy się na technice, plastyce oraz pewności siebie. Możesz też zacząć stopniową naukę od kursu online dla początkujących „First Touch”. Najważniejsze są chęć próbowania i radość z procesu."
+        "answer": "Tak, ten styl jest odpowiedni dla początkujących. Na zajęciach offline w grupie dla początkujących pracujemy stopniowo i skupiamy się na technice, plastyce oraz pewności siebie. Możesz też zacząć od kursu online dla początkujących „First Touch”. Najważniejsze są chęć próbowania i radość z procesu."
       },
       "2": {
         "question": "Co zabrać na trening?",
@@ -166,7 +166,7 @@
       },
       "3": {
         "question": "Czy mogę dołączyć w trakcie miesiąca lub kursu?",
-        "answer": "Jeśli chcesz dołączyć w połowie miesiąca, napisz do Anny w wiadomości prywatnej, a podpowie Ci, kiedy najlepiej wejść w nowy materiał. Linki do jej Instagrama i Telegrama znajdziesz w sekcji „Kontakt”."
+        "answer": "Jeśli chcesz dołączyć w połowie miesiąca, napisz do mnie w prywatnej wiadomości, a podpowiem Ci, kiedy najlepiej zacząć, żeby trafić na nowy materiał. Linki do mojego Instagrama i Telegrama znajdziesz w sekcji „Kontakt”."
       },
       "4": {
         "question": "Czy Frame Up jest dla mnie, jeśli się wstydzę lub boję się ruchu?",
@@ -178,11 +178,11 @@
       },
       "6": {
         "question": "Jakie poziomy zaawansowania są dostępne?",
-        "answer": "Są grupy dla początkujących, średniozaawansowanych oraz osób, które chcą wejść głębiej w technikę i występy. Pomogę dobrać właściwy poziom."
+        "answer": "Są grupy dla początkujących, średniozaawansowanych oraz dla osób, które chcą głębiej pracować nad techniką i ekspresją. Pomogę Ci dobrać poziom odpowiedni właśnie dla Ciebie."
       },
       "7": {
-        "question": "Czy mogę ćwiczyć, jeśli nie mam plastyki?",
-        "answer": "Plastyka to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się bardziej kobieco."
+        "question": "Czy mogę ćwiczyć, jeśli brakuje mi plastyki ruchu?",
+        "answer": "Plastyka ruchu to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się bardziej kobieco."
       },
       "8": {
         "question": "Czy Frame Up jest odpowiedni w każdym wieku?",
@@ -222,23 +222,23 @@
     "items": {
       "1": {
         "title": "Lekcja 1: Praca stóp",
-        "description": "Poznajemy podstawy ustawienia stopy, zarówno w obcasach, jak i bez nich. Uczysz się czuć oparcie, rozkładać ciężar ciała i utrzymywać stabilność w każdym ruchu. To fundament plastyki i wyrazu."
+        "description": "Poznajemy podstawy ustawienia stopy, zarówno w obcasach, jak i bez nich. Uczymy się czuć oparcie, rozkładać ciężar ciała i utrzymywać stabilność w każdym ruchu. To fundament plastyki i wyrazu, od którego zaczyna się pewny taniec."
       },
       "2": {
         "title": "Lekcja 2: Żywe ciało — fale i kręgosłup",
-        "description": "Otwieramy ciało na przepływ. Poznajesz miękkie fale, pracę kręgosłupa i ruchomość tułowia. Uczysz się łączyć oddech z ruchem, aby taniec był żywy, płynny i zmysłowy."
+        "description": "Otwieramy ciało na przepływ. Poznajemy miękkie fale, pracę kręgosłupa i ruchomość tułowia. Uczymy się łączyć oddech z ruchem, aby taniec był żywy, płynny i zmysłowy."
       },
       "3": {
-        "title": "Lekcja 3: Nogi — en l'air, wymachy, kiki",
-        "description": "Rozwijamy siłę i ekspresję nóg. Opanowujesz podstawowe elementy i uczysz się wykonywać je technicznie, efektownie i z charakterem. Pracujemy nad linią, amplitudą i kontrolą."
+        "title": "Lekcja 3: Nogi — en l'air, wymachy, kicki",
+        "description": "Rozwijamy siłę i ekspresję nóg. Opanowujemy podstawowe elementy: en l'air, wymachy i kicki — uczymy się wykonywać je technicznie, efektownie i z charakterem. Pracujemy nad linią, amplitudą i kontrolą."
       },
       "4": {
         "title": "Lekcja 4: Wyraz w tańcu — spojrzenie i emocja",
-        "description": "Taniec to nie tylko technika, ale też historia. Uczysz się pracować nad wyrazem: spojrzeniem, mimiką i stanem wewnętrznym. Jak przekazać emocję, przyciągnąć widza i czuć pewność na sali i scenie."
+        "description": "Taniec to nie tylko technika, ale też historia. Uczymy się pracować nad wyrazem: spojrzeniem, mimiką i stanem wewnętrznym. Jak przekazać emocję, przyciągnąć widza, być pewną siebie i prawdziwą na scenie i na sali."
       },
       "5": {
         "title": "Lekcja 5: Składamy wszystko w choreografię",
-        "description": "Łączymy wszystko, czego się nauczyłaś, w pierwszą pełną choreografię. Tańczysz, przeżywasz i czerpiesz radość. To moment, gdy technika staje się sztuką, a ruch staje się Twoim stylem."
+        "description": "Łączymy wszystko, czego się nauczyłaś, w pierwszą pełną choreografię. Tańczymy, przeżywamy i czerpiemy z tego radość. To moment, gdy technika staje się sztuką, a ruch staje się Twoim stylem."
       }
     }
   },
@@ -258,7 +258,7 @@
       "instagram": "Instagram",
       "bio": {
         "1": "Jestem Anna Strok, profesjonalna tancerka i instruktorka z wieloletnim doświadczeniem oraz wyraźnym stylem artystycznym.",
-        "2": "Jestem twórczynią i organizatorką Total Strip Weekend w Mińsku – największych na Białorusi mistrzostw frame up strip i high heels, które gromadziły setki tancerzy i stały się ważnym wydarzeniem dla społeczności tanecznej."
+        "2": "Jestem twórczynią i organizatorką Total Strip Weekend w Mińsku — największych na Białorusi mistrzostw frame up strip i high heels, które gromadziły setki tancerzy i stały się ważnym wydarzeniem dla społeczności tanecznej."
       },
       "achievements": {
         "stage18Solo": {
@@ -284,7 +284,7 @@
       },
       "quote": {
         "1": "Dziś rozwijam Frame Up w Polsce: prowadzę grupy, w których kobiety otwierają się przez ruch, i dalej uczę się od europejskich mistrzów, aby rozwijać się razem z moimi uczennicami.",
-        "2": "Moim celem jest wzmacnianie kultury Frame Up i inspirowanie kobiet do odwagi, wolności oraz ekspresji, tworząc przestrzeń, w której każda może poczuć swoją siłę, piękno i energię twórczą."
+        "2": "Moim celem jest wzmacnianie kultury Frame Up, inspirowanie kobiet do odwagi, wolności i ekspresji oraz tworzenie przestrzeni, w której każda może poczuć swoją siłę, piękno i energię twórczą."
       },
       "imageAlt": "Zdjęcie Anny Strok"
     },
@@ -316,7 +316,7 @@
       "title": "Zajęcia online",
       "location": "W Telegramie",
       "description": {
-        "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia – i to jest całkowicie normalne. Taniec ma dawać radość, a nie stres.",
+        "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia — i to jest całkowicie normalne. Taniec ma dawać radość, a nie stres.",
         "2": "Jeśli jeszcze nie jesteś gotowa na zajęcia offline, mieszkasz w innym mieście albo chcesz zacząć w komfortowych warunkach, możesz rozpocząć od moich kursów online."
       }
     },
@@ -325,8 +325,8 @@
         "title": "Kurs dla początkujących\n„First Touch”",
         "description": {
           "1": "Twoje pierwsze spotkanie z Frame Up Strip.",
-          "2": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się świadomości ciała, pewności siebie i ruchu.",
-          "3": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
+          "2": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czuć swoje ciało, nabrać pewności siebie i swobody w ruchu.",
+          "3": "Pracujemy nad podstawową techniką, pracą stóp i emocjami, a na końcu nauczysz się swojej pierwszej choreografii."
         },
         "startLabel": "Start kursu",
         "startValue": "Zima 2026–2027 albo po zebraniu pełnej grupy"
@@ -343,8 +343,8 @@
       "choreo": {
         "title": "Tutoriale moich choreografii",
         "description": {
-          "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku lub angielsku.",
-          "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
+          "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku i angielsku.",
+          "2": "Uczymy się razem online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
         },
         "startLabel": "Start",
         "startValue": "W dowolnym momencie",
@@ -364,8 +364,8 @@
     "studio": {
       "title": "Taniec w studiu to zupełnie inne odczucia",
       "paragraphs": {
-        "1": "W studiu czujesz energię ludzi obok, szybciej łapiesz rytm i odważniej się otwierasz. Każdy ruch staje się pewniejszy, gdy wspiera Cię grupa.",
-        "2": "Zajęcia offline pomagają głębiej poczuć ciało, poprawić technikę i dostać emocjonalny impuls, którego często brakuje online. Tutaj nie tylko powtarzasz ruch – przeżywasz taniec.",
+        "1": "W studiu czujesz energię ludzi obok, szybciej łapiesz rytm i odważniej się otwierasz. Każdy ruch staje się pewniejszy, gdy obok masz grupę, która Cię wspiera, inspiruje i idzie z Tobą w tym samym tempie.",
+        "2": "Zajęcia offline pomagają głębiej poczuć ciało, poprawić technikę i dostać emocjonalny impuls, którego często brakuje online. Tutaj nie tylko powtarzasz ruch — przeżywasz taniec.",
         "3": "Przyjdź do studia i pozwól sobie na więcej odczuć, wolności i siły."
       },
       "button": "Więcej o grupach",
@@ -376,7 +376,7 @@
     "hero": {
       "title": "Zajęcia offline",
       "location": "Warszawa, Polska",
-      "description": "Każdy przychodzi do Frame Up ze swoją historią – ktoś pierwszy raz zakłada obcasy, a ktoś już tańczy pewnie i chce iść dalej. Dlatego zajęcia są podzielone na poziomy, aby rozwijać się komfortowo i bez stresu."
+      "description": "Każdy przychodzi do Frame Up ze swoją historią — ktoś pierwszy raz zakłada obcasy, a ktoś już tańczy pewnie i chce iść dalej. Dlatego zajęcia są podzielone na poziomy, aby rozwijać się komfortowo i bez stresu."
     },
     "cards": {
       "common": {
@@ -387,7 +387,7 @@
       },
       "fromZero": {
         "title": "Początkujący",
-        "description": "Idealnie, jeśli dopiero zaczynasz. Pracujemy nad bazową techniką, plastyką, postawą, rytmem i pewnością ruchu.",
+        "description": "Idealnie, jeśli dopiero zaczynasz. Pracujemy nad podstawową techniką, plastyką, postawą, rytmem i pewnością ruchu.",
         "schedule": {
           "1": "Poniedziałek 20:30–22:00",
           "2": "Piątek 19:00–20:30"
@@ -411,7 +411,7 @@
           "halloween": "Edycja Halloween"
         },
         "description": "Te spotkania są dla osób, które chcą uczyć się improwizować, więcej ćwiczyć i przestać bać się improwizacji.",
-        "note": "Ważne: Impro Room nie jest zajęciami, na których uczę, jak poprawnie improwizować. Wymyślam zadania, tworzę przestrzeń do praktyki i uczę się razem z wami.",
+        "note": "Ważne: Impro Room to nie zajęcia, na których uczę Cię, „jak poprawnie improwizować”. Wymyślam zadania, tworzę przestrzeń do praktyki i uczę się razem z Tobą.",
         "details": "Spotykamy się razem na sali i pracujemy z różnymi zadaniami i koncepcjami, próbujemy nowych podejść, jamujemy i po prostu dużo improwizujemy.",
         "scheduleTitle": "Grafik na listopad",
         "schedule": {
@@ -426,8 +426,8 @@
     "promo": {
       "title": "Nie możesz uczestniczyć w zajęciach offline?",
       "description": {
-        "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia – i to jest normalne. Taniec powinien dawać radość, a nie stres.",
-        "2": "Jeśli nie jesteś jeszcze gotowa na offline, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
+        "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia — i to jest normalne. Taniec powinien dawać radość, a nie stres.",
+        "2": "Jeśli nie jesteś jeszcze gotowa na zajęcia offline, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
       }
     }
   },
@@ -436,13 +436,13 @@
       "title": "Kurs „First Touch”",
       "subtitle": "Twoje pierwsze spotkanie z Frame Up Strip.",
       "description": {
-        "1": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czucia ciała, pewności siebie i ruchu.",
-        "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
+        "1": "Kurs dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czuć swoje ciało, nabrać pewności siebie i swobody w ruchu.",
+        "2": "Pracujemy nad podstawową techniką, pracą stóp i emocjami, a na końcu nauczysz się swojej pierwszej choreografii."
       },
       "startLabel": "Start kursu",
       "priceLabel": "Cena kursu",
       "startDate": "Zima 2026–2027 albo po zebraniu pełnej grupy",
-      "startNote": "Już teraz możesz zarezerwować miejsce w kolejnej grupie. Gdy start kursu będzie bliżej i grupa będzie gotowa, wyślemy email z linkiem do płatności.",
+      "startNote": "Już teraz możesz zarezerwować miejsce w kolejnej grupie. Gdy start kursu będzie bliżej i grupa będzie gotowa, wyślemy e-mail z linkiem do płatności.",
       "buyButton": "Kup za 250 PLN / 50 €",
       "enrollButton": "Zapisz się",
       "programButton": "Program kursu",
@@ -452,13 +452,13 @@
       "title": "Zarezerwuj miejsce w First Touch",
       "description": {
         "intro": "Zostaw kontakt, a dodamy Cię do listy kolejnej grupy.",
-        "step1": "Bliżej startu wyślemy email z linkiem do płatności. Po płatności otrzymasz instrukcje i dostęp do kursu."
+        "step1": "Bliżej startu wyślemy e-mail z linkiem do płatności. Po płatności otrzymasz instrukcje i dostęp do kursu."
       },
       "closeLabel": "Zamknij okno zapisu",
       "closeButton": "Będę czekać",
       "retryButton": "Spróbuj ponownie",
       "submitButton": "Wyślij zgłoszenie",
-      "successMessage": "Zgłoszenie zostało zapisane. Wyślemy email z linkiem do płatności, gdy start kursu będzie bliżej.",
+      "successMessage": "Zgłoszenie zostało zapisane. Wyślemy e-mail z linkiem do płatności, gdy start kursu będzie bliżej.",
       "errorMessage": "Nie udało się zapisać zgłoszenia. Spróbuj ponownie albo napisz do nas bezpośrednio.",
       "failure": {
         "title": "Coś poszło nie tak",
@@ -466,7 +466,7 @@
           "network": "Wygląda na to, że połączenie zostało przerwane albo zgłoszenie nie dotarło do serwera. Sprawdź internet i spróbuj ponownie.",
           "rateLimited": "Za dużo prób w krótkim czasie. Poczekaj chwilę i spróbuj ponownie.",
           "server": "Nie udało się zapisać zgłoszenia po naszej stronie. Spróbuj ponownie za chwilę albo napisz do nas bezpośrednio.",
-          "validation": "Dane nie przeszły walidacji. Wróć do formularza i sprawdź pola.",
+          "validation": "Niektóre dane są niepoprawne. Wróć do formularza i sprawdź pola.",
           "unknown": "Nie udało się zapisać zgłoszenia. Spróbuj ponownie albo napisz do nas bezpośrednio."
         }
       },
@@ -482,13 +482,13 @@
           "error": "Podaj Telegram lub Instagram"
         },
         "email": {
-          "label": "Email",
+          "label": "E-mail",
           "placeholder": "name@example.com",
-          "duplicateError": "Ten email jest już zapisany"
+          "duplicateError": "Ten adres e-mail jest już na liście"
         },
         "consent": {
-          "label": "Wyrażam zgodę na otrzymanie emaila o starcie kursu i linku do płatności",
-          "error": "Potwierdź zgodę na email o starcie kursu"
+          "label": "Wyrażam zgodę na otrzymanie e-maila o starcie kursu i linku do płatności",
+          "error": "Potwierdź zgodę na e-mail o starcie kursu"
         }
       }
     },
@@ -497,16 +497,16 @@
     },
     "suggestions": {
       "1": {
-        "title": "Grupa online z moim osobistym wsparciem",
-        "text": "Nie uczysz się sama – prowadzę Cię krok po kroku, koryguję technikę i pomagam rozwinąć ekspresję ciała."
+        "title": "Nauka w grupie z moim osobistym wsparciem",
+        "text": "Nie uczysz się sama — prowadzę Cię krok po kroku, koryguję technikę i pomagam rozwinąć ekspresję ciała."
       },
       "2": {
         "title": "Zadania domowe z omówieniem i feedbackiem",
         "text": "Każde zadanie utrwala materiał. Otrzymujesz komentarze, rekomendacje i wsparcie, żeby rozwijać się szybciej."
       },
       "3": {
-        "title": "5 przemyślanych lekcji budujących fundament",
-        "text": "Od pracy stóp i fal po ekspresję i pierwszą choreografię – dostajesz pełną bazę, by pewnie poruszać się w Frame Up i pokrewnych stylach."
+        "title": "5 przemyślanych lekcji budujących fundament stylu",
+        "text": "Od pracy stóp i fal po ekspresję i pierwszą choreografię — dostajesz pełną bazę, by pewnie poruszać się w Frame Up i pokrewnych stylach."
       },
       "4": {
         "title": "Czas trwania kursu: 1,5 miesiąca",
@@ -560,9 +560,9 @@
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
           "3": "Czas trwania cyklu — 6 tygodni",
-          "4": "Dostęp do zamkniętego Telegram-czatu",
+          "4": "Dostęp do zamkniętego czatu na Telegramie",
           "5": "Kontakt i wsparcie w grupie",
-          "6": "Dodatkowe materiały dla inspiracji"
+          "6": "Dodatkowe materiały do inspiracji"
         }
       },
       "plus": {
@@ -572,15 +572,15 @@
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
           "3": "Czas trwania cyklu — 6 tygodni",
-          "4": "Dostęp do zamkniętego Telegram-czatu",
+          "4": "Dostęp do zamkniętego czatu na Telegramie",
           "5": "Kontakt i wsparcie w grupie",
           "6": "Dostęp do Inspiration Hub na czas trwania cyklu",
           "7": "Lekcje ze wszystkich poprzednich cykli",
           "8": "Dodatkowe ćwiczenia",
-          "9": "Playlisty, moodboardy i filmy dla inspiracji",
+          "9": "Playlisty, moodboardy i inspirujące filmy",
           "10": "Przydatne rekomendacje"
         },
-        "includesStandard": "Wszystko ze Standard, a także:"
+        "includesStandard": "Wszystko z pakietu Standard, a także:"
       },
       "popular": "Popularny",
       "switchLabel": "Wybór pakietu"
@@ -595,7 +595,7 @@
       },
       "2": {
         "title": "Nowe lekcje w każdym cyklu",
-        "text": "Każdy cykl obejmuje nowe tematy: technikę, podstawy, rutyny, improwizację, akrobatykę i choreografię oraz 5 różnych lekcji."
+        "text": "W każdym cyklu poruszamy nowe tematy: technikę, podstawy, rutyny, improwizację, akrobatykę i choreografię. Cały cykl to 5 lekcji na różne tematy."
       },
       "3": {
         "title": "Zadania domowe z feedbackiem",
@@ -607,7 +607,7 @@
       },
       "5": {
         "title": "Pakiet Plus z Inspiration Hub",
-        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub pozostaje aktywny do startu kolejnego cyklu."
+        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub jest aktywny na czas trwania cyklu."
       },
       "6": {
         "title": "Zamknięty czat Telegram",
@@ -624,8 +624,8 @@
       "title": "Tutoriale moich choreografii",
       "stickyTitle": "Tutoriale",
       "description": {
-        "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku lub angielsku.",
-        "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
+        "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku i angielsku.",
+        "2": "Uczymy się razem online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
       },
       "startLabel": "Start",
       "startValue": "W dowolnym momencie",
@@ -651,7 +651,7 @@
       },
       "4": {
         "title": "Szybki dostęp przez zamknięte kanały Telegram",
-        "text": "Bez zbędnych platform – całe szkolenie w jednym miejscu od razu po płatności."
+        "text": "Bez zbędnych platform — cała nauka w jednym miejscu, od razu po opłaceniu."
       },
       "5": {
         "title": "Samodzielna praktyka we własnym tempie",
@@ -676,7 +676,7 @@
     "personalDataTitle": "Dane kupującego",
     "salesClosed": {
       "title": "Sprzedaż niedostępna",
-      "description": "Aktualne kursy i choreografie znajdziesz w katalogu.",
+      "description": "Aktualne kursy i tutoriale znajdziesz w katalogu.",
       "contactButton": "Napisz na Telegramie"
     },
     "catalogUnavailable": {
@@ -696,7 +696,7 @@
     },
     "renewal": {
       "title": "Potwierdź Telegram przed płatnością",
-      "description": "Aby przedłużyć dostęp, potwierdź konto Telegram.",
+      "description": "Aby przedłużyć udział, potwierdź konto Telegram.",
       "summaryCard": {
         "description": "Kontynuacja udziału w grupie online na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
@@ -708,7 +708,7 @@
       "status": {
         "loading": "Przygotowujemy weryfikację...",
         "ready": "Kliknij niebieską ikonę, aby potwierdzić konto Telegram.",
-        "openingTelegram": "Potwierdź logowanie w Telegramie. Po potwierdzeniu spróbujemy automatycznie wrócić do płatności.",
+        "openingTelegram": "Potwierdź logowanie w Telegramie. Po potwierdzeniu spróbujemy automatycznie przenieść Cię z powrotem do płatności.",
         "checkingMembership": "Sprawdzamy czat...",
         "verified": "Gotowe.",
         "verifiedAs": "Gotowe: {username}",
@@ -720,7 +720,7 @@
       },
       "unavailable": {
         "title": "Przedłużenie niedostępne",
-        "description": "Napisz do nas — pomożemy przedłużyć dostęp."
+        "description": "Napisz do nas — pomożemy przedłużyć udział."
       }
     },
     "inputs": {
@@ -729,15 +729,15 @@
         "placeholder": "Anna Kowalska"
       },
       "email": {
-        "label": "Email",
+        "label": "E-mail",
         "placeholder": "name@gmail.com",
-        "hint": "Tu przyjdzie link do dostępu i potwierdzenie płatności",
+        "hint": "Tu wyślemy link dostępu i potwierdzenie płatności",
         "suggestion": "Czy chodziło o"
       },
       "nickname": {
         "label": "Nick w Telegramie",
         "placeholder": "yournickname",
-        "hint": "Po nim otworzymy Ci dostęp w Telegramie"
+        "hint": "Na jego podstawie nadamy Ci dostęp w Telegramie"
       },
       "address": {
         "label": "Adres",
@@ -778,7 +778,7 @@
     },
     "staleLink": {
       "title": "Oferta niedostępna",
-      "description": "Aktualne kursy i choreografie znajdziesz w katalogu.",
+      "description": "Aktualne kursy i tutoriale znajdziesz w katalogu.",
       "catalogButton": "Zobacz kursy"
     },
     "successVerification": {
@@ -786,8 +786,8 @@
     },
     "paymentLockedHint": "Uzupełnij dane i zaznacz zgody — tutaj otworzy się formularz płatności.",
     "offerUnavailable": {
-      "title": "Ten wariant jest niedostępny.",
-      "selectButton": "Wybierz wariant"
+      "title": "Ten pakiet jest niedostępny.",
+      "selectButton": "Wybierz pakiet"
     },
     "steps": {
       "access": {
@@ -806,7 +806,7 @@
     },
     "progress": {
       "step": "Krok {current} z {total}",
-      "ready": "Wszystko uzupełnione, zostało zapłacić",
+      "ready": "Wszystko wypełnione, została tylko płatność",
       "duration": "około minuty"
     },
     "paymentLocked": {
@@ -820,32 +820,32 @@
       "checking": "Sprawdzamy status płatności...",
       "pending": "Płatność jest jeszcze przetwarzana — nie płać ponownie. Gdy tylko zostanie potwierdzona, linki dostępu pojawią się tutaj i wyślemy je również na Twój e-mail.",
       "refreshButton": "Sprawdź ponownie",
-      "unavailable": "Nie udało się potwierdzić statusu płatności. Odśwież stronę lub skontaktuj się ze wsparciem i nie płać ponownie."
+      "unavailable": "Nie udało się potwierdzić statusu płatności. Odśwież stronę lub napisz do nas i nie płać ponownie."
     },
     "description": {
       "firstTouch": {
         "line1": "Przygotowujemy Twój osobisty dostęp do kursu First Touch.",
-        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
+        "line2": "Link pojawi się poniżej i wyślemy go również e-mailem."
       },
       "withoutMentor": {
         "line1": "Przygotowujemy Twój osobisty dostęp do lekcji.",
-        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
+        "line2": "Link pojawi się poniżej i wyślemy go również e-mailem."
       },
       "withMentor": {
         "line1": "Przygotowujemy Twój osobisty dostęp do lekcji.",
-        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
+        "line2": "Link pojawi się poniżej i wyślemy go również e-mailem."
       },
       "onlineGroup": {
         "line1": "Przygotowujemy Twój osobisty dostęp do grupy online.",
-        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
+        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również e-mailem."
       },
       "renewal": {
         "line1": "Przygotowujemy Twój dostęp do nowego cyklu grupy online.",
-        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
+        "line2": "Dostępne linki pojawią się poniżej i wyślemy je również e-mailem."
       },
       "birthdayDrop": {
         "line1": "Przygotowujemy Twój osobisty dostęp do materiałów.",
-        "line2": "Link pojawi się poniżej i wyślemy go również emailem."
+        "line2": "Link pojawi się poniżej i wyślemy go również e-mailem."
       }
     },
     "accessNotice": {
@@ -862,8 +862,8 @@
       "openMainGroup": "Otwórz grupę online",
       "openInspiration": "Otwórz Inspiration Hub",
       "pending": "Przygotowujemy Twój osobisty link do lekcji w Telegramie...",
-      "unavailable": "Link nie jest jeszcze gotowy. Skontaktuj się ze wsparciem.",
-      "contactSupport": "Wsparcie",
+      "unavailable": "Link nie jest jeszcze gotowy. Napisz do nas.",
+      "contactSupport": "Pomoc",
       "nameMainGroup": "Grupa online",
       "nameInspiration": "Inspiration Hub"
     },
@@ -879,7 +879,7 @@
     },
     "buttons": {
       "backToPayment": "Spróbuj ponownie",
-      "contactSupport": "Napisz do wsparcia"
+      "contactSupport": "Napisz do nas"
     }
   },
   "StripePaymentTabs": {
@@ -894,7 +894,7 @@
       "preparing": "Przygotowujemy bezpieczną płatność przez Stripe...",
       "preparingSlow": "Przygotowanie trwa dłużej niż zwykle. Poczekaj chwilę lub odśwież stronę.",
       "verifying": "Weryfikujemy Twoją płatność — nie płać ponownie. Zwykle trwa to kilka sekund.",
-      "verificationUnresolved": "Nie udało się jeszcze potwierdzić płatności — nie płać ponownie. Gdy zostanie potwierdzona, linki dostępu wyślemy na Twój e-mail. Jeśli nic nie przyjdzie, <link>skontaktuj się ze wsparciem</link>."
+      "verificationUnresolved": "Nie udało się jeszcze potwierdzić płatności — nie płać ponownie. Gdy zostanie potwierdzona, linki dostępu wyślemy na Twój e-mail. Jeśli nic nie przyjdzie, <link>napisz do nas</link>."
     },
     "placeholder": {
       "missingPublishableKey": "Płatność jest chwilowo niedostępna."
@@ -904,13 +904,13 @@
       "catalogUnavailable": "Ten zakup jest obecnie niedostępny.",
       "salesClosed": "Ten zakup jest obecnie niedostępny.",
       "consentEvidenceFailed": "Nie udało się otworzyć płatności.",
-      "invalidCustomerData": "Sprawdź dane klienta i spróbuj ponownie.",
+      "invalidCustomerData": "Sprawdź dane kupującego i spróbuj ponownie.",
       "missingSecretKey": "Płatność niedostępna.",
       "paymentIntentFailed": "Nie udało się otworzyć płatności.",
       "paymentIntentRequestFailed": "Nie udało się otworzyć płatności.",
       "requiredConsentMissing": "Zaakceptuj wszystkie wymagane zgody, aby kontynuować.",
       "onlineGroupCampaignNotConfigured": "Ten zakup jest obecnie niedostępny.",
-      "telegramRenewalVerificationRequired": "Najpierw potwierdź Telegram dla tej kontynuacji.",
+      "telegramRenewalVerificationRequired": "Aby przedłużyć udział, najpierw potwierdź konto Telegram.",
       "renewalCampaignInactive": "Ten zakup jest obecnie niedostępny.",
       "renewalPaymentContextMismatch": "Ten link do przedłużenia jest niedostępny.",
       "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie.",
@@ -928,8 +928,8 @@
       "title": "Kurs dla początkujących „First Touch”",
       "shortTitle": "Kurs „First Touch”",
       "description": {
-        "1": "Dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czucia ciała, pewności siebie i ruchu.",
-        "2": "Pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię."
+        "1": "Dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czuć swoje ciało, nabrać pewności siebie i swobody w ruchu.",
+        "2": "Pracujemy nad podstawową techniką, pracą stóp i emocjami, a na końcu nauczysz się swojej pierwszej choreografii."
       },
       "accessNote": "Kurs trwa 1,5 miesiąca. Lekcje pozostają dostępne przez 120 dni od dołączenia do prywatnego czatu Telegram.",
       "offers": {
@@ -941,7 +941,7 @@
       "shortTitle": "Tutorial „Still Alive”",
       "description": {
         "1": "Dla osób, które chcą głębi, struktury i wyrazistego tańca.",
-        "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
+        "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką.",
         "3": "Możesz wybrać format samodzielny albo udział z mentorem i feedbackiem."
       },
       "accessNote": "Dostęp do materiałów przez 60 dni od dołączenia do prywatnego kanału Telegram.",
@@ -955,7 +955,7 @@
       "shortTitle": "Tutorial „Her Lies”",
       "description": {
         "1": "Dla osób, które chcą głębi, struktury i wyrazistego tańca.",
-        "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie złożyć wszystko z muzyką.",
+        "2": "Lekcja jest dostępna w wygodnym formacie online: możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką.",
         "3": "Samodzielna nauka bez wsparcia mentora i informacji zwrotnej."
       },
       "accessNote": "Dostęp do materiałów przez 60 dni od dołączenia do prywatnego kanału Telegram.",

@@ -11,6 +11,7 @@ import {
   type PaymentAgreementState,
   type PaymentCustomerData,
   type PaymentCustomerFieldName,
+  type PaymentLessonLanguage,
 } from "@/app/[locale]/payment/payment.constants";
 import {
   getPaymentCustomerSchema,
@@ -63,6 +64,8 @@ export type PaymentCheckoutDraft = {
   agreements: PaymentAgreementState;
   checkoutSessionId: string;
   customerData: PaymentCustomerData;
+  /** Absent in drafts saved before the buyer's own choice was tracked. */
+  lessonLanguageChosen?: boolean;
   selectedCurrency: SupportedCheckoutCurrency;
   selectedOfferId: string;
   selectedProductId: string;
@@ -126,6 +129,11 @@ const normalizePaymentAgreementDraft = (
     { ...INITIAL_AGREEMENTS },
   );
 
+/** Tutorials come in Russian or English: Russian pages offer Russian, the rest English. */
+const getDefaultLessonLanguage = (
+  locale: PaymentValidationLocale,
+): PaymentLessonLanguage => (locale === "ru" ? "ru" : "en");
+
 const getStripeIntentErrorCode = (error: unknown): StripeIntentErrorCode => {
   if (error instanceof DOMException && error.name === "AbortError") {
     return "payment_intent_request_failed";
@@ -147,6 +155,8 @@ export class PaymentStore {
   catalogStatus: SellableCatalogStatus = "loading";
   customerData: PaymentCustomerData = { ...INITIAL_CUSTOMER_DATA };
   customerErrors: PaymentCustomerErrors = {};
+  /** Until the buyer picks a material language, it follows the page language. */
+  lessonLanguageChosen = false;
   touchedFields: PaymentCustomerTouched = {};
   agreements: PaymentAgreementState = { ...INITIAL_AGREEMENTS };
   validationLocale: PaymentValidationLocale = "ru";
@@ -320,6 +330,7 @@ export class PaymentStore {
       agreements: { ...this.agreements },
       checkoutSessionId: this.checkoutSessionId,
       customerData: this.normalizedCustomerData,
+      lessonLanguageChosen: this.lessonLanguageChosen,
       selectedCurrency: this.selectedCurrency,
       selectedOfferId: this.selectedOfferId,
       selectedProductId: this.selectedProductId,
@@ -423,6 +434,8 @@ export class PaymentStore {
 
     this.customerData = normalizePaymentCustomerDataDraft(draft.customerData);
     this.agreements = normalizePaymentAgreementDraft(draft.agreements);
+    this.lessonLanguageChosen = draft.lessonLanguageChosen === true;
+    this.applyDefaultLessonLanguage();
 
     this.customerErrors = {};
     this.touchedFields = {};
@@ -492,6 +505,10 @@ export class PaymentStore {
   setCustomerField(fieldName: PaymentCustomerFieldName, value: string) {
     this.ensureCustomerDataShape();
 
+    if (fieldName === "lessonLanguage") {
+      this.lessonLanguageChosen = true;
+    }
+
     if (this.customerData[fieldName] !== value) {
       const previousIntentCustomerKey = this.stripeIntentCustomerKey;
 
@@ -529,7 +546,27 @@ export class PaymentStore {
     }
 
     this.validationLocale = nextLocale;
+    this.applyDefaultLessonLanguage();
     this.revalidateTouchedFields();
+  }
+
+  private applyDefaultLessonLanguage() {
+    if (this.lessonLanguageChosen) {
+      return;
+    }
+
+    const defaultLanguage = getDefaultLessonLanguage(this.validationLocale);
+
+    if (this.customerData.lessonLanguage === defaultLanguage) {
+      return;
+    }
+
+    const previousIntentCustomerKey = this.stripeIntentCustomerKey;
+    this.customerData.lessonLanguage = defaultLanguage;
+
+    if (this.stripeIntentCustomerKey !== previousIntentCustomerKey) {
+      this.invalidateStripeIntentRequests();
+    }
   }
 
   setRenewalCampaignSlug(slug: string | null | undefined) {
@@ -882,6 +919,7 @@ export class PaymentStore {
     this.checkoutSessionId = createCheckoutSessionId();
     this.customerData = normalizePaymentCustomerDataDraft();
     this.customerErrors = {};
+    this.lessonLanguageChosen = false;
     this.touchedFields = {};
     this.agreements = normalizePaymentAgreementDraft();
     this.validationLocale = "ru";
