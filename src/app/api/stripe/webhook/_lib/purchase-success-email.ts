@@ -37,7 +37,6 @@ const EMAIL_COPY = {
     autoReplyNote:
       "This is an automatic email. If you have any questions, contact support",
     backToSite: "Back to website",
-    defaultOfferLabel: "Standard access",
     heading: "Thank you, your payment was successful",
     intro: "Below you will find your purchase details, the next step and your receipt.",
     invoiceAttached: "The PDF invoice is attached to this email.",
@@ -131,7 +130,6 @@ const EMAIL_COPY = {
     autoReplyNote:
       "To wiadomość automatyczna. Jeśli masz pytania, skontaktuj się ze wsparciem",
     backToSite: "Wróć na stronę",
-    defaultOfferLabel: "Dostęp standardowy",
     heading: "Dziękujemy, płatność zakończyła się sukcesem",
     intro: "Poniżej znajdziesz szczegóły zakupu, kolejny krok i potwierdzenie płatności.",
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
@@ -196,7 +194,7 @@ const EMAIL_COPY = {
         cta: "Otwórz czat Telegram",
       },
       telegramOnlineGroup: {
-        title: "Dostęp do Online Group",
+        title: "Dostęp do grupy online",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
         pending:
@@ -204,7 +202,7 @@ const EMAIL_COPY = {
         cta: "Otwórz grupę Telegram",
       },
       telegramRenewal: {
-        title: "Dostęp do nowego cyklu Online Group",
+        title: "Dostęp do nowego cyklu grupy online",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do nowej grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
         pending:
@@ -226,7 +224,6 @@ const EMAIL_COPY = {
     autoReplyNote:
       "Это автоматическое письмо. Если у тебя есть вопросы, свяжись с поддержкой",
     backToSite: "Вернуться на сайт",
-    defaultOfferLabel: "Стандартный доступ",
     heading: "Спасибо, оплата прошла успешно",
     intro: "Ниже ты найдёшь детали покупки, следующий шаг и чек.",
     invoiceAttached: "PDF-инвойс прикреплен к этому письму.",
@@ -290,7 +287,7 @@ const EMAIL_COPY = {
         cta: "Открыть Telegram-чат",
       },
       telegramOnlineGroup: {
-        title: "Доступ в Online Group",
+        title: "Доступ в онлайн-группу",
         ready:
           "Нажми кнопку ниже, чтобы вступить в Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
         pending:
@@ -298,7 +295,7 @@ const EMAIL_COPY = {
         cta: "Открыть Telegram-группу",
       },
       telegramRenewal: {
-        title: "Доступ в новый поток Online Group",
+        title: "Доступ в новый поток онлайн-группы",
         ready:
           "Нажми кнопку ниже, чтобы вступить в новую Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
         pending:
@@ -765,7 +762,7 @@ const renderPurchaseSuccessEmailHtml = ({
               <td style="padding:0 0 8px 0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeProductTitle}</td>
             </tr>
             ${
-              showOfferLabel
+              showOfferLabel && safeOfferLabel
                 ? `<tr>
               <td style="padding:0 14px 8px 0;color:#6f6f6f;font-size:14px;line-height:22px;width:92px;vertical-align:top;">${copy.offerLabel}</td>
               <td style="padding:0 0 8px 0;color:#121212;font-size:14px;line-height:22px;font-weight:700;vertical-align:top;">${safeOfferLabel}</td>
@@ -882,7 +879,7 @@ const renderPurchaseSuccessEmailText = ({
   const textParts = [
     copy.paymentSucceededText,
     `${copy.productLabel}: ${productTitle}`,
-    showOfferLabel ? `${copy.offerLabel}: ${offerLabel || copy.defaultOfferLabel}` : "",
+    showOfferLabel && offerLabel ? `${copy.offerLabel}: ${offerLabel}` : "",
     `${copy.amountLabel}: ${amountLabel}`,
     accessSummary ? `${copy.accessLabel}: ${accessSummary}` : "",
     accessContent.title,
@@ -937,7 +934,7 @@ export const buildPurchaseSuccessEmail = ({
     locale,
   });
   const safeProductTitle = escapeHtml(productTitle);
-  const safeOfferLabel = escapeHtml(offerLabel || copy.defaultOfferLabel);
+  const safeOfferLabel = escapeHtml(offerLabel);
   const safeAmountLabel = escapeHtml(amountLabel);
   const safeReceiptLink = receiptLink ? escapeHtml(receiptLink) : "";
   const safeSupportTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);

@@ -9,9 +9,12 @@ export const isChoreoTutorialProduct = (product: SellableProduct) =>
 /**
  * The tariff is named to the buyer only when there was a choice: a product with
  * one tariff, or one open tariff, stays neutral. A closed tariff keeps its name
- * so a historical or exceptional selection is still recognisable.
+ * so a historical or exceptional selection is still recognisable. Online Group
+ * always names it: Standard and Plus give different access, and the buyer
+ * should see which one she paid for.
  */
 export const shouldShowOfferLabel = (product: SellableProduct, offerId: string) => {
+  if (product.code === "online-group-anna-strok") return true;
   if (product.offers.length === 1) return false;
 
   const enabledOffers = product.offers.filter((offer) => offer.salesEnabled);
@@ -22,7 +25,3 @@ export const shouldShowOfferLabel = (product: SellableProduct, offerId: string) 
 export const shouldNameOfferAtCheckout = (product: SellableProduct, offerId: string) =>
   product.code === "online-group-anna-strok" ||
   (isChoreoTutorialProduct(product) && shouldShowOfferLabel(product, offerId));
-
-/** Stored with the payment so later catalogue switches cannot rewrite its presentation. */
-export const shouldShowPurchasedOfferLabel = (metadata: Record<string, string>) =>
-  metadata.show_offer_label !== "false";

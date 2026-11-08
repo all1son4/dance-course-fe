@@ -56,7 +56,7 @@
       },
       "birthdayDrop": {
         "title": "The Birthday Drop “Love me in the morning”",
-        "description": "The “Love me in the morning” choreography breakdown, a playlist, a moodboard and a YouTube link to the 34-questions interview. Lifetime access, pay from any country.",
+        "description": "The “Love me in the morning” choreography tutorial, a playlist, a moodboard and a YouTube link to the 34-questions interview. Lifetime access, pay from any country.",
         "ogImageAlt": "The Birthday Drop “Love me in the morning” by Anna Strok"
       },
       "payment": {
@@ -343,7 +343,7 @@
       "choreo": {
         "title": "Video tutorials of my choreographies",
         "description": {
-          "1": "Online video tutorials of my choreographies.",
+          "1": "Each choreography step by step: movement, technique and performance, explained in Russian or English.",
           "2": "Learn online with unlimited replay so you can confidently build everything into the music."
         },
         "startLabel": "Start",
@@ -433,7 +433,7 @@
   },
   "FirstTouchPage": {
     "hero": {
-      "title": "Course “First Touch”",
+      "title": "“First Touch” course",
       "subtitle": "Your first touch with Frame Up Strip.",
       "description": {
         "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
@@ -527,6 +527,7 @@
     "hero": {
       "title": "Online Group\nby Anna Strok",
       "titlePlain": "Online Group by Anna Strok",
+      "stickyTitle": "Online Group",
       "description": {
         "1": "In the online group, we train in a convenient format, work on technique, fluidity, strength, improvisation and musicality, and learn choreography. You stay in the process, receive new assignments, practise at home and feel connected to me wherever you are.",
         "2": "Suitable for intermediate and advanced dancers."
@@ -623,7 +624,7 @@
       "title": "Video tutorials of my choreographies",
       "stickyTitle": "Tutorials",
       "description": {
-        "1": "Online video tutorials of my choreographies.",
+        "1": "Each choreography step by step: movement, technique and performance, explained in Russian or English.",
         "2": "Learn online with replay support to confidently assemble choreography into music."
       },
       "startLabel": "Start",
@@ -936,8 +937,8 @@
       }
     },
     "choreoStillAlive": {
-      "title": "Online choreography breakdown “Still Alive”",
-      "shortTitle": "“Still Alive” breakdown",
+      "title": "Online choreography tutorial “Still Alive”",
+      "shortTitle": "“Still Alive” tutorial",
       "description": {
         "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
@@ -950,8 +951,8 @@
       }
     },
     "choreoHerLies": {
-      "title": "Online choreography breakdown “Her Lies”",
-      "shortTitle": "“Her Lies” breakdown",
+      "title": "Online choreography tutorial “Her Lies”",
+      "shortTitle": "“Her Lies” tutorial",
       "description": {
         "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
@@ -964,9 +965,9 @@
       }
     },
     "choreoBundle": {
-      "title": "Choreography breakdown bundle “Still Alive” + “Her Lies”",
+      "title": "Choreography tutorial bundle “Still Alive” + “Her Lies”",
       "shortTitle": "“Still Alive” + “Her Lies” bundle",
-      "cardTitle": "Two choreography breakdowns",
+      "cardTitle": "Two choreography tutorials",
       "description": {
         "1": "Two tutorials in one access for dancers who want to work with different dynamics, performance qualities and musicality right away.",
         "2": "Move through the material at your own pace, replay the lessons and assemble both choreographies to music.",
@@ -983,8 +984,8 @@
       "shortTitle": "The Birthday Drop",
       "checkoutTitle": "The Birthday Drop",
       "description": {
-        "1": "An online breakdown of the Love me in the morning choreography, put together as a separate drop.",
-        "2": "Inside: the breakdown itself, a playlist, a moodboard and a YouTube link to the “34 questions for my 34th” interview.",
+        "1": "An online tutorial for the “Love me in the morning” choreography, put together as a separate drop.",
+        "2": "Inside: the tutorial itself, a playlist, a moodboard and a YouTube link to the “34 questions for my 34th” interview.",
         "3": "Come back to the materials and repeat at your own pace."
       },
       "accessNote": "Lifetime access to the materials through a private Telegram channel.",
@@ -1010,8 +1011,8 @@
       }
     },
     "choreoLoveMeInTheMorning": {
-      "title": "Online choreography breakdown “Love me in the morning”",
-      "shortTitle": "“Love me in the morning” breakdown",
+      "title": "Online choreography tutorial “Love me in the morning”",
+      "shortTitle": "“Love me in the morning” tutorial",
       "description": {
         "1": "Detailed explanations of movements and transitions.",
         "2": "Study, replay and practise at your own pace.",
@@ -1154,7 +1155,7 @@
     "aboutTitle": "What awaits you in The Birthday Drop",
     "suggestions": {
       "video": {
-        "title": "Choreography breakdown “Love me in the morning”",
+        "title": "Choreography tutorial “Love me in the morning”",
         "text": "You get access to a tutorial for this choreography in two languages: Russian and English."
       },
       "playlist": {

@@ -41,7 +41,7 @@ export const ADMIN_FEATURES: AdminFeature[] = [
 ];
 
 export const KIND_OPTIONS: Array<{ label: string; value: GeneratorKind }> = [
-  { label: "Первый курс (First Touch)", value: "first-touch" },
+  { label: "Курс «First Touch»", value: "first-touch" },
   { label: "Разбор", value: "choreo" },
 ];
 

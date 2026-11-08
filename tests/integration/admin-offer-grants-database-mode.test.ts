@@ -255,6 +255,7 @@ test("[BEH-ADMIN-01] creates and reads one atomic admin grant without export eve
       adminLabel: "WRITE-05 admin",
       createdAt: "2026-08-13T10:00:00.000Z",
       lessonLanguage: "en",
+      offerId: offerExternalId,
       offerLabel: "WRITE-05 access",
       productTitle: "WRITE-05 fixture",
       purchaseItem: "WRITE-05 fixture — WRITE-05 access",

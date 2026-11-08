@@ -48,7 +48,7 @@ test("the buyer sees the tariff only when there was a choice", () => {
       offerId: HER_LIES_SELF_PACED.id,
       showOfferLabel: false,
     }),
-    "“Her Lies” breakdown",
+    "“Her Lies” tutorial",
   );
   assert.equal(
     getBuyerPurchaseLine({
@@ -77,7 +77,7 @@ test("the admin line is Russian and names the tariff whenever there are several"
   );
   assert.equal(
     getAdminPurchaseLine("off_online_group_anna_strok_renewal_library_access"),
-    "Online Group · Продление Plus",
+    "Онлайн-группа · Продление Plus",
   );
   assert.equal(getAdminPurchaseLine(PRIVATE_LESSON_OFFER_ID), "Индивидуальное занятие");
   assert.equal(getAdminPurchaseLine("off_unknown"), null);
@@ -107,8 +107,8 @@ test("the purchase alert is Russian whatever language the buyer used", () => {
       outcome: "succeeded",
       payment_intent_id: "pi_test",
       product_id: HER_LIES.id,
-      product_title: "Online choreography breakdown “Her Lies”",
-      purchase_item: "Online choreography breakdown “Her Lies” · Without mentor",
+      product_title: "Online choreography tutorial “Her Lies”",
+      purchase_item: "Online choreography tutorial “Her Lies” · Without mentor",
       telegram_access_status: "token_issued",
     },
     processedAtIso: "2026-11-07T14:32:09.000Z",

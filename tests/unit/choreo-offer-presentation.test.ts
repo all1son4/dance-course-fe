@@ -2,10 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
-import {
-  shouldShowOfferLabel,
-  shouldShowPurchasedOfferLabel,
-} from "@/lib/choreo-offer-presentation";
+import { shouldShowOfferLabel } from "@/lib/choreo-offer-presentation";
 import { getPurchaseDescription } from "@/lib/invoices/purchase-invoice";
 import { createEmptyPaymentRecord } from "@/lib/payment-record";
 
@@ -48,13 +45,17 @@ test("a product with one configured tariff stays neutral even with sales paused"
   for (const offer of onlineGroup.offers) {
     assert.equal(shouldShowOfferLabel(onlineGroup, offer.id), true);
   }
-});
-
-test("purchase presentation uses a snapshot and preserves legacy labels without the flag", () => {
-  assert.equal(shouldShowPurchasedOfferLabel({ show_offer_label: "false" }), false);
-  assert.equal(shouldShowPurchasedOfferLabel({ show_offer_label: "true" }), true);
-  assert.equal(shouldShowPurchasedOfferLabel({}), true);
-  assert.equal(shouldShowPurchasedOfferLabel({ show_offer_label: "invalid" }), true);
+  // Standard and Plus give different access, so the name stays even when only
+  // one of them is on sale.
+  const [firstOnlineGroupOffer] = onlineGroup.offers;
+  const onlyOneOnSale = {
+    ...onlineGroup,
+    offers: onlineGroup.offers.map((offer) => ({
+      ...offer,
+      salesEnabled: offer.id === firstOnlineGroupOffer.id,
+    })),
+  };
+  assert.equal(shouldShowOfferLabel(onlyOneOnSale, firstOnlineGroupOffer.id), true);
 });
 
 test("invoice descriptions omit a single tariff without changing the stored purchase", () => {
