@@ -256,7 +256,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
         "First Touch is ready to start. You can now pay for your place and join the course.",
       steps: [
         "After payment, we will confirm your place in the group.",
-        "Next, we will add you to the Telegram group for your First Touch cohort.",
+        "Then you will receive an email with your personal invite link to the Telegram group for your First Touch cohort.",
         "Inside the group you will receive instructions, lessons, homework and feedback details.",
       ],
       stepsTitle: "What happens after payment",
@@ -269,7 +269,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
     return {
       button: "Przejdź do płatności",
       contactIntro:
-        "Jeśli masz pytania, zmieniły Ci się plany albo nie wiesz, jaki jest kolejny krok, napisz do nas, pomożemy.",
+        "Jeśli masz pytania, zmieniły Ci się plany albo nie wiesz, jaki jest kolejny krok, napisz do nas — pomożemy.",
       contactInstagramButton: "Napisz na Instagramie",
       contactTelegramButton: "Napisz na Telegramie",
       description: [
@@ -280,7 +280,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
         "First Touch jest gotowy do startu. Możesz już opłacić swoje miejsce i dołączyć do kursu.",
       steps: [
         "Po płatności potwierdzimy Twoje miejsce w grupie.",
-        "Następnie dodamy Cię do grupy Telegram tej edycji First Touch.",
+        "Następnie dostaniesz e-mail z osobistym linkiem do grupy Telegram tej edycji First Touch.",
         "W grupie otrzymasz instrukcje, lekcje, zadania domowe i informacje o feedbacku.",
       ],
       stepsTitle: "Co wydarzy się po płatności",
@@ -292,23 +292,23 @@ const getFirstTouchEmailCopy = (locale: string) => {
   return {
     button: "Перейти к оплате",
     contactIntro:
-      "Если есть вопросы, изменились планы или ты не уверена в следующем шаге, напиши нам, поможем.",
+      "Если есть вопросы, изменились планы или ты не уверена в следующем шаге, напиши нам — поможем.",
     contactInstagramButton: "Написать в Instagram",
     contactTelegramButton: "Написать в Telegram",
     description: [
       "First Touch — курс для тех, кто никогда не танцевал, но хочет научиться чувствовать тело, уверенность и движение.",
-      "На курсе мы работаем над базовой техникой, стопами, эмоциями и в конце учим твою первую хореографию.",
+      "На курсе мы работаем над базовой техникой, стопами и эмоциями, а в конце ты выучишь свою первую хореографию.",
     ],
     intro:
-      "First Touch готов к старту. Сейчас можно оплатить свое место и стать частью курса.",
+      "First Touch готов к старту. Сейчас можно оплатить своё место и стать частью курса.",
     steps: [
       "После оплаты мы закрепим за тобой место в группе.",
-      "Дальше мы добавим тебя в Telegram-группу этого потока First Touch.",
-      "В группе будут инструкции, уроки, домашние задания и детали по обратной связи.",
+      "Затем придёт письмо с персональной ссылкой-приглашением в Telegram-группу этого потока First Touch.",
+      "В группе будут инструкции, уроки, домашние задания и обратная связь по ним.",
     ],
     stepsTitle: "Что будет после оплаты",
-    subject: "Оплатить First Touch и войти в курс",
-    title: "Оплатить First Touch",
+    subject: "Оплати First Touch и присоединяйся к курсу",
+    title: "Оплати First Touch",
   };
 };
 

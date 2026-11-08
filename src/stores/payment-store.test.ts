@@ -9,7 +9,7 @@ import {
 } from "@/constants/sellable-products";
 
 import { installJsonFetchFixture } from "../../tests/fixtures/providers";
-import { PaymentStore } from "./payment-store";
+import { type PaymentCheckoutDraft, PaymentStore } from "./payment-store";
 
 // The store targets the browser; the tests provide the timers its intent
 // requests use for their timeouts and retries.
@@ -60,6 +60,42 @@ test("draft snapshot restores the checkout after an apply round-trip", () => {
   assert.deepEqual(restored.customerData, source.customerData);
   assert.deepEqual(restored.agreements, source.agreements);
   assert.equal(typeof snapshot.updatedAt, "number");
+});
+
+test("material language follows the page language until the buyer picks one", () => {
+  const store = new PaymentStore();
+  assert.equal(store.customerData.lessonLanguage, "ru");
+
+  store.setValidationLocale("en");
+  assert.equal(store.customerData.lessonLanguage, "en");
+
+  store.setValidationLocale("pl");
+  assert.equal(store.customerData.lessonLanguage, "en");
+
+  store.setValidationLocale("ru");
+  assert.equal(store.customerData.lessonLanguage, "ru");
+
+  store.setCustomerField("lessonLanguage", "en");
+  store.setValidationLocale("pl");
+  store.setValidationLocale("ru");
+  assert.equal(store.customerData.lessonLanguage, "en");
+});
+
+test("a restored draft keeps a picked material language and defaults an unpicked one", () => {
+  const picked = new PaymentStore();
+  picked.setCustomerField("lessonLanguage", "ru");
+  const pickedSnapshot = picked.getCheckoutDraftSnapshot();
+
+  const restoredPicked = new PaymentStore();
+  restoredPicked.applyCheckoutDraft({ ...pickedSnapshot, validationLocale: "pl" });
+  assert.equal(restoredPicked.customerData.lessonLanguage, "ru");
+
+  const legacySnapshot: Partial<PaymentCheckoutDraft> =
+    new PaymentStore().getCheckoutDraftSnapshot();
+  delete legacySnapshot.lessonLanguageChosen;
+  const restoredLegacy = new PaymentStore();
+  restoredLegacy.applyCheckoutDraft({ ...legacySnapshot, validationLocale: "en" });
+  assert.equal(restoredLegacy.customerData.lessonLanguage, "en");
 });
 
 test("a malformed draft falls back to safe defaults", () => {

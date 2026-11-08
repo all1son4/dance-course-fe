@@ -30,24 +30,26 @@ const EMAIL_COPY = {
       days: (days: number) => `${days} days from joining`,
       lifetime: "forever",
       onlineGroup: "no end date",
-      privateLesson: "we will agree on the date and time",
+      privateLesson: "date and time to be agreed",
     },
-    accessUntil: "Access until",
+    formatDays: (days: number) => `${days} ${days === 1 ? "day" : "days"}`,
+    inspirationHubAccessUntil: "Inspiration Hub access until {date}",
     amountLabel: "Amount",
     autoReplyNote:
       "This is an automatic email. If you have any questions, contact support",
     backToSite: "Back to website",
     heading: "Thank you, your payment was successful",
     intro: "Below you will find your purchase details, the next step and your receipt.",
-    invoiceAttached: "The PDF invoice is attached to this email.",
-    limitedAccessValidity:
-      "Access to the materials is provided for {days} days from joining.",
+    invoiceAttached: "Your invoice (PDF) is attached to this email.",
+    limitedAccessValidity: "Access to the materials is provided for {days} from joining.",
     inspirationHubAccessDuration:
       "Inspiration Hub access is provided for the duration of the cycle.",
     inspirationHubCta: "Open Inspiration Hub",
-    accessAlreadyActive: "Access is already active",
-    accessExpired: "The access period has ended",
-    accessNeedsSupport: "The invite could not be prepared. Please contact support",
+    inspirationHubName: "Inspiration Hub",
+    telegramGroupName: "Telegram group",
+    accessAlreadyActive: "access is already active",
+    accessExpired: "the access period has ended",
+    accessNeedsSupport: "we couldn't prepare the invite — please contact support",
     offerLabel: "Plan",
     paymentSucceededText: "Payment successful",
     productLabel: "Product",
@@ -56,8 +58,8 @@ const EMAIL_COPY = {
       "This receipt link is temporary and usually remains active for up to 30 days.",
     receiptPdfCta: "Download PDF receipt",
     receiptPending:
-      "Stripe receipt is being prepared. We will send it as soon as it is available.",
-    receiptTitle: "Your payment receipt",
+      "Your Stripe receipt is being prepared. We'll send it as soon as it's ready.",
+    receiptTitle: "Payment documents",
     siteLabel: "Website",
     subjectPrefix: "Payment confirmed",
     summaryTitle: "Purchase summary",
@@ -68,7 +70,7 @@ const EMAIL_COPY = {
       },
       privateLesson: {
         title: "Your lesson",
-        body: `If the date and time are already agreed, see you at the lesson. If not yet, we will get in touch to arrange them — or message us on Telegram ${PERSONAL_TELEGRAM_HANDLE} or Instagram @${INSTAGRAM_PROFILE_HANDLE}, that may be faster.`,
+        body: `If the date and time are already agreed, see you at the lesson. If not yet, we will get in touch to arrange them, or you can message us on Telegram ${PERSONAL_TELEGRAM_HANDLE} or Instagram @${INSTAGRAM_PROFILE_HANDLE} — that may be faster.`,
       },
       support: {
         title: "Access details",
@@ -77,16 +79,16 @@ const EMAIL_COPY = {
       telegramChannel: {
         title: "Access your materials",
         ready:
-          "Use the button below to open your personal one-use invite link to the private Telegram channel. Access to the materials is provided for {days} days from joining.",
+          "Use the button below to open your personal one-time invite link to the private Telegram channel. Access to the materials is provided for {days} from joining.",
         pending:
-          "Your personal Telegram channel invite link is being prepared. Material access is provided for {days} days from joining. If the button is missing, contact support and we will send access manually.",
+          "Your personal Telegram channel invite link is being prepared. Material access is provided for {days} from joining. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram channel",
         mentorNote: "The admin will also contact you separately about feedback.",
       },
       telegramChannelLifetime: {
         title: "Access your materials",
         ready:
-          "Use the button below to open your personal one-use invite link to the private Telegram channel. Access to the materials is yours forever.",
+          "Use the button below to open your personal one-time invite link to the private Telegram channel. Access to the materials is yours forever.",
         pending:
           "Your personal Telegram channel invite link is being prepared. Access to the materials is yours forever. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram channel",
@@ -94,15 +96,16 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Access your course",
         ready:
-          "Use the button below to open your personal one-use invite link to the private Telegram chat with the course materials. Access to the lessons is provided for {days} days from joining.",
+          "Use the button below to open your personal one-time invite link to the private Telegram chat with the course materials. Access to the lessons is provided for {days} from joining.",
         pending:
-          "Your personal Telegram chat invite link is being prepared. Lesson access is provided for {days} days from joining. If the button is missing, contact support and we will send access manually.",
+          "Your personal Telegram chat invite link is being prepared. Lesson access is provided for {days} from joining. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram chat",
       },
       telegramOnlineGroup: {
-        title: "Join Online Group",
+        title: "Join the Online Group",
         ready:
           "Use the button below to join your Telegram group. The personal invite is valid for 30 days; after joining, your group access has no automatic expiry.",
+        active: "You're already in the Telegram group — your access is active.",
         pending:
           "Your personal Telegram group invite is being prepared. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram group",
@@ -111,6 +114,7 @@ const EMAIL_COPY = {
         title: "Join the new Online Group cycle",
         ready:
           "Use the button below to join your new Telegram group. The personal invite is valid for 30 days; after joining, your group access has no automatic expiry.",
+        active: "You're already in the new Telegram group — your access is active.",
         pending:
           "Your personal Telegram group invite link is being prepared. If the button is missing, contact support and we will send access manually.",
         cta: "Open new Telegram group",
@@ -123,9 +127,10 @@ const EMAIL_COPY = {
       days: (days: number) => `${days} dni od dołączenia`,
       lifetime: "na zawsze",
       onlineGroup: "bez limitu czasowego",
-      privateLesson: "ustalimy datę i godzinę",
+      privateLesson: "termin do ustalenia",
     },
-    accessUntil: "Dostęp do",
+    formatDays: (days: number) => `${days} ${days === 1 ? "dzień" : "dni"}`,
+    inspirationHubAccessUntil: "Dostęp do Inspiration Hub ważny do {date}",
     amountLabel: "Kwota",
     autoReplyNote:
       "To wiadomość automatyczna. Jeśli masz pytania, skontaktuj się ze wsparciem",
@@ -134,14 +139,16 @@ const EMAIL_COPY = {
     intro: "Poniżej znajdziesz szczegóły zakupu, kolejny krok i potwierdzenie płatności.",
     invoiceAttached: "Faktura PDF jest załączona do tej wiadomości.",
     limitedAccessValidity:
-      "Dostęp do materiałów jest przyznawany na {days} dni od dołączenia.",
+      "Dostęp do materiałów jest przyznawany na {days} od dołączenia.",
     inspirationHubAccessDuration:
       "Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
     inspirationHubCta: "Otwórz Inspiration Hub",
-    accessAlreadyActive: "Dostęp jest już aktywny",
-    accessExpired: "Okres dostępu dobiegł końca",
+    inspirationHubName: "Inspiration Hub",
+    telegramGroupName: "Grupa Telegram",
+    accessAlreadyActive: "dostęp jest już aktywny",
+    accessExpired: "okres dostępu dobiegł końca",
     accessNeedsSupport:
-      "Nie udało się przygotować zaproszenia. Skontaktuj się ze wsparciem",
+      "nie udało się przygotować zaproszenia — skontaktuj się ze wsparciem",
     offerLabel: "Pakiet",
     paymentSucceededText: "Płatność zakończyła się sukcesem",
     productLabel: "Produkt",
@@ -151,7 +158,7 @@ const EMAIL_COPY = {
     receiptPdfCta: "Pobierz potwierdzenie PDF",
     receiptPending:
       "Potwierdzenie płatności Stripe jest jeszcze przygotowywane. Wyślemy je, gdy tylko będzie dostępne.",
-    receiptTitle: "Potwierdzenie płatności",
+    receiptTitle: "Dokumenty płatności",
     siteLabel: "Strona",
     subjectPrefix: "Płatność potwierdzona",
     summaryTitle: "Podsumowanie zakupu",
@@ -171,42 +178,45 @@ const EMAIL_COPY = {
       telegramChannel: {
         title: "Dostęp do materiałów",
         ready:
-          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów otrzymujesz na {days} dni od dołączenia.",
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów otrzymujesz na {days} od dołączenia.",
         pending:
-          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów otrzymujesz na {days} dni od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów otrzymujesz na {days} od dołączenia. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz kanał Telegram",
-        mentorNote: "Administrator skontaktuje się z Tobą osobno w sprawie feedbacku.",
+        mentorNote:
+          "Administrator skontaktuje się też z Tobą osobno w sprawie feedbacku.",
       },
       telegramChannelLifetime: {
         title: "Dostęp do materiałów",
         ready:
-          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów zostaje na zawsze.",
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego kanału Telegram. Dostęp do materiałów masz na zawsze.",
         pending:
-          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów zostaje na zawsze. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do kanału Telegram jest przygotowywany. Dostęp do materiałów masz na zawsze. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz kanał Telegram",
       },
       telegramChat: {
         title: "Dostęp do kursu",
         ready:
-          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na {days} dni od dołączenia.",
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na {days} od dołączenia.",
         pending:
-          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Dostęp do lekcji otrzymujesz na {days} dni od dołączenia. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Dostęp do lekcji otrzymujesz na {days} od dołączenia. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz czat Telegram",
       },
       telegramOnlineGroup: {
         title: "Dostęp do grupy online",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
+        active: "Jesteś już w grupie Telegram — dostęp jest aktywny.",
         pending:
-          "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz grupę Telegram",
       },
       telegramRenewal: {
         title: "Dostęp do nowego cyklu grupy online",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do nowej grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
+        active: "Jesteś już w nowej grupie Telegram — dostęp jest aktywny.",
         pending:
-          "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli brakuje przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+          "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz nową grupę Telegram",
       },
     },
@@ -217,24 +227,27 @@ const EMAIL_COPY = {
       days: (days: number) => `${days} ${getRussianDays(days)} с момента вступления`,
       lifetime: "навсегда",
       onlineGroup: "без ограничения по сроку",
-      privateLesson: "дату и время согласуем",
+      privateLesson: "дата и время — по договорённости",
     },
-    accessUntil: "Доступ до",
+    formatDays: (days: number) => `${days} ${getRussianDays(days)}`,
+    inspirationHubAccessUntil: "Доступ к Inspiration Hub — до {date}",
     amountLabel: "Сумма",
     autoReplyNote:
       "Это автоматическое письмо. Если у тебя есть вопросы, свяжись с поддержкой",
     backToSite: "Вернуться на сайт",
     heading: "Спасибо, оплата прошла успешно",
     intro: "Ниже ты найдёшь детали покупки, следующий шаг и чек.",
-    invoiceAttached: "PDF-инвойс прикреплен к этому письму.",
+    invoiceAttached: "Счёт в PDF приложен к этому письму.",
     limitedAccessValidity:
-      "Доступ к материалам предоставляется на {days} дней с момента вступления.",
+      "Доступ к материалам предоставляется на {days} с момента вступления.",
     inspirationHubAccessDuration:
       "Доступ в Inspiration Hub предоставляется на время потока.",
     inspirationHubCta: "Открыть Inspiration Hub",
-    accessAlreadyActive: "Доступ уже активирован",
-    accessExpired: "Срок доступа завершен",
-    accessNeedsSupport: "Не удалось подготовить приглашение. Свяжись с поддержкой",
+    inspirationHubName: "Inspiration Hub",
+    telegramGroupName: "Telegram-группа",
+    accessAlreadyActive: "доступ уже активен",
+    accessExpired: "срок доступа завершён",
+    accessNeedsSupport: "не удалось подготовить приглашение — напиши в поддержку",
     offerLabel: "Тариф",
     paymentSucceededText: "Оплата прошла успешно",
     productLabel: "Продукт",
@@ -243,8 +256,8 @@ const EMAIL_COPY = {
       "Ссылка на чек действует ограниченное время (обычно до 30 дней по правилам Stripe).",
     receiptPdfCta: "Скачать PDF-чек",
     receiptPending:
-      "Чек Stripe еще формируется. Отправим его, как только он станет доступен.",
-    receiptTitle: "Чек по оплате",
+      "Чек Stripe ещё формируется. Отправим его, как только он станет доступен.",
+    receiptTitle: "Документы по оплате",
     siteLabel: "Сайт",
     subjectPrefix: "Оплата подтверждена",
     summaryTitle: "Кратко о покупке",
@@ -264,42 +277,45 @@ const EMAIL_COPY = {
       telegramChannel: {
         title: "Доступ к материалам",
         ready:
-          "Нажми кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам предоставляется на {days} дней с момента вступления.",
+          "Нажми кнопку ниже, чтобы открыть персональную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам предоставляется на {days} с момента вступления.",
         pending:
-          "Личная ссылка-приглашение в Telegram-канал подготавливается. Доступ к материалам предоставляется на {days} дней с момента вступления. Если кнопки нет, свяжись с поддержкой, и мы отправим доступ вручную.",
+          "Персональная ссылка-приглашение в Telegram-канал готовится. Доступ к материалам предоставляется на {days} с момента вступления. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         cta: "Открыть Telegram-канал",
-        mentorNote: "Администратор также свяжется с тобой по поводу обратной связи.",
+        mentorNote: "Администратор отдельно напишет тебе насчёт обратной связи.",
       },
       telegramChannelLifetime: {
         title: "Доступ к материалам",
         ready:
-          "Нажми кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам остаётся навсегда.",
+          "Нажми кнопку ниже, чтобы открыть персональную одноразовую ссылку-приглашение в приватный Telegram-канал. Доступ к материалам остаётся навсегда.",
         pending:
-          "Личная ссылка-приглашение в Telegram-канал готовится. Доступ к материалам остаётся навсегда. Если кнопки нет, напиши в поддержку — отправим доступ вручную.",
+          "Персональная ссылка-приглашение в Telegram-канал готовится. Доступ к материалам остаётся навсегда. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         cta: "Открыть Telegram-канал",
       },
       telegramChat: {
         title: "Доступ к курсу",
         ready:
-          "Нажми кнопку ниже, чтобы открыть личную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на {days} дней с момента вступления.",
+          "Нажми кнопку ниже, чтобы открыть персональную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на {days} с момента вступления.",
         pending:
-          "Личная ссылка-приглашение в Telegram-чат подготавливается. Доступ к урокам предоставляется на {days} дней с момента вступления. Если кнопки нет, свяжись с поддержкой, и мы отправим доступ вручную.",
+          "Персональная ссылка-приглашение в Telegram-чат готовится. Доступ к урокам предоставляется на {days} с момента вступления. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         cta: "Открыть Telegram-чат",
       },
       telegramOnlineGroup: {
         title: "Доступ в онлайн-группу",
         ready:
           "Нажми кнопку ниже, чтобы вступить в Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
+        active: "Ты уже в Telegram-группе — доступ активен, ничего делать не нужно.",
         pending:
-          "Персональная ссылка-приглашение в Telegram-группу подготавливается. Если кнопки нет, свяжись с поддержкой, и мы отправим доступ вручную.",
+          "Персональная ссылка-приглашение в Telegram-группу готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         cta: "Открыть Telegram-группу",
       },
       telegramRenewal: {
         title: "Доступ в новый поток онлайн-группы",
         ready:
           "Нажми кнопку ниже, чтобы вступить в новую Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
+        active:
+          "Ты уже в новой Telegram-группе — доступ активен, ничего делать не нужно.",
         pending:
-          "Личная ссылка-приглашение в Telegram-группу подготавливается. Если кнопки нет, свяжись с поддержкой, и мы отправим доступ вручную.",
+          "Персональная ссылка-приглашение в Telegram-группу готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         cta: "Открыть новую Telegram-группу",
       },
     },
@@ -424,12 +440,15 @@ const formatAccessExpiry = (value: string, locale: EmailLocale): string => {
 const resolveAccessContent = ({
   accessKind,
   copy,
+  hasAccessButton,
   hasOnlineGroupAccess,
   showMentorFollowupNote,
   telegramLink,
 }: {
   accessKind: PurchaseSuccessEmailAccessKind;
   copy: EmailCopy;
+  /** False when every invite is already used, so the email renders no button. */
+  hasAccessButton: boolean;
   hasOnlineGroupAccess: boolean;
   showMentorFollowupNote: boolean;
   telegramLink: string | null;
@@ -470,7 +489,9 @@ const resolveAccessContent = ({
         cta: copy.access.telegramRenewal.cta,
         description:
           telegramLink || hasOnlineGroupAccess
-            ? copy.access.telegramRenewal.ready
+            ? hasAccessButton
+              ? copy.access.telegramRenewal.ready
+              : copy.access.telegramRenewal.active
             : copy.access.telegramRenewal.pending,
         mentorFollowupNote: "",
         title: copy.access.telegramRenewal.title,
@@ -480,7 +501,9 @@ const resolveAccessContent = ({
         cta: copy.access.telegramOnlineGroup.cta,
         description:
           telegramLink || hasOnlineGroupAccess
-            ? copy.access.telegramOnlineGroup.ready
+            ? hasAccessButton
+              ? copy.access.telegramOnlineGroup.ready
+              : copy.access.telegramOnlineGroup.active
             : copy.access.telegramOnlineGroup.pending,
         mentorFollowupNote: "",
         title: copy.access.telegramOnlineGroup.title,
@@ -579,6 +602,15 @@ const getTelegramAccessLabel = ({
 }): string =>
   access.accessKey === "inspiration-hub" ? copy.inspirationHubCta : accessCta;
 
+/** A status line names the place ("Telegram group: …"), not the button verb. */
+const getTelegramAccessStatusLabel = (
+  access: TelegramAccessLink,
+  copy: EmailCopy,
+): string =>
+  access.accessKey === "inspiration-hub"
+    ? copy.inspirationHubName
+    : copy.telegramGroupName;
+
 const renderOnlineGroupAccessButtons = ({
   accessCta,
   copy,
@@ -604,14 +636,16 @@ const renderOnlineGroupAccessButtons = ({
         `;
       }
 
+      const statusLabel = getTelegramAccessStatusLabel(access, copy);
+
       if (access.status === "active") {
-        return `<p style="margin:8px 0;color:#5f5f5f;font-size:14px;line-height:22px;">${label}: ${copy.accessAlreadyActive}</p>`;
+        return `<p style="margin:8px 0;color:#5f5f5f;font-size:14px;line-height:22px;">${statusLabel}: ${copy.accessAlreadyActive}</p>`;
       }
 
       const statusText =
         access.status === "expired" ? copy.accessExpired : copy.accessNeedsSupport;
 
-      return `<p style="margin:8px 0;color:#7c0002;font-size:14px;line-height:22px;">${label}: ${statusText}</p>`;
+      return `<p style="margin:8px 0;color:#7c0002;font-size:14px;line-height:22px;">${statusLabel}: ${statusText}</p>`;
     })
     .join("");
 
@@ -625,7 +659,13 @@ const getInspirationAccessText = ({
   hasInspirationHubAccess: boolean;
 }): string => {
   if (formattedInspirationExpiry) {
-    return `${copy.inspirationHubCta}: ${copy.accessUntil.toLowerCase()} ${formattedInspirationExpiry}.`;
+    const sentence = copy.inspirationHubAccessUntil.replace(
+      "{date}",
+      formattedInspirationExpiry,
+    );
+
+    // A Russian date already ends with "г.", so no second full stop.
+    return sentence.endsWith(".") ? sentence : `${sentence}.`;
   }
 
   return hasInspirationHubAccess ? copy.inspirationHubAccessDuration : "";
@@ -668,7 +708,10 @@ const getLimitedAccessValidity = ({
     };
   }
 
-  const text = copy.limitedAccessValidity.replace("{days}", String(accessDurationDays));
+  const text = copy.limitedAccessValidity.replace(
+    "{days}",
+    copy.formatDays(accessDurationDays),
+  );
 
   return {
     paragraph: `
@@ -834,11 +877,13 @@ const renderTelegramAccessTextLines = ({
       return `${label}: ${access.accessUrl}`;
     }
 
+    const statusLabel = getTelegramAccessStatusLabel(access, copy);
+
     if (access.status === "active") {
-      return `${label}: ${copy.accessAlreadyActive}`;
+      return `${statusLabel}: ${copy.accessAlreadyActive}`;
     }
 
-    return `${label}: ${
+    return `${statusLabel}: ${
       access.status === "expired" ? copy.accessExpired : copy.accessNeedsSupport
     }`;
   });
@@ -952,9 +997,17 @@ export const buildPurchaseSuccessEmail = ({
         : accessKind === "telegram-chat"
           ? 120
           : 0;
+  // The per-link list replaces the single button whenever it is present.
+  const hasAccessButton =
+    telegramAccessLinks.length > 0
+      ? telegramAccessLinks.some(
+          (access) => access.status === "ready" && access.accessUrl,
+        )
+      : Boolean(telegramLink);
   const resolvedAccessContent = resolveAccessContent({
     accessKind,
     copy,
+    hasAccessButton,
     hasOnlineGroupAccess,
     showMentorFollowupNote,
     telegramLink,
@@ -963,7 +1016,7 @@ export const buildPurchaseSuccessEmail = ({
     ...resolvedAccessContent,
     description: resolvedAccessContent.description.replace(
       "{days}",
-      String(resolvedAccessDurationDays),
+      copy.formatDays(resolvedAccessDurationDays),
     ),
   };
   const resolvedReceiptKind = resolveReceiptKind({

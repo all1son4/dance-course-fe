@@ -16,11 +16,11 @@ const MAINTENANCE_COPY: Record<
   en: {
     loader: "Final checks",
     status: "Update in progress",
-    subtitle: "Final touches now. The updated website goes live very soon.",
+    subtitle: "We're adding the final touches. The updated website goes live very soon.",
     title: "Be right back.",
   },
   pl: {
-    loader: "Ostatnie sprawdzenie",
+    loader: "Ostatnie testy",
     status: "Aktualizacja strony",
     subtitle:
       "Trwają ostatnie przygotowania. Zaktualizowana strona będzie dostępna już wkrótce.",
@@ -30,8 +30,8 @@ const MAINTENANCE_COPY: Record<
     loader: "Финальная проверка",
     status: "Обновление сайта",
     subtitle:
-      "Завершаем последние приготовления. Обновленный сайт будет доступен совсем скоро.",
-    title: "Скоро вернемся.",
+      "Завершаем последние приготовления. Обновлённый сайт будет доступен совсем скоро.",
+    title: "Скоро вернёмся.",
   },
 };
 

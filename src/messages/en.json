@@ -119,7 +119,7 @@
     }
   },
   "NotFoundPage": {
-    "title": "Looks like this page does not exist",
+    "title": "Looks like this page doesn't exist",
     "backHome": "Back to home",
     "imageAlt": "404 error illustration"
   },
@@ -138,7 +138,7 @@
       "title": "Have a question? We're here to help",
       "button": "Contact support"
     },
-    "copyright": "© 2026 Dance Platform. All rights reserved",
+    "copyright": "© 2026 Anna Strok. All rights reserved",
     "privacyPolicy": "Privacy policy",
     "cookieSettings": "Cookie settings"
   },
@@ -158,7 +158,7 @@
     "items": {
       "1": {
         "question": "Is Frame Up suitable if I have never danced before?",
-        "answer": "Yes, this style is beginner-friendly. In the offline beginner group, we move step by step and focus on technique, body flow, and confidence. You can also begin gradually with the online beginner course “First Touch”. The main thing is your willingness to try and enjoy the process."
+        "answer": "Yes, this style is beginner-friendly. In the offline beginner group, we move step by step and focus on technique, body flow, and confidence. You can also start at your own pace with the online beginner course “First Touch”. The main thing is your willingness to try and enjoy the process."
       },
       "2": {
         "question": "What should I bring to class?",
@@ -166,7 +166,7 @@
       },
       "3": {
         "question": "Can I join in the middle of a month or course?",
-        "answer": "If you want to join in the middle of the month, message Anna directly and she will advise when it is best to join new material. Links to her Instagram and Telegram are available in the “Contact” section."
+        "answer": "If you'd like to join mid-month, message me directly and I'll let you know when it's best to start, so you begin with new material. You'll find links to my Instagram and Telegram in the “Contact” section."
       },
       "4": {
         "question": "Is Frame Up right for me if I feel shy or afraid to move?",
@@ -181,12 +181,12 @@
         "answer": "There are groups for beginners, intermediate dancers and students who want to go deeper into technique and performance. I will help you choose the right level."
       },
       "7": {
-        "question": "Can I train if I am not flexible?",
-        "answer": "Flexibility is a skill that can be developed. Frame Up gently helps you open your body, improve mobility and feel more feminine."
+        "question": "Can I train if my movement isn't fluid yet?",
+        "answer": "Fluidity is a skill you can develop. Frame Up gently helps you open up your body, improve mobility and feel more feminine."
       },
       "8": {
         "question": "Is Frame Up suitable for any age?",
-        "answer": "Absolutely. Frame Up is about femininity, confidence and joy of movement, not age limits."
+        "answer": "Absolutely. Frame Up is about femininity, confidence and the joy of movement, not age limits."
       }
     }
   },
@@ -234,7 +234,7 @@
       },
       "4": {
         "title": "Lesson 4: Performance — gaze and emotion",
-        "description": "Dance is not only technique, but also story. You learn to work with performance quality: gaze, facial expression and inner state. How to convey emotion, engage the viewer and feel confident on stage and in class."
+        "description": "Dance is not only technique, but also a story. You learn to work on your performance: gaze, facial expression and inner state — how to convey emotion, draw the viewer in, and feel confident and authentic on stage and in class."
       },
       "5": {
         "title": "Lesson 5: Putting it all into choreography",
@@ -258,7 +258,7 @@
       "instagram": "Instagram",
       "bio": {
         "1": "I am Anna Strok, a professional dancer and teacher with many years of teaching experience and a clear artistic style.",
-        "2": "I am the creator and organizer of Total Strip Weekend in Minsk, the largest frame up strip and high heels championship in Belarus, which gathered hundreds of dancers and became an important event for the dance community."
+        "2": "I am the creator and organiser of Total Strip Weekend in Minsk, the largest Frame Up Strip and High Heels championship in Belarus, which gathered hundreds of dancers and became an important event for the dance community."
       },
       "achievements": {
         "stage18Solo": {
@@ -306,7 +306,7 @@
             "highlight": "Impro Room",
             "text": "improvisation practice"
           },
-          "4": "Private classes"
+          "4": "Private lessons"
         }
       }
     }
@@ -316,7 +316,7 @@
       "title": "Online classes",
       "location": "In Telegram",
       "description": {
-        "1": "Not everyone has the opportunity or confidence to come to a dance studio, and that is absolutely normal. Dance should bring joy, not stress.",
+        "1": "Not everyone has the opportunity or confidence to come to a dance studio, and that's completely normal. Dance should bring joy, not stress.",
         "2": "If you are not ready for offline classes yet, live in another city, or simply want to begin in a comfortable setting, you can start with my online courses."
       }
     },
@@ -325,8 +325,8 @@
         "title": "Beginner course\n“First Touch”",
         "description": {
           "1": "Your first touch with Frame Up Strip.",
-          "2": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
-          "3": "We work on basic technique, feet, emotions, and by the end you will learn your first choreography."
+          "2": "A course for those who have never danced but want to feel their body, gain confidence and learn to move.",
+          "3": "We'll work on basic technique, footwork and emotion, and finish by learning your first choreography."
         },
         "startLabel": "Course starts",
         "startValue": "Winter 2026–2027 or once the group is full"
@@ -335,7 +335,7 @@
         "title": "Online Group\nby Anna Strok",
         "description": {
           "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body.",
-          "2": "If you cannot attend my offline classes, you can gain new knowledge, practise at home and stay in touch with me wherever you are."
+          "2": "If you can't come to my studio classes, you can still learn new things, practise at home and stay in touch with me wherever you are."
         },
         "startLabel": "Next cycle starts",
         "startValue": "November"
@@ -343,8 +343,8 @@
       "choreo": {
         "title": "Online tutorials of my choreographies",
         "description": {
-          "1": "Each choreography step by step: movement, technique and performance, explained in Russian or English.",
-          "2": "Learn online with unlimited replay so you can confidently build everything into the music."
+          "1": "Each choreography step by step: movement, technique and performance, explained in Russian and English.",
+          "2": "We learn together online: rewatch and repeat as many times as you need to confidently put it all to music."
         },
         "startLabel": "Start",
         "startValue": "Anytime",
@@ -364,9 +364,9 @@
     "studio": {
       "title": "Dancing in a studio feels completely different",
       "paragraphs": {
-        "1": "In the studio you feel the energy of people around you, catch rhythm faster and open up with more confidence. Every movement becomes stronger when the group supports and inspires you.",
-        "2": "Offline classes help you feel your body deeper, improve technique and get the emotional charge that online often misses. You do not just repeat movements – you live the dance.",
-        "3": "Join studio classes and allow yourself more sensations, freedom and strength."
+        "1": "In the studio you feel the energy of the people around you, pick up the rhythm faster and open up with more confidence. Every movement becomes stronger when the group supports and inspires you.",
+        "2": "Offline classes help you feel your body more deeply, improve your technique and get the emotional boost that's often missing online. You don't just repeat movements — you live the dance.",
+        "3": "Come to the studio and let yourself feel more — more freedom, more strength."
       },
       "button": "More about groups",
       "imageAlt": "Studio class photo"
@@ -376,7 +376,7 @@
     "hero": {
       "title": "Offline classes",
       "location": "Warsaw, Poland",
-      "description": "Everyone comes to Frame Up with a different story. Some wear heels for the first time, others already dance confidently and want to grow further. That is why classes are split by levels for comfortable progress without stress."
+      "description": "Everyone comes to Frame Up with a different story. Some wear heels for the first time, others already dance confidently and want to grow further. That's why classes are split by level, so you can progress comfortably and without stress."
     },
     "cards": {
       "common": {
@@ -393,17 +393,17 @@
           "2": "Friday 19:00–20:30"
         },
         "price": "500 PLN",
-        "priceSuffix": "/ per month"
+        "priceSuffix": "/ month"
       },
       "advanced": {
         "title": "Advanced group",
-        "description": "For dancers who strive for detail, dynamics and deeper style understanding, and want to improve musicality while working on technique, performance quality and memorizing more advanced choreographies.",
+        "description": "For dancers who want more detail, more dynamics and a deeper understanding of the style, and who want to improve their musicality while working on technique, performance and learning more advanced choreographies.",
         "schedule": {
           "1": "Monday 19:00–20:30",
           "2": "Wednesday 19:00–20:30"
         },
         "price": "500 PLN",
-        "priceSuffix": "/ per month"
+        "priceSuffix": "/ month"
       },
       "impro": {
         "title": "Impro Room",
@@ -420,13 +420,13 @@
         "location": "Location",
         "locationValue": "Warsaw, Wola",
         "price": "50 PLN",
-        "priceSuffix": "/ per class"
+        "priceSuffix": "/ class"
       }
     },
     "promo": {
-      "title": "Cannot attend offline classes?",
+      "title": "Can't make it to the studio?",
       "description": {
-        "1": "Not everyone has the opportunity or confidence to come to a studio, and that is normal. Dance should bring joy, not stress.",
+        "1": "Not everyone has the opportunity or confidence to come to a studio, and that's completely normal. Dance should bring joy, not stress.",
         "2": "If you are not ready for offline classes yet, live in another city or want to begin in comfort, there is an online alternative for you."
       }
     }
@@ -436,29 +436,29 @@
       "title": "“First Touch” course",
       "subtitle": "Your first touch with Frame Up Strip.",
       "description": {
-        "1": "A course for those who have never danced but want to learn body awareness, confidence and movement.",
-        "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
+        "1": "A course for those who have never danced but want to feel their body, gain confidence and learn to move.",
+        "2": "We'll work on basic technique, footwork and emotion, and finish by learning your first choreography."
       },
       "startLabel": "Course starts",
       "priceLabel": "Course price",
       "startDate": "Winter 2026–2027 or once the group is full",
-      "startNote": "You can reserve a place in the next group now. When the course start gets closer and the group is ready to launch, we will email you the payment link.",
+      "startNote": "You can reserve a place in the next group now. Closer to the start date, once the group is ready to launch, we'll email you a payment link.",
       "buyButton": "Buy for 250 PLN / 50 €",
       "enrollButton": "Sign up",
-      "programButton": "Course program",
+      "programButton": "Course programme",
       "introductionVideoSrc": "/videos/introduction_first_touch_en.mp4"
     },
     "signupDialog": {
       "title": "Reserve a place in First Touch",
       "description": {
-        "intro": "Leave your contacts and we will add you to the next group list.",
+        "intro": "Leave your contact details and we'll add you to the list for the next group.",
         "step1": "Closer to the start, we will email the payment link. After payment, you will receive instructions and course access."
       },
       "closeLabel": "Close signup dialog",
-      "closeButton": "I'll wait",
+      "closeButton": "Can't wait!",
       "retryButton": "Try again",
       "submitButton": "Send request",
-      "successMessage": "Your request has been saved. We will email you the payment link when the course start gets closer.",
+      "successMessage": "Your request has been saved. We'll email you the payment link closer to the start date.",
       "errorMessage": "Could not save the request. Try again or contact us directly.",
       "failure": {
         "title": "Something went wrong",
@@ -484,11 +484,11 @@
         "email": {
           "label": "Email",
           "placeholder": "name@example.com",
-          "duplicateError": "This email is already signed up"
+          "duplicateError": "This email is already on the list"
         },
         "consent": {
-          "label": "I agree to receive an email about the course start and payment link",
-          "error": "Confirm consent for the course start email"
+          "label": "I agree to receive an email with the payment link when the course is about to start",
+          "error": "Please tick the box so we can email you when the course starts"
         }
       }
     },
@@ -497,16 +497,16 @@
     },
     "suggestions": {
       "1": {
-        "title": "Online group with my personal guidance",
-        "text": "You do not learn alone – I guide you step by step, correct technique and help you develop body expression."
+        "title": "Learning in a group with my personal guidance",
+        "text": "You don't learn alone — I guide you step by step, correct your technique and help you open up your body and performance."
       },
       "2": {
         "title": "Homework with feedback",
-        "text": "Each task consolidates the material. You receive comments, recommendations and support to grow faster."
+        "text": "Every assignment is practice that helps you lock in what you've learned. You get comments, recommendations and support to help you grow faster."
       },
       "3": {
         "title": "5 well-designed lessons that build your foundation",
-        "text": "From feet and waves to performance and first choreography – you get a complete base for confident movement in Frame Up and related styles."
+        "text": "From footwork and waves to performance and your first choreography — you get a complete foundation for moving confidently in Frame Up and related styles."
       },
       "4": {
         "title": "Course duration: 1.5 months",
@@ -518,9 +518,9 @@
       }
     },
     "program": {
-      "title": "Course program",
+      "title": "Course programme",
       "buyButton": "Buy for 250 PLN / 50 €",
-      "imageAlt": "First Touch program photo"
+      "imageAlt": "First Touch programme photo"
     }
   },
   "OnlineGroupPage": {
@@ -529,10 +529,10 @@
       "titlePlain": "Online Group by Anna Strok",
       "stickyTitle": "Online Group",
       "description": {
-        "1": "In the online group, we train in a convenient format, work on technique, fluidity, strength, improvisation and musicality, and learn choreography. You stay in the process, receive new assignments, practise at home and feel connected to me wherever you are.",
+        "1": "In the Online Group, we train in a convenient format, work on technique, fluidity, strength, improvisation and musicality, and learn choreography. It's a way to keep training, get new assignments, practise at home and stay connected with me wherever you are.",
         "2": "Suitable for intermediate and advanced dancers."
       },
-      "startLabel": "Next group starts",
+      "startLabel": "Next cycle starts",
       "startDate": "November",
       "priceLabel": "Price for new participants",
       "buyButton": "Buy your place",
@@ -570,7 +570,7 @@
         "subtitle": "Online Group + Inspiration Hub",
         "features": {
           "1": "5 new lessons",
-          "2": "Homework assignments with feedback",
+          "2": "Homework with feedback",
           "3": "Cycle duration — 6 weeks",
           "4": "Access to the private Telegram chat",
           "5": "Communication and support within the group",
@@ -607,7 +607,7 @@
       },
       "5": {
         "title": "Plus plan with Inspiration Hub",
-        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience. Hub access remains active until the next cycle starts."
+        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience. Hub access stays active for the duration of the cycle."
       },
       "6": {
         "title": "Private Telegram chat",
@@ -615,7 +615,7 @@
       },
       "7": {
         "title": "Continue without a break",
-        "text": "Current online-group participants receive a special price when renewing for the next cycle."
+        "text": "Current Online Group participants receive a special price when renewing for the next cycle."
       }
     }
   },
@@ -624,8 +624,8 @@
       "title": "Online tutorials of my choreographies",
       "stickyTitle": "Tutorials",
       "description": {
-        "1": "Each choreography step by step: movement, technique and performance, explained in Russian or English.",
-        "2": "Learn online with replay support to confidently assemble choreography into music."
+        "1": "Each choreography step by step: movement, technique and performance, explained in Russian and English.",
+        "2": "We learn together online: rewatch and repeat as many times as you need to confidently put it all to music."
       },
       "startLabel": "Start",
       "startValue": "Anytime",
@@ -651,7 +651,7 @@
       },
       "4": {
         "title": "Instant access via private Telegram channels",
-        "text": "No extra platforms – all course materials in one place right after payment."
+        "text": "No extra platforms — all course materials in one place right after payment."
       },
       "5": {
         "title": "Independent practice at your own pace",
@@ -698,7 +698,7 @@
       "title": "Confirm Telegram before payment",
       "description": "Confirm your Telegram account to renew.",
       "summaryCard": {
-        "description": "Renew your online group access for the next cycle at the special price.",
+        "description": "Renew your Online Group access for the next cycle at the special price.",
         "accessNote": "After payment, you will receive a personal one-time invite to the new Telegram chat.",
         "accessNotePlus": "After payment, you will receive personal one-time invites to the new Telegram chat and Inspiration Hub. Hub access is provided for the duration of the cycle."
       },
@@ -706,14 +706,14 @@
         "verify": "Confirm Telegram"
       },
       "status": {
-        "loading": "Preparing check...",
+        "loading": "Preparing check…",
         "ready": "Tap the blue icon to confirm Telegram.",
         "openingTelegram": "Confirm the login in Telegram. After confirmation, we will try to return you to checkout automatically.",
-        "checkingMembership": "Checking chat...",
+        "checkingMembership": "Checking chat…",
         "verified": "Done.",
         "verifiedAs": "Done: {username}",
         "verifiedAsWithProfile": "Done: {username}. Your details are filled in — please review them.",
-        "notMember": "We could not find this account in the old chat. Check the username or message support.",
+        "notMember": "We couldn't find this account in the Online Group chat. Check the username or message support.",
         "usernameMismatch": "The username does not match the confirmed Telegram account. Enter the same one or confirm again.",
         "loadFailed": "We could not start the check. Please try again.",
         "failed": "Could not confirm Telegram."
@@ -737,7 +737,7 @@
       "nickname": {
         "label": "Telegram username",
         "placeholder": "yournickname",
-        "hint": "We use it to open your access in Telegram"
+        "hint": "We'll use it to give you access in Telegram"
       },
       "address": {
         "label": "Address",
@@ -806,7 +806,7 @@
     },
     "progress": {
       "step": "Step {current} of {total}",
-      "ready": "All filled in, just pay",
+      "ready": "All set — just pay",
       "duration": "about a minute"
     },
     "paymentLocked": {
@@ -817,31 +817,31 @@
   "PaymentSuccessPage": {
     "title": "Payment successful",
     "verification": {
-      "checking": "Checking your payment status...",
+      "checking": "Checking your payment status…",
       "pending": "Your payment is still processing — please do not pay again. As soon as it is confirmed, your access links will appear here and will also be sent to your email.",
       "refreshButton": "Check again",
       "unavailable": "We couldn't confirm the payment status. Refresh this page or contact support, and do not pay again."
     },
     "description": {
       "firstTouch": {
-        "line1": "We’re preparing your personal First Touch access.",
-        "line2": "The link will appear below and is also sent to your email."
+        "line1": "We're preparing your personal First Touch access.",
+        "line2": "The link will appear below and will also be sent to your email."
       },
       "withoutMentor": {
-        "line1": "We’re preparing your personal lesson access.",
-        "line2": "The link will appear below and is also sent to your email."
+        "line1": "We're preparing your personal lesson access.",
+        "line2": "The link will appear below and will also be sent to your email."
       },
       "withMentor": {
-        "line1": "We’re preparing your personal lesson access.",
-        "line2": "The link will appear below and is also sent to your email."
+        "line1": "We're preparing your personal lesson access.",
+        "line2": "The link will appear below and will also be sent to your email."
       },
       "onlineGroup": {
-        "line1": "We’re preparing your personal Online Group access.",
-        "line2": "The available links will appear below and are also sent to your email."
+        "line1": "We're preparing your personal Online Group access.",
+        "line2": "Your links will appear below and will also be sent to your email."
       },
       "renewal": {
-        "line1": "We’re preparing your access to the new Online Group.",
-        "line2": "The available links will appear below and are also sent to your email."
+        "line1": "We're preparing your access to the next Online Group cycle.",
+        "line2": "Your links will appear below and will also be sent to your email."
       },
       "birthdayDrop": {
         "line1": "We’re preparing your personal access to the materials.",
@@ -861,7 +861,7 @@
       "openLink": "Go to Telegram",
       "openMainGroup": "Open Online Group",
       "openInspiration": "Open Inspiration Hub",
-      "pending": "Preparing your personal Telegram lessons link...",
+      "pending": "Preparing your personal Telegram lessons link…",
       "unavailable": "The link is not ready yet. Please contact support.",
       "contactSupport": "Support",
       "nameMainGroup": "Online Group",
@@ -887,11 +887,11 @@
     "description": "Secure payment via Stripe",
     "button": {
       "pay": "Pay",
-      "processing": "Processing...",
+      "processing": "Processing…",
       "updating": "Updating…"
     },
     "status": {
-      "preparing": "Preparing secure payment with Stripe...",
+      "preparing": "Preparing secure payment with Stripe…",
       "preparingSlow": "Preparation is taking longer than usual. Please wait a bit or refresh the page.",
       "verifying": "We're verifying your payment — please don't pay again. This usually takes a few seconds.",
       "verificationUnresolved": "We couldn't confirm your payment yet — please don't pay again. Once it's confirmed, your access links will be sent to your email. If nothing arrives, <link>contact support</link>."
@@ -928,8 +928,8 @@
       "title": "Beginner course “First Touch”",
       "shortTitle": "“First Touch” course",
       "description": {
-        "1": "For those who have never danced but want to learn body awareness, confidence and movement.",
-        "2": "We work on basic technique, feet and emotions, and by the end you will learn your first choreography."
+        "1": "For those who have never danced but want to feel their body, gain confidence and learn to move.",
+        "2": "We'll work on basic technique, footwork and emotion, and finish by learning your first choreography."
       },
       "accessNote": "The course runs for 1.5 months. Lessons stay available for 120 days after joining the private Telegram chat.",
       "offers": {
@@ -942,7 +942,7 @@
       "description": {
         "1": "For dancers who want depth, structure and expressive movement.",
         "2": "The lesson is available in a convenient online format: you can replay and repeat the material as many times as needed to confidently put everything to music.",
-        "3": "Choose between a self-paced format or participation with mentor support and feedback."
+        "3": "Learn on your own, or with a mentor who gives you feedback."
       },
       "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
       "offers": {
@@ -999,10 +999,10 @@
       "checkoutTitle": "Online Group",
       "description": {
         "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body.",
-        "2": "If you cannot attend my offline classes, you can gain new knowledge, practise at home and stay in touch with me wherever you are."
+        "2": "If you can't come to my studio classes, you can still learn new things, practise at home and stay in touch with me wherever you are."
       },
-      "accessNote": "After payment, we will send you a personal one-use invite link to the Telegram group.",
-      "accessNotePlus": "After payment, we will send you personal one-use invite links to the Telegram group and Inspiration Hub. Hub access is provided for the duration of the cycle.",
+      "accessNote": "After payment, we will send you a personal one-time invite link to the Telegram group.",
+      "accessNotePlus": "After payment, we will send you personal one-time invite links to the Telegram group and Inspiration Hub. Hub access is provided for the duration of the cycle.",
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",
