@@ -194,11 +194,11 @@ const getAccessWorkflowLabel = (workflow: string) => {
   }
 
   if (workflow === "telegram-online-group") {
-    return "Новая Online Group";
+    return "Онлайн-группа";
   }
 
   if (workflow === "telegram-renewal") {
-    return "Продление Online Group";
+    return "Продление онлайн-группы";
   }
 
   if (workflow === "manual-admin") {
@@ -511,7 +511,7 @@ const getStandardAccessLabel = (paymentRecord: PaymentRecordSnapshot) => {
   }
 
   if (workflow === "telegram-online-group") {
-    return "Online Group";
+    return "Онлайн-группа";
   }
 
   return paymentRecord.delivery_channel.trim() === "telegram"
@@ -532,7 +532,7 @@ const getOnlineGroupAccessProcessingStatuses = ({
     const fallbackStatuses = [
       getAccessProcessingStatus({
         expected: true,
-        label: "Online Group",
+        label: "Онлайн-группа",
         status: paymentRecord.telegram_access_status.trim(),
       }),
     ];
@@ -554,7 +554,7 @@ const getOnlineGroupAccessProcessingStatuses = ({
   const statuses = [
     getAccessProcessingStatus({
       expected: true,
-      label: "Online Group",
+      label: "Онлайн-группа",
       missingDetail: "запись доступа не создана",
       missingState: "error",
       status: accessStatusByKey.get("main-group") ?? "",

@@ -17,7 +17,7 @@
       },
       "online": {
         "title": "Kursy Frame Up Strip online na Telegramie",
-        "description": "Tutoriale choreografii, Online Group dla średniozaawansowanych i zaawansowanych oraz First Touch dla osób, które nigdy nie tańczyły. Z dowolnego kraju.",
+        "description": "Tutoriale choreografii, grupa online dla średniozaawansowanych i zaawansowanych oraz First Touch dla osób, które nigdy nie tańczyły. Z dowolnego kraju.",
         "ogImageAlt": "Anna Strok: kursy Frame Up Strip online",
         "heroImageAlt": "Anna Strok w butach strip, z ugiętymi kolanami i dłońmi złączonymi przed sobą"
       },
@@ -28,9 +28,9 @@
         "heroImageAlt": "Anna Strok na stołku w butach strip, z szeroko rozstawionymi nogami"
       },
       "onlineGroup": {
-        "title": "Online Group: treningi Frame Up Strip online",
+        "title": "Grupa online: treningi Frame Up Strip",
         "description": "Sześciotygodniowy cykl na Telegramie dla średniozaawansowanych i zaawansowanych: 5 nowych lekcji, zadania z feedbackiem do nagrań i zamknięty czat grupy.",
-        "ogImageAlt": "Online Group: treningi online z Anną Strok"
+        "ogImageAlt": "Grupa online: treningi z Anną Strok"
       },
       "choreo": {
         "title": "Tutoriale choreografii Frame Up Strip",
@@ -332,7 +332,7 @@
         "startValue": "Zima 2026–2027 albo po zebraniu pełnej grupy"
       },
       "onlineGroup": {
-        "title": "Online Group\nby Anna Strok",
+        "title": "Grupa online\nby Anna Strok",
         "description": {
           "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
           "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
@@ -525,10 +525,10 @@
   },
   "OnlineGroupPage": {
     "hero": {
-      "title": "Online Group\nby Anna Strok",
-      "titlePlain": "Online Group by Anna Strok",
+      "title": "Grupa online\nby Anna Strok",
+      "titlePlain": "Grupa online by Anna Strok",
       "description": {
-        "1": "W Online Group trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
+        "1": "W grupie online trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
         "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
       },
       "startLabel": "Start kolejnej grupy",
@@ -538,11 +538,11 @@
       "offers": {
         "regular": {
           "title": "Standard",
-          "description": "Nowe lekcje, zadania i feedback w zamkniętej Online Group."
+          "description": "Nowe lekcje, zadania i feedback w zamkniętej grupie online."
         },
         "library": {
           "title": "Plus",
-          "description": "Online Group z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
+          "description": "Grupa online z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
         }
       },
       "programButton": "Co na Ciebie czeka"
@@ -554,7 +554,7 @@
       "buyButton": "Kup",
       "standard": {
         "title": "Standard",
-        "subtitle": "Online Group",
+        "subtitle": "Grupa online",
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
@@ -566,7 +566,7 @@
       },
       "plus": {
         "title": "Plus",
-        "subtitle": "Online Group + Inspiration Hub",
+        "subtitle": "Grupa online + Inspiration Hub",
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
@@ -585,7 +585,7 @@
       "switchLabel": "Wybór pakietu"
     },
     "about": {
-      "title": "Co czeka Cię w Online Group"
+      "title": "Co czeka Cię w grupie online"
     },
     "suggestions": {
       "1": {
@@ -697,7 +697,7 @@
       "title": "Potwierdź Telegram przed płatnością",
       "description": "Aby przedłużyć dostęp, potwierdź konto Telegram.",
       "summaryCard": {
-        "description": "Kontynuacja udziału w Online Group na kolejny cykl w specjalnej cenie.",
+        "description": "Kontynuacja udziału w grupie online na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
         "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
       },
@@ -835,11 +835,11 @@
         "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       },
       "onlineGroup": {
-        "line1": "Przygotowujemy Twój osobisty dostęp do Online Group.",
+        "line1": "Przygotowujemy Twój osobisty dostęp do grupy online.",
         "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
       },
       "renewal": {
-        "line1": "Przygotowujemy Twój dostęp do nowej Online Group.",
+        "line1": "Przygotowujemy Twój dostęp do nowego cyklu grupy online.",
         "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
       },
       "birthdayDrop": {
@@ -851,19 +851,19 @@
       "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 120 dni od dołączenia.",
       "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 60 dni od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
       "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
       "inspirationUntil": "Dostęp do Inspiration Hub do",
       "openLink": "Przejdź do Telegrama",
-      "openMainGroup": "Otwórz Online Group",
+      "openMainGroup": "Otwórz grupę online",
       "openInspiration": "Otwórz Inspiration Hub",
       "pending": "Przygotowujemy Twój osobisty link do lekcji w Telegramie...",
       "unavailable": "Link nie jest jeszcze gotowy. Skontaktuj się ze wsparciem.",
       "contactSupport": "Wsparcie",
-      "nameMainGroup": "Online Group",
+      "nameMainGroup": "Grupa online",
       "nameInspiration": "Inspiration Hub"
     },
     "buttons": {
@@ -993,9 +993,9 @@
       }
     },
     "onlineGroupAnnaStrok": {
-      "title": "Online Group by Anna Strok",
-      "shortTitle": "Online Group",
-      "checkoutTitle": "Online Group",
+      "title": "Grupa online by Anna Strok",
+      "shortTitle": "Grupa online",
+      "checkoutTitle": "Grupa online",
       "description": {
         "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
         "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."

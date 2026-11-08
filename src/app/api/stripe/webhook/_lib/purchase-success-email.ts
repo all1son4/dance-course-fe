@@ -194,7 +194,7 @@ const EMAIL_COPY = {
         cta: "Otwórz czat Telegram",
       },
       telegramOnlineGroup: {
-        title: "Dostęp do Online Group",
+        title: "Dostęp do grupy online",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
         pending:
@@ -202,7 +202,7 @@ const EMAIL_COPY = {
         cta: "Otwórz grupę Telegram",
       },
       telegramRenewal: {
-        title: "Dostęp do nowego cyklu Online Group",
+        title: "Dostęp do nowego cyklu grupy online",
         ready:
           "Użyj przycisku poniżej, aby dołączyć do nowej grupy Telegram. Osobisty link jest ważny przez 30 dni; po dołączeniu dostęp do grupy nie wygasa automatycznie.",
         pending:
@@ -287,7 +287,7 @@ const EMAIL_COPY = {
         cta: "Открыть Telegram-чат",
       },
       telegramOnlineGroup: {
-        title: "Доступ в Online Group",
+        title: "Доступ в онлайн-группу",
         ready:
           "Нажми кнопку ниже, чтобы вступить в Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
         pending:
@@ -295,7 +295,7 @@ const EMAIL_COPY = {
         cta: "Открыть Telegram-группу",
       },
       telegramRenewal: {
-        title: "Доступ в новый поток Online Group",
+        title: "Доступ в новый поток онлайн-группы",
         ready:
           "Нажми кнопку ниже, чтобы вступить в новую Telegram-группу. Персональная ссылка действует 30 дней; после вступления доступ к группе автоматически не ограничивается.",
         pending:
