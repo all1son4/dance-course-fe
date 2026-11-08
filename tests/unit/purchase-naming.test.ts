@@ -195,7 +195,7 @@ test("the purchase email names the purchase on one line and states the access", 
   });
 
   assert.equal(lesson.subject, "Payment confirmed: Private lesson");
-  assert.match(lesson.text, /^Access: 60 minutes, we will agree on the date and time$/mu);
+  assert.match(lesson.text, /^Access: 60 minutes, date and time to be agreed$/mu);
   assert.doesNotMatch(lesson.text, /Plan:/u);
 });
 
