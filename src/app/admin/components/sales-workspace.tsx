@@ -130,7 +130,8 @@ const SalesProductsTable = ({
                   {product.offers.map((offer) => (
                     <li key={offer.offerId}>
                       <span>
-                        <span>{offer.label}</span>
+                        {/* A lone tariff has no name worth showing: it is just the price. */}
+                        <span>{product.offers.length > 1 ? offer.label : "Цена"}</span>
                         <strong>{offer.price}</strong>
                       </span>
                       {product.type === "choreo" && (

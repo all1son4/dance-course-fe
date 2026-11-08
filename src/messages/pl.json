@@ -11,13 +11,13 @@
     "pages": {
       "home": {
         "title": "Anna Strok: Frame Up Strip online i w Warszawie",
-        "description": "Kursy Frame Up Strip online na Telegramie z feedbackiem do Twoich nagrań i praktyka Impro Room w Warszawie. Kurs od zera, treningi i samouczki choreografii.",
+        "description": "Kursy Frame Up Strip online na Telegramie z feedbackiem do Twoich nagrań i praktyka Impro Room w Warszawie. Kurs od zera, treningi i tutoriale choreografii.",
         "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
         "heroImageAlt": "Anna Strok w butach strip na wysokim stołku, z głową odchyloną do tyłu"
       },
       "online": {
         "title": "Kursy Frame Up Strip online na Telegramie",
-        "description": "Samouczki choreografii, Online Group dla średniozaawansowanych i zaawansowanych oraz First Touch dla osób, które nigdy nie tańczyły. Z dowolnego kraju.",
+        "description": "Tutoriale choreografii, grupa online dla średniozaawansowanych i zaawansowanych oraz First Touch dla osób, które nigdy nie tańczyły. Z dowolnego kraju.",
         "ogImageAlt": "Anna Strok: kursy Frame Up Strip online",
         "heroImageAlt": "Anna Strok w butach strip, z ugiętymi kolanami i dłońmi złączonymi przed sobą"
       },
@@ -28,14 +28,14 @@
         "heroImageAlt": "Anna Strok na stołku w butach strip, z szeroko rozstawionymi nogami"
       },
       "onlineGroup": {
-        "title": "Online Group: treningi Frame Up Strip online",
+        "title": "Grupa online: treningi Frame Up Strip",
         "description": "Sześciotygodniowy cykl na Telegramie dla średniozaawansowanych i zaawansowanych: 5 nowych lekcji, zadania z feedbackiem do nagrań i zamknięty czat grupy.",
-        "ogImageAlt": "Online Group: treningi online z Anną Strok"
+        "ogImageAlt": "Grupa online: treningi z Anną Strok"
       },
       "choreo": {
-        "title": "Samouczki choreografii Frame Up Strip",
+        "title": "Tutoriale choreografii Frame Up Strip",
         "description": "Choreografie Anny Strok krok po kroku, z wyjaśnieniami po rosyjsku i angielsku: ruchy, technika i ekspresja. Dla średniozaawansowanych i zaawansowanych.",
-        "ogImageAlt": "Samouczki choreografii Anny Strok",
+        "ogImageAlt": "Tutoriale choreografii Anny Strok",
         "heroImageAlt": "Anna Strok w głębokim przysiadzie w butach strip, z dłońmi między kolanami"
       },
       "offline": {
@@ -56,7 +56,7 @@
       },
       "birthdayDrop": {
         "title": "The Birthday Drop „Love me in the morning”",
-        "description": "Rozbiór choreografii „Love me in the morning”, playlista, moodboard i link do wywiadu „34 pytania” na YouTube. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
+        "description": "Tutorial choreografii „Love me in the morning”, playlista, moodboard i link do wywiadu „34 pytania” na YouTube. Dostęp do materiałów na zawsze, płatność z każdego kraju.",
         "ogImageAlt": "The Birthday Drop „Love me in the morning” od Anny Strok"
       },
       "payment": {
@@ -114,7 +114,7 @@
         "prefix": "Grupa online",
         "highlight": "by Anna Strok"
       },
-      "3": "Samouczki choreograficzne",
+      "3": "Tutoriale choreografii",
       "4": "The Birthday Drop"
     }
   },
@@ -332,7 +332,7 @@
         "startValue": "Zima 2026–2027 albo po zebraniu pełnej grupy"
       },
       "onlineGroup": {
-        "title": "Online Group\nby Anna Strok",
+        "title": "Grupa online\nby Anna Strok",
         "description": {
           "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
           "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
@@ -341,9 +341,9 @@
         "startValue": "Listopad"
       },
       "choreo": {
-        "title": "Samouczki moich choreografii",
+        "title": "Tutoriale moich choreografii",
         "description": {
-          "1": "Samouczki online moich choreografii.",
+          "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku lub angielsku.",
           "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz."
         },
         "startLabel": "Start",
@@ -355,7 +355,7 @@
         "title": "The Birthday Drop",
         "description": {
           "1": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą.",
-          "2": "Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
+          "2": "Dlatego przygotowałam dla Ciebie tutorial jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów."
         },
         "salesLabel": "Sprzedaż otwarta do 7 września",
         "salesValue": "Dostęp na zawsze!"
@@ -525,10 +525,11 @@
   },
   "OnlineGroupPage": {
     "hero": {
-      "title": "Online Group\nby Anna Strok",
-      "titlePlain": "Online Group by Anna Strok",
+      "title": "Grupa online\nby Anna Strok",
+      "titlePlain": "Grupa online by Anna Strok",
+      "stickyTitle": "Grupa online",
       "description": {
-        "1": "W Online Group trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
+        "1": "W grupie online trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
         "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
       },
       "startLabel": "Start kolejnej grupy",
@@ -538,11 +539,11 @@
       "offers": {
         "regular": {
           "title": "Standard",
-          "description": "Nowe lekcje, zadania i feedback w zamkniętej Online Group."
+          "description": "Nowe lekcje, zadania i feedback w zamkniętej grupie online."
         },
         "library": {
           "title": "Plus",
-          "description": "Online Group z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
+          "description": "Grupa online z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
         }
       },
       "programButton": "Co na Ciebie czeka"
@@ -554,7 +555,7 @@
       "buyButton": "Kup",
       "standard": {
         "title": "Standard",
-        "subtitle": "Online Group",
+        "subtitle": "Grupa online",
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
@@ -566,7 +567,7 @@
       },
       "plus": {
         "title": "Plus",
-        "subtitle": "Online Group + Inspiration Hub",
+        "subtitle": "Grupa online + Inspiration Hub",
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
@@ -585,7 +586,7 @@
       "switchLabel": "Wybór pakietu"
     },
     "about": {
-      "title": "Co czeka Cię w Online Group"
+      "title": "Co czeka Cię w grupie online"
     },
     "suggestions": {
       "1": {
@@ -620,10 +621,10 @@
   },
   "ChoreoPage": {
     "hero": {
-      "title": "Samouczki choreograficzne",
+      "title": "Tutoriale moich choreografii",
       "stickyTitle": "Tutoriale",
       "description": {
-        "1": "Samouczki online moich choreografii.",
+        "1": "Choreografia krok po kroku: ruchy, technika i ekspresja, z wyjaśnieniami po rosyjsku lub angielsku.",
         "2": "Uczysz się online i możesz wracać do materiału tyle razy, ile potrzebujesz, aby pewnie połączyć wszystko z muzyką."
       },
       "startLabel": "Start",
@@ -633,11 +634,11 @@
       "button": "Wybierz choreografię"
     },
     "about": {
-      "title": "Co zawiera omówienie choreografii"
+      "title": "Co zawiera tutorial"
     },
     "suggestions": {
       "1": {
-        "title": "Samouczki choreograficzne dla poziomu średniozaawansowanego i zaawansowanego",
+        "title": "Tutoriale choreografii dla poziomu średniozaawansowanego i zaawansowanego",
         "text": "Szczegółowe wyjaśnienia po rosyjsku i angielsku: ruchy, technika i ekspresja."
       },
       "2": {
@@ -697,7 +698,7 @@
       "title": "Potwierdź Telegram przed płatnością",
       "description": "Aby przedłużyć dostęp, potwierdź konto Telegram.",
       "summaryCard": {
-        "description": "Kontynuacja udziału w Online Group na kolejny cykl w specjalnej cenie.",
+        "description": "Kontynuacja udziału w grupie online na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
         "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
       },
@@ -835,11 +836,11 @@
         "line2": "Link pojawi się poniżej i wyślemy go również emailem."
       },
       "onlineGroup": {
-        "line1": "Przygotowujemy Twój osobisty dostęp do Online Group.",
+        "line1": "Przygotowujemy Twój osobisty dostęp do grupy online.",
         "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
       },
       "renewal": {
-        "line1": "Przygotowujemy Twój dostęp do nowej Online Group.",
+        "line1": "Przygotowujemy Twój dostęp do nowego cyklu grupy online.",
         "line2": "Dostępne linki pojawią się poniżej i wyślemy je również emailem."
       },
       "birthdayDrop": {
@@ -851,19 +852,19 @@
       "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 120 dni od dołączenia.",
       "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 60 dni od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do Online Group nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
       "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
       "inspirationUntil": "Dostęp do Inspiration Hub do",
       "openLink": "Przejdź do Telegrama",
-      "openMainGroup": "Otwórz Online Group",
+      "openMainGroup": "Otwórz grupę online",
       "openInspiration": "Otwórz Inspiration Hub",
       "pending": "Przygotowujemy Twój osobisty link do lekcji w Telegramie...",
       "unavailable": "Link nie jest jeszcze gotowy. Skontaktuj się ze wsparciem.",
       "contactSupport": "Wsparcie",
-      "nameMainGroup": "Online Group",
+      "nameMainGroup": "Grupa online",
       "nameInspiration": "Inspiration Hub"
     },
     "buttons": {
@@ -983,8 +984,8 @@
       "shortTitle": "The Birthday Drop",
       "checkoutTitle": "The Birthday Drop",
       "description": {
-        "1": "Rozbiór choreografii Love me in the morning, przygotowany jako osobny drop.",
-        "2": "W środku: rozbiór kombinacji, playlista, moodboard i link do wywiadu „34 pytania do moich 34” na YouTube.",
+        "1": "Tutorial choreografii „Love me in the morning”, przygotowany jako osobny drop.",
+        "2": "W środku: tutorial kombinacji, playlista, moodboard i link do wywiadu „34 pytania do moich 34” na YouTube.",
         "3": "Możesz wracać do materiałów i powtarzać we własnym tempie."
       },
       "accessNote": "Dostęp do materiałów na zawsze, przez prywatny kanał na Telegramie.",
@@ -993,9 +994,9 @@
       }
     },
     "onlineGroupAnnaStrok": {
-      "title": "Online Group by Anna Strok",
-      "shortTitle": "Online Group",
-      "checkoutTitle": "Online Group",
+      "title": "Grupa online by Anna Strok",
+      "shortTitle": "Grupa online",
+      "checkoutTitle": "Grupa online",
       "description": {
         "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
         "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
@@ -1023,8 +1024,8 @@
       }
     },
     "privateLesson": {
-      "title": "Lekcja indywidualna z Anną Strok",
-      "shortTitle": "Lekcja indywidualna",
+      "title": "Zajęcia indywidualne z Anną Strok",
+      "shortTitle": "Zajęcia indywidualne",
       "offers": {
         "sixtyMinutes": "60 minut"
       }
@@ -1140,7 +1141,7 @@
   },
   "BirthdayPopup": {
     "title": "Happy Birthday to me!",
-    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "text": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie tutorial jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "cta": "Dowiedz się więcej",
     "close": "Zamknij"
   },
@@ -1148,14 +1149,14 @@
     "title": "The Birthday Drop<br></br>„Love me in the morning”",
     "titlePlain": "The Birthday Drop „Love me in the morning”",
     "titleShort": "The Birthday Drop",
-    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie samouczek do jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
+    "description": "Kończę 34 lata i chcę uczcić ten dzień razem z Tobą. Dlatego przygotowałam dla Ciebie tutorial jednej z moich najnowszych choreografii i jeszcze kilka miłych bonusów. Dostęp do wszystkich materiałów zostaje z wami na zawsze.",
     "buyButton": "Kup za {price}",
     "detailsButton": "Dowiedz się więcej",
     "aboutTitle": "Co czeka Cię w The Birthday Drop",
     "suggestions": {
       "video": {
-        "title": "Rozbiór choreografii „Love me in the morning”",
-        "text": "Otrzymujesz dostęp do samouczka tej choreografii w dwóch językach: rosyjskim i angielskim."
+        "title": "Tutorial choreografii „Love me in the morning”",
+        "text": "Otrzymujesz dostęp do tutorialu tej choreografii w dwóch językach: rosyjskim i angielskim."
       },
       "playlist": {
         "title": "Birthday Playlist",
