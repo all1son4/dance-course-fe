@@ -341,7 +341,7 @@
         "startValue": "November"
       },
       "choreo": {
-        "title": "Video tutorials of my choreographies",
+        "title": "Online tutorials of my choreographies",
         "description": {
           "1": "Each choreography step by step: movement, technique and performance, explained in Russian or English.",
           "2": "Learn online with unlimited replay so you can confidently build everything into the music."
@@ -621,7 +621,7 @@
   },
   "ChoreoPage": {
     "hero": {
-      "title": "Video tutorials of my choreographies",
+      "title": "Online tutorials of my choreographies",
       "stickyTitle": "Tutorials",
       "description": {
         "1": "Each choreography step by step: movement, technique and performance, explained in Russian or English.",
