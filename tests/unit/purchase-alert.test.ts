@@ -128,7 +128,7 @@ test("[BEH-TG-03] states the access term each offer actually grants", () => {
       access_workflow: "telegram-online-group",
       offer_id: "off_R6vN2cH9sW4y",
     }),
-    "Новая Online Group",
+    "Онлайн-группа",
   );
 });
 
@@ -187,7 +187,7 @@ test("[BEH-OG-02] lists both accesses of an Online Group Plus purchase", () => {
     product_title: "Online Group by Anna Strok",
   });
 
-  assert.match(alertText, /✅ Online Group: ссылка подготовлена/u);
+  assert.match(alertText, /✅ Онлайн-группа: ссылка подготовлена/u);
   assert.match(alertText, /✅ Inspiration Hub: ссылка подготовлена/u);
 });
 

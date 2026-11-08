@@ -119,7 +119,7 @@ const SCENARIOS: PreviewScenario[] = [
       product_id: "prd_L9aK3mT7qP2x",
       product_title: "Online Group by Anna Strok",
     },
-    title: "Online Group Standard",
+    title: "Онлайн-группа Standard",
   },
   {
     onlineGroupAccessStates: ONLINE_GROUP_WITH_HUB_READY,
@@ -131,7 +131,7 @@ const SCENARIOS: PreviewScenario[] = [
       product_id: "prd_L9aK3mT7qP2x",
       product_title: "Online Group by Anna Strok",
     },
-    title: "Online Group Plus — два доступа",
+    title: "Онлайн-группа Plus — два доступа",
   },
   {
     onlineGroupAccessStates: ONLINE_GROUP_WITH_HUB_READY,
@@ -144,7 +144,7 @@ const SCENARIOS: PreviewScenario[] = [
       product_id: "prd_L9aK3mT7qP2x",
       product_title: "Online Group by Anna Strok",
     },
-    title: "Продление Online Group Plus",
+    title: "Продление онлайн-группы Plus",
   },
   {
     hasClosedSales: true,

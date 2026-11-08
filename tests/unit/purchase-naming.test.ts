@@ -77,7 +77,7 @@ test("the admin line is Russian and names the tariff whenever there are several"
   );
   assert.equal(
     getAdminPurchaseLine("off_online_group_anna_strok_renewal_library_access"),
-    "Online Group · Продление Plus",
+    "Онлайн-группа · Продление Plus",
   );
   assert.equal(getAdminPurchaseLine(PRIVATE_LESSON_OFFER_ID), "Индивидуальное занятие");
   assert.equal(getAdminPurchaseLine("off_unknown"), null);
