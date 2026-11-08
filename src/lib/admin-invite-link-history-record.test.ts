@@ -3,12 +3,13 @@ import test from "node:test";
 
 import type { AdminInviteLinkHistoryRecord } from "./admin-invite-link-history-record";
 
-test("history contract preserves all nine fields and missing timestamps", () => {
+test("history contract preserves all ten fields and missing timestamps", () => {
   const record: AdminInviteLinkHistoryRecord = {
     accessUrl: "https://t.me/+private_invite",
     adminLabel: "",
     createdAt: "2026-08-13T10:00:00.000Z",
     lessonLanguage: "en",
+    offerId: "off_test",
     offerLabel: "Standard",
     productTitle: "Course",
     purchaseItem: "Course — Standard",
@@ -22,6 +23,7 @@ test("history contract preserves all nine fields and missing timestamps", () => 
     "adminLabel",
     "createdAt",
     "lessonLanguage",
+    "offerId",
     "offerLabel",
     "productTitle",
     "purchaseItem",

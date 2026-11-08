@@ -269,7 +269,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
     return {
       button: "Przejdź do płatności",
       contactIntro:
-        "Jeśli masz pytania, zmieniły Ci się plany albo nie wiesz, jaki jest kolejny krok, napisz do nas - pomożemy.",
+        "Jeśli masz pytania, zmieniły Ci się plany albo nie wiesz, jaki jest kolejny krok, napisz do nas, pomożemy.",
       contactInstagramButton: "Napisz na Instagramie",
       contactTelegramButton: "Napisz na Telegramie",
       description: [
@@ -292,11 +292,11 @@ const getFirstTouchEmailCopy = (locale: string) => {
   return {
     button: "Перейти к оплате",
     contactIntro:
-      "Если есть вопросы, изменились планы или ты не уверена в следующем шаге, напиши нам - поможем.",
+      "Если есть вопросы, изменились планы или ты не уверена в следующем шаге, напиши нам, поможем.",
     contactInstagramButton: "Написать в Instagram",
     contactTelegramButton: "Написать в Telegram",
     description: [
-      "First Touch - курс для тех, кто никогда не танцевал, но хочет научиться чувствовать тело, уверенность и движение.",
+      "First Touch — курс для тех, кто никогда не танцевал, но хочет научиться чувствовать тело, уверенность и движение.",
       "На курсе мы работаем над базовой техникой, стопами, эмоциями и в конце учим твою первую хореографию.",
     ],
     intro:

@@ -72,7 +72,8 @@ export const getChoreoSelections = () =>
 
           return {
             key: `${product.id}::${offer.id}::${lessonLanguage}`,
-            label: `${product.title} • ${LESSON_LANGUAGE_LABELS[lessonLanguage]} • ${offerTypeLabel}`,
+            // Same order as the history and the alerts: product · tariff · language.
+            label: `${product.shortTitle} · ${offerTypeLabel} · ${LESSON_LANGUAGE_LABELS[lessonLanguage]}`,
             lessonLanguage,
             offerId: offer.id,
             productId: product.id,

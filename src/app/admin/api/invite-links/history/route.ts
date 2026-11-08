@@ -2,6 +2,10 @@ import { listAdminInviteLinkHistoryRecords } from "@/lib/admin-invite-link-histo
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
+import {
+  formatPurchaseLine,
+  getAdminPurchaseLine,
+} from "@/lib/sellable-products-localization";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
 
 export const runtime = "nodejs";
@@ -41,23 +45,25 @@ const normalizeLanguageLabel = (value: string) => {
   return value.trim().toUpperCase();
 };
 
+/** The same line as the generator: "Разбор «Her Lies» · Без куратора · RU". */
 const buildSelectionLabel = ({
   language,
+  offerId,
   offerLabel,
   productTitle,
 }: {
   language: string;
+  offerId: string;
   offerLabel: string;
   productTitle: string;
-}) => {
-  const normalizedProductTitle = productTitle.trim();
-  const normalizedOfferLabel = offerLabel.trim();
-  const normalizedLanguage = normalizeLanguageLabel(language);
-
-  return [normalizedProductTitle, normalizedLanguage, normalizedOfferLabel]
+}) =>
+  [
+    (offerId ? getAdminPurchaseLine(offerId) : null) ??
+      formatPurchaseLine(productTitle, offerLabel),
+    normalizeLanguageLabel(language),
+  ]
     .filter(Boolean)
-    .join(" • ");
-};
+    .join(" · ");
 
 const isFreshHistoryCache = (entry: HistoryCacheEntry) =>
   entry.cachedAt + HISTORY_CACHE_TTL_MS > Date.now();
@@ -80,6 +86,7 @@ const fetchHistoryItems = async () => {
       linkState: row.tokenUsedAt.trim() ? "used" : "active",
       selectionLabel: buildSelectionLabel({
         language: row.lessonLanguage,
+        offerId: row.offerId,
         offerLabel: row.offerLabel,
         productTitle: row.productTitle,
       }),
