@@ -155,7 +155,9 @@ export default async function OnlineGroupPage() {
             analytics={{ id: "select_tariff", placement: "online_group_sticky" }}
             label={t("tariffs.selectButton")}
             href="#tariffs"
-            title={t("hero.titlePlain")}
+            // The bar has ~105px for the name on a 320px phone: the full
+            // "Онлайн-группа by Anna Strok" needs three lines there.
+            title={t("hero.stickyTitle")}
             note={
               availableOffers[0] ? formatOfferPrice(availableOffers[0].prices) : undefined
             }
