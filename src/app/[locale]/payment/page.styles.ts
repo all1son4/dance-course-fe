@@ -956,6 +956,8 @@ export const SummarySupport = styled.a`
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       background: rgba(255, 255, 255, 0.66);
+      /* The global a:hover underline outranks the base rule above. */
+      text-decoration: none;
     }
   }
 
