@@ -162,6 +162,34 @@
       "when": 1793789540286,
       "tag": "0022_choreo_offer_sales",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793800491116,
+      "tag": "0023_inspiration_hub_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793800491117,
+      "tag": "0024_online_group_cohorts",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1793800491118,
+      "tag": "0025_hub_access_sources",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793800491119,
+      "tag": "0026_hub_paid_periods",
+      "breakpoints": true
     }
   ]
 }

@@ -14,7 +14,7 @@ import {
 import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
 import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
-import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
+import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-hub-expiry";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;

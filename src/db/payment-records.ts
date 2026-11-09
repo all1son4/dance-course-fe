@@ -5,6 +5,7 @@ import {
   type PaymentRecordSnapshot,
 } from "@/lib/payment-record";
 
+import { keepClassifiedAccessPeriod } from "./classified-access";
 import { getDatabase } from "./client";
 import {
   getPaymentOutcomeTransitionCondition,
@@ -797,7 +798,7 @@ const upsertPaymentEntitlement = async ({
       updatedAt: now,
     })
     .onConflictDoUpdate({
-      set: {
+      set: keepClassifiedAccessPeriod({
         accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
         currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
         customerId,
@@ -816,7 +817,7 @@ const upsertPaymentEntitlement = async ({
         telegramUserId: nullIfEmpty(paymentRecord.telegram_user_id),
         telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
         updatedAt: now,
-      },
+      }),
       target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
     });
 };

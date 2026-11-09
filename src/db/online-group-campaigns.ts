@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, type AnyColumn, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 
 import {
   isOnlineGroupLibraryOfferId,
@@ -103,6 +103,15 @@ const isOnlineGroupCampaignUnchanged = ({
   campaign.title === title &&
   campaign.startsAt.getTime() === startsAt.getTime();
 
+// The campaign deadline belongs to Plus access. A standalone Hub purchase shares the
+// Hub chat but keeps the dates written by the Hub period services.
+const hasNoStandaloneHubRight = (purchaseId: AnyColumn) =>
+  sql`NOT EXISTS (
+    SELECT 1 FROM ${accessEntitlements} standalone_right
+    WHERE standalone_right.purchase_id = ${purchaseId}
+      AND standalone_right.source_kind = 'standalone_hub'
+  )`;
+
 const getExistingCampaignDeadlineConditions = ({
   existingCampaign,
   mainChatId,
@@ -135,7 +144,7 @@ const getExistingCampaignDeadlineConditions = ({
   };
 };
 
-const saveOnlineGroupCampaignInTransaction = async ({
+export const saveOnlineGroupCampaignInTransaction = async ({
   existingCampaign,
   inspirationChatId,
   mainChatId,
@@ -175,6 +184,7 @@ const saveOnlineGroupCampaignInTransaction = async ({
         and(
           eq(purchases.inspirationChatIdSnapshot, existingCampaign.libraryChatId),
           purchaseDeadlineCondition,
+          hasNoStandaloneHubRight(purchases.id),
         ),
       );
     await tx
@@ -188,6 +198,9 @@ const saveOnlineGroupCampaignInTransaction = async ({
           eq(accessEntitlements.accessKey, "inspiration-hub"),
           eq(accessEntitlements.telegramChatId, existingCampaign.libraryChatId),
           entitlementDeadlineCondition,
+          // Period-model rights end at cohort closure (HUB-D19, HUB-D24); only
+          // legacy Plus rights keep "until the next cohort starts".
+          isNull(accessEntitlements.sourceKind),
         ),
       );
     await tx
@@ -200,6 +213,7 @@ const saveOnlineGroupCampaignInTransaction = async ({
         and(
           eq(telegramAccessTokens.chatId, existingCampaign.libraryChatId),
           tokenDeadlineCondition,
+          hasNoStandaloneHubRight(telegramAccessTokens.purchaseId),
         ),
       );
     await tx
@@ -212,6 +226,7 @@ const saveOnlineGroupCampaignInTransaction = async ({
         and(
           eq(telegramUserBindings.chatId, existingCampaign.libraryChatId),
           bindingDeadlineCondition,
+          hasNoStandaloneHubRight(telegramUserBindings.purchaseId),
         ),
       );
   }

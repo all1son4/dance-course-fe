@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { and, desc, eq, gt, isNull, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, or, sql } from "drizzle-orm";
 
 import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
+import { keepClassifiedAccessPeriod } from "@/db/classified-access";
 import { getDatabase } from "@/db/client";
 import {
   accessEntitlements,
@@ -10,6 +11,7 @@ import {
   telegramAccessTokens,
   telegramUserBindings,
 } from "@/db/schema";
+import type { DatabaseExecutor, DatabaseTransaction } from "@/db/transaction";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
 
@@ -17,7 +19,6 @@ import {
   banTelegramChatMember,
   createTelegramChatInviteLink,
   revokeTelegramChatInviteLink,
-  shouldIgnoreKickFailure,
   unbanTelegramChatMember,
 } from "./bot-api";
 import { getOnlineGroupIdentityReuseLookup } from "./identity-reuse-policy";
@@ -38,13 +39,6 @@ type OnlineGroupAccessItem = {
   status: "active" | "expired" | "ready" | "unavailable";
   tokenExpiresAt: string;
 };
-type DatabaseExecutor = Pick<
-  ReturnType<typeof getDatabase>,
-  "insert" | "select" | "update"
->;
-type DatabaseTransaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
 type OnlineGroupMembershipResult = {
   handled: boolean;
   shouldKick: boolean;
@@ -168,6 +162,34 @@ export const listOnlineGroupAccessStatesForPayment = async (
 
 type OnlineGroupPurchase = NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
 
+const toPersistedAccessKey = (accessKey: OnlineGroupAccessKey) =>
+  accessKey === "main-group" ? "primary" : accessKey;
+
+// A business revocation of a Hub-model right blocks redelivery. Legacy rows keep
+// their reissue behaviour, where the access date alone decides.
+const isClassifiedAccessRevoked = async ({
+  accessKey,
+  purchaseId,
+}: {
+  accessKey: OnlineGroupAccessKey;
+  purchaseId: string;
+}): Promise<boolean> => {
+  const [revoked] = await getDatabase()
+    .select({ id: accessEntitlements.id })
+    .from(accessEntitlements)
+    .where(
+      and(
+        eq(accessEntitlements.purchaseId, purchaseId),
+        eq(accessEntitlements.accessKey, toPersistedAccessKey(accessKey)),
+        isNotNull(accessEntitlements.sourceKind),
+        isNotNull(accessEntitlements.revokedAt),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(revoked);
+};
+
 const upsertEntitlement = async ({
   accessExpiresAt,
   accessKey,
@@ -191,7 +213,7 @@ const upsertEntitlement = async ({
 }) => {
   const now = new Date();
   const expiresAt = accessExpiresAt ? new Date(accessExpiresAt) : null;
-  const persistedAccessKey = accessKey === "main-group" ? "primary" : accessKey;
+  const persistedAccessKey = toPersistedAccessKey(accessKey);
   const values = {
     accessWorkflow: "telegram-online-group",
     currentTokenId: tokenId?.trim() || null,
@@ -216,7 +238,7 @@ const upsertEntitlement = async ({
       purchaseId: purchase.id,
     })
     .onConflictDoUpdate({
-      set: values,
+      set: keepClassifiedAccessPeriod(values),
       target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
     })
     .returning();
@@ -674,6 +696,10 @@ const ensureTargetAccess = async ({
   paymentRecord: PaymentRecordSnapshot;
   purchase: OnlineGroupPurchase;
 }): Promise<OnlineGroupAccessItem> => {
+  if (await isClassifiedAccessRevoked({ accessKey, purchaseId: purchase.id })) {
+    return createAccessItem({ accessExpiresAt, accessKey, status: "unavailable" });
+  }
+
   const now = new Date();
   const expectedTelegramUserId = paymentRecord.telegram_user_id.trim();
   const expectedTelegramUsername = paymentRecord.telegram_username.trim();
@@ -840,7 +866,8 @@ export const ensureOnlineGroupAccessForPayment = (
   return ensurePromise;
 };
 
-const kickUnexpectedMember = async (
+/** Removes a member with a short ban so the same person can rejoin later. */
+export const kickUnexpectedMember = async (
   chatId: string,
   telegramUserId: string,
 ): Promise<void> => {
@@ -1207,114 +1234,4 @@ export const syncOnlineGroupMembership = async ({
   }
 
   return true;
-};
-
-export const revokeExpiredOnlineGroupHubAccess = async (): Promise<{
-  failedGroups: number;
-  processedGroups: number;
-  revokedBindings: number;
-  revokedGroups: number;
-}> => {
-  const db = getDatabase();
-  const now = new Date();
-  const expiredRows = await db
-    .select({ binding: telegramUserBindings, entitlement: accessEntitlements })
-    .from(telegramUserBindings)
-    .innerJoin(
-      accessEntitlements,
-      eq(telegramUserBindings.entitlementId, accessEntitlements.id),
-    )
-    .where(
-      and(
-        eq(telegramUserBindings.status, "active"),
-        eq(accessEntitlements.accessKey, "inspiration-hub"),
-        lte(telegramUserBindings.accessExpiresAt, now),
-      ),
-    );
-  const groups = new Map<string, typeof expiredRows>();
-
-  for (const row of expiredRows) {
-    const key = `${row.binding.telegramUserId}:${row.binding.chatId}`;
-    groups.set(key, [...(groups.get(key) ?? []), row]);
-  }
-
-  let failedGroups = 0;
-  let processedGroups = 0;
-  let revokedBindings = 0;
-  let revokedGroups = 0;
-
-  for (const rows of groups.values()) {
-    const sample = rows[0];
-
-    if (!sample?.binding.chatId) {
-      continue;
-    }
-
-    processedGroups += 1;
-
-    const [newerBinding] = await db
-      .select()
-      .from(telegramUserBindings)
-      .where(
-        and(
-          eq(telegramUserBindings.telegramUserId, sample.binding.telegramUserId),
-          eq(telegramUserBindings.chatId, sample.binding.chatId),
-          eq(telegramUserBindings.status, "active"),
-          or(
-            isNull(telegramUserBindings.accessExpiresAt),
-            gt(telegramUserBindings.accessExpiresAt, now),
-          ),
-        ),
-      )
-      .limit(1);
-
-    if (!newerBinding) {
-      // One unreachable chat must not abort the whole run: an unrevoked group stays
-      // active and is retried next run, while every other group still gets processed.
-      try {
-        await kickUnexpectedMember(sample.binding.chatId, sample.binding.telegramUserId);
-      } catch (error) {
-        if (!shouldIgnoreKickFailure(error)) {
-          failedGroups += 1;
-          logSafeError("Failed to revoke expired Online Group access", error);
-
-          continue;
-        }
-      }
-
-      revokedGroups += 1;
-    }
-
-    revokedBindings += rows.length;
-
-    await Promise.all(
-      rows.map(async ({ binding, entitlement }) => {
-        await db
-          .update(telegramUserBindings)
-          .set({
-            revokedAt: now,
-            revokedReason: "expired",
-            status: "revoked",
-            updatedAt: now,
-          })
-          .where(eq(telegramUserBindings.id, binding.id));
-        await db
-          .update(accessEntitlements)
-          .set({
-            revokedAt: now,
-            revokedReason: "expired",
-            status: "revoked",
-            updatedAt: now,
-          })
-          .where(eq(accessEntitlements.id, entitlement.id));
-      }),
-    );
-  }
-
-  return {
-    failedGroups,
-    processedGroups,
-    revokedBindings,
-    revokedGroups,
-  };
 };
