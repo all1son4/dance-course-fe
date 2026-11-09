@@ -553,6 +553,7 @@
       "selectButton": "Выбрать тариф",
       "priceLabel": "Стоимость",
       "buyButton": "Купить",
+      "signUpButton": "Записаться",
       "standard": {
         "title": "Standard",
         "subtitle": "Онлайн-группа",

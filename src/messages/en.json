@@ -553,6 +553,7 @@
       "selectButton": "Choose a plan",
       "priceLabel": "Price",
       "buyButton": "Buy",
+      "signUpButton": "Sign up",
       "standard": {
         "title": "Standard",
         "subtitle": "Online Group",
