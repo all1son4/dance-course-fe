@@ -21,6 +21,9 @@ export const FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL =
 export const IMPRO_ROOM_REGISTRATION_FORM_VIEW_URL =
   "https://forms.gle/pLwUq2LeGHyXK3y56";
 
+export const ONLINE_GROUP_REGISTRATION_FORM_VIEW_URL =
+  "https://forms.gle/mhEDBtZEFJzC8R6J7";
+
 export const CHOREO_STILL_ALIVE_REEL_URL =
   "https://www.instagram.com/reel/DRAHnn4jWk9/?igsh=NjF3eDNia3hxbDZ2";
 export const CHOREO_HER_LIES_REEL_URL =

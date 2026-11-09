@@ -1,5 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 
+import { ONLINE_GROUP_REGISTRATION_FORM_VIEW_URL } from "../../src/constants/links";
 import {
   buildCheckoutHref,
   CHOREO_CATALOGUE_PRODUCT_CODES,
@@ -116,9 +117,12 @@ test("[BEH-ENTRY-02] Online Group entry follows the authoritative sales switch",
   const purchaseLinks = page.getByRole("link", { name: /^Buy(?: — .+)?$/u });
 
   if (!catalogProduct?.salesEnabled || expectedOfferIds.length === 0) {
-    // The notice streams in behind the shell; once it is visible the sales
-    // state has resolved and the absence of buy links is meaningful.
-    await expect(page.getByText(/Currently unavailable/)).toBeVisible();
+    // Closed plans take sign-ups through the stream's Google Form instead.
+    const signUpLinks = page.getByRole("link", { name: /^Sign up — .+$/u });
+    await expect(signUpLinks).toHaveCount(2);
+    for (const link of await signUpLinks.all()) {
+      await expect(link).toHaveAttribute("href", ONLINE_GROUP_REGISTRATION_FORM_VIEW_URL);
+    }
     await expect(purchaseLinks).toHaveCount(0);
     await expect(page.locator('a[href*="/payment?"]')).toHaveCount(0);
     return;

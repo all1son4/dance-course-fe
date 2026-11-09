@@ -4,22 +4,22 @@ import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import CourseCard from "@/components/cards/CourseCard";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
-import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import { HERO_MEDIA } from "@/constants/hero-media";
+import { ONLINE_GROUP_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
 import {
   buildCheckoutHref,
   formatOfferPrice,
   SELLABLE_PRODUCTS,
+  type SellableProductOffer,
 } from "@/constants/sellable-products";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { getOpenPublicProductOffers } from "@/lib/public-sales";
 import {
   getProductSaleState,
   getStorefrontSellableProducts,
-  type ProductSaleState,
 } from "@/lib/sales-availability";
 import { buildBreadcrumbStructuredData } from "@/lib/seo";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
@@ -73,11 +73,10 @@ export default async function OnlineGroupPage() {
   // 150-300ms after the page on Vercel: everything below it jumped down,
   // "Choose a plan" was a dead click until then and /online/group#tariffs
   // missed its target.
-  const [t, metadataT, onlineT, commonT, saleState, catalogProducts] = await Promise.all([
+  const [t, metadataT, onlineT, saleState, catalogProducts] = await Promise.all([
     getTranslations("OnlineGroupPage"),
     getTranslations("Metadata"),
     getTranslations("OnlinePage"),
-    getTranslations("Common"),
     getProductSaleState(configuredProduct.id),
     getStorefrontSellableProducts(),
   ]);
@@ -91,6 +90,38 @@ export default async function OnlineGroupPage() {
   );
   const standardOffer = product.offers.find((offer) => offer.code === "standard");
   const plusOffer = product.offers.find((offer) => offer.code === "library-access");
+  // A plan that cannot be bought right now takes sign-ups through the
+  // stream's Google Form instead, so every card always has an action.
+  const getTariffAction = (offer: SellableProductOffer, placement: string) =>
+    saleState === "open" && offer.salesEnabled
+      ? {
+          buttonText: t("tariffs.buyButton"),
+          buttonHref: buildCheckoutHref({ offerId: offer.id, productId: product.id }),
+          buttonAnalytics: {
+            id: "buy_online_group",
+            offer_code: offer.code,
+            offer_id: offer.id,
+            placement,
+            product_code: product.code,
+            product_id: product.id,
+          },
+          buttonPrefetch: false,
+          buttonRel: "nofollow",
+        }
+      : {
+          buttonText: t("tariffs.signUpButton"),
+          buttonHref: ONLINE_GROUP_REGISTRATION_FORM_VIEW_URL,
+          buttonAnalytics: {
+            id: "online_group_signup_form",
+            offer_code: offer.code,
+            offer_id: offer.id,
+            placement,
+            product_code: product.code,
+            product_id: product.id,
+          },
+          buttonRel: "noopener noreferrer",
+          buttonTarget: "_blank",
+        };
   const courseStructuredData = buildCourseStructuredData({
     name: t("hero.titlePlain"),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
@@ -141,39 +172,36 @@ export default async function OnlineGroupPage() {
         <ProductFact label={t("hero.startLabel")} value={t("hero.startDate")} />
       </InfoBoxGroup>
 
-      {saleState === "open" && (
-        <ButtonBox>
-          <Button
-            buttonText={t("tariffs.selectButton")}
-            href="#tariffs"
-            analytics={{ id: "select_tariff", placement: "online_group_hero" }}
-            {...stickyCtaAnchorProps}
-          />
-          {/* Only while there is something to buy: a floating "choose a plan"
-            pointing at a closed tariff section would be noise. */}
-          <StickyCta
-            analytics={{ id: "select_tariff", placement: "online_group_sticky" }}
-            label={t("tariffs.selectButton")}
-            href="#tariffs"
-            // The bar has ~105px for the name on a 320px phone: the full
-            // "Онлайн-группа by Anna Strok" needs three lines there.
-            title={t("hero.stickyTitle")}
-            note={
-              availableOffers[0] ? formatOfferPrice(availableOffers[0].prices) : undefined
-            }
-          />
-        </ButtonBox>
-      )}
+      {/* Every plan card always carries an action (buy, or sign up through
+        the form while sales are closed), so "choose a plan" always leads somewhere. */}
+      <ButtonBox>
+        <Button
+          buttonText={t("tariffs.selectButton")}
+          href="#tariffs"
+          analytics={{ id: "select_tariff", placement: "online_group_hero" }}
+          {...stickyCtaAnchorProps}
+        />
+        <StickyCta
+          analytics={{ id: "select_tariff", placement: "online_group_sticky" }}
+          label={t("tariffs.selectButton")}
+          href="#tariffs"
+          // The bar has ~105px for the name on a 320px phone: the full
+          // "Онлайн-группа by Anna Strok" needs three lines there.
+          title={t("hero.stickyTitle")}
+          note={
+            availableOffers[0] ? formatOfferPrice(availableOffers[0].prices) : undefined
+          }
+        />
+      </ButtonBox>
     </ProductHero>
   );
 
-  const renderTariffSection = (saleState: ProductSaleState) => (
+  const renderTariffSection = () => (
     // The whole tariff section is a sticky-CTA anchor: while any part of it
     // is on screen the floating "Choose a plan" bar has nothing to add (on
     // phones the visible card's button may be off to the side of the track).
     <TariffSection id="tariffs" {...stickyCtaAnchorProps}>
       <TariffTitle>{t("tariffs.title")}</TariffTitle>
-      {saleState !== "open" && <ClosedSalesNotice text={commonT("salesUnavailable")} />}
       <TariffTabs
         ariaLabel={t("tariffs.switchLabel")}
         tabs={[
@@ -205,30 +233,8 @@ export default async function OnlineGroupPage() {
                           />
                         </TarifContentBox>
                       }
-                      buttonText={
-                        saleState === "open" && standardOffer.salesEnabled
-                          ? t("tariffs.buyButton")
-                          : undefined
-                      }
-                      buttonAnalytics={{
-                        id: "buy_online_group",
-                        offer_code: standardOffer.code,
-                        offer_id: standardOffer.id,
-                        placement: "tariff_standard",
-                        product_code: product.code,
-                        product_id: product.id,
-                      }}
-                      buttonPrefetch={false}
-                      buttonRel="nofollow"
+                      {...getTariffAction(standardOffer, "tariff_standard")}
                       buttonIsStickyAnchor
-                      buttonHref={
-                        saleState === "open" && standardOffer.salesEnabled
-                          ? buildCheckoutHref({
-                              offerId: standardOffer.id,
-                              productId: product.id,
-                            })
-                          : undefined
-                      }
                     />
                   ),
                 },
@@ -266,30 +272,8 @@ export default async function OnlineGroupPage() {
                           />
                         </TarifContentBox>
                       }
-                      buttonText={
-                        saleState === "open" && plusOffer.salesEnabled
-                          ? t("tariffs.buyButton")
-                          : undefined
-                      }
-                      buttonAnalytics={{
-                        id: "buy_online_group",
-                        offer_code: plusOffer.code,
-                        offer_id: plusOffer.id,
-                        placement: "tariff_plus",
-                        product_code: product.code,
-                        product_id: product.id,
-                      }}
-                      buttonPrefetch={false}
-                      buttonRel="nofollow"
+                      {...getTariffAction(plusOffer, "tariff_plus")}
                       buttonIsStickyAnchor
-                      buttonHref={
-                        saleState === "open" && plusOffer.salesEnabled
-                          ? buildCheckoutHref({
-                              offerId: plusOffer.id,
-                              productId: product.id,
-                            })
-                          : undefined
-                      }
                     />
                   ),
                 },
@@ -327,7 +311,7 @@ export default async function OnlineGroupPage() {
             radius="0px"
           />
         </VideoSection>
-        {renderTariffSection(saleState)}
+        {renderTariffSection()}
         <SuggestionGrid
           compactBelow={920}
           components={{
