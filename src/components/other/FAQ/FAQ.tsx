@@ -27,7 +27,9 @@ import {
 export default function FAQ() {
   const t = useTranslations("FAQ");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const questionsArray = getQuestionsArray((key) => t(key));
+  const questionsArray = getQuestionsArray((key) =>
+    t.markup(key, { strong: (chunks) => chunks }),
+  );
 
   const onItemClickHandler = (id: number) => {
     const isExpanded = selectedId !== id;
@@ -83,7 +85,11 @@ export default function FAQ() {
                 aria-labelledby={questionId}
                 $isOpened={isOpened}
               >
-                <Answer>{q.answer}</Answer>
+                <Answer>
+                  {t.rich(`items.${q.id}.answer`, {
+                    strong: (chunks) => <strong>{chunks}</strong>,
+                  })}
+                </Answer>
               </AnswerWrap>
             </QuestionItem>
           );
