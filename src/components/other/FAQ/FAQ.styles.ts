@@ -218,7 +218,12 @@ export const Answer = styled.p`
   font-size: var(--text-body);
   line-height: 1.5;
   margin: 0;
+  white-space: pre-line;
   color: rgba(36, 36, 36, 1);
+
+  & strong {
+    font-weight: 600;
+  }
 
   @media (max-width: 880px) {
     font-size: var(--text-small);

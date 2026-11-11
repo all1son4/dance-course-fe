@@ -101,7 +101,9 @@ export default function Home() {
   const commonT = useTranslations("Common");
   const faqT = useTranslations("FAQ");
   const metadataT = useTranslations("Metadata");
-  const questions = getQuestionsArray((key) => faqT(key));
+  const questions = getQuestionsArray((key) =>
+    faqT.markup(key, { strong: (chunks) => chunks }),
+  );
   const faqStructuredData = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
