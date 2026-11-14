@@ -35,7 +35,9 @@ export const useOverviewAdmin = ({
       onUnauthorized();
       return;
     }
-    if (!result.ok || !result.data) {
+    // A reply without the attention list is not an overview (an old deploy, a proxy
+    // page): show "не удалось загрузить" instead of breaking the whole admin.
+    if (!result.ok || !Array.isArray(result.data?.attention)) {
       setFailed(true);
       return;
     }

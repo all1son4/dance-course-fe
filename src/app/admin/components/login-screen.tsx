@@ -167,7 +167,7 @@ export const LoginScreen = ({
             loading={isUnlocking}
             disabled={busy || !authPassword.trim()}
           >
-            {isChecking ? "Проверяю вход…" : isUnlocking ? "Вхожу…" : "Войти"}
+            {isChecking ? "Проверяю сессию…" : isUnlocking ? "Вхожу…" : "Войти"}
           </AdminButton>
           {authStatus && (
             <Callout
@@ -188,7 +188,7 @@ export const LoginScreen = ({
               disabled={busy}
               fullWidth
             >
-              Проверить вход ещё раз
+              Проверить сессию ещё раз
             </AdminButton>
           )}
         </Form>

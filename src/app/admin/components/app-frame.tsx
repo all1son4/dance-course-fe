@@ -505,13 +505,13 @@ export const AdminFrame = ({
           <SessionLine $unavailable={isSessionCheckUnavailable} role="status">
             <span>
               {isSessionCheckUnavailable
-                ? "Не удалось проверить вход"
-                : "Вход подтверждён"}
+                ? "Не удалось проверить сессию"
+                : "Сессия подтверждена"}
             </span>
             <IconButton
               type="button"
-              aria-label="Проверить вход"
-              title="Проверить вход"
+              aria-label="Проверить сессию"
+              title="Проверить сессию"
               onClick={onRefreshSession}
               aria-busy={isRefreshingSession || undefined}
               disabled={isRefreshingSession}
