@@ -29,7 +29,7 @@ export const HERO_MEDIA = {
   home: asset("/svg/MainPageBackgroundPhoto.webp", 775, 900, 1550, [480, 720, 960, 1200]),
   online: asset("/svg/OnlinePageBackgroundPhoto.webp", 598, 846, 1196, [480, 720, 960]),
   inspirationHub: asset(
-    "/svg/InspirationHubPageBackgroundPhoto.webp",
+    "/svg/InspirationHubHeroPhoto.webp",
     598,
     846,
     1196,
