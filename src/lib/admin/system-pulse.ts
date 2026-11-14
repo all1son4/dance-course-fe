@@ -1,4 +1,5 @@
 import { getDatabaseClient } from "@/db/client";
+import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { getTelegramWebhookInfo } from "@/lib/telegram/bot-api";
 
 /**
@@ -49,10 +50,6 @@ type DatabaseSignals = {
   stuckPayments: number;
   attempts24h: number;
   failed24h: number;
-  stripeBacklog: number;
-  oldestStripeBacklogAt: Date | null;
-  queueBacklog: number;
-  oldestQueueAt: Date | null;
   sent24h: number;
 };
 
@@ -73,14 +70,6 @@ const readDatabaseSignals = async (now: Date): Promise<DatabaseSignals> => {
         WHERE outcome IN ('failed', 'canceled')
           AND created_at > ${nowIso}::timestamptz - interval '24 hours'
           AND created_at <= ${nowIso}::timestamptz) AS "failed24h",
-      (SELECT count(*)::int FROM stripe_events
-        WHERE processing_status IN ('pending', 'processing', 'failed')) AS "stripeBacklog",
-      (SELECT MIN(received_at) FROM stripe_events
-        WHERE processing_status IN ('pending', 'processing', 'failed')) AS "oldestStripeBacklogAt",
-      (SELECT count(*)::int FROM purchase_side_effects
-        WHERE status IN ('pending', 'sending', 'failed')) AS "queueBacklog",
-      (SELECT MIN(created_at) FROM purchase_side_effects
-        WHERE status IN ('pending', 'sending', 'failed')) AS "oldestQueueAt",
       (SELECT count(*)::int FROM purchase_side_effects
         WHERE status = 'sent'
           AND sent_at > ${nowIso}::timestamptz - interval '24 hours'
@@ -146,18 +135,22 @@ const telegramSignal = async (now: Date): Promise<PulseSignal> => {
   }
 };
 
+/**
+ * Queue figures come from the same reading as the «Системы» block below, so the two
+ * never disagree: only jobs that are due count, not ones scheduled for later.
+ */
 export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
-  const [db, telegram] = await Promise.all([
+  const [db, telegram, status] = await Promise.all([
     readDatabaseSignals(now),
     telegramSignal(now),
+    readOperationalDatabaseStatus(),
   ]);
   const failRate = db.attempts24h > 0 ? db.failed24h / db.attempts24h : 0;
-  const queueAgeMs = db.oldestQueueAt
-    ? now.getTime() - new Date(db.oldestQueueAt).getTime()
-    : 0;
-  const stripeAgeMs = db.oldestStripeBacklogAt
-    ? now.getTime() - new Date(db.oldestStripeBacklogAt).getTime()
-    : 0;
+  const stripeBacklog = status.inbox.ready + status.inbox.working;
+  const stripeAgeMs = (status.inbox.oldestReadyAgeSeconds ?? 0) * 1000;
+  const queueBacklog = status.outbox.ready;
+  const queueAgeMs = (status.outbox.oldestReadyAgeSeconds ?? 0) * 1000;
+  const formatSeconds = (ms: number) => formatAge(new Date(now.getTime() - ms), now);
 
   const signals: PulseSignal[] = [
     {
@@ -170,13 +163,13 @@ export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
     {
       id: "stripe-backlog",
       label: "Оплаты в обработке",
-      value: db.stripeBacklog === 0 ? "Всё обработано" : String(db.stripeBacklog),
+      value: stripeBacklog === 0 ? "Всё обработано" : String(stripeBacklog),
       detail:
-        db.stripeBacklog === 0
+        stripeBacklog === 0
           ? "Каждое событие Stripe дошло до покупки."
-          : `Самое старое ждёт ${formatAge(db.oldestStripeBacklogAt && new Date(db.oldestStripeBacklogAt), now)}.`,
+          : `Самое старое ждёт ${formatSeconds(stripeAgeMs)}.`,
       tone:
-        db.stripeBacklog === 0
+        stripeBacklog === 0
           ? "success"
           : stripeAgeMs > 15 * 60_000
             ? "danger"
@@ -212,13 +205,13 @@ export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
     {
       id: "queue",
       label: "Письма и Telegram",
-      value: db.queueBacklog === 0 ? "Очередь пуста" : `${db.queueBacklog} в очереди`,
+      value: queueBacklog === 0 ? "Очередь пуста" : `${queueBacklog} в очереди`,
       detail:
-        db.queueBacklog === 0
+        queueBacklog === 0
           ? `За сутки отправлено: ${db.sent24h}.`
-          : `Самая старая задача ждёт ${formatAge(db.oldestQueueAt && new Date(db.oldestQueueAt), now)}.`,
+          : `Самая старая задача ждёт ${formatSeconds(queueAgeMs)}.`,
       tone:
-        db.queueBacklog === 0
+        queueBacklog === 0
           ? "success"
           : queueAgeMs > 2 * HOUR_MS
             ? "danger"

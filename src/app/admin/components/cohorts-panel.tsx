@@ -41,7 +41,12 @@ const cohortStatus = (
   cohorts: CohortOverview[],
   now: number,
 ): { label: string; tone: AdminTone } => {
-  if (cohort.closedAt) return { label: "Закрыт", tone: "neutral" };
+  if (cohort.closedAt) {
+    // A closure can be set ahead (the launch transfer does): say when, not "closed".
+    return Date.parse(cohort.closedAt) > now
+      ? { label: `Закроется ${formatDate(cohort.closedAt)}`, tone: "warning" }
+      : { label: "Закрыт", tone: "neutral" };
+  }
   const started = Date.parse(cohort.startsAt) <= now;
   if (cohort.salesEnabled)
     return { label: started ? "Идёт · продаётся" : "Продаётся", tone: "success" };
@@ -385,7 +390,11 @@ export const CohortsPanel = ({
                       <dd>{formatDate(cohort.startsAt, true)}</dd>
                       {cohort.closedAt && (
                         <>
-                          <dt>Закрыт</dt>
+                          <dt>
+                            {Date.parse(cohort.closedAt) > loadedAt
+                              ? "Закроется"
+                              : "Закрыт"}
+                          </dt>
                           <dd>{formatDate(cohort.closedAt, true)}</dd>
                         </>
                       )}

@@ -124,43 +124,46 @@ export async function findCohortRenewalLinks(
 const countCohortFacts = async (executor: DatabaseExecutor, cohortId: string) => {
   const predecessor = alias(accessEntitlements, "predecessor");
   const predecessorPurchase = alias(purchases, "predecessor_purchase");
-  const [sales] = await executor
-    .select({
-      plus: sql<number>`count(*) filter (where ${inArray(purchases.offerExternalId, PLUS_OFFER_IDS)})::int`,
-      total: sql<number>`count(*)::int`,
-    })
-    .from(purchases)
-    .where(
-      and(
-        eq(purchases.onlineGroupCohortId, cohortId),
-        eq(purchases.outcome, "succeeded"),
+  // Three independent counts: one round trip to the database instead of three.
+  const [[sales], [legacyPlusHub], [continuations]] = await Promise.all([
+    executor
+      .select({
+        plus: sql<number>`count(*) filter (where ${inArray(purchases.offerExternalId, PLUS_OFFER_IDS)})::int`,
+        total: sql<number>`count(*)::int`,
+      })
+      .from(purchases)
+      .where(
+        and(
+          eq(purchases.onlineGroupCohortId, cohortId),
+          eq(purchases.outcome, "succeeded"),
+        ),
       ),
-    );
-  const [legacyPlusHub] = await executor
-    .select({ count: sql<number>`count(*)::int` })
-    .from(accessEntitlements)
-    .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
-    .where(
-      and(
-        eq(purchases.onlineGroupCohortId, cohortId),
-        eq(accessEntitlements.accessKey, "inspiration-hub"),
-        isNull(accessEntitlements.sourceKind),
+    executor
+      .select({ count: sql<number>`count(*)::int` })
+      .from(accessEntitlements)
+      .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
+      .where(
+        and(
+          eq(purchases.onlineGroupCohortId, cohortId),
+          eq(accessEntitlements.accessKey, "inspiration-hub"),
+          isNull(accessEntitlements.sourceKind),
+        ),
       ),
-    );
-  const [continuations] = await executor
-    .select({ count: sql<number>`count(*)::int` })
-    .from(accessEntitlements)
-    .innerJoin(
-      predecessor,
-      eq(predecessor.id, accessEntitlements.startsAfterEntitlementId),
-    )
-    .innerJoin(predecessorPurchase, eq(predecessorPurchase.id, predecessor.purchaseId))
-    .where(
-      and(
-        eq(accessEntitlements.sourceKind, "standalone_hub"),
-        eq(predecessorPurchase.onlineGroupCohortId, cohortId),
+    executor
+      .select({ count: sql<number>`count(*)::int` })
+      .from(accessEntitlements)
+      .innerJoin(
+        predecessor,
+        eq(predecessor.id, accessEntitlements.startsAfterEntitlementId),
+      )
+      .innerJoin(predecessorPurchase, eq(predecessorPurchase.id, predecessor.purchaseId))
+      .where(
+        and(
+          eq(accessEntitlements.sourceKind, "standalone_hub"),
+          eq(predecessorPurchase.onlineGroupCohortId, cohortId),
+        ),
       ),
-    );
+  ]);
 
   return {
     continuations: continuations?.count ?? 0,
@@ -207,12 +210,15 @@ export async function getCohortsOverview(now = new Date()) {
       const next = cohorts.find(
         (candidate) => candidate.cohort.previousCohortId === cohort.id,
       )?.cohort;
-      const links = next
-        ? await findCohortRenewalLinks(db, {
-            cohortMainChatId: cohort.mainChatId,
-            nextMainChatId: next.mainChatId,
-          })
-        : null;
+      const [links, facts] = await Promise.all([
+        next
+          ? findCohortRenewalLinks(db, {
+              cohortMainChatId: cohort.mainChatId,
+              nextMainChatId: next.mainChatId,
+            })
+          : Promise.resolve(null),
+        countCohortFacts(db, cohort.id),
+      ]);
       const accessEndsAt = cohort.accessEndsAt ?? getStartOfNextWarsawDay(now);
       const post = posts.find(
         (candidate) => candidate.deduplicationKey === cohortClosurePostKey(cohort.id),
@@ -237,7 +243,7 @@ export async function getCohortsOverview(now = new Date()) {
               salesEnabled: next.salesEnabled,
             }
           : null,
-        facts: await countCohortFacts(db, cohort.id),
+        facts,
         links,
         draftPost:
           next && links && !cohort.closedAt

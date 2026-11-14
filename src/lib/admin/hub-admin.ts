@@ -54,47 +54,48 @@ export async function getHubAdminOverview({
   previewAt,
 }: { now?: Date; previewAt?: Date } = {}) {
   const db = getDatabase();
-  const hubChatId = await findInspirationHubChatId(db);
-  const [chat] = hubChatId
-    ? await db
-        .select({ title: telegramChats.title })
-        .from(telegramChats)
-        .where(eq(telegramChats.chatId, hubChatId))
-    : [];
-  const [product] = await db
-    .select({ salesEnabled: products.salesEnabled })
-    .from(products)
-    .where(eq(products.externalProductId, INSPIRATION_HUB_PRODUCT_ID));
-
-  const rows = await db
-    .select({
-      entitlementId: accessEntitlements.id,
-      status: accessEntitlements.status,
-      startsAt: accessEntitlements.startsAt,
-      expiresAt: accessEntitlements.expiresAt,
-      periodStartMode: accessEntitlements.periodStartMode,
-      rightOwner: accessEntitlements.telegramUserId,
-      purchaseOwner: purchases.telegramUserId,
-      paymentIntentId: purchases.paymentIntentId,
-      customerName: purchases.customerFullNameSnapshot,
-      customerEmail: purchases.customerEmailSnapshot,
-      offerLabel: purchases.offerLabelSnapshot,
-      offerId: purchases.offerExternalId,
-      amountMinor: purchases.amountMinor,
-      currency: purchases.currency,
-      paidAt: purchases.succeededAt,
-    })
-    .from(accessEntitlements)
-    .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
-    .where(
-      and(
-        eq(accessEntitlements.sourceKind, "standalone_hub"),
-        eq(purchases.outcome, "succeeded"),
-        isNull(accessEntitlements.revokedAt),
-      ),
-    )
-    .orderBy(desc(purchases.succeededAt))
-    .limit(PERIOD_LIST_LIMIT);
+  const nextCronAt = getNextHubCronRun(now);
+  // Every query is a round trip to the database, so the independent ones go at once;
+  // the cron preview is the longest and runs alongside the rest.
+  const [hubChatId, [product], rows, ownerless, stalled, preview] = await Promise.all([
+    findInspirationHubChatId(db),
+    db
+      .select({ salesEnabled: products.salesEnabled })
+      .from(products)
+      .where(eq(products.externalProductId, INSPIRATION_HUB_PRODUCT_ID)),
+    db
+      .select({
+        entitlementId: accessEntitlements.id,
+        status: accessEntitlements.status,
+        startsAt: accessEntitlements.startsAt,
+        expiresAt: accessEntitlements.expiresAt,
+        periodStartMode: accessEntitlements.periodStartMode,
+        rightOwner: accessEntitlements.telegramUserId,
+        purchaseOwner: purchases.telegramUserId,
+        paymentIntentId: purchases.paymentIntentId,
+        customerName: purchases.customerFullNameSnapshot,
+        customerEmail: purchases.customerEmailSnapshot,
+        offerLabel: purchases.offerLabelSnapshot,
+        offerId: purchases.offerExternalId,
+        amountMinor: purchases.amountMinor,
+        currency: purchases.currency,
+        paidAt: purchases.succeededAt,
+      })
+      .from(accessEntitlements)
+      .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
+      .where(
+        and(
+          eq(accessEntitlements.sourceKind, "standalone_hub"),
+          eq(purchases.outcome, "succeeded"),
+          isNull(accessEntitlements.revokedAt),
+        ),
+      )
+      .orderBy(desc(purchases.succeededAt))
+      .limit(PERIOD_LIST_LIMIT),
+    listOwnerlessHubPurchases(db, { checkedAt: now }),
+    listStalledHubContinuations(db),
+    previewHubExpiry(db, { at: previewAt ?? nextCronAt }),
+  ]);
 
   const owners = [
     ...new Set(
@@ -103,19 +104,30 @@ export async function getHubAdminOverview({
         .filter((id): id is string => !!id),
     ),
   ];
-  const usernames = owners.length
-    ? await db
-        .selectDistinctOn([telegramUserBindings.telegramUserId], {
-          telegramUserId: telegramUserBindings.telegramUserId,
-          telegramUsername: telegramUserBindings.telegramUsername,
-        })
-        .from(telegramUserBindings)
-        .where(inArray(telegramUserBindings.telegramUserId, owners))
-        .orderBy(
-          telegramUserBindings.telegramUserId,
-          desc(telegramUserBindings.updatedAt),
-        )
-    : [];
+  const [[chat], usernames, ended] = await Promise.all([
+    hubChatId
+      ? db
+          .select({ title: telegramChats.title })
+          .from(telegramChats)
+          .where(eq(telegramChats.chatId, hubChatId))
+      : Promise.resolve([] as { title: string | null }[]),
+    owners.length
+      ? db
+          .selectDistinctOn([telegramUserBindings.telegramUserId], {
+            telegramUserId: telegramUserBindings.telegramUserId,
+            telegramUsername: telegramUserBindings.telegramUsername,
+          })
+          .from(telegramUserBindings)
+          .where(inArray(telegramUserBindings.telegramUserId, owners))
+          .orderBy(
+            telegramUserBindings.telegramUserId,
+            desc(telegramUserBindings.updatedAt),
+          )
+      : Promise.resolve(
+          [] as { telegramUserId: string; telegramUsername: string | null }[],
+        ),
+    listEndedHubAccessRights(db, { checkedAt: now, hubChatId }),
+  ]);
   const usernameOf = new Map(
     usernames.map((row) => [row.telegramUserId, row.telegramUsername]),
   );
@@ -139,14 +151,6 @@ export async function getHubAdminOverview({
     };
   });
   const endingSoonBefore = now.getTime() + ENDING_SOON_DAYS * DAY_MS;
-
-  const [ownerless, stalled, ended] = await Promise.all([
-    listOwnerlessHubPurchases(db, { checkedAt: now }),
-    listStalledHubContinuations(db),
-    listEndedHubAccessRights(db, { checkedAt: now, hubChatId }),
-  ]);
-  const nextCronAt = getNextHubCronRun(now);
-  const preview = await previewHubExpiry(db, { at: previewAt ?? nextCronAt });
 
   return {
     generatedAt: now.toISOString(),
