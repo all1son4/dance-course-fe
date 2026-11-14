@@ -18,6 +18,9 @@ export const INSTAGRAM_DIB_GALA_URL =
 export const FIRST_TOUCH_REGISTRATION_FORM_VIEW_URL =
   "https://docs.google.com/forms/d/1CQj--QKVTDUOeYMeZm8QBCKvBBD_I9xdS-6Y126oO00/viewform";
 
+export const OFFLINE_BEGINNER_REGISTRATION_FORM_VIEW_URL =
+  "https://docs.google.com/forms/d/e/1FAIpQLSfW8Mp3x4S3uDoHzgDdnRSB7OV7Q2p8Dft_zfWK5fJBseyxZQ/viewform";
+
 export const IMPRO_ROOM_REGISTRATION_FORM_VIEW_URL =
   "https://forms.gle/pLwUq2LeGHyXK3y56";
 

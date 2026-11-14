@@ -4,14 +4,14 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Frame Up Strip with Anna Strok: online courses in Telegram with feedback and Impro Room practice in Warsaw.",
+    "description": "Frame Up Strip with Anna Strok: online courses in Telegram with feedback, a beginner group and Impro Room practice in Warsaw.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Anna Strok, Frame Up Strip dancer and teacher",
     "pages": {
       "home": {
         "title": "Anna Strok: Frame Up Strip online and in Warsaw",
-        "description": "Online Frame Up Strip courses in Telegram with feedback on your videos, and Impro Room practice in Warsaw. A course from zero, group training and tutorials.",
+        "description": "Frame Up Strip with Anna Strok: online courses with feedback, a beginner group and Impro Room in Warsaw. Start dancing from scratch online or in the studio.",
         "ogImageAlt": "Anna Strok, Frame Up Strip dancer and teacher",
         "heroImageAlt": "Anna Strok in strip shoes on a tall stool, head tilted back"
       },
@@ -39,9 +39,9 @@
         "heroImageAlt": "Anna Strok in a deep squat in strip shoes, hands between her knees"
       },
       "offline": {
-        "title": "Frame Up Strip in Warsaw: Impro Room",
-        "description": "Impro Room sessions with Anna Strok in Wola, Warsaw: exercises, jamming and plenty of improvisation, 50 PLN per session. Private lessons are also available.",
-        "ogImageAlt": "Anna Strok: Impro Room in Warsaw",
+        "title": "Frame Up Strip in Warsaw: Beginners & Impro Room",
+        "description": "Beginner Frame Up Strip group in Wola, Warsaw: starts December 4, Fridays 18:00–19:00, 250 PLN for 4 lessons. Impro Room and private lessons are also available.",
+        "ogImageAlt": "Anna Strok: beginner group and Impro Room in Warsaw",
         "heroImageAlt": "Anna Strok on a stool in strip shoes, one arm raised"
       },
       "privacyPolicy": {
@@ -164,7 +164,7 @@
     "items": {
       "1": {
         "question": "Is Frame Up suitable if I have never danced before?",
-        "answer": "Yes, this style is beginner-friendly. In the offline beginner group, we move step by step and focus on technique, body flow, and confidence. You can also start at your own pace with the online beginner course “First Touch”. The main thing is your willingness to try and enjoy the process."
+        "answer": "Yes, this style is beginner-friendly. No dance experience is needed for the beginner group in Warsaw: it starts December 4, with classes on Fridays 18:00–19:00 in Wola. You can find the details and registration form on the Offline page. You can also start with the online beginner course “First Touch”. The main thing is your willingness to try and enjoy the process."
       },
       "2": {
         "question": "What should I bring to class?",
@@ -184,7 +184,7 @@
       },
       "6": {
         "question": "What skill levels are available?",
-        "answer": "<strong>In Warsaw</strong>, there is a beginner group and a creative group for dancers with experience. Private lessons are suitable for any level.\n\n<strong>Online</strong>, beginners can start with the First Touch course. The online group and choreography video tutorials are designed for intermediate dancers and above."
+        "answer": "<strong>In Warsaw</strong>, there is a beginner group to learn from scratch: it starts December 4, with classes on Fridays 18:00–19:00. Impro Room sessions offer improvisation practice. Private lessons are suitable for any level.\n\n<strong>Online</strong>, beginners can start with the First Touch course. The online group and choreography video tutorials are designed for intermediate dancers and above."
       },
       "7": {
         "question": "Can I train if my movement isn't fluid yet?",
@@ -301,7 +301,7 @@
         "subtitle": "Warsaw, Poland",
         "items": {
           "1": {
-            "highlight": "Beginners",
+            "highlight": "Beginner group",
             "text": "learn from scratch"
           },
           "2": {
@@ -381,7 +381,7 @@
       "paragraphs": {
         "1": "In the studio you feel the energy of the people around you, pick up the rhythm faster and open up with more confidence. Every movement becomes stronger when the group supports and inspires you.",
         "2": "Offline classes help you feel your body more deeply, improve your technique and get the emotional boost that's often missing online. You don't just repeat movements — you live the dance.",
-        "3": "Come to the studio and let yourself feel more — more freedom, more strength."
+        "3": "Start with the beginner group in Warsaw: starts December 4, Fridays 18:00–19:00 in Wola. No dance experience needed. For improvisation practice, join Impro Room."
       },
       "button": "More about groups",
       "imageAlt": "Studio class photo"
@@ -391,7 +391,7 @@
     "hero": {
       "title": "Offline classes",
       "location": "Warsaw, Poland",
-      "description": "Everyone comes to Frame Up with a different story. Some wear heels for the first time, others already dance confidently and want to grow further. That's why classes are split by level, so you can progress comfortably and without stress."
+      "description": "Start Frame Up Strip from scratch in the beginner group in Warsaw — no dance experience needed. For more practice and freedom in movement, join the Impro Room sessions."
     },
     "cards": {
       "common": {
@@ -401,14 +401,16 @@
         "button": "Join"
       },
       "fromZero": {
-        "title": "Beginners",
-        "description": "Ideal if you are just starting. We focus on basic technique, body flow, posture, rhythm and confidence in movement.",
+        "title": "Beginner group",
+        "description": "A group for those starting Frame Up Strip from scratch. No dance experience needed.",
+        "startLabel": "Starts",
+        "startValue": "December 4",
         "schedule": {
-          "1": "Monday 20:30–22:00",
-          "2": "Friday 19:00–20:30"
+          "1": "Friday 18:00–19:00"
         },
-        "price": "500 PLN",
-        "priceSuffix": "/ month"
+        "locationValue": "Warsaw, Wola, al. Prymasa Tysiąclecia 76D",
+        "price": "250 PLN",
+        "priceSuffix": "/ for 4 lessons"
       },
       "advanced": {
         "title": "Advanced group",

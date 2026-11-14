@@ -4,14 +4,14 @@
       "default": "Anna Strok | Frame Up Strip",
       "template": "%s | Anna Strok"
     },
-    "description": "Frame Up Strip z Anną Strok: kursy online na Telegramie z feedbackiem i praktyka Impro Room w Warszawie.",
+    "description": "Frame Up Strip z Anną Strok: kursy online na Telegramie z feedbackiem, grupa dla początkujących i praktyka Impro Room w Warszawie.",
     "applicationName": "Anna Strok",
     "siteName": "Anna Strok | Frame Up Strip",
     "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
     "pages": {
       "home": {
         "title": "Anna Strok: Frame Up Strip online i w Warszawie",
-        "description": "Kursy Frame Up Strip online na Telegramie z feedbackiem do Twoich nagrań i praktyka Impro Room w Warszawie. Kurs od zera, treningi i tutoriale choreografii.",
+        "description": "Frame Up Strip z Anną Strok: kursy online z feedbackiem, grupa dla początkujących i Impro Room w Warszawie. Zacznij tańczyć od zera online lub w studiu.",
         "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
         "heroImageAlt": "Anna Strok w butach strip na wysokim stołku, z głową odchyloną do tyłu"
       },
@@ -39,9 +39,9 @@
         "heroImageAlt": "Anna Strok w głębokim przysiadzie w butach strip, z dłońmi między kolanami"
       },
       "offline": {
-        "title": "Frame Up Strip w Warszawie: Impro Room",
-        "description": "Spotkania Impro Room z Anną Strok na warszawskiej Woli: zadania, jam i dużo improwizacji, 50 PLN za zajęcia. Dostępne są też zajęcia indywidualne.",
-        "ogImageAlt": "Anna Strok: Impro Room w Warszawie",
+        "title": "Frame Up Strip w Warszawie: początkujący i Impro Room",
+        "description": "Grupa Frame Up Strip dla początkujących na warszawskiej Woli: start 4 grudnia, piątki 18:00–19:00, 250 PLN za 4 zajęcia. Także Impro Room i zajęcia indywidualne.",
+        "ogImageAlt": "Anna Strok: grupa dla początkujących i Impro Room w Warszawie",
         "heroImageAlt": "Anna Strok na stołku w butach strip, z jedną ręką uniesioną"
       },
       "privacyPolicy": {
@@ -164,7 +164,7 @@
     "items": {
       "1": {
         "question": "Czy Frame Up jest dla mnie, jeśli nigdy nie tańczyłam?",
-        "answer": "Tak, ten styl jest odpowiedni dla początkujących. Na zajęciach offline w grupie dla początkujących pracujemy stopniowo i skupiamy się na technice, plastyce oraz pewności siebie. Możesz też zacząć od kursu online dla początkujących „First Touch”. Najważniejsze są chęć próbowania i radość z procesu."
+        "answer": "Tak, ten styl jest odpowiedni dla początkujących. W grupie dla początkujących w Warszawie doświadczenie taneczne nie jest potrzebne: start 4 grudnia, zajęcia w piątki 18:00–19:00 na Woli. Szczegóły i formularz zapisów znajdziesz na stronie „Offline”. Możesz też zacząć od kursu online dla początkujących „First Touch”. Najważniejsze są chęć próbowania i radość z procesu."
       },
       "2": {
         "question": "Co zabrać na trening?",
@@ -184,7 +184,7 @@
       },
       "6": {
         "question": "Jakie poziomy zaawansowania są dostępne?",
-        "answer": "<strong>W Warszawie</strong> jest grupa dla początkujących oraz grupa kreatywna dla osób z doświadczeniem. Zajęcia indywidualne są odpowiednie dla każdego poziomu.\n\n<strong>Online</strong> dla początkujących dostępny jest kurs First Touch. Grupa online i materiały wideo z nauką choreografii są przeznaczone dla osób na poziomie średniozaawansowanym i wyższym."
+        "answer": "<strong>W Warszawie</strong> jest grupa dla początkujących od zera: start 4 grudnia, zajęcia w piątki 18:00–19:00. Odbywają się też spotkania Impro Room z praktyką improwizacji. Zajęcia indywidualne są odpowiednie dla każdego poziomu.\n\n<strong>Online</strong> dla początkujących dostępny jest kurs First Touch. Grupa online i materiały wideo z nauką choreografii są przeznaczone dla osób na poziomie średniozaawansowanym i wyższym."
       },
       "7": {
         "question": "Czy mogę ćwiczyć, jeśli brakuje mi plastyki ruchu?",
@@ -301,8 +301,8 @@
         "subtitle": "Warszawa, Polska",
         "items": {
           "1": {
-            "highlight": "Początkujący",
-            "text": "nauka od podstaw"
+            "highlight": "Grupa dla początkujących",
+            "text": "nauka od zera"
           },
           "2": {
             "highlight": "Grupa kontynuująca",
@@ -381,7 +381,7 @@
       "paragraphs": {
         "1": "W studiu czujesz energię ludzi obok, szybciej łapiesz rytm i odważniej się otwierasz. Każdy ruch staje się pewniejszy, gdy obok masz grupę, która Cię wspiera, inspiruje i idzie z Tobą w tym samym tempie.",
         "2": "Zajęcia offline pomagają głębiej poczuć ciało, poprawić technikę i dostać emocjonalny impuls, którego często brakuje online. Tutaj nie tylko powtarzasz ruch — przeżywasz taniec.",
-        "3": "Przyjdź do studia i pozwól sobie na więcej odczuć, wolności i siły."
+        "3": "Zacznij od grupy dla początkujących w Warszawie: start 4 grudnia, piątki 18:00–19:00 na Woli. Doświadczenie taneczne nie jest potrzebne. Na praktykę improwizacji zapraszam do Impro Room."
       },
       "button": "Więcej o grupach",
       "imageAlt": "Zdjęcie ze studia"
@@ -391,7 +391,7 @@
     "hero": {
       "title": "Zajęcia offline",
       "location": "Warszawa, Polska",
-      "description": "Każdy przychodzi do Frame Up ze swoją historią — ktoś pierwszy raz zakłada obcasy, a ktoś już tańczy pewnie i chce iść dalej. Dlatego zajęcia są podzielone na poziomy, aby rozwijać się komfortowo i bez stresu."
+      "description": "Zacznij tańczyć Frame Up Strip od zera w grupie dla początkujących w Warszawie — doświadczenie taneczne nie jest potrzebne. Jeśli chcesz więcej praktyki i swobody w ruchu, dołącz do spotkań Impro Room."
     },
     "cards": {
       "common": {
@@ -401,14 +401,16 @@
         "button": "Zapisz się"
       },
       "fromZero": {
-        "title": "Początkujący",
-        "description": "Idealnie, jeśli dopiero zaczynasz. Pracujemy nad podstawową techniką, plastyką, postawą, rytmem i pewnością ruchu.",
+        "title": "Grupa dla początkujących",
+        "description": "Grupa dla osób, które zaczynają tańczyć Frame Up Strip od zera. Doświadczenie taneczne nie jest potrzebne.",
+        "startLabel": "Start",
+        "startValue": "4 grudnia",
         "schedule": {
-          "1": "Poniedziałek 20:30–22:00",
-          "2": "Piątek 19:00–20:30"
+          "1": "Piątek 18:00–19:00"
         },
-        "price": "500 PLN",
-        "priceSuffix": "/ miesięcznie"
+        "locationValue": "Warszawa, Wola, al. Prymasa Tysiąclecia 76D",
+        "price": "250 PLN",
+        "priceSuffix": "/ za 4 zajęcia"
       },
       "advanced": {
         "title": "Grupa kontynuująca",

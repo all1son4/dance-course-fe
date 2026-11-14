@@ -2,7 +2,10 @@ import { Fragment, type ReactNode } from "react";
 
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
 import { OccasionScheduleLabel } from "@/components/cards/InteractiveCard/InteractiveCard.occasion-context";
-import { IMPRO_ROOM_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
+import {
+  IMPRO_ROOM_REGISTRATION_FORM_VIEW_URL,
+  OFFLINE_BEGINNER_REGISTRATION_FORM_VIEW_URL,
+} from "@/constants/links";
 import { SmallClock, SmallMap } from "@/svg";
 
 import {
@@ -83,28 +86,33 @@ const buildScheduleAndLocationContent = (
 );
 
 export const getOfflineCoursesArray = (t: Translate): InteractiveCourseCard[] => [
-  // {
-  //   id: "from-zero",
-  //   title: t("cards.fromZero.title"),
-  //   topRowContent: (
-  //     <ContentStack $gap="26px">
-  //       <DetailText>{t("cards.fromZero.description")}</DetailText>
-  //       {buildScheduleAndLocationContent(t, [
-  //         "cards.fromZero.schedule.1",
-  //         "cards.fromZero.schedule.2",
-  //       ])}
-  //     </ContentStack>
-  //   ),
-  //   bottomRowContent: buildPriceRow(
-  //     t,
-  //     "cards.fromZero.price",
-  //     "cards.fromZero.priceSuffix",
-  //   ),
-  //   buttonText: t("cards.common.button"),
-  //   buttonHref: TRIAL_REGISTRATION_FORM_VIEW_URL,
-  //   buttonTarget: "_blank",
-  //   buttonRel: "noopener noreferrer",
-  // },
+  {
+    id: "from-zero",
+    title: t("cards.fromZero.title"),
+    headerPhoto: "/images/photos/card_offline_beginner.webp",
+    topRowContent: (
+      <ContentStack $gap="26px">
+        <ContentStack $gap="16px">
+          <DetailText>{t("cards.fromZero.description")}</DetailText>
+          <DetailStrongText>
+            {t("cards.fromZero.startLabel")}: {t("cards.fromZero.startValue")}
+          </DetailStrongText>
+        </ContentStack>
+        {buildScheduleAndLocationContent(t, ["cards.fromZero.schedule.1"], {
+          locationValueKey: "cards.fromZero.locationValue",
+        })}
+      </ContentStack>
+    ),
+    bottomRowContent: buildPriceRow(
+      t,
+      "cards.fromZero.price",
+      "cards.fromZero.priceSuffix",
+    ),
+    buttonText: t("cards.common.button"),
+    buttonHref: OFFLINE_BEGINNER_REGISTRATION_FORM_VIEW_URL,
+    buttonTarget: "_blank",
+    buttonRel: "noopener noreferrer",
+  },
   // {
   //   id: "advanced",
   //   title: t("cards.advanced.title"),
