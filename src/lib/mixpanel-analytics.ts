@@ -2,6 +2,7 @@ import type { Config, Mixpanel } from "mixpanel-browser";
 
 import { routing } from "@/i18n/routing";
 import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const MIXPANEL_EU_API_HOST = "https://api-eu.mixpanel.com";
 export const MIXPANEL_EU_APP_HOST = "https://eu.mixpanel.com";
@@ -503,7 +504,7 @@ const loadMixpanel = (): Promise<Mixpanel | null> => {
       })
       .catch((error: unknown) => {
         mixpanelPromise = null;
-        console.error("Failed to initialize Mixpanel analytics", error);
+        logSafeError("Failed to initialize Mixpanel analytics", error);
         return null;
       });
   }
@@ -523,7 +524,7 @@ export const enableMixpanel = async () => {
     // Mixpanel `$opt_in` event while enabling SDK persistence and collection.
     mixpanel.opt_in_tracking({ track: () => undefined });
   } catch (error) {
-    console.error("Failed to enable Mixpanel analytics", error);
+    logSafeError("Failed to enable Mixpanel analytics", error);
     return null;
   }
 
@@ -546,7 +547,7 @@ export const disableMixpanel = async () => {
     // and event batching. No profile deletion request is needed for anonymous use.
     mixpanel.opt_out_tracking({ delete_user: false });
   } catch (error) {
-    console.error("Failed to disable Mixpanel analytics", error);
+    logSafeError("Failed to disable Mixpanel analytics", error);
   }
 };
 
@@ -560,7 +561,7 @@ export const stopLoadedMixpanelRecording = async () => {
   try {
     mixpanel?.stop_session_recording();
   } catch (error) {
-    console.error("Failed to stop Mixpanel session recording", error);
+    logSafeError("Failed to stop Mixpanel session recording", error);
   }
 };
 
@@ -603,7 +604,7 @@ export const trackAnalyticsEvent = async <EventName extends AnalyticsEventName>(
       ...properties,
     });
   } catch (error) {
-    console.error(`Failed to track Mixpanel event: ${eventName}`, error);
+    logSafeError(`Failed to track Mixpanel event: ${eventName}`, error);
   }
 };
 

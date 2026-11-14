@@ -14,6 +14,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 import { getProductSaleState } from "@/lib/sales-availability";
 
 const FIRST_TOUCH_PRODUCT = SELLABLE_PRODUCTS["first-touch"];
@@ -25,18 +26,25 @@ const MAX_BODY_BYTES = 4 * 1024;
 const getRateLimitResponse = async ({
   keyPrefix,
   limit,
+  onBackendUnavailable,
   request,
 }: {
   keyPrefix: string;
   limit: number;
+  onBackendUnavailable?: "local" | "deny";
   request: Request;
 }) => {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix,
     limit,
+    onBackendUnavailable,
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (!rateLimit.limited) {
     return null;
@@ -72,7 +80,7 @@ export async function GET(request: Request) {
       ...snapshot,
     });
   } catch (error) {
-    console.error("Failed to load First Touch broadcast stats", error);
+    logSafeError("Failed to load First Touch broadcast stats", error);
 
     return jsonErrorNoStore("first_touch_broadcast_stats_failed", { status: 500 });
   }
@@ -90,6 +98,7 @@ export async function POST(request: Request) {
   const rateLimitResponse = await getRateLimitResponse({
     keyPrefix: "admin:first-touch-broadcast:send",
     limit: 10,
+    onBackendUnavailable: "deny",
     request,
   });
 
@@ -121,7 +130,7 @@ export async function POST(request: Request) {
       stats: snapshot.stats,
     });
   } catch (error) {
-    console.error("Failed to deliver First Touch broadcast", error);
+    logSafeError("Failed to deliver First Touch broadcast", error);
 
     return jsonErrorNoStore("first_touch_broadcast_failed", { status: 500 });
   }
@@ -144,6 +153,7 @@ export async function PATCH(request: Request) {
   const rateLimitResponse = await getRateLimitResponse({
     keyPrefix: "admin:first-touch-broadcast:exclude",
     limit: 40,
+    onBackendUnavailable: "deny",
     request,
   });
 
@@ -151,7 +161,14 @@ export async function PATCH(request: Request) {
     return rateLimitResponse;
   }
 
-  const body = await parseJsonBody<{ leadId?: string; scope?: string }>(request);
+  const { body, errorResponse: bodyErrorResponse } = await parseJsonBody<{
+    leadId?: string;
+    scope?: string;
+  }>(request, MAX_BODY_BYTES);
+
+  if (bodyErrorResponse) {
+    return bodyErrorResponse;
+  }
   const leadId = body?.leadId?.trim() ?? "";
   const scope =
     body?.scope === "global" ? "global" : body?.scope === "campaign" ? "campaign" : null;
@@ -185,7 +202,7 @@ export async function PATCH(request: Request) {
       stats: result.snapshot.stats,
     });
   } catch (error) {
-    console.error("Failed to exclude First Touch broadcast lead", error);
+    logSafeError("Failed to exclude First Touch broadcast lead", error);
 
     return jsonErrorNoStore("first_touch_broadcast_exclusion_failed", { status: 500 });
   }

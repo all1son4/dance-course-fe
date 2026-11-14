@@ -26,6 +26,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -85,9 +86,14 @@ export async function POST(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:operations-replay",
     limit: 10,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -97,7 +103,14 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<ReplayBody>(request);
+    const { body, errorResponse: bodyErrorResponse } = await parseJsonBody<ReplayBody>(
+      request,
+      MAX_BODY_BYTES,
+    );
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
     const queue = body?.queue === "inbox" || body?.queue === "outbox" ? body.queue : "";
     const key = typeof body?.key === "string" ? body.key.trim() : "";
 
@@ -153,10 +166,7 @@ export async function POST(request: Request) {
     } catch (drainError) {
       // The row is durable and pending; the next webhook or the daily cron
       // will pick it up even though this immediate attempt failed.
-      console.error("Failed to drain queue after admin replay", {
-        error: drainError,
-        queue,
-      });
+      logSafeError(`Failed to drain ${queue} queue after admin replay`, drainError);
     }
 
     const status =
@@ -166,7 +176,7 @@ export async function POST(request: Request) {
 
     return jsonNoStore({ status });
   } catch (error) {
-    console.error("Failed to replay durable job from admin", error);
+    logSafeError("Failed to replay durable job from admin", error);
     return jsonErrorNoStore("replay_failed", { status: 500 });
   }
 }

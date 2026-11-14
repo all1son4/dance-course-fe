@@ -1,6 +1,7 @@
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
       products,
     });
   } catch (error) {
-    console.error("Failed to load authoritative sellable product catalog", { error });
+    logSafeError("Failed to load authoritative sellable product catalog", error);
 
     return jsonErrorNoStore("catalog_unavailable", { status: 503 });
   }

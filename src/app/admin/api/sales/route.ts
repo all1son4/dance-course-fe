@@ -19,6 +19,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 import { CATALOG_CACHE_TAG } from "@/lib/sales-availability";
 import { getMissingChoreoLessonLanguages } from "@/lib/telegram/choreo-sales";
 
@@ -92,7 +93,7 @@ export async function GET(request: Request) {
   try {
     return jsonNoStore(await loadSalesState());
   } catch (error) {
-    console.error("Failed to load product sales state", error);
+    logSafeError("Failed to load product sales state", error);
     return jsonErrorNoStore("sales_state_unavailable", { status: 500 });
   }
 }
@@ -114,9 +115,14 @@ export async function POST(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:product-sales",
     limit: 30,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -126,7 +132,12 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<ToggleSalesBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<ToggleSalesBody>(request, MAX_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
 
     if (!body || typeof body.salesEnabled !== "boolean") {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
@@ -193,7 +204,7 @@ export async function POST(request: Request) {
 
     return jsonNoStore(await loadSalesState());
   } catch (error) {
-    console.error("Failed to change product sales switch", error);
+    logSafeError("Failed to change product sales switch", error);
     return jsonErrorNoStore("sales_switch_failed", { status: 500 });
   }
 }

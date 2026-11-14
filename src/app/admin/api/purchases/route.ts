@@ -10,6 +10,7 @@ import {
 } from "@/lib/http-security";
 import { formatReportMonthLabel, parseReportMonth } from "@/lib/monthly-sales-report";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -64,7 +65,7 @@ export async function GET(request: Request) {
       summary: overview.summary,
     });
   } catch (error) {
-    console.error("Failed to load admin purchases overview", error);
+    logSafeError("Failed to load admin purchases overview", error);
     return jsonErrorNoStore("purchases_overview_failed", { status: 500 });
   }
 }
@@ -86,9 +87,14 @@ export async function PATCH(request: Request) {
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:polish-terminal-sales",
     limit: 60,
+    onBackendUnavailable: "deny",
     request,
     windowMs: 60_000,
   });
+
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
 
   if (rateLimit.limited) {
     return jsonErrorNoStore("rate_limited", {
@@ -98,7 +104,12 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const body = await parseJsonBody<SetTerminalRecordedBody>(request);
+    const { body, errorResponse: bodyErrorResponse } =
+      await parseJsonBody<SetTerminalRecordedBody>(request, MAX_BODY_BYTES);
+
+    if (bodyErrorResponse) {
+      return bodyErrorResponse;
+    }
     const paymentIntentId =
       typeof body?.paymentIntentId === "string" ? body.paymentIntentId.trim() : "";
 
@@ -120,7 +131,7 @@ export async function PATCH(request: Request) {
       terminalRecordedAtIso: updated.terminalRecordedAt?.toISOString() ?? "",
     });
   } catch (error) {
-    console.error("Failed to update Polish terminal sale state", error);
+    logSafeError("Failed to update Polish terminal sale state", error);
     return jsonErrorNoStore("polish_terminal_update_failed", { status: 500 });
   }
 }
