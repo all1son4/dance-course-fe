@@ -1,4 +1,6 @@
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
+  INSPIRATION_HUB_ACCESS_OFFER_ID,
   INSPIRATION_HUB_RENEWAL_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
@@ -37,12 +39,14 @@ export const getPlusHubLastDay = (accessEndsAt: Date) =>
 export const getGraceReminderDay = (accessEndsAt: Date) =>
   toWarsawDay(addWarsawCalendarDays(getPlusHubLastDay(accessEndsAt), -1));
 
-const hubSpecialPrice = () => {
+const hubPrice = (offerId: string) => {
   const offer = SELLABLE_PRODUCTS["inspiration-hub"].offers.find(
-    (candidate) => candidate.id === INSPIRATION_HUB_RENEWAL_OFFER_ID,
+    (candidate) => candidate.id === offerId,
   );
   return offer ? `${offer.prices.eur} EUR / ${offer.prices.pln} PLN` : "";
 };
+
+const hubSpecialPrice = () => hubPrice(INSPIRATION_HUB_RENEWAL_OFFER_ID);
 
 const linkLines = (links: CohortRenewalLinks, { standard }: { standard: boolean }) =>
   [
@@ -52,33 +56,66 @@ const linkLines = (links: CohortRenewalLinks, { standard }: { standard: boolean 
   ].filter((line): line is string => line !== null);
 
 /**
- * Section 8, text 2 (draft, awaits Anna): the bot's post in the closed cohort's chat.
- * The admin can edit it in the closure window before it is published.
+ * Section 8, text 2б (approved by the owner 2026-11-14): the bot's post in the closed
+ * cohort's chat. The admin can still edit it in the closure window before it goes.
+ *
+ * `plusHubEndsOn` is for a cohort whose Plus Hub keeps the old model (HUB-D26: it lasts
+ * until the next cohort starts, not 7 days after closure); otherwise the date follows
+ * from the closure. The special Hub price always follows the closure (HUB-D36).
  */
 export const buildCohortClosurePost = ({
   accessEndsAt,
   links,
   nextCohortStartsAt,
+  plusHubEndsOn,
 }: {
   accessEndsAt: Date;
   links: CohortRenewalLinks;
   nextCohortStartsAt: Date;
+  plusHubEndsOn?: Date;
 }) => {
-  const lastDay = formatDay(getPlusHubLastDay(accessEndsAt));
-  const price = hubSpecialPrice();
+  const priceLastDay = formatDay(getPlusHubLastDay(accessEndsAt));
+  const hubLastDay = plusHubEndsOn ? formatDay(plusHubEndsOn) : priceLastDay;
+  const special = hubSpecialPrice();
+  const full = hubPrice(INSPIRATION_HUB_ACCESS_OFFER_ID);
 
   return [
     "Поток завершён — спасибо, что была с нами!",
-    "Уроки из этого чата мы убрали, сам чат остаётся.",
     "",
-    `Следующий поток стартует ${formatDay(nextCohortStartsAt)}.`,
+    "Уроки из этого чата мы убрали, а сам чат остаётся: здесь по-прежнему можно общаться.",
     "",
-    `Inspiration Hub у участниц Plus остаётся ещё ${PLUS_HUB_GRACE_DAYS} дней — до ${lastDay} включительно.`,
-    `— Продли Plus на следующий поток до ${lastDay}, и Hub останется с тобой без перерыва до старта.`,
-    `— Хочешь только Hub? До ${lastDay} продли его на 8 недель${price ? ` за ${price}` : ""}.`,
-    "Пока Hub действует, цена продления на поток для тебя сохраняется.",
+    "Что дальше",
+    `Новый поток стартует ${formatDay(nextCohortStartsAt)}. Для тебя как для участницы этого потока действует цена продления. Выбери, что подходит:`,
+    ...(links.plus
+      ? [
+          "",
+          "Онлайн-группа Plus — занятия нового потока и Inspiration Hub.",
+          `Продлить: ${links.plus}`,
+        ]
+      : []),
+    ...(links.standard
+      ? [
+          "",
+          "Онлайн-группа Standard — занятия нового потока.",
+          `Продлить: ${links.standard}`,
+        ]
+      : []),
     "",
-    ...linkLines(links, { standard: true }),
+    `Только Inspiration Hub — уроки прошлых потоков и материалы без занятий в группе. 8 недель${special ? ` за ${special}` : ""}.`,
+    `Оформить: ${links.hub}`,
+    "",
+    "Про Inspiration Hub",
+    `• Если у тебя был Plus, Hub открыт до ${hubLastDay} включительно. Чтобы остаться в нём, продли Plus или возьми только Hub до этой даты.`,
+    "• Возьмёшь только Hub сейчас — оплаченные 8 недель начнутся сразу, как закончится твой доступ от Plus. Ни один день не пропадёт.",
+    "• Если у тебя был Standard, 8 недель Hub начинаются сразу после оплаты.",
+    ...(special && full
+      ? [`• Цена ${special} действует до ${priceLastDay} включительно, потом — ${full}.`]
+      : []),
+    "",
+    "Как оформить",
+    "По ссылке мы попросим подтвердить твой Telegram: так мы увидим, что ты из этого чата, и откроем цену продления. Это один шаг перед оплатой. Проверь, что в настройках Telegram у тебя указано имя пользователя (@username).",
+    "",
+    `Места в группе ограничены. Вопросы — ${SUPPORT_TELEGRAM_URL}`,
   ].join("\n");
 };
 

@@ -113,7 +113,7 @@ test("the closure window: overview, closure with a pinned post, next sales open"
     assert.equal(overview.next?.id, nextId);
     assert.match(overview.links?.plus ?? "", /renewal=rnw_plus_/u);
     assert.match(overview.links?.standard ?? "", /renewal=rnw_std_/u);
-    assert.match(overview.draftPost, /Продлить Plus: /u);
+    assert.match(overview.draftPost, /Онлайн-группа Plus[^\n]*\nПродлить: .*rnw_plus_/u);
     assert.equal(overview.post, null);
 
     await assert.rejects(

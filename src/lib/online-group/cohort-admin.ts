@@ -251,6 +251,8 @@ export async function getCohortsOverview(now = new Date()) {
                 accessEndsAt,
                 links,
                 nextCohortStartsAt: next.startsAt,
+                // Old-model Plus Hub rights last until the next cohort starts (HUB-D26).
+                plusHubEndsOn: facts.legacyPlusHubRights > 0 ? next.startsAt : undefined,
               })
             : "",
         post: post
