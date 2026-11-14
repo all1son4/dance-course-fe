@@ -643,12 +643,12 @@
       "titlePlain": "Inspiration HUB",
       "description": {
         "1": "INSPIRATION HUB to Twoja przestrzeń inspiracji, praktyki i rozwoju w tańcu.",
-        "2": "Biblioteka lekcji wideo z techniki, choreografii i improwizacji oraz przydatnych materiałów. Zyskaj dostęp do lekcji z poprzednich cykli Online Group (10+ lekcji), ćwicz we własnym tempie i odkrywaj nowe pomysły na swój taniec."
+        "2": "Ćwicz z Anną, kiedy Ci pasuje: bez grafiku i terminów, we własnym tempie."
       },
       "accessLabel": "Dostęp",
       "accessValue": "8 tygodni",
       "priceLabel": "Cena",
-      "perWeek": "≈ {price} tygodniowo",
+      "priceNote": "Jednorazowa płatność — bez automatycznego odnawiania",
       "buyButton": "Kup",
       "insideButton": "Co w środku"
     },
@@ -657,24 +657,51 @@
     },
     "suggestions": {
       "1": {
-        "title": "Pełne programy poprzednich cykli",
-        "text": "Zyskaj dostęp do lekcji z zakończonych cykli Online Group 1.0 i 2.0. W środku 5 pełnych lekcji: technika nóg i rąk, flow, hair work, improwizacja, podstawy akrobatyki i choreografie."
+        "title": "Lekcje z zakończonych cykli",
+        "text": "Pełne lekcje Online Group 1.0 i 2.0 — te same, które uczestniczki przerabiały razem z Anną."
       },
       "2": {
-        "title": "Materiały dodatkowe",
-        "text": "Lekcje bonusowe, które urozmaicą treningi i pomogą rozwijać technikę. Muzyka do treningów, inspiracje, wskazówki i przydatne informacje o stroju do tańca i wyborze butów, a także informacje o wydarzeniach tanecznych."
+        "title": "Dodatki do treningów",
+        "text": "Dodatkowe lekcje techniki, muzyka do ćwiczeń, porady dotyczące stroju i butów do tańca oraz zapowiedzi wydarzeń."
       },
       "3": {
-        "title": "Ćwicz, kiedy chcesz",
-        "text": "Dołącz w dowolnym momencie i miej dostęp do wszystkich materiałów przez 8 tygodni. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
+        "title": "Wszystko w jednym kanale na Telegramie",
+        "text": "Zamknięty kanał zawsze pod ręką: otwórz lekcję w telefonie na sali lub w domu i wracaj do niej, ile chcesz, przez 8 tygodni."
       },
       "4": {
-        "title": "Zamknięty kanał na Telegramie",
-        "text": "Wszystkie lekcje i materiały są w wygodnej, zamkniętej przestrzeni, zawsze pod ręką."
-      },
-      "5": {
-        "title": "Kontynuacja bez przerwy",
-        "text": "Uczestnicy obecnej grupy online i subskrybenci Inspiration HUB mają specjalną cenę przy kontynuacji w kolejnym cyklu."
+        "title": "Specjalna cena dla swoich",
+        "text": "Uczestniczki obecnej grupy online i Inspiration Hub mają specjalną cenę przedłużenia."
+      }
+    },
+    "topics": {
+      "title": "Tematy lekcji",
+      "text": "Wszystko, nad czym pracowała grupa online, teraz w jednej bibliotece.",
+      "items": {
+        "1": "Technika nóg",
+        "2": "Technika rąk",
+        "3": "Flow",
+        "4": "Hair work",
+        "5": "Improwizacja",
+        "6": "Podstawy akrobatyki",
+        "7": "Choreografie",
+        "8": "Muzyka do treningów"
+      }
+    },
+    "audience": {
+      "title": "Dla kogo",
+      "items": {
+        "1": {
+          "title": "Byłaś w grupie online",
+          "text": "Powtarzaj program, utrwalaj technikę i nie trać formy między cyklami."
+        },
+        "2": {
+          "title": "Chcesz ćwiczyć częściej",
+          "text": "Dodaj lekcje Anny do swoich treningów i próbuj nowych rzeczy między zajęciami."
+        },
+        "3": {
+          "title": "Szukasz inspiracji",
+          "text": "Choreografie, flow i improwizacja dadzą nowe pomysły do Twojego tańca."
+        }
       }
     },
     "steps": {
@@ -698,6 +725,11 @@
           "description": "Jeśli nie przedłużysz, dostęp do kanału zamknie się sam po 8 tygodniach od płatności. Możesz wrócić w każdej chwili."
         }
       }
+    },
+    "cta": {
+      "title": "Zacznij już dziś",
+      "text": "Dostęp do Inspiration HUB otworzy się zaraz po płatności — na 8 tygodni.",
+      "note": "Jednorazowa płatność — bez automatycznego odnawiania"
     }
   },
   "ChoreoPage": {

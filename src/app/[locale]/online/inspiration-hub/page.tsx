@@ -11,7 +11,6 @@ import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   buildCheckoutHref,
   formatOfferPrice,
-  formatPrice,
   INSPIRATION_HUB_ACCESS_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
@@ -38,7 +37,19 @@ import {
   buildCourseStructuredData,
 } from "../_shared/structured-data";
 import SuggestionGrid from "../_shared/suggestion-grid";
-import { getInspirationHubSuggestions } from "./constants";
+import { getInspirationHubSuggestions, HUB_AUDIENCE, HUB_TOPIC_COUNT } from "./constants";
+import {
+  AudienceCard,
+  AudienceGrid,
+  FinalCta,
+  FinalCtaOffer,
+  FinalCtaText,
+  HubSection,
+  HubSectionHead,
+  HubSectionLead,
+  HubSectionTitle,
+  TopicList,
+} from "./hub-blocks.styles";
 import {
   AboutCourseSection,
   ButtonBox,
@@ -57,7 +68,6 @@ import {
 
 const PATH = "/online/inspiration-hub";
 const STEP_COUNT = 4;
-const PAID_WEEKS = 8;
 
 export const generateMetadata = () =>
   buildLocalizedPageMetadata({ pageKey: "inspirationHub", path: PATH });
@@ -86,11 +96,6 @@ export default async function InspirationHubPage() {
       (candidate) => candidate.id === INSPIRATION_HUB_ACCESS_OFFER_ID,
     ) ?? configuredProduct.offers[0];
   const price = formatOfferPrice(offer.prices);
-  // The usual subscription anchor: what one week costs (40 EUR / 8 weeks = 5 EUR).
-  const weeklyPrice = [
-    formatPrice(Math.round(offer.prices.pln / PAID_WEEKS), "pln"),
-    formatPrice(Math.round((offer.prices.eur / PAID_WEEKS) * 10) / 10, "eur"),
-  ].join(" / ");
   const canBuy = saleState === "open" && offer.salesEnabled;
   const checkoutHref = buildCheckoutHref({ offerId: offer.id, productId: product.id });
   const buyAnalytics = {
@@ -147,7 +152,7 @@ export default async function InspirationHubPage() {
         <FactsRow>
           <ProductFact label={t("hero.accessLabel")} value={t("hero.accessValue")} />
           <ProductFact label={t("hero.priceLabel")} value={price}>
-            <FactNote>{t("hero.perWeek", { price: weeklyPrice })}</FactNote>
+            <FactNote>{t("hero.priceNote")}</FactNote>
           </ProductFact>
         </FactsRow>
 
@@ -201,6 +206,31 @@ export default async function InspirationHubPage() {
           items={getInspirationHubSuggestions((key) => t(key))}
           photo="/images/photos/about_inspiration_hub.webp"
         />
+        <HubSection aria-labelledby="hub-topics-title">
+          <HubSectionHead>
+            <HubSectionTitle id="hub-topics-title">{t("topics.title")}</HubSectionTitle>
+            <HubSectionLead>{t("topics.text")}</HubSectionLead>
+          </HubSectionHead>
+          <TopicList>
+            {Array.from({ length: HUB_TOPIC_COUNT }, (_, index) => (
+              <li key={index}>{t(`topics.items.${index + 1}`)}</li>
+            ))}
+          </TopicList>
+        </HubSection>
+        <HubSection aria-labelledby="hub-audience-title">
+          <HubSectionTitle id="hub-audience-title">{t("audience.title")}</HubSectionTitle>
+          <AudienceGrid>
+            {HUB_AUDIENCE.map(({ icon: Icon, id }, index) => (
+              <AudienceCard key={id}>
+                <Icon />
+                <div>
+                  <h3>{t(`audience.items.${index + 1}.title`)}</h3>
+                  <p>{t(`audience.items.${index + 1}.text`)}</p>
+                </div>
+              </AudienceCard>
+            ))}
+          </AudienceGrid>
+        </HubSection>
         <StepsSection id="how-it-works">
           <StepsTextBox>
             <StepsTitle>{t("steps.title")}</StepsTitle>
@@ -215,6 +245,33 @@ export default async function InspirationHubPage() {
             sizes="(max-width: 920px) 100vw, 473px"
           />
         </StepsSection>
+        <FinalCta aria-labelledby="hub-cta-title">
+          <FinalCtaText>
+            <h2 id="hub-cta-title">{t("cta.title")}</h2>
+            <p>{t("cta.text")}</p>
+          </FinalCtaText>
+          <FinalCtaOffer>
+            <strong>{price}</strong>
+            {canBuy ? (
+              <Button
+                buttonText={t("hero.buyButton")}
+                href={checkoutHref}
+                prefetch={false}
+                rel="nofollow"
+                variant="white"
+                width="280px"
+                analytics={{ ...buyAnalytics, placement: "inspiration_hub_final" }}
+              />
+            ) : (
+              <small>
+                {commonT(
+                  saleState === "unavailable" ? "salesUnavailable" : "salesClosed",
+                )}
+              </small>
+            )}
+            <small>{t("cta.note")}</small>
+          </FinalCtaOffer>
+        </FinalCta>
         <Contacts layout="spaced" />
       </SpecialWrapper>
     </>

@@ -643,12 +643,12 @@
       "titlePlain": "Inspiration HUB",
       "description": {
         "1": "INSPIRATION HUB is your space for inspiration, practice and growth in dance.",
-        "2": "A library of video lessons on technique, choreography and improvisation, plus useful materials. Get access to lessons from previous Online Group cycles (10+ lessons), practise at your own pace and find new ideas for your dance."
+        "2": "Practise with Anna whenever it suits you: no schedule, no deadlines, at your own pace."
       },
       "accessLabel": "Access",
       "accessValue": "8 weeks",
       "priceLabel": "Price",
-      "perWeek": "≈ {price} per week",
+      "priceNote": "One-time payment — no auto-renewal",
       "buyButton": "Buy",
       "insideButton": "What's inside"
     },
@@ -657,24 +657,51 @@
     },
     "suggestions": {
       "1": {
-        "title": "Full programmes of previous cycles",
-        "text": "Get access to lessons from the completed Online Group 1.0 and 2.0 cycles. Inside are 5 full lessons: leg and arm technique, flow, hair work, improvisation, basic acrobatics and choreography."
+        "title": "Lessons from past cycles",
+        "text": "Full Online Group 1.0 and 2.0 lessons — the same ones the participants took with Anna."
       },
       "2": {
-        "title": "Extra materials",
-        "text": "Bonus lessons to vary your training and develop your technique. Training music, ideas for inspiration, tips and useful information on dancewear and choosing shoes, plus news about dance events."
+        "title": "Training extras",
+        "text": "Extra technique lessons, music for practice, tips on dancewear and shoes, and event announcements."
       },
       "3": {
-        "title": "Practise whenever you like",
-        "text": "Join at any time and get access to all materials for 8 weeks. No schedules and no deadlines: choose what to learn and practise when it suits you."
+        "title": "All in one Telegram channel",
+        "text": "The private channel is always at hand: open a lesson on your phone at the studio or at home and come back to it as often as you like for 8 weeks."
       },
       "4": {
-        "title": "Private Telegram channel",
-        "text": "All lessons and materials are kept in a convenient private space that is always at hand."
-      },
-      "5": {
-        "title": "Continue without a break",
-        "text": "Current Online Group participants and Inspiration HUB subscribers get a special price when they continue to the next cycle."
+        "title": "A special price for members",
+        "text": "Participants of the current Online Group and Inspiration Hub get a special renewal price."
+      }
+    },
+    "topics": {
+      "title": "Lesson topics",
+      "text": "Everything the Online Group worked on, now in one library.",
+      "items": {
+        "1": "Leg technique",
+        "2": "Arm technique",
+        "3": "Flow",
+        "4": "Hair work",
+        "5": "Improvisation",
+        "6": "Basic acrobatics",
+        "7": "Choreography",
+        "8": "Music for practice"
+      }
+    },
+    "audience": {
+      "title": "Who it's for",
+      "items": {
+        "1": {
+          "title": "You've been in the Online Group",
+          "text": "Repeat the programme, consolidate your technique and stay in shape between cycles."
+        },
+        "2": {
+          "title": "You want to practise more often",
+          "text": "Add Anna's lessons to your training and try something new between classes."
+        },
+        "3": {
+          "title": "You're looking for inspiration",
+          "text": "Choreography, flow and improvisation bring new ideas to your dance."
+        }
       }
     },
     "steps": {
@@ -698,6 +725,11 @@
           "description": "If you do not renew, channel access closes by itself 8 weeks after payment. You can come back at any time."
         }
       }
+    },
+    "cta": {
+      "title": "Start today",
+      "text": "Your Inspiration HUB access opens right after payment — for 8 weeks.",
+      "note": "One-time payment — no auto-renewal"
     }
   },
   "ChoreoPage": {
