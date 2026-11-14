@@ -1,7 +1,6 @@
-import { LoaderCircle, Mail, RefreshCw } from "lucide-react";
+import { CircleAlert, Download, Mail, RefreshCw, Search } from "lucide-react";
+import styled from "styled-components";
 
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
 import { ACCOUNTING_TIME_ZONE } from "@/lib/accounting-month";
 import { formatMinorDelta } from "@/lib/minor-amount";
 
@@ -16,48 +15,20 @@ import type {
   StatusMessage,
 } from "../lib/admin.types";
 import { formatDateTime } from "../lib/admin.utils";
+import type { AdminTone } from "../styles/tokens.styles";
+import { Checkbox, Input, Select, StatusLine } from "../ui/forms";
 import {
-  AdminDataTable,
-  BroadcastActionButton,
-  CardFooterActions,
-  CardFooterRow,
-  DeltaChip,
-  HeaderSelectWrap,
-  IconActionButton,
-  InlineSearchRow,
-  JournalEmptyState,
-  JournalSkeletonCard,
-  JournalSkeletonList,
-  PolishSaleBadge,
-  ProductBreakdownHeader,
-  ProductBreakdownList,
-  ProductBreakdownName,
-  ProductBreakdownNumbers,
-  ProductBreakdownRow,
-  ProductShareFill,
-  ProductShareTrack,
-  PurchaseTableRow,
-  SalesProductMeta,
-  SalesProductName,
-  SalesStatusBadge,
-  SalesTableWrap,
-  SearchFieldWrap,
-  SectionHeading,
-  SkeletonLine,
-  StatCell,
-  StatCellLabel,
-  StatCellMeta,
-  StatCellValue,
-  StatStrip,
-  StatusText,
-  SurfaceCard,
-  SurfaceDescription,
-  SurfaceHeaderActions,
-  SurfaceHeaderRow,
-  SurfaceTitle,
-  TerminalCheckboxLabel,
-  WorkspaceStack,
-} from "../page.styles";
+  AdminButton,
+  Badge,
+  Callout,
+  EmptyState,
+  Muted,
+  Panel,
+  Row,
+  Skeleton,
+  Stack,
+} from "../ui/primitives";
+import { CellPrimary, CellSecondary, DataTable, TableScroller } from "../ui/table";
 
 type PurchasesWorkspaceProps = {
   appliedSearch: string;
@@ -89,47 +60,174 @@ type PurchasesWorkspaceProps = {
   updatingTerminalPaymentIntentId: string;
 };
 
-const OUTCOME_META: Record<
-  PurchaseOutcome,
-  { label: string; state: "blocked" | "closed" | "open" }
-> = {
-  canceled: { label: "Отменена", state: "closed" },
-  failed: { label: "Не прошла", state: "closed" },
-  processing: { label: "В процессе", state: "blocked" },
-  requires_action: { label: "Ждет действия", state: "blocked" },
-  succeeded: { label: "Оплачено", state: "open" },
+const OUTCOME_META: Record<PurchaseOutcome, { label: string; tone: AdminTone }> = {
+  canceled: { label: "Отменена", tone: "neutral" },
+  failed: { label: "Не прошла", tone: "danger" },
+  processing: { label: "В процессе", tone: "warning" },
+  requires_action: { label: "Ждёт действия", tone: "warning" },
+  succeeded: { label: "Оплачено", tone: "success" },
 };
 
-const MonthDelta = ({
-  delta,
-  formattedDelta,
-}: {
-  delta: number;
-  formattedDelta: string;
-}) => {
-  if (delta === 0) {
-    return <>как в прошлом месяце</>;
+/** Six figures in even rows: 6 across, 3 on tablets, 2 on phones. */
+const Metrics = styled.div`
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+
+  @container admin-content (max-width: 1000px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  return (
-    <>
-      <DeltaChip $direction={delta > 0 ? "up" : "down"}>{formattedDelta}</DeltaChip>к
-      прошлому месяцу
-    </>
-  );
-};
+  @container admin-content (max-width: 520px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+`;
 
-const PurchasesSkeleton = () => (
-  <JournalSkeletonList>
-    {Array.from({ length: 3 }, (_, index) => (
-      <JournalSkeletonCard key={`purchases-skeleton-${index}`}>
-        <SkeletonLine $width="38%" />
-        <SkeletonLine $width="82%" />
-        <SkeletonLine $height="32px" $width="100%" />
-      </JournalSkeletonCard>
-    ))}
-  </JournalSkeletonList>
-);
+const Metric = styled.div`
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: var(--a-radius);
+  background: var(--a-surface-sunken);
+
+  > span:first-child {
+    color: var(--a-ink-2);
+    font-size: var(--a-text-sm);
+  }
+
+  > b {
+    font-size: var(--a-text-xl);
+    font-weight: 700;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  > small {
+    color: var(--a-ink-3);
+    font-size: var(--a-text-xs);
+    line-height: 1.4;
+  }
+`;
+
+const Breakdown = styled.ul`
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    gap: 6px;
+  }
+
+  [data-head] {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: var(--a-text-sm);
+  }
+
+  [data-head] span:first-child {
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  [data-head] span:last-child {
+    flex-shrink: 0;
+    color: var(--a-ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-track] {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--a-surface-hover);
+    overflow: hidden;
+  }
+
+  [data-fill] {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--a-accent);
+  }
+`;
+
+const SubHeading = styled.h3`
+  margin: 0;
+  font-size: var(--a-text);
+  font-weight: 650;
+`;
+
+const ReportBar = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--a-border);
+`;
+
+const SearchForm = styled.form`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  > div {
+    position: relative;
+    flex: 1 1 260px;
+    min-width: 0;
+  }
+
+  > div svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    color: var(--a-ink-3);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  > div input {
+    padding-left: 36px;
+  }
+
+  @media (max-width: 640px) {
+    > button {
+      flex: 1 1 auto;
+    }
+  }
+`;
+
+const MonthSelect = styled(Select)`
+  width: auto;
+  min-width: 170px;
+`;
+
+const PurchaseRow = styled.tr<{ $polish: boolean }>`
+  td:first-child {
+    box-shadow: ${({ $polish }) => ($polish ? "inset 3px 0 0 var(--a-warning)" : "none")};
+  }
+
+  @container admin-content (max-width: 760px) {
+    td:first-child {
+      box-shadow: none;
+    }
+
+    border-left: ${({ $polish }) =>
+      $polish ? "3px solid var(--a-warning) !important" : "1px solid var(--a-border)"};
+  }
+`;
+
+const deltaText = (delta: number, formatted: string) =>
+  delta === 0 ? "как в прошлом месяце" : `${formatted} к прошлому месяцу`;
 
 export const PurchasesWorkspace = ({
   appliedSearch,
@@ -166,6 +264,7 @@ export const PurchasesWorkspace = ({
       previousSummary.plnTotalMinor > 0 ||
       previousSummary.eurTotalMinor > 0),
   );
+  const comparable = hasPreviousData && previousSummary?.stripeFinancialDataComplete;
   const maxProductSalesCount = products.reduce(
     (maxCount, product) => Math.max(maxCount, product.salesCount),
     0,
@@ -179,392 +278,349 @@ export const PurchasesWorkspace = ({
   const financialDataIncomplete = Boolean(
     summary && !summary.stripeFinancialDataComplete,
   );
+  const grossDelta =
+    comparable &&
+    previousSummary?.grossTotalMinor != null &&
+    summary?.grossTotalMinor != null
+      ? summary.grossTotalMinor - previousSummary.grossTotalMinor
+      : null;
+  const netDelta =
+    comparable && previousSummary?.netTotalMinor != null && summary?.netTotalMinor != null
+      ? summary.netTotalMinor - previousSummary.netTotalMinor
+      : null;
+  const countDelta =
+    hasPreviousData && previousSummary && summary
+      ? summary.salesCount - previousSummary.salesCount
+      : null;
 
   return (
-    <WorkspaceStack>
-      <SurfaceCard>
-        <SurfaceHeaderRow>
-          <SurfaceTitle>Сводка за месяц</SurfaceTitle>
-          <SurfaceHeaderActions>
-            {months.length > 0 && (
-              <HeaderSelectWrap>
-                <Input
-                  id="admin-purchases-month"
-                  name="adminPurchasesMonth"
-                  label="Месяц"
-                  value={monthValue}
-                  placeholder="Месяц"
-                  selectOptions={months}
-                  onChange={(event) => void onMonthChange(event.target.value)}
-                  disabled={isLoading}
-                  width="100%"
-                />
-              </HeaderSelectWrap>
-            )}
-            <IconActionButton
-              type="button"
-              onClick={onRefresh}
-              disabled={isLoading}
-              $isLoading={isLoading}
-              aria-label="Обновить продажи"
-              title="Обновить продажи"
-            >
-              {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-            </IconActionButton>
-          </SurfaceHeaderActions>
-        </SurfaceHeaderRow>
-        <SurfaceDescription>
-          Только подтвержденные продажи Stripe. Поступление, комиссия и сумма после
-          комиссии совпадают с итогами CSV в PLN; исходная стоимость сохраняет валюту
-          покупателя. Бесплатные ссылки из админки не учитываются.
-        </SurfaceDescription>
-
-        {summary && (
-          <StatStrip>
-            <StatCell>
-              <StatCellLabel>Поступило в Stripe</StatCellLabel>
-              <StatCellValue $primary>
-                {financialDataIncomplete ? "—" : summary.grossTotalLabel}
-              </StatCellValue>
-              {hasPreviousData &&
-                previousSummary?.stripeFinancialDataComplete &&
-                previousSummary.grossTotalMinor !== null &&
-                summary.grossTotalMinor !== null && (
-                  <StatCellMeta>
-                    <MonthDelta
-                      delta={summary.grossTotalMinor - previousSummary.grossTotalMinor}
-                      formattedDelta={formatMinorDelta(
-                        summary.grossTotalMinor - previousSummary.grossTotalMinor,
-                        "pln",
-                      )}
-                    />
-                  </StatCellMeta>
-                )}
-              {!financialDataIncomplete && (
-                <StatCellMeta>до комиссии · итог CSV</StatCellMeta>
-              )}
-            </StatCell>
-            <StatCell>
-              <StatCellLabel>Комиссия Stripe</StatCellLabel>
-              <StatCellValue>
-                {financialDataIncomplete ? "—" : summary.feeTotalLabel}
-              </StatCellValue>
-              {!financialDataIncomplete && <StatCellMeta>удержано Stripe</StatCellMeta>}
-            </StatCell>
-            <StatCell>
-              <StatCellLabel>После комиссии</StatCellLabel>
-              <StatCellValue $primary>
-                {financialDataIncomplete ? "—" : summary.netTotalLabel}
-              </StatCellValue>
-              {hasPreviousData &&
-                previousSummary?.stripeFinancialDataComplete &&
-                previousSummary.netTotalMinor !== null &&
-                summary.netTotalMinor !== null && (
-                  <StatCellMeta>
-                    <MonthDelta
-                      delta={summary.netTotalMinor - previousSummary.netTotalMinor}
-                      formattedDelta={formatMinorDelta(
-                        summary.netTotalMinor - previousSummary.netTotalMinor,
-                        "pln",
-                      )}
-                    />
-                  </StatCellMeta>
-                )}
-            </StatCell>
-            <StatCell>
-              <StatCellLabel>Исходная стоимость</StatCellLabel>
-              <StatCellValue>{originalAmountLabel}</StatCellValue>
-              <StatCellMeta>до конвертации Stripe</StatCellMeta>
-            </StatCell>
-            <StatCell>
-              <StatCellLabel>Продаж в отчете</StatCellLabel>
-              <StatCellValue>{summary.salesCount}</StatCellValue>
-              {hasPreviousData && previousSummary && (
-                <StatCellMeta>
-                  <MonthDelta
-                    delta={summary.salesCount - previousSummary.salesCount}
-                    formattedDelta={`${
-                      summary.salesCount > previousSummary.salesCount ? "+" : "−"
-                    }${Math.abs(summary.salesCount - previousSummary.salesCount)}`}
-                  />
-                </StatCellMeta>
-              )}
-              {summary.unconfirmedSalesCount > 0 && (
-                <StatCellMeta>
-                  Без подтвержденного Stripe-события: {summary.unconfirmedSalesCount}
-                </StatCellMeta>
-              )}
-            </StatCell>
-            <StatCell>
-              <StatCellLabel>Неуспешных попыток</StatCellLabel>
-              <StatCellValue>{summary.failedAttempts}</StatCellValue>
-              <StatCellMeta>отклонена или отменена</StatCellMeta>
-            </StatCell>
-          </StatStrip>
-        )}
-
-        {summary && financialDataIncomplete && (
-          <StatusText $tone="error">
-            Финансовые итоги скрыты: полный набор суммы, комиссии и нетто Stripe есть по
-            {` ${summary.settledCount} из ${summary.salesCount}`} продаж. CSV также не
-            будет сформирован до заполнения всех данных.
-          </StatusText>
-        )}
-
-        {products.length > 0 && (
+    <Stack $gap={16}>
+      <Panel
+        title="Сводка за месяц"
+        description="Только подтверждённые продажи Stripe. Поступление, комиссия и сумма после комиссии совпадают с итогами CSV в PLN; исходная стоимость — в валюте покупателя. Бесплатные ссылки из админки не учитываются."
+        actions={
           <>
-            <SectionHeading>По продуктам · исходная стоимость</SectionHeading>
-            <ProductBreakdownList>
-              {products.map((product) => (
-                <ProductBreakdownRow key={product.itemTitle}>
-                  <ProductBreakdownHeader>
-                    <ProductBreakdownName>{product.itemTitle}</ProductBreakdownName>
-                    <ProductBreakdownNumbers>
-                      {product.salesCount} шт
-                      {product.amountLabels.length > 0
-                        ? ` · ${product.amountLabels.join(" · ")}`
-                        : ""}
-                    </ProductBreakdownNumbers>
-                  </ProductBreakdownHeader>
-                  <ProductShareTrack>
-                    <ProductShareFill
-                      $percent={
-                        maxProductSalesCount > 0
-                          ? (product.salesCount / maxProductSalesCount) * 100
-                          : 0
-                      }
-                    />
-                  </ProductShareTrack>
-                </ProductBreakdownRow>
-              ))}
-            </ProductBreakdownList>
+            {months.length > 0 && (
+              <MonthSelect
+                aria-label="Месяц"
+                value={monthValue}
+                disabled={isLoading}
+                onChange={(event) => void onMonthChange(event.target.value)}
+              >
+                {months.map((month) => (
+                  <option key={month.value} value={month.value}>
+                    {month.label}
+                  </option>
+                ))}
+              </MonthSelect>
+            )}
+            <AdminButton
+              size="sm"
+              icon={<RefreshCw aria-hidden />}
+              loading={isLoading}
+              onClick={() => void onRefresh()}
+            >
+              Обновить
+            </AdminButton>
           </>
-        )}
+        }
+      >
+        <Stack $gap={18}>
+          {summary ? (
+            <Metrics>
+              <Metric>
+                <span>Поступило в Stripe</span>
+                <b>{financialDataIncomplete ? "—" : summary.grossTotalLabel}</b>
+                <small>
+                  {grossDelta !== null
+                    ? deltaText(grossDelta, formatMinorDelta(grossDelta, "pln"))
+                    : "до комиссии · итог CSV"}
+                </small>
+              </Metric>
+              <Metric>
+                <span>Комиссия Stripe</span>
+                <b>{financialDataIncomplete ? "—" : summary.feeTotalLabel}</b>
+                <small>удержано Stripe</small>
+              </Metric>
+              <Metric>
+                <span>После комиссии</span>
+                <b>{financialDataIncomplete ? "—" : summary.netTotalLabel}</b>
+                <small>
+                  {netDelta !== null
+                    ? deltaText(netDelta, formatMinorDelta(netDelta, "pln"))
+                    : "на счёт"}
+                </small>
+              </Metric>
+              <Metric>
+                <span>Исходная стоимость</span>
+                <b>{originalAmountLabel}</b>
+                <small>до конвертации Stripe</small>
+              </Metric>
+              <Metric>
+                <span>Продаж в отчёте</span>
+                <b>{summary.salesCount}</b>
+                <small>
+                  {summary.unconfirmedSalesCount > 0
+                    ? `ещё ${summary.unconfirmedSalesCount} без подтверждения Stripe`
+                    : countDelta !== null
+                      ? deltaText(
+                          countDelta,
+                          `${countDelta > 0 ? "+" : "−"}${Math.abs(countDelta)}`,
+                        )
+                      : "подтверждены Stripe"}
+                </small>
+              </Metric>
+              <Metric>
+                <span>Неуспешных попыток</span>
+                <b>{summary.failedAttempts}</b>
+                <small>отклонена или отменена</small>
+              </Metric>
+            </Metrics>
+          ) : (
+            <Metrics>
+              {Array.from({ length: 6 }, (_, index) => (
+                <Skeleton key={index} $height={84} />
+              ))}
+            </Metrics>
+          )}
 
-        <CardFooterRow>
-          <SalesProductMeta>
-            Отчет за месяц — CSV по подтвержденным продажам
-          </SalesProductMeta>
-          <CardFooterActions>
-            <Button
-              buttonText={isDownloadingReport ? "Формирую..." : "Скачать CSV"}
-              type="button"
-              onClick={onDownloadReport}
-              disabled={isReportDisabled}
-              isLoading={isDownloadingReport}
-              size="sm"
-              variant="secondary"
-              width="160px"
-            />
-            <Button
-              buttonText={isSendingReport ? "Отправляю..." : "Отправить на почту"}
-              type="button"
-              onClick={onSendReport}
-              disabled={isReportDisabled}
-              isLoading={isSendingReport}
-              size="sm"
-              width="200px"
-            />
-          </CardFooterActions>
-        </CardFooterRow>
+          {summary && financialDataIncomplete && (
+            <Callout tone="danger" icon={<CircleAlert aria-hidden />}>
+              Финансовые итоги скрыты: полный набор суммы, комиссии и нетто Stripe есть по{" "}
+              {summary.settledCount} из {summary.salesCount} продаж. CSV не сформируется,
+              пока данные не заполнятся.
+            </Callout>
+          )}
 
-        {reportStatus && (
-          <StatusText $tone={reportStatus.tone}>{reportStatus.text}</StatusText>
-        )}
-        {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-      </SurfaceCard>
+          {products.length > 0 && (
+            <Stack $gap={12}>
+              <SubHeading>По продуктам · исходная стоимость</SubHeading>
+              <Breakdown>
+                {products.map((product) => (
+                  <li key={product.itemTitle}>
+                    <div data-head>
+                      <span>{product.itemTitle}</span>
+                      <span>
+                        {product.salesCount} шт
+                        {product.amountLabels.length > 0
+                          ? ` · ${product.amountLabels.join(" · ")}`
+                          : ""}
+                      </span>
+                    </div>
+                    <div data-track>
+                      <div
+                        data-fill
+                        style={{
+                          width: `${
+                            maxProductSalesCount > 0
+                              ? (product.salesCount / maxProductSalesCount) * 100
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </Breakdown>
+            </Stack>
+          )}
 
-      <SurfaceCard>
-        <SurfaceHeaderRow>
-          <SurfaceTitle>Покупки</SurfaceTitle>
-        </SurfaceHeaderRow>
-        <SurfaceDescription>
-          {appliedSearch
-            ? `Результаты поиска «${appliedSearch}» по всей истории продаж.`
-            : "Покупки выбранного месяца, включая неуспешные. Поиск по имени, email, номеру инвойса или платежа — по всей истории."}
-        </SurfaceDescription>
+          <ReportBar>
+            <Muted>Отчёт за месяц — CSV по подтверждённым продажам.</Muted>
+            <Row $gap={8}>
+              <AdminButton
+                icon={<Download aria-hidden />}
+                disabled={isReportDisabled}
+                loading={isDownloadingReport}
+                onClick={() => void onDownloadReport()}
+              >
+                Скачать CSV
+              </AdminButton>
+              <AdminButton
+                variant="primary"
+                icon={<Mail aria-hidden />}
+                disabled={isReportDisabled}
+                loading={isSendingReport}
+                onClick={() => void onSendReport()}
+              >
+                Отправить на почту
+              </AdminButton>
+            </Row>
+          </ReportBar>
+          <StatusLine status={reportStatus} />
+          <StatusLine status={status} />
+        </Stack>
+      </Panel>
 
-        <InlineSearchRow
-          onSubmit={(event) => {
-            event.preventDefault();
-            void onSubmitSearch();
-          }}
-        >
-          <SearchFieldWrap>
-            <Input
-              id="admin-purchases-search"
-              name="adminPurchasesSearch"
-              label="Поиск покупателя"
-              value={searchInput}
-              placeholder="Имя, email, номер инвойса или платежа"
-              onChange={(event) => onSearchInputChange(event.target.value)}
-              disabled={isLoading}
-              width="100%"
-            />
-          </SearchFieldWrap>
-          <Button
-            buttonText={isLoading ? "Ищу..." : "Найти"}
-            type="submit"
-            disabled={isLoading || (!searchInput.trim() && !appliedSearch)}
-            isLoading={isLoading && Boolean(appliedSearch)}
-            size="sm"
-            width="120px"
-          />
-          {appliedSearch && (
-            <Button
-              buttonText="Показать месяц"
-              type="button"
-              onClick={onClearSearch}
-              disabled={isLoading}
-              size="sm"
-              variant="secondary"
-              width="160px"
+      <Panel
+        title={appliedSearch ? `Поиск: «${appliedSearch}»` : "Покупки"}
+        description={
+          appliedSearch
+            ? "Результаты по всей истории продаж."
+            : "Покупки выбранного месяца, включая неуспешные. Поиск ищет по всей истории."
+        }
+      >
+        <Stack $gap={14}>
+          <SearchForm
+            role="search"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void onSubmitSearch();
+            }}
+          >
+            <div>
+              <Search aria-hidden />
+              <Input
+                type="search"
+                aria-label="Поиск покупателя"
+                value={searchInput}
+                placeholder="Имя, email, номер инвойса или платежа"
+                disabled={isLoading}
+                onChange={(event) => onSearchInputChange(event.target.value)}
+              />
+            </div>
+            <AdminButton
+              type="submit"
+              variant="primary"
+              disabled={isLoading || (!searchInput.trim() && !appliedSearch)}
+              loading={isLoading && Boolean(appliedSearch)}
+            >
+              Найти
+            </AdminButton>
+            {appliedSearch && (
+              <AdminButton disabled={isLoading} onClick={() => void onClearSearch()}>
+                Показать месяц
+              </AdminButton>
+            )}
+          </SearchForm>
+
+          {purchases.length > 0 && (
+            <Muted>
+              Показано: {purchases.length}
+              {purchases.length === PURCHASES_LIST_LIMIT
+                ? " — это максимум списка, уточни поиском или месяцем"
+                : ""}
+            </Muted>
+          )}
+
+          {purchases.length > 0 ? (
+            <TableScroller>
+              <DataTable aria-label="Список покупок">
+                <thead>
+                  <tr>
+                    <th>Дата</th>
+                    <th>Покупатель</th>
+                    <th>Покупка</th>
+                    <th>Сумма</th>
+                    <th>Статус</th>
+                    <th>Касса</th>
+                    <th aria-label="Действия" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {purchases.map((purchase) => {
+                    const outcome = OUTCOME_META[purchase.outcome];
+                    const isResending =
+                      resendingPaymentIntentId === purchase.paymentIntentId;
+                    const isUpdatingTerminal =
+                      updatingTerminalPaymentIntentId === purchase.paymentIntentId;
+                    const isTerminalRecorded = Boolean(purchase.terminalRecordedAtIso);
+                    const requiresTerminal =
+                      purchase.isPolish && purchase.outcome === "succeeded";
+
+                    return (
+                      <PurchaseRow
+                        key={purchase.paymentIntentId}
+                        $polish={requiresTerminal && !isTerminalRecorded}
+                      >
+                        <td data-label="Дата">
+                          {formatDateTime(purchase.soldAtIso, ACCOUNTING_TIME_ZONE)}
+                        </td>
+                        <td data-label="Покупатель">
+                          <CellPrimary>
+                            {purchase.customerName || "Без имени"}
+                          </CellPrimary>
+                          {purchase.customerEmail && (
+                            <CellSecondary>{purchase.customerEmail}</CellSecondary>
+                          )}
+                        </td>
+                        <td data-label="Покупка" title={purchase.paymentIntentId}>
+                          <CellPrimary>{purchase.purchaseItem || "—"}</CellPrimary>
+                          {purchase.invoiceNumber && (
+                            <CellSecondary>Инвойс {purchase.invoiceNumber}</CellSecondary>
+                          )}
+                        </td>
+                        <td data-label="Сумма">
+                          <CellPrimary>{purchase.amountLabel}</CellPrimary>
+                        </td>
+                        <td data-label="Статус">
+                          <Badge $tone={outcome.tone}>{outcome.label}</Badge>
+                        </td>
+                        <td data-label="Касса">
+                          {requiresTerminal ? (
+                            <Checkbox
+                              checked={isTerminalRecorded}
+                              disabled={Boolean(updatingTerminalPaymentIntentId)}
+                              label={
+                                isUpdatingTerminal
+                                  ? "Сохраняю…"
+                                  : isTerminalRecorded
+                                    ? "Внесено"
+                                    : "Внести в кассу"
+                              }
+                              description={
+                                purchase.terminalRecordedAtIso
+                                  ? formatDateTime(
+                                      purchase.terminalRecordedAtIso,
+                                      ACCOUNTING_TIME_ZONE,
+                                    )
+                                  : "Польская оплата"
+                              }
+                              onChange={(checked) =>
+                                void onTerminalRecordedChange(purchase, checked)
+                              }
+                            />
+                          ) : (
+                            <Muted>—</Muted>
+                          )}
+                        </td>
+                        <td data-actions>
+                          {purchase.outcome === "succeeded" && (
+                            <AdminButton
+                              size="sm"
+                              icon={<Mail aria-hidden />}
+                              disabled={Boolean(resendingPaymentIntentId)}
+                              loading={isResending}
+                              onClick={() => void onResendEmail(purchase.paymentIntentId)}
+                            >
+                              Письмо ещё раз
+                            </AdminButton>
+                          )}
+                        </td>
+                      </PurchaseRow>
+                    );
+                  })}
+                </tbody>
+              </DataTable>
+            </TableScroller>
+          ) : isLoading ? (
+            <Stack $gap={8}>
+              <Skeleton $height={48} />
+              <Skeleton $height={48} />
+              <Skeleton $height={48} />
+            </Stack>
+          ) : (
+            <EmptyState
+              title={
+                appliedSearch ? "Ничего не нашлось" : "В этом месяце покупок пока нет"
+              }
+              text={
+                appliedSearch ? "Проверь написание или поищи по части email." : undefined
+              }
             />
           )}
-        </InlineSearchRow>
-
-        {purchases.length > 0 && (
-          <SalesProductMeta>
-            Показано: {purchases.length}
-            {purchases.length === PURCHASES_LIST_LIMIT
-              ? " — это максимум списка, уточни поиском или месяцем"
-              : ""}
-          </SalesProductMeta>
-        )}
-
-        {purchases.length > 0 ? (
-          <SalesTableWrap>
-            <AdminDataTable aria-label="Список покупок">
-              <thead>
-                <tr>
-                  <th>Дата</th>
-                  <th>Покупатель</th>
-                  <th>Покупка</th>
-                  <th>Сумма</th>
-                  <th>Статус</th>
-                  <th>Терминал</th>
-                  <th>Действие</th>
-                </tr>
-              </thead>
-              <tbody>
-                {purchases.map((purchase) => {
-                  const outcomeMeta = OUTCOME_META[purchase.outcome];
-                  const isResending =
-                    resendingPaymentIntentId === purchase.paymentIntentId;
-                  const isUpdatingTerminal =
-                    updatingTerminalPaymentIntentId === purchase.paymentIntentId;
-                  const isTerminalRecorded = Boolean(purchase.terminalRecordedAtIso);
-                  const requiresTerminalRecording =
-                    purchase.isPolish && purchase.outcome === "succeeded";
-
-                  return (
-                    <PurchaseTableRow
-                      key={purchase.paymentIntentId}
-                      $isPolish={requiresTerminalRecording}
-                    >
-                      <td data-label="Дата">
-                        {formatDateTime(purchase.soldAtIso, ACCOUNTING_TIME_ZONE)}
-                      </td>
-                      <td data-label="Покупатель">
-                        <span>
-                          <SalesProductName>
-                            {purchase.customerName || "Без имени"}
-                          </SalesProductName>
-                          {purchase.customerEmail && (
-                            <SalesProductMeta>{purchase.customerEmail}</SalesProductMeta>
-                          )}
-                          {requiresTerminalRecording && (
-                            <PolishSaleBadge>Польша · фискальный учет</PolishSaleBadge>
-                          )}
-                        </span>
-                      </td>
-                      <td data-label="Покупка" title={purchase.paymentIntentId}>
-                        <span>
-                          <SalesProductName>
-                            {purchase.purchaseItem || "—"}
-                          </SalesProductName>
-                          {purchase.invoiceNumber && (
-                            <SalesProductMeta>
-                              Инвойс: {purchase.invoiceNumber}
-                            </SalesProductMeta>
-                          )}
-                        </span>
-                      </td>
-                      <td data-label="Сумма">
-                        <SalesProductName>{purchase.amountLabel}</SalesProductName>
-                      </td>
-                      <td data-label="Статус">
-                        <SalesStatusBadge $state={outcomeMeta.state}>
-                          {outcomeMeta.label}
-                        </SalesStatusBadge>
-                      </td>
-                      <td data-label="Терминал">
-                        {requiresTerminalRecording ? (
-                          <span>
-                            <TerminalCheckboxLabel $checked={isTerminalRecorded}>
-                              <input
-                                type="checkbox"
-                                checked={isTerminalRecorded}
-                                onChange={(event) =>
-                                  void onTerminalRecordedChange(
-                                    purchase,
-                                    event.target.checked,
-                                  )
-                                }
-                                disabled={Boolean(updatingTerminalPaymentIntentId)}
-                                aria-label={`Продажа ${purchase.paymentIntentId} внесена в фискальный терминал`}
-                              />
-                              {isUpdatingTerminal
-                                ? "Сохраняю..."
-                                : isTerminalRecorded
-                                  ? "Внесено"
-                                  : "Не внесено"}
-                            </TerminalCheckboxLabel>
-                            {purchase.terminalRecordedAtIso && (
-                              <SalesProductMeta>
-                                {formatDateTime(
-                                  purchase.terminalRecordedAtIso,
-                                  ACCOUNTING_TIME_ZONE,
-                                )}
-                              </SalesProductMeta>
-                            )}
-                          </span>
-                        ) : (
-                          <SalesProductMeta>—</SalesProductMeta>
-                        )}
-                      </td>
-                      <td data-label="Действие">
-                        {purchase.outcome === "succeeded" && (
-                          <BroadcastActionButton
-                            type="button"
-                            onClick={() => onResendEmail(purchase.paymentIntentId)}
-                            disabled={Boolean(resendingPaymentIntentId)}
-                          >
-                            {isResending ? (
-                              <LoaderCircle aria-hidden />
-                            ) : (
-                              <Mail aria-hidden />
-                            )}
-                            {isResending ? "Отправляю..." : "Письмо еще раз"}
-                          </BroadcastActionButton>
-                        )}
-                      </td>
-                    </PurchaseTableRow>
-                  );
-                })}
-              </tbody>
-            </AdminDataTable>
-          </SalesTableWrap>
-        ) : isLoading ? (
-          <PurchasesSkeleton />
-        ) : (
-          <JournalEmptyState>
-            {appliedSearch
-              ? "По запросу ничего не нашлось. Проверь написание или поищи по части email."
-              : "В выбранном месяце покупок пока нет."}
-          </JournalEmptyState>
-        )}
-      </SurfaceCard>
-    </WorkspaceStack>
+        </Stack>
+      </Panel>
+    </Stack>
   );
 };

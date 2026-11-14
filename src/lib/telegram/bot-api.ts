@@ -383,3 +383,18 @@ export const getTelegramChatMember = async ({
       botToken,
     },
   );
+
+export type TelegramWebhookInfo = {
+  last_error_date?: number;
+  last_error_message?: string;
+  pending_update_count: number;
+  url: string;
+};
+
+/** Read-only: where Telegram delivers the bot's updates and whether it is failing. */
+export const getTelegramWebhookInfo = async ({ botToken }: { botToken?: string } = {}) =>
+  callTelegramApi<TelegramWebhookInfo>(
+    "getWebhookInfo",
+    {},
+    { botToken, maxAttempts: 1 },
+  );

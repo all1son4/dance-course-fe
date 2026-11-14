@@ -98,6 +98,7 @@ export const buildHubExpiryProblemsText = (problems: HubExpiryProblems): string 
   ].join("\n");
 
 const sendHubExpiryProblemsToAlerts = async (problems: HubExpiryProblems) => {
+  console.error("Inspiration Hub expiry needs attention", problems);
   const botToken = getTelegramAlertsBotToken();
   const chatId = getTelegramAlertsChatId();
 
@@ -305,7 +306,6 @@ export const revokeExpiredOnlineGroupHubAccess = async ({
   };
 
   if (hasHubExpiryProblems(problems)) {
-    console.error("Inspiration Hub expiry needs attention", problems);
     try {
       await reportProblems(problems);
     } catch (error) {

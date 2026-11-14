@@ -1,0 +1,220 @@
+import { and, desc, eq, inArray, isNull, notInArray } from "drizzle-orm";
+
+import { INSPIRATION_HUB_PRODUCT_ID } from "@/constants/sellable-products";
+import { getDatabase } from "@/db/client";
+import {
+  findInspirationHubChatId,
+  listEndedHubAccessRights,
+  listOwnerlessHubPurchases,
+  listStalledHubContinuations,
+} from "@/db/hub-access-coverage";
+import {
+  accessEntitlements,
+  products,
+  purchases,
+  telegramChats,
+  telegramUserBindings,
+} from "@/db/schema";
+import { previewHubExpiry } from "@/lib/telegram/hub-expiry-preview";
+
+const DAY_MS = 24 * 3600_000;
+const ENDING_SOON_DAYS = 7;
+const PERIOD_LIST_LIMIT = 300;
+const FINISHED_STATUSES: ("expired" | "revoked")[] = ["expired", "revoked"];
+
+export type HubPeriodState = "active" | "scheduled" | "waiting" | "ended";
+
+/** The daily cron runs at 03:00 UTC (vercel.json); the next run after `now`. */
+export const getNextHubCronRun = (now: Date) => {
+  const next = new Date(now);
+  next.setUTCHours(3, 0, 0, 0);
+  if (next.getTime() <= now.getTime()) next.setTime(next.getTime() + DAY_MS);
+  return next;
+};
+
+const periodState = (
+  right: { startsAt: Date | null; expiresAt: Date | null; status: string },
+  now: Date,
+): HubPeriodState => {
+  if (FINISHED_STATUSES.includes(right.status as "expired")) return "ended";
+  if (right.startsAt === null) return "waiting";
+  if (right.startsAt.getTime() > now.getTime()) return "scheduled";
+  if (right.expiresAt !== null && right.expiresAt.getTime() <= now.getTime())
+    return "ended";
+  return "active";
+};
+
+/**
+ * Everything the Inspiration Hub tab shows: the chat, sales, the paid periods with a
+ * plain state each, the problems the cron reports (К5, К6, К13) and whom the next
+ * cron run would remove, computed by the cron's own code in a rolled-back preview.
+ */
+export async function getHubAdminOverview({
+  now = new Date(),
+  previewAt,
+}: { now?: Date; previewAt?: Date } = {}) {
+  const db = getDatabase();
+  const hubChatId = await findInspirationHubChatId(db);
+  const [chat] = hubChatId
+    ? await db
+        .select({ title: telegramChats.title })
+        .from(telegramChats)
+        .where(eq(telegramChats.chatId, hubChatId))
+    : [];
+  const [product] = await db
+    .select({ salesEnabled: products.salesEnabled })
+    .from(products)
+    .where(eq(products.externalProductId, INSPIRATION_HUB_PRODUCT_ID));
+
+  const rows = await db
+    .select({
+      entitlementId: accessEntitlements.id,
+      status: accessEntitlements.status,
+      startsAt: accessEntitlements.startsAt,
+      expiresAt: accessEntitlements.expiresAt,
+      periodStartMode: accessEntitlements.periodStartMode,
+      rightOwner: accessEntitlements.telegramUserId,
+      purchaseOwner: purchases.telegramUserId,
+      paymentIntentId: purchases.paymentIntentId,
+      customerName: purchases.customerFullNameSnapshot,
+      customerEmail: purchases.customerEmailSnapshot,
+      offerLabel: purchases.offerLabelSnapshot,
+      offerId: purchases.offerExternalId,
+      amountMinor: purchases.amountMinor,
+      currency: purchases.currency,
+      paidAt: purchases.succeededAt,
+    })
+    .from(accessEntitlements)
+    .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
+    .where(
+      and(
+        eq(accessEntitlements.sourceKind, "standalone_hub"),
+        eq(purchases.outcome, "succeeded"),
+        isNull(accessEntitlements.revokedAt),
+      ),
+    )
+    .orderBy(desc(purchases.succeededAt))
+    .limit(PERIOD_LIST_LIMIT);
+
+  const owners = [
+    ...new Set(
+      rows
+        .map((row) => row.rightOwner ?? row.purchaseOwner)
+        .filter((id): id is string => !!id),
+    ),
+  ];
+  const usernames = owners.length
+    ? await db
+        .selectDistinctOn([telegramUserBindings.telegramUserId], {
+          telegramUserId: telegramUserBindings.telegramUserId,
+          telegramUsername: telegramUserBindings.telegramUsername,
+        })
+        .from(telegramUserBindings)
+        .where(inArray(telegramUserBindings.telegramUserId, owners))
+        .orderBy(
+          telegramUserBindings.telegramUserId,
+          desc(telegramUserBindings.updatedAt),
+        )
+    : [];
+  const usernameOf = new Map(
+    usernames.map((row) => [row.telegramUserId, row.telegramUsername]),
+  );
+
+  const periods = rows.map((row) => {
+    const owner = row.rightOwner ?? row.purchaseOwner;
+    return {
+      paymentIntentId: row.paymentIntentId,
+      customerName: row.customerName ?? "",
+      customerEmail: row.customerEmail ?? "",
+      offerLabel: row.offerLabel ?? "",
+      amountMinor: row.amountMinor,
+      currency: row.currency,
+      paidAt: row.paidAt?.toISOString() ?? null,
+      startsAt: row.startsAt?.toISOString() ?? null,
+      expiresAt: row.expiresAt?.toISOString() ?? null,
+      telegramUserId: owner,
+      telegramUsername: (owner && usernameOf.get(owner)) || null,
+      state: periodState(row, now),
+      afterCohort: row.periodStartMode === "after_entitlement",
+    };
+  });
+  const endingSoonBefore = now.getTime() + ENDING_SOON_DAYS * DAY_MS;
+
+  const [ownerless, stalled, ended] = await Promise.all([
+    listOwnerlessHubPurchases(db, { checkedAt: now }),
+    listStalledHubContinuations(db),
+    listEndedHubAccessRights(db, { checkedAt: now, hubChatId }),
+  ]);
+  const nextCronAt = getNextHubCronRun(now);
+  const preview = await previewHubExpiry(db, { at: previewAt ?? nextCronAt });
+
+  return {
+    generatedAt: now.toISOString(),
+    chat: hubChatId ? { chatId: hubChatId, title: chat?.title ?? hubChatId } : null,
+    salesEnabled: product?.salesEnabled ?? false,
+    counts: {
+      active: periods.filter((period) => period.state === "active").length,
+      scheduled: periods.filter(
+        (period) => period.state === "scheduled" || period.state === "waiting",
+      ).length,
+      endingSoon: periods.filter(
+        (period) =>
+          period.state === "active" &&
+          period.expiresAt !== null &&
+          Date.parse(period.expiresAt) <= endingSoonBefore,
+      ).length,
+    },
+    problems: {
+      settingsMissing: hubChatId === null,
+      ownerlessPaymentIntentIds: ownerless,
+      stalledPaymentIntentIds: stalled,
+      endedOwnerlessPaymentIntentIds: ended
+        .filter((right) => right.telegramUserId === null)
+        .map((right) => right.paymentIntentId),
+    },
+    nextCronAt: nextCronAt.toISOString(),
+    preview: {
+      at: preview.at,
+      removals: preview.removals,
+    },
+    periods,
+  };
+}
+
+export type HubAdminOverview = Awaited<ReturnType<typeof getHubAdminOverview>>;
+
+/** Standalone Hub periods still running, for the overview tiles. */
+export async function countRunningHubPeriods(now = new Date()) {
+  const db = getDatabase();
+  const rows = await db
+    .select({
+      startsAt: accessEntitlements.startsAt,
+      expiresAt: accessEntitlements.expiresAt,
+      status: accessEntitlements.status,
+    })
+    .from(accessEntitlements)
+    .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
+    .where(
+      and(
+        eq(accessEntitlements.sourceKind, "standalone_hub"),
+        eq(purchases.outcome, "succeeded"),
+        isNull(accessEntitlements.revokedAt),
+        notInArray(accessEntitlements.status, FINISHED_STATUSES),
+      ),
+    );
+  const endingSoonBefore = now.getTime() + ENDING_SOON_DAYS * DAY_MS;
+  const states = rows.map((row) => ({ ...row, state: periodState(row, now) }));
+
+  return {
+    active: states.filter((row) => row.state === "active").length,
+    endingSoon: states.filter(
+      (row) =>
+        row.state === "active" &&
+        row.expiresAt !== null &&
+        row.expiresAt.getTime() <= endingSoonBefore,
+    ).length,
+    scheduled: states.filter(
+      (row) => row.state === "scheduled" || row.state === "waiting",
+    ).length,
+  };
+}

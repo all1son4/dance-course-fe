@@ -13,7 +13,8 @@ import type {
   OnlineGroupAdminAccessState,
 } from "./admin.types";
 
-export const formatDateTime = (value: string, timeZone = "UTC") => {
+// Anna works from Warsaw: every time in the admin is Warsaw time.
+export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
@@ -27,7 +28,6 @@ export const formatDateTime = (value: string, timeZone = "UTC") => {
     minute: "2-digit",
     month: "2-digit",
     timeZone,
-    timeZoneName: "short",
     year: "numeric",
   }).format(date);
 };
