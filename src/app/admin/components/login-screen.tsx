@@ -58,6 +58,13 @@ const Lead = styled.p`
   color: var(--a-ink-2);
 `;
 
+// The label holds only its word, so the field is named «Пароль» and the eye button
+// keeps its own name.
+const PasswordField = styled.div`
+  display: grid;
+  gap: 6px;
+`;
+
 const PasswordWrap = styled.div`
   position: relative;
 
@@ -133,8 +140,8 @@ export const LoginScreen = ({
         <Heading>Центр управления</Heading>
         <Lead>Anna Strok · продажи, потоки и доступы</Lead>
         <Form onSubmit={onSubmit}>
-          <FieldLabel htmlFor="admin-password">
-            Пароль
+          <PasswordField>
+            <FieldLabel htmlFor="admin-password">Пароль</FieldLabel>
             <PasswordWrap>
               <TextField
                 id="admin-password"
@@ -158,7 +165,7 @@ export const LoginScreen = ({
                 {visible ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
               </IconButton>
             </PasswordWrap>
-          </FieldLabel>
+          </PasswordField>
           {capsLock && <Hint>Включён Caps Lock</Hint>}
           <AdminButton
             type="submit"

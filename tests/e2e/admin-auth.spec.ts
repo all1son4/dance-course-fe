@@ -108,11 +108,11 @@ test("admin keeps the shared-password flow and verifies an uncertain logout", as
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "Центр управления" })).toBeVisible();
 
-  await page.getByLabel("Пароль").fill("wrong-password");
+  await page.getByLabel("Пароль", { exact: true }).fill("wrong-password");
   await page.getByRole("button", { name: "Войти" }).click();
   await expect(page.getByText("Неверный пароль.")).toBeVisible();
 
-  await page.getByLabel("Пароль").fill("test-only-password");
+  await page.getByLabel("Пароль", { exact: true }).fill("test-only-password");
   await page.getByRole("button", { name: "Войти" }).click();
   await expect(page.getByText("Сессия подтверждена")).toBeVisible();
 
