@@ -31,7 +31,9 @@ const auditDatabaseInvariants = async (): Promise<InvariantAuditRow[]> => {
         'without-mentor',
         'with-mentor',
         'renewal-discount',
-        'renewal-library-access'
+        'renewal-library-access',
+        'hub-access',
+        'hub-renewal'
       )
 
       UNION ALL

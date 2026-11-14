@@ -67,6 +67,8 @@ export const productOffers = pgTable(
         | "with-mentor"
         | "renewal-discount"
         | "renewal-library-access"
+        | "hub-access"
+        | "hub-renewal"
       >(),
     label: text("label").notNull(),
     labelKey: text("label_key"),
@@ -88,7 +90,9 @@ export const productOffers = pgTable(
         'without-mentor',
         'with-mentor',
         'renewal-discount',
-        'renewal-library-access'
+        'renewal-library-access',
+        'hub-access',
+        'hub-renewal'
       )`,
     ),
     check(
@@ -325,6 +329,62 @@ export const telegramRenewalVerifications = pgTable(
     ),
     index("telegram_renewal_verifications_user_idx").on(table.telegramUserId),
     index("telegram_renewal_verifications_expires_idx").on(table.expiresAt),
+  ],
+);
+
+// One Telegram check per checkout session for the discounted Hub price. Unlike
+// `telegram_renewal_verifications` it needs no renewal campaign or chat pair: the
+// basis is either the buyer's own active Hub period or the chat of a cohort.
+export const hubDiscountVerifications = pgTable(
+  "hub_discount_verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    checkoutSessionId: text("checkout_session_id").notNull(),
+    telegramUserId: text("telegram_user_id").notNull(),
+    telegramUsername: text("telegram_username"),
+    basis: text("basis").$type<"cohort_chat" | "active_hub">(),
+    cohortId: uuid("cohort_id"),
+    status: text("status").notNull().$type<"verified" | "not_member" | "failed">(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "hub_discount_verifications_status_check",
+      sql`${table.status} IN ('verified', 'not_member', 'failed')`,
+    ),
+    check(
+      "hub_discount_verifications_basis_check",
+      sql`${table.basis} IS NULL OR ${table.basis} IN ('cohort_chat', 'active_hub')`,
+    ),
+    // Only a passed check has a basis and a time; a cohort accompanies exactly
+    // the cohort-chat basis.
+    check(
+      "hub_discount_verifications_verified_check",
+      sql`CASE
+        WHEN ${table.status} = 'verified'
+          THEN ${table.basis} IS NOT NULL AND ${table.verifiedAt} IS NOT NULL
+        ELSE ${table.basis} IS NULL
+      END`,
+    ),
+    check(
+      "hub_discount_verifications_cohort_check",
+      sql`(${table.basis} IS NOT DISTINCT FROM 'cohort_chat') = (${table.cohortId} IS NOT NULL)`,
+    ),
+    check(
+      "hub_discount_verifications_ids_check",
+      sql`BTRIM(${table.checkoutSessionId}) <> ''
+        AND BTRIM(${table.telegramUserId}) <> ''`,
+    ),
+    foreignKey({
+      columns: [table.cohortId],
+      foreignColumns: [onlineGroupCohorts.id],
+      name: "hub_discount_verifications_cohort_fk",
+    }).onDelete("restrict"),
+    uniqueIndex("hub_discount_verifications_checkout_idx").on(table.checkoutSessionId),
   ],
 );
 
