@@ -252,7 +252,8 @@ export default async function InspirationHubPage() {
             sizes="(max-width: 920px) 100vw, 473px"
           />
         </StepsSection>
-        <FinalCta aria-labelledby="hub-cta-title">
+        {/* The closing offer is a buy block of its own: the sticky bar steps aside while it is on screen. */}
+        <FinalCta aria-labelledby="hub-cta-title" {...stickyCtaAnchorProps}>
           <FinalCtaText>
             <h2 id="hub-cta-title">{t("cta.title")}</h2>
             <p>{t("cta.text")}</p>
