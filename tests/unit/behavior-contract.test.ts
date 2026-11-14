@@ -118,6 +118,20 @@ test("[BEH-TG-02] keeps the accepted product, offer, price, and access-duration 
       pln: 220,
       product: "online-group-anna-strok",
     },
+    {
+      durationDays: 56,
+      eur: 40,
+      offer: "hub-access",
+      pln: 175,
+      product: "inspiration-hub",
+    },
+    {
+      durationDays: 56,
+      eur: 35,
+      offer: "hub-renewal",
+      pln: 155,
+      product: "inspiration-hub",
+    },
   ]);
 });
 

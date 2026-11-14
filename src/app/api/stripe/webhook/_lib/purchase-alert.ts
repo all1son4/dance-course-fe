@@ -1,6 +1,10 @@
 import { normalizeCountryCode } from "@/constants/countries";
 import { DEFAULT_SITE_HOME_URL } from "@/constants/links";
-import { formatPrice, isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
+import {
+  formatPrice,
+  isInspirationHubOfferId,
+  isOnlineGroupLibraryOfferId,
+} from "@/constants/sellable-products";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import {
   formatPurchaseLine,
@@ -590,6 +594,28 @@ const getAccessProcessingStatuses = ({
     });
   }
 
+  // A Hub purchase has one right, the paid Hub period; there is no main group.
+  if (isInspirationHubOfferId(paymentRecord.offer_id)) {
+    return [
+      onlineGroupAccessStates
+        ? getAccessProcessingStatus({
+            expected: true,
+            label: "Inspiration Hub",
+            missingDetail: "период не записан",
+            missingState: "error",
+            status:
+              onlineGroupAccessStates.find(
+                (access) => access.accessKey === "inspiration-hub",
+              )?.status ?? "",
+          })
+        : {
+            detail: "статус не удалось проверить",
+            label: "Inspiration Hub",
+            state: "attention",
+          },
+    ];
+  }
+
   const workflow = paymentRecord.access_workflow.trim();
 
   if (workflow === "manual-admin") {
@@ -740,6 +766,7 @@ export const buildPurchaseAlertText = ({
   onlineGroupAccessStates,
   processedAtIso,
   paymentRecord,
+  rejectedAccessReason = null,
 }: {
   eventCreatedAtIso: string;
   eventId: string;
@@ -748,6 +775,8 @@ export const buildPurchaseAlertText = ({
   onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
   processedAtIso: string;
   paymentRecord: PaymentRecordSnapshot;
+  /** Set when the Hub access job of this purchase was rejected. */
+  rejectedAccessReason?: string | null;
 }) => {
   const checkoutLocale = getResolvedCheckoutLocale(paymentRecord.checkout_locale);
   const amountLabel = getFormattedAmountLabel({
@@ -768,6 +797,15 @@ export const buildPurchaseAlertText = ({
       onlineGroupAccessStates,
       paymentRecord,
     }),
+    ...(rejectedAccessReason
+      ? [
+          {
+            detail: `не записан: ${rejectedAccessReason}`,
+            label: "Срок доступа",
+            state: "error" as const,
+          },
+        ]
+      : []),
   ];
   const processingState = getWorstProcessingState(statuses);
   // A sale after sales were closed always asks for a look, even when every

@@ -110,6 +110,16 @@ const EMAIL_COPY = {
           "Your personal Telegram group invite is being prepared. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram group",
       },
+      telegramInspirationHub: {
+        title: "Join Inspiration Hub",
+        ready:
+          "Use the button below to join Inspiration Hub. The personal invite works once and is valid for up to 30 days.",
+        active:
+          "You're already in Inspiration Hub — your access is extended, nothing to do.",
+        pending:
+          "Your personal Inspiration Hub invite is being prepared. If the button is missing, contact support and we will send access manually.",
+        cta: "Open Inspiration Hub",
+      },
       telegramRenewal: {
         title: "Join the new Online Group cycle",
         ready:
@@ -210,6 +220,16 @@ const EMAIL_COPY = {
           "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz grupę Telegram",
       },
+      telegramInspirationHub: {
+        title: "Dostęp do Inspiration Hub",
+        ready:
+          "Użyj przycisku poniżej, aby dołączyć do Inspiration Hub. Osobisty link działa jeden raz i jest ważny do 30 dni.",
+        active:
+          "Jesteś już w Inspiration Hub — dostęp został przedłużony, nic nie musisz robić.",
+        pending:
+          "Twój osobisty link do Inspiration Hub jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        cta: "Otwórz Inspiration Hub",
+      },
       telegramRenewal: {
         title: "Dostęp do nowego cyklu grupy online",
         ready:
@@ -308,6 +328,15 @@ const EMAIL_COPY = {
           "Персональная ссылка-приглашение в Telegram-группу готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         cta: "Открыть Telegram-группу",
       },
+      telegramInspirationHub: {
+        title: "Доступ в Inspiration Hub",
+        ready:
+          "Нажми кнопку ниже, чтобы войти в Inspiration Hub. Персональная ссылка одноразовая и действует до 30 дней.",
+        active: "Ты уже в Inspiration Hub — доступ продлён, ничего делать не нужно.",
+        pending:
+          "Персональная ссылка в Inspiration Hub готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
+        cta: "Открыть Inspiration Hub",
+      },
       telegramRenewal: {
         title: "Доступ в новый поток онлайн-группы",
         ready:
@@ -329,6 +358,7 @@ export type PurchaseSuccessEmailAccessKind =
   | "telegram-channel"
   | "telegram-channel-lifetime"
   | "telegram-chat"
+  | "telegram-inspiration-hub"
   | "telegram-online-group"
   | "telegram-renewal";
 
@@ -416,6 +446,7 @@ const isTelegramAccessKind = (accessKind: PurchaseSuccessEmailAccessKind): boole
   accessKind === "telegram-channel" ||
   accessKind === "telegram-channel-lifetime" ||
   accessKind === "telegram-chat" ||
+  accessKind === "telegram-inspiration-hub" ||
   accessKind === "telegram-online-group" ||
   accessKind === "telegram-renewal";
 
@@ -495,6 +526,18 @@ const resolveAccessContent = ({
             : copy.access.telegramRenewal.pending,
         mentorFollowupNote: "",
         title: copy.access.telegramRenewal.title,
+      };
+    case "telegram-inspiration-hub":
+      return {
+        cta: copy.access.telegramInspirationHub.cta,
+        description:
+          telegramLink || hasOnlineGroupAccess
+            ? hasAccessButton
+              ? copy.access.telegramInspirationHub.ready
+              : copy.access.telegramInspirationHub.active
+            : copy.access.telegramInspirationHub.pending,
+        mentorFollowupNote: "",
+        title: copy.access.telegramInspirationHub.title,
       };
     case "telegram-online-group":
       return {
@@ -744,6 +787,8 @@ const getAccessSummary = ({
     case "telegram-online-group":
     case "telegram-renewal":
       return copy.accessSummary.onlineGroup;
+    case "telegram-inspiration-hub":
+      return accessDurationDays > 0 ? copy.formatDays(accessDurationDays) : "";
     case "private-lesson":
       return [offerLabel, copy.accessSummary.privateLesson].filter(Boolean).join(", ");
     case "manual-admin":
@@ -1050,9 +1095,10 @@ export const buildPurchaseSuccessEmail = ({
     copy,
     telegramAccessLinks,
   });
-  const hasInspirationHubAccess = telegramAccessLinks.some(
-    (access) => access.accessKey === "inspiration-hub",
-  );
+  // "For the time of the cohort" describes the Hub inside Plus, not a paid Hub period.
+  const hasInspirationHubAccess =
+    accessKind !== "telegram-inspiration-hub" &&
+    telegramAccessLinks.some((access) => access.accessKey === "inspiration-hub");
   const inspirationAccessText = getInspirationAccessText({
     copy,
     formattedInspirationExpiry,

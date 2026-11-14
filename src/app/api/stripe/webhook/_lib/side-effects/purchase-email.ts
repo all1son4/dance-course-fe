@@ -65,6 +65,13 @@ const getPurchaseSuccessEmailAccessKind = ({
     return "telegram-online-group";
   }
 
+  if (
+    configuredAccessWorkflow === "telegram-inspiration-hub" ||
+    configuredAccessWorkflow === "telegram-hub-renewal"
+  ) {
+    return "telegram-inspiration-hub";
+  }
+
   if (configuredAccessWorkflow === "telegram-channel-lifetime") {
     return "telegram-channel-lifetime";
   }

@@ -69,6 +69,8 @@ function makeFixture(resolvedFirst = true, end: string | null = ONLINE_END) {
     id: "cohort",
     mainChatId: "online-chat",
     accessEndsAt: end === null ? null : new Date(end),
+    nextCohortStartsAt: null,
+    holdsLegacyPlusHub: false,
   };
   // Input order deliberately differs from dependency order.
   const input = makeInput([second, root, first], cohort);

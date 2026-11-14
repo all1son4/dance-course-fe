@@ -61,6 +61,12 @@
       },
       "payment": {
         "title": "Secure checkout"
+      },
+      "inspirationHub": {
+        "title": "Inspiration HUB: Frame Up Strip lesson library",
+        "description": "Lessons from completed Online Group cycles, bonus materials and training music in a private Telegram channel. 8 weeks of access right after payment.",
+        "ogImageAlt": "Inspiration HUB by Anna Strok",
+        "heroImageAlt": "Anna Strok, Inspiration HUB"
       }
     },
     "breadcrumbHome": "Home"
@@ -359,6 +365,15 @@
         },
         "salesLabel": "Sales open until 7 September",
         "salesValue": "Lifetime access!"
+      },
+      "inspirationHub": {
+        "title": "Inspiration HUB",
+        "description": {
+          "1": "A library of video lessons and useful materials. Get access to lessons from previous Online Group cycles, practise at your own pace and find new ideas for your dance."
+        },
+        "accessLabel": "Access to materials",
+        "accessValue": "Right after purchase, for 8 weeks",
+        "buyButton": "Buy"
       }
     },
     "studio": {
@@ -620,6 +635,69 @@
       }
     }
   },
+  "InspirationHubPage": {
+    "hero": {
+      "title": "Inspiration HUB",
+      "titlePlain": "Inspiration HUB",
+      "description": {
+        "1": "INSPIRATION HUB is your space for inspiration, practice and growth in dance.",
+        "2": "A library of video lessons on technique, choreography and improvisation, plus useful materials. Get access to lessons from previous Online Group cycles (10+ lessons), practise at your own pace and find new ideas for your dance."
+      },
+      "accessLabel": "Access",
+      "accessValue": "8 weeks",
+      "priceLabel": "Price",
+      "perWeek": "≈ {price} per week",
+      "buyButton": "Buy",
+      "insideButton": "What's inside"
+    },
+    "about": {
+      "title": "What awaits you inside Inspiration HUB"
+    },
+    "suggestions": {
+      "1": {
+        "title": "Full programmes of previous cycles",
+        "text": "Get access to lessons from the completed Online Group 1.0 and 2.0 cycles. Inside are 5 full lessons: leg and arm technique, flow, hair work, improvisation, basic acrobatics and choreography."
+      },
+      "2": {
+        "title": "Extra materials",
+        "text": "Bonus lessons to vary your training and develop your technique. Training music, ideas for inspiration, tips and useful information on dancewear and choosing shoes, plus news about dance events."
+      },
+      "3": {
+        "title": "Practise whenever you like",
+        "text": "Join at any time and get access to all materials for 8 weeks. No schedules and no deadlines: choose what to learn and practise when it suits you."
+      },
+      "4": {
+        "title": "Private Telegram channel",
+        "text": "All lessons and materials are kept in a convenient private space that is always at hand."
+      },
+      "5": {
+        "title": "Continue without a break",
+        "text": "Current Online Group participants and Inspiration HUB subscribers get a special price when they continue to the next cycle."
+      }
+    },
+    "steps": {
+      "title": "How it works",
+      "imageAlt": "Anna Strok",
+      "items": {
+        "1": {
+          "title": "Payment",
+          "description": "Check out on the site: it is a one-time payment with no automatic charges. Your personal link to the private Telegram channel appears right after payment and arrives by email."
+        },
+        "2": {
+          "title": "Joining the channel",
+          "description": "Open the link from the Telegram account you will use: it works once and only for you."
+        },
+        "3": {
+          "title": "Renewal",
+          "description": "You can renew in advance, and the next 8 weeks start right after the current ones."
+        },
+        "4": {
+          "title": "End of access",
+          "description": "If you do not renew, channel access closes by itself 8 weeks after payment. You can come back at any time."
+        }
+      }
+    }
+  },
   "ChoreoPage": {
     "hero": {
       "title": "Online tutorials of my choreographies",
@@ -723,6 +801,12 @@
         "title": "Renewal unavailable",
         "description": "Message us for help renewing your access."
       }
+    },
+    "hubDiscount": {
+      "description": "Special price for Online Group participants and Inspiration Hub subscribers. Confirm your Telegram account.",
+      "summaryDescription": "Inspiration Hub for 8 weeks at the special price.",
+      "notEligible": "We could not find this account in the current or a recently finished Online Group cycle, or in Inspiration Hub.",
+      "fullPriceLink": "Buy at full price"
     },
     "inputs": {
       "fullName": {
@@ -847,6 +931,10 @@
       "birthdayDrop": {
         "line1": "We’re preparing your personal access to the materials.",
         "line2": "The link will appear below and is also sent to your email."
+      },
+      "inspirationHub": {
+        "line1": "We are preparing your personal access to Inspiration Hub.",
+        "line2": "The link will appear below and will also arrive by email."
       }
     },
     "accessNotice": {
@@ -854,7 +942,8 @@
       "choreo": "Invite valid for 30 days. Material access: 60 days after joining.",
       "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
       "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration Hub access is provided for the duration of the cycle.",
-      "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever."
+      "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever.",
+      "inspirationHub": "The link is valid for up to 30 days. Inspiration Hub access lasts 8 weeks."
     },
     "telegram": {
       "active": "access is already active",
@@ -1022,6 +1111,18 @@
       "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor"
+      }
+    },
+    "inspirationHub": {
+      "title": "Inspiration Hub",
+      "shortTitle": "Inspiration Hub",
+      "description": {
+        "1": "Access to the private Inspiration Hub Telegram channel for 8 weeks."
+      },
+      "accessNote": "After payment, we will send you a personal one-time link to Inspiration Hub.",
+      "offers": {
+        "hubAccess": "Full price",
+        "hubRenewal": "Special price"
       }
     },
     "privateLesson": {

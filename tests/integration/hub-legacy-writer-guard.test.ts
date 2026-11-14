@@ -239,3 +239,122 @@ test("Online delivery issues no invite for a revoked classified right", async (t
     return [record.payment_intent_id];
   });
 });
+
+async function readOwnerAndStatus(paymentIntentId: string) {
+  const [row] = await client<{ status: string; telegram_user_id: string | null }[]>`
+    SELECT entitlement.status, entitlement.telegram_user_id
+    FROM access_entitlements entitlement
+    JOIN purchases purchase ON purchase.id = entitlement.purchase_id
+    WHERE purchase.payment_intent_id = ${paymentIntentId}
+      AND entitlement.access_key = 'primary'
+  `;
+  assert.ok(row);
+  return row;
+}
+
+test("a legacy replay never moves a classified right to or from expired and revoked", async () => {
+  await withChat(async (chatId) => {
+    const ownerId = createTestTelegramUserId();
+    const ended = makeRecord(chatId, ownerId);
+    const active = makeRecord(chatId, ownerId);
+    const legacy = makeRecord(chatId, ownerId);
+
+    for (const record of [ended, active, legacy]) {
+      await upsertPaymentRecordToDatabase(record);
+    }
+    // The cron ended this right; no revocation time is involved.
+    await classifyPrimary(ended.payment_intent_id, {
+      revokedAt: null,
+      status: "expired",
+    });
+    await classifyPrimary(active.payment_intent_id, {
+      revokedAt: null,
+      status: "activated",
+    });
+
+    await upsertPaymentRecordToDatabase({
+      ...ended,
+      telegram_access_status: "token_issued",
+      updated_at: "2026-10-01T08:05:00.000Z",
+    });
+    for (const record of [active, legacy]) {
+      await upsertPaymentRecordToDatabase({
+        ...record,
+        telegram_access_status: "expired",
+        updated_at: "2026-10-01T08:05:00.000Z",
+      });
+    }
+
+    assert.equal((await readPrimary(ended.payment_intent_id)).status, "expired");
+    assert.equal((await readPrimary(active.payment_intent_id)).status, "activated");
+    assert.equal((await readPrimary(legacy.payment_intent_id)).status, "expired");
+
+    return [ended, active, legacy].map((record) => record.payment_intent_id);
+  });
+});
+
+test("a legacy replay fills an empty classified owner but never replaces one", async () => {
+  await withChat(async (chatId) => {
+    const [ownerId, otherId] = [createTestTelegramUserId(), createTestTelegramUserId()];
+    const owned = makeRecord(chatId, ownerId);
+    const ownerless = makeRecord(chatId, "");
+    const legacy = makeRecord(chatId, ownerId);
+
+    for (const record of [owned, ownerless, legacy]) {
+      await upsertPaymentRecordToDatabase(record);
+      await classifyPrimary(record.payment_intent_id, {
+        revokedAt: null,
+        status: "activated",
+      });
+    }
+    await client`
+      UPDATE access_entitlements entitlement SET source_kind = NULL
+      FROM purchases purchase
+      WHERE purchase.id = entitlement.purchase_id
+        AND purchase.payment_intent_id = ${legacy.payment_intent_id}
+    `;
+
+    const replay = { updated_at: "2026-10-01T08:05:00.000Z" };
+    await upsertPaymentRecordToDatabase({
+      ...owned,
+      ...replay,
+      telegram_user_id: otherId,
+    });
+    await upsertPaymentRecordToDatabase({
+      ...ownerless,
+      ...replay,
+      telegram_user_id: otherId,
+    });
+    await upsertPaymentRecordToDatabase({
+      ...legacy,
+      ...replay,
+      telegram_user_id: otherId,
+    });
+
+    assert.equal(
+      (await readOwnerAndStatus(owned.payment_intent_id)).telegram_user_id,
+      ownerId,
+    );
+    assert.equal(
+      (await readOwnerAndStatus(ownerless.payment_intent_id)).telegram_user_id,
+      otherId,
+    );
+    assert.equal(
+      (await readOwnerAndStatus(legacy.payment_intent_id)).telegram_user_id,
+      otherId,
+    );
+
+    // An empty value is not an owner either.
+    await upsertPaymentRecordToDatabase({
+      ...owned,
+      telegram_user_id: "",
+      updated_at: "2026-10-01T08:06:00.000Z",
+    });
+    assert.equal(
+      (await readOwnerAndStatus(owned.payment_intent_id)).telegram_user_id,
+      ownerId,
+    );
+
+    return [owned, ownerless, legacy].map((record) => record.payment_intent_id);
+  });
+});

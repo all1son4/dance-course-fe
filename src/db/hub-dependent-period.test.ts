@@ -43,6 +43,8 @@ function makeOnline(end: string | null = ONLINE_END): HubPeriodPredecessorInput 
       id: "cohort-online",
       mainChatId: "online-chat",
       accessEndsAt: end === null ? null : new Date(end),
+      nextCohortStartsAt: null,
+      holdsLegacyPlusHub: false,
     },
   };
 }

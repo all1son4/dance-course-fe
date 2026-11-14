@@ -4,6 +4,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import {
   getSellableProductById,
   getSellableProductOfferById,
+  isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
@@ -95,36 +96,42 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const isWithoutMentorPurchase = selectedOffer?.code === "without-mentor";
   const isRenewalPurchase = isRenewalDiscountOfferId(offerId);
   const isOnlineGroupPurchase = isOnlineGroupAccessOfferId(offerId);
+  const isHubPurchase = isInspirationHubOfferId(offerId);
   const isLifetimeChannelPurchase = isLifetimeChannelOfferId(offerId);
   const isTelegramAccessPurchase =
     isChoreoChannelOfferId(offerId) ||
     isFirstTouchOfferId(offerId) ||
     isLifetimeChannelPurchase ||
-    isOnlineGroupPurchase;
+    isOnlineGroupPurchase ||
+    isHubPurchase;
   const successCase = isFirstTouchPurchase
     ? "firstTouch"
-    : isRenewalPurchase
-      ? "renewal"
-      : isOnlineGroupPurchase
-        ? "onlineGroup"
-        : isLifetimeChannelPurchase
-          ? "birthdayDrop"
-          : isWithoutMentorPurchase
-            ? "withoutMentor"
-            : "withMentor";
+    : isHubPurchase
+      ? "inspirationHub"
+      : isRenewalPurchase
+        ? "renewal"
+        : isOnlineGroupPurchase
+          ? "onlineGroup"
+          : isLifetimeChannelPurchase
+            ? "birthdayDrop"
+            : isWithoutMentorPurchase
+              ? "withoutMentor"
+              : "withMentor";
   const accessNotice = isFirstTouchPurchase
     ? t("accessNotice.firstTouch")
-    : isLifetimeChannelPurchase
-      ? t("accessNotice.birthdayDrop")
-      : isChoreoChannelOfferId(offerId)
-        ? t("accessNotice.choreo")
-        : isOnlineGroupPurchase
-          ? t(
-              isOnlineGroupLibraryOfferId(offerId)
-                ? "accessNotice.onlineGroupPlus"
-                : "accessNotice.onlineGroup",
-            )
-          : "";
+    : isHubPurchase
+      ? t("accessNotice.inspirationHub")
+      : isLifetimeChannelPurchase
+        ? t("accessNotice.birthdayDrop")
+        : isChoreoChannelOfferId(offerId)
+          ? t("accessNotice.choreo")
+          : isOnlineGroupPurchase
+            ? t(
+                isOnlineGroupLibraryOfferId(offerId)
+                  ? "accessNotice.onlineGroupPlus"
+                  : "accessNotice.onlineGroup",
+              )
+            : "";
 
   const purchaseCurrency =
     currencyParam === "eur" || currencyParam === "pln" ? currencyParam : undefined;

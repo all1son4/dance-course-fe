@@ -1,5 +1,7 @@
 import type Stripe from "stripe";
 
+import { isInspirationHubOfferId } from "@/constants/sellable-products";
+import { findPurchaseOutboxJobState } from "@/db/transactional-outbox";
 import { logSafeError } from "@/lib/safe-error-log";
 import { hasClosedSalesAtFulfilment } from "@/lib/sales-availability";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
@@ -40,7 +42,7 @@ const getOnlineGroupAccessStatesForAlert = async ({
   offerId: string;
   paymentIntentId: string;
 }): Promise<OnlineGroupAccessState[] | null | undefined> => {
-  if (!isOnlineGroupAccessOfferId(offerId)) {
+  if (!isOnlineGroupAccessOfferId(offerId) && !isInspirationHubOfferId(offerId)) {
     return undefined;
   }
 
@@ -53,27 +55,47 @@ const getOnlineGroupAccessStatesForAlert = async ({
   }
 };
 
+/** The reason a rejected access job gave up; null when it did not. */
+const getRejectedAccessReason = async (purchaseId: string | null) => {
+  if (!purchaseId) return null;
+
+  try {
+    const job = await findPurchaseOutboxJobState(purchaseId, "telegram_access_delivery");
+    return job?.status === "dead_letter"
+      ? job.lastErrorMessage || "причина не записана"
+      : null;
+  } catch (error) {
+    logSafeError("Failed to load the access job for purchase alert", error);
+    return "статус не удалось проверить";
+  }
+};
+
 const buildAlertTextForPayment = async ({
   event,
   handledEvent,
   paymentIntentId,
   paymentRecord,
+  purchaseId,
 }: {
   event: Stripe.Event;
   handledEvent: StripeWebhookSyncResult;
   paymentIntentId: string;
   paymentRecord: StripeWebhookSyncResult["paymentRecord"];
+  purchaseId: string | null;
 }) => {
-  // Both reads swallow their own failures, so neither can reject the pair.
-  const [onlineGroupAccessStates, hasClosedSales] = await Promise.all([
-    getOnlineGroupAccessStatesForAlert({
-      offerId: paymentRecord.offer_id,
-      paymentIntentId,
-    }),
-    hasClosedSalesAtFulfilment(paymentRecord.product_id, paymentRecord.offer_id),
-  ]);
+  // Every read swallows its own failures, so none can reject the group.
+  const [onlineGroupAccessStates, hasClosedSales, rejectedAccessReason] =
+    await Promise.all([
+      getOnlineGroupAccessStatesForAlert({
+        offerId: paymentRecord.offer_id,
+        paymentIntentId,
+      }),
+      hasClosedSalesAtFulfilment(paymentRecord.product_id, paymentRecord.offer_id),
+      getRejectedAccessReason(purchaseId),
+    ]);
 
   return buildPurchaseAlertText({
+    rejectedAccessReason,
     eventCreatedAtIso: toUtcIso(event.created * 1000),
     eventId: handledEvent.eventId,
     eventType: handledEvent.eventType,
@@ -87,9 +109,11 @@ const buildAlertTextForPayment = async ({
 export const deliverPurchaseAlertFromOutbox = async ({
   event,
   handledEvent,
+  purchaseId = null,
 }: {
   event: Stripe.Event;
   handledEvent: StripeWebhookSyncResult;
+  purchaseId?: string | null;
 }): Promise<{ externalMessageId?: string; skipped?: boolean }> => {
   if (
     !shouldRunPurchaseSuccessSideEffects(event) ||
@@ -126,6 +150,7 @@ export const deliverPurchaseAlertFromOutbox = async ({
     handledEvent,
     paymentIntentId,
     paymentRecord: handledEvent.paymentRecord,
+    purchaseId,
   });
   // Telegram Bot API has no idempotency key for sendMessage. The outbox owns the
   // durable deduplication and this adapter deliberately performs one provider attempt;

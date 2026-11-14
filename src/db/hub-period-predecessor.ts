@@ -4,13 +4,21 @@ import type { PendingHubChainSnapshotInput } from "./hub-period-chain-input";
 import type { HubPeriodNodeSnapshot } from "./hub-period-nodes";
 import type { onlineGroupCohorts } from "./schema";
 
+/** The cohort of an Online predecessor, with what HUB-D26 needs to place its end. */
+export type HubPredecessorCohort = Pick<
+  typeof onlineGroupCohorts.$inferSelect,
+  "id" | "mainChatId" | "accessEndsAt"
+> & {
+  /** Start of the cohort that follows this one; null while none is configured. */
+  nextCohortStartsAt: Date | null;
+  /** The predecessor purchase holds an unrevoked Plus Hub right of the old model. */
+  holdsLegacyPlusHub: boolean;
+};
+
 export type HubPeriodPredecessorInput = {
   telegramUserId: string;
   node: HubPeriodNodeSnapshot;
-  cohort: Pick<
-    typeof onlineGroupCohorts.$inferSelect,
-    "id" | "mainChatId" | "accessEndsAt"
-  > | null;
+  cohort: HubPredecessorCohort | null;
 };
 
 const INVALID_PREDECESSOR = "hub_period_predecessor_invalid";
@@ -41,6 +49,9 @@ function validatePredecessorNode(
 // The cohort is the only source of an Online end. Dates recorded on the Online right
 // are delivery projections that legacy writers rewrite, so they never decide the
 // calendar here. A free admin grant has no payment time and still anchors a period.
+// HUB-D26: a Plus buyer sold under the old promise keeps the Hub until the next cohort
+// starts, so a Hub-only continuation begins at the later of the boundary and that
+// start; without a configured next cohort the end is not known yet.
 function getOnlinePredecessorEnd(
   { entitlement, purchase }: HubPeriodNodeSnapshot,
   cohort: HubPeriodPredecessorInput["cohort"],
@@ -58,12 +69,18 @@ function getOnlinePredecessorEnd(
     throw new Error(INVALID_PREDECESSOR);
   }
 
-  const endsAt = cohort.accessEndsAt;
-  if (endsAt !== null && !isFiniteDate(endsAt)) {
+  const { accessEndsAt: endsAt, nextCohortStartsAt } = cohort;
+  if (
+    (endsAt !== null && !isFiniteDate(endsAt)) ||
+    (nextCohortStartsAt !== null && !isFiniteDate(nextCohortStartsAt))
+  ) {
     throw new Error(INVALID_PREDECESSOR);
   }
 
-  return endsAt;
+  if (!cohort.holdsLegacyPlusHub) return endsAt;
+  if (endsAt === null || nextCohortStartsAt === null) return null;
+
+  return endsAt.getTime() >= nextCohortStartsAt.getTime() ? endsAt : nextCohortStartsAt;
 }
 
 function isExactStandalonePeriod(startsAt: Date, expiresAt: Date): boolean {

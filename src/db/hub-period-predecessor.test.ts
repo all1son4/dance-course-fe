@@ -38,6 +38,8 @@ const makeOnline = (end: string | null = ONLINE_END): HubPeriodPredecessorInput 
       id: "cohort",
       mainChatId: "online-chat",
       accessEndsAt: end === null ? null : new Date(end),
+      nextCohortStartsAt: null,
+      holdsLegacyPlusHub: false,
     },
   };
 };
@@ -408,7 +410,13 @@ const standaloneInvalid: InvalidCase[] = [
   {
     name: "an unexpected cohort snapshot",
     change: (input) => {
-      input.cohort = { id: "cohort", mainChatId: "chat", accessEndsAt: null };
+      input.cohort = {
+        id: "cohort",
+        mainChatId: "chat",
+        accessEndsAt: null,
+        nextCohortStartsAt: null,
+        holdsLegacyPlusHub: false,
+      };
     },
   },
   {
@@ -661,4 +669,45 @@ test("a waiting standalone predecessor keeps its following paid period waiting",
       waitingEntitlementIds: ["next"],
     },
   );
+});
+
+// HUB-D26: cohort #2 ends at 00:00 on 16 November; cohort #3 starts on 23 November.
+const NEXT_START = "2026-11-23T18:00:00+01:00";
+
+const makeLegacyPlus = (
+  end: string | null = ONLINE_END,
+  nextStart: string | null = NEXT_START,
+): HubPeriodPredecessorInput => {
+  const input = makeOnline(end);
+  assert.ok(input.cohort);
+  input.cohort.holdsLegacyPlusHub = true;
+  input.cohort.nextCohortStartsAt = nextStart === null ? null : new Date(nextStart);
+  return input;
+};
+
+test("HUB-D26: a legacy Plus buyer's Hub-only continuation waits for the next start", () => {
+  assertValid(makeLegacyPlus(), new Date(NEXT_START));
+});
+
+test("HUB-D26: a boundary later than the next start still wins", () => {
+  assertValid(
+    makeLegacyPlus("2026-11-25T00:00:00+01:00"),
+    new Date("2026-11-25T00:00:00+01:00"),
+  );
+});
+
+test("HUB-D26: without a next cohort or a boundary the end is not known yet", () => {
+  assertValid(makeLegacyPlus(ONLINE_END, null), null);
+  assertValid(makeLegacyPlus(null), null);
+});
+
+test("HUB-D26: Standard and new-model Plus keep the cohort boundary", () => {
+  const standard = makeOnline();
+  assert.ok(standard.cohort);
+  standard.cohort.nextCohortStartsAt = new Date(NEXT_START);
+  assertValid(standard, new Date(ONLINE_END));
+});
+
+test("HUB-D26: an invalid next start is rejected", () => {
+  assertInvalid(makeLegacyPlus(ONLINE_END, "not a date"));
 });

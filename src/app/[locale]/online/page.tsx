@@ -43,18 +43,20 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function Online() {
-  const [t, metadataT, commonT, choreoSaleState] = await Promise.all([
+  const [t, metadataT, commonT, choreoSaleState, hubSaleState] = await Promise.all([
     getTranslations("OnlinePage"),
     getTranslations("Metadata"),
     getTranslations("Common"),
     getProductsSaleState(
       CHOREO_CATALOGUE_PRODUCT_CODES.map((code) => SELLABLE_PRODUCTS[code].id),
     ),
+    getProductsSaleState([SELLABLE_PRODUCTS["inspiration-hub"].id]),
   ]);
   const onlineCoursesArray = getOnlineCoursesArray(
     (key) => t(key),
     (key) => commonT(key),
     choreoSaleState,
+    hubSaleState,
   );
   const onlineCoursesStructuredData = {
     "@context": "https://schema.org",

@@ -10,6 +10,7 @@ import {
 import { retryHubPeriodChainTransaction } from "./hub-period-chain-retry";
 import type { HubPeriodPredecessorInput } from "./hub-period-predecessor";
 import { selectHubPeriodPredecessorInTransaction } from "./hub-period-selection";
+import { loadHubPredecessorCohort } from "./hub-predecessor-cohort";
 import { accessEntitlements, onlineGroupCohorts, purchases } from "./schema";
 import type { DatabaseTransaction } from "./transaction";
 
@@ -17,7 +18,7 @@ export type EnsureHubPurchasePeriodCommand = {
   purchaseId: string;
   /** Cohort of the Standard/Plus continuation offer behind this purchase, if any. */
   continuationCohortId: string | null;
-  /** Moment of processing: picks the current chain and stamps updatedAt. */
+  /** Moment of processing: stamps updatedAt only. The chain is picked at payment (К11). */
   processedAt: Date;
 };
 
@@ -96,7 +97,13 @@ async function loadPredecessorInput(
     .from(onlineGroupCohorts)
     .where(eq(onlineGroupCohorts.id, cohortId));
 
-  return { telegramUserId, node, cohort: cohort ?? null };
+  return {
+    telegramUserId,
+    node,
+    cohort: cohort
+      ? await loadHubPredecessorCohort(tx, { cohort, purchaseId: node.purchase.id })
+      : null,
+  };
 }
 
 async function resolveAndReread(
@@ -164,7 +171,11 @@ export async function ensureHubPurchasePeriodInTransaction(
   if (!purchase || purchase.telegramUserId !== owner) {
     throw new Error("hub_period_chain_read_conflict");
   }
-  if (purchase.outcome !== "succeeded" || purchase.onlineGroupCohortId !== null) {
+  if (
+    purchase.outcome !== "succeeded" ||
+    purchase.onlineGroupCohortId !== null ||
+    purchase.succeededAt === null
+  ) {
     throw new Error(PURCHASE_INVALID);
   }
 
@@ -177,7 +188,8 @@ export async function ensureHubPurchasePeriodInTransaction(
       : await selectHubPeriodPredecessorInTransaction(tx, {
           telegramUserId: owner,
           continuationCohortId: command.continuationCohortId,
-          checkedAt: command.processedAt,
+          // A Hub that ran out between payment and processing still precedes it.
+          checkedAt: purchase.succeededAt,
         });
 
   if (owner === null || predecessorId === null) {

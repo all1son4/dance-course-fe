@@ -5,6 +5,7 @@ import {
   getResolvedCheckoutCurrency,
   getSellableProductById,
   getSellableProductOfferById,
+  INSPIRATION_HUB_DISCOUNT_SLUG,
   isOfferSaleOpen,
   isOnlineGroupLibraryOfferId,
   isOnlineGroupNewOfferId,
@@ -14,10 +15,19 @@ import {
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
 import { recordCheckoutConsentEvidence } from "@/db/checkout-consent-evidence";
+import { getDatabase } from "@/db/client";
+import {
+  findValidHubDiscountVerification,
+  isHubDiscountBasisStillValid,
+} from "@/db/hub-discount";
 import {
   getActiveOnlineGroupCampaign,
   getActiveOnlineGroupTargetByOfferId,
 } from "@/db/online-group-campaigns";
+import {
+  getOnlineGroupCohortSale,
+  type OnlineGroupCohortSale,
+} from "@/db/online-group-cohort-sale";
 import { findValidRenewalVerification } from "@/db/renewal-campaigns";
 import { getCheckoutSelectionFromDatabase } from "@/db/sellable-products";
 import {
@@ -89,6 +99,9 @@ type CheckoutSelection = {
 };
 
 type RenewalVerification = Awaited<ReturnType<typeof findValidRenewalVerification>>;
+type HubDiscountVerification = Awaited<
+  ReturnType<typeof findValidHubDiscountVerification>
+>;
 type OnlineGroupTarget = Awaited<ReturnType<typeof getActiveOnlineGroupTargetByOfferId>>;
 type OnlineGroupSettings = Awaited<
   ReturnType<typeof getActiveOnlineGroupCampaign>
@@ -100,6 +113,12 @@ type PaymentIntentContext = CheckoutSelection & {
   consentAcceptance: Pick<CheckoutConsentEvidence, "agreements">;
   currency: SupportedCheckoutCurrency;
   customerData: PaymentIntentCustomerData;
+  /** The passed Hub discount check of this checkout session (offer `hub-renewal`). */
+  hubDiscountVerification: HubDiscountVerification;
+  /** The recorded basis still holds now, re-checked from the database alone. */
+  isHubDiscountStillValid: boolean;
+  /** Set for every Online Group payment, new or renewal; null for other products. */
+  onlineGroupCohortSale: OnlineGroupCohortSale | null;
   onlineGroupTarget: OnlineGroupTarget;
   renewalCampaignSlug: string;
   renewalOnlineGroupSettings: OnlineGroupSettings;
@@ -192,17 +211,33 @@ const resolvePaymentIntentContext = async (
     productId: body.productId,
   });
   const renewalCampaignSlug = (body.renewalCampaignSlug ?? "").trim();
-  const renewalVerification = renewalCampaignSlug
-    ? await findValidRenewalVerification({
-        checkoutSessionId,
-        slug: renewalCampaignSlug,
-      })
+  const renewalVerification =
+    renewalCampaignSlug && renewalCampaignSlug !== INSPIRATION_HUB_DISCOUNT_SLUG
+      ? await findValidRenewalVerification({
+          checkoutSessionId,
+          slug: renewalCampaignSlug,
+        })
+      : null;
+  const hubDiscountVerification = requiresHubDiscount(selection.offer)
+    ? await findValidHubDiscountVerification(checkoutSessionId)
     : null;
+  const isHubDiscountStillValid = hubDiscountVerification
+    ? await isHubDiscountBasisStillValid(getDatabase(), {
+        basis: hubDiscountVerification.discount,
+        checkedAt: new Date(),
+        telegramUserId: hubDiscountVerification.telegramUserId,
+      })
+    : false;
   const onlineGroupTarget = isOnlineGroupNewOfferId(selection.offer.id)
     ? await getActiveOnlineGroupTargetByOfferId(selection.offer.id)
     : null;
   const renewalOnlineGroupSettings = renewalVerification
     ? await getActiveOnlineGroupCampaign()
+    : null;
+  const onlineGroupMainChatId =
+    onlineGroupTarget?.mainChatId ?? renewalOnlineGroupSettings?.regularChatId;
+  const onlineGroupCohortSale = onlineGroupMainChatId
+    ? await getOnlineGroupCohortSale(getDatabase(), onlineGroupMainChatId)
     : null;
 
   return {
@@ -214,11 +249,41 @@ const resolvePaymentIntentContext = async (
     },
     currency,
     customerData,
+    hubDiscountVerification,
+    isHubDiscountStillValid,
+    onlineGroupCohortSale,
     onlineGroupTarget,
     renewalCampaignSlug,
     renewalOnlineGroupSettings,
     renewalVerification,
   };
+};
+
+const requiresHubDiscount = (offer: SellableProductOffer) =>
+  offer.accessWorkflow === "telegram-hub-renewal";
+
+/** П7: the discounted Hub is paid only after this session passed the Hub check. */
+const getHubDiscountErrorResponse = ({
+  hubDiscountVerification,
+  isHubDiscountStillValid,
+  offer,
+  renewalCampaignSlug,
+}: PaymentIntentContext): Response | null => {
+  if (
+    renewalCampaignSlug === INSPIRATION_HUB_DISCOUNT_SLUG &&
+    !requiresHubDiscount(offer)
+  ) {
+    return jsonErrorNoStore("renewal_payment_context_mismatch", { status: 403 });
+  }
+
+  if (
+    requiresHubDiscount(offer) &&
+    (!hubDiscountVerification || !isHubDiscountStillValid)
+  ) {
+    return jsonErrorNoStore("hub_discount_verification_required", { status: 403 });
+  }
+
+  return null;
 };
 
 const getRenewalContextErrorResponse = ({
@@ -228,8 +293,11 @@ const getRenewalContextErrorResponse = ({
   renewalOnlineGroupSettings,
   renewalVerification,
 }: PaymentIntentContext): Response | null => {
+  const isOnlineRenewalLink =
+    Boolean(renewalCampaignSlug) && renewalCampaignSlug !== INSPIRATION_HUB_DISCOUNT_SLUG;
+
   if (
-    (renewalCampaignSlug || offer.accessWorkflow === "telegram-renewal") &&
+    (isOnlineRenewalLink || offer.accessWorkflow === "telegram-renewal") &&
     !renewalVerification
   ) {
     return jsonErrorNoStore("telegram_renewal_verification_required", {
@@ -296,14 +364,27 @@ const getOnlineGroupContextErrorResponse = ({
   return null;
 };
 
+const getOnlineGroupCohortErrorResponse = ({
+  onlineGroupCohortSale,
+}: PaymentIntentContext): Response | null => {
+  if (!onlineGroupCohortSale || onlineGroupCohortSale.open) return null;
+
+  console.error("Online Group cohort is not open for sale", {
+    reason: onlineGroupCohortSale.reason,
+  });
+  return jsonErrorNoStore("online_group_cohort_unavailable", { status: 409 });
+};
+
 const getPaymentIntentContextErrorResponse = (
   context: PaymentIntentContext,
 ): Response | null =>
   // Sales availability is checked first so a closed product reports "closed"
   // instead of a campaign-shaped error that reads like a misconfiguration.
   getSalesAvailabilityErrorResponse(context) ??
+  getHubDiscountErrorResponse(context) ??
   getRenewalContextErrorResponse(context) ??
-  getOnlineGroupContextErrorResponse(context);
+  getOnlineGroupContextErrorResponse(context) ??
+  getOnlineGroupCohortErrorResponse(context);
 
 const getLocalizedCheckout = ({
   checkoutLocale,
@@ -350,7 +431,27 @@ const getOnlineGroupAccessMetadata = (
     : {}),
 });
 
-const getAccessMetadata = (context: PaymentIntentContext): Stripe.MetadataParam => {
+// The access job (А4) reads these keys to place the period and name its owner.
+const getHubDiscountAccessMetadata = (
+  verification: NonNullable<HubDiscountVerification>,
+): Stripe.MetadataParam => ({
+  access_workflow: "telegram-hub-renewal",
+  delivery_channel: "telegram",
+  hub_discount_basis: verification.discount.basis,
+  ...(verification.discount.cohortId
+    ? { hub_discount_cohort_id: verification.discount.cohortId }
+    : {}),
+  telegram_user_id: verification.telegramUserId,
+  telegram_username: verification.telegramUsername ?? "",
+});
+
+const getChannelAccessMetadata = (
+  context: PaymentIntentContext,
+): Stripe.MetadataParam => {
+  if (context.hubDiscountVerification) {
+    return getHubDiscountAccessMetadata(context.hubDiscountVerification);
+  }
+
   if (context.renewalVerification) {
     return getRenewalAccessMetadata({
       offer: context.offer,
@@ -365,6 +466,13 @@ const getAccessMetadata = (context: PaymentIntentContext): Stripe.MetadataParam 
 
   return {};
 };
+
+const getAccessMetadata = (context: PaymentIntentContext): Stripe.MetadataParam => ({
+  ...getChannelAccessMetadata(context),
+  ...(context.onlineGroupCohortSale?.open
+    ? { online_group_cohort_id: context.onlineGroupCohortSale.cohortId }
+    : {}),
+});
 
 const createPaymentIntentMetadata = (
   context: PaymentIntentContext,
@@ -413,18 +521,27 @@ const createPaymentIntentParams = (
 });
 
 const getPaymentIntentContextKey = ({
+  hubDiscountVerification,
+  onlineGroupCohortSale,
   onlineGroupTarget,
   renewalVerification,
 }: PaymentIntentContext): string => {
   let accessContextKey = "";
 
-  if (renewalVerification) {
+  if (hubDiscountVerification) {
+    accessContextKey = `hub-discount:${hubDiscountVerification.updatedAt.toISOString()}`;
+  } else if (renewalVerification) {
     accessContextKey = `renewal:${renewalVerification.campaign.slug}:${renewalVerification.verification.updatedAt.toISOString()}`;
   } else if (onlineGroupTarget) {
     accessContextKey = `online-group:${onlineGroupTarget.campaign.id}`;
   }
 
-  return [accessContextKey, `consent:${CHECKOUT_CONSENT_VERSION_KEY}`]
+  // The cohort is part of the metadata, so a new cohort needs a new Stripe key.
+  const cohortContextKey = onlineGroupCohortSale?.open
+    ? `cohort:${onlineGroupCohortSale.cohortId}`
+    : "";
+
+  return [accessContextKey, cohortContextKey, `consent:${CHECKOUT_CONSENT_VERSION_KEY}`]
     .filter(Boolean)
     .join(":");
 };

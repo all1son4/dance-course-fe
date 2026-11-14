@@ -13,7 +13,8 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-import { getTelegramChatMember, type TelegramChatMember } from "@/lib/telegram/bot-api";
+import { getTelegramChatMember } from "@/lib/telegram/bot-api";
+import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
 import {
   createTelegramLoginNonce,
   getTelegramLoginClientId,
@@ -69,20 +70,6 @@ const normalizeSlug = (value: string | null | undefined) =>
 
 const normalizeUsername = (value: string | null | undefined) =>
   (value ?? "").trim().replace(/^@/, "").toLowerCase().slice(0, 32);
-
-const isActiveTelegramMember = (member: TelegramChatMember | undefined) => {
-  const status = member?.status?.trim() ?? "";
-
-  if (status === "member" || status === "administrator" || status === "creator") {
-    return true;
-  }
-
-  if (status === "restricted") {
-    return member?.is_member === true;
-  }
-
-  return false;
-};
 
 const resolveActiveRenewalCampaign = async (
   slug: string,

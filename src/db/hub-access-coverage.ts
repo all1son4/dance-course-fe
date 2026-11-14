@@ -1,6 +1,7 @@
 import {
   and,
   eq,
+  gt,
   inArray,
   isNotNull,
   isNull,
@@ -47,9 +48,13 @@ export type HubAccessCoverage = {
 
 export type EndedHubAccessRight = {
   entitlementId: string;
+  paymentIntentId: string;
   telegramUserId: string | null;
   chatId: string | null;
 };
+
+// К5: a Hub purchase whose owner is still unknown after this long needs a person.
+const OWNERLESS_PURCHASE_REPORT_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
 
 // A paid, unrevoked Hub right of the period model. Legacy rows (no source_kind)
 // keep their binding-based expiry and never match here.
@@ -83,6 +88,7 @@ export async function listEndedHubAccessRights(
   const rows = await database
     .select({
       entitlementId: accessEntitlements.id,
+      paymentIntentId: purchases.paymentIntentId,
       sourceKind: accessEntitlements.sourceKind,
       periodStartMode: accessEntitlements.periodStartMode,
       startsAt: accessEntitlements.startsAt,
@@ -109,9 +115,65 @@ export async function listEndedHubAccessRights(
     })
     .map((row) => ({
       entitlementId: row.entitlementId,
+      paymentIntentId: row.paymentIntentId,
       telegramUserId: row.entitlementTelegramUserId ?? row.purchaseTelegramUserId,
       chatId: row.telegramChatId ?? hubChatId,
     }));
+}
+
+/** К6: standalone rights exist, so the shared Hub chat must be configured. */
+export async function hasUnfinishedStandaloneHubRight(
+  database: DatabaseExecutor,
+): Promise<boolean> {
+  const [right] = await database
+    .select({ id: accessEntitlements.id })
+    .from(accessEntitlements)
+    .innerJoin(purchases, eq(accessEntitlements.purchaseId, purchases.id))
+    .where(
+      and(
+        isUsableHubRight,
+        eq(accessEntitlements.sourceKind, "standalone_hub"),
+        notInArray(accessEntitlements.status, FINISHED_STATUSES),
+      ),
+    )
+    .limit(1);
+
+  return right !== undefined;
+}
+
+/**
+ * К5: paid Hub periods still running whose buyer has not been identified for three
+ * days: no join came and no earlier binding named them, so the cron could never
+ * remove them. Ended ones are reported by the expiry run itself.
+ */
+export async function listOwnerlessHubPurchases(
+  database: DatabaseExecutor,
+  { checkedAt }: { checkedAt: Date },
+): Promise<string[]> {
+  const rows = await database
+    .select({ paymentIntentId: purchases.paymentIntentId })
+    .from(accessEntitlements)
+    .innerJoin(purchases, eq(accessEntitlements.purchaseId, purchases.id))
+    .where(
+      and(
+        isUsableHubRight,
+        eq(accessEntitlements.sourceKind, "standalone_hub"),
+        notInArray(accessEntitlements.status, FINISHED_STATUSES),
+        isNull(accessEntitlements.telegramUserId),
+        isNull(purchases.telegramUserId),
+        lte(
+          purchases.succeededAt,
+          new Date(checkedAt.getTime() - OWNERLESS_PURCHASE_REPORT_AFTER_MS),
+        ),
+        or(
+          isNull(accessEntitlements.expiresAt),
+          gt(accessEntitlements.expiresAt, checkedAt),
+        ),
+      ),
+    )
+    .orderBy(purchases.succeededAt);
+
+  return rows.map((row) => row.paymentIntentId);
 }
 
 /**

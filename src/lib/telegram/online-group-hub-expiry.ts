@@ -4,14 +4,21 @@ import { getDatabase } from "@/db/client";
 import {
   findHubAccessCoverage,
   findInspirationHubChatId,
+  hasUnfinishedStandaloneHubRight,
   listEndedHubAccessRights,
+  listOwnerlessHubPurchases,
   markHubAccessRightsExpired,
 } from "@/db/hub-access-coverage";
 import { accessEntitlements, telegramUserBindings } from "@/db/schema";
 import type { DatabaseExecutor } from "@/db/transaction";
 import { logSafeError } from "@/lib/safe-error-log";
 
-import { shouldIgnoreKickFailure } from "./bot-api";
+import { sendTelegramMessage, shouldIgnoreKickFailure } from "./bot-api";
+import {
+  getTelegramAlertsBotToken,
+  getTelegramAlertsChatId,
+  isTelegramAlertsConfigured,
+} from "./config";
 import { kickUnexpectedMember } from "./online-group-access";
 
 type ExpiredLegacyHubRow = {
@@ -26,12 +33,73 @@ type HubExpiryGroup = {
   telegramUserId: string;
 };
 
+/** What the cron could not settle on its own; reported on every run until fixed. */
+export type HubExpiryProblems = {
+  /** К6: standalone rights exist but the shared Hub chat is not configured. */
+  hubSettingsMissing: boolean;
+  /** К5: ended rights left unmarked because nobody can be removed for them. */
+  ownerlessEndedPaymentIntentIds: string[];
+  /** К5: running Hub purchases whose owner is unknown for over three days. */
+  ownerlessPurchasePaymentIntentIds: string[];
+};
+
 type HubExpiryResult = {
   failedGroups: number;
+  problems: HubExpiryProblems;
   processedGroups: number;
   revokedBindings: number;
   revokedGroups: number;
   stalledGroups: number;
+};
+
+const hasHubExpiryProblems = (problems: HubExpiryProblems) =>
+  problems.hubSettingsMissing ||
+  problems.ownerlessEndedPaymentIntentIds.length > 0 ||
+  problems.ownerlessPurchasePaymentIntentIds.length > 0;
+
+const listPaymentIntents = (ids: readonly string[]) =>
+  ids.map((id) => `• ${id}`).join("\n");
+
+/** Russian, like every operator alert; states what was observed, not why. */
+export const buildHubExpiryProblemsText = (problems: HubExpiryProblems): string =>
+  [
+    "⚠️ Inspiration Hub: крон не смог закончить работу",
+    ...(problems.hubSettingsMissing
+      ? [
+          "",
+          "Не задан общий чат хаба (inspiration_hub_settings). Самостоятельные права не помечаются истёкшими, пока его нет.",
+        ]
+      : []),
+    ...(problems.ownerlessEndedPaymentIntentIds.length > 0
+      ? [
+          "",
+          "Срок хаба закончился, Telegram-аккаунт покупателя не известен, удалить некого:",
+          listPaymentIntents(problems.ownerlessEndedPaymentIntentIds),
+        ]
+      : []),
+    ...(problems.ownerlessPurchasePaymentIntentIds.length > 0
+      ? [
+          "",
+          "Хаб оплачен больше 3 дней назад, Telegram-аккаунт покупателя не известен:",
+          listPaymentIntents(problems.ownerlessPurchasePaymentIntentIds),
+        ]
+      : []),
+  ].join("\n");
+
+const sendHubExpiryProblemsToAlerts = async (problems: HubExpiryProblems) => {
+  const botToken = getTelegramAlertsBotToken();
+  const chatId = getTelegramAlertsChatId();
+
+  if (!isTelegramAlertsConfigured() || !botToken || !chatId) {
+    throw new Error("telegram_alerts_not_configured");
+  }
+
+  await sendTelegramMessage({
+    botToken,
+    chatId,
+    disableWebPagePreview: true,
+    text: buildHubExpiryProblemsText(problems),
+  });
 };
 
 // Bindings of period-model rights carry no reliable deadline copy, so only bindings of
@@ -148,9 +216,11 @@ const markClassifiedHubBindingsRemoved = async (
 export const revokeExpiredOnlineGroupHubAccess = async ({
   database = getDatabase(),
   now = new Date(),
+  reportProblems = sendHubExpiryProblemsToAlerts,
 }: {
   database?: DatabaseExecutor;
   now?: Date;
+  reportProblems?: (problems: HubExpiryProblems) => Promise<void>;
 } = {}): Promise<HubExpiryResult> => {
   const expiredLegacyRows = await database
     .select({ binding: telegramUserBindings, entitlement: accessEntitlements })
@@ -185,31 +255,48 @@ export const revokeExpiredOnlineGroupHubAccess = async ({
     groups.set(key, group);
     return group;
   };
-  const unownedEndedRightIds: string[] = [];
+  const problems: HubExpiryProblems = {
+    hubSettingsMissing:
+      hubChatId === null && (await hasUnfinishedStandaloneHubRight(database)),
+    ownerlessEndedPaymentIntentIds: [],
+    ownerlessPurchasePaymentIntentIds: await listOwnerlessHubPurchases(database, {
+      checkedAt: now,
+    }),
+  };
 
   for (const row of expiredLegacyRows) {
     getGroup(row.binding.telegramUserId, row.binding.chatId ?? "").legacyRows.push(row);
   }
 
+  // An ended right nobody can be removed for stays unmarked, so it is reported on
+  // every run instead of disappearing from view (К5, К6).
   for (const right of endedRights) {
-    if (right.telegramUserId && right.chatId) {
+    if (!right.telegramUserId) {
+      problems.ownerlessEndedPaymentIntentIds.push(right.paymentIntentId);
+    } else if (right.chatId) {
       getGroup(right.telegramUserId, right.chatId).endedRightIds.push(
         right.entitlementId,
       );
-    } else {
-      unownedEndedRightIds.push(right.entitlementId);
     }
   }
 
-  await markHubAccessRightsExpired(database, unownedEndedRightIds, now);
-
   const result: HubExpiryResult = {
     failedGroups: 0,
+    problems,
     processedGroups: 0,
     revokedBindings: 0,
     revokedGroups: 0,
     stalledGroups: 0,
   };
+
+  if (hasHubExpiryProblems(problems)) {
+    console.error("Inspiration Hub expiry needs attention", problems);
+    try {
+      await reportProblems(problems);
+    } catch (error) {
+      logSafeError("Failed to report Inspiration Hub expiry problems", error);
+    }
+  }
 
   for (const group of groups.values()) {
     if (!group.chatId) {

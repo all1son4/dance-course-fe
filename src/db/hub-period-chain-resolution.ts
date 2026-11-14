@@ -12,6 +12,7 @@ import {
 } from "./hub-period-chain-discovery";
 import { applyPendingHubPeriodDatesInTransaction } from "./hub-period-dates";
 import { loadHubPeriodNodesForUpdate } from "./hub-period-nodes";
+import { loadHubPredecessorCohort } from "./hub-predecessor-cohort";
 import { onlineGroupCohorts } from "./schema";
 import type { DatabaseTransaction } from "./transaction";
 
@@ -119,7 +120,14 @@ export async function resolveHubPeriodChainInTransaction(
 
   const root = nodes.find((node) => node.entitlement.startsAfterEntitlementId === null);
   const rootCohortId = root?.purchase.onlineGroupCohortId ?? null;
-  const cohort = cohorts.find((item) => item.id === rootCohortId) ?? null;
+  const rootCohort = cohorts.find((item) => item.id === rootCohortId) ?? null;
+  const cohort =
+    root && rootCohort
+      ? await loadHubPredecessorCohort(tx, {
+          cohort: rootCohort,
+          purchaseId: root.purchase.id,
+        })
+      : null;
 
   const chainInput = buildHubPeriodChainInput({
     telegramUserId: command.telegramUserId,

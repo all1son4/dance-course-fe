@@ -1,10 +1,16 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { and, desc, eq, gt, isNotNull, isNull, or, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, notInArray, or, sql } from "drizzle-orm";
 
-import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
+import {
+  isInspirationHubOfferId,
+  isOnlineGroupLibraryOfferId,
+} from "@/constants/sellable-products";
 import { keepClassifiedAccessPeriod } from "@/db/classified-access";
 import { getDatabase } from "@/db/client";
+import { findInspirationHubChatId } from "@/db/hub-access-coverage";
+import { lockHubPeriodOwner } from "@/db/hub-period-chain-resolution";
+import { recordPurchaseTelegramOwnerInTransaction } from "@/db/purchase-access-source";
 import {
   accessEntitlements,
   purchases,
@@ -22,10 +28,13 @@ import {
   unbanTelegramChatMember,
 } from "./bot-api";
 import { getOnlineGroupIdentityReuseLookup } from "./identity-reuse-policy";
-import { isOnlineGroupAccessOfferId } from "./offer-access";
+import { getOfferMetadataById, isOnlineGroupAccessOfferId } from "./offer-access";
 
 const INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
-const TEMP_KICK_SECONDS = 35;
+// К15: Telegram treats a ban shorter than 30 seconds as permanent. The ban end is
+// computed once, and the API call may retry for about 31 seconds (three 10-second
+// timeouts plus backoff), so the end must leave 30+ seconds after the last attempt.
+export const TEMP_KICK_SECONDS = 90;
 
 export type OnlineGroupAccessKey = "inspiration-hub" | "main-group";
 export type OnlineGroupAccessState = {
@@ -55,6 +64,10 @@ const pendingOnlineGroupAccessEnsures = new Map<
 >();
 
 const hashInvite = (value: string) => createHash("sha256").update(value).digest("hex");
+
+/** Offers whose access goes through personal invites to a Telegram group: Online Group and the Hub. */
+const isGroupInviteOfferId = (offerId: string) =>
+  isOnlineGroupAccessOfferId(offerId) || isInspirationHubOfferId(offerId);
 
 const createAccessItem = ({
   accessExpiresAt,
@@ -215,7 +228,9 @@ const upsertEntitlement = async ({
   const expiresAt = accessExpiresAt ? new Date(accessExpiresAt) : null;
   const persistedAccessKey = toPersistedAccessKey(accessKey);
   const values = {
-    accessWorkflow: "telegram-online-group",
+    accessWorkflow:
+      getOfferMetadataById(purchase.offerExternalId ?? "")?.accessWorkflow ||
+      "telegram-online-group",
     currentTokenId: tokenId?.trim() || null,
     customerId: purchase.customerId,
     deliveryChannel: "telegram",
@@ -701,7 +716,9 @@ const ensureTargetAccess = async ({
   }
 
   const now = new Date();
-  const expectedTelegramUserId = paymentRecord.telegram_user_id.trim();
+  // A Hub purchase names its owner on the purchase itself (А4/А5).
+  const expectedTelegramUserId =
+    paymentRecord.telegram_user_id.trim() || purchase.telegramUserId?.trim() || "";
   const expectedTelegramUsername = paymentRecord.telegram_username.trim();
   const knownTelegramIdentity = await findKnownTelegramIdentity({
     chatId,
@@ -802,11 +819,64 @@ const ensureTargetAccess = async ({
   }
 };
 
+/**
+ * А9: a Hub purchase gets one personal invite into the shared Hub chat for the paid
+ * period the access job (А4) wrote; without that period there is nothing to deliver
+ * yet. The invite lives until the period ends, at most 30 days; a buyer already in
+ * the Hub gets none. Expiry and revocation belong to the cron.
+ */
+const ensureHubPurchaseAccess = async (
+  paymentRecord: PaymentRecordSnapshot,
+  purchase: OnlineGroupPurchase,
+): Promise<OnlineGroupAccessItem[]> => {
+  const [right] = await getDatabase()
+    .select({ expiresAt: accessEntitlements.expiresAt })
+    .from(accessEntitlements)
+    .where(
+      and(
+        eq(accessEntitlements.purchaseId, purchase.id),
+        eq(accessEntitlements.accessKey, "inspiration-hub"),
+        eq(accessEntitlements.sourceKind, "standalone_hub"),
+      ),
+    )
+    .limit(1);
+
+  if (!right) {
+    return [];
+  }
+
+  const accessExpiresAt = right.expiresAt?.toISOString() ?? "";
+  const hubChatId = await findInspirationHubChatId(getDatabase());
+
+  if (!hubChatId) {
+    console.error("Inspiration Hub chat is not configured; no invite issued", {
+      purchaseId: purchase.id,
+    });
+    return [
+      createAccessItem({
+        accessExpiresAt,
+        accessKey: "inspiration-hub",
+        status: "unavailable",
+      }),
+    ];
+  }
+
+  return [
+    await ensureTargetAccess({
+      accessExpiresAt,
+      accessKey: "inspiration-hub",
+      chatId: hubChatId,
+      paymentRecord,
+      purchase,
+    }),
+  ];
+};
+
 const ensureOnlineGroupAccessForPaymentInternal = async (
   paymentRecord: PaymentRecordSnapshot,
 ): Promise<OnlineGroupAccessItem[] | null> => {
   if (
-    !isOnlineGroupAccessOfferId(paymentRecord.offer_id) ||
+    !isGroupInviteOfferId(paymentRecord.offer_id) ||
     paymentRecord.access_workflow.trim() === "manual-admin"
   ) {
     return null;
@@ -820,6 +890,10 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
 
   if (!purchase) {
     return [];
+  }
+
+  if (isInspirationHubOfferId(paymentRecord.offer_id)) {
+    return ensureHubPurchaseAccess(paymentRecord, purchase);
   }
 
   const targets = getAccessTargets(paymentRecord, {
@@ -899,10 +973,19 @@ const markOnlineGroupBindingLeft = async ({
     .where(eq(telegramUserBindings.id, binding.id));
 
   if (binding.entitlementId) {
+    // A period-model right that the cron already ended keeps its final status.
     await database
       .update(accessEntitlements)
       .set({ status: "left_channel", updatedAt: now })
-      .where(eq(accessEntitlements.id, binding.entitlementId));
+      .where(
+        and(
+          eq(accessEntitlements.id, binding.entitlementId),
+          or(
+            isNull(accessEntitlements.sourceKind),
+            notInArray(accessEntitlements.status, ["expired", "revoked"]),
+          ),
+        ),
+      );
   }
 };
 
@@ -927,7 +1010,7 @@ const syncOnlineGroupMemberLeft = async ({
       ),
     );
   const onlineGroupBindings = bindings.filter((row) =>
-    isOnlineGroupAccessOfferId(row.purchase.offerExternalId ?? ""),
+    isGroupInviteOfferId(row.purchase.offerExternalId ?? ""),
   );
 
   if (!onlineGroupBindings.length) {
@@ -1079,7 +1162,7 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
     .where(eq(telegramAccessTokens.tokenHash, inviteHash))
     .limit(1);
 
-  if (!row || !isOnlineGroupAccessOfferId(row.purchase.offerExternalId ?? "")) {
+  if (!row || !isGroupInviteOfferId(row.purchase.offerExternalId ?? "")) {
     return {
       handled: false,
       shouldKick: false,
@@ -1118,6 +1201,21 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
       shouldKick: true,
       shouldRevokeInvite: false,
     };
+  }
+
+  // А5: the purchase learns its owner at the first join, under the owner lock the
+  // Hub period writers take, and only into an empty field.
+  await lockHubPeriodOwner(transaction, identity.telegramUserId);
+  const ownerWrite = await recordPurchaseTelegramOwnerInTransaction(
+    transaction,
+    purchase.id,
+    identity.telegramUserId,
+  );
+
+  if (ownerWrite === "mismatch") {
+    console.error("Purchase already names another Telegram account; owner kept", {
+      purchaseId: purchase.id,
+    });
   }
 
   if (isFirstUse) {

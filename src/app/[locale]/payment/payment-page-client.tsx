@@ -19,9 +19,12 @@ import type { CountryOption } from "@/constants/countries";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
   BIRTHDAY_DROP_PRODUCT_ID,
+  buildCheckoutHref,
   formatCheckoutPrice,
   getDefaultCheckoutCurrencyByLocale,
   getResolvedCheckoutCurrency,
+  INSPIRATION_HUB_ACCESS_OFFER_ID,
+  INSPIRATION_HUB_DISCOUNT_SLUG,
   isOnlineGroupLibraryOfferId,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
@@ -149,6 +152,7 @@ const PaymentPage = observer(function PaymentPage({
   const checkoutTitleKey = paymentStore.selectedProduct.checkoutTitleKey;
   const renewalSlug = new URLSearchParams(searchKey).get("renewal")?.trim() ?? "";
   const isRenewalCheckout = Boolean(renewalSlug);
+  const isHubDiscountCheckout = renewalSlug === INSPIRATION_HUB_DISCOUNT_SLUG;
   // A product may name itself for the checkout - the drop is sold under its
   // campaign name, not the track in quotes. Otherwise the wide card keeps the
   // full title and the narrow one falls back to the quoted short name.
@@ -184,6 +188,10 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.stripeIntentError === "renewal_campaign_inactive" ||
     paymentStore.stripeIntentError === "renewal_payment_context_mismatch";
   const isRenewalVerified = !isRenewalCheckout || renewalStatus === "verified";
+  const hubFullPriceHref = `${buildCheckoutHref({
+    offerId: INSPIRATION_HUB_ACCESS_OFFER_ID,
+    productId: paymentStore.selectedProduct.id,
+  })}&currency=${paymentStore.selectedCurrency}`;
 
   // A stale or mistyped link must not silently sell the default product: when
   // the requested product or offer is missing from the authoritative catalogue,
@@ -958,17 +966,19 @@ const PaymentPage = observer(function PaymentPage({
     hideAll: t("agreements.acceptAll.hide"),
     showAll: t("agreements.acceptAll.show", { count: PAYMENT_CHECKBOXES.length }),
   };
-  const accessNote = isRenewalCheckout
-    ? t(
-        isOnlineGroupPlusCheckout
-          ? "renewal.summaryCard.accessNotePlus"
-          : "renewal.summaryCard.accessNote",
-      )
-    : productT(
-        isOnlineGroupPlusCheckout
-          ? "onlineGroupAnnaStrok.accessNotePlus"
-          : paymentStore.selectedProduct.accessNoteKey,
-      );
+  const accessNote = isHubDiscountCheckout
+    ? productT(paymentStore.selectedProduct.accessNoteKey)
+    : isRenewalCheckout
+      ? t(
+          isOnlineGroupPlusCheckout
+            ? "renewal.summaryCard.accessNotePlus"
+            : "renewal.summaryCard.accessNote",
+        )
+      : productT(
+          isOnlineGroupPlusCheckout
+            ? "onlineGroupAnnaStrok.accessNotePlus"
+            : paymentStore.selectedProduct.accessNoteKey,
+        );
   const namedOfferLabel = shouldNameOfferAtCheckout(
     paymentStore.selectedProduct,
     paymentStore.selectedOffer.id,
@@ -1006,7 +1016,11 @@ const PaymentPage = observer(function PaymentPage({
       ? t("summary.offerLabel", { offer: namedOfferLabel })
       : null,
     onCurrencyChange: handleCurrencyChange,
-    renewalDescription: t("renewal.summaryCard.description"),
+    renewalDescription: t(
+      isHubDiscountCheckout
+        ? "hubDiscount.summaryDescription"
+        : "renewal.summaryCard.description",
+    ),
     selectedCurrency: paymentStore.selectedCurrency,
     support: {
       href: SUPPORT_TELEGRAM_URL,
@@ -1062,7 +1076,11 @@ const PaymentPage = observer(function PaymentPage({
             </CheckoutProgress>
           )}
           {!isCheckoutBlocked && isRenewalCheckout ? (
-            <PaymentDescription>{t("renewal.description")}</PaymentDescription>
+            <PaymentDescription>
+              {t(
+                isHubDiscountCheckout ? "hubDiscount.description" : "renewal.description",
+              )}
+            </PaymentDescription>
           ) : null}
         </TextBox>
         {/* With an invalid link the selected product is just the fallback, so
@@ -1187,7 +1205,19 @@ const PaymentPage = observer(function PaymentPage({
             renewalClientId={renewalClientId}
             renewalNonce={renewalNonce}
             renewalStatus={renewalStatus}
-            renewalStatusText={renewalStatusText}
+            renewalStatusText={
+              isHubDiscountCheckout && renewalStatus === "not_member" ? (
+                // П17: the same Hub at full price, in the currency already chosen.
+                <>
+                  {t("hubDiscount.notEligible")}{" "}
+                  <AgreementLink href={hubFullPriceHref}>
+                    {t("hubDiscount.fullPriceLink")}
+                  </AgreementLink>
+                </>
+              ) : (
+                renewalStatusText
+              )
+            }
             renewalStatusTone={renewalStatusTone}
             onRetryPaymentPreparation={
               paymentStore.stripeIntentError ? handleRetryPaymentPreparation : undefined

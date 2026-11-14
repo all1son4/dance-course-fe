@@ -121,6 +121,28 @@ const enqueueWithExecutor = async (
   };
 };
 
+/** The state of one kind of purchase job, for jobs that must wait for another. */
+export const findPurchaseOutboxJobState = async (
+  purchaseId: string,
+  kind: OutboxJobKind,
+) => {
+  const [job] = await getDatabase()
+    .select({
+      lastErrorMessage: purchaseSideEffects.lastErrorMessage,
+      status: purchaseSideEffects.status,
+    })
+    .from(purchaseSideEffects)
+    .where(
+      and(
+        eq(purchaseSideEffects.purchaseId, purchaseId),
+        eq(purchaseSideEffects.kind, kind),
+      ),
+    )
+    .limit(1);
+
+  return job ?? null;
+};
+
 export const enqueueOutboxJob = (input: EnqueueOutboxJobInput) =>
   enqueueWithExecutor(input, getDatabase());
 

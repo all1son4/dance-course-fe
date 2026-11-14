@@ -6,7 +6,7 @@ import {
   canStartTelegramRenewalVerification,
   focusNextCheckoutControl,
   formatTelegramUsernameInput,
-  PAYMENT_API_ENDPOINTS,
+  getTelegramRenewalEndpoint,
   type PaymentStoreInstance,
   POST_VERIFICATION_FOCUS_DELAY_MS,
   prefillRenewalCustomerProfile,
@@ -64,7 +64,7 @@ export const useTelegramRenewal = ({
     setRenewalStatus("loading");
     setRenewalStatusText(t("renewal.status.loading"));
 
-    void fetch(`${PAYMENT_API_ENDPOINTS.telegramRenewal}?${searchParams.toString()}`, {
+    void fetch(`${getTelegramRenewalEndpoint(renewalSlug)}?${searchParams.toString()}`, {
       cache: "no-store",
       signal: requestController.signal,
     })
