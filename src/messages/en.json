@@ -957,7 +957,9 @@
       "unavailable": "The link is not ready yet. Please contact support.",
       "contactSupport": "Support",
       "nameMainGroup": "Online Group",
-      "nameInspiration": "Inspiration Hub"
+      "nameInspiration": "Inspiration Hub",
+      "scheduled": "Your paid 8 weeks of Inspiration Hub begin on {date}. On that day your personal invite will arrive by email.",
+      "scheduledAfterCohort": "Your paid 8 weeks of Inspiration Hub begin right after your cohort ends. On that day your personal invite will arrive by email."
     },
     "buttons": {
       "home": "Back to home"

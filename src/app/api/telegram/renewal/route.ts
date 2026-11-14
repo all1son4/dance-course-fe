@@ -1,4 +1,3 @@
-import { getActiveOnlineGroupCampaign } from "@/db/online-group-campaigns";
 import {
   findRenewalCustomerProfile,
   findValidRenewalVerification,
@@ -11,6 +10,7 @@ import {
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
+import { getOnlineGroupSale } from "@/lib/online-group-sale";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import { getTelegramChatMember } from "@/lib/telegram/bot-api";
@@ -85,11 +85,13 @@ const resolveActiveRenewalCampaign = async (
     };
   }
 
-  const onlineGroupCampaign = await getActiveOnlineGroupCampaign();
+  // HUB-D13 (П9): the renewal sells the cohort of the active campaign, so it is
+  // offered only when the payment would accept that cohort.
+  const onlineGroupSale = await getOnlineGroupSale();
 
   if (
-    !onlineGroupCampaign ||
-    onlineGroupCampaign.regularChatId !== campaign.targetChatId
+    !onlineGroupSale.open ||
+    onlineGroupSale.campaign.regularChatId !== campaign.targetChatId
   ) {
     return {
       campaign: null,

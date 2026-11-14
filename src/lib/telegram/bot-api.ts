@@ -207,6 +207,22 @@ export const sendTelegramMessage = async ({
     },
   );
 
+/** HUB-D29: the cohort closure post is pinned in the old cohort chat. */
+export const pinTelegramChatMessage = async ({
+  botToken,
+  chatId,
+  messageId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  messageId: number;
+}) =>
+  callTelegramApi<boolean>(
+    "pinChatMessage",
+    { chat_id: chatId, disable_notification: false, message_id: messageId },
+    { botToken },
+  );
+
 export const copyTelegramMessage = async ({
   botToken,
   protectContent = true,

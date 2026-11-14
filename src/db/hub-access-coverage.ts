@@ -197,6 +197,7 @@ export async function findHubAccessCoverage(
 ): Promise<HubAccessCoverage> {
   const predecessor = alias(accessEntitlements, "predecessor");
   const predecessorPurchase = alias(purchases, "predecessor_purchase");
+  const rightCohort = alias(onlineGroupCohorts, "right_cohort");
   const isInChat =
     chatId === hubChatId
       ? or(
@@ -215,9 +216,11 @@ export async function findHubAccessCoverage(
       predecessorSourceKind: predecessor.sourceKind,
       predecessorExpiresAt: predecessor.expiresAt,
       predecessorCohortEndsAt: onlineGroupCohorts.accessEndsAt,
+      rightCohortStartsAt: rightCohort.startsAt,
     })
     .from(accessEntitlements)
     .innerJoin(purchases, eq(accessEntitlements.purchaseId, purchases.id))
+    .leftJoin(rightCohort, eq(rightCohort.id, purchases.onlineGroupCohortId))
     .leftJoin(
       predecessor,
       eq(predecessor.id, accessEntitlements.startsAfterEntitlementId),
@@ -243,7 +246,16 @@ export async function findHubAccessCoverage(
 
   const hasActiveRight = rights.some((right) => {
     if (right.sourceKind === null) return false;
-    const accessRight = { ...right, sourceKind: right.sourceKind };
+    // HUB-D33 (К3, К4): the Hub included in Plus opens at its cohort's start, read
+    // from the cohort itself; the date copied onto the right may be stale or empty.
+    const accessRight = {
+      ...right,
+      sourceKind: right.sourceKind,
+      startsAt:
+        right.sourceKind === "online_group"
+          ? (right.rightCohortStartsAt ?? right.startsAt)
+          : right.startsAt,
+    };
 
     return isHubAccessRightActive(
       { ...accessRight, expiresAt: getRemovalBoundary(accessRight) },
@@ -267,6 +279,55 @@ export async function findHubAccessCoverage(
     .map((right) => right.id);
 
   return { hasActiveRight, stalledEntitlementIds };
+}
+
+/**
+ * К13: paid continuations still waiting for their dates although the predecessor's
+ * end is known. Cohort closure fixes those dates in the same operation, so any such
+ * row is stalled. Listed on every cron run, not only while its owner has an ended
+ * right to process: after the first run the Plus right is marked and the owner would
+ * drop out of view.
+ */
+export async function listStalledHubContinuations(
+  database: DatabaseExecutor,
+): Promise<string[]> {
+  const predecessor = alias(accessEntitlements, "predecessor");
+  const predecessorPurchase = alias(purchases, "predecessor_purchase");
+  const rows = await database
+    .select({ paymentIntentId: purchases.paymentIntentId })
+    .from(accessEntitlements)
+    .innerJoin(purchases, eq(accessEntitlements.purchaseId, purchases.id))
+    .innerJoin(
+      predecessor,
+      eq(predecessor.id, accessEntitlements.startsAfterEntitlementId),
+    )
+    .leftJoin(predecessorPurchase, eq(predecessorPurchase.id, predecessor.purchaseId))
+    .leftJoin(
+      onlineGroupCohorts,
+      eq(onlineGroupCohorts.id, predecessorPurchase.onlineGroupCohortId),
+    )
+    .where(
+      and(
+        isUsableHubRight,
+        eq(accessEntitlements.sourceKind, "standalone_hub"),
+        eq(accessEntitlements.periodStartMode, "after_entitlement"),
+        isNull(accessEntitlements.startsAt),
+        isNull(accessEntitlements.expiresAt),
+        or(
+          and(
+            eq(predecessor.sourceKind, "online_group"),
+            isNotNull(onlineGroupCohorts.accessEndsAt),
+          ),
+          and(
+            ne(predecessor.sourceKind, "online_group"),
+            isNotNull(predecessor.expiresAt),
+          ),
+        ),
+      ),
+    )
+    .orderBy(purchases.succeededAt);
+
+  return rows.map((row) => row.paymentIntentId);
 }
 
 /** Records the calendar end without revoking: expiry is not a cancelled payment. */

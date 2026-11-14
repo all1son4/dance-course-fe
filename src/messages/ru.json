@@ -957,7 +957,9 @@
       "unavailable": "Ссылка ещё не готова. Пожалуйста, напиши в поддержку.",
       "contactSupport": "Поддержка",
       "nameMainGroup": "Онлайн-группа",
-      "nameInspiration": "Inspiration Hub"
+      "nameInspiration": "Inspiration Hub",
+      "scheduled": "Оплаченные 8 недель Inspiration Hub начнутся {date}. В этот день на твой email придёт персональная ссылка для входа.",
+      "scheduledAfterCohort": "Оплаченные 8 недель Inspiration Hub начнутся сразу после окончания твоего потока. В этот день на твой email придёт персональная ссылка для входа."
     },
     "buttons": {
       "home": "Вернуться на главную"

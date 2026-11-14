@@ -330,6 +330,8 @@ export type SalesProductOffer = {
 };
 
 export type SalesProductEntry = {
+  /** Why the Online Group cannot be sold now (HUB-D13); empty otherwise. */
+  campaignIssue: string;
   code: string;
   hasActiveCampaign: boolean;
   offers: SalesProductOffer[];

@@ -94,6 +94,7 @@ import {
 import {
   type CheckoutAgreement,
   getCheckoutEnterKeyHint,
+  getCheckoutSelectionFromSearch,
   getCompactSummaryTitle,
   getVisiblePaymentInputs,
   isCheckoutLinkStale,
@@ -286,10 +287,7 @@ const PaymentPage = observer(function PaymentPage({
   useEffect(() => {
     const searchParams = new URLSearchParams(searchKey);
 
-    paymentStore.configureCheckoutSelection({
-      offerId: searchParams.get("offer"),
-      productId: searchParams.get("product"),
-    });
+    paymentStore.configureCheckoutSelection(getCheckoutSelectionFromSearch(searchParams));
     paymentStore.setRenewalCampaignSlug(searchParams.get("renewal"));
   }, [paymentStore, searchKey]);
 

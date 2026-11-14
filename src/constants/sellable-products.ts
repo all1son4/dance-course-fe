@@ -67,6 +67,7 @@ export const ONLINE_GROUP_RENEWAL_OFFER_ID =
 export const ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID =
   "off_online_group_anna_strok_renewal_library_access";
 
+export const INSPIRATION_HUB_PRODUCT_ID = "prd_inspiration_hub";
 export const INSPIRATION_HUB_ACCESS_OFFER_ID = "off_inspiration_hub_access";
 export const INSPIRATION_HUB_RENEWAL_OFFER_ID = "off_inspiration_hub_renewal";
 
@@ -476,7 +477,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     code: "inspiration-hub",
     description: ["Доступ в закрытый Telegram-канал Inspiration Hub на 8 недель."],
     descriptionKeys: ["inspirationHub.description.1"],
-    id: "prd_inspiration_hub",
+    id: INSPIRATION_HUB_PRODUCT_ID,
     salesEnabled: false,
     slug: "inspiration-hub",
     shortTitle: "Inspiration Hub",

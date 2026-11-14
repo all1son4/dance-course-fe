@@ -16,7 +16,9 @@ import {
 } from "@/db/transactional-outbox";
 import { deliverChoreoAccessReminder } from "@/lib/choreo-access-reminder-delivery";
 import { sendResendEmail, type SendResendEmailInput } from "@/lib/email/resend";
+import { deliverHubPeriodStartInvite } from "@/lib/hub-period-start-invite-delivery";
 import { formatReportMonthLabel } from "@/lib/monthly-sales-report";
+import { deliverCohortChatMessage } from "@/lib/online-group/cohort-admin";
 import { sendTelegramMessage } from "@/lib/telegram/bot-api";
 import {
   getTelegramAlertsBotToken,
@@ -29,6 +31,9 @@ export const BUSINESS_OPERATION_OUTBOX_KINDS = [
   "campaign_email_delivery",
   "polish_terminal_reminder",
   "choreo_access_expiry_reminder",
+  "hub_period_start_invite",
+  "cohort_closure_post",
+  "cohort_grace_reminder",
 ] as const;
 
 type MonthlyReportDeliveryPayload = {
@@ -345,6 +350,10 @@ const deliverPolishTerminalReminder = async (job: ClaimedOutboxJob) => {
 export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
   if (job.kind === "choreo_access_expiry_reminder")
     return deliverChoreoAccessReminder(job);
+  if (job.kind === "hub_period_start_invite") return deliverHubPeriodStartInvite(job);
+  if (job.kind === "cohort_closure_post" || job.kind === "cohort_grace_reminder") {
+    return deliverCohortChatMessage(job);
+  }
   if (job.kind === "campaign_email_delivery") {
     return deliverCampaignEmail(job);
   }

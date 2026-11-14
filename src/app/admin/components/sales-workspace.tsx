@@ -82,7 +82,7 @@ const getCampaignMeta = (product: SalesProductEntry, activeCampaignTitle: string
 
   return product.hasActiveCampaign
     ? `Активный поток: ${activeCampaignTitle || "без названия"}`
-    : "Поток не запущен";
+    : product.campaignIssue || "Поток не запущен";
 };
 
 const SalesProductsTable = ({

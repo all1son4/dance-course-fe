@@ -2,8 +2,8 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 
 import { SELLABLE_PRODUCTS, type SellableProduct } from "@/constants/sellable-products";
-import { getActiveOnlineGroupCampaign } from "@/db/online-group-campaigns";
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
+import { getOnlineGroupSale } from "@/lib/online-group-sale";
 import { getOpenPublicProductOffers } from "@/lib/public-sales";
 import { logSafeError } from "@/lib/safe-error-log";
 
@@ -143,7 +143,8 @@ export const getProductSaleState = async (
   if (state !== "open" || productId !== SELLABLE_PRODUCTS["online-group-anna-strok"].id)
     return state;
   try {
-    return (await getActiveOnlineGroupCampaign()) ? "open" : "closed";
+    // Open only when the payment would accept it: campaign and cohort (HUB-D13).
+    return (await getOnlineGroupSale()).open ? "open" : "closed";
   } catch (error) {
     logSafeError("Failed to read Online Group availability", error);
     return "unavailable";

@@ -226,10 +226,14 @@ test("a new cohort stamps legacy Plus Hub deadlines but not period-model rights"
 
     assert.deepEqual(await readDeadlines(fixture, legacyPlus), allAt(NEW_START));
     // A classified Plus right ends at closure plus the HUB-D24 grace, not at the next
-    // start; only the purchase snapshot, binding and token copies follow the campaign.
+    // start, and its copies stay untouched too (К16): the email and the delivery read
+    // the end the closure records.
     assert.deepEqual(await readDeadlines(fixture, classifiedPlus), {
-      ...allAt(NEW_START),
+      purchase: null,
+      rightStart: null,
       rightEnd: null,
+      binding: null,
+      token: null,
     });
     assert.deepEqual(await readDeadlines(fixture, waiting), {
       purchase: null,

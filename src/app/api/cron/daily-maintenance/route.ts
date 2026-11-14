@@ -6,11 +6,13 @@ import {
 } from "@/lib/business-operation-outbox";
 import { enqueueDueChoreoAccessReminders } from "@/lib/choreo-access-reminder-delivery";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import { enqueueStartedHubPeriodInvites } from "@/lib/hub-period-start-invite-delivery";
 import {
   generateAndDeliverMonthlySalesReport,
   getScheduledMonthlySalesReportPeriod,
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
+import { enqueueDueCohortGraceReminders } from "@/lib/online-group/cohort-admin";
 import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
 import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
@@ -47,6 +49,14 @@ export async function GET(request: Request) {
     ReturnType<typeof enqueueDueChoreoAccessReminders>
   > | null = null;
   let choreoRemindersError: string | null = null;
+  let hubStartInvitesResult: Awaited<
+    ReturnType<typeof enqueueStartedHubPeriodInvites>
+  > | null = null;
+  let hubStartInvitesError: string | null = null;
+  let cohortRemindersResult: Awaited<
+    ReturnType<typeof enqueueDueCohortGraceReminders>
+  > | null = null;
+  let cohortRemindersError: string | null = null;
   let businessJobsError: string | null = null;
   let businessJobsResult: Awaited<
     ReturnType<typeof runBusinessOperationOutboxJobs>
@@ -132,6 +142,23 @@ export async function GET(request: Request) {
     choreoRemindersError = "choreo_access_reminders_failed";
   }
 
+  // HUB-D37: invites for paid Hub periods that began today; the business outbox run
+  // below creates and mails them.
+  try {
+    hubStartInvitesResult = await enqueueStartedHubPeriodInvites(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to schedule Hub start invites", error);
+    hubStartInvitesError = "hub_start_invites_failed";
+  }
+
+  // HUB-D29: the bot's reminder in a closed cohort's chat a day before the Plus Hub ends.
+  try {
+    cohortRemindersResult = await enqueueDueCohortGraceReminders(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to schedule cohort reminders", error);
+    cohortRemindersError = "cohort_reminders_failed";
+  }
+
   try {
     businessJobsResult = await runBusinessOperationOutboxJobs({
       limit: 100,
@@ -161,6 +188,8 @@ export async function GET(request: Request) {
   const hasFailure = Boolean(
     accessRevocationError ||
     choreoRemindersError ||
+    hubStartInvitesError ||
+    cohortRemindersError ||
     businessJobsError ||
     monthlySalesReportError ||
     polishTerminalReminderError ||
@@ -173,6 +202,10 @@ export async function GET(request: Request) {
       accessRevocationResult,
       choreoRemindersError,
       choreoRemindersResult,
+      hubStartInvitesError,
+      hubStartInvitesResult,
+      cohortRemindersError,
+      cohortRemindersResult,
       businessJobsError,
       businessJobsResult,
       monthlySalesReportError,

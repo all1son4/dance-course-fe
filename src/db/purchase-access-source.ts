@@ -1,8 +1,10 @@
 import { and, eq, isNull, ne } from "drizzle-orm";
 
+import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
 import { getOnlineGroupIdentityReuseLookup } from "@/lib/telegram/identity-reuse-policy";
 
 import { getDatabase } from "./client";
+import { ensurePlusHubBridgeInTransaction } from "./hub-bridge";
 import { lockHubPeriodOwner } from "./hub-period-chain-resolution";
 import { retryHubPeriodChainTransaction } from "./hub-period-chain-retry";
 import { ensureHubPurchasePeriodInTransaction } from "./hub-purchase-period-service";
@@ -26,6 +28,7 @@ export type OnlineGroupPurchaseSourceCommand = {
   cohortId: string;
   /** Telegram account confirmed before payment (renewal), if any. */
   verifiedTelegramUserId: string | null;
+  processedAt?: Date;
 };
 
 export type HubPurchaseAccessCommand = {
@@ -131,9 +134,26 @@ export async function recordOnlineGroupPurchaseSourceInTransaction(
       .where(eq(accessEntitlements.id, primary.id));
   }
 
-  return owner === null
-    ? null
-    : recordPurchaseTelegramOwnerInTransaction(tx, purchase.id, owner);
+  const ownerWrite =
+    owner === null
+      ? null
+      : await recordPurchaseTelegramOwnerInTransaction(tx, purchase.id, owner);
+
+  // HUB-D24 and section 8: a Plus bought while the buyer's Hub runs, or within the
+  // 7-day grace after the previous Plus, keeps the Hub until the new cohort starts.
+  // Without a known owner, or with nothing to bridge, no bridge is written; a replay
+  // returns the stored one.
+  if (
+    isOnlineGroupLibraryOfferId(purchase.offerExternalId ?? "") &&
+    purchase.succeededAt
+  ) {
+    await ensurePlusHubBridgeInTransaction(tx, {
+      purchaseId: purchase.id,
+      processedAt: command.processedAt ?? new Date(),
+    });
+  }
+
+  return ownerWrite;
 }
 
 /**

@@ -76,8 +76,12 @@ const resolveTelegramAccessResponse = async (
 
     return jsonNoStore({
       accesses: onlineGroupAccess,
+      // A scheduled Hub period (HUB-D37) is a settled answer, not a failure.
       status: onlineGroupAccess.some(
-        (access) => access.status === "ready" || access.status === "active",
+        (access) =>
+          access.status === "ready" ||
+          access.status === "active" ||
+          access.status === "scheduled",
       )
         ? "ready"
         : "not_available",

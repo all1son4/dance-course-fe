@@ -5,7 +5,6 @@ import {
   SELLABLE_PRODUCTS,
   type SellableProduct,
 } from "@/constants/sellable-products";
-import { getActiveOnlineGroupCampaign } from "@/db/online-group-campaigns";
 import {
   getSellableProductsWithDatabaseCommercialData,
   setOfferSalesEnabled,
@@ -18,6 +17,10 @@ import {
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
+import {
+  getOnlineGroupSale,
+  ONLINE_GROUP_SALE_REFUSAL_LABELS,
+} from "@/lib/online-group-sale";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import { CATALOG_CACHE_TAG } from "@/lib/sales-availability";
@@ -36,18 +39,21 @@ type ToggleSalesBody = {
 };
 
 // The Online Group is the one product whose sale needs a second, independent
-// switch: without an active cycle the checkout would create a PaymentIntent it
-// cannot deliver, so selling is refused until a cycle exists.
+// switch: without an active cycle whose cohort is open (HUB-D13) the checkout
+// refuses the payment, so selling is refused until the cycle can be sold.
 const requiresActiveCampaign = (productId: string) =>
   productId === ONLINE_GROUP_PRODUCT.id;
 
 const serializeProduct = ({
+  campaignIssue,
   hasActiveCampaign,
   product,
 }: {
+  campaignIssue: string;
   hasActiveCampaign: boolean;
   product: SellableProduct;
 }) => ({
+  campaignIssue: requiresActiveCampaign(product.id) ? campaignIssue : "",
   code: product.code,
   hasActiveCampaign,
   missingLessonLanguages: getMissingChoreoLessonLanguages(product),
@@ -69,16 +75,19 @@ const serializeProduct = ({
 });
 
 const loadSalesState = async () => {
-  const [catalogProducts, activeCampaign] = await Promise.all([
+  const [catalogProducts, onlineGroupSale] = await Promise.all([
     getSellableProductsWithDatabaseCommercialData(),
-    getActiveOnlineGroupCampaign(),
+    getOnlineGroupSale(),
   ]);
 
   return {
-    activeCampaignTitle: activeCampaign?.title ?? "",
+    activeCampaignTitle: onlineGroupSale.campaign?.title ?? "",
     products: catalogProducts.map((product) =>
       serializeProduct({
-        hasActiveCampaign: Boolean(activeCampaign),
+        campaignIssue: onlineGroupSale.open
+          ? ""
+          : ONLINE_GROUP_SALE_REFUSAL_LABELS[onlineGroupSale.reason],
+        hasActiveCampaign: onlineGroupSale.open,
         product,
       }),
     ),

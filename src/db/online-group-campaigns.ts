@@ -1,4 +1,5 @@
 import { and, type AnyColumn, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import {
   isOnlineGroupLibraryOfferId,
@@ -7,9 +8,11 @@ import {
 
 import { getDatabase } from "./client";
 import { retryTransientDatabaseRead } from "./database-read-retry";
+import { moveCohortStartInTransaction } from "./hub-bridge";
 import {
   accessEntitlements,
   onlineGroupCampaigns,
+  onlineGroupCohorts,
   purchases,
   renewalCampaigns,
   telegramAccessTokens,
@@ -105,11 +108,15 @@ const isOnlineGroupCampaignUnchanged = ({
 
 // The campaign deadline belongs to Plus access. A standalone Hub purchase shares the
 // Hub chat but keeps the dates written by the Hub period services.
-const hasNoStandaloneHubRight = (purchaseId: AnyColumn) =>
+// К16: the "until the next cohort start" deadline belongs to legacy Plus only. A
+// purchase whose Hub right is in the period model (a standalone period or a
+// classified Plus) keeps its copies: its end is written by the cohort closure.
+const hasNoPeriodModelHubRight = (purchaseId: AnyColumn) =>
   sql`NOT EXISTS (
-    SELECT 1 FROM ${accessEntitlements} standalone_right
-    WHERE standalone_right.purchase_id = ${purchaseId}
-      AND standalone_right.source_kind = 'standalone_hub'
+    SELECT 1 FROM ${accessEntitlements} period_model_right
+    WHERE period_model_right.purchase_id = ${purchaseId}
+      AND period_model_right.access_key = 'inspiration-hub'
+      AND period_model_right.source_kind IS NOT NULL
   )`;
 
 const getExistingCampaignDeadlineConditions = ({
@@ -142,6 +149,95 @@ const getExistingCampaignDeadlineConditions = ({
     purchaseDeadlineCondition,
     tokenDeadlineCondition,
   };
+};
+
+const findCohortByMainChat = async (tx: DatabaseTransaction, mainChatId: string) => {
+  const [cohort] = await tx
+    .select({
+      closedAt: onlineGroupCohorts.closedAt,
+      id: onlineGroupCohorts.id,
+      previousCohortId: onlineGroupCohorts.previousCohortId,
+      startsAt: onlineGroupCohorts.startsAt,
+    })
+    .from(onlineGroupCohorts)
+    .where(eq(onlineGroupCohorts.mainChatId, mainChatId));
+
+  return cohort ?? null;
+};
+
+/**
+ * П11: the old form still edits the campaign, but once the current main chat has a
+ * cohort record the cohort is the truth. The main chat may only follow the records:
+ * from a closed cohort to the cohort recorded as its successor. A new start date
+ * moves that cohort too, so bridges keep matching it. A start that paid Hub
+ * continuations of the previous cohort already begin at (HUB-D26) is not moved: their
+ * chains would stop validating, so the developer moves it with a recalculation.
+ */
+export const alignCohortWithCampaignInTransaction = async ({
+  existingCampaign,
+  mainChatId,
+  startsAt,
+  tx,
+}: {
+  existingCampaign: OnlineGroupCampaign | undefined;
+  mainChatId: string;
+  startsAt: Date;
+  tx: DatabaseTransaction;
+}) => {
+  if (!existingCampaign) return;
+
+  const current = await findCohortByMainChat(tx, existingCampaign.regularChatId);
+
+  // A setup without cohort records keeps working exactly as before.
+  if (!current) return;
+
+  let cohort = current;
+
+  if (mainChatId !== existingCampaign.regularChatId) {
+    const next = await findCohortByMainChat(tx, mainChatId);
+
+    if (!current.closedAt || !next || next.previousCohortId !== current.id) {
+      throw new Error("online_group_cohort_main_chat_fixed");
+    }
+
+    cohort = next;
+  }
+
+  if (cohort.startsAt.getTime() === startsAt.getTime()) return;
+
+  if (cohort.closedAt) {
+    throw new Error("online_group_cohort_closed");
+  }
+
+  if (cohort.previousCohortId) {
+    const predecessor = alias(accessEntitlements, "predecessor_right");
+    const [continuation] = await tx
+      .select({ id: accessEntitlements.id })
+      .from(accessEntitlements)
+      .innerJoin(
+        predecessor,
+        eq(predecessor.id, accessEntitlements.startsAfterEntitlementId),
+      )
+      .innerJoin(purchases, eq(purchases.id, predecessor.purchaseId))
+      .where(
+        and(
+          eq(accessEntitlements.sourceKind, "standalone_hub"),
+          eq(purchases.onlineGroupCohortId, cohort.previousCohortId),
+          eq(accessEntitlements.startsAt, cohort.startsAt),
+        ),
+      )
+      .limit(1);
+
+    if (continuation) {
+      throw new Error("online_group_cohort_start_has_continuations");
+    }
+  }
+
+  await moveCohortStartInTransaction(tx, {
+    cohortId: cohort.id,
+    startsAt,
+    updatedAt: new Date(),
+  });
 };
 
 export const saveOnlineGroupCampaignInTransaction = async ({
@@ -184,7 +280,7 @@ export const saveOnlineGroupCampaignInTransaction = async ({
         and(
           eq(purchases.inspirationChatIdSnapshot, existingCampaign.libraryChatId),
           purchaseDeadlineCondition,
-          hasNoStandaloneHubRight(purchases.id),
+          hasNoPeriodModelHubRight(purchases.id),
         ),
       );
     await tx
@@ -213,7 +309,7 @@ export const saveOnlineGroupCampaignInTransaction = async ({
         and(
           eq(telegramAccessTokens.chatId, existingCampaign.libraryChatId),
           tokenDeadlineCondition,
-          hasNoStandaloneHubRight(telegramAccessTokens.purchaseId),
+          hasNoPeriodModelHubRight(telegramAccessTokens.purchaseId),
         ),
       );
     await tx
@@ -226,7 +322,7 @@ export const saveOnlineGroupCampaignInTransaction = async ({
         and(
           eq(telegramUserBindings.chatId, existingCampaign.libraryChatId),
           bindingDeadlineCondition,
-          hasNoStandaloneHubRight(telegramUserBindings.purchaseId),
+          hasNoPeriodModelHubRight(telegramUserBindings.purchaseId),
         ),
       );
   }
@@ -326,16 +422,23 @@ export const saveOnlineGroupSettings = async ({
     };
   }
 
-  const campaign = await db.transaction((tx) =>
-    saveOnlineGroupCampaignInTransaction({
+  const campaign = await db.transaction(async (tx) => {
+    await alignCohortWithCampaignInTransaction({
+      existingCampaign: existing,
+      mainChatId: normalizedMainChatId,
+      startsAt: normalizedStartsAt,
+      tx,
+    });
+
+    return saveOnlineGroupCampaignInTransaction({
       existingCampaign: existing,
       inspirationChatId: normalizedInspirationChatId,
       mainChatId: normalizedMainChatId,
       startsAt: normalizedStartsAt,
       title: normalizedTitle,
       tx,
-    }),
-  );
+    });
+  });
 
   if (!campaign) {
     throw new Error("online_group_settings_save_failed");

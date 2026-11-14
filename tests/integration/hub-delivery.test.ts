@@ -267,3 +267,89 @@ test("a different account cannot use the Hub invite", async (t) => {
     assert.equal((await readRight(purchase.rightId))?.telegram_user_id, OWNER);
   });
 });
+
+test("the admin reissues a fresh invite after the first one was used (HUB-D38)", async (t) => {
+  const calls = stubTelegram(t);
+  await withHubChat(async (hubChatId) => {
+    const purchase = await buyHub(hubChatId);
+    const paymentRecord = await findPaymentRecordByIntentIdFromDatabase(
+      purchase.paymentIntentId,
+    );
+    assert.ok(paymentRecord);
+    const [first] = (await ensureOnlineGroupAccessForPayment(paymentRecord)) ?? [];
+    assert.ok(first?.accessUrl);
+
+    // She joins with the invite, then leaves the chat.
+    await syncOnlineGroupMembership({
+      chatId: hubChatId,
+      inviteLink: first.accessUrl,
+      membershipStatus: "joined",
+      telegramUserId: OWNER,
+    });
+    await syncOnlineGroupMembership({
+      chatId: hubChatId,
+      membershipStatus: "left",
+      telegramUserId: OWNER,
+    });
+
+    // The email and the success page have nothing new to offer: the invite is used.
+    const [ordinary] = (await ensureOnlineGroupAccessForPayment(paymentRecord)) ?? [];
+    assert.equal(ordinary?.accessUrl, "");
+
+    const invitesBefore = calls.filter((call) => call.method === "createChatInviteLink");
+    const [reissued] =
+      (await ensureOnlineGroupAccessForPayment(paymentRecord, { reissue: true })) ?? [];
+    assert.equal(reissued?.status, "ready");
+    assert.ok(reissued?.accessUrl);
+    assert.notEqual(reissued.accessUrl, first.accessUrl);
+    assert.equal(reissued.accessExpiresAt, purchase.periodEnd.toISOString());
+    assert.equal(
+      calls.filter((call) => call.method === "createChatInviteLink").length,
+      invitesBefore.length + 1,
+    );
+    assert.ok(
+      calls.some(
+        (call) =>
+          call.method === "unbanChatMember" &&
+          call.chatId === hubChatId &&
+          call.userId === OWNER,
+      ),
+    );
+
+    // A second reissue while the fresh invite is unused hands out the same one.
+    const [repeat] =
+      (await ensureOnlineGroupAccessForPayment(paymentRecord, { reissue: true })) ?? [];
+    assert.equal(repeat?.accessUrl, reissued.accessUrl);
+
+    // The fresh invite lets her back in.
+    assert.equal(
+      await syncOnlineGroupMembership({
+        chatId: hubChatId,
+        inviteLink: reissued.accessUrl,
+        membershipStatus: "joined",
+        telegramUserId: OWNER,
+      }),
+      true,
+    );
+    assert.equal((await readRight(purchase.rightId))?.status, "activated");
+  });
+});
+
+test("an ended Hub period gets no reissued invite", async (t) => {
+  stubTelegram(t);
+  await withHubChat(async (hubChatId) => {
+    const purchase = await buyHub(hubChatId);
+    await client`UPDATE access_entitlements
+      SET starts_at = now() - interval '60 days', expires_at = now() - interval '1 day'
+      WHERE id = ${purchase.rightId}`;
+    const paymentRecord = await findPaymentRecordByIntentIdFromDatabase(
+      purchase.paymentIntentId,
+    );
+    assert.ok(paymentRecord);
+
+    const [reissued] =
+      (await ensureOnlineGroupAccessForPayment(paymentRecord, { reissue: true })) ?? [];
+    assert.equal(reissued?.status, "expired");
+    assert.equal(reissued?.accessUrl, "");
+  });
+});

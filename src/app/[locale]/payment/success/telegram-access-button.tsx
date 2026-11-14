@@ -22,6 +22,8 @@ type TelegramAccessButtonProps = {
   paymentIntentId: string;
   pendingText: string;
   productId: string;
+  /** HUB-D37: when the invite of a paid period that starts later will come. */
+  scheduledText: (accessStartsAt: string) => string;
   supportButtonText: string;
   supportHref: string;
   unavailableText: string;
@@ -30,8 +32,9 @@ type TelegramAccessButtonProps = {
 type TelegramAccess = {
   accessExpiresAt: string;
   accessKey: "inspiration-hub" | "main-group";
+  accessStartsAt?: string;
   accessUrl: string;
-  status: "active" | "expired" | "ready" | "unavailable";
+  status: "active" | "expired" | "ready" | "scheduled" | "unavailable";
   tokenExpiresAt: string;
 };
 
@@ -132,8 +135,9 @@ const getAccessAnalyticsResult = ({
   }
 
   if (accesses.length) {
+    // A paid period that starts later is as settled as an active one (HUB-D37).
     const activeAccessCount = accesses.filter(
-      (access) => access.status === "active",
+      (access) => access.status === "active" || access.status === "scheduled",
     ).length;
     const readyAccessCount = accesses.filter(
       (access) => access.status === "ready" && access.accessUrl,
@@ -183,6 +187,7 @@ export default function TelegramAccessButton({
   paymentIntentId,
   pendingText,
   productId,
+  scheduledText,
   supportButtonText,
   supportHref,
   unavailableText,
@@ -446,7 +451,9 @@ export default function TelegramAccessButton({
         {otherAccesses.map((access) =>
           renderNotice(
             access.accessKey,
-            `${nameOf(access)}: ${access.status === "active" ? activeText : unavailableText}`,
+            access.status === "scheduled"
+              ? scheduledText(access.accessStartsAt ?? "")
+              : `${nameOf(access)}: ${access.status === "active" ? activeText : unavailableText}`,
           ),
         )}
         {hasUnavailableAccess ? renderSupportButton("secondary") : null}

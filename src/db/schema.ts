@@ -724,6 +724,9 @@ export const purchaseSideEffects = pgTable(
         | "polish_terminal_recorded"
         | "polish_terminal_reminder"
         | "choreo_access_expiry_reminder"
+        | "hub_period_start_invite"
+        | "cohort_closure_post"
+        | "cohort_grace_reminder"
       >(),
     provider: text("provider").$type<"resend" | "telegram" | "internal">(),
     payload: jsonb("payload")

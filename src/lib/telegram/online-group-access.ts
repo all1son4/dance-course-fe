@@ -44,8 +44,11 @@ export type OnlineGroupAccessState = {
 type OnlineGroupAccessItem = {
   accessExpiresAt: string;
   accessKey: OnlineGroupAccessKey;
+  /** Set only when the access has not begun yet ("scheduled"); "" if its start is unknown. */
+  accessStartsAt: string;
   accessUrl: string;
-  status: "active" | "expired" | "ready" | "unavailable";
+  /** "scheduled": paid, not started; the invite comes on the start day (HUB-D37). */
+  status: "active" | "expired" | "ready" | "scheduled" | "unavailable";
   tokenExpiresAt: string;
 };
 type OnlineGroupMembershipResult = {
@@ -72,18 +75,21 @@ const isGroupInviteOfferId = (offerId: string) =>
 const createAccessItem = ({
   accessExpiresAt,
   accessKey,
+  accessStartsAt = "",
   accessUrl = "",
   status,
   tokenExpiresAt = "",
 }: {
   accessExpiresAt: string;
   accessKey: OnlineGroupAccessKey;
+  accessStartsAt?: string;
   accessUrl?: string;
   status: OnlineGroupAccessItem["status"];
   tokenExpiresAt?: string;
 }): OnlineGroupAccessItem => ({
   accessExpiresAt,
   accessKey,
+  accessStartsAt,
   accessUrl,
   status,
   tokenExpiresAt,
@@ -444,9 +450,20 @@ type EnsureTargetAccessContext = {
   accessKey: OnlineGroupAccessKey;
   chatId: string;
   purchase: OnlineGroupPurchase;
+  /** The admin asks for a fresh invite in place of a used or burnt one (HUB-D38, П3). */
+  reissue: boolean;
   telegramUserId: string;
   telegramUsername: string;
 };
+
+/** A token whose invite can no longer let anyone in. */
+const isSpentToken = (
+  token: NonNullable<Awaited<ReturnType<typeof findCurrentToken>>>,
+  now: Date,
+) =>
+  token.status === "used" ||
+  token.status === "expired" ||
+  token.expiresAt.getTime() <= now.getTime();
 
 type CreatedTargetInvite = {
   expiresAt: Date;
@@ -666,7 +683,7 @@ const ensureTargetAccessInTransaction = async ({
     purchaseId: context.purchase.id,
   });
 
-  if (currentToken) {
+  if (currentToken && !(context.reissue && isSpentToken(currentToken, now))) {
     return resolveCurrentTargetToken({
       context,
       currentToken,
@@ -701,15 +718,23 @@ const ensureTargetAccessInTransaction = async ({
 const ensureTargetAccess = async ({
   accessExpiresAt,
   accessKey,
+  accessStartsAt,
   chatId,
   paymentRecord,
   purchase,
+  reissue,
 }: {
   accessExpiresAt: string;
   accessKey: OnlineGroupAccessKey;
+  /**
+   * A Hub period's start: null while it waits for its predecessor, absent for
+   * accesses that begin with the payment.
+   */
+  accessStartsAt?: Date | null;
   chatId: string;
   paymentRecord: PaymentRecordSnapshot;
   purchase: OnlineGroupPurchase;
+  reissue: boolean;
 }): Promise<OnlineGroupAccessItem> => {
   if (await isClassifiedAccessRevoked({ accessKey, purchaseId: purchase.id })) {
     return createAccessItem({ accessExpiresAt, accessKey, status: "unavailable" });
@@ -733,6 +758,7 @@ const ensureTargetAccess = async ({
     accessKey,
     chatId,
     purchase,
+    reissue,
     telegramUserId: accessTelegramUserId,
     telegramUsername: accessTelegramUsername,
   };
@@ -755,7 +781,9 @@ const ensureTargetAccess = async ({
     });
   }
 
-  if (accessKey === "inspiration-hub" && accessTelegramUserId) {
+  // A reissue is asked for because the member is not in the chat, whatever an old
+  // binding still says.
+  if (accessKey === "inspiration-hub" && accessTelegramUserId && !reissue) {
     const activeBinding = await findActiveHubBinding({
       chatId,
       telegramUserId: accessTelegramUserId,
@@ -786,6 +814,21 @@ const ensureTargetAccess = async ({
         status: "active",
       });
     }
+  }
+
+  // HUB-D37: a paid period that has not begun gets its invite on its start day from
+  // the daily job; an earlier invite would let the buyer in for free until then.
+  // Someone already in the Hub on another basis was answered "active" above.
+  if (
+    accessStartsAt !== undefined &&
+    (accessStartsAt === null || accessStartsAt.getTime() > now.getTime())
+  ) {
+    return createAccessItem({
+      accessExpiresAt,
+      accessKey,
+      accessStartsAt: accessStartsAt?.toISOString() ?? "",
+      status: "scheduled",
+    });
   }
 
   const inviteLockKey = `online-group-invite:${purchase.id}:${chatId}`;
@@ -828,9 +871,13 @@ const ensureTargetAccess = async ({
 const ensureHubPurchaseAccess = async (
   paymentRecord: PaymentRecordSnapshot,
   purchase: OnlineGroupPurchase,
+  reissue: boolean,
 ): Promise<OnlineGroupAccessItem[]> => {
   const [right] = await getDatabase()
-    .select({ expiresAt: accessEntitlements.expiresAt })
+    .select({
+      expiresAt: accessEntitlements.expiresAt,
+      startsAt: accessEntitlements.startsAt,
+    })
     .from(accessEntitlements)
     .where(
       and(
@@ -865,15 +912,43 @@ const ensureHubPurchaseAccess = async (
     await ensureTargetAccess({
       accessExpiresAt,
       accessKey: "inspiration-hub",
+      accessStartsAt: right.startsAt,
       chatId: hubChatId,
       paymentRecord,
       purchase,
+      reissue,
     }),
   ];
 };
 
+/**
+ * К10: the Hub of a Plus in the period model ends where its cohort closure recorded
+ * the end on the right itself; the copy on the purchase is the old campaign deadline
+ * and may still lie ahead, which would hand out an invite after the access ended.
+ */
+const findPlusHubEnd = async (purchase: OnlineGroupPurchase): Promise<Date | null> => {
+  const [right] = await getDatabase()
+    .select({
+      expiresAt: accessEntitlements.expiresAt,
+      sourceKind: accessEntitlements.sourceKind,
+    })
+    .from(accessEntitlements)
+    .where(
+      and(
+        eq(accessEntitlements.purchaseId, purchase.id),
+        eq(accessEntitlements.accessKey, "inspiration-hub"),
+      ),
+    )
+    .limit(1);
+
+  return right?.sourceKind === "online_group" && right.expiresAt
+    ? right.expiresAt
+    : purchase.inspirationAccessExpiresAtSnapshot;
+};
+
 const ensureOnlineGroupAccessForPaymentInternal = async (
   paymentRecord: PaymentRecordSnapshot,
+  reissue: boolean,
 ): Promise<OnlineGroupAccessItem[] | null> => {
   if (
     !isGroupInviteOfferId(paymentRecord.offer_id) ||
@@ -893,11 +968,11 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
   }
 
   if (isInspirationHubOfferId(paymentRecord.offer_id)) {
-    return ensureHubPurchaseAccess(paymentRecord, purchase);
+    return ensureHubPurchaseAccess(paymentRecord, purchase, reissue);
   }
 
   const targets = getAccessTargets(paymentRecord, {
-    inspirationAccessExpiresAt: purchase.inspirationAccessExpiresAtSnapshot,
+    inspirationAccessExpiresAt: await findPlusHubEnd(purchase),
     inspirationChatId: purchase.inspirationChatIdSnapshot,
   });
 
@@ -907,18 +982,27 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
         ...target,
         paymentRecord,
         purchase,
+        reissue,
       }),
     ),
   );
 };
 
+/**
+ * The invites of an Online or Hub purchase. With `reissue` (admin only, HUB-D38) a
+ * used or burnt invite of a still running access is replaced by a fresh one; an
+ * ended or revoked access still gets none.
+ */
 export const ensureOnlineGroupAccessForPayment = (
   paymentRecord: PaymentRecordSnapshot,
+  { reissue = false }: { reissue?: boolean } = {},
 ): Promise<OnlineGroupAccessItem[] | null> => {
   const paymentIntentId = paymentRecord.payment_intent_id.trim();
 
-  if (!paymentIntentId) {
-    return ensureOnlineGroupAccessForPaymentInternal(paymentRecord);
+  // A reissue must not join a concurrent ordinary ensure, which would return the
+  // spent invite again.
+  if (!paymentIntentId || reissue) {
+    return ensureOnlineGroupAccessForPaymentInternal(paymentRecord, reissue);
   }
 
   const pendingEnsure = pendingOnlineGroupAccessEnsures.get(paymentIntentId);
@@ -927,13 +1011,14 @@ export const ensureOnlineGroupAccessForPayment = (
     return pendingEnsure;
   }
 
-  const ensurePromise = ensureOnlineGroupAccessForPaymentInternal(paymentRecord).finally(
-    () => {
-      if (pendingOnlineGroupAccessEnsures.get(paymentIntentId) === ensurePromise) {
-        pendingOnlineGroupAccessEnsures.delete(paymentIntentId);
-      }
-    },
-  );
+  const ensurePromise = ensureOnlineGroupAccessForPaymentInternal(
+    paymentRecord,
+    false,
+  ).finally(() => {
+    if (pendingOnlineGroupAccessEnsures.get(paymentIntentId) === ensurePromise) {
+      pendingOnlineGroupAccessEnsures.delete(paymentIntentId);
+    }
+  });
 
   pendingOnlineGroupAccessEnsures.set(paymentIntentId, ensurePromise);
 

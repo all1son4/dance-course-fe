@@ -344,6 +344,40 @@ test("a paid continuation stalled after a closed cohort keeps the member and is 
   });
 });
 
+test("a stalled continuation is reported on every run, not only the first (К13)", async (t) => {
+  stubTelegram(t);
+  t.mock.method(console, "warn", () => undefined);
+  t.mock.method(console, "error", () => undefined);
+  await withFixture(async (fixture) => {
+    await insertLegacyExpiredMember(fixture);
+    const pending = await insertPendingContinuation(fixture, PAST);
+    const waiting = await insertPendingContinuation(fixture, null);
+    const [stalledPurchase, waitingPurchase] = await Promise.all(
+      [pending.purchaseId, waiting.purchaseId].map(async (id) => {
+        const [row] = await fixture.tx
+          .select({ paymentIntentId: purchases.paymentIntentId })
+          .from(purchases)
+          .where(eq(purchases.id, id));
+        return row?.paymentIntentId;
+      }),
+    );
+
+    for (let runIndex = 0; runIndex < 2; runIndex += 1) {
+      const reported: string[][] = [];
+      await revokeExpiredOnlineGroupHubAccess({
+        database: fixture.tx,
+        now: NOW,
+        reportProblems: async (problems) => {
+          reported.push(problems.stalledContinuationPaymentIntentIds);
+        },
+      });
+      assert.ok(reported[0]?.includes(stalledPurchase ?? ""), `run ${runIndex + 1}`);
+      // A continuation whose cohort is still open is simply waiting.
+      assert.equal(reported[0]?.includes(waitingPurchase ?? ""), false);
+    }
+  });
+});
+
 test("a continuation waiting for an open cohort does not keep anyone in the Hub", async (t) => {
   const calls = stubTelegram(t);
   await withFixture(async (fixture) => {
@@ -396,6 +430,41 @@ test("the Hub of a classified Plus keeps a member whose standalone period ended"
 
     assert.equal(kicksIn(calls, fixture).length, 0);
     assert.equal((await readRight(fixture, standalone.entitlementId)).status, "expired");
+  });
+});
+
+test("the Hub of a Plus whose cohort has not started does not keep anyone yet (К3, HUB-D33)", async (t) => {
+  const calls = stubTelegram(t);
+  await withFixture(async (fixture) => {
+    const standalone = await insertStandalone(fixture);
+    await insertBinding(fixture, { ...standalone, accessExpiresAt: null });
+    const mainChatId = `hub_expiry_future_${randomUUID()}`;
+    await fixture.tx
+      .insert(telegramChats)
+      .values({ chatId: mainChatId, title: "Future cohort", type: "supergroup" });
+    const [cohort] = await fixture.tx
+      .insert(onlineGroupCohorts)
+      .values({
+        title: "Future cohort",
+        mainChatId,
+        startsAt: new Date(NOW.getTime() + 8 * 24 * 3600_000),
+      })
+      .returning({ id: onlineGroupCohorts.id });
+    assert.ok(cohort);
+    const plusPurchaseId = await insertPurchase(fixture, {
+      telegramUserId: fixture.ownerId,
+      onlineGroupCohortId: cohort.id,
+    });
+    // The right carries no start: only the cohort says when the Plus Hub opens.
+    await insertRight(fixture, {
+      purchaseId: plusPurchaseId,
+      sourceKind: "online_group",
+      startsAt: null,
+    });
+
+    await run(fixture);
+
+    assert.equal(kicksIn(calls, fixture).length, 1);
   });
 });
 

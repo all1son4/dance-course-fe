@@ -195,6 +195,8 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               telegramMainGroupLinkText={t("telegram.openMainGroup")}
               telegramOpenLinkText={t("telegram.openLink")}
               telegramPendingText={t("telegram.pending")}
+              telegramScheduledAfterCohortText={t("telegram.scheduledAfterCohort")}
+              telegramScheduledText={t("telegram.scheduled")}
               telegramUnavailableText={t("telegram.unavailable")}
               title={t("title")}
             />

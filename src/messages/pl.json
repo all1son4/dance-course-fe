@@ -957,7 +957,9 @@
       "unavailable": "Link nie jest jeszcze gotowy. Napisz do nas.",
       "contactSupport": "Pomoc",
       "nameMainGroup": "Grupa online",
-      "nameInspiration": "Inspiration Hub"
+      "nameInspiration": "Inspiration Hub",
+      "scheduled": "Opłacone 8 tygodni w Inspiration Hub zaczyna się {date}. Tego dnia osobisty link przyjdzie na Twój e-mail.",
+      "scheduledAfterCohort": "Opłacone 8 tygodni w Inspiration Hub zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia osobisty link przyjdzie na Twój e-mail."
     },
     "buttons": {
       "home": "Wróć na stronę główną"

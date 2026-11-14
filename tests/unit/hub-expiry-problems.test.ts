@@ -8,6 +8,7 @@ test("the Hub cron report lists only the problems it saw, with payment IDs", () 
     hubSettingsMissing: false,
     ownerlessEndedPaymentIntentIds: ["pi_ended"],
     ownerlessPurchasePaymentIntentIds: ["pi_old_a", "pi_old_b"],
+    stalledContinuationPaymentIntentIds: [],
   });
 
   assert.match(text, /^⚠️ Inspiration Hub/u);
@@ -21,8 +22,20 @@ test("a missing shared Hub setting is named in the report", () => {
     hubSettingsMissing: true,
     ownerlessEndedPaymentIntentIds: [],
     ownerlessPurchasePaymentIntentIds: [],
+    stalledContinuationPaymentIntentIds: [],
   });
 
   assert.match(text, /Не задан общий чат хаба/u);
   assert.doesNotMatch(text, /•/u);
+});
+
+test("a stalled continuation is named in the report (К13)", () => {
+  const text = buildHubExpiryProblemsText({
+    hubSettingsMissing: false,
+    ownerlessEndedPaymentIntentIds: [],
+    ownerlessPurchasePaymentIntentIds: [],
+    stalledContinuationPaymentIntentIds: ["pi_stalled"],
+  });
+
+  assert.match(text, /так и не получило даты.*:\n• pi_stalled$/u);
 });

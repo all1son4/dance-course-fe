@@ -358,3 +358,54 @@ test("a legacy replay fills an empty classified owner but never replaces one", a
     return [owned, ownerless, legacy].map((record) => record.payment_intent_id);
   });
 });
+
+test("an ended Plus Hub of the period model gets no new invite (К10)", async (t) => {
+  const methods = stubTelegram(t);
+  const hubChatId = `hub_writer_guard_hub_${randomUUID()}`;
+  await client`
+    INSERT INTO telegram_chats (chat_id, title, type)
+    VALUES (${hubChatId}, 'Legacy writer guard Hub', 'supergroup')
+  `;
+  try {
+    await withChat(async (chatId) => {
+      const record: PaymentRecordSnapshot = {
+        ...makeRecord(chatId, createTestTelegramUserId()),
+        offer_id: "off_online_group_anna_strok_library_access",
+        telegram_access_status: "",
+        telegram_token_used_at: "",
+        telegram_inspiration_chat_id: hubChatId,
+        // The campaign copy on the purchase still lies ahead...
+        telegram_inspiration_access_expires_at: new Date(
+          Date.now() + 10 * 24 * 3600_000,
+        ).toISOString(),
+      };
+      await upsertPaymentRecordToDatabase(record);
+      // ...while the closure recorded the real end on the classified Hub right.
+      await client`
+        INSERT INTO access_entitlements (purchase_id, access_key, status, source_kind,
+          telegram_chat_id, expires_at)
+        SELECT purchase.id, 'inspiration-hub', 'activated', 'online_group', ${hubChatId},
+          ${new Date(Date.now() - 24 * 3600_000)}
+        FROM purchases purchase
+        WHERE purchase.payment_intent_id = ${record.payment_intent_id}
+        ON CONFLICT (purchase_id, access_key) DO UPDATE
+          SET source_kind = 'online_group', expires_at = excluded.expires_at
+      `;
+
+      const accesses = (await ensureOnlineGroupAccessForPayment(record)) ?? [];
+      const hub = accesses.find((access) => access.accessKey === "inspiration-hub");
+
+      assert.equal(hub?.status, "expired");
+      assert.equal(hub?.accessUrl, "");
+      // Only the main group got an invite.
+      assert.equal(
+        methods.filter((method) => method === "createChatInviteLink").length,
+        1,
+      );
+
+      return [record.payment_intent_id];
+    });
+  } finally {
+    await client`DELETE FROM telegram_chats WHERE chat_id = ${hubChatId}`;
+  }
+});

@@ -23,7 +23,7 @@ const TOGGLE_ERROR_MESSAGES: Record<string, string> = {
     "Сначала настрой русский и английский Telegram-каналы этого разбора.",
   network_error: TOGGLE_FALLBACK_ERROR_TEXT,
   online_group_campaign_required:
-    "Сначала запусти поток Online Group — без активного потока продавать нечего.",
+    "Поток Online Group сейчас нельзя продавать: причина указана в строке продукта.",
   offer_not_found: "Тариф не найден. Обнови список и попробуй снова.",
   product_not_found: "Продукт не найден. Обнови список и попробуй снова.",
   rate_limited: "Слишком часто. Подожди минуту и попробуй снова.",

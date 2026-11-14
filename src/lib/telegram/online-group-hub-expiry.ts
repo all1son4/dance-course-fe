@@ -7,6 +7,7 @@ import {
   hasUnfinishedStandaloneHubRight,
   listEndedHubAccessRights,
   listOwnerlessHubPurchases,
+  listStalledHubContinuations,
   markHubAccessRightsExpired,
 } from "@/db/hub-access-coverage";
 import { accessEntitlements, telegramUserBindings } from "@/db/schema";
@@ -41,6 +42,8 @@ export type HubExpiryProblems = {
   ownerlessEndedPaymentIntentIds: string[];
   /** К5: running Hub purchases whose owner is unknown for over three days. */
   ownerlessPurchasePaymentIntentIds: string[];
+  /** К13: paid continuations left without dates after their cohort closed. */
+  stalledContinuationPaymentIntentIds: string[];
 };
 
 type HubExpiryResult = {
@@ -55,7 +58,8 @@ type HubExpiryResult = {
 const hasHubExpiryProblems = (problems: HubExpiryProblems) =>
   problems.hubSettingsMissing ||
   problems.ownerlessEndedPaymentIntentIds.length > 0 ||
-  problems.ownerlessPurchasePaymentIntentIds.length > 0;
+  problems.ownerlessPurchasePaymentIntentIds.length > 0 ||
+  problems.stalledContinuationPaymentIntentIds.length > 0;
 
 const listPaymentIntents = (ids: readonly string[]) =>
   ids.map((id) => `• ${id}`).join("\n");
@@ -82,6 +86,13 @@ export const buildHubExpiryProblemsText = (problems: HubExpiryProblems): string 
           "",
           "Хаб оплачен больше 3 дней назад, Telegram-аккаунт покупателя не известен:",
           listPaymentIntents(problems.ownerlessPurchasePaymentIntentIds),
+        ]
+      : []),
+    ...(problems.stalledContinuationPaymentIntentIds.length > 0
+      ? [
+          "",
+          "Поток закрыт, а оплаченное продолжение хаба так и не получило даты (человек пока остаётся в хабе):",
+          listPaymentIntents(problems.stalledContinuationPaymentIntentIds),
         ]
       : []),
   ].join("\n");
@@ -216,10 +227,13 @@ const markClassifiedHubBindingsRemoved = async (
 export const revokeExpiredOnlineGroupHubAccess = async ({
   database = getDatabase(),
   now = new Date(),
+  removeMember = kickUnexpectedMember,
   reportProblems = sendHubExpiryProblemsToAlerts,
 }: {
   database?: DatabaseExecutor;
   now?: Date;
+  /** Removes one member from one chat; the preview records instead of removing. */
+  removeMember?: (chatId: string, telegramUserId: string) => Promise<void>;
   reportProblems?: (problems: HubExpiryProblems) => Promise<void>;
 } = {}): Promise<HubExpiryResult> => {
   const expiredLegacyRows = await database
@@ -262,6 +276,7 @@ export const revokeExpiredOnlineGroupHubAccess = async ({
     ownerlessPurchasePaymentIntentIds: await listOwnerlessHubPurchases(database, {
       checkedAt: now,
     }),
+    stalledContinuationPaymentIntentIds: await listStalledHubContinuations(database),
   };
 
   for (const row of expiredLegacyRows) {
@@ -337,7 +352,7 @@ export const revokeExpiredOnlineGroupHubAccess = async ({
       // One unreachable chat must not abort the whole run: an unrevoked group stays
       // active and is retried next run, while every other group still gets processed.
       try {
-        await kickUnexpectedMember(group.chatId, group.telegramUserId);
+        await removeMember(group.chatId, group.telegramUserId);
       } catch (error) {
         if (!shouldIgnoreKickFailure(error)) {
           result.failedGroups += 1;

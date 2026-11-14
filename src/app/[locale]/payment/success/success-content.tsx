@@ -47,6 +47,8 @@ type SuccessContentProps = {
   telegramMainGroupLinkText: string;
   telegramOpenLinkText: string;
   telegramPendingText: string;
+  telegramScheduledAfterCohortText: string;
+  telegramScheduledText: string;
   telegramUnavailableText: string;
   title: string;
 };
@@ -76,6 +78,8 @@ export default function SuccessContent({
   telegramMainGroupLinkText,
   telegramOpenLinkText,
   telegramPendingText,
+  telegramScheduledAfterCohortText,
+  telegramScheduledText,
   telegramUnavailableText,
   title,
 }: SuccessContentProps) {
@@ -132,6 +136,16 @@ export default function SuccessContent({
         timeZone: "Europe/Warsaw",
       }).format(new Date(inspirationAccessExpiresAt))
     : "";
+  const formatScheduledText = (accessStartsAt: string) =>
+    accessStartsAt
+      ? telegramScheduledText.replace(
+          "{date}",
+          new Intl.DateTimeFormat(dateLocale, {
+            dateStyle: "long",
+            timeZone: "Europe/Warsaw",
+          }).format(new Date(accessStartsAt)),
+        )
+      : telegramScheduledAfterCohortText;
   const inspirationAccessExpiryText = formattedInspirationExpiry
     ? `${telegramInspirationUntilLabel} ${formattedInspirationExpiry}${formattedInspirationExpiry.endsWith(".") ? "" : "."}`
     : "";
@@ -165,6 +179,7 @@ export default function SuccessContent({
             paymentIntentId={paymentIntentId}
             pendingText={telegramPendingText}
             productId={productId}
+            scheduledText={formatScheduledText}
             supportButtonText={telegramContactSupportText}
             supportHref={SUPPORT_TELEGRAM_URL}
             unavailableText={telegramUnavailableText}

@@ -118,6 +118,10 @@ const EMAIL_COPY = {
           "You're already in Inspiration Hub — your access is extended, nothing to do.",
         pending:
           "Your personal Inspiration Hub invite is being prepared. If the button is missing, contact support and we will send access manually.",
+        scheduled:
+          "Your paid 8 weeks begin on {date}. On that day your personal Inspiration Hub invite will arrive at this address.",
+        scheduledAfterCohort:
+          "Your paid 8 weeks begin right after your cohort ends. On that day your personal Inspiration Hub invite will arrive at this address.",
         cta: "Open Inspiration Hub",
       },
       telegramRenewal: {
@@ -228,6 +232,10 @@ const EMAIL_COPY = {
           "Jesteś już w Inspiration Hub — dostęp został przedłużony, nic nie musisz robić.",
         pending:
           "Twój osobisty link do Inspiration Hub jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        scheduled:
+          "Opłacone 8 tygodni zaczyna się {date}. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
+        scheduledAfterCohort:
+          "Opłacone 8 tygodni zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
         cta: "Otwórz Inspiration Hub",
       },
       telegramRenewal: {
@@ -335,6 +343,10 @@ const EMAIL_COPY = {
         active: "Ты уже в Inspiration Hub — доступ продлён, ничего делать не нужно.",
         pending:
           "Персональная ссылка в Inspiration Hub готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
+        scheduled:
+          "Оплаченные 8 недель начнутся {date}. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
+        scheduledAfterCohort:
+          "Оплаченные 8 недель начнутся сразу после окончания твоего потока. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
         cta: "Открыть Inspiration Hub",
       },
       telegramRenewal: {
@@ -425,7 +437,9 @@ export type BuildPurchaseSuccessEmailInput = {
   telegramAccessLinks?: Array<{
     accessKey: "inspiration-hub" | "main-group";
     accessUrl: string;
-    status: "active" | "expired" | "ready" | "unavailable";
+    status: "active" | "expired" | "ready" | "scheduled" | "unavailable";
+    /** For "scheduled": the period start, "" while it waits for a cohort to end. */
+    accessStartsAt?: string;
   }>;
 };
 
@@ -473,6 +487,7 @@ const resolveAccessContent = ({
   copy,
   hasAccessButton,
   hasOnlineGroupAccess,
+  scheduledStart,
   showMentorFollowupNote,
   telegramLink,
 }: {
@@ -481,9 +496,22 @@ const resolveAccessContent = ({
   /** False when every invite is already used, so the email renders no button. */
   hasAccessButton: boolean;
   hasOnlineGroupAccess: boolean;
+  /** HUB-D37: the formatted start of a paid period not begun yet, "" if unknown. */
+  scheduledStart: string | null;
   showMentorFollowupNote: boolean;
   telegramLink: string | null;
 }): AccessContent => {
+  if (accessKind === "telegram-inspiration-hub" && scheduledStart !== null) {
+    return {
+      cta: copy.access.telegramInspirationHub.cta,
+      description: scheduledStart
+        ? copy.access.telegramInspirationHub.scheduled.replace("{date}", scheduledStart)
+        : copy.access.telegramInspirationHub.scheduledAfterCohort,
+      mentorFollowupNote: "",
+      title: copy.access.telegramInspirationHub.title,
+    };
+  }
+
   switch (accessKind) {
     case "telegram-channel-lifetime":
       return {
@@ -677,6 +705,11 @@ const renderOnlineGroupAccessButtons = ({
             ${label}
           </a>
         `;
+      }
+
+      // The access text already says when the invite comes.
+      if (access.status === "scheduled") {
+        return "";
       }
 
       const statusLabel = getTelegramAccessStatusLabel(access, copy);
@@ -922,6 +955,10 @@ const renderTelegramAccessTextLines = ({
       return `${label}: ${access.accessUrl}`;
     }
 
+    if (access.status === "scheduled") {
+      return "";
+    }
+
     const statusLabel = getTelegramAccessStatusLabel(access, copy);
 
     if (access.status === "active") {
@@ -1049,11 +1086,19 @@ export const buildPurchaseSuccessEmail = ({
           (access) => access.status === "ready" && access.accessUrl,
         )
       : Boolean(telegramLink);
+  const scheduledAccess = telegramAccessLinks.find(
+    (access) => access.status === "scheduled",
+  );
   const resolvedAccessContent = resolveAccessContent({
     accessKind,
     copy,
     hasAccessButton,
     hasOnlineGroupAccess,
+    scheduledStart: scheduledAccess
+      ? scheduledAccess.accessStartsAt
+        ? formatAccessExpiry(scheduledAccess.accessStartsAt, locale)
+        : ""
+      : null,
     showMentorFollowupNote,
     telegramLink,
   });

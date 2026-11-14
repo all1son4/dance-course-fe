@@ -91,7 +91,10 @@ export async function POST(request: Request) {
       return jsonErrorNoStore("purchase_not_succeeded", { status: 409 });
     }
 
-    const onlineGroupAccess = await ensureOnlineGroupAccessForPayment(paymentRecord);
+    // A used or burnt invite of a running access is replaced by a fresh one (HUB-D38).
+    const onlineGroupAccess = await ensureOnlineGroupAccessForPayment(paymentRecord, {
+      reissue: true,
+    });
 
     if (onlineGroupAccess) {
       const links = onlineGroupAccess
