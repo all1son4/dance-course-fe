@@ -29,7 +29,8 @@ export const LibrarySection = styled.section`
   gap: 32px 60px;
   width: 100%;
 
-  @media (max-width: 1100px) {
+  /* Below 1240px a photo column would squeeze the topics into wrapped lines. */
+  @media (max-width: 1240px) {
     grid-template-columns: minmax(0, 1fr);
   }
 `;
@@ -39,6 +40,7 @@ export const LibraryText = styled.div`
   flex-direction: column;
   gap: 22px;
   min-width: 0;
+  container: hub-library / inline-size;
 
   h2 {
     ${sectionTitle}
@@ -70,15 +72,20 @@ export const TopicsLabel = styled.span`
   text-transform: uppercase;
 `;
 
-/** A compact table of contents: numbered rows in two columns, one soft panel. */
+/**
+ * A compact table of contents: numbered rows in two columns, one soft panel.
+ * Every topic stays on one line: the longest («Базовая акробатика») needs 217px at
+ * 19px, so the steps follow the column's own width, not the screen's: two columns
+ * need 518px at 19px and 396px at the small size, below that it is one column.
+ */
 export const TopicGrid = styled.ol`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-flow: column;
   grid-template-rows: repeat(4, auto);
-  column-gap: 40px;
+  column-gap: 32px;
   margin: 0;
-  padding: 6px 30px;
+  padding: 6px 26px;
   border-radius: 32px;
   background: rgba(244, 245, 246, 1);
   list-style: none;
@@ -107,7 +114,7 @@ export const TopicGrid = styled.ol`
     letter-spacing: 0.08em;
   }
 
-  @media (max-width: 550px) {
+  @container hub-library (max-width: 540px) {
     column-gap: 16px;
     padding: 4px 18px;
     border-radius: 24px;
@@ -116,6 +123,20 @@ export const TopicGrid = styled.ol`
       gap: 9px;
       padding: 12px 0;
       font-size: var(--text-small);
+    }
+  }
+
+  @container hub-library (max-width: 410px) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-auto-flow: row;
+
+    li:nth-child(4n) {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    }
+
+    li:last-child {
+      border-bottom: 0;
     }
   }
 `;
@@ -128,7 +149,7 @@ export const LibraryPhoto = styled(Image)`
   object-position: 50% 20%;
   border-radius: var(--radius-panel);
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1240px) {
     display: none;
   }
 `;
@@ -179,7 +200,7 @@ export const FeatureRow = styled.ul`
     flex-direction: column;
   }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 1399px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -229,7 +250,7 @@ export const StatementBand = styled.figure`
   blockquote {
     margin: 0;
     color: var(--ink);
-    font-size: 44px;
+    font-size: clamp(28px, 2.9vw, 44px);
     font-weight: 400;
     line-height: 1.15;
   }
@@ -243,10 +264,6 @@ export const StatementBand = styled.figure`
   }
 
   @media (max-width: 1100px) {
-    blockquote {
-      font-size: 34px;
-    }
-
     figcaption {
       padding-left: 40px;
     }
@@ -274,6 +291,16 @@ export const StatementBand = styled.figure`
 
     blockquote {
       font-size: 28px;
+    }
+  }
+
+  @media (max-width: 400px) {
+    figcaption {
+      padding: 20px 20px 26px;
+    }
+
+    blockquote {
+      font-size: 24px;
     }
   }
 `;
@@ -340,6 +367,13 @@ export const FinalCtaText = styled.div`
 
     p {
       font-size: var(--text-body-sm);
+    }
+  }
+
+  /* «к Inspiration HUB» is one unbreakable piece; on the narrowest phones it needs a step smaller. */
+  @media (max-width: 360px) {
+    h2 {
+      font-size: 28px;
     }
   }
 `;

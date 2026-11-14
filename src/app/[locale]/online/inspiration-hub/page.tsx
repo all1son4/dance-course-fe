@@ -51,11 +51,11 @@ import {
 } from "./hub-blocks.styles";
 import {
   ButtonBox,
-  FactNote,
   FactsRow,
   ImageBox,
   IntroductionSection,
   MobileImagesBox,
+  PriceNote,
   StepsImage,
   StepsSection,
   StepsTextBox,
@@ -148,9 +148,8 @@ export default async function InspirationHubPage() {
 
         <FactsRow>
           <ProductFact label={t("hero.accessLabel")} value={t("hero.accessValue")} />
-          <ProductFact label={t("hero.priceLabel")} value={price}>
-            <FactNote>{t("hero.priceNote")}</FactNote>
-          </ProductFact>
+          <ProductFact label={t("hero.priceLabel")} value={price} />
+          <PriceNote>{t("hero.priceNote")}</PriceNote>
         </FactsRow>
 
         <ButtonBox>
@@ -211,7 +210,7 @@ export default async function InspirationHubPage() {
             alt=""
             width={1000}
             height={1250}
-            sizes="(max-width: 1100px) 0px, 420px"
+            sizes="(max-width: 1240px) 0px, 420px"
           />
           <FeatureRow>
             {HUB_FEATURES.map(({ icon: Icon, id }, index) => (

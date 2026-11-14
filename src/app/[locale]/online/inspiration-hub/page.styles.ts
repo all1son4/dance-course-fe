@@ -1,6 +1,7 @@
 import styled from "styled-components";
 
 import { InfoBoxGroup } from "../_shared/section.styles";
+import { StartNote } from "../first-touch/page.styles";
 import {
   ButtonBox as GroupButtonBox,
   MobileImagesBox as GroupMobileImagesBox,
@@ -15,18 +16,26 @@ export {
   CourseProgramTextBox as StepsTextBox,
   CourseProgramTitle as StepsTitle,
 } from "../first-touch/page.styles";
-export { StartNote as FactNote } from "../first-touch/page.styles";
 export { ImageBox, IntroductionSection, TextBox } from "../group/page.styles";
 
-/** "Inspiration HUB" stays on one line wherever the column is wide enough. */
+/**
+ * "Inspiration HUB" never breaks between its two words: one line everywhere, a
+ * step smaller on the narrowest phones so it still fits.
+ */
 export const Title = styled(GroupTitle)`
   max-width: none;
+  white-space: nowrap;
+
+  @media (max-width: 380px) {
+    font-size: 32px;
+  }
 `;
 
 /**
  * Access and price side by side, so the hero fits the same height as the group's.
- * Below 920px the photo slides under the text column, so the facts stack and stay
- * clear of it.
+ * Each fact is as wide as its value, so the pair fits the 515px text column of
+ * small laptops too. Below 920px the photo slides under the text column, so the
+ * facts stack and stay clear of it.
  */
 export const FactsRow = styled(InfoBoxGroup)`
   flex-direction: row;
@@ -34,12 +43,7 @@ export const FactsRow = styled(InfoBoxGroup)`
   column-gap: 60px;
 
   & > div {
-    flex: 0 1 240px;
-  }
-
-  /* The price carries its note («Разовая оплата — без автопродления»): a bit wider. */
-  & > div:last-child {
-    flex-basis: 300px;
+    flex: 0 0 auto;
   }
 
   @media (max-width: 920px) {
@@ -69,4 +73,10 @@ export const MobileImagesBox = styled(GroupMobileImagesBox)`
       width: 100%;
     }
   }
+`;
+
+/** «Разовая оплата — без автопродления»: its own line under both facts. */
+export const PriceNote = styled(StartNote)`
+  flex: 0 0 100%;
+  margin: -8px 0 0;
 `;

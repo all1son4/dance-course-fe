@@ -639,8 +639,8 @@
   },
   "InspirationHubPage": {
     "hero": {
-      "title": "Inspiration HUB",
-      "titlePlain": "Inspiration HUB",
+      "title": "Inspiration HUB",
+      "titlePlain": "Inspiration HUB",
       "lead": "A library of video lessons on technique, choreography and improvisation, plus useful materials. Get access to lessons from previous Online Group cycles (10+ lessons) and find new ideas for your dance.",
       "accessLabel": "Access",
       "accessValue": "8 weeks",
@@ -650,7 +650,7 @@
       "insideButton": "What's inside"
     },
     "inside": {
-      "title": "What awaits you inside Inspiration HUB",
+      "title": "What awaits you inside Inspiration HUB",
       "lead": "Full programmes of the completed Online Group 1.0 and 2.0 cycles: 5 full lessons.",
       "topicsLabel": "In the lessons",
       "topics": {
@@ -677,13 +677,13 @@
         },
         "4": {
           "title": "Continue without a break",
-          "text": "Current Online Group participants and Inspiration HUB subscribers get a special price when they continue to the next cycle."
+          "text": "Current Online Group participants and Inspiration HUB subscribers get a special price when they continue to the next cycle."
         }
       }
     },
     "statement": {
       "text": "Your space for inspiration, practice and growth in dance.",
-      "caption": "Inspiration HUB"
+      "caption": "Inspiration HUB"
     },
     "steps": {
       "title": "How it works",
@@ -708,7 +708,7 @@
       }
     },
     "cta": {
-      "title": "Join Inspiration HUB",
+      "title": "Join Inspiration HUB",
       "text": "Everything inside, from day one:",
       "items": {
         "1": "Full Online Group 1.0 and 2.0 programmes",

@@ -639,20 +639,20 @@
   },
   "InspirationHubPage": {
     "hero": {
-      "title": "Inspiration HUB",
-      "titlePlain": "Inspiration HUB",
-      "lead": "Biblioteka lekcji wideo z techniki, choreografii i improwizacji oraz przydatnych materiałów. Zyskaj dostęp do lekcji z poprzednich cykli Online Group (10+ lekcji) i odkrywaj nowe pomysły na swój taniec.",
+      "title": "Inspiration HUB",
+      "titlePlain": "Inspiration HUB",
+      "lead": "Biblioteka lekcji wideo z techniki, choreografii i improwizacji oraz przydatnych materiałów. Zyskaj dostęp do lekcji z poprzednich cykli Online Group (10+ lekcji) i odkrywaj nowe pomysły na swój taniec.",
       "accessLabel": "Dostęp",
-      "accessValue": "8 tygodni",
+      "accessValue": "8 tygodni",
       "priceLabel": "Cena",
       "priceNote": "Jednorazowa płatność — bez automatycznego odnawiania",
       "buyButton": "Kup",
-      "insideButton": "Co w środku"
+      "insideButton": "Co w środku"
     },
     "inside": {
-      "title": "Co czeka na Ciebie w Inspiration HUB",
-      "lead": "Pełne programy zakończonych cykli Online Group 1.0 i 2.0: 5 pełnych lekcji.",
-      "topicsLabel": "W lekcjach",
+      "title": "Co czeka na Ciebie w Inspiration HUB",
+      "lead": "Pełne programy zakończonych cykli Online Group 1.0 i 2.0: 5 pełnych lekcji.",
+      "topicsLabel": "W lekcjach",
       "topics": {
         "1": "Technika nóg",
         "2": "Technika rąk",
@@ -665,25 +665,25 @@
       "features": {
         "1": {
           "title": "Materiały dodatkowe",
-          "text": "Lekcje bonusowe, które urozmaicą treningi i pomogą rozwijać technikę. Muzyka do treningów, inspiracje, wskazówki dotyczące stroju do tańca i wyboru butów oraz informacje o wydarzeniach tanecznych."
+          "text": "Lekcje bonusowe, które urozmaicą treningi i pomogą rozwijać technikę. Muzyka do treningów, inspiracje, wskazówki dotyczące stroju do tańca i wyboru butów oraz informacje o wydarzeniach tanecznych."
         },
         "2": {
           "title": "Ćwicz, kiedy chcesz",
-          "text": "Dołącz w dowolnym momencie i miej dostęp do wszystkich materiałów przez 8 tygodni. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
+          "text": "Dołącz w dowolnym momencie i miej dostęp do wszystkich materiałów przez 8 tygodni. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
         },
         "3": {
           "title": "Zamknięty kanał na Telegramie",
-          "text": "Wszystkie lekcje i materiały są w wygodnej, zamkniętej przestrzeni, zawsze pod ręką."
+          "text": "Wszystkie lekcje i materiały są w wygodnej, zamkniętej przestrzeni, zawsze pod ręką."
         },
         "4": {
           "title": "Kontynuacja bez przerwy",
-          "text": "Uczestnicy obecnej grupy online i subskrybenci Inspiration HUB mają specjalną cenę przy kontynuacji w kolejnym cyklu."
+          "text": "Uczestnicy obecnej grupy online i subskrybenci Inspiration HUB mają specjalną cenę przy kontynuacji w kolejnym cyklu."
         }
       }
     },
     "statement": {
-      "text": "Twoja przestrzeń inspiracji, praktyki i rozwoju w tańcu.",
-      "caption": "Inspiration HUB"
+      "text": "Twoja przestrzeń inspiracji, praktyki i rozwoju w tańcu.",
+      "caption": "Inspiration HUB"
     },
     "steps": {
       "title": "Jak to działa",
@@ -691,30 +691,30 @@
       "items": {
         "1": {
           "title": "Płatność",
-          "description": "Kup dostęp na stronie: płatność jest jednorazowa, bez automatycznych obciążeń. Osobisty link do zamkniętego kanału na Telegramie pojawi się zaraz po płatności i przyjdzie na email."
+          "description": "Kup dostęp na stronie: płatność jest jednorazowa, bez automatycznych obciążeń. Osobisty link do zamkniętego kanału na Telegramie pojawi się zaraz po płatności i przyjdzie na email."
         },
         "2": {
           "title": "Wejście do kanału",
-          "description": "Otwórz link z konta Telegram, z którego będziesz korzystać: działa jeden raz i tylko dla Ciebie."
+          "description": "Otwórz link z konta Telegram, z którego będziesz korzystać: działa jeden raz i tylko dla Ciebie."
         },
         "3": {
           "title": "Przedłużenie",
-          "description": "Możesz przedłużyć dostęp wcześniej — kolejne 8 tygodni zacznie się zaraz po obecnych."
+          "description": "Możesz przedłużyć dostęp wcześniej — kolejne 8 tygodni zacznie się zaraz po obecnych."
         },
         "4": {
           "title": "Koniec dostępu",
-          "description": "Jeśli nie przedłużysz, dostęp do kanału zamknie się sam po 8 tygodniach od płatności. Możesz wrócić w każdej chwili."
+          "description": "Jeśli nie przedłużysz, dostęp do kanału zamknie się sam po 8 tygodniach od płatności. Możesz wrócić w każdej chwili."
         }
       }
     },
     "cta": {
-      "title": "Dołącz do Inspiration HUB",
-      "text": "Wszystko w środku — od pierwszego dnia:",
+      "title": "Dołącz do Inspiration HUB",
+      "text": "Wszystko w środku — od pierwszego dnia:",
       "items": {
-        "1": "Pełne programy Online Group 1.0 i 2.0",
-        "2": "Lekcje bonusowe i materiały",
+        "1": "Pełne programy Online Group 1.0 i 2.0",
+        "2": "Lekcje bonusowe i materiały",
         "3": "Zamknięty kanał na Telegramie",
-        "4": "8 tygodni dostępu zaraz po płatności"
+        "4": "8 tygodni dostępu zaraz po płatności"
       },
       "note": "Jednorazowa płatność — bez automatycznego odnawiania"
     }
