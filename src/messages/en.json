@@ -641,10 +641,7 @@
     "hero": {
       "title": "Inspiration HUB",
       "titlePlain": "Inspiration HUB",
-      "description": {
-        "1": "INSPIRATION HUB is your space for inspiration, practice and growth in dance.",
-        "2": "Practise with Anna whenever it suits you: no schedule, no deadlines, at your own pace."
-      },
+      "lead": "A library of video lessons on technique, choreography and improvisation, plus useful materials. Get access to lessons from previous Online Group cycles (10+ lessons) and find new ideas for your dance.",
       "accessLabel": "Access",
       "accessValue": "8 weeks",
       "priceLabel": "Price",
@@ -652,57 +649,41 @@
       "buyButton": "Buy",
       "insideButton": "What's inside"
     },
-    "about": {
-      "title": "What awaits you inside Inspiration HUB"
-    },
-    "suggestions": {
-      "1": {
-        "title": "Lessons from past cycles",
-        "text": "Full Online Group 1.0 and 2.0 lessons — the same ones the participants took with Anna."
-      },
-      "2": {
-        "title": "Training extras",
-        "text": "Extra technique lessons, music for practice, tips on dancewear and shoes, and event announcements."
-      },
-      "3": {
-        "title": "All in one Telegram channel",
-        "text": "The private channel is always at hand: open a lesson on your phone at the studio or at home and come back to it as often as you like for 8 weeks."
-      },
-      "4": {
-        "title": "A special price for members",
-        "text": "Participants of the current Online Group and Inspiration Hub get a special renewal price."
-      }
-    },
-    "topics": {
-      "title": "Lesson topics",
-      "text": "Everything the Online Group worked on, now in one library.",
-      "items": {
+    "inside": {
+      "title": "What awaits you inside Inspiration HUB",
+      "lead": "Full programmes of the completed Online Group 1.0 and 2.0 cycles: 5 full lessons.",
+      "topicsLabel": "In the lessons",
+      "topics": {
         "1": "Leg technique",
         "2": "Arm technique",
         "3": "Flow",
         "4": "Hair work",
         "5": "Improvisation",
         "6": "Basic acrobatics",
-        "7": "Choreography",
-        "8": "Music for practice"
-      }
-    },
-    "audience": {
-      "title": "Who it's for",
-      "items": {
+        "7": "Choreography"
+      },
+      "features": {
         "1": {
-          "title": "You've been in the Online Group",
-          "text": "Repeat the programme, consolidate your technique and stay in shape between cycles."
+          "title": "Extra materials",
+          "text": "Bonus lessons to vary your training and develop your technique. Training music, ideas for inspiration, tips on dancewear and choosing shoes, and news about dance events."
         },
         "2": {
-          "title": "You want to practise more often",
-          "text": "Add Anna's lessons to your training and try something new between classes."
+          "title": "Practise whenever you like",
+          "text": "Join at any time and get access to all materials for 8 weeks. No schedules and no deadlines: choose what to learn and practise when it suits you."
         },
         "3": {
-          "title": "You're looking for inspiration",
-          "text": "Choreography, flow and improvisation bring new ideas to your dance."
+          "title": "Private Telegram channel",
+          "text": "All lessons and materials are kept in a convenient private space that is always at hand."
+        },
+        "4": {
+          "title": "Continue without a break",
+          "text": "Current Online Group participants and Inspiration HUB subscribers get a special price when they continue to the next cycle."
         }
       }
+    },
+    "statement": {
+      "text": "Your space for inspiration, practice and growth in dance.",
+      "caption": "Inspiration HUB"
     },
     "steps": {
       "title": "How it works",
@@ -727,8 +708,14 @@
       }
     },
     "cta": {
-      "title": "Start today",
-      "text": "Your Inspiration HUB access opens right after payment — for 8 weeks.",
+      "title": "Join Inspiration HUB",
+      "text": "Everything inside, from day one:",
+      "items": {
+        "1": "Full Online Group 1.0 and 2.0 programmes",
+        "2": "Bonus lessons and materials",
+        "3": "A private Telegram channel",
+        "4": "8 weeks of access right after payment"
+      },
       "note": "One-time payment — no auto-renewal"
     }
   },

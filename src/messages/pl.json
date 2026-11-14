@@ -641,10 +641,7 @@
     "hero": {
       "title": "Inspiration HUB",
       "titlePlain": "Inspiration HUB",
-      "description": {
-        "1": "INSPIRATION HUB to Twoja przestrzeń inspiracji, praktyki i rozwoju w tańcu.",
-        "2": "Ćwicz z Anną, kiedy Ci pasuje: bez grafiku i terminów, we własnym tempie."
-      },
+      "lead": "Biblioteka lekcji wideo z techniki, choreografii i improwizacji oraz przydatnych materiałów. Zyskaj dostęp do lekcji z poprzednich cykli Online Group (10+ lekcji) i odkrywaj nowe pomysły na swój taniec.",
       "accessLabel": "Dostęp",
       "accessValue": "8 tygodni",
       "priceLabel": "Cena",
@@ -652,57 +649,41 @@
       "buyButton": "Kup",
       "insideButton": "Co w środku"
     },
-    "about": {
-      "title": "Co czeka na Ciebie w Inspiration HUB"
-    },
-    "suggestions": {
-      "1": {
-        "title": "Lekcje z zakończonych cykli",
-        "text": "Pełne lekcje Online Group 1.0 i 2.0 — te same, które uczestniczki przerabiały razem z Anną."
-      },
-      "2": {
-        "title": "Dodatki do treningów",
-        "text": "Dodatkowe lekcje techniki, muzyka do ćwiczeń, porady dotyczące stroju i butów do tańca oraz zapowiedzi wydarzeń."
-      },
-      "3": {
-        "title": "Wszystko w jednym kanale na Telegramie",
-        "text": "Zamknięty kanał zawsze pod ręką: otwórz lekcję w telefonie na sali lub w domu i wracaj do niej, ile chcesz, przez 8 tygodni."
-      },
-      "4": {
-        "title": "Specjalna cena dla swoich",
-        "text": "Uczestniczki obecnej grupy online i Inspiration Hub mają specjalną cenę przedłużenia."
-      }
-    },
-    "topics": {
-      "title": "Tematy lekcji",
-      "text": "Wszystko, nad czym pracowała grupa online, teraz w jednej bibliotece.",
-      "items": {
+    "inside": {
+      "title": "Co czeka na Ciebie w Inspiration HUB",
+      "lead": "Pełne programy zakończonych cykli Online Group 1.0 i 2.0: 5 pełnych lekcji.",
+      "topicsLabel": "W lekcjach",
+      "topics": {
         "1": "Technika nóg",
         "2": "Technika rąk",
         "3": "Flow",
         "4": "Hair work",
         "5": "Improwizacja",
         "6": "Podstawy akrobatyki",
-        "7": "Choreografie",
-        "8": "Muzyka do treningów"
-      }
-    },
-    "audience": {
-      "title": "Dla kogo",
-      "items": {
+        "7": "Choreografie"
+      },
+      "features": {
         "1": {
-          "title": "Byłaś w grupie online",
-          "text": "Powtarzaj program, utrwalaj technikę i nie trać formy między cyklami."
+          "title": "Materiały dodatkowe",
+          "text": "Lekcje bonusowe, które urozmaicą treningi i pomogą rozwijać technikę. Muzyka do treningów, inspiracje, wskazówki dotyczące stroju do tańca i wyboru butów oraz informacje o wydarzeniach tanecznych."
         },
         "2": {
-          "title": "Chcesz ćwiczyć częściej",
-          "text": "Dodaj lekcje Anny do swoich treningów i próbuj nowych rzeczy między zajęciami."
+          "title": "Ćwicz, kiedy chcesz",
+          "text": "Dołącz w dowolnym momencie i miej dostęp do wszystkich materiałów przez 8 tygodni. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
         },
         "3": {
-          "title": "Szukasz inspiracji",
-          "text": "Choreografie, flow i improwizacja dadzą nowe pomysły do Twojego tańca."
+          "title": "Zamknięty kanał na Telegramie",
+          "text": "Wszystkie lekcje i materiały są w wygodnej, zamkniętej przestrzeni, zawsze pod ręką."
+        },
+        "4": {
+          "title": "Kontynuacja bez przerwy",
+          "text": "Uczestnicy obecnej grupy online i subskrybenci Inspiration HUB mają specjalną cenę przy kontynuacji w kolejnym cyklu."
         }
       }
+    },
+    "statement": {
+      "text": "Twoja przestrzeń inspiracji, praktyki i rozwoju w tańcu.",
+      "caption": "Inspiration HUB"
     },
     "steps": {
       "title": "Jak to działa",
@@ -727,8 +708,14 @@
       }
     },
     "cta": {
-      "title": "Zacznij już dziś",
-      "text": "Dostęp do Inspiration HUB otworzy się zaraz po płatności — na 8 tygodni.",
+      "title": "Dołącz do Inspiration HUB",
+      "text": "Wszystko w środku — od pierwszego dnia:",
+      "items": {
+        "1": "Pełne programy Online Group 1.0 i 2.0",
+        "2": "Lekcje bonusowe i materiały",
+        "3": "Zamknięty kanał na Telegramie",
+        "4": "8 tygodni dostępu zaraz po płatności"
+      },
       "note": "Jednorazowa płatność — bez automatycznego odnawiania"
     }
   },

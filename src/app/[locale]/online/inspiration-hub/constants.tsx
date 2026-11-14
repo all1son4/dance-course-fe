@@ -1,60 +1,15 @@
-import {
-  OnlineCreditCard,
-  OnlineGroup,
-  OnlineHome,
-  OnlineInspiration,
-  OnlineMusic,
-  OnlineTelegram,
-  OnlineVideo,
-} from "@/svg";
+import { OnlineCalendar, OnlineCreditCard, OnlineTelegram, OnlineVideo } from "@/svg";
 
-import {
-  buildOnlineSuggestionCards,
-  type OnlineSuggestionCard,
-  type OnlineSuggestionDefinition,
-} from "../_shared/content";
+/** What the lessons cover, from Anna's first card (`inside.topics.N`). */
+export const HUB_TOPIC_COUNT = 7;
 
-type Translate = (key: string) => string;
-
-const INSPIRATION_HUB_SUGGESTION_DEFINITIONS = [
-  {
-    id: "lessons",
-    icon: OnlineVideo,
-    titleKey: "suggestions.1.title",
-    textKey: "suggestions.1.text",
-  },
-  {
-    id: "extras",
-    icon: OnlineMusic,
-    titleKey: "suggestions.2.title",
-    textKey: "suggestions.2.text",
-  },
-  {
-    id: "telegram",
-    icon: OnlineTelegram,
-    titleKey: "suggestions.3.title",
-    textKey: "suggestions.3.text",
-  },
-  {
-    id: "member-price",
-    icon: OnlineCreditCard,
-    titleKey: "suggestions.4.title",
-    textKey: "suggestions.4.text",
-  },
-] satisfies readonly OnlineSuggestionDefinition[];
-
-export const getInspirationHubSuggestions = (t: Translate): OnlineSuggestionCard[] =>
-  buildOnlineSuggestionCards({
-    definitions: INSPIRATION_HUB_SUGGESTION_DEFINITIONS,
-    t,
-  });
-
-/** Lesson topics shown as pills (`topics.items.N`). */
-export const HUB_TOPIC_COUNT = 8;
-
-/** «Кому подойдёт»: one icon per card, texts in `audience.items.N`. */
-export const HUB_AUDIENCE = [
-  { id: "group", icon: OnlineGroup },
-  { id: "more-often", icon: OnlineHome },
-  { id: "inspiration", icon: OnlineInspiration },
+/** Anna's other four cards (`inside.features.N`), one icon each. */
+export const HUB_FEATURES = [
+  { id: "extras", icon: OnlineVideo },
+  { id: "own-pace", icon: OnlineCalendar },
+  { id: "telegram", icon: OnlineTelegram },
+  { id: "no-pause", icon: OnlineCreditCard },
 ] as const;
+
+/** What the price buys, listed in the closing offer (`cta.items.N`). */
+export const HUB_VALUE_COUNT = 4;

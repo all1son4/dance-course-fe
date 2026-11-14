@@ -2,7 +2,6 @@ import styled from "styled-components";
 
 import { InfoBoxGroup } from "../_shared/section.styles";
 import {
-  AboutCourseSection as GroupAboutCourseSection,
   ButtonBox as GroupButtonBox,
   MobileImagesBox as GroupMobileImagesBox,
   Title as GroupTitle,
@@ -11,12 +10,12 @@ import {
 // The Hub page is laid out like the Online Group page it continues: the same hero,
 // button row and "what's inside" grid; the steps come from First Touch.
 export {
-  StartNote as FactNote,
   CourseProgramImage as StepsImage,
   CourseProgramSection as StepsSection,
   CourseProgramTextBox as StepsTextBox,
   CourseProgramTitle as StepsTitle,
 } from "../first-touch/page.styles";
+export { StartNote as FactNote } from "../first-touch/page.styles";
 export { ImageBox, IntroductionSection, TextBox } from "../group/page.styles";
 
 /** "Inspiration HUB" stays on one line wherever the column is wide enough. */
@@ -36,6 +35,11 @@ export const FactsRow = styled(InfoBoxGroup)`
 
   & > div {
     flex: 0 1 240px;
+  }
+
+  /* The price carries its note («Разовая оплата — без автопродления»): a bit wider. */
+  & > div:last-child {
+    flex-basis: 300px;
   }
 
   @media (max-width: 920px) {
@@ -65,12 +69,4 @@ export const MobileImagesBox = styled(GroupMobileImagesBox)`
       width: 100%;
     }
   }
-`;
-
-/**
- * On the group page this grid follows the tariffs; here it opens the white slab,
- * whose own padding already gives the top air.
- */
-export const AboutCourseSection = styled(GroupAboutCourseSection)`
-  padding-top: 0;
 `;

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 
 import HeroMedia from "@/app/[locale]/_shared/hero-media";
@@ -26,8 +27,6 @@ import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import ProductFact from "../_shared/product-fact";
 import ProductHero from "../_shared/product-hero";
 import {
-  AboutCourseCards,
-  AboutCourseTitle,
   Description,
   DescriptionParagraph,
   SpecialWrapper,
@@ -36,22 +35,21 @@ import {
   buildCourseOffersStructuredData,
   buildCourseStructuredData,
 } from "../_shared/structured-data";
-import SuggestionGrid from "../_shared/suggestion-grid";
-import { getInspirationHubSuggestions, HUB_AUDIENCE, HUB_TOPIC_COUNT } from "./constants";
+import { HUB_FEATURES, HUB_TOPIC_COUNT, HUB_VALUE_COUNT } from "./constants";
 import {
-  AudienceCard,
-  AudienceGrid,
+  FeatureRow,
   FinalCta,
   FinalCtaOffer,
   FinalCtaText,
-  HubSection,
-  HubSectionHead,
-  HubSectionLead,
-  HubSectionTitle,
-  TopicList,
+  LibraryPhoto,
+  LibrarySection,
+  LibraryText,
+  StatementBand,
+  TopicGrid,
+  TopicsLabel,
+  ValueList,
 } from "./hub-blocks.styles";
 import {
-  AboutCourseSection,
   ButtonBox,
   FactNote,
   FactsRow,
@@ -107,7 +105,7 @@ export default async function InspirationHubPage() {
   };
   const courseStructuredData = buildCourseStructuredData({
     name: t("hero.titlePlain"),
-    description: `${t("hero.description.1")} ${t("hero.description.2")}`,
+    description: t("hero.lead"),
     path: PATH,
     offers: buildCourseOffersStructuredData({
       landingPath: PATH,
@@ -145,8 +143,7 @@ export default async function InspirationHubPage() {
       >
         <Title>{t("hero.title")}</Title>
         <Description>
-          <DescriptionParagraph>{t("hero.description.1")}</DescriptionParagraph>
-          <DescriptionParagraph>{t("hero.description.2")}</DescriptionParagraph>
+          <DescriptionParagraph>{t("hero.lead")}</DescriptionParagraph>
         </Description>
 
         <FactsRow>
@@ -194,43 +191,54 @@ export default async function InspirationHubPage() {
       </ProductHero>
 
       <SpecialWrapper $compactAt={1100} $stacked={false}>
-        <SuggestionGrid
-          compactBelow={920}
-          components={{
-            Section: AboutCourseSection,
-            Title: AboutCourseTitle,
-            Cards: AboutCourseCards,
-          }}
-          id="inside"
-          title={t("about.title")}
-          items={getInspirationHubSuggestions((key) => t(key))}
-          photo="/images/photos/about_inspiration_hub.webp"
-        />
-        <HubSection aria-labelledby="hub-topics-title">
-          <HubSectionHead>
-            <HubSectionTitle id="hub-topics-title">{t("topics.title")}</HubSectionTitle>
-            <HubSectionLead>{t("topics.text")}</HubSectionLead>
-          </HubSectionHead>
-          <TopicList>
-            {Array.from({ length: HUB_TOPIC_COUNT }, (_, index) => (
-              <li key={index}>{t(`topics.items.${index + 1}`)}</li>
-            ))}
-          </TopicList>
-        </HubSection>
-        <HubSection aria-labelledby="hub-audience-title">
-          <HubSectionTitle id="hub-audience-title">{t("audience.title")}</HubSectionTitle>
-          <AudienceGrid>
-            {HUB_AUDIENCE.map(({ icon: Icon, id }, index) => (
-              <AudienceCard key={id}>
+        <LibrarySection id="inside" aria-labelledby="hub-inside-title">
+          <LibraryText>
+            <h2 id="hub-inside-title">{t("inside.title")}</h2>
+            <p>{t("inside.lead")}</p>
+            <TopicsLabel>{t("inside.topicsLabel")}</TopicsLabel>
+            <TopicGrid>
+              {Array.from({ length: HUB_TOPIC_COUNT }, (_, index) => (
+                <li key={index}>
+                  <span aria-hidden>{String(index + 1).padStart(2, "0")}</span>
+                  {t(`inside.topics.${index + 1}`)}
+                </li>
+              ))}
+            </TopicGrid>
+          </LibraryText>
+          <LibraryPhoto
+            {...imageFadeProps}
+            src="/images/photos/about_inspiration_hub.webp"
+            alt=""
+            width={1000}
+            height={1250}
+            sizes="(max-width: 1100px) 0px, 420px"
+          />
+          <FeatureRow>
+            {HUB_FEATURES.map(({ icon: Icon, id }, index) => (
+              <li key={id}>
                 <Icon />
                 <div>
-                  <h3>{t(`audience.items.${index + 1}.title`)}</h3>
-                  <p>{t(`audience.items.${index + 1}.text`)}</p>
+                  <strong>{t(`inside.features.${index + 1}.title`)}</strong>
+                  <p>{t(`inside.features.${index + 1}.text`)}</p>
                 </div>
-              </AudienceCard>
+              </li>
             ))}
-          </AudienceGrid>
-        </HubSection>
+          </FeatureRow>
+        </LibrarySection>
+
+        <StatementBand>
+          <Image
+            src="/images/photos/card_inspiration_hub.webp"
+            alt={metadataT("pages.inspirationHub.heroImageAlt")}
+            fill
+            sizes="(max-width: 880px) 100vw, 1240px"
+          />
+          <figcaption>
+            <blockquote>{t("statement.text")}</blockquote>
+            <cite>{t("statement.caption")}</cite>
+          </figcaption>
+        </StatementBand>
+
         <StepsSection id="how-it-works">
           <StepsTextBox>
             <StepsTitle>{t("steps.title")}</StepsTitle>
@@ -249,6 +257,11 @@ export default async function InspirationHubPage() {
           <FinalCtaText>
             <h2 id="hub-cta-title">{t("cta.title")}</h2>
             <p>{t("cta.text")}</p>
+            <ValueList>
+              {Array.from({ length: HUB_VALUE_COUNT }, (_, index) => (
+                <li key={index}>{t(`cta.items.${index + 1}`)}</li>
+              ))}
+            </ValueList>
           </FinalCtaText>
           <FinalCtaOffer>
             <strong>{price}</strong>

@@ -1,33 +1,15 @@
+import Image from "next/image";
 import styled from "styled-components";
 
 /*
- * The Hub page's own selling blocks, drawn in the site's language: the 50px section
- * titles of the course pages, the brand wine as the one accent, pill shapes and the
- * white slab's rhythm (150px between sections on wide screens, 40px on phones).
+ * The Hub page's own blocks, in the site's language: 50px section titles, the
+ * brand wine as the one accent, soft grey panels and big rounded photos, and the
+ * white slab's rhythm (150px between sections on wide screens, 60px on phones).
+ * Each block looks different on purpose, so the page reads as a story rather than
+ * a stack of identical cards.
  */
 
-export const HubSection = styled.section`
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
-  width: 100%;
-  padding: 150px 0 0;
-
-  @media (max-width: 880px) {
-    gap: 28px;
-    padding: 60px 0 0;
-  }
-`;
-
-export const HubSectionHead = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px 40px;
-`;
-
-export const HubSectionTitle = styled.h2`
+const sectionTitle = `
   margin: 0;
   color: var(--ink);
   font-size: 50px;
@@ -39,112 +21,265 @@ export const HubSectionTitle = styled.h2`
   }
 `;
 
-export const HubSectionLead = styled.p`
-  max-width: 420px;
-  margin: 0;
-  color: var(--ink-muted);
-  font-size: var(--text-body);
-  font-weight: var(--weight-text);
-  line-height: 1.5;
+/* ---------- «Что внутри»: the library ---------- */
 
-  @media (max-width: 880px) {
-    font-size: var(--text-body-sm);
+export const LibrarySection = styled.section`
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
+  gap: 32px 60px;
+  width: 100%;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr);
   }
 `;
 
-/** Lesson topics as pills: the library at a glance. */
-export const TopicList = styled.ul`
+export const LibraryText = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+
+  h2 {
+    ${sectionTitle}
+  }
+
+  > p {
+    max-width: 560px;
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: var(--text-body);
+    font-weight: var(--weight-text);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 880px) {
+    gap: 16px;
+
+    > p {
+      font-size: var(--text-body-sm);
+    }
+  }
+`;
+
+export const TopicsLabel = styled.span`
+  margin: 14px 0 -8px;
+  color: var(--brand);
+  font-size: var(--text-caption);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+`;
+
+/** A compact table of contents: numbered rows in two columns, one soft panel. */
+export const TopicGrid = styled.ol`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-template-rows: repeat(4, auto);
+  column-gap: 40px;
   margin: 0;
-  padding: 0;
+  padding: 6px 30px;
+  border-radius: 32px;
+  background: rgba(244, 245, 246, 1);
   list-style: none;
 
   li {
-    padding: 14px 26px;
-    border: 1px solid rgba(124, 0, 2, 0.16);
-    border-radius: var(--radius-pill);
-    background: rgba(124, 0, 2, 0.04);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+    color: var(--ink);
+    font-size: 19px;
+    line-height: 1.25;
+  }
+
+  li:nth-child(4n),
+  li:last-child {
+    border-bottom: 0;
+  }
+
+  li span {
+    flex-shrink: 0;
     color: var(--brand);
-    font-size: var(--text-body);
-    line-height: 1.2;
-    white-space: nowrap;
+    font-size: var(--text-caption);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.08em;
   }
 
   @media (max-width: 550px) {
-    gap: 8px;
+    column-gap: 16px;
+    padding: 4px 18px;
+    border-radius: 24px;
 
     li {
-      padding: 11px 18px;
+      gap: 9px;
+      padding: 12px 0;
       font-size: var(--text-small);
     }
   }
 `;
 
-/** Three "this is for you" cards in a row; one column on phones. */
-export const AudienceGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+export const LibraryPhoto = styled(Image)`
+  width: 100%;
+  height: 100%;
+  min-height: 520px;
+  object-fit: cover;
+  object-position: 50% 20%;
+  border-radius: var(--radius-panel);
 
-  @media (max-width: 920px) {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+  @media (max-width: 1100px) {
+    display: none;
   }
 `;
 
-export const AudienceCard = styled.article`
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  padding: 36px 32px;
-  border-radius: var(--radius-panel);
-  background: rgba(244, 245, 246, 1);
+/** Anna's four other cards, small and side by side. */
+export const FeatureRow = styled.ul`
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
 
-  svg {
-    width: 44px;
-    height: 44px;
-    color: var(--brand);
+  li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.07);
+    border-radius: 28px;
   }
 
-  h3 {
-    margin: 0;
+  svg {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 6px;
     color: var(--ink);
-    font-size: 24px;
+    font-size: 19px;
     font-weight: 400;
-    line-height: 1.2;
+    line-height: 1.25;
   }
 
   p {
     margin: 0;
     color: var(--ink-muted);
-    font-size: var(--text-body-sm);
+    font-size: var(--text-caption);
     font-weight: var(--weight-text);
     line-height: 1.5;
   }
 
-  @media (max-width: 920px) {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 18px;
-    padding: 24px;
-    border-radius: 28px;
+  li {
+    flex-direction: column;
+  }
 
-    svg {
-      flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-    }
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 
-    h3 {
-      margin-bottom: 6px;
-      font-size: 20px;
+  @media (max-width: 600px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+
+    li {
+      flex-direction: row;
+      padding: 18px;
+      border-radius: 24px;
     }
   }
 `;
 
-/** The closing call to action: the brand wine panel with the price and the button. */
+/* ---------- The statement band ---------- */
+
+/**
+ * Anna's line over the wide photo: she stands on the right, the light wall on the
+ * left carries the words, so no overlay is needed on wide screens.
+ */
+export const StatementBand = styled.figure`
+  position: relative;
+  width: 100%;
+  margin: 150px 0 0;
+  aspect-ratio: 1400 / 640;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: rgba(233, 234, 238, 1);
+
+  img {
+    object-fit: cover;
+    object-position: 70% 30%;
+  }
+
+  figcaption {
+    position: absolute;
+    inset: 0 auto 0 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 22px;
+    width: min(46%, 560px);
+    padding: 0 0 0 64px;
+  }
+
+  blockquote {
+    margin: 0;
+    color: var(--ink);
+    font-size: 44px;
+    font-weight: 400;
+    line-height: 1.15;
+  }
+
+  cite {
+    color: var(--brand);
+    font-size: var(--text-caption);
+    font-style: normal;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 1100px) {
+    blockquote {
+      font-size: 34px;
+    }
+
+    figcaption {
+      padding-left: 40px;
+    }
+  }
+
+  /* Phones: the photo above, the words under it on the same grey. */
+  @media (max-width: 767px) {
+    aspect-ratio: auto;
+    margin: 60px 0 0;
+    border-radius: 32px;
+
+    img {
+      position: static !important;
+      height: auto !important;
+      aspect-ratio: 1400 / 800;
+      object-position: 75% 30%;
+    }
+
+    figcaption {
+      position: static;
+      width: auto;
+      padding: 24px 24px 30px;
+      gap: 14px;
+    }
+
+    blockquote {
+      font-size: 28px;
+    }
+  }
+`;
+
+/* ---------- The closing offer ---------- */
+
 export const FinalCta = styled.section`
   display: flex;
   align-items: center;
@@ -206,6 +341,35 @@ export const FinalCtaText = styled.div`
     p {
       font-size: var(--text-body-sm);
     }
+  }
+`;
+
+/** What the price buys, as a short checked list (the value stack). */
+export const ValueList = styled.ul`
+  display: grid;
+  gap: 10px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    color: var(--ink-inverse);
+    font-size: var(--text-body-sm);
+    line-height: 1.4;
+  }
+
+  li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 7px;
+    height: 12px;
+    margin: 0 2px 1px;
+    border: solid rgba(255, 255, 255, 0.9);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translateY(-2px);
   }
 `;
 
