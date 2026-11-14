@@ -29,6 +29,8 @@ const COHORT_2_CHAT = `transfer_c2_${run}`;
 const COHORT_3_CHAT = `transfer_c3_${run}`;
 const HUB_CHAT = `transfer_hub_${run}`;
 const [OWNER, OTHER] = createTestTelegramUserIdPair();
+// 20 February 13:00 in Warsaw; access ends at 00:00 on 21 February (23:00 UTC).
+const CLOSURE = { closedAt: "2025-02-20T12:00:00.000Z", lessonsCleared: true };
 // Dates long past, so the cohorts never count as recent for other test files.
 const INPUT: HubLaunchTransferInput = {
   cohort2: {
@@ -42,8 +44,7 @@ const INPUT: HubLaunchTransferInput = {
     startsAt: "2025-03-01T17:00:00.000Z",
   },
   hubChatId: HUB_CHAT,
-  // 20 February 13:00 in Warsaw; access ends at 00:00 on 21 February (23:00 UTC).
-  closeCohort2: { closedAt: "2025-02-20T12:00:00.000Z", lessonsCleared: true },
+  closeCohort2: CLOSURE,
 };
 const purchaseIds = new Map<string, string>();
 let previousHubChat: string | null = null;
@@ -164,7 +165,7 @@ const countCohorts = async () => {
 test("bad input is refused before anything is read or written", async () => {
   await assert.rejects(
     runHubLaunchTransfer(db, {
-      input: { ...INPUT, closeCohort2: { ...INPUT.closeCohort2, lessonsCleared: false } },
+      input: { ...INPUT, closeCohort2: { ...CLOSURE, lessonsCleared: false } },
       write: true,
     }),
     /hub_launch_transfer_lessons_not_confirmed/u,
@@ -195,8 +196,8 @@ test("a dry run reports the whole transfer and keeps nothing", async () => {
     report.purchases.ownerConflicts.map((entry) => entry.paymentIntentId),
     [`pi_transfer_conflict_${run}`],
   );
-  assert.equal(report.closure.accessEndsAt, "2025-02-20T23:00:00.000Z");
-  assert.equal(report.closure.nextCohortSalesOpened, true);
+  assert.equal(report.closure?.accessEndsAt, "2025-02-20T23:00:00.000Z");
+  assert.equal(report.closure?.nextCohortSalesOpened, true);
 
   assert.equal(await countCohorts(), 0);
   assert.deepEqual(await readPurchase("plus"), {
@@ -208,6 +209,19 @@ test("a dry run reports the whole transfer and keeps nothing", async () => {
   });
   const [settings] = await client`SELECT 1 FROM inspiration_hub_settings`;
   assert.equal(settings, undefined);
+});
+
+test("without a closure cohort #2 stays open for «Закрыть поток» in the admin", async () => {
+  const report = await runHubLaunchTransfer(db, {
+    input: { ...INPUT, closeCohort2: undefined },
+    write: false,
+  });
+
+  assert.equal(report.cohorts.cohort2.created, true);
+  assert.equal(report.cohorts.cohort3.created, true);
+  assert.equal(report.purchases.linked, 4);
+  assert.equal(report.closure, null);
+  assert.equal(await countCohorts(), 0);
 });
 
 test("the real run creates the cohorts, links purchases and closes cohort #2", async () => {
@@ -269,6 +283,6 @@ test("running it again changes nothing", async () => {
   assert.equal(report.purchases.linked, 0);
   assert.equal(report.purchases.alreadyLinked, 4);
   assert.equal(report.purchases.ownersWritten, 0);
-  assert.equal(report.closure.alreadyClosed, true);
+  assert.equal(report.closure?.alreadyClosed, true);
   assert.equal(await countCohorts(), 2);
 });

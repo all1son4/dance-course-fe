@@ -30,7 +30,11 @@ export type HubLaunchTransferInput = {
   cohort2: CohortInput;
   cohort3: CohortInput;
   hubChatId: string;
-  closeCohort2: { closedAt: string; lessonsCleared: boolean };
+  /**
+   * Leave it out to keep cohort #2 open: the owner then closes it with «Закрыть
+   * поток» in the admin, which also opens sales of cohort #3.
+   */
+  closeCohort2?: { closedAt: string; lessonsCleared: boolean };
 };
 
 type CohortLabel = "cohort2" | "cohort3";
@@ -52,6 +56,7 @@ export type HubLaunchTransferReport = {
     /** Already tied to another cohort or classified otherwise: left untouched. */
     skipped: { cohort: CohortLabel; paymentIntentId: string; reason: string }[];
   };
+  /** Null when the input left cohort #2 open. */
   closure: {
     alreadyClosed: boolean;
     closedAt: string;
@@ -59,7 +64,7 @@ export type HubLaunchTransferReport = {
     accessEndsAt: string;
     nextCohortSalesOpened: boolean;
     continuationRoots: number;
-  };
+  } | null;
 };
 
 type Database = ReturnType<typeof getDatabase>;
@@ -87,7 +92,8 @@ export function validateHubLaunchTransferInput(input: HubLaunchTransferInput) {
     throw new Error("hub_launch_transfer_same_main_chat");
   }
   if (!input.hubChatId?.trim()) throw new Error("hub_launch_transfer_hub_chat_missing");
-  if (input.closeCohort2?.lessonsCleared !== true) {
+  if (!input.closeCohort2) return;
+  if (input.closeCohort2.lessonsCleared !== true) {
     // HUB-D19: the owner confirms the lessons were removed from chat #2 by hand.
     throw new Error("hub_launch_transfer_lessons_not_confirmed");
   }
@@ -307,7 +313,7 @@ async function linkCohortPurchases(
 async function transferInTransaction(
   tx: DatabaseTransaction,
   input: HubLaunchTransferInput,
-): Promise<{ report: HubLaunchTransferReport; closure: CohortClosure }> {
+): Promise<{ report: HubLaunchTransferReport; closure: CohortClosure | null }> {
   const hubChatId = input.hubChatId.trim();
   await requireChats(tx, [
     input.cohort2.mainChatId.trim(),
@@ -341,13 +347,15 @@ async function transferInTransaction(
     purchaseReport,
   );
 
-  const closure = await closeOnlineGroupCohortInTransaction(tx, {
-    cohortId: cohort2.id,
-    confirmationTitle: input.cohort2.title,
-    lessonsCleared: input.closeCohort2.lessonsCleared,
-    openNextCohortSales: true,
-    closedAt: parseDate(input.closeCohort2.closedAt, "closeCohort2.closedAt"),
-  });
+  const closure = input.closeCohort2
+    ? await closeOnlineGroupCohortInTransaction(tx, {
+        cohortId: cohort2.id,
+        confirmationTitle: input.cohort2.title,
+        lessonsCleared: input.closeCohort2.lessonsCleared,
+        openNextCohortSales: true,
+        closedAt: parseDate(input.closeCohort2.closedAt, "closeCohort2.closedAt"),
+      })
+    : null;
 
   return {
     closure,
@@ -356,7 +364,7 @@ async function transferInTransaction(
       cohorts: { cohort2, cohort3 },
       hubSettings,
       purchases: purchaseReport,
-      closure: {
+      closure: closure && {
         alreadyClosed: closure.alreadyClosed,
         closedAt: closure.cohort.closedAt?.toISOString() ?? "",
         accessEndsAt: closure.cohort.accessEndsAt?.toISOString() ?? "",
@@ -393,7 +401,7 @@ export async function runHubLaunchTransfer(
 
   const outcome = result as Awaited<ReturnType<typeof transferInTransaction>> | null;
   if (!outcome) throw new Error("hub_launch_transfer_no_result");
-  if (write && outcome.closure.continuationRoots.length > 0) {
+  if (write && outcome.closure && outcome.closure.continuationRoots.length > 0) {
     await resolveCohortContinuations(
       outcome.closure.continuationRoots,
       outcome.closure.cohort.closedAt ?? new Date(),
