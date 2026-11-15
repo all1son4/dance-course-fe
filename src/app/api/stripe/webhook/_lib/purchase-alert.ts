@@ -477,7 +477,7 @@ const getAccessProcessingStatus = ({
   }
 
   if (status === "left_channel") {
-    return { detail: "покупательница вышла", label, state: "error" };
+    return { detail: "уже вышли", label, state: "error" };
   }
 
   if (status === "not_required") {
@@ -661,7 +661,7 @@ const getAccessProcessingStatuses = ({
 
   if (isWithMentorOfferId(paymentRecord.offer_id)) {
     statuses.push({
-      detail: "нужно связаться с покупательницей",
+      detail: "нужно выйти на связь",
       label: "Куратор",
       state: "attention",
     });

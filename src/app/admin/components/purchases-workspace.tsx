@@ -524,7 +524,7 @@ export const PurchasesWorkspace = ({
                 <thead>
                   <tr>
                     <th>Дата</th>
-                    <th>Покупатель</th>
+                    <th>Имя</th>
                     <th>Покупка</th>
                     <th>Сумма</th>
                     <th>Статус</th>
@@ -551,7 +551,7 @@ export const PurchasesWorkspace = ({
                         <td data-label="Дата">
                           {formatDateTime(purchase.soldAtIso, ACCOUNTING_TIME_ZONE)}
                         </td>
-                        <td data-label="Покупатель">
+                        <td data-label="Имя">
                           <CellPrimary>
                             {purchase.customerName || "Без имени"}
                           </CellPrimary>

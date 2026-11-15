@@ -182,7 +182,7 @@ export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
       detail:
         db.stuckPayments === 0
           ? "Нет оплат, застрявших на подтверждении банка."
-          : "Дольше часа ждут подтверждения банка. Обычно покупатель бросил оплату.",
+          : "Дольше часа ждут подтверждения банка. Обычно оплату просто бросили.",
       tone: db.stuckPayments === 0 ? "success" : "warning",
     },
     {

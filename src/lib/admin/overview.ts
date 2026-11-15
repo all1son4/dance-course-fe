@@ -227,7 +227,7 @@ export async function getAdminOverview(now = new Date()) {
       severity: "warning",
       title: `${ownerless} ${plural(ownerless, "покупка хаба", "покупки хаба", "покупок хаба")} без Telegram-аккаунта`,
       detail:
-        "Покупательница не вошла по ссылке больше 3 дней. Напиши ей или выдай ссылку заново.",
+        "Ссылкой не воспользовались больше 3 дней. Напиши на email из покупки или выдай ссылку заново.",
     });
   }
 
@@ -309,7 +309,7 @@ export async function getAdminOverview(now = new Date()) {
           id: `grace-${cohort.id}`,
           at: new Date(graceEnd).toISOString(),
           view: "inspiration-hub",
-          title: `Кончается хаб у участниц Plus «${cohort.title}»`,
+          title: `Кончается хаб для Plus «${cohort.title}»`,
         });
       }
     }

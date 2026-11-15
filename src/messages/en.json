@@ -176,7 +176,7 @@
       },
       "4": {
         "question": "Is Frame Up right for me if I feel shy or afraid to move?",
-        "answer": "Frame Up helps you open up naturally. Classes are held in a safe atmosphere where every woman feels support and respect. Shyness usually fades after the first sessions."
+        "answer": "Frame Up helps you open up naturally. Classes are held in a safe atmosphere where everyone feels support and respect. Shyness usually fades after the first sessions."
       },
       "5": {
         "question": "What is the difference between offline and online classes?",
@@ -188,11 +188,11 @@
       },
       "7": {
         "question": "Can I train if my movement isn't fluid yet?",
-        "answer": "Fluidity is a skill you can develop. Frame Up gently helps you open up your body, improve mobility and feel more feminine."
+        "answer": "Fluidity is a skill you can develop. Frame Up gently helps you open up your body, improve mobility and feel more at ease in your body."
       },
       "8": {
         "question": "Is Frame Up suitable for any age?",
-        "answer": "Absolutely. Frame Up is about femininity, confidence and the joy of movement, not age limits."
+        "answer": "Absolutely. Frame Up is about sensuality, confidence and the joy of movement, not age limits."
       }
     }
   },
@@ -252,7 +252,7 @@
     "hero": {
       "title": "Frame Up",
       "subtitle": "Discover yourself in Frame Up style",
-      "description": "Learn to dance beautifully, boldly and sensually in an atmosphere of freedom and feminine strength.",
+      "description": "Learn to dance beautifully, boldly and sensually in an atmosphere of freedom and inner strength.",
       "hint": "Choose your learning format",
       "buttons": {
         "online": "Online",
@@ -289,8 +289,8 @@
         }
       },
       "quote": {
-        "1": "Today I develop Frame Up in Poland: I lead groups where women open up through movement, and I continue to learn from European masters to grow together with my students.",
-        "2": "My goal is to strengthen Frame Up culture and inspire women to be bold, free and expressive by creating a space where each woman can feel her strength, beauty and creative energy."
+        "1": "Today I develop Frame Up in Poland: I lead groups where people open up through movement, and I continue to learn from European masters to grow together with my students.",
+        "2": "My goal is to strengthen Frame Up culture and inspire people to be bold, free and expressive by creating a space where everyone can feel their strength, beauty and creative energy."
       },
       "imageAlt": "Photo of Anna Strok"
     },
@@ -1314,7 +1314,7 @@
   "MyAccessPage": {
     "metaTitle": "My access",
     "title": "My access",
-    "intro": "Everything you bought is here: Inspiration Hub, groups and reviews — with their dates.",
+    "intro": "All your purchases are here: Inspiration Hub, groups and tutorials — with their dates.",
     "empty": {
       "text": "You have no active access right now. Have a look at the programmes — everything you can start today is there.",
       "button": "See the programmes"

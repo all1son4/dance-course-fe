@@ -382,10 +382,7 @@ export const CohortsPanel = ({
   };
 
   return (
-    <Panel
-      title="Потоки"
-      description="Записи потоков: даты, продажи, участницы и закрытие."
-    >
+    <Panel title="Потоки" description="Записи потоков: даты, продажи, ссылки и закрытие.">
       {failed && cohorts && (
         <Callout tone="warning" title="Список не обновился">
           Показаны данные прошлой загрузки.{" "}
@@ -535,7 +532,7 @@ export const CohortsPanel = ({
                       {showLinks && cohort.links && (
                         <Stack $gap={6}>
                           <SectionCaption>
-                            Ссылки для участниц этого потока
+                            Ссылки продления для этого потока
                             {cohort.next ? ` на «${cohort.next.title}»` : ""}
                           </SectionCaption>
                           {cohort.links.plus && (
@@ -580,7 +577,7 @@ export const CohortsPanel = ({
       <ConfirmDialog
         open={closing !== null}
         title={closing ? `Закрыть «${closing.title}»` : ""}
-        description="Закрытие необратимо. Чат и участницы остаются, уроков в нём больше нет."
+        description="Закрытие необратимо. Чат остаётся со всеми, кто в нём есть, а уроков в нём больше нет."
         confirmLabel="Закрыть поток"
         tone="danger"
         busy={isClosing}

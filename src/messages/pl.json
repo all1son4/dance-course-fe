@@ -163,7 +163,7 @@
     "title": "Pytania i odpowiedzi",
     "items": {
       "1": {
-        "question": "Czy Frame Up jest dla mnie, jeśli nigdy nie tańczyłam?",
+        "question": "Czy Frame Up jest dla mnie, jeśli nie mam doświadczenia w tańcu?",
         "answer": "Tak, ten styl jest odpowiedni dla początkujących. W grupie dla początkujących w Warszawie doświadczenie taneczne nie jest potrzebne: start 4 grudnia, zajęcia w piątki 18:00–19:00 na Woli. Szczegóły i formularz zapisów znajdziesz na stronie „Offline”. Możesz też zacząć od kursu online dla początkujących „First Touch”. Najważniejsze są chęć próbowania i radość z procesu."
       },
       "2": {
@@ -176,7 +176,7 @@
       },
       "4": {
         "question": "Czy Frame Up jest dla mnie, jeśli się wstydzę lub boję się ruchu?",
-        "answer": "Frame Up pomaga się otworzyć. Zajęcia odbywają się w bezpiecznej atmosferze, gdzie każda kobieta czuje wsparcie i szacunek. Nieśmiałość zwykle znika po pierwszych treningach."
+        "answer": "Frame Up pomaga się otworzyć. Zajęcia odbywają się w bezpiecznej atmosferze, w której wszyscy czują wsparcie i szacunek. Nieśmiałość zwykle znika po pierwszych treningach."
       },
       "5": {
         "question": "Jaka jest różnica między zajęciami offline i online?",
@@ -188,11 +188,11 @@
       },
       "7": {
         "question": "Czy mogę ćwiczyć, jeśli brakuje mi plastyki ruchu?",
-        "answer": "Plastyka ruchu to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się bardziej kobieco."
+        "answer": "Plastyka ruchu to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się swobodniej we własnym ciele."
       },
       "8": {
         "question": "Czy Frame Up jest odpowiedni w każdym wieku?",
-        "answer": "Zdecydowanie tak. Frame Up to kobiecość, pewność siebie i przyjemność z ruchu, a nie ograniczenia wiekowe."
+        "answer": "Zdecydowanie tak. Frame Up to zmysłowość, pewność siebie i przyjemność z ruchu, a nie ograniczenia wiekowe."
       }
     }
   },
@@ -204,7 +204,7 @@
       "next": "Następna opinia"
     },
     "a11y": {
-      "container": "Opinie kursantek",
+      "container": "Opinie o zajęciach",
       "carousel": "Karuzela",
       "item": "Opinia",
       "slide": "{index} z {slidesLength}"
@@ -240,11 +240,11 @@
       },
       "4": {
         "title": "Lekcja 4: Wyraz w tańcu — spojrzenie i emocja",
-        "description": "Taniec to nie tylko technika, ale też historia. Uczymy się pracować nad wyrazem: spojrzeniem, mimiką i stanem wewnętrznym. Jak przekazać emocję, przyciągnąć widza, być pewną siebie i prawdziwą na scenie i na sali."
+        "description": "Taniec to nie tylko technika, ale też historia. Uczymy się pracować nad wyrazem: spojrzeniem, mimiką i stanem wewnętrznym. Jak przekazać emocję, przyciągnąć widza, czuć pewność siebie i pozostać sobą na scenie i na sali."
       },
       "5": {
         "title": "Lekcja 5: Składamy wszystko w choreografię",
-        "description": "Łączymy wszystko, czego się nauczyłaś, w pierwszą pełną choreografię. Tańczymy, przeżywamy i czerpiemy z tego radość. To moment, gdy technika staje się sztuką, a ruch staje się Twoim stylem."
+        "description": "Łączymy wszystko, co już umiesz, w pierwszą pełną choreografię. Tańczymy, przeżywamy i czerpiemy z tego radość. To moment, gdy technika staje się sztuką, a ruch staje się Twoim stylem."
       }
     }
   },
@@ -252,7 +252,7 @@
     "hero": {
       "title": "Frame Up",
       "subtitle": "Odkryj siebie w stylu Frame Up",
-      "description": "Ucz się tańczyć pięknie, odważnie i zmysłowo w atmosferze wolności i kobiecej siły.",
+      "description": "Ucz się tańczyć pięknie, odważnie i zmysłowo w atmosferze wolności i wewnętrznej siły.",
       "hint": "Wybierz swój format nauki",
       "buttons": {
         "online": "Online",
@@ -289,8 +289,8 @@
         }
       },
       "quote": {
-        "1": "Dziś rozwijam Frame Up w Polsce: prowadzę grupy, w których kobiety otwierają się przez ruch, i dalej uczę się od europejskich mistrzów, aby rozwijać się razem z moimi uczennicami.",
-        "2": "Moim celem jest wzmacnianie kultury Frame Up, inspirowanie kobiet do odwagi, wolności i ekspresji oraz tworzenie przestrzeni, w której każda może poczuć swoją siłę, piękno i energię twórczą."
+        "1": "Dziś rozwijam Frame Up w Polsce: prowadzę grupy, w których można otworzyć się przez ruch, i dalej uczę się od europejskich mistrzów, aby rozwijać się razem z osobami, które ze mną tańczą.",
+        "2": "Moim celem jest wzmacnianie kultury Frame Up, inspirowanie do odwagi, wolności i ekspresji oraz tworzenie przestrzeni, w której można poczuć swoją siłę, piękno i energię twórczą."
       },
       "imageAlt": "Zdjęcie Anny Strok"
     },
@@ -323,7 +323,7 @@
       "location": "W Telegramie",
       "description": {
         "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia — i to jest całkowicie normalne. Taniec ma dawać radość, a nie stres.",
-        "2": "Jeśli jeszcze nie jesteś gotowa na zajęcia offline, mieszkasz w innym mieście albo chcesz zacząć w komfortowych warunkach, możesz rozpocząć od moich kursów online."
+        "2": "Jeśli na zajęcia offline jest dla Ciebie jeszcze za wcześnie, mieszkasz w innym mieście albo chcesz zacząć w komfortowych warunkach, możesz rozpocząć od moich kursów online."
       }
     },
     "cards": {
@@ -443,7 +443,7 @@
       "title": "Nie możesz uczestniczyć w zajęciach offline?",
       "description": {
         "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia — i to jest normalne. Taniec powinien dawać radość, a nie stres.",
-        "2": "Jeśli nie jesteś jeszcze gotowa na zajęcia offline, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
+        "2": "Jeśli na zajęcia offline jest dla Ciebie jeszcze za wcześnie, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
       }
     }
   },
@@ -514,7 +514,7 @@
     "suggestions": {
       "1": {
         "title": "Nauka w grupie z moim osobistym wsparciem",
-        "text": "Nie uczysz się sama — prowadzę Cię krok po kroku, koryguję technikę i pomagam rozwinąć ekspresję ciała."
+        "text": "Nie uczysz się w pojedynkę — prowadzę Cię krok po kroku, koryguję technikę i pomagam rozwinąć ekspresję ciała."
       },
       "2": {
         "title": "Zadania domowe z omówieniem i feedbackiem",
@@ -872,11 +872,11 @@
     "agreements": {
       "immediateAccessConsent": "Wyrażam zgodę na rozpoczęcie świadczenia usługi / udostępnienie treści cyfrowych (kursu online) natychmiast po opłaceniu, przed upływem 14-dniowego terminu odstąpienia od umowy.",
       "withdrawalNoticeAcknowledgement": "Przyjmuję do wiadomości, że po uzyskaniu natychmiastowego dostępu do treści cyfrowych tracę prawo do odstąpienia od umowy w ciągu 14 dni.",
-      "privacyPolicyAcknowledgement": "Oświadczam, że zapoznałam się z <link>polityką prywatności</link>.",
+      "privacyPolicyAcknowledgement": "Potwierdzam zapoznanie się z <link>polityką prywatności</link>.",
       "digitalContentAgreement": "Akceptuję warunki i zawieram umowę o dostarczenie treści cyfrowych.",
       "acceptAll": {
         "title": "Akceptuję warunki zakupu",
-        "summary": "Chcę otrzymać dostęp od razu po płatności i rozumiem, że tracę wtedy prawo do odstąpienia od umowy w ciągu 14 dni. Akceptuję warunki dostarczenia treści cyfrowych i zapoznałam się z <link>polityką prywatności</link>.",
+        "summary": "Chcę otrzymać dostęp od razu po płatności i rozumiem, że tracę wtedy prawo do odstąpienia od umowy w ciągu 14 dni. Akceptuję warunki dostarczenia treści cyfrowych i potwierdzam zapoznanie się z <link>polityką prywatności</link>.",
         "show": "Pokaż wszystkie punkty ({count})",
         "hide": "Zwiń"
       }
@@ -1314,7 +1314,7 @@
   "MyAccessPage": {
     "metaTitle": "Mój dostęp",
     "title": "Mój dostęp",
-    "intro": "Tu widać wszystko, co kupiłaś: Inspiration Hub, grupy i rozbiory — z terminami.",
+    "intro": "Tu są wszystkie Twoje zakupy: Inspiration Hub, grupy i tutoriale — z terminami.",
     "empty": {
       "text": "Nie masz teraz aktywnych dostępów. Zajrzyj do programów — znajdziesz tam wszystko, co możesz zacząć od razu.",
       "button": "Zobacz programy"

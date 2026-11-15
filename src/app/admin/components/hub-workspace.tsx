@@ -431,7 +431,7 @@ export const HubWorkspace = ({
               <DataTable>
                 <thead>
                   <tr>
-                    <th>Покупательница</th>
+                    <th>Имя</th>
                     <th>Тариф</th>
                     <th>Период</th>
                     <th>Telegram</th>
@@ -446,7 +446,7 @@ export const HubWorkspace = ({
                     const isOwnerless = ownerless.includes(period.paymentIntentId);
                     return (
                       <tr key={period.paymentIntentId}>
-                        <td data-label="Покупательница">
+                        <td data-label="Имя">
                           <CellPrimary>{period.customerName || "Без имени"}</CellPrimary>
                           <CellSecondary>{period.customerEmail}</CellSecondary>
                         </td>
@@ -472,7 +472,7 @@ export const HubWorkspace = ({
                             <Muted>ID {period.telegramUserId}</Muted>
                           ) : (
                             <Badge $tone={isOwnerless ? "warning" : "neutral"}>
-                              Ещё не вошла
+                              Ещё не привязан
                             </Badge>
                           )}
                         </td>

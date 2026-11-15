@@ -80,12 +80,12 @@ export const buildCohortClosurePost = ({
   const full = hubPrice(INSPIRATION_HUB_ACCESS_OFFER_ID);
 
   return [
-    "Поток завершён — спасибо, что была с нами!",
+    "Поток завершён — спасибо за эти недели вместе!",
     "",
     "Уроки из этого чата мы убрали, а сам чат остаётся: здесь по-прежнему можно общаться.",
     "",
     "Что дальше",
-    `Новый поток стартует ${formatDay(nextCohortStartsAt)}. Для тебя как для участницы этого потока действует цена продления. Выбери, что подходит:`,
+    `Новый поток стартует ${formatDay(nextCohortStartsAt)}. Ты из этого потока, поэтому для тебя действует цена продления. Выбери, что подходит:`,
     ...(links.plus
       ? [
           "",
@@ -130,7 +130,7 @@ export const buildCohortGraceReminder = ({
   nextCohortStartsAt: Date;
 }) =>
   [
-    `Завтра, ${formatDay(getPlusHubLastDay(accessEndsAt))}, — последний день Inspiration Hub для участниц Plus прошлого потока.`,
+    `Завтра, ${formatDay(getPlusHubLastDay(accessEndsAt))}, — последний день Inspiration Hub для тех, у кого был Plus в прошлом потоке.`,
     `Продли Plus на поток, который стартует ${formatDay(nextCohortStartsAt)}, — и Hub останется с тобой. Или продли только Hub на 8 недель.`,
     "",
     ...linkLines(links, { standard: false }),

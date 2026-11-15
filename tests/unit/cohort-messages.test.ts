@@ -30,7 +30,7 @@ test("the closure post names the dates, both prices, all three links and support
     nextCohortStartsAt: NEXT_START,
   });
 
-  assert.match(post, /^Поток завершён — спасибо, что была с нами!/u);
+  assert.match(post, /^Поток завершён — спасибо за эти недели вместе!/u);
   assert.match(post, /Новый поток стартует 1 февраля\./u);
   assert.match(post, /Hub открыт до 24 января включительно/u);
   assert.match(post, /8 недель за 35 EUR \/ 155 PLN\./u);

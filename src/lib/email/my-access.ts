@@ -14,7 +14,7 @@ const COPY = {
     heading: "Твоя ссылка на «Мой доступ»",
     intro:
       "Привет! По этой кнопке откроется страница со всеми твоими доступами и сроками.",
-    ignore: "Если ты не запрашивала ссылку, просто не обращай внимания на это письмо.",
+    ignore: "Если это был не твой запрос, просто не обращай внимания на это письмо.",
     support: "Нужна помощь? Напиши нам",
   },
   en: {
@@ -33,7 +33,7 @@ const COPY = {
     heading: "Twój link do „Mój dostęp”",
     intro:
       "Cześć! Ten przycisk otwiera stronę ze wszystkimi Twoimi dostępami i terminami.",
-    ignore: "Jeśli nie prosiłaś o ten link, po prostu zignoruj tę wiadomość.",
+    ignore: "Jeśli to nie Twoja prośba, po prostu zignoruj tę wiadomość.",
     support: "Potrzebujesz pomocy? Napisz do nas",
   },
 } as const;

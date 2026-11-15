@@ -85,7 +85,7 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   },
   "invite-links": {
     description:
-      "Создай персональную одноразовую ссылку на курс и скопируй её из журнала для отправки участнику.",
+      "Создай персональную одноразовую ссылку на курс и скопируй её из журнала, чтобы отправить.",
   },
   "online-group": {
     description: "Потоки, продажи Standard и Plus, ссылки продления и ручные доступы.",

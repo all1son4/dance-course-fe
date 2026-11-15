@@ -138,7 +138,7 @@ export const BroadcastWorkspace = ({
             <AudienceTable aria-label="Пользователи, ожидающие рассылки">
               <thead>
                 <tr>
-                  <th>Участник</th>
+                  <th>Имя</th>
                   <th>Контакт</th>
                   <th>Язык</th>
                   <th>Заявка</th>
@@ -154,7 +154,7 @@ export const BroadcastWorkspace = ({
 
                   return (
                     <tr key={lead.leadId}>
-                      <td data-label="Участник">
+                      <td data-label="Имя">
                         <span>
                           <CellPrimary>{lead.fullName || "Без имени"}</CellPrimary>
                           <CellSecondary>{lead.email}</CellSecondary>

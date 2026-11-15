@@ -447,10 +447,10 @@ export const RenewalGeneratorCard = ({
 }: RenewalGeneratorCardProps) => (
   <Panel
     title="Создать ссылку продления"
-    description="Цена продления для участниц выбранных чатов. Сайт проверит членство в Telegram при оплате."
+    description="Цена продления для тех, кто состоит в выбранных чатах. Сайт проверит членство в Telegram при оплате."
   >
     <Form onSubmit={onSubmit}>
-      <Field label="Кто сможет оплатить — участницы чатов">
+      <Field label="Кто сможет оплатить — люди из этих чатов">
         {chats.length === 0 ? (
           <Muted>Доступных чатов пока нет.</Muted>
         ) : (
@@ -554,7 +554,7 @@ export const RenewalCampaignsCard = ({
                 </Row>
               </ItemHead>
               <Meta>
-                Для участниц: {campaign.sourceChatTitles.join(", ")} · создана{" "}
+                Для чатов: {campaign.sourceChatTitles.join(", ")} · создана{" "}
                 {formatDateTime(campaign.createdAt)}
               </Meta>
               {isActive && (
