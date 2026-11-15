@@ -1346,7 +1346,8 @@
         "scheduled": "From {start} to {end}",
         "linkOnStart": "The link to join will arrive by email on the start day",
         "afterCohort": "8 weeks paid, starting when the current cycle ends",
-        "ended": "Access ended on {date}"
+        "ended": "Access ended on {date}",
+        "notJoinedExpired": "Your time is running, but the emailed link no longer works — message us for a new one"
       },
       "plusHub": {
         "included": "Included in your Plus",
@@ -1369,15 +1370,19 @@
       },
       "actions": {
         "renewHub": "Renew the Hub",
-        "buyHub": "Buy the Hub"
+        "buyHub": "Buy the Hub",
+        "support": "Contact support"
       },
       "chips": {
         "active": "Active",
         "endsSoon": "Ending soon",
         "notJoined": "Not joined yet",
         "upcoming": "Starting soon",
-        "ended": "Ended"
-      }
+        "ended": "Ended",
+        "linkExpired": "New link needed"
+      },
+      "linkExpired": "The link from the email no longer works — message us and we will send a new one",
+      "count": "{count, plural, one {# purchase} other {# purchases}}"
     }
   }
 }

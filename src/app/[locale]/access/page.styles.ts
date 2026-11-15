@@ -153,6 +153,13 @@ export const CardTitleRow = styled.div`
     line-height: 1.25;
   }
 
+  /* "× 4": the same purchase made several times, folded into one card. */
+  strong span {
+    margin-left: 6px;
+    color: var(--ink-muted);
+    font-size: 15px;
+  }
+
   @media (max-width: 550px) {
     strong {
       font-size: 17px;
@@ -164,6 +171,7 @@ const CHIP_TONES = {
   active: { background: "rgba(24, 112, 58, 0.1)", color: "var(--success)" },
   endsSoon: { background: "rgba(124, 0, 2, 0.08)", color: "var(--brand)" },
   notJoined: { background: "rgba(124, 0, 2, 0.08)", color: "var(--brand)" },
+  linkExpired: { background: "rgba(124, 0, 2, 0.08)", color: "var(--brand)" },
   upcoming: { background: "rgba(18, 18, 18, 0.06)", color: "var(--ink)" },
   ended: { background: "rgba(18, 18, 18, 0.05)", color: "var(--ink-muted)" },
 } as const;

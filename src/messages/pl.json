@@ -1346,7 +1346,8 @@
         "scheduled": "Od {start} do {end}",
         "linkOnStart": "Link do wejścia przyjdzie mailem w dniu startu",
         "afterCohort": "Opłacone 8 tygodni po zakończeniu obecnego cyklu",
-        "ended": "Dostęp zakończył się {date}"
+        "ended": "Dostęp zakończył się {date}",
+        "notJoinedExpired": "Czas już biegnie, a link z wiadomości nie działa — napisz do nas, wyślemy nowy"
       },
       "plusHub": {
         "included": "W Twoim pakiecie Plus",
@@ -1369,15 +1370,19 @@
       },
       "actions": {
         "renewHub": "Przedłuż Hub",
-        "buyHub": "Kup Hub"
+        "buyHub": "Kup Hub",
+        "support": "Napisz do wsparcia"
       },
       "chips": {
         "active": "Aktywny",
         "endsSoon": "Wkrótce się kończy",
         "notJoined": "Czeka na wejście",
         "upcoming": "Wkrótce start",
-        "ended": "Zakończony"
-      }
+        "ended": "Zakończony",
+        "linkExpired": "Potrzebny nowy link"
+      },
+      "linkExpired": "Link z wiadomości już nie działa — napisz do nas, wyślemy nowy",
+      "count": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}"
     }
   }
 }

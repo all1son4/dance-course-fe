@@ -1,3 +1,4 @@
+import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
   INSPIRATION_HUB_DISCOUNT_SLUG,
   isInspirationHubOfferId,
@@ -41,6 +42,11 @@ export type MyAccessRight = {
   expiresAt: Date | null;
   revokedAt: Date | null;
   sourceKind: string | null;
+  /**
+   * Whether an unused, unexpired invite still waits in the payment email; absent
+   * when unknown. A buyer who never joined and holds none is sent to support.
+   */
+  hasLiveInvite?: boolean;
 };
 
 export type MyAccessCohort = {
@@ -59,7 +65,8 @@ export type MyAccessSnapshot = {
 /** A translated line: the key under `MyAccessPage.cards` and its values (dates as ISO). */
 export type MyAccessLine = { key: string; values?: Record<string, string | number> };
 
-export type MyAccessChip = "active" | "endsSoon" | "notJoined" | "upcoming" | "ended";
+export type MyAccessChip =
+  "active" | "endsSoon" | "notJoined" | "linkExpired" | "upcoming" | "ended";
 
 export type MyAccessCard = {
   id: string;
@@ -73,14 +80,24 @@ export type MyAccessCard = {
   title: { productExternalId: string; offerExternalId: string } | "hub";
   status: MyAccessLine;
   note?: MyAccessLine;
-  action?: { key: "renewHub" | "buyHub"; href: string };
+  action?: { key: "renewHub" | "buyHub" | "support"; href: string };
+  /** How many identical purchases this one card stands for (folded duplicates). */
+  count: number;
   /** 0 — needs action, 1 — running, 2 — later, 3 — ended. Sort key. */
   urgency: 0 | 1 | 2 | 3;
   /** Secondary sort key: the date the card is about. */
   sortAt: number;
 };
 
-type BaseCard = Omit<MyAccessCard, "chip" | "kind">;
+type BaseCard = Omit<MyAccessCard, "chip" | "count" | "kind">;
+
+const SUPPORT_ACTION = { href: SUPPORT_TELEGRAM_URL, key: "support" as const };
+
+/** The note of an access not joined yet: the emailed link, or support once it has expired. */
+const joinNote = (right: MyAccessRight) =>
+  right.hasLiveInvite === false
+    ? { action: SUPPORT_ACTION, note: { key: "linkExpired" } }
+    : { note: { key: "linkInEmail" } };
 
 const isRevoked = (right: MyAccessRight) =>
   right.revokedAt !== null || right.status === "revoked";
@@ -131,13 +148,17 @@ const buildStandaloneHubCard = ({
       period: { end: iso(paidUntil), start: iso(current.startsAt!) },
       status: { key: "hub.activeUntil", values: { date: iso(paidUntil) } },
       note: notJoined
-        ? { key: "hub.notJoined" }
+        ? current.hasLiveInvite === false
+          ? { key: "hub.notJoinedExpired" }
+          : { key: "hub.notJoined" }
         : later.length > 0
           ? { key: "hub.renewed" }
           : { key: "daysLeft", values: { count: left } },
       ...(endsSoon
         ? { action: { key: "renewHub" as const, href: HUB_RENEWAL_HREF } }
-        : {}),
+        : notJoined && current.hasLiveInvite === false
+          ? { action: SUPPORT_ACTION }
+          : {}),
       urgency: endsSoon || notJoined ? 0 : 1,
       sortAt: paidUntil.getTime(),
     };
@@ -301,6 +322,7 @@ const buildOnlineGroupCard = ({
     return {
       ...base,
       status: { key: "group.startsOn", values: { date: iso(cohort.startsAt) } },
+      ...(isJoined(primary) ? {} : joinNote(primary)),
       urgency: isJoined(primary) ? 2 : 0,
       sortAt: cohort.startsAt.getTime(),
     };
@@ -309,6 +331,7 @@ const buildOnlineGroupCard = ({
   return {
     ...base,
     status: { key: "group.running" },
+    ...(isJoined(primary) ? {} : joinNote(primary)),
     urgency: isJoined(primary) ? 1 : 0,
     sortAt: cohort.startsAt.getTime(),
   };
@@ -358,7 +381,7 @@ const buildTimedChannelCard = ({
     status: days
       ? { key: "channel.startsOnJoin", values: { count: days } }
       : { key: "channel.paid" },
-    note: { key: "linkInEmail" },
+    ...joinNote(primary),
     urgency: 0,
     sortAt: purchase.succeededAt?.getTime() ?? 0,
   };
@@ -385,6 +408,7 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
   ) {
     return "upcoming";
   }
+  if (card.action?.key === "support") return "linkExpired";
   if (card.urgency === 0) return "notJoined";
   if (key === "group.startsOn") return "upcoming";
   if (
@@ -400,6 +424,7 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
 const withPresentation = (card: BaseCard, now: Date): MyAccessCard => ({
   ...card,
   chip: chipOf(card, now),
+  count: 1,
   kind: kindOf(card.status.key),
 });
 
@@ -492,7 +517,22 @@ export const buildMyAccessCards = (
     if (card) cards.push(card);
   }
 
-  return cards
-    .map((card) => withPresentation(card, now))
-    .sort((a, b) => a.urgency - b.urgency || a.sortAt - b.sortAt);
+  // Identical cards (the same product bought and left unopened twice) read as one.
+  const folded = new Map<string, MyAccessCard>();
+  for (const card of cards.map((base) => withPresentation(base, now))) {
+    const key = JSON.stringify([
+      card.title,
+      card.status,
+      card.note,
+      card.action,
+      card.chip,
+    ]);
+    const existing = folded.get(key);
+    if (existing) existing.count += 1;
+    else folded.set(key, card);
+  }
+
+  return [...folded.values()].sort(
+    (a, b) => a.urgency - b.urgency || a.sortAt - b.sortAt,
+  );
 };

@@ -180,7 +180,14 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                   <Icon />
                   <CardText>
                     <CardTitleRow>
-                      <strong>{cardTitle(card)}</strong>
+                      <strong>
+                        {cardTitle(card)}
+                        {card.count > 1 && (
+                          <span aria-label={t("cards.count", { count: card.count })}>
+                            × {card.count}
+                          </span>
+                        )}
+                      </strong>
                       <StatusChip $tone={card.chip}>
                         {t(`cards.chips.${card.chip}`)}
                       </StatusChip>
@@ -202,7 +209,10 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                       prefetch={false}
                       rel="nofollow"
                       size="sm"
-                      width="200px"
+                      width={card.action.key === "support" ? "240px" : "200px"}
+                      {...(card.action.key === "support"
+                        ? { target: "_blank", variant: "secondary" as const }
+                        : {})}
                     />
                   )}
                 </AccessCard>

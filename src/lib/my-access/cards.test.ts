@@ -316,3 +316,44 @@ test("each card says its state in a badge and its icon family", () => {
   );
   assert.equal(byKind.lifetime?.chip, "active");
 });
+
+test("the same purchase left unopened several times reads as one card", () => {
+  const cards = cardsOf({
+    purchases: [1, 2, 3].map((n) =>
+      purchase({
+        id: `f${n}`,
+        offerExternalId: FIRST_TOUCH_OFFER,
+        productExternalId: "y",
+      }),
+    ),
+    rights: [1, 2, 3].map((n) => right({ purchaseId: `f${n}`, status: "token_issued" })),
+  });
+
+  assert.equal(cards.length, 1);
+  assert.equal(cards[0]?.count, 3);
+});
+
+test("an unopened access whose emailed link expired sends the buyer to support", () => {
+  const cards = cardsOf({
+    purchases: [
+      purchase({ id: "live", offerExternalId: CHOREO_OFFER, productExternalId: "x" }),
+      purchase({
+        id: "dead",
+        offerExternalId: FIRST_TOUCH_OFFER,
+        productExternalId: "y",
+      }),
+    ],
+    rights: [
+      right({ hasLiveInvite: true, purchaseId: "live", status: "token_issued" }),
+      right({ hasLiveInvite: false, purchaseId: "dead", status: "token_issued" }),
+    ],
+  });
+  const live = cards.find((card) => card.id === "channel:live");
+  const dead = cards.find((card) => card.id === "channel:dead");
+
+  assert.deepEqual(live?.note, { key: "linkInEmail" });
+  assert.equal(live?.chip, "notJoined");
+  assert.deepEqual(dead?.note, { key: "linkExpired" });
+  assert.equal(dead?.chip, "linkExpired");
+  assert.equal(dead?.action?.key, "support");
+});

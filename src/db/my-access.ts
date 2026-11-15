@@ -3,7 +3,13 @@ import { and, eq, inArray, or, sql } from "drizzle-orm";
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
 
 import { normalizeEmail } from "./record-values";
-import { accessEntitlements, customers, onlineGroupCohorts, purchases } from "./schema";
+import {
+  accessEntitlements,
+  customers,
+  onlineGroupCohorts,
+  purchases,
+  telegramAccessTokens,
+} from "./schema";
 import type { DatabaseExecutor } from "./transaction";
 
 /*
@@ -107,10 +113,12 @@ export async function readMyAccessSnapshot(
   const cohortIds = [
     ...new Set(purchaseRows.flatMap((row) => (row.cohortId ? [row.cohortId] : []))),
   ];
-  const [rights, cohorts] = await Promise.all([
+  const [rights, cohorts, tokens] = await Promise.all([
     ids.length
       ? database
           .select({
+            id: accessEntitlements.id,
+            telegramChatId: accessEntitlements.telegramChatId,
             accessKey: accessEntitlements.accessKey,
             expiresAt: accessEntitlements.expiresAt,
             purchaseId: accessEntitlements.purchaseId,
@@ -133,7 +141,32 @@ export async function readMyAccessSnapshot(
           .from(onlineGroupCohorts)
           .where(inArray(onlineGroupCohorts.id, cohortIds))
       : Promise.resolve([]),
+    ids.length
+      ? database
+          .select({
+            chatId: telegramAccessTokens.chatId,
+            entitlementId: telegramAccessTokens.entitlementId,
+            expiresAt: telegramAccessTokens.expiresAt,
+            purchaseId: telegramAccessTokens.purchaseId,
+            status: telegramAccessTokens.status,
+          })
+          .from(telegramAccessTokens)
+          .where(inArray(telegramAccessTokens.purchaseId, ids))
+      : Promise.resolve([]),
   ]);
+  const now = Date.now();
+  // An invite still usable: issued, not expired. Older tokens may lack the right's id
+  // and are matched by purchase and chat instead.
+  const hasLiveInvite = (right: (typeof rights)[number]) =>
+    tokens.some(
+      (token) =>
+        token.status === "issued" &&
+        token.expiresAt.getTime() > now &&
+        (token.entitlementId === right.id ||
+          (token.entitlementId === null &&
+            token.purchaseId === right.purchaseId &&
+            (!token.chatId || token.chatId === right.telegramChatId))),
+    );
 
   return {
     cohorts,
@@ -142,6 +175,15 @@ export async function readMyAccessSnapshot(
       offerExternalId: row.offerExternalId ?? "",
       productExternalId: row.productExternalId ?? "",
     })),
-    rights: rights.map((right) => ({ ...right, purchaseId: right.purchaseId ?? "" })),
+    rights: rights.map((right) => ({
+      accessKey: right.accessKey,
+      expiresAt: right.expiresAt,
+      hasLiveInvite: hasLiveInvite(right),
+      purchaseId: right.purchaseId ?? "",
+      revokedAt: right.revokedAt,
+      sourceKind: right.sourceKind,
+      startsAt: right.startsAt,
+      status: right.status,
+    })),
   };
 }
