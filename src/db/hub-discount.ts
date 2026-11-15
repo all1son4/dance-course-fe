@@ -1,5 +1,9 @@
-import { and, desc, eq, gt, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
 
+import {
+  ONLINE_GROUP_LIBRARY_OFFER_ID,
+  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+} from "@/constants/sellable-products";
 import { isHubAccessRightActive } from "@/lib/inspiration-hub/access-state";
 import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
 
@@ -16,7 +20,12 @@ import type { DatabaseExecutor } from "./transaction";
 const ENDED_COHORT_DISCOUNT_DAYS = 7;
 const VERIFICATION_TTL_MS = 60 * 60 * 1000;
 
-export type HubDiscountCohort = { id: string; mainChatId: string };
+export type HubDiscountCohort = {
+  id: string;
+  mainChatId: string;
+  /** Its boundary passed (basis 3): a Plus member there is in the 7-day Hub grace. */
+  ended: boolean;
+};
 
 export type HubDiscountBasis =
   { basis: "active_hub"; cohortId: null } | { basis: "cohort_chat"; cohortId: string };
@@ -95,20 +104,56 @@ export async function listHubDiscountCohorts(
     )
     .orderBy(desc(onlineGroupCohorts.accessEndsAt));
 
-  const cohorts = latestStarted ? [latestStarted] : [];
+  const cohorts: HubDiscountCohort[] = latestStarted
+    ? [{ ...latestStarted, ended: false }]
+    : [];
 
   for (const cohort of recentlyEnded) {
+    const known = cohorts.find((candidate) => candidate.id === cohort.id);
+    if (known) {
+      known.ended = true;
+      continue;
+    }
     if (
       cohort.accessEndsAt &&
       addWarsawCalendarDays(cohort.accessEndsAt, ENDED_COHORT_DISCOUNT_DAYS).getTime() >=
-        checkedAt.getTime() &&
-      !cohorts.some((known) => known.id === cohort.id)
+        checkedAt.getTime()
     ) {
-      cohorts.push({ id: cohort.id, mainChatId: cohort.mainChatId });
+      cohorts.push({ id: cohort.id, mainChatId: cohort.mainChatId, ended: true });
     }
   }
 
   return cohorts;
+}
+
+/**
+ * The ended cohorts among these where this Telegram account bought Plus. A Plus member
+ * buying "Hub only" continues the Plus Hub (plan §3: from the end of Plus), so such a
+ * cohort wins over the latest started one — otherwise a Plus #3 member who also
+ * bought Standard #4 would wait for #4 to end, with a gap after the 7-day grace.
+ */
+export async function listPlusCohortIdsOf(
+  executor: DatabaseExecutor,
+  { cohortIds, telegramUserId }: { cohortIds: string[]; telegramUserId: string },
+): Promise<Set<string>> {
+  if (cohortIds.length === 0) return new Set();
+
+  const rows = await executor
+    .select({ cohortId: purchases.onlineGroupCohortId })
+    .from(purchases)
+    .where(
+      and(
+        inArray(purchases.onlineGroupCohortId, cohortIds),
+        inArray(purchases.offerExternalId, [
+          ONLINE_GROUP_LIBRARY_OFFER_ID,
+          ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+        ]),
+        eq(purchases.outcome, "succeeded"),
+        eq(purchases.telegramUserId, telegramUserId),
+      ),
+    );
+
+  return new Set(rows.flatMap((row) => (row.cohortId ? [row.cohortId] : [])));
 }
 
 /**

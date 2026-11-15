@@ -9,6 +9,7 @@ import {
   hasActiveStandaloneHub,
   type HubDiscountBasis,
   listHubDiscountCohorts,
+  listPlusCohortIdsOf,
   recordHubDiscountVerification,
 } from "@/db/hub-discount";
 import {
@@ -91,7 +92,19 @@ const resolveHubDiscountBasis = async (
   const checks = await Promise.all(
     cohorts.map((cohort) => checkCohortMembership(cohort, telegramUserId)),
   );
-  const matched = checks.find((check) => check.isMember);
+  // A Plus member of a just-ended cohort continues that Plus Hub (plan §3), even if
+  // she is also in the latest started cohort; otherwise the order above decides.
+  const endedMatches = checks
+    .filter((check) => check.isMember)
+    .map((check) => check.cohortId)
+    .filter((cohortId) => cohorts.find((cohort) => cohort.id === cohortId)?.ended);
+  const plusCohortIds = await listPlusCohortIdsOf(database, {
+    cohortIds: endedMatches,
+    telegramUserId,
+  });
+  const matched =
+    checks.find((check) => check.isMember && plusCohortIds.has(check.cohortId)) ??
+    checks.find((check) => check.isMember);
 
   return {
     basis: matched ? { basis: "cohort_chat", cohortId: matched.cohortId } : null,

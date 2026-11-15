@@ -1,9 +1,4 @@
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
-import {
-  buildCheckoutHref,
-  INSPIRATION_HUB_ACCESS_OFFER_ID,
-  SELLABLE_PRODUCTS,
-} from "@/constants/sellable-products";
 import type { ProductSaleState } from "@/lib/sales-availability";
 
 import {
@@ -112,17 +107,9 @@ export const getOnlineCoursesArray = (
         </DetailFactText>
       </ContentStack>
     ),
-    // While sales are open the card goes straight to checkout; otherwise to the page.
-    ...(hubSaleState === "open"
-      ? {
-          buttonText: t("cards.inspirationHub.buyButton"),
-          buttonHref: buildCheckoutHref({
-            offerId: INSPIRATION_HUB_ACCESS_OFFER_ID,
-            productId: SELLABLE_PRODUCTS["inspiration-hub"].id,
-          }),
-          buttonRel: "nofollow",
-        }
-      : { buttonText: commonT("details"), buttonHref: "/online/inspiration-hub" }),
+    // Like every card here, it leads to the course page, where the buy button is.
+    buttonText: commonT("details"),
+    buttonHref: "/online/inspiration-hub",
     buttonPrefetch: false,
   },
   {

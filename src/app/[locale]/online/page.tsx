@@ -66,10 +66,7 @@ export default async function Online() {
       "@type": "ListItem",
       position: index + 1,
       name: toPlainTitle(String(course.title)),
-      // The course's own page, never the noindex checkout the Hub card may link to.
-      url: `${normalizedSiteUrl}${
-        course.id === "inspiration-hub" ? "/online/inspiration-hub" : course.buttonHref
-      }`,
+      url: `${normalizedSiteUrl}${course.buttonHref}`,
     })),
   };
 

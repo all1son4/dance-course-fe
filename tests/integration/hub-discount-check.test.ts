@@ -241,6 +241,40 @@ test("basis 3: a cohort whose boundary passed 5 days ago still counts", async (t
   assert.equal(check.row?.cohort_id, cohortIds.get(ENDED_5_CHAT));
 });
 
+test("§3: a Plus member of a just-ended cohort continues that Plus Hub, not the newer cohort", async (t) => {
+  const userId = createTestTelegramUserId();
+  stubTelegram(t, {
+    [`${ENDED_5_CHAT}:${userId}`]: "member",
+    [`${LATEST_CHAT}:${userId}`]: "member",
+  });
+  const [plus] = await client<{ id: string }[]>`
+    INSERT INTO purchases (payment_intent_id, amount_minor, currency, stripe_status,
+      outcome, succeeded_at, telegram_user_id, offer_external_id, online_group_cohort_id)
+    VALUES (${`pi_hub_discount_plus_${randomUUID()}`}, 38000, 'pln', 'succeeded', 'succeeded',
+      ${new Date(Date.now() - 50 * DAY_MS).toISOString()}, ${userId},
+      'off_online_group_anna_strok_library_access', ${cohortIds.get(ENDED_5_CHAT)!})
+    RETURNING id`;
+  assert.ok(plus);
+  purchaseIds.push(plus.id);
+
+  const check = await checkDiscount(userId);
+
+  assert.equal(check.status, 200);
+  assert.equal(check.row?.cohort_id, cohortIds.get(ENDED_5_CHAT));
+});
+
+test("without Plus there, the latest started cohort still comes first", async (t) => {
+  const userId = createTestTelegramUserId();
+  stubTelegram(t, {
+    [`${ENDED_5_CHAT}:${userId}`]: "member",
+    [`${LATEST_CHAT}:${userId}`]: "member",
+  });
+
+  const check = await checkDiscount(userId);
+
+  assert.equal(check.row?.cohort_id, cohortIds.get(LATEST_CHAT));
+});
+
 test("a cohort whose boundary passed 8 days ago no longer counts", async (t) => {
   const userId = createTestTelegramUserId();
   stubTelegram(t, { [`${ENDED_8_CHAT}:${userId}`]: "member" });
