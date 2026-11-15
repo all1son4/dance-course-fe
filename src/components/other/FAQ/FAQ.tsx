@@ -84,6 +84,8 @@ export default function FAQ() {
                 role="region"
                 aria-labelledby={questionId}
                 $isOpened={isOpened}
+                // Collapsed to 0fr the answer is invisible but still read aloud.
+                inert={!isOpened}
               >
                 <Answer>
                   {t.rich(`items.${q.id}.answer`, {
