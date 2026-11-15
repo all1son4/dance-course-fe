@@ -7,13 +7,18 @@ on:
       - main
       - dev
   merge_group:
+  # Weekly run on the default branch catches drift nobody pushed: runner images,
+  # the postgres:17 image, and time-dependent tests.
+  schedule:
+    - cron: "0 5 * * 1"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event.pull_request.number || github.ref }}
+  # The event name keeps the weekly run from cancelling a push run on main.
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -67,8 +72,10 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
+      # Unit tests with a coverage floor just under the 2026-11-15 level on main
+      # (lines 52.3%, branches 78.7%, functions 45.8%), so coverage cannot quietly drop.
       - name: Test
-        run: npm test
+        run: npm run test:coverage
 
       - name: Prepare integration database
         run: npm run test:integration:setup
