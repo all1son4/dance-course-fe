@@ -92,6 +92,11 @@ const OUTBOX_KIND_LABELS: Record<string, string> = {
   monthly_report_delivery: "Месячный отчет",
   polish_terminal_reminder: "Напоминание о польских продажах",
   choreo_access_expiry_reminder: "Окончание доступа к разбору",
+  cohort_closure_post: "Пост о закрытии потока",
+  cohort_grace_reminder: "Напоминание об отсрочке хаба Plus",
+  hub_expiry_reminder: "Напоминание о конце хаба",
+  hub_period_start_invite: "Ссылка в хаб в день начала",
+  online_group_previous_chat_removal: "Удаление из чата прошлого потока",
   purchase_success_email: "Письмо о покупке",
   telegram_access_delivery: "Выдача Telegram-доступа",
 };
