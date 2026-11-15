@@ -114,7 +114,16 @@
     "typescript": "^6.0.3"
   },
   "overrides": {
-    "@react-pdf/textkit": "6.3.0"
+    "@react-pdf/textkit": "6.3.0",
+    "eslint-plugin-import": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-jsx-a11y": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-react": {
+      "eslint": "$eslint"
+    }
   },
   "allowScripts": {
     "@parcel/watcher@2.6.0": true,
