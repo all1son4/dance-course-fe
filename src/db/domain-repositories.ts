@@ -33,7 +33,6 @@ import { updateTelegramAccessInDatabase } from "./telegram-access";
 import {
   findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
   findTelegramAccessTokenRecordByTokenHashFromDatabase,
-  findTelegramAccessTokenRecordByTokenValueFromDatabase,
 } from "./telegram-access-token-records";
 import {
   findActiveTelegramUserBindingsFromDatabase,
@@ -118,6 +117,5 @@ export const domainRepositories = Object.freeze({
     findLatestTokenByPaymentIntentId:
       findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
     findTokenByHash: findTelegramAccessTokenRecordByTokenHashFromDatabase,
-    findTokenByValue: findTelegramAccessTokenRecordByTokenValueFromDatabase,
   }),
 });

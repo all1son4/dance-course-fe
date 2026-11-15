@@ -10,7 +10,6 @@ import {
   findLatestTelegramAccessTokenRecordByPaymentIntentId,
   findPaymentRecordByIntentId,
   findTelegramAccessTokenRecordByTokenHash,
-  findTelegramAccessTokenRecordByTokenValue,
   findTelegramUserBindingByPaymentIntentId,
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,
@@ -1016,8 +1015,10 @@ const resolveTelegramJoinRecords = async ({
       tokenRecord: TelegramAccessTokenRecord;
     }
 > => {
-  const tokenRecord =
-    await findTelegramAccessTokenRecordByTokenValue(normalizedInviteLink);
+  // By hash: the clear link is erased once the token is used or expires (HARD-03).
+  const tokenRecord = await findTelegramAccessTokenRecordByTokenHash(
+    hashToken(normalizedInviteLink),
+  );
 
   if (!tokenRecord || tokenRecord.link_kind !== "channel_invite") {
     return {

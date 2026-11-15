@@ -82,7 +82,13 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
       and(
         sql`LOWER(BTRIM(${accessEntitlements.accessWorkflow})) = ${normalizedAccessWorkflow}`,
         sql`NULLIF(BTRIM(${purchases.paymentIntentId}), '') IS NOT NULL`,
-        sql`NULLIF(BTRIM(${telegramAccessTokens.tokenValue}), '') IS NOT NULL`,
+        // Every link that was issued stays listed; a used or expired one has its
+        // clear link erased (HARD-03), so only issued unexpired rows need it.
+        sql`(
+          NULLIF(BTRIM(${telegramAccessTokens.tokenValue}), '') IS NOT NULL
+          OR ${telegramAccessTokens.status} <> 'issued'
+          OR ${telegramAccessTokens.expiresAt} <= now()
+        )`,
       ),
     )
     .orderBy(desc(createdAt), asc(purchases.firstSeenAt), asc(purchases.paymentIntentId));

@@ -77,6 +77,12 @@ test("Telegram DB projections preserve every field, empty values and snapshot pr
       expectedToken,
     );
 
+    const issuedWithLink = { ...expectedToken, token_value: "fixture_bearer+/=" };
+    assert.deepEqual(
+      await upsertTelegramAccessTokenRecord(issuedWithLink),
+      issuedWithLink,
+    );
+
     const populatedToken = {
       ...expectedToken,
       access_expires_at: expiresAt,
@@ -90,10 +96,11 @@ test("Telegram DB projections preserve every field, empty values and snapshot pr
       token_value: "fixture_bearer+/=",
       used_at: createdAt,
     };
-    assert.deepEqual(
-      await upsertTelegramAccessTokenRecord(populatedToken),
-      populatedToken,
-    );
+    // HARD-03: a used token keeps every field except its clear link.
+    assert.deepEqual(await upsertTelegramAccessTokenRecord(populatedToken), {
+      ...populatedToken,
+      token_value: "",
+    });
 
     const binding = createTelegramBindingFixture({
       bound_at: createdAt,

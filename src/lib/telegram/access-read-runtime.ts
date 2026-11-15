@@ -25,7 +25,6 @@ export type TelegramAccessReadSource = {
   findLatestTokenByPaymentIntentId: (paymentIntentId: string) => Promise<TokenRecord>;
   findPaymentByIntentId: (paymentIntentId: string) => Promise<PaymentRecord>;
   findTokenByHash: (tokenHash: string) => Promise<TokenRecord>;
-  findTokenByValue: (tokenValue: string) => Promise<TokenRecord>;
 };
 
 export type TelegramAccessReadDependencies = {
@@ -51,7 +50,6 @@ const defaultDependencies: TelegramAccessReadDependencies = {
       domainRepositories.telegramAccessReads.findLatestTokenByPaymentIntentId,
     findPaymentByIntentId: domainRepositories.paymentReads.findByPaymentIntentId,
     findTokenByHash: domainRepositories.telegramAccessReads.findTokenByHash,
-    findTokenByValue: domainRepositories.telegramAccessReads.findTokenByValue,
   },
 };
 
@@ -72,11 +70,6 @@ export const findTelegramAccessTokenRecordByTokenHash = (
   tokenHash: string,
   options?: TelegramAccessReadOptions,
 ) => getDatabaseSource(options).findTokenByHash(tokenHash);
-
-export const findTelegramAccessTokenRecordByTokenValue = (
-  tokenValue: string,
-  options?: TelegramAccessReadOptions,
-) => getDatabaseSource(options).findTokenByValue(tokenValue);
 
 export const findTelegramUserBindingByPaymentIntentId = (
   paymentIntentId: string,
