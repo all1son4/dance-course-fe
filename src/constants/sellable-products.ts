@@ -61,7 +61,7 @@ export type SellableProduct = {
 };
 
 const ONLINE_GROUP_STANDARD_OFFER_ID = "off_R6vN2cH9sW4y";
-const ONLINE_GROUP_LIBRARY_OFFER_ID = "off_online_group_anna_strok_library_access";
+export const ONLINE_GROUP_LIBRARY_OFFER_ID = "off_online_group_anna_strok_library_access";
 export const ONLINE_GROUP_RENEWAL_OFFER_ID =
   "off_online_group_anna_strok_renewal_discount";
 export const ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID =

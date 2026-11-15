@@ -18,6 +18,7 @@ type TelegramAccessButtonProps = {
   inspirationButtonText: string;
   mainButtonText: string;
   onInspirationExpiryChange?: (expiresAt: string) => void;
+  onMyAccessUrlChange?: (url: string) => void;
   offerId: string;
   paymentIntentId: string;
   pendingText: string;
@@ -41,6 +42,8 @@ type TelegramAccess = {
 type AccessLinkResponse = {
   accesses?: TelegramAccess[];
   accessUrl?: string;
+  /** The buyer's «Мой доступ» link (HUB-D31), once the purchase is recorded. */
+  myAccessUrl?: string;
   status: "not_available" | "pending" | "ready";
   tokenExpiresAt?: string;
 };
@@ -183,6 +186,7 @@ export default function TelegramAccessButton({
   inspirationButtonText,
   mainButtonText,
   onInspirationExpiryChange,
+  onMyAccessUrlChange,
   offerId,
   paymentIntentId,
   pendingText,
@@ -325,6 +329,10 @@ export default function TelegramAccessButton({
           return;
         }
 
+        if (data.myAccessUrl) {
+          onMyAccessUrlChange?.(data.myAccessUrl);
+        }
+
         if (data.status === "ready" && data.accessUrl) {
           setAccessUrl(data.accessUrl);
           return;
@@ -372,6 +380,7 @@ export default function TelegramAccessButton({
     checkoutSessionId,
     isContextValid,
     offerId,
+    onMyAccessUrlChange,
     paymentIntentId,
     pendingText,
     productId,

@@ -1,6 +1,16 @@
-import { and, eq, gt, isNotNull, isNull, lte, notExists, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, lte, notExists, or } from "drizzle-orm";
 
-import { accessEntitlements, purchases, telegramAccessTokens } from "./schema";
+import {
+  ONLINE_GROUP_LIBRARY_OFFER_ID,
+  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+} from "@/constants/sellable-products";
+
+import {
+  accessEntitlements,
+  onlineGroupCohorts,
+  purchases,
+  telegramAccessTokens,
+} from "./schema";
 import type { DatabaseExecutor } from "./transaction";
 
 export type StartedHubPeriodWithoutInvite = {
@@ -57,6 +67,83 @@ export async function listStartedHubPeriodsWithoutInvite(
             email: row.email.trim().toLowerCase(),
             entitlementId: row.entitlementId,
             paymentIntentId: row.paymentIntentId,
+            startsAt: row.startsAt,
+          },
+        ]
+      : [],
+  );
+}
+
+export type StartedPlusHubWithoutInvite = {
+  email: string;
+  paymentIntentId: string;
+  purchaseId: string;
+  startsAt: Date;
+};
+
+/** How far back a cohort start still sends its Plus Hub invite (a missed cron run). */
+const PLUS_HUB_INVITE_CATCH_UP_DAYS = 14;
+
+/**
+ * HUB-D43: Plus purchases of a cohort that has started whose buyer has no Hub invite
+ * yet: at payment they were answered "scheduled". Plus bought before the rule got
+ * its invite at payment and is left out by the token check; the window keeps old
+ * cohorts out entirely.
+ */
+export async function listStartedPlusHubsWithoutInvite(
+  database: DatabaseExecutor,
+  { livemode, now }: { livemode: boolean; now: Date },
+): Promise<StartedPlusHubWithoutInvite[]> {
+  const windowStart = new Date(
+    now.getTime() - PLUS_HUB_INVITE_CATCH_UP_DAYS * 24 * 60 * 60 * 1000,
+  );
+  const rows = await database
+    .select({
+      email: purchases.customerEmailSnapshot,
+      paymentIntentId: purchases.paymentIntentId,
+      purchaseId: purchases.id,
+      startsAt: onlineGroupCohorts.startsAt,
+    })
+    .from(purchases)
+    .innerJoin(
+      onlineGroupCohorts,
+      eq(onlineGroupCohorts.id, purchases.onlineGroupCohortId),
+    )
+    .where(
+      and(
+        inArray(purchases.offerExternalId, [
+          ONLINE_GROUP_LIBRARY_OFFER_ID,
+          ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+        ]),
+        eq(purchases.outcome, "succeeded"),
+        eq(purchases.livemode, livemode),
+        isNotNull(purchases.customerEmailSnapshot),
+        isNotNull(purchases.inspirationChatIdSnapshot),
+        lte(onlineGroupCohorts.startsAt, now),
+        gt(onlineGroupCohorts.startsAt, windowStart),
+        isNull(onlineGroupCohorts.closedAt),
+        notExists(
+          database
+            .select({ id: telegramAccessTokens.id })
+            .from(telegramAccessTokens)
+            .where(
+              and(
+                eq(telegramAccessTokens.purchaseId, purchases.id),
+                eq(telegramAccessTokens.chatId, purchases.inspirationChatIdSnapshot),
+              ),
+            ),
+        ),
+      ),
+    )
+    .orderBy(onlineGroupCohorts.startsAt);
+
+  return rows.flatMap((row) =>
+    row.email
+      ? [
+          {
+            email: row.email.trim().toLowerCase(),
+            paymentIntentId: row.paymentIntentId,
+            purchaseId: row.purchaseId,
             startsAt: row.startsAt,
           },
         ]

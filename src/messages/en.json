@@ -625,7 +625,7 @@
       },
       "5": {
         "title": "Plus plan with Inspiration Hub",
-        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience. Hub access stays active for the duration of the cycle."
+        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience. Hub access lasts for the cycle and 7 more days after it ends. If you renew Plus for the next cycle within those days, the Hub stays with you without a break until it starts."
       },
       "6": {
         "title": "Private Telegram chat",
@@ -978,10 +978,12 @@
       "nameMainGroup": "Online Group",
       "nameInspiration": "Inspiration Hub",
       "scheduled": "Your paid 8 weeks of Inspiration Hub begin on {date}. On that day your personal invite will arrive by email.",
+      "scheduledPlus": "Inspiration Hub opens when your cycle starts, on {date}. That day a personal link to join will arrive in your email.",
       "scheduledAfterCohort": "Your paid 8 weeks of Inspiration Hub begin right after your cohort ends. On that day your personal invite will arrive by email."
     },
     "buttons": {
-      "home": "Back to home"
+      "home": "Back to home",
+      "myAccess": "My access"
     }
   },
   "PaymentFailedPage": {
@@ -1309,5 +1311,73 @@
       }
     },
     "closedNotice": "Sales are temporarily closed"
+  },
+  "MyAccessPage": {
+    "metaTitle": "My access",
+    "title": "My access",
+    "intro": "Everything you bought is here: Inspiration Hub, groups and reviews — with their dates.",
+    "empty": {
+      "text": "You have no active access right now. Have a look at the programmes — everything you can start today is there.",
+      "button": "See the programmes"
+    },
+    "help": {
+      "text": "Something wrong with your access? Message us and we will help.",
+      "button": "Contact support"
+    },
+    "request": {
+      "lead": "Open this page with the “My access” button from any of our emails. No email at hand? Enter your address and we will send you the link.",
+      "invalidLink": "This link does not work. Enter your email and we will send a new one.",
+      "emailLabel": "Email",
+      "submit": "Send the link",
+      "sent": "If this address has purchases, we have sent the link to it. Check your spam folder too.",
+      "invalid": "Check the email",
+      "error": "Could not send. Please try again a little later."
+    },
+    "cards": {
+      "hubTitle": "Inspiration Hub",
+      "fallbackTitle": "Purchase",
+      "daysLeft": "{count, plural, one {# day left} other {# days left}}",
+      "linkInEmail": "The link to join is in your payment email",
+      "lifetime": "Lifetime access",
+      "hub": {
+        "activeUntil": "Until {date}",
+        "notJoined": "Your time is already running. The link to join is in your payment email",
+        "renewed": "Renewal paid",
+        "scheduled": "From {start} to {end}",
+        "linkOnStart": "The link to join will arrive by email on the start day",
+        "afterCohort": "8 weeks paid, starting when the current cycle ends",
+        "ended": "Access ended on {date}"
+      },
+      "plusHub": {
+        "included": "Included in your Plus",
+        "duringCohort": "Access lasts for the cycle and 7 more days after it",
+        "opensOnStart": "The Hub opens when the cycle starts, {date}. The link will arrive by email",
+        "closed": "The cycle has ended. Your Plus Hub stays open until {date}",
+        "keep": "Renew Plus or just the Hub to keep your access",
+        "until": "Included in your Plus — until {date}"
+      },
+      "group": {
+        "running": "The cycle is running",
+        "startsOn": "Starts on {date}",
+        "closed": "The cycle has ended, access until {date}",
+        "until": "Until {date}"
+      },
+      "channel": {
+        "until": "Until {date}",
+        "startsOnJoin": "Paid: {count, plural, one {# day starts} other {# days start}} when you join the channel",
+        "paid": "Paid: your time starts when you join the channel"
+      },
+      "actions": {
+        "renewHub": "Renew the Hub",
+        "buyHub": "Buy the Hub"
+      },
+      "chips": {
+        "active": "Active",
+        "endsSoon": "Ending soon",
+        "notJoined": "Not joined yet",
+        "upcoming": "Starting soon",
+        "ended": "Ended"
+      }
+    }
   }
 }

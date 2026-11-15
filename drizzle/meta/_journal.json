@@ -197,6 +197,13 @@
       "when": 1794597859579,
       "tag": "0027_hub_catalog_discount",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1794699298062,
+      "tag": "0028_cohort_previous_chat_removal",
+      "breakpoints": true
     }
   ]
 }

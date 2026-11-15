@@ -625,7 +625,7 @@
       },
       "5": {
         "title": "Pakiet Plus z Inspiration Hub",
-        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub jest aktywny na czas trwania cyklu."
+        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub trwa przez cały cykl i jeszcze 7 dni po jego zakończeniu. Jeśli w tym czasie przedłużysz Plus na kolejny cykl, Hub zostanie z Tobą bez przerwy aż do jego startu."
       },
       "6": {
         "title": "Zamknięty czat Telegram",
@@ -978,10 +978,12 @@
       "nameMainGroup": "Grupa online",
       "nameInspiration": "Inspiration Hub",
       "scheduled": "Opłacone 8 tygodni w Inspiration Hub zaczyna się {date}. Tego dnia osobisty link przyjdzie na Twój e-mail.",
+      "scheduledPlus": "Inspiration Hub otworzy się wraz ze startem cyklu, {date}. Tego dnia na Twój email przyjdzie osobisty link do wejścia.",
       "scheduledAfterCohort": "Opłacone 8 tygodni w Inspiration Hub zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia osobisty link przyjdzie na Twój e-mail."
     },
     "buttons": {
-      "home": "Wróć na stronę główną"
+      "home": "Wróć na stronę główną",
+      "myAccess": "Mój dostęp"
     }
   },
   "PaymentFailedPage": {
@@ -1309,5 +1311,73 @@
       }
     },
     "closedNotice": "Sprzedaż jest tymczasowo zamknięta"
+  },
+  "MyAccessPage": {
+    "metaTitle": "Mój dostęp",
+    "title": "Mój dostęp",
+    "intro": "Tu widać wszystko, co kupiłaś: Inspiration Hub, grupy i rozbiory — z terminami.",
+    "empty": {
+      "text": "Nie masz teraz aktywnych dostępów. Zajrzyj do programów — znajdziesz tam wszystko, co możesz zacząć od razu.",
+      "button": "Zobacz programy"
+    },
+    "help": {
+      "text": "Coś nie tak z dostępem? Napisz do nas — pomożemy.",
+      "button": "Napisz do wsparcia"
+    },
+    "request": {
+      "lead": "Otwórz tę stronę przyciskiem „Mój dostęp” z dowolnej naszej wiadomości. Nie masz jej pod ręką? Wpisz email, a wyślemy link.",
+      "invalidLink": "Ten link nie działa. Wpisz email, a wyślemy nowy.",
+      "emailLabel": "Email",
+      "submit": "Wyślij link",
+      "sent": "Jeśli pod tym adresem są zakupy, wysłaliśmy na niego link. Sprawdź też folder „Spam”.",
+      "invalid": "Sprawdź email",
+      "error": "Nie udało się wysłać. Spróbuj ponownie za chwilę."
+    },
+    "cards": {
+      "hubTitle": "Inspiration Hub",
+      "fallbackTitle": "Zakup",
+      "daysLeft": "{count, plural, one {Został # dzień} few {Zostały # dni} many {Zostało # dni} other {Zostało # dnia}}",
+      "linkInEmail": "Link do wejścia jest w wiadomości o płatności",
+      "lifetime": "Dostęp bezterminowy",
+      "hub": {
+        "activeUntil": "Do {date}",
+        "notJoined": "Czas już biegnie. Link do wejścia jest w wiadomości o płatności",
+        "renewed": "Przedłużenie opłacone",
+        "scheduled": "Od {start} do {end}",
+        "linkOnStart": "Link do wejścia przyjdzie mailem w dniu startu",
+        "afterCohort": "Opłacone 8 tygodni po zakończeniu obecnego cyklu",
+        "ended": "Dostęp zakończył się {date}"
+      },
+      "plusHub": {
+        "included": "W Twoim pakiecie Plus",
+        "duringCohort": "Dostęp trwa przez cały cykl i jeszcze 7 dni po nim",
+        "opensOnStart": "Hub otworzy się wraz ze startem cyklu, {date}. Link przyjdzie mailem",
+        "closed": "Cykl się zakończył. Hub z pakietu Plus jest dostępny do {date}",
+        "keep": "Przedłuż Plus albo sam Hub, aby nie stracić dostępu",
+        "until": "W Twoim pakiecie Plus — do {date}"
+      },
+      "group": {
+        "running": "Cykl trwa",
+        "startsOn": "Start {date}",
+        "closed": "Cykl się zakończył, dostęp do {date}",
+        "until": "Do {date}"
+      },
+      "channel": {
+        "until": "Do {date}",
+        "startsOnJoin": "Opłacone: {count, plural, one {# dzień zacznie się} few {# dni zaczną się} many {# dni zacznie się} other {# dnia zacznie się}}, gdy dołączysz do kanału",
+        "paid": "Opłacone: czas zacznie biec, gdy dołączysz do kanału"
+      },
+      "actions": {
+        "renewHub": "Przedłuż Hub",
+        "buyHub": "Kup Hub"
+      },
+      "chips": {
+        "active": "Aktywny",
+        "endsSoon": "Wkrótce się kończy",
+        "notJoined": "Czeka na wejście",
+        "upcoming": "Wkrótce start",
+        "ended": "Zakończony"
+      }
+    }
   }
 }

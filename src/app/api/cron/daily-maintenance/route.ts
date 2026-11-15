@@ -6,6 +6,7 @@ import {
 } from "@/lib/business-operation-outbox";
 import { enqueueDueChoreoAccessReminders } from "@/lib/choreo-access-reminder-delivery";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import { enqueueDueHubExpiryReminders } from "@/lib/hub-expiry-reminder-delivery";
 import { enqueueStartedHubPeriodInvites } from "@/lib/hub-period-start-invite-delivery";
 import {
   generateAndDeliverMonthlySalesReport,
@@ -53,6 +54,10 @@ export async function GET(request: Request) {
     ReturnType<typeof enqueueStartedHubPeriodInvites>
   > | null = null;
   let hubStartInvitesError: string | null = null;
+  let hubRemindersResult: Awaited<
+    ReturnType<typeof enqueueDueHubExpiryReminders>
+  > | null = null;
+  let hubRemindersError: string | null = null;
   let cohortRemindersResult: Awaited<
     ReturnType<typeof enqueueDueCohortGraceReminders>
   > | null = null;
@@ -151,6 +156,14 @@ export async function GET(request: Request) {
     hubStartInvitesError = "hub_start_invites_failed";
   }
 
+  // HUB-06: emails 7 and 3 days before a self-paid Hub ends.
+  try {
+    hubRemindersResult = await enqueueDueHubExpiryReminders(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to schedule Hub reminders", error);
+    hubRemindersError = "hub_reminders_failed";
+  }
+
   // HUB-D29: the bot's reminder in a closed cohort's chat a day before the Plus Hub ends.
   try {
     cohortRemindersResult = await enqueueDueCohortGraceReminders(now);
@@ -189,6 +202,7 @@ export async function GET(request: Request) {
     accessRevocationError ||
     choreoRemindersError ||
     hubStartInvitesError ||
+    hubRemindersError ||
     cohortRemindersError ||
     businessJobsError ||
     monthlySalesReportError ||
@@ -204,6 +218,8 @@ export async function GET(request: Request) {
       choreoRemindersResult,
       hubStartInvitesError,
       hubStartInvitesResult,
+      hubRemindersError,
+      hubRemindersResult,
       cohortRemindersError,
       cohortRemindersResult,
       businessJobsError,

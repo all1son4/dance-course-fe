@@ -8,6 +8,7 @@ import type { CloseCohortInput, CloseCohortResult } from "../hooks/use-cohorts-a
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { ConfirmDialog, useToast } from "../ui/feedback";
+import { Switch } from "../ui/forms";
 import {
   AdminButton,
   Badge,
@@ -185,6 +186,30 @@ const CardFooter = styled.div`
   border-top: 1px solid var(--a-border);
 `;
 
+const SwitchSetting = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 560px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  b {
+    font-size: var(--a-text-sm);
+    font-weight: 600;
+  }
+
+  small {
+    color: var(--a-ink-2);
+    font-size: var(--a-text-xs);
+    line-height: 1.4;
+  }
+`;
+
 const SectionCaption = styled.p`
   margin: 0;
   color: var(--a-ink-2);
@@ -255,6 +280,7 @@ type CohortsPanelProps = {
   ) => Promise<{ ok: true; result: CloseCohortResult } | { ok: false; message: string }>;
   onClosed: () => void;
   onRetryPost: (cohortId: string) => Promise<boolean>;
+  onSetPreviousChatRemoval: (cohortId: string, enabled: boolean) => Promise<boolean>;
   onUnauthorized: () => void;
   retryingId: string;
 };
@@ -267,10 +293,20 @@ export const CohortsPanel = ({
   onClose,
   onClosed,
   onRetryPost,
+  onSetPreviousChatRemoval,
   onUnauthorized,
   retryingId,
 }: CohortsPanelProps) => {
   const toast = useToast();
+  const [switchingId, setSwitchingId] = useState("");
+
+  const switchPreviousChatRemoval = async (cohort: CohortOverview, enabled: boolean) => {
+    setSwitchingId(cohort.id);
+    const ok = await onSetPreviousChatRemoval(cohort.id, enabled);
+    setSwitchingId("");
+    if (!ok)
+      toast({ tone: "danger", title: "Не получилось переключить. Попробуй ещё раз." });
+  };
   const [closing, setClosing] = useState<CohortOverview | null>(null);
   const [lessonsCleared, setLessonsCleared] = useState(false);
   const [openNext, setOpenNext] = useState(true);
@@ -421,6 +457,29 @@ export const CohortsPanel = ({
                         <b>{cohort.facts.continuations}</b>
                       </div>
                     </Facts>
+                    {cohort.previousCohortId && !cohort.closedAt && (
+                      <SwitchSetting>
+                        <Switch
+                          checked={cohort.removesPreviousChatMembers}
+                          disabled={switchingId === cohort.id}
+                          label="Удалять из чата прошлого потока"
+                          onChange={(enabled) =>
+                            void switchPreviousChatRemoval(cohort, enabled)
+                          }
+                        />
+                        <div>
+                          <b>Удалять из чата прошлого потока</b>
+                          <small>
+                            Кто вошёл в чат этого потока по своей покупке, удаляется из
+                            чата
+                            {cohorts?.find((c) => c.id === cohort.previousCohortId)
+                              ? ` «${cohorts.find((c) => c.id === cohort.previousCohortId)!.mainChatTitle}»`
+                              : " прошлого потока"}
+                            . Админов и создателя бот не трогает.
+                          </small>
+                        </div>
+                      </SwitchSetting>
+                    )}
                   </Stack>
                   {(showLinks || cohort.post) && (
                     <Stack $gap={10}>

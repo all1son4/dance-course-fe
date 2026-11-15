@@ -110,6 +110,7 @@ export const OnlineGroupTab = ({
             onProblemsChanged();
           }}
           onRetryPost={cohorts.retryPost}
+          onSetPreviousChatRemoval={cohorts.setPreviousChatRemoval}
           onUnauthorized={onUnauthorized}
           retryingId={cohorts.retryingId}
         />

@@ -7,11 +7,19 @@ import {
 } from "@/constants/links";
 import { formatPrice } from "@/constants/sellable-products";
 import { formatEmailDate } from "@/lib/email/dates";
+import { buildMyAccessEmailBlock } from "@/lib/email/my-access";
 
 const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
   DEFAULT_SITE_HOME_URL;
+/** HUB-D43: the Plus Hub of a cohort that has not started opens on its start day. */
+const PLUS_HUB_SCHEDULED_COPY = {
+  en: "Inspiration Hub opens when your cycle starts, on {date}. That day your personal Hub invite will arrive at this address.",
+  pl: "Inspiration Hub otworzy się wraz ze startem cyklu, {date}. Tego dnia na ten adres przyjdzie osobisty link do Hub.",
+  ru: "Inspiration Hub откроется со стартом потока, {date}. В этот день на этот адрес придёт персональная ссылка в Hub.",
+} as const;
+
 const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
 
 const getRussianDays = (days: number) => {
@@ -433,6 +441,8 @@ export type BuildPurchaseSuccessEmailInput = {
   /** One-line name for the subject: "Разбор «Her Lies»"; the product title when absent. */
   subjectLine?: string;
   accessKind: PurchaseSuccessEmailAccessKind;
+  /** The buyer's «Мой доступ» link (HUB-D31); no button without it. */
+  myAccessUrl?: string | null;
   telegramAccessUrl?: string | null;
   telegramAccessLinks?: Array<{
     accessKey: "inspiration-hub" | "main-group";
@@ -469,7 +479,11 @@ const hasCompleteOnlineGroupAccess = (
 ): boolean =>
   telegramAccessLinks.length > 0 &&
   telegramAccessLinks.every(
-    (access) => access.status === "ready" || access.status === "active",
+    // "scheduled" is settled too: the Hub invite comes on its start day (HUB-D37/D43).
+    (access) =>
+      access.status === "ready" ||
+      access.status === "active" ||
+      access.status === "scheduled",
   );
 
 const formatAccessExpiry = (value: string, locale: EmailLocale): string => {
@@ -838,6 +852,7 @@ const renderPurchaseSuccessEmailHtml = ({
   intro,
   limitedAccessValidityParagraph,
   mentorFollowupParagraph,
+  myAccessBlock,
   onlineGroupAccessButtons,
   receiptButton,
   safeAccessSummary,
@@ -849,6 +864,7 @@ const renderPurchaseSuccessEmailHtml = ({
   safeSupportTelegramUrl,
 }: {
   accessButton: string;
+  myAccessBlock: string;
   safeAccessSummary: string;
   accessContent: AccessContent;
   copy: EmailCopy;
@@ -914,6 +930,7 @@ const renderPurchaseSuccessEmailHtml = ({
           ${onlineGroupAccessButtons || accessButton}
           ${limitedAccessValidityParagraph}
           ${mentorFollowupParagraph}
+          ${myAccessBlock}
         </div>
 
         <div style="background:#f7f7f5;border-radius:16px;padding:16px 18px;margin:0 0 22px 0;">
@@ -1043,6 +1060,7 @@ export const buildPurchaseSuccessEmail = ({
   inspirationAccessExpiresAt,
   offerLabel,
   productTitle,
+  myAccessUrl,
   receiptKind,
   receiptLink,
   showMentorFollowupNote = false,
@@ -1052,6 +1070,23 @@ export const buildPurchaseSuccessEmail = ({
   telegramAccessLinks = [],
 }: BuildPurchaseSuccessEmailInput) => {
   const locale = getResolvedCheckoutLocale(checkoutLocale);
+  const myAccessBlock = buildMyAccessEmailBlock({ locale, url: myAccessUrl });
+  const scheduledPlusHub = telegramAccessLinks.some(
+    (access) => access.accessKey === "main-group",
+  )
+    ? telegramAccessLinks.find(
+        (access) =>
+          access.accessKey === "inspiration-hub" &&
+          access.status === "scheduled" &&
+          access.accessStartsAt,
+      )
+    : undefined;
+  const plusHubScheduledLine = scheduledPlusHub?.accessStartsAt
+    ? PLUS_HUB_SCHEDULED_COPY[locale].replace(
+        "{date}",
+        formatEmailDate(new Date(scheduledPlusHub.accessStartsAt), locale),
+      )
+    : "";
   const copy = EMAIL_COPY[locale];
   const telegramLink = telegramAccessUrl ?? null;
   const hasOnlineGroupAccess = hasCompleteOnlineGroupAccess(telegramAccessLinks);
@@ -1167,6 +1202,11 @@ export const buildPurchaseSuccessEmail = ({
     intro,
     limitedAccessValidityParagraph: limitedAccessValidity.paragraph,
     mentorFollowupParagraph,
+    myAccessBlock: `${
+      plusHubScheduledLine
+        ? `<p style="margin:12px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">${escapeHtml(plusHubScheduledLine)}</p>`
+        : ""
+    }${myAccessBlock.html}`,
     onlineGroupAccessButtons,
     receiptButton,
     safeAccessSummary: escapeHtml(accessSummary),
@@ -1198,6 +1238,6 @@ export const buildPurchaseSuccessEmail = ({
   return {
     html,
     subject,
-    text,
+    text: [text, plusHubScheduledLine, myAccessBlock.text].filter(Boolean).join("\n"),
   };
 };

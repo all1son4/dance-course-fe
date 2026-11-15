@@ -1,8 +1,11 @@
 import type Stripe from "stripe";
 
+import { getDatabase } from "@/db/client";
+import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
 import { ensureInvoiceNumberForPayment } from "@/lib/invoices/invoice-numbering";
 import { buildPurchaseInvoiceAttachment } from "@/lib/invoices/purchase-invoice";
+import { buildMyAccessUrl } from "@/lib/my-access/link";
 import {
   formatPurchaseLine,
   getLocalizedOfferMetadataByOfferId,
@@ -156,9 +159,28 @@ const resolvePurchaseEmailRecipient = ({
 }): string =>
   paymentRecord.customer_email || paymentIntent.receipt_email || receipt.recipientEmail;
 
+/** «Мой доступ» in the email (HUB-D31); a failed lookup only leaves the button out. */
+const resolveMyAccessUrl = async (
+  paymentRecord: PurchasePaymentRecord,
+  checkoutLocale: CheckoutLocale,
+): Promise<string | null> => {
+  try {
+    return buildMyAccessUrl(
+      await findMyAccessCustomerIdForPaymentIntent(
+        getDatabase(),
+        paymentRecord.payment_intent_id,
+      ),
+      checkoutLocale,
+    );
+  } catch {
+    return null;
+  }
+};
+
 const buildPreparedPurchaseSuccessEmail = ({
   checkoutLocale,
   localizedOfferMetadata,
+  myAccessUrl,
   onlineGroupAccess,
   paymentIntent,
   paymentRecord,
@@ -167,6 +189,7 @@ const buildPreparedPurchaseSuccessEmail = ({
 }: {
   checkoutLocale: CheckoutLocale;
   localizedOfferMetadata: LocalizedOfferMetadata;
+  myAccessUrl: string | null;
   onlineGroupAccess: PurchaseEmailAccess["onlineGroupAccess"];
   paymentIntent: Stripe.PaymentIntent;
   paymentRecord: PurchasePaymentRecord;
@@ -202,6 +225,7 @@ const buildPreparedPurchaseSuccessEmail = ({
     inspirationAccessExpiresAt: onlineGroupAccess?.find(
       (access) => access.accessKey === "inspiration-hub",
     )?.accessExpiresAt,
+    myAccessUrl,
     offerLabel,
     productTitle,
     receiptKind: receipt.receiptKind,
@@ -274,6 +298,7 @@ export const deliverPurchaseSuccessEmailFromOutbox = async ({
   const content = buildPreparedPurchaseSuccessEmail({
     checkoutLocale,
     localizedOfferMetadata,
+    myAccessUrl: await resolveMyAccessUrl(paymentRecord, checkoutLocale),
     onlineGroupAccess: access.onlineGroupAccess,
     paymentIntent,
     paymentRecord,

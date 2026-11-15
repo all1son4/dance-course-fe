@@ -1,9 +1,15 @@
+import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
 import { getDatabase } from "@/db/client";
-import { listStartedHubPeriodsWithoutInvite } from "@/db/hub-period-start";
+import {
+  listStartedHubPeriodsWithoutInvite,
+  listStartedPlusHubsWithoutInvite,
+} from "@/db/hub-period-start";
+import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
 import { buildHubPeriodStartInviteEmail } from "@/lib/email/hub-period-start-invite";
 import { sendResendEmail } from "@/lib/email/resend";
+import { buildMyAccessUrl } from "@/lib/my-access/link";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
 const isProduction = () =>
@@ -29,13 +35,33 @@ export const enqueueStartedHubPeriodInvites = async (now = new Date()) => {
   });
   result.due = periods.length;
 
-  for (const period of periods) {
-    const queued = await enqueueOutboxJob({
+  // HUB-D43: Plus buyers outside the Hub get their invite on the cohort start day.
+  const plusHubs = await listStartedPlusHubsWithoutInvite(getDatabase(), {
+    livemode: isProduction(),
+    now,
+  });
+  result.due += plusHubs.length;
+
+  const jobs = [
+    ...periods.map((period) => ({
       deduplicationKey: `hub_period_start_invite:${period.entitlementId}:${period.startsAt.toISOString()}`,
+      email: period.email,
+      paymentIntentId: period.paymentIntentId,
+    })),
+    ...plusHubs.map((plus) => ({
+      deduplicationKey: `hub_period_start_invite:plus:${plus.purchaseId}:${plus.startsAt.toISOString()}`,
+      email: plus.email,
+      paymentIntentId: plus.paymentIntentId,
+    })),
+  ];
+
+  for (const job of jobs) {
+    const queued = await enqueueOutboxJob({
+      deduplicationKey: job.deduplicationKey,
       kind: "hub_period_start_invite",
-      payload: { paymentIntentId: period.paymentIntentId },
+      payload: { paymentIntentId: job.paymentIntentId },
       provider: "resend",
-      recipient: period.email,
+      recipient: job.email,
     });
     if (queued.duplicate) result.duplicates += 1;
     else result.enqueued += 1;
@@ -60,7 +86,10 @@ export const deliverHubPeriodStartInvite = async (job: ClaimedOutboxJob) => {
     throw nonRetryable("hub_start_invite_recipient_mismatch");
   }
 
-  const [access] = (await ensureOnlineGroupAccessForPayment(paymentRecord)) ?? [];
+  // A Hub purchase has one access; a Plus purchase also has its main group.
+  const access = (await ensureOnlineGroupAccessForPayment(paymentRecord))?.find(
+    (candidate) => candidate.accessKey === "inspiration-hub",
+  );
 
   // Already in the Hub, ended meanwhile, or the start moved later: nothing to send now.
   if (
@@ -80,6 +109,13 @@ export const deliverHubPeriodStartInvite = async (job: ClaimedOutboxJob) => {
     accessUrl: access.accessUrl,
     expiresAt: access.accessExpiresAt ? new Date(access.accessExpiresAt) : null,
     locale: paymentRecord.checkout_locale,
+    variant: isOnlineGroupLibraryOfferId(paymentRecord.offer_id) ? "plus" : "period",
+    myAccessUrl: buildMyAccessUrl(
+      await findMyAccessCustomerIdForPaymentIntent(getDatabase(), paymentIntentId).catch(
+        () => null,
+      ),
+      paymentRecord.checkout_locale,
+    ),
   });
   const { emailId } = await sendResendEmail({
     ...email,

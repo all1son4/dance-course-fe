@@ -28,6 +28,8 @@ type SuccessContentProps = {
   dateLocale: string;
   descriptionLine1: string;
   descriptionLine2: string;
+  /** «Мой доступ» button label (HUB-D31); the link itself arrives with the access answer. */
+  myAccessButtonText: string;
   homeButtonText: string;
   isTelegramAccessPurchase: boolean;
   isRenewalPurchase: boolean;
@@ -61,6 +63,7 @@ export default function SuccessContent({
   descriptionLine1,
   descriptionLine2,
   homeButtonText,
+  myAccessButtonText,
   isTelegramAccessPurchase,
   isRenewalPurchase,
   offerCode,
@@ -129,6 +132,7 @@ export default function SuccessContent({
     purchaseValue,
   ]);
   const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");
+  const [myAccessUrl, setMyAccessUrl] = useState("");
   // Russian long dates already end in "г." - no second full stop after those.
   const formattedInspirationExpiry = inspirationAccessExpiresAt
     ? new Intl.DateTimeFormat(dateLocale, {
@@ -184,6 +188,17 @@ export default function SuccessContent({
             supportHref={SUPPORT_TELEGRAM_URL}
             unavailableText={telegramUnavailableText}
             onInspirationExpiryChange={setInspirationAccessExpiresAt}
+            onMyAccessUrlChange={setMyAccessUrl}
+          />
+        ) : null}
+        {myAccessUrl ? (
+          <Button
+            buttonText={myAccessButtonText}
+            href={myAccessUrl}
+            prefetch={false}
+            rel="nofollow"
+            variant="secondary"
+            analytics={{ id: "open_my_access", placement: "success_result" }}
           />
         ) : null}
         <Button

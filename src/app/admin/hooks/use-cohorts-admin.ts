@@ -107,6 +107,20 @@ export const useCohortsAdmin = ({
     return response.ok && response.data.status === "sent";
   };
 
+  /** HUB-D44: the per-cohort switch of the removal from the previous chat. */
+  const setPreviousChatRemoval = async (cohortId: string, enabled: boolean) => {
+    const response = await requestAdminJson<{ enabled: boolean }>(
+      ADMIN_API_ENDPOINTS.onlineGroupCohorts,
+      { body: { cohortId, removesPreviousChatMembers: enabled }, method: "PATCH" },
+    );
+    if (response.unauthorized) {
+      onUnauthorized();
+      return false;
+    }
+    await load();
+    return response.ok;
+  };
+
   return {
     close,
     cohorts,
@@ -116,5 +130,6 @@ export const useCohortsAdmin = ({
     loadedAt,
     retryPost,
     retryingId,
+    setPreviousChatRemoval,
   };
 };

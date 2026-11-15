@@ -235,6 +235,7 @@ export async function getCohortsOverview(now = new Date()) {
         plusHubLastDay: toWarsawDay(getPlusHubLastDay(accessEndsAt)),
         salesEnabled: cohort.salesEnabled,
         previousCohortId: cohort.previousCohortId,
+        removesPreviousChatMembers: cohort.removesPreviousChatMembers,
         next: next
           ? {
               id: next.id,
@@ -430,4 +431,31 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
   }
 
   return { externalMessageId: String(message.message_id) };
+}
+
+/** HUB-D44: the switch «Удалять из чата прошлого потока» of one cohort. */
+export async function setCohortPreviousChatRemoval({
+  cohortId,
+  enabled,
+}: {
+  cohortId: string;
+  enabled: boolean;
+}) {
+  const db = getDatabase();
+  const [cohort] = await db
+    .select({ previousCohortId: onlineGroupCohorts.previousCohortId })
+    .from(onlineGroupCohorts)
+    .where(eq(onlineGroupCohorts.id, cohortId))
+    .limit(1);
+
+  if (!cohort) throw new Error("cohort_not_found");
+  // Nothing to leave without a previous cohort: the switch stays off.
+  if (enabled && !cohort.previousCohortId) throw new Error("cohort_has_no_previous");
+
+  await db
+    .update(onlineGroupCohorts)
+    .set({ removesPreviousChatMembers: enabled, updatedAt: new Date() })
+    .where(eq(onlineGroupCohorts.id, cohortId));
+
+  return { enabled };
 }

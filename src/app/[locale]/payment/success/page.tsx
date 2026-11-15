@@ -167,6 +167,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               descriptionLine2={t(`description.${successCase}.line2`)}
               dateLocale={locale}
               homeButtonText={t("buttons.home")}
+              myAccessButtonText={t("buttons.myAccess")}
               isTelegramAccessPurchase={isTelegramAccessPurchase}
               isRenewalPurchase={isRenewalPurchase}
               offerId={offerId}
@@ -196,7 +197,9 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               telegramOpenLinkText={t("telegram.openLink")}
               telegramPendingText={t("telegram.pending")}
               telegramScheduledAfterCohortText={t("telegram.scheduledAfterCohort")}
-              telegramScheduledText={t("telegram.scheduled")}
+              telegramScheduledText={t(
+                isOnlineGroupPurchase ? "telegram.scheduledPlus" : "telegram.scheduled",
+              )}
               telegramUnavailableText={t("telegram.unavailable")}
               title={t("title")}
             />

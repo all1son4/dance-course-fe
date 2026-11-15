@@ -8,6 +8,7 @@ import {
 import {
   closeCohortFromAdmin,
   getCohortsOverview,
+  setCohortPreviousChatRemoval,
 } from "@/lib/online-group/cohort-admin";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -114,5 +115,42 @@ export async function POST(request: Request) {
     }
     logSafeError("Failed to close an Online Group cohort", error);
     return jsonErrorNoStore("cohort_close_failed", { status: 500 });
+  }
+}
+
+/** HUB-D44: turns the removal from the previous cohort's chat on or off. */
+export async function PATCH(request: Request) {
+  if (!isAdminInviteLinksRequestAuthenticated(request)) {
+    return jsonErrorNoStore("unauthorized", { status: 401 });
+  }
+
+  const requestErrorResponse = getBrowserJsonRequestErrorResponse(request, 1024);
+  if (requestErrorResponse) return requestErrorResponse;
+
+  try {
+    const { body, errorResponse } = await parseJsonBody<{
+      cohortId?: unknown;
+      removesPreviousChatMembers?: unknown;
+    }>(request, 1024);
+    if (errorResponse) return errorResponse;
+
+    const cohortId = typeof body?.cohortId === "string" ? body.cohortId.trim() : "";
+    if (!cohortId || typeof body?.removesPreviousChatMembers !== "boolean") {
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
+    }
+
+    return jsonNoStore(
+      await setCohortPreviousChatRemoval({
+        cohortId,
+        enabled: body.removesPreviousChatMembers,
+      }),
+    );
+  } catch (error) {
+    const errorCode = error instanceof Error ? error.message : "";
+    if (errorCode === "cohort_not_found" || errorCode === "cohort_has_no_previous") {
+      return jsonNoStore({ errorCode }, { status: 409 });
+    }
+    logSafeError("Failed to switch the previous chat removal", error);
+    return jsonErrorNoStore("cohort_update_failed", { status: 500 });
   }
 }

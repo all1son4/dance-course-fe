@@ -222,6 +222,13 @@ export const onlineGroupCohorts = pgTable(
     accessEndsAt: timestamp("access_ends_at", { withTimezone: true }),
     lessonsClearedAt: timestamp("lessons_cleared_at", { withTimezone: true }),
     salesEnabled: boolean("sales_enabled").notNull().default(false),
+    /**
+     * HUB-D44: a buyer who joins this cohort's main chat is removed from the previous
+     * cohort's chat (plan, section 6.5). Off until the owner turns it on.
+     */
+    removesPreviousChatMembers: boolean("removes_previous_chat_members")
+      .notNull()
+      .default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -725,6 +732,8 @@ export const purchaseSideEffects = pgTable(
         | "polish_terminal_reminder"
         | "choreo_access_expiry_reminder"
         | "hub_period_start_invite"
+        | "hub_expiry_reminder"
+        | "online_group_previous_chat_removal"
         | "cohort_closure_post"
         | "cohort_grace_reminder"
       >(),

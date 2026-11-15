@@ -2,6 +2,7 @@ import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { resolveSellableProductsLocale } from "@/lib/sellable-products-localization";
 
 import { formatEmailDate } from "./dates";
+import { buildMyAccessEmailBlock } from "./my-access";
 
 const COPY = {
   ru: {
@@ -42,6 +43,28 @@ const COPY = {
   },
 } as const;
 
+/** HUB-D43: the same invite for Plus, sent when the cohort starts. */
+const PLUS_COPY = {
+  ru: {
+    subject: "Поток стартовал — Inspiration Hub открыт",
+    heading: "Inspiration Hub открыт",
+    intro:
+      "Сегодня стартовал твой поток, и Inspiration Hub из тарифа Plus открыт. Нажми кнопку ниже, чтобы войти в закрытый Telegram-канал.",
+  },
+  en: {
+    subject: "Your cycle has started — Inspiration Hub is open",
+    heading: "Inspiration Hub is open",
+    intro:
+      "Your cycle starts today, and the Inspiration Hub of your Plus plan is open. Use the button below to join the private Telegram channel.",
+  },
+  pl: {
+    subject: "Cykl wystartował — Inspiration Hub jest otwarty",
+    heading: "Inspiration Hub jest otwarty",
+    intro:
+      "Dziś startuje Twój cykl, a Inspiration Hub z pakietu Plus jest otwarty. Użyj przycisku poniżej, aby dołączyć do prywatnego kanału Telegram.",
+  },
+} as const;
+
 const escapeHtml = (value: string) =>
   value.replace(
     /[&<>"']/gu,
@@ -60,13 +83,22 @@ export const buildHubPeriodStartInviteEmail = ({
   accessUrl,
   expiresAt,
   locale,
+  myAccessUrl,
+  variant = "period",
 }: {
   accessUrl: string;
   expiresAt: Date | null;
   locale: string | null;
+  myAccessUrl?: string | null;
+  /** "plus": the Hub of a Plus cohort that started today (HUB-D43). */
+  variant?: "period" | "plus";
 }) => {
   const resolvedLocale = resolveSellableProductsLocale(locale);
-  const copy = COPY[resolvedLocale];
+  const myAccess = buildMyAccessEmailBlock({ locale, url: myAccessUrl });
+  const copy =
+    variant === "plus"
+      ? { ...COPY[resolvedLocale], ...PLUS_COPY[resolvedLocale] }
+      : COPY[resolvedLocale];
   const deadline = expiresAt ? formatEmailDate(expiresAt, locale) : "";
   const text = [
     copy.heading,
@@ -74,6 +106,7 @@ export const buildHubPeriodStartInviteEmail = ({
     `${copy.button}: ${accessUrl}`,
     copy.linkNote,
     deadline ? copy.deadlineLine(deadline) : "",
+    myAccess.text,
     `${copy.support}: ${SUPPORT_TELEGRAM_URL}`,
   ]
     .filter(Boolean)
@@ -95,6 +128,7 @@ export const buildHubPeriodStartInviteEmail = ({
     </div>`
         : ""
     }
+    ${myAccess.html}
     <p style="margin:26px 0 0;padding-top:18px;border-top:1px solid #ece8e3;font-size:12px;line-height:1.5;">
       <a href="${SUPPORT_TELEGRAM_URL}" style="color:#777;text-decoration:underline;">${escapeHtml(copy.support)}</a>
     </p>

@@ -10,14 +10,18 @@ import { keepClassifiedAccessPeriod } from "@/db/classified-access";
 import { getDatabase } from "@/db/client";
 import { findInspirationHubChatId } from "@/db/hub-access-coverage";
 import { lockHubPeriodOwner } from "@/db/hub-period-chain-resolution";
+import { findPreviousChatRemoval } from "@/db/previous-chat-removal";
 import { recordPurchaseTelegramOwnerInTransaction } from "@/db/purchase-access-source";
 import {
   accessEntitlements,
+  onlineGroupCohorts,
   purchases,
   telegramAccessTokens,
   telegramUserBindings,
 } from "@/db/schema";
 import type { DatabaseExecutor, DatabaseTransaction } from "@/db/transaction";
+import { enqueueOutboxJobInTransaction } from "@/db/transactional-outbox";
+import { previousChatRemovalKey } from "@/lib/online-group/previous-chat-removal-key";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
 
@@ -53,6 +57,8 @@ type OnlineGroupAccessItem = {
 };
 type OnlineGroupMembershipResult = {
   handled: boolean;
+  /** HUB-D44: the job that removes the member from the previous cohort's chat. */
+  previousChatRemovalKey?: string;
   shouldKick: boolean;
   shouldRevokeInvite: boolean;
 };
@@ -946,6 +952,22 @@ const findPlusHubEnd = async (purchase: OnlineGroupPurchase): Promise<Date | nul
     : purchase.inspirationAccessExpiresAtSnapshot;
 };
 
+/**
+ * HUB-D43: the Plus Hub of a cohort that has not started opens on the start day.
+ * Someone already in the Hub is answered "active" before this matters.
+ */
+const findPlusHubStart = async (purchase: OnlineGroupPurchase, now: Date) => {
+  if (!purchase.onlineGroupCohortId) return undefined;
+
+  const [cohort] = await getDatabase()
+    .select({ startsAt: onlineGroupCohorts.startsAt })
+    .from(onlineGroupCohorts)
+    .where(eq(onlineGroupCohorts.id, purchase.onlineGroupCohortId))
+    .limit(1);
+
+  return cohort && cohort.startsAt > now ? cohort.startsAt : undefined;
+};
+
 const ensureOnlineGroupAccessForPaymentInternal = async (
   paymentRecord: PaymentRecordSnapshot,
   reissue: boolean,
@@ -976,10 +998,17 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
     inspirationChatId: purchase.inspirationChatIdSnapshot,
   });
 
+  const plusHubStartsAt = targets.some((target) => target.accessKey === "inspiration-hub")
+    ? await findPlusHubStart(purchase, new Date())
+    : undefined;
+
   return Promise.all(
     targets.map((target) =>
       ensureTargetAccess({
         ...target,
+        ...(target.accessKey === "inspiration-hub" && plusHubStartsAt
+          ? { accessStartsAt: plusHubStartsAt }
+          : {}),
         paymentRecord,
         purchase,
         reissue,
@@ -1339,8 +1368,37 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
     telegramUsername: identity.telegramUsername,
   });
 
+  // HUB-D44 (section 6.5): a confirmed join into the new cohort's main chat, by this
+  // purchase's own invite, sends the member out of the previous cohort's chat.
+  const removal =
+    accessKey === "main-group" && purchase.onlineGroupCohortId
+      ? await findPreviousChatRemoval(transaction, {
+          cohortId: purchase.onlineGroupCohortId,
+          joinedChatId: identity.chatId,
+        })
+      : null;
+  const removalKey = removal
+    ? previousChatRemovalKey(purchase.id, removal.previousChatId)
+    : undefined;
+
+  if (removal && removalKey) {
+    await enqueueOutboxJobInTransaction(transaction, {
+      deduplicationKey: removalKey,
+      kind: "online_group_previous_chat_removal",
+      payload: {
+        cohortId: removal.cohortId,
+        previousChatId: removal.previousChatId,
+        telegramUserId: identity.telegramUserId,
+      },
+      provider: "telegram",
+      purchaseId: purchase.id,
+      recipient: removal.previousChatId,
+    });
+  }
+
   return {
     handled: true,
+    previousChatRemovalKey: removalKey,
     shouldKick: false,
     shouldRevokeInvite: isFirstUse,
   };
@@ -1413,6 +1471,18 @@ export const syncOnlineGroupMembership = async ({
     } catch (error) {
       // Telegram's member limit already blocks reuse; revocation is defense in depth.
       logSafeError("Failed to revoke a used Online Group invite", error);
+    }
+  }
+
+  if (membershipResult.previousChatRemovalKey) {
+    try {
+      // Imported here: the business outbox imports this module.
+      const { processBusinessOperationOutboxJob } =
+        await import("@/lib/business-operation-outbox");
+      await processBusinessOperationOutboxJob(membershipResult.previousChatRemovalKey);
+    } catch (error) {
+      // The job stays queued; the daily run retries it.
+      logSafeError("Failed to remove a member from the previous cohort chat", error);
     }
   }
 
