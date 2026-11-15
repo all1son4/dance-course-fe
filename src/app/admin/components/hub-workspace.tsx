@@ -250,6 +250,12 @@ export const HubWorkspace = ({
         }
       />
 
+      {failed && (
+        <Callout tone="warning" title="Данные не обновились">
+          Показан прошлый расчёт: последний запрос не прошёл. Нажми «Обновить».
+        </Callout>
+      )}
+
       {(problems.settingsMissing ||
         problems.stalledPaymentIntentIds.length > 0 ||
         ownerless.length > 0) && (

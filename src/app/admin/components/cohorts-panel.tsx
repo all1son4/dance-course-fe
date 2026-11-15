@@ -272,6 +272,8 @@ const PostEditor = styled.textarea`
 
 type CohortsPanelProps = {
   cohorts: CohortOverview[] | null;
+  /** The last load failed; without data the panel says so instead of loading forever. */
+  failed: boolean;
   isClosing: boolean;
   /** When the cohorts were fetched: "has it started" is judged at that moment. */
   loadedAt: number;
@@ -279,6 +281,7 @@ type CohortsPanelProps = {
     input: CloseCohortInput,
   ) => Promise<{ ok: true; result: CloseCohortResult } | { ok: false; message: string }>;
   onClosed: () => void;
+  onReload: () => Promise<void> | void;
   onRetryPost: (cohortId: string) => Promise<boolean>;
   onSetPreviousChatRemoval: (cohortId: string, enabled: boolean) => Promise<boolean>;
   onUnauthorized: () => void;
@@ -288,10 +291,12 @@ type CohortsPanelProps = {
 /** The cohort records and the "Закрыть поток" window (section 6.2). */
 export const CohortsPanel = ({
   cohorts,
+  failed,
   isClosing,
   loadedAt,
   onClose,
   onClosed,
+  onReload,
   onRetryPost,
   onSetPreviousChatRemoval,
   onUnauthorized,
@@ -381,7 +386,22 @@ export const CohortsPanel = ({
       title="Потоки"
       description="Записи потоков: даты, продажи, участницы и закрытие."
     >
-      {!cohorts ? (
+      {failed && cohorts && (
+        <Callout tone="warning" title="Список не обновился">
+          Показаны данные прошлой загрузки.{" "}
+          <AdminButton size="sm" onClick={() => void onReload()}>
+            Повторить
+          </AdminButton>
+        </Callout>
+      )}
+      {!cohorts && failed ? (
+        <EmptyState
+          icon={<CircleAlert aria-hidden />}
+          title="Не удалось загрузить потоки"
+          text="Остальные разделы работают. Попробуй ещё раз через минуту."
+          action={<AdminButton onClick={() => void onReload()}>Повторить</AdminButton>}
+        />
+      ) : !cohorts ? (
         <List>
           <Skeleton $height={160} />
           <Skeleton $height={120} />
@@ -396,9 +416,9 @@ export const CohortsPanel = ({
           {ordered.map((cohort) => {
             const status = cohortStatus(cohort, ordered, loadedAt);
             const isCurrent = !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt;
+            // A queued post is on its way; only a failed one can be retried.
             const postFailed =
-              cohort.post &&
-              ["failed", "dead_letter", "pending"].includes(cohort.post.status);
+              cohort.post && ["failed", "dead_letter"].includes(cohort.post.status);
             const showLinks = !cohort.closedAt && cohort.links;
             return (
               <CohortCard
@@ -486,12 +506,20 @@ export const CohortsPanel = ({
                       {cohort.post && (
                         <Row $gap={8}>
                           <Badge
-                            $tone={cohort.post.status === "sent" ? "success" : "danger"}
+                            $tone={
+                              cohort.post.status === "sent"
+                                ? "success"
+                                : postFailed
+                                  ? "danger"
+                                  : "neutral"
+                            }
                           >
                             <Send aria-hidden />
                             {cohort.post.status === "sent"
                               ? "Пост о закрытии опубликован"
-                              : "Пост о закрытии не опубликован"}
+                              : postFailed
+                                ? "Пост о закрытии не опубликован"
+                                : "Пост о закрытии в очереди"}
                           </Badge>
                           {postFailed && (
                             <AdminButton

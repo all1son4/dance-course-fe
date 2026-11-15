@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import type Stripe from "stripe";
 
 import {
@@ -546,12 +548,21 @@ const getPaymentIntentContextKey = ({
     .join(":");
 };
 
+// Stripe refuses a reused idempotency key whose parameters differ. The key therefore
+// covers every parameter sent: a changed price, title, label or checkout language mints
+// a new intent instead of a permanent "payment_intent_failed" for that checkout.
 const createPaymentIntentRequestOptions = (
   context: PaymentIntentContext,
+  params: Stripe.PaymentIntentCreateParams,
 ): Stripe.RequestOptions => ({
   idempotencyKey: createPaymentIntentIdempotencyKey({
     checkoutSessionId: context.checkoutSessionId,
-    contextKey: getPaymentIntentContextKey(context),
+    contextKey: [
+      getPaymentIntentContextKey(context),
+      `params:${createHash("sha256").update(JSON.stringify(params)).digest("hex").slice(0, 16)}`,
+    ]
+      .filter(Boolean)
+      .join(":"),
     currency: context.currency,
     customerData: context.customerData,
     offerId: context.offer.id,
@@ -635,9 +646,10 @@ export async function POST(request: Request): Promise<Response> {
       return jsonErrorNoStore("missing_checkout_session_id", { status: 400 });
     }
 
+    const paymentIntentParams = createPaymentIntentParams(context, localizedCheckout);
     const paymentIntent = await stripe.paymentIntents.create(
-      createPaymentIntentParams(context, localizedCheckout),
-      createPaymentIntentRequestOptions(context),
+      paymentIntentParams,
+      createPaymentIntentRequestOptions(context, paymentIntentParams),
     );
 
     if (!paymentIntent.client_secret) {

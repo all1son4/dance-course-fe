@@ -90,8 +90,11 @@ const getPurchaseSuccessEmailAccessKind = ({
   return "support";
 };
 
+// Resend's test sender may only write to the account owner: on previews such a 403 is
+// expected. On production it means the domain or sender broke, and every purchase email
+// with its access link would be silently skipped — so there it fails and is retried.
 const isExpectedResendRestrictionError = (error: unknown) => {
-  if (!(error instanceof Error)) {
+  if (!(error instanceof Error) || process.env.VERCEL_ENV === "production") {
     return false;
   }
 

@@ -2,7 +2,9 @@ import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
   INSPIRATION_HUB_DISCOUNT_SLUG,
   isInspirationHubOfferId,
+  isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
+import { isStartDayReached } from "@/lib/inspiration-hub/calendar";
 import { getPlusHubLastDay } from "@/lib/online-group/cohort-messages";
 import {
   getOfferAccessDurationDaysByOfferId,
@@ -214,11 +216,14 @@ const buildStandaloneHubCard = ({
 /** The Hub that comes with Plus (section 8, text 3). */
 const buildPlusHubCard = ({
   cohort,
+  hubContinues,
   now,
   purchase,
   right,
 }: {
   cohort: MyAccessCohort | null;
+  /** A paid Hub period or a later Plus already keeps this buyer in the Hub (§11). */
+  hubContinues: boolean;
   now: Date;
   purchase: MyAccessPurchase;
   right: MyAccessRight;
@@ -231,16 +236,25 @@ const buildPlusHubCard = ({
   if (cohort?.closedAt && cohort.accessEndsAt) {
     const lastDay = legacyEnd ?? getPlusHubLastDay(cohort.accessEndsAt);
 
-    return lastDay > now
+    if (lastDay <= now) return null;
+
+    // Already renewed: no urgent "renew" next to the Hub she has paid for.
+    return hubContinues
       ? {
+          ...base,
+          status: { key: "plusHub.closed", values: { date: iso(lastDay) } },
+          note: { key: "hub.renewed" },
+          urgency: 1,
+          sortAt: lastDay.getTime(),
+        }
+      : {
           ...base,
           status: { key: "plusHub.closed", values: { date: iso(lastDay) } },
           note: { key: "plusHub.keep" },
           action: { key: "renewHub", href: HUB_RENEWAL_HREF },
           urgency: 0,
           sortAt: lastDay.getTime(),
-        }
-      : null;
+        };
   }
 
   const recordedEnd = legacyEnd ?? (cohort ? null : right.expiresAt);
@@ -256,7 +270,7 @@ const buildPlusHubCard = ({
       : null;
   }
 
-  if (cohort && cohort.startsAt > now) {
+  if (cohort && !isStartDayReached(cohort.startsAt, now)) {
     return {
       ...base,
       status: { key: "plusHub.included" },
@@ -443,6 +457,25 @@ export const buildMyAccessCards = (
     ]);
   }
 
+  // One page is one customer: a standalone Hub period not over yet, or a Plus of a later
+  // cohort, means the Hub goes on after a closed Plus — no renewal pitch on it.
+  const hasHubAhead = snapshot.rights.some(
+    (right) =>
+      !isRevoked(right) &&
+      right.sourceKind === "standalone_hub" &&
+      (right.expiresAt === null || right.expiresAt > now),
+  );
+  const plusCohortStarts = snapshot.purchases.flatMap((purchase) => {
+    const cohort = purchase.cohortId ? cohorts.get(purchase.cohortId) : undefined;
+    return cohort && isOnlineGroupLibraryOfferId(purchase.offerExternalId)
+      ? [cohort.startsAt.getTime()]
+      : [];
+  });
+  const hubContinuesAfter = (cohort: MyAccessCohort | null) =>
+    hasHubAhead ||
+    (cohort !== null &&
+      plusCohortStarts.some((start) => start > cohort.startsAt.getTime()));
+
   const cards: BaseCard[] = [];
   const hubGroups = new Map<string, MyAccessRight[]>();
   const plusHubIdentities = new Set<string>();
@@ -475,7 +508,13 @@ export const buildMyAccessCards = (
           (right.sourceKind === null || right.sourceKind === "online_group"),
       );
       const plusHubCard = hubRight
-        ? buildPlusHubCard({ cohort, now, purchase, right: hubRight })
+        ? buildPlusHubCard({
+            cohort,
+            hubContinues: hubContinuesAfter(cohort),
+            now,
+            purchase,
+            right: hubRight,
+          })
         : null;
       if (plusHubCard) {
         cards.push(plusHubCard);

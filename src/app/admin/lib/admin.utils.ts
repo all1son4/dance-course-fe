@@ -32,6 +32,34 @@ export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
   }).format(date);
 };
 
+/** The Warsaw wall-clock parts of a moment, whatever the device's time zone. */
+const warsawParts = (date: Date) =>
+  Object.fromEntries(
+    new Intl.DateTimeFormat("en-CA", {
+      day: "2-digit",
+      hour: "2-digit",
+      hourCycle: "h23",
+      minute: "2-digit",
+      month: "2-digit",
+      timeZone: "Europe/Warsaw",
+      year: "numeric",
+    })
+      .formatToParts(date)
+      .map((part) => [part.type, part.value]),
+  ) as Record<"day" | "hour" | "minute" | "month" | "year", string>;
+
+const warsawWallClockMs = (date: Date) => {
+  const parts = warsawParts(date);
+  return Date.UTC(
+    Number(parts.year),
+    Number(parts.month) - 1,
+    Number(parts.day),
+    Number(parts.hour),
+    Number(parts.minute),
+  );
+};
+
+/** A `datetime-local` value shown in Warsaw time ("По Варшаве"), not the device's. */
 export const formatDateTimeInput = (value: string) => {
   const date = new Date(value);
 
@@ -39,13 +67,30 @@ export const formatDateTimeInput = (value: string) => {
     return "";
   }
 
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 16);
+  const parts = warsawParts(date);
+  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+};
+
+/**
+ * The moment a `datetime-local` value means when read as Warsaw time: "2026-11-23T18:00"
+ * is 17:00 UTC in winter on every device. Two passes settle the offset across DST.
+ */
+export const parseWarsawDateTimeInput = (value: string): string => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/u.exec(value);
+  if (!match) return "";
+
+  const [, year, month, day, hour, minute] = match.map(Number);
+  const wanted = Date.UTC(year!, month! - 1, day!, hour!, minute!);
+  let instant = wanted;
+  for (let pass = 0; pass < 2; pass += 1) {
+    instant += wanted - warsawWallClockMs(new Date(instant));
+  }
+
+  return new Date(instant).toISOString();
 };
 
 export const resolveLinkStateLabel = (state: LinkState) =>
-  state === "used" ? "Использована" : "Активна";
+  state === "used" ? "Использована" : state === "expired" ? "Истекла" : "Активна";
 
 export const resolveOnlineGroupAccessStateLabel = (
   state: OnlineGroupAdminAccessState,

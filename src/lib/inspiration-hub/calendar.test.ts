@@ -111,3 +111,14 @@ test("the next midnight is found across both clock changes", () => {
 test("an invalid closure date is rejected", () => {
   assert.throws(() => getStartOfNextWarsawDay(new Date(Number.NaN)), RangeError);
 });
+
+test("an access starting at 18:00 Warsaw counts as started from 00:00 that day", async () => {
+  const { isStartDayReached } = await import("@/lib/inspiration-hub/calendar");
+  // Cohort #3 starts on 23 November 2026 at 18:00 Warsaw (17:00 UTC).
+  const start = new Date("2026-11-23T17:00:00.000Z");
+
+  assert.equal(isStartDayReached(start, new Date("2026-11-22T22:59:00.000Z")), false);
+  // The 03:00 UTC cron of the start day sends the invite.
+  assert.equal(isStartDayReached(start, new Date("2026-11-23T03:00:00.000Z")), true);
+  assert.equal(isStartDayReached(start, new Date("2026-11-24T03:00:00.000Z")), true);
+});

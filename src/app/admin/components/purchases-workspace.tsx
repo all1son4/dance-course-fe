@@ -1,7 +1,7 @@
 import { CircleAlert, Download, Mail, RefreshCw, Search } from "lucide-react";
 import styled from "styled-components";
 
-import { ACCOUNTING_TIME_ZONE } from "@/lib/accounting-month";
+import { ACCOUNTING_TIME_ZONE, getAccountingMonthValue } from "@/lib/accounting-month";
 import { formatMinorDelta } from "@/lib/minor-amount";
 
 import { PURCHASES_LIST_LIMIT } from "../lib/admin.constants";
@@ -226,8 +226,13 @@ const PurchaseRow = styled.tr<{ $polish: boolean }>`
   }
 `;
 
-const deltaText = (delta: number, formatted: string) =>
-  delta === 0 ? "как в прошлом месяце" : `${formatted} к прошлому месяцу`;
+// The running month is compared with the same days of the previous one (admin-sales).
+const deltaText = (delta: number, formatted: string, isRunningMonth: boolean) =>
+  delta === 0
+    ? isRunningMonth
+      ? "как за те же дни прошлого месяца"
+      : "как в прошлом месяце"
+    : `${formatted} ${isRunningMonth ? "к тем же дням прошлого месяца" : "к прошлому месяцу"}`;
 
 export const PurchasesWorkspace = ({
   appliedSearch,
@@ -257,6 +262,7 @@ export const PurchasesWorkspace = ({
 }: PurchasesWorkspaceProps) => {
   const isReportDisabled =
     !monthValue || isLoading || isSendingReport || isDownloadingReport;
+  const isRunningMonth = monthValue === getAccountingMonthValue(new Date());
   // A month with zero prior activity has nothing meaningful to compare against.
   const hasPreviousData = Boolean(
     previousSummary &&
@@ -333,7 +339,11 @@ export const PurchasesWorkspace = ({
                 <b>{financialDataIncomplete ? "—" : summary.grossTotalLabel}</b>
                 <small>
                   {grossDelta !== null
-                    ? deltaText(grossDelta, formatMinorDelta(grossDelta, "pln"))
+                    ? deltaText(
+                        grossDelta,
+                        formatMinorDelta(grossDelta, "pln"),
+                        isRunningMonth,
+                      )
                     : "до комиссии · итог CSV"}
                 </small>
               </Metric>
@@ -347,7 +357,11 @@ export const PurchasesWorkspace = ({
                 <b>{financialDataIncomplete ? "—" : summary.netTotalLabel}</b>
                 <small>
                   {netDelta !== null
-                    ? deltaText(netDelta, formatMinorDelta(netDelta, "pln"))
+                    ? deltaText(
+                        netDelta,
+                        formatMinorDelta(netDelta, "pln"),
+                        isRunningMonth,
+                      )
                     : "на счёт"}
                 </small>
               </Metric>
@@ -366,6 +380,7 @@ export const PurchasesWorkspace = ({
                       ? deltaText(
                           countDelta,
                           `${countDelta > 0 ? "+" : "−"}${Math.abs(countDelta)}`,
+                          isRunningMonth,
                         )
                       : "подтверждены Stripe"}
                 </small>

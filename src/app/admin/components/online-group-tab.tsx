@@ -102,6 +102,7 @@ export const OnlineGroupTab = ({
       {section === "cohorts" && (
         <CohortsPanel
           cohorts={cohorts.cohorts}
+          failed={cohorts.failed}
           isClosing={cohorts.isClosing}
           loadedAt={cohorts.loadedAt}
           onClose={cohorts.close}
@@ -109,6 +110,7 @@ export const OnlineGroupTab = ({
             void settings.load();
             onProblemsChanged();
           }}
+          onReload={cohorts.load}
           onRetryPost={cohorts.retryPost}
           onSetPreviousChatRemoval={cohorts.setPreviousChatRemoval}
           onUnauthorized={onUnauthorized}

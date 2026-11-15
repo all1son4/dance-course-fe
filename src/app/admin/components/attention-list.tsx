@@ -93,6 +93,14 @@ export const AttentionList = ({
       { body: { cohortId: item.fix.cohortId }, method: "POST" },
     );
     setFixingId("");
+    if (result.unauthorized) {
+      toast({
+        tone: "warning",
+        title: "Сессия закончилась",
+        description: "Войди заново и повтори.",
+      });
+      return;
+    }
     if (result.ok && result.data.status === "sent") {
       toast({ tone: "success", title: "Пост опубликован" });
     } else {

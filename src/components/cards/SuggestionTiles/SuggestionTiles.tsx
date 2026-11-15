@@ -54,26 +54,17 @@ type TileRow = { index: number; keys: string[] };
 
 const SINGLE_COLUMN_QUERY = "(max-width: 360px)";
 /* The tap hint: after the grid has been in view this long without a tap it
-   appears once per visit (session storage), then fades away on its own or
-   on any tap. */
+   appears once per visit, then fades away on its own or on any tap. "Seen" lives in
+   memory, not in browser storage: the cookie policy lists every storage key, and a
+   visitor who declined cookies must not get one written (a reload may show it again). */
 const HINT_DELAY_MS = 2000;
 const HINT_VISIBLE_MS = 4000;
-const HINT_SEEN_KEY = "suggestion-tiles-hint-seen";
+let hintSeenThisVisit = false;
 
-const hasSeenHint = () => {
-  try {
-    return window.sessionStorage.getItem(HINT_SEEN_KEY) === "1";
-  } catch {
-    return false;
-  }
-};
+const hasSeenHint = () => hintSeenThisVisit;
 
 const rememberHint = () => {
-  try {
-    window.sessionStorage.setItem(HINT_SEEN_KEY, "1");
-  } catch {
-    // Storage blocked: the hint may show again on another page; harmless.
-  }
+  hintSeenThisVisit = true;
 };
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 /* Matches OPEN_MS / EASE in the styles. */

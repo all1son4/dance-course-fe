@@ -8,3 +8,4 @@ package-lock.json
 pnpm-lock.yaml
 yarn.lock
 src/styles/vendor/plyr.css
+.claude

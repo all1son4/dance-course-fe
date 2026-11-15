@@ -1,4 +1,4 @@
-import { and, eq, isNull, ne } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import type { HubPredecessorCohort } from "./hub-period-predecessor";
 import { accessEntitlements, onlineGroupCohorts } from "./schema";
@@ -11,9 +11,11 @@ type CohortRow = Pick<
 
 /**
  * Adds what HUB-D26 needs to an Online predecessor's cohort: the next cohort's start
- * and whether the predecessor purchase still holds an unrevoked legacy Plus Hub right.
- * Every place that builds an Online predecessor must use it, because each new period
- * revalidates the whole chain with the same end.
+ * and whether the predecessor purchase came with a legacy Plus Hub right. That is a
+ * fact of the purchase, not of the right's current state: the cron later revokes the
+ * right ("expired", "left_channel"), and every new period revalidates the whole chain
+ * with the same end — a state-based answer would break an early renewal months later.
+ * Every place that builds an Online predecessor must use it.
  */
 export async function loadHubPredecessorCohort(
   tx: DatabaseTransaction,
@@ -31,10 +33,9 @@ export async function loadHubPredecessorCohort(
         eq(accessEntitlements.purchaseId, purchaseId),
         eq(accessEntitlements.accessKey, "inspiration-hub"),
         isNull(accessEntitlements.sourceKind),
-        isNull(accessEntitlements.revokedAt),
-        ne(accessEntitlements.status, "revoked"),
       ),
-    );
+    )
+    .limit(1);
 
   return {
     id: cohort.id,

@@ -141,7 +141,14 @@ export const deliverPurchaseAlertFromOutbox = async ({
   // race the email/access job whose statuses it renders. While that job is
   // still running, back off so the outbox redelivers the alert once the
   // state is final.
-  if (isEmailDeliveryInFlight(handledEvent.paymentRecord)) {
+  // A retryable email failure is still on its way (it usually goes out on the next
+  // attempt seconds later); only a dead-lettered one is reported as "не отправлено".
+  if (
+    isEmailDeliveryInFlight(handledEvent.paymentRecord) ||
+    (purchaseId !== null &&
+      (await findPurchaseOutboxJobState(purchaseId, "purchase_success_email"))?.status ===
+        "failed")
+  ) {
     throw new Error("purchase_alert_waiting_for_email_delivery");
   }
 

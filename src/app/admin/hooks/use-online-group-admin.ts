@@ -19,7 +19,7 @@ import type {
   TelegramChatOption,
   TelegramChatsResponse,
 } from "../lib/admin.types";
-import { formatDateTimeInput } from "../lib/admin.utils";
+import { formatDateTimeInput, parseWarsawDateTimeInput } from "../lib/admin.utils";
 import { ADMIN_NETWORK_ERROR_CODE, requestAdminJson } from "../lib/admin-request";
 
 type UseOnlineGroupAdminOptions = {
@@ -246,9 +246,17 @@ export const useOnlineGroupAdmin = ({
     setIsLoading(false);
   }, [onUnauthorized]);
 
+  // «Отменить» drops the edits: a later «Изменить» starts from the saved stream again.
   const toggleForm = useCallback(() => {
-    setIsFormOpen((currentValue) => !currentValue);
-  }, []);
+    if (isFormOpen && activeCampaign) {
+      setMainChatId(activeCampaign.mainChatId);
+      setLibraryChatId(activeCampaign.inspirationChatId);
+      setStartsAt(formatDateTimeInput(activeCampaign.startsAt));
+      setTitle(activeCampaign.title);
+      setStatus(null);
+    }
+    setIsFormOpen(!isFormOpen);
+  }, [activeCampaign, isFormOpen]);
 
   const changeMainChat = useCallback((value: string) => {
     setMainChatId(value);
@@ -491,7 +499,7 @@ export const useOnlineGroupAdmin = ({
         body: {
           inspirationChatId: libraryChatId,
           mainChatId,
-          startsAt: new Date(startsAt).toISOString(),
+          startsAt: parseWarsawDateTimeInput(startsAt),
           title,
         },
         method: "POST",

@@ -29,7 +29,7 @@ export type AdminFeatureId =
 export type AdminFeatureGroup = "home" | "sales" | "products" | "more";
 export type GeneratorKind = "choreo" | "first-touch";
 export type LessonLanguage = "en" | "ru";
-export type LinkState = "active" | "used";
+export type LinkState = "active" | "expired" | "used";
 export type StatusTone = "error" | "info" | "success";
 export type AuthState = "authorized" | "checking" | "locked";
 

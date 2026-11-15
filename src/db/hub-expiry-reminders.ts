@@ -5,7 +5,7 @@ import type {
   HubReminderPlusRight,
 } from "@/lib/inspiration-hub/expiry-reminders";
 
-import { accessEntitlements, purchases } from "./schema";
+import { accessEntitlements, onlineGroupCohorts, purchases } from "./schema";
 import type { DatabaseExecutor } from "./transaction";
 
 /*
@@ -55,12 +55,17 @@ export async function listHubReminderPlusRights(
 
   const rows = await database
     .select({
+      cohortStartsAt: onlineGroupCohorts.startsAt,
       entitlementOwner: accessEntitlements.telegramUserId,
       expiresAt: accessEntitlements.expiresAt,
       purchaseOwner: purchases.telegramUserId,
     })
     .from(accessEntitlements)
     .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
+    .leftJoin(
+      onlineGroupCohorts,
+      eq(onlineGroupCohorts.id, purchases.onlineGroupCohortId),
+    )
     .where(
       and(
         eq(accessEntitlements.accessKey, "inspiration-hub"),
@@ -80,6 +85,14 @@ export async function listHubReminderPlusRights(
 
   return rows.flatMap((row) => {
     const owner = row.purchaseOwner ?? row.entitlementOwner;
-    return owner ? [{ expiresAt: row.expiresAt, telegramUserId: owner }] : [];
+    return owner
+      ? [
+          {
+            expiresAt: row.expiresAt,
+            startsAt: row.cohortStartsAt,
+            telegramUserId: owner,
+          },
+        ]
+      : [];
   });
 }

@@ -415,12 +415,28 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
     throw Object.assign(new Error("cohort_chat_message_invalid"), { retryable: false });
   }
 
-  const message = await sendTelegramMessage({
-    chatId,
-    disableWebPagePreview: true,
-    maxAttempts: 3,
-    text,
-  });
+  let message: Awaited<ReturnType<typeof sendTelegramMessage>>;
+  try {
+    message = await sendTelegramMessage({
+      chatId,
+      disableWebPagePreview: true,
+      maxAttempts: 3,
+      text,
+    });
+  } catch (error) {
+    // A timeout may mean Telegram posted it anyway; sendMessage has no idempotency
+    // key, so the queue must not post it again on its own (a second pinned post in
+    // the cohort chat). The admin sees the failure and «Повторить» decides.
+    const uncertain =
+      error instanceof TypeError ||
+      (error instanceof Error && error.name === "AbortError");
+    if (uncertain) {
+      throw Object.assign(new Error("cohort_chat_message_delivery_uncertain"), {
+        retryable: false,
+      });
+    }
+    throw error;
+  }
 
   if (job.payload.pin === true) {
     try {

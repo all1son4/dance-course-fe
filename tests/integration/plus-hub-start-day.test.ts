@@ -96,7 +96,11 @@ test("HUB-D43: a new Plus buyer outside the Hub gets the Hub invite on the start
     );
 
     // The cohort has started: the daily job lists the purchase and the invite is issued.
-    await client`UPDATE online_group_cohorts SET starts_at = now() - interval '1 hour'
+    // Start day reached: the cohort begins later today (Warsaw), the 03:00 UTC run of
+    // that morning already sends the invite — a few hours early, never a day late.
+    await client`UPDATE online_group_cohorts
+      SET starts_at = (date_trunc('day', now() AT TIME ZONE 'Europe/Warsaw')
+        + interval '23 hours 59 minutes') AT TIME ZONE 'Europe/Warsaw'
       WHERE id = ${cohort!.id}`;
     const due = await listStartedPlusHubsWithoutInvite(getDatabase(), {
       livemode: false,

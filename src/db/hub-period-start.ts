@@ -1,9 +1,10 @@
-import { and, eq, gt, inArray, isNotNull, isNull, lte, notExists, or } from "drizzle-orm";
+import { and, eq, gt, inArray, isNotNull, isNull, lt, notExists, or } from "drizzle-orm";
 
 import {
   ONLINE_GROUP_LIBRARY_OFFER_ID,
   ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
 } from "@/constants/sellable-products";
+import { getStartOfNextWarsawDay } from "@/lib/inspiration-hub/calendar";
 
 import {
   accessEntitlements,
@@ -45,7 +46,8 @@ export async function listStartedHubPeriodsWithoutInvite(
         eq(accessEntitlements.accessKey, "inspiration-hub"),
         eq(accessEntitlements.status, "pending"),
         isNull(accessEntitlements.revokedAt),
-        lte(accessEntitlements.startsAt, now),
+        // The whole start day counts (HUB-D37): the 03:00 UTC run sends it that morning.
+        lt(accessEntitlements.startsAt, getStartOfNextWarsawDay(now)),
         or(isNull(accessEntitlements.expiresAt), gt(accessEntitlements.expiresAt, now)),
         eq(purchases.outcome, "succeeded"),
         eq(purchases.livemode, livemode),
@@ -119,7 +121,7 @@ export async function listStartedPlusHubsWithoutInvite(
         eq(purchases.livemode, livemode),
         isNotNull(purchases.customerEmailSnapshot),
         isNotNull(purchases.inspirationChatIdSnapshot),
-        lte(onlineGroupCohorts.startsAt, now),
+        lt(onlineGroupCohorts.startsAt, getStartOfNextWarsawDay(now)),
         gt(onlineGroupCohorts.startsAt, windowStart),
         isNull(onlineGroupCohorts.closedAt),
         notExists(

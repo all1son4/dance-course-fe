@@ -200,9 +200,22 @@ export const getAdminPurchasesOverview = async ({
       ? { ...fullMonthRange, end: referenceDate }
       : fullMonthRange;
   const previousMonthValue = getPreviousAccountingMonthValue(monthValue);
-  const previousMonthRange = previousMonthValue
+  const fullPreviousMonthRange = previousMonthValue
     ? getAccountingMonthRange(previousMonthValue)
     : null;
+  // The current month is still running: compare it with the same days of the month
+  // before, not with the whole of it.
+  const sameMomentLastMonth = new Date(referenceDate);
+  sameMomentLastMonth.setMonth(sameMomentLastMonth.getMonth() - 1);
+  const previousMonthRange =
+    fullPreviousMonthRange && monthRange !== fullMonthRange
+      ? {
+          ...fullPreviousMonthRange,
+          end: new Date(
+            Math.min(fullPreviousMonthRange.end.getTime(), sameMomentLastMonth.getTime()),
+          ),
+        }
+      : fullPreviousMonthRange;
   const normalizedSearch = searchQuery.trim();
   const likePattern = normalizedSearch ? `%${escapeLikePattern(normalizedSearch)}%` : "";
 

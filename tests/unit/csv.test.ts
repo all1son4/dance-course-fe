@@ -37,3 +37,9 @@ test("does not alter text that is already safe or only contains formula characte
   assert.equal(escapeSpreadsheetCsvCell("Customer = active"), "Customer = active");
   assert.equal(escapeSpreadsheetCsvCell("'=1+1"), "'=1+1");
 });
+
+test("a formula after a semicolon is neutralised for semicolon-separated Excel", () => {
+  assert.equal(escapeSpreadsheetCsvCell("Anna;=1+1"), `"Anna;'=1+1"`);
+  assert.equal(escapeSpreadsheetCsvCell("Anna; -cmd"), `"Anna; '-cmd"`);
+  assert.equal(escapeSpreadsheetCsvCell("Anna;Kowalska"), `"Anna;Kowalska"`);
+});

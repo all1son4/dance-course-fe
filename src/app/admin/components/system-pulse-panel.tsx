@@ -6,7 +6,7 @@ import type { PulseSignal, SystemPulse } from "@/lib/admin/system-pulse";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import { requestAdminJson } from "../lib/admin-request";
 import { toneColors } from "../styles/tokens.styles";
-import { Muted, Panel, Skeleton } from "../ui/primitives";
+import { Callout, Muted, Panel, Skeleton } from "../ui/primitives";
 
 const REFRESH_MS = 60_000;
 
@@ -121,6 +121,12 @@ export const SystemPulsePanel = ({ onUnauthorized }: { onUnauthorized: () => voi
           : "Живые показатели оплат, очереди и Telegram-бота."
       }
     >
+      {pulse && failed && (
+        <Callout tone="warning" title="Пульс не обновился">
+          Показаны значения на {formatTime(pulse.generatedAt)}. Попробую снова через
+          минуту.
+        </Callout>
+      )}
       {pulse ? (
         <Grid>
           {pulse.signals.map((signal) => (

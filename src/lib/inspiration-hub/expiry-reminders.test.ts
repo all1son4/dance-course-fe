@@ -93,7 +93,7 @@ test("Plus that keeps the person in the Hub past the end stops the pitch", () =>
     planHubExpiryReminders({
       now,
       periods: [period()],
-      plusRights: [{ expiresAt: null, telegramUserId: "777" }],
+      plusRights: [{ expiresAt: null, startsAt: null, telegramUserId: "777" }],
     }),
     [],
   );
@@ -101,7 +101,13 @@ test("Plus that keeps the person in the Hub past the end stops the pitch", () =>
     planHubExpiryReminders({
       now,
       periods: [period()],
-      plusRights: [{ expiresAt: at("2027-01-01T23:00:00.000Z"), telegramUserId: "777" }],
+      plusRights: [
+        {
+          expiresAt: at("2027-01-01T23:00:00.000Z"),
+          startsAt: null,
+          telegramUserId: "777",
+        },
+      ],
     }).length,
     1,
   );
@@ -135,4 +141,28 @@ test("the reminder email names the end date, the renewal link and its price", ()
   });
   assert.equal(withOnline.subject, "Inspiration Hub: one week left");
   assert.match(withOnline.text, /Online Group cycle starts/u);
+});
+
+test("a Plus that starts after the Hub ends does not stop the reminder", () => {
+  const now = at("2027-01-02T04:00:00.000Z");
+  const laterPlus = {
+    expiresAt: null,
+    startsAt: at("2027-01-20T17:00:00.000Z"),
+    telegramUserId: "777",
+  };
+  const runningPlus = {
+    expiresAt: null,
+    startsAt: at("2026-12-01T17:00:00.000Z"),
+    telegramUserId: "777",
+  };
+
+  assert.equal(
+    planHubExpiryReminders({ now, periods: [period()], plusRights: [laterPlus] }).length,
+    1,
+  );
+  assert.equal(
+    planHubExpiryReminders({ now, periods: [period()], plusRights: [runningPlus] })
+      .length,
+    0,
+  );
 });

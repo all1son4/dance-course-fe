@@ -122,7 +122,9 @@ type TelegramJoinAccessContext = {
 const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
 const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
 const TELEGRAM_START_TOKEN_BYTES = 24;
-const TELEGRAM_TEMP_KICK_SECONDS = 60;
+// К15, as in online-group-access: a ban shorter than 30 seconds is permanent in
+// Telegram, and the call may retry for ~31 seconds; 90 keeps the kick temporary.
+const TELEGRAM_TEMP_KICK_SECONDS = 90;
 const pendingTelegramAccessLinkEnsures = new Map<
   string,
   Promise<TelegramAccessLinkResult>

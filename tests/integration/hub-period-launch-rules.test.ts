@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after, type TestContext } from "node:test";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -204,6 +204,43 @@ test("HUB-D26: an early renewal after such a continuation follows its end", asyn
     const renewal = await buyHub(tx, { paidAt: new Date("2026-12-20T10:00:00.000Z") });
 
     // The renewal revalidates the whole chain, cohort #2 included, with HUB-D26.
+    assert.deepEqual(continuation.startsAt, COHORT_3_STARTS);
+    assert.equal(renewal.startsAfterEntitlementId, continuation.id);
+    assert.deepEqual(renewal.startsAt, continuation.expiresAt);
+  });
+});
+
+test("HUB-D26: the renewal still follows the continuation after the cron revoked the #2 Plus Hub right", async () => {
+  await withTransaction(async (tx) => {
+    const cohortId = await insertCohort2Buyer(tx, true);
+    const continuation = await buyHub(tx, {
+      paidAt: CONTINUATION_PAID,
+      continuationCohortId: cohortId,
+    });
+    // 24 November: a newer legacy Hub binding (Plus #3) makes the cron revoke the #2 row.
+    await tx
+      .update(accessEntitlements)
+      .set({
+        revokedAt: new Date("2026-11-24T03:00:00.000Z"),
+        revokedReason: "expired",
+        status: "revoked",
+      })
+      .where(
+        and(
+          eq(accessEntitlements.accessKey, "inspiration-hub"),
+          isNull(accessEntitlements.sourceKind),
+          inArray(
+            accessEntitlements.purchaseId,
+            tx
+              .select({ id: purchases.id })
+              .from(purchases)
+              .where(eq(purchases.onlineGroupCohortId, cohortId)),
+          ),
+        ),
+      );
+
+    const renewal = await buyHub(tx, { paidAt: new Date("2027-01-10T10:00:00.000Z") });
+
     assert.deepEqual(continuation.startsAt, COHORT_3_STARTS);
     assert.equal(renewal.startsAfterEntitlementId, continuation.id);
     assert.deepEqual(renewal.startsAt, continuation.expiresAt);

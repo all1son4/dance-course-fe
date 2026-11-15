@@ -202,7 +202,15 @@ export const InviteLinkJournalCard = ({
           <JournalEntry key={`${entry.accessUrl}-${entry.createdAtIso}`}>
             <Row $justify="space-between" $gap={10} $wrap={false}>
               <strong>{entry.selectionLabel}</strong>
-              <Badge $tone={entry.linkState === "used" ? "neutral" : "success"}>
+              <Badge
+                $tone={
+                  entry.linkState === "active"
+                    ? "success"
+                    : entry.linkState === "expired"
+                      ? "warning"
+                      : "neutral"
+                }
+              >
                 {resolveLinkStateLabel(entry.linkState)}
               </Badge>
             </Row>

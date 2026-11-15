@@ -20,8 +20,10 @@ export default function TrackedContactCardLink({
 }: TrackedContactCardLinkProps) {
   return (
     <ContactCardLink
-      target="_blank"
-      rel="noopener noreferrer"
+      // tel:/mailto: open the dialer or mail app in place; a new tab stays empty.
+      {...(/^https?:/u.test(href)
+        ? { target: "_blank", rel: "noopener noreferrer" }
+        : {})}
       href={href}
       onClick={() => {
         void trackCtaClick(analytics, href);

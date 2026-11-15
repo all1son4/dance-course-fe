@@ -18,6 +18,7 @@ import type { AdminOverview } from "@/lib/admin/overview";
 import type { AdminFeatureId } from "../lib/admin.types";
 import {
   AdminButton,
+  Callout,
   EmptyState,
   PageHeader,
   Panel,
@@ -143,6 +144,12 @@ export const OverviewWorkspace = ({
           </AdminButton>
         }
       />
+
+      {failed && overview && (
+        <Callout tone="warning" title="Обзор не обновился">
+          Показаны данные прошлой загрузки. Нажми «Обновить» через минуту.
+        </Callout>
+      )}
 
       {failed && !overview && (
         <Panel>

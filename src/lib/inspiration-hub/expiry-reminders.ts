@@ -20,6 +20,8 @@ export type HubReminderPeriod = {
 export type HubReminderPlusRight = {
   telegramUserId: string;
   expiresAt: Date | null;
+  /** The Plus cohort's start: a Plus starting after the Hub ends does not cover it. */
+  startsAt: Date | null;
 };
 
 export type HubExpiryReminder = {
@@ -102,6 +104,7 @@ export const planHubExpiryReminders = ({
       plusRights.some(
         (right) =>
           right.telegramUserId === owner &&
+          (right.startsAt === null || right.startsAt <= endsAt) &&
           (right.expiresAt === null || right.expiresAt > endsAt),
       );
 

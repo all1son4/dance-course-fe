@@ -108,3 +108,12 @@ export const getStartOfNextWarsawDay = (date: Date): Date => {
 
   return toWarsawInstant(startOfDay + CALENDAR_DAY_MS);
 };
+
+/**
+ * HUB-D37/D43: an access that begins on a Warsaw calendar day gets its invite from the
+ * morning of that day (the daily cron runs at 03:00 UTC), even if it begins later in
+ * the day — a few early hours rather than a day late. True from 00:00 Warsaw of the
+ * start day on.
+ */
+export const isStartDayReached = (startsAt: Date, now: Date): boolean =>
+  startsAt.getTime() < getStartOfNextWarsawDay(now).getTime();

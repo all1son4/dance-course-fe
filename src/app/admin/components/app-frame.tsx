@@ -69,7 +69,11 @@ const SidebarRoot = styled.aside<{ $open: boolean }>`
     width: min(300px, 86vw);
     box-shadow: var(--a-shadow-lg);
     transform: translateX(${({ $open }) => ($open ? "0" : "-105%")});
-    transition: transform 200ms ease;
+    /* Closed, the panel leaves the tab order and screen readers once it has slid out. */
+    visibility: ${({ $open }) => ($open ? "visible" : "hidden")};
+    transition:
+      transform 200ms ease,
+      visibility 0s linear ${({ $open }) => ($open ? "0s" : "200ms")};
     padding-top: calc(14px + env(safe-area-inset-top));
 
     @media (prefers-reduced-motion: reduce) {
@@ -419,6 +423,9 @@ export const AdminFrame = ({
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const wasMenuOpen = useRef(false);
   const active = ADMIN_FEATURES.find((feature) => feature.id === activeId);
 
   useEffect(() => {
@@ -440,6 +447,16 @@ export const AdminFrame = ({
   useEffect(() => {
     if (mobileSearchOpen) searchRef.current?.focus();
   }, [mobileSearchOpen]);
+
+  // Phones: focus goes into the menu when it opens and back to its button when it closes.
+  useEffect(() => {
+    if (menuOpen) {
+      sidebarRef.current?.querySelector<HTMLElement>("nav button")?.focus();
+    } else if (wasMenuOpen.current) {
+      menuButtonRef.current?.focus();
+    }
+    wasMenuOpen.current = menuOpen;
+  }, [menuOpen]);
 
   const navigate = (id: AdminFeatureId) => {
     onNavigate(id);
@@ -466,7 +483,7 @@ export const AdminFrame = ({
   return (
     <Root>
       <Scrim $open={menuOpen} onClick={() => setMenuOpen(false)} aria-hidden />
-      <SidebarRoot $open={menuOpen} aria-label="Разделы админки">
+      <SidebarRoot ref={sidebarRef} $open={menuOpen} aria-label="Разделы админки">
         <Brand>
           <span data-mark aria-hidden>
             AS
@@ -539,6 +556,7 @@ export const AdminFrame = ({
         <Topbar>
           <MobileOnly>
             <IconButton
+              ref={menuButtonRef}
               type="button"
               aria-label="Открыть меню"
               aria-expanded={menuOpen}

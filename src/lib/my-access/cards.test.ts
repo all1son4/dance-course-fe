@@ -357,3 +357,38 @@ test("an unopened access whose emailed link expired sends the buyer to support",
   assert.equal(dead?.chip, "linkExpired");
   assert.equal(dead?.action?.key, "support");
 });
+
+test("§11: a closed Plus does not push a renewal on someone who already renewed", () => {
+  const closedCohort2 = {
+    accessEndsAt: new Date("2026-12-28T23:00:00.000Z"),
+    closedAt: new Date("2026-12-28T10:00:00.000Z"),
+    id: "c2",
+    startsAt: new Date("2026-10-05T16:00:00.000Z"),
+  };
+  const plus = purchase({
+    cohortId: "c2",
+    id: "p",
+    offerExternalId: PLUS_OFFER,
+    productExternalId: "x",
+  });
+  const plusRights = [
+    right({ purchaseId: "p" }),
+    right({ accessKey: "inspiration-hub", purchaseId: "p", sourceKind: "online_group" }),
+  ];
+
+  const alone = cardsOf({
+    cohorts: [closedCohort2],
+    purchases: [plus],
+    rights: plusRights,
+  });
+  const renewed = cardsOf({
+    cohorts: [closedCohort2],
+    purchases: [plus, purchase({ id: "h" })],
+    rights: [...plusRights, hubPeriod("h", null, null)],
+  });
+
+  assert.equal(alone[0]?.action?.key, "renewHub");
+  const plusHub = renewed.find((card) => card.id === "plus-hub:p");
+  assert.equal(plusHub?.action, undefined);
+  assert.deepEqual(plusHub?.note, { key: "hub.renewed" });
+});

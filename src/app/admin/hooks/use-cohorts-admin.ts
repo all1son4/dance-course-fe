@@ -45,20 +45,28 @@ export const useCohortsAdmin = ({
   const [isClosing, setIsClosing] = useState(false);
   const [retryingId, setRetryingId] = useState("");
   const [loadedAt, setLoadedAt] = useState(0);
+  const [failed, setFailed] = useState(false);
   const loaded = useRef(false);
+  // Close, retry and the switch all reload: only the latest answer may land.
+  const sequence = useRef(0);
 
   const load = useCallback(async () => {
+    const current = ++sequence.current;
     setIsLoading(true);
     const result = await requestAdminJson<{ cohorts: CohortOverview[] }>(
       ADMIN_API_ENDPOINTS.onlineGroupCohorts,
     );
+    if (current !== sequence.current) return;
     setIsLoading(false);
     if (result.unauthorized) return onUnauthorized();
-    if (result.ok) {
-      setCohorts(result.data.cohorts);
-      setLoadedAt(Date.now());
-      loaded.current = true;
+    if (!result.ok || !Array.isArray(result.data?.cohorts)) {
+      setFailed(true);
+      return;
     }
+    setFailed(false);
+    setCohorts(result.data.cohorts);
+    setLoadedAt(Date.now());
+    loaded.current = true;
   }, [onUnauthorized]);
 
   useEffect(() => {
@@ -124,6 +132,7 @@ export const useCohortsAdmin = ({
   return {
     close,
     cohorts,
+    failed,
     isClosing,
     isLoading,
     load,

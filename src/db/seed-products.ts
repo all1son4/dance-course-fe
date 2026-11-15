@@ -3,7 +3,7 @@ import postgres from "postgres";
 
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 
-import { getRequiredDatabaseUrlFromEnv } from "./env";
+import { getDatabaseEnvSelection, getRequiredDatabaseUrlFromEnv } from "./env";
 import { loadDatabaseEnvConfig } from "./load-env";
 import { offerPrices, productOffers, products } from "./schema";
 
@@ -119,6 +119,17 @@ const buildPriceUpdateValues = (amountMajor: number) => ({
 });
 
 const main = async () => {
+  // Prices are live the moment they are written: the target is named twice, like the
+  // other writing scripts (DB_SEED_CONFIRM=production DATABASE_ENV=production).
+  const database = getDatabaseEnvSelection("unpooled");
+  const confirmation = process.env.DB_SEED_CONFIRM?.trim() ?? "";
+
+  if (!database.variableName || confirmation !== database.deploymentEnvironment) {
+    throw new Error(
+      `DB_SEED_CONFIRM must equal ${database.deploymentEnvironment} (connection ${database.variableName ?? "missing"}).`,
+    );
+  }
+
   const client = postgres(
     getRequiredDatabaseUrlFromEnv({
       kind: "unpooled",

@@ -1,7 +1,10 @@
 import { getDatabaseClient } from "@/db/client";
 import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales";
-import { getAccountingMonthValue } from "@/lib/accounting-month";
+import {
+  getAccountingMonthValue,
+  getPreviousAccountingMonthValue,
+} from "@/lib/accounting-month";
 import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
 import { getCohortsOverview } from "@/lib/online-group/cohort-admin";
 import {
@@ -61,7 +64,6 @@ export const readSalesMetrics = async (now: Date) => {
       monthGross: string;
       monthCount: number;
       previousGross: string;
-      previousCount: number;
       weekCount: number;
     }[]
   >`
@@ -99,9 +101,6 @@ export const readSalesMetrics = async (now: Date) => {
           AND sale_at AT TIME ZONE 'Europe/Warsaw' < bounds.month_start
           AND sale_at <= ${now.toISOString()}::timestamptz - interval '1 month'), 0)::text AS "previousGross",
       count(*) FILTER (
-        WHERE sale_at AT TIME ZONE 'Europe/Warsaw' >= bounds.previous_start
-          AND sale_at AT TIME ZONE 'Europe/Warsaw' < bounds.month_start)::int AS "previousCount",
-      count(*) FILTER (
         WHERE sale_at > ${now.toISOString()}::timestamptz - interval '7 days'
           AND sale_at <= ${now.toISOString()}::timestamptz)::int AS "weekCount"
     FROM sales, bounds
@@ -133,9 +132,10 @@ export const readSalesMetrics = async (now: Date) => {
  */
 export async function getAdminOverview(now = new Date()) {
   const monthValue = getAccountingMonthValue(now);
-  const previousMonthValue = getAccountingMonthValue(
-    new Date(now.getTime() - 32 * DAY_MS),
-  );
+  // The calendar month before, not "32 days ago": that lands two months back on 1–4 March.
+  const previousMonthValue = monthValue
+    ? getPreviousAccountingMonthValue(monthValue)
+    : null;
   const [
     operations,
     cohorts,

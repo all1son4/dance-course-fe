@@ -21,6 +21,7 @@ import {
 } from "@/db/schema";
 import type { DatabaseExecutor, DatabaseTransaction } from "@/db/transaction";
 import { enqueueOutboxJobInTransaction } from "@/db/transactional-outbox";
+import { isStartDayReached } from "@/lib/inspiration-hub/calendar";
 import { previousChatRemovalKey } from "@/lib/online-group/previous-chat-removal-key";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -827,7 +828,7 @@ const ensureTargetAccess = async ({
   // Someone already in the Hub on another basis was answered "active" above.
   if (
     accessStartsAt !== undefined &&
-    (accessStartsAt === null || accessStartsAt.getTime() > now.getTime())
+    (accessStartsAt === null || !isStartDayReached(accessStartsAt, now))
   ) {
     return createAccessItem({
       accessExpiresAt,
@@ -965,7 +966,7 @@ const findPlusHubStart = async (purchase: OnlineGroupPurchase, now: Date) => {
     .where(eq(onlineGroupCohorts.id, purchase.onlineGroupCohortId))
     .limit(1);
 
-  return cohort && cohort.startsAt > now ? cohort.startsAt : undefined;
+  return cohort && !isStartDayReached(cohort.startsAt, now) ? cohort.startsAt : undefined;
 };
 
 const ensureOnlineGroupAccessForPaymentInternal = async (

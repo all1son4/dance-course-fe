@@ -131,8 +131,8 @@ const parseJwtPart = <T>(value: string): T => {
   return JSON.parse(decoded) as T;
 };
 
-const getTelegramJwks = async () => {
-  if (jwksCache && jwksCache.expiresAt > Date.now()) {
+const getTelegramJwks = async ({ refresh = false }: { refresh?: boolean } = {}) => {
+  if (!refresh && jwksCache && jwksCache.expiresAt > Date.now()) {
     return jwksCache.keys;
   }
 
@@ -223,10 +223,15 @@ export const verifyTelegramLoginIdToken = async (
   const [encodedHeader, encodedPayload, encodedSignature] = tokenParts;
   const header = parseJwtPart<{ alg?: string; kid?: string }>(encodedHeader);
   const claims = parseJwtPart<TelegramLoginClaims>(encodedPayload);
-  const keys = await getTelegramJwks();
-  const key = keys.find((candidate) =>
-    header.kid ? candidate.kid === header.kid : candidate.kty === "RSA",
-  );
+  const findKey = (keys: Awaited<ReturnType<typeof getTelegramJwks>>) =>
+    keys.find((candidate) =>
+      header.kid ? candidate.kid === header.kid : candidate.kty === "RSA",
+    );
+  // An unknown key id means Telegram rotated its keys since the cache was filled:
+  // fetch once more instead of refusing every login for up to an hour.
+  const key =
+    findKey(await getTelegramJwks()) ??
+    (header.kid ? findKey(await getTelegramJwks({ refresh: true })) : undefined);
 
   if (!key) {
     throw new Error("telegram_login_key_not_found");

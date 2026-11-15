@@ -227,7 +227,14 @@ const normalizeSiteOrigin = (value: string) => {
   }
 };
 
-const getFirstTouchCheckoutUrl = () => {
+// The locale segment sets the checkout language (the site keeps no prefix and turns
+// /pl/payment into /payment with a PL cookie); without it an EN or PL lead could land
+// on a checkout in another language.
+const getFirstTouchCheckoutUrl = (locale: string) => {
+  const normalizedLocale = locale.trim().toLowerCase().slice(0, 2);
+  const localeSegment = ["en", "pl", "ru"].includes(normalizedLocale)
+    ? `/${normalizedLocale}`
+    : "";
   const product = SELLABLE_PRODUCTS["first-touch"];
   const offer = getDefaultProductOffer(product);
   const checkoutHref = buildCheckoutHref({
@@ -235,7 +242,7 @@ const getFirstTouchCheckoutUrl = () => {
     productId: product.id,
   });
 
-  return `${normalizeSiteOrigin(SITE_HOME_URL)}${checkoutHref}`;
+  return `${normalizeSiteOrigin(SITE_HOME_URL)}${localeSegment}${checkoutHref}`;
 };
 
 const getFirstTouchEmailCopy = (locale: string) => {
@@ -314,7 +321,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
 
 const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadRecord) => {
   const copy = getFirstTouchEmailCopy(lead.locale);
-  const checkoutUrl = getFirstTouchCheckoutUrl();
+  const checkoutUrl = getFirstTouchCheckoutUrl(lead.locale);
   const safeCheckoutUrl = escapeHtml(checkoutUrl);
   const safeTitle = escapeHtml(copy.title);
   const safeIntro = escapeHtml(copy.intro);

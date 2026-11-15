@@ -29,8 +29,13 @@ const isRetryableTelegramHttpError = (
   data: TelegramApiResponse<unknown> | null,
 ) => status === 429 || status >= 500 || data?.error_code === 429;
 
-const isRetryableTelegramNetworkError = (error: unknown) =>
-  error instanceof TypeError || isAbortError(error);
+// A timed-out send or invite may have gone through: repeating it posts the message twice
+// (a second pinned closure post) or leaves an orphan invite. Only those two wait for 429.
+const NOT_REPEATED_AFTER_TIMEOUT = new Set(["createChatInviteLink", "sendMessage"]);
+
+const isRetryableTelegramNetworkError = (method: string, error: unknown) =>
+  error instanceof TypeError ||
+  (isAbortError(error) && !NOT_REPEATED_AFTER_TIMEOUT.has(method));
 
 // A member who already left the chat, or was never in it, cannot be kicked. Both
 // access subsystems treat that as a completed revocation rather than a failure.
@@ -147,7 +152,7 @@ const callTelegramApi = async <T>(
       throw new Error(`telegram_api_failed:${method}:${description}`);
     } catch (error) {
       const shouldRetry =
-        attempt < maxAttempts - 1 && isRetryableTelegramNetworkError(error);
+        attempt < maxAttempts - 1 && isRetryableTelegramNetworkError(method, error);
 
       if (shouldRetry) {
         await wait(
