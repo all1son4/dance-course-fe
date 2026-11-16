@@ -206,7 +206,10 @@ test("the grace reminder is queued on its day only, after a published post", asy
     const [job] = await client<{ payload: { text: string } }[]>`
       SELECT payload FROM purchase_side_effects
       WHERE deduplication_key = ${`cohort_grace_reminder:${cohortId}`}`;
-    assert.match(job?.payload.text ?? "", /^Завтра, .* последний день Inspiration Hub/u);
+    assert.match(
+      job?.payload.text ?? "",
+      /^Завтра, .* последний день библиотеки Inspiration\sHUB/u,
+    );
     assert.match(job?.payload.text ?? "", /Продлить Plus: .*rnw_plus_/u);
   });
 });

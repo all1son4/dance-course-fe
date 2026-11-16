@@ -1,9 +1,10 @@
 export const DEFAULT_SITE_HOME_URL = "https://annastrok.com";
 
-export const SUPPORT_TELEGRAM_URL = "https://t.me/annastroksupport";
-
 export const PERSONAL_TELEGRAM_HANDLE = "@annastrok_dance";
 export const PERSONAL_TELEGRAM_URL = "https://t.me/annastrok_dance";
+
+/** Support goes to Anna's own Telegram since 2026-11-16 (was @annastroksupport). */
+export const SUPPORT_TELEGRAM_URL = PERSONAL_TELEGRAM_URL;
 
 export const INSTAGRAM_PROFILE_HANDLE = "anna.strok_dance";
 export const INSTAGRAM_PROFILE_URL = "https://www.instagram.com/anna.strok_dance";

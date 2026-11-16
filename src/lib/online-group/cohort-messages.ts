@@ -49,16 +49,20 @@ const hubPrice = (offerId: string) => {
 
 const hubSpecialPrice = () => hubPrice(INSPIRATION_HUB_RENEWAL_OFFER_ID);
 
+const IH = "Inspiration HUB";
+
 const linkLines = (links: CohortRenewalLinks, { standard }: { standard: boolean }) =>
   [
     links.plus ? `Продлить Plus: ${links.plus}` : null,
     standard && links.standard ? `Продлить Standard: ${links.standard}` : null,
-    `Только Hub: ${links.hub}`,
+    `Только ${IH}: ${links.hub}`,
   ].filter((line): line is string => line !== null);
 
 /**
- * Section 8, text 2б (approved by the owner 2026-11-14): the bot's post in the closed
- * cohort's chat. The admin can still edit it in the closure window before it goes.
+ * Section 8, text 2б: the bot's post in the closed cohort's chat (copy reworked
+ * 2026-11-16: the Hub is «библиотека Inspiration HUB», never «хаб»; PLN first; the
+ * special price names its deadline). The admin can still edit it in the closure
+ * window before it goes.
  *
  * `plusHubEndsOn` is for a cohort whose Plus Hub keeps the old model (HUB-D26: it lasts
  * until the next cohort starts, not 7 days after closure); otherwise the date follows
@@ -90,7 +94,7 @@ export const buildCohortClosurePost = ({
     ...(links.plus
       ? [
           "",
-          "Онлайн-группа Plus — занятия нового потока и Inspiration Hub.",
+          `Онлайн-группа Plus — занятия нового потока и библиотека ${IH}.`,
           `Продлить: ${links.plus}`,
         ]
       : []),
@@ -102,25 +106,26 @@ export const buildCohortClosurePost = ({
         ]
       : []),
     "",
-    `Только Inspiration Hub — уроки прошлых потоков и материалы без занятий в группе. 8 недель${special ? ` за ${special}` : ""}.`,
+    `Только ${IH} — библиотека уроков прошлых потоков и материалов, без занятий в группе. 8 недель${special ? ` за ${special}${full ? ` вместо ${full}` : ""}` : ""}.`,
     `Оформить: ${links.hub}`,
     "",
-    "Про Inspiration Hub",
-    `• Если у тебя был Plus, Hub открыт до ${hubLastDay} включительно. Чтобы остаться в нём, продли Plus или возьми только Hub до этой даты.`,
-    "• Возьмёшь только Hub сейчас — оплаченные 8 недель начнутся сразу, как закончится твой доступ от Plus. Ни один день не пропадёт.",
-    "• Если у тебя был Standard, 8 недель Hub начинаются сразу после оплаты.",
+    `Про ${IH}`,
     ...(special && full
-      ? [`• Цена ${special} действует до ${priceLastDay} включительно, потом — ${full}.`]
+      ? [
+          `• Специальная цена ${special} действует до ${priceLastDay} включительно. Потом — ${full}.`,
+        ]
       : []),
+    `• Если у тебя был Plus, библиотека открыта до ${hubLastDay} включительно. Оформишь ${IH} заранее — оплаченные 8 недель начнутся сразу, как закончится этот доступ, ни один день не пропадёт.`,
+    "• Если у тебя был Standard, 8 недель начнутся сразу после оплаты.",
     "",
     "Как оформить",
-    "По ссылке мы попросим подтвердить твой Telegram: так мы увидим, что ты из этого чата, и откроем цену продления. Это один шаг перед оплатой. Проверь, что в настройках Telegram у тебя указано имя пользователя (@username).",
+    "По ссылке мы попросим подтвердить твой Telegram: так мы увидим, что ты из этого чата, и откроем цену продления. Проверь, что в настройках Telegram у тебя указано имя пользователя (@username).",
     "",
     `Места в группе ограничены. Вопросы — ${SUPPORT_TELEGRAM_URL}`,
   ].join("\n");
 };
 
-/** Section 8, text 2a (draft, awaits Anna): the reminder on the day before the last day. */
+/** Section 8, text 2a: the reminder on the day before the Plus library's last day. */
 export const buildCohortGraceReminder = ({
   accessEndsAt,
   links,
@@ -129,10 +134,14 @@ export const buildCohortGraceReminder = ({
   accessEndsAt: Date;
   links: CohortRenewalLinks;
   nextCohortStartsAt: Date;
-}) =>
-  [
-    `Завтра, ${formatDay(getPlusHubLastDay(accessEndsAt))}, — последний день Inspiration Hub для тех, у кого был Plus в прошлом потоке.`,
-    `Продли Plus на поток, который стартует ${formatDay(nextCohortStartsAt)}, — и Hub останется с тобой. Или продли только Hub на 8 недель.`,
+}) => {
+  const lastDay = formatDay(getPlusHubLastDay(accessEndsAt));
+  const special = hubSpecialPrice();
+
+  return [
+    `Завтра, ${lastDay}, — последний день библиотеки ${IH} для тех, у кого был Plus в прошлом потоке.`,
+    `Продли Plus на поток, который стартует ${formatDay(nextCohortStartsAt)}, — и библиотека останется с тобой. Или оформи только ${IH} на 8 недель${special ? ` за ${special}` : ""}: эта цена действует до ${lastDay} включительно.`,
     "",
     ...linkLines(links, { standard: false }),
   ].join("\n");
+};

@@ -32,14 +32,18 @@ test("the closure post names the dates, both prices, all three links and support
 
   assert.match(post, /^Поток завершён — спасибо за эти недели вместе!/u);
   assert.match(post, /Новый поток стартует 1 февраля\./u);
-  assert.match(post, /Hub открыт до 24 января включительно/u);
-  assert.match(post, /8 недель за 155\sPLN \/ 35\s€\./u);
-  assert.match(post, /до 24 января включительно, потом — 200\sPLN \/ 45\s€\./u);
+  assert.match(post, /библиотека открыта до 24 января включительно/u);
+  assert.match(post, /8 недель за 155\sPLN \/ 35\s€ вместо 200\sPLN \/ 45\s€\./u);
+  assert.match(
+    post,
+    /Специальная цена 155\sPLN \/ 35\s€ действует до 24 января включительно\. Потом — 200\sPLN \/ 45\s€\./u,
+  );
   assert.match(post, /Онлайн-группа Plus[^\n]*\nПродлить: .*rnw_plus/u);
   assert.match(post, /Онлайн-группа Standard[^\n]*\nПродлить: .*rnw_standard/u);
   assert.match(post, /Оформить: .*renewal=inspiration-hub/u);
   assert.match(post, /@username/u);
-  assert.match(post, /Вопросы — https:\/\/t\.me\/annastroksupport$/u);
+  assert.match(post, /Вопросы — https:\/\/t\.me\/annastrok_dance$/u);
+  assert.doesNotMatch(post, /(?<![\p{L}])[Хх]аб|(?<![\p{L}])Hub(?![\p{L}])/u);
 });
 
 test("an old-model cohort names the next start as the Plus Hub's last day", () => {
@@ -50,7 +54,7 @@ test("an old-model cohort names the next start as the Plus Hub's last day", () =
     plusHubEndsOn: NEXT_START,
   });
 
-  assert.match(post, /Hub открыт до 1 февраля включительно/u);
+  assert.match(post, /библиотека открыта до 1 февраля включительно/u);
   // The special price still follows the closure.
   assert.match(post, /действует до 24 января включительно/u);
 });
@@ -75,5 +79,7 @@ test("the reminder speaks to Plus members and offers Plus and the Hub only", () 
   assert.match(reminder, /^Завтра, 24 января, — последний день/u);
   assert.match(reminder, /стартует 1 февраля/u);
   assert.doesNotMatch(reminder, /Standard/u);
-  assert.match(reminder, /Только Hub: /u);
+  assert.match(reminder, /Только Inspiration\sHUB: /u);
+  assert.match(reminder, /эта цена действует до 24 января включительно/u);
+  assert.doesNotMatch(reminder, /(?<![\p{L}])[Хх]аб/u);
 });
