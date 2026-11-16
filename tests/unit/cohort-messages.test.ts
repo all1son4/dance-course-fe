@@ -31,7 +31,8 @@ test("the closure post names the dates, every price, all three links and support
   });
 
   assert.match(post, /^The cycle is over — thank you for these weeks together!/u);
-  assert.match(post, /stays open until the new cycle starts on 1 February/u);
+  assert.match(post, /the chat itself stays until the new cycle starts/u);
+  assert.match(post, /The new cycle starts on 1 February\./u);
   assert.match(
     post,
     /Online Group Plus[^\n]*220\sPLN \/ 50\s€ instead of 280\sPLN \/ 65\s€\.\nRenew: .*rnw_plus/u,
@@ -43,9 +44,9 @@ test("the closure post names the dates, every price, all three links and support
   assert.match(post, /8 weeks for 155\sPLN \/ 35\s€ instead of 200\sPLN \/ 45\s€\./u);
   assert.match(
     post,
-    /The special price 155\sPLN \/ 35\s€ is valid until 24 January inclusive\. After that — 200\sPLN \/ 45\s€\./u,
+    /The price 155\sPLN \/ 35\s€ is valid until 24 January inclusive, then — 200\sPLN \/ 45\s€\./u,
   );
-  assert.match(post, /the library stays open until 24 January inclusive/u);
+  assert.match(post, /the library is open until 24 January inclusive/u);
   assert.match(post, /Get it: .*renewal=inspiration-hub/u);
   assert.match(post, /@username/u);
   assert.match(post, /Questions — https:\/\/t\.me\/annastrok_dance$/u);
@@ -60,7 +61,7 @@ test("an old-model cohort names the next start as the Plus library's last day", 
     plusHubEndsOn: NEXT_START,
   });
 
-  assert.match(post, /the library stays open until 1 February inclusive/u);
+  assert.match(post, /the library is open until 1 February inclusive/u);
   // The special price still follows the closure.
   assert.match(post, /is valid until 24 January inclusive/u);
 });

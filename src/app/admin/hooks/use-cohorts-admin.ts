@@ -18,6 +18,8 @@ export type CloseCohortResult = {
   alreadyClosed: boolean;
   continuations: { failures: { entitlementId: string; reason: string }[] };
   nextCohortSalesOpened: boolean;
+  /** The next cohort became the current one in «Настройки потока». */
+  campaignSwitch: "switched" | "not_needed" | "failed";
   postStatus: string | null;
 };
 

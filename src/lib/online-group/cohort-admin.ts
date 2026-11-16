@@ -10,6 +10,10 @@ import {
 import { getDatabase } from "@/db/client";
 import { closeOnlineGroupCohortInDatabase } from "@/db/cohort-closure";
 import {
+  getActiveOnlineGroupCampaign,
+  saveOnlineGroupSettings,
+} from "@/db/online-group-campaigns";
+import {
   accessEntitlements,
   onlineGroupCohorts,
   purchases,
@@ -305,6 +309,71 @@ const sendClosurePost = async ({
  * service, then publishes the post in the cohort chat if asked. A failed post never
  * undoes the closure: it stays in the queue for "Повторить".
  */
+/**
+ * Where a renewal link created now leads: the next cohort when the current one runs
+ * and its successor is recorded, so the links exist before the closure post that
+ * lists them; otherwise the current cohort, as before.
+ */
+export async function resolveRenewalTargetChatId(activeMainChatId: string) {
+  const db = getDatabase();
+  const [current] = await db
+    .select({ closedAt: onlineGroupCohorts.closedAt, id: onlineGroupCohorts.id })
+    .from(onlineGroupCohorts)
+    .where(eq(onlineGroupCohorts.mainChatId, activeMainChatId))
+    .limit(1);
+
+  if (!current || current.closedAt) return activeMainChatId;
+
+  const [next] = await db
+    .select({ mainChatId: onlineGroupCohorts.mainChatId })
+    .from(onlineGroupCohorts)
+    .where(
+      and(
+        eq(onlineGroupCohorts.previousCohortId, current.id),
+        isNull(onlineGroupCohorts.closedAt),
+      ),
+    )
+    .limit(1);
+
+  return next?.mainChatId ?? activeMainChatId;
+}
+
+/**
+ * After a closure the next cohort becomes the current one in «Настройки потока»:
+ * its renewal links turn payable and new Online sales go to it. Saving those
+ * settings also gives the legacy Plus Hub of the closed cohort its end, «until the
+ * next start». A failure leaves the closure done; the admin then saves by hand.
+ */
+async function switchCampaignToNextCohort(closed: { id: string; mainChatId: string }) {
+  try {
+    const active = await getActiveOnlineGroupCampaign();
+    if (!active || active.regularChatId !== closed.mainChatId)
+      return "not_needed" as const;
+
+    const [next] = await getDatabase()
+      .select({
+        mainChatId: onlineGroupCohorts.mainChatId,
+        startsAt: onlineGroupCohorts.startsAt,
+        title: onlineGroupCohorts.title,
+      })
+      .from(onlineGroupCohorts)
+      .where(eq(onlineGroupCohorts.previousCohortId, closed.id))
+      .limit(1);
+    if (!next) return "not_needed" as const;
+
+    await saveOnlineGroupSettings({
+      inspirationChatId: active.libraryChatId,
+      mainChatId: next.mainChatId,
+      startsAt: next.startsAt,
+      title: next.title,
+    });
+    return "switched" as const;
+  } catch (error) {
+    logSafeError("Failed to switch the Online Group settings to the next cohort", error);
+    return "failed" as const;
+  }
+}
+
 export async function closeCohortFromAdmin({
   cohortId,
   confirmationTitle,
@@ -325,6 +394,10 @@ export async function closeCohortFromAdmin({
     openNextCohortSales,
     closedAt: new Date(),
   });
+  // Before the post, so the renewal links it lists already open the payment.
+  const campaignSwitch = closure.alreadyClosed
+    ? ("not_needed" as const)
+    : await switchCampaignToNextCohort(closure.cohort);
   const postResult =
     post && !closure.alreadyClosed && post.text.trim()
       ? await sendClosurePost({
@@ -338,6 +411,7 @@ export async function closeCohortFromAdmin({
     alreadyClosed: closure.alreadyClosed,
     accessEndsAt: closure.cohort.accessEndsAt?.toISOString() ?? null,
     nextCohortSalesOpened: closure.nextCohortSalesOpened,
+    campaignSwitch,
     continuations: closure.continuations,
     postStatus: postResult?.status ?? null,
   };

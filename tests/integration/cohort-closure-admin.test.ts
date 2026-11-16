@@ -213,3 +213,30 @@ test("the grace reminder is queued on its day only, after a published post", asy
     assert.match(job?.payload.text ?? "", /Renew Plus: .*rnw_plus_/u);
   });
 });
+
+test("renewal links lead to the next cohort while the current one runs", async () => {
+  await withCohorts(async ({ cohortId, chatId, nextChatId }) => {
+    // Before the closure: a link created from the running cohort leads into the next.
+    assert.equal(await admin.resolveRenewalTargetChatId(chatId), nextChatId);
+
+    await client`UPDATE online_group_cohorts SET closed_at = now(), access_ends_at = now() + interval '1 day', lessons_cleared_at = now() WHERE id = ${cohortId}`;
+    // After it the next cohort is the current one, and links lead into it as before.
+    assert.equal(await admin.resolveRenewalTargetChatId(chatId), chatId);
+    assert.equal(await admin.resolveRenewalTargetChatId(nextChatId), nextChatId);
+  });
+});
+
+test("a closure without an active Online Group setup leaves the settings alone", async (t) => {
+  stubTelegram(t);
+  await withCohorts(async ({ cohortId }) => {
+    const result = await admin.closeCohortFromAdmin({
+      cohortId,
+      confirmationTitle: "Online Group 3.0",
+      lessonsCleared: true,
+      openNextCohortSales: true,
+      post: null,
+    });
+    assert.equal(result.alreadyClosed, false);
+    assert.equal(result.campaignSwitch, "not_needed");
+  });
+});
