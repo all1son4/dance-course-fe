@@ -13,14 +13,12 @@ import type { usePaymentStore } from "@/stores";
 import {
   PAYMENT_INPUTS,
   type PaymentAgreementFieldName,
-  type PaymentCustomerData,
   type PaymentCustomerFieldName,
   type PaymentInputConfig,
 } from "./payment.constants";
 
 export const PAYMENT_DRAFT_SAVE_DEBOUNCE_MS = 240;
 export const PAYMENT_INTENT_CREATION_DELAY_MS = 420;
-export const POST_VERIFICATION_FOCUS_DELAY_MS = 120;
 const LEGACY_NAVIGATION_TYPE_RELOAD = 1;
 export const TELEGRAM_USERNAME_PATTERN = /^@[A-Za-z0-9_]{1,32}$/;
 export const PAYMENT_API_ENDPOINTS = {
@@ -358,31 +356,66 @@ export const prefillRenewalCustomerProfile = (
   return hasPrefilledProfile;
 };
 
-export const focusNextCheckoutControl = ({
-  customerData,
-  inputs,
-}: {
-  customerData: PaymentCustomerData;
-  inputs: PaymentInputConfig[];
-}) => {
-  window.focus();
+/**
+ * What started a move through the checkout. Typing on (Enter, the keyboard's
+ * "Next") means the keyboard is already open, so focus may follow; a tap on a
+ * button must not pop the phone keyboard up by itself.
+ */
+export type CheckoutIntent = "keyboard" | "pointer" | "auto";
 
-  const nextField = inputs.find(
-    ({ name }) => name !== "nickname" && !customerData[name].trim(),
+/** A phone or tablet: focusing a text field there opens the keyboard and shifts the page. */
+export const isTouchPrimary = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia?.("(pointer: coarse)").matches === true;
+
+/** Focus may land in a field: the buyer is typing, or the device has no on-screen keyboard. */
+export const shouldMoveCheckoutFocus = (intent: CheckoutIntent) =>
+  intent === "keyboard" || !isTouchPrimary();
+
+/**
+ * Scrolls only when the element is not already comfortably in view: what the buyer
+ * can see stays where it is, so the page does not move under their thumb.
+ */
+export const bringIntoViewIfNeeded = (
+  element: HTMLElement,
+  block: "center" | "start",
+) => {
+  const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+  const { bottom, top } = element.getBoundingClientRect();
+  // Below the fixed header and the pinned purchase bar (the step's scroll margin).
+  const topEdge = Math.max(
+    Number.parseFloat(getComputedStyle(element).scrollMarginTop) || 0,
+    viewportHeight * 0.18,
   );
-  // Nothing left to fill: the step the buyer is moved to takes it from there.
-  const nextControl = nextField ? document.getElementById(nextField.id) : null;
+  const isComfortable =
+    block === "start"
+      ? top >= topEdge - 8 && top <= viewportHeight * 0.5
+      : top >= topEdge && bottom <= viewportHeight - 24;
 
-  if (
-    nextControl instanceof HTMLInputElement ||
-    nextControl instanceof HTMLSelectElement
-  ) {
-    nextControl.focus({ preventScroll: true });
-    nextControl.scrollIntoView({
+  if (!isComfortable) {
+    element.scrollIntoView({
       behavior: prefersReducedMotion() ? "auto" : "smooth",
-      block: "center",
+      block,
     });
   }
+};
+
+/**
+ * Points the buyer at a field: focus when it will not surprise them, otherwise just
+ * makes sure it is in view (its message is already on screen next to it).
+ */
+export const pointCheckoutField = (fieldId: string, intent: CheckoutIntent) => {
+  const field = document.getElementById(fieldId);
+
+  if (!field) {
+    return;
+  }
+
+  if (shouldMoveCheckoutFocus(intent)) {
+    field.focus({ preventScroll: true });
+  }
+
+  bringIntoViewIfNeeded(field, "center");
 };
 
 /** Check the requested IDs before showing the store's fallback selection. */

@@ -185,6 +185,11 @@ export const StepSection = styled.section<{ $isOpen: boolean }>`
   /* A step brought into view lands below the fixed header, not under it. */
   scroll-margin-top: calc(var(--header-clearance) + 12px);
 
+  /* Focused by script when a step opens on a phone; it is a landmark, not a control. */
+  &:focus {
+    outline: none;
+  }
+
   & + & {
     padding-top: 28px;
     border-top: 1px solid rgba(0, 0, 0, 0.09);
