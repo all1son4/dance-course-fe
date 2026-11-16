@@ -32,7 +32,7 @@ test("admin distinguishes an unavailable check from an expired session", async (
 
   sessionState = "authorized";
   await page.getByRole("button", { name: "Проверить сессию ещё раз" }).click();
-  await expect(page.getByText("Сессия подтверждена")).toBeVisible();
+  await expect(page.getByText("Вход выполнен")).toBeVisible();
 
   const checksBeforeReturn = authCheckCount;
 
@@ -114,12 +114,12 @@ test("admin keeps the shared-password flow and verifies an uncertain logout", as
 
   await page.getByLabel("Пароль", { exact: true }).fill("test-only-password");
   await page.getByRole("button", { name: "Войти" }).click();
-  await expect(page.getByText("Сессия подтверждена")).toBeVisible();
+  await expect(page.getByText("Вход выполнен")).toBeVisible();
 
   await page.getByRole("button", { name: "Выйти" }).click();
   await expect(
     page.getByText("Выход не завершён: сессия ещё активна.", { exact: false }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Выйти" }).click();
-  await expect(page.getByText("Вы вышли из админки.")).toBeVisible();
+  await expect(page.getByText("Выход выполнен.")).toBeVisible();
 });

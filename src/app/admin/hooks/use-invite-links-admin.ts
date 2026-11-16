@@ -118,7 +118,7 @@ export const useInviteLinksAdmin = ({
 
     setIsGenerating(true);
     setStatus({
-      text: "Генерирую invite-ссылку...",
+      text: "Создаю ссылку…",
       tone: "info",
     });
     setGeneratedLink("");

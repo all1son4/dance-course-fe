@@ -88,9 +88,12 @@ export const InviteLinkGeneratorCard = ({
   onSubmit,
   selectedChoreoKey,
 }: InviteLinkGeneratorCardProps) => (
-  <Panel title="Генератор доступа">
+  <Panel
+    title="Бесплатный доступ"
+    description="Доступ в Online Group и библиотеку для Plus — в разделе Online Group → «Ручной доступ»."
+  >
     <GeneratorForm onSubmit={onSubmit}>
-      <Field label="Что генерируем" htmlFor="generator-kind">
+      <Field label="К чему доступ" htmlFor="generator-kind">
         <Select
           id="generator-kind"
           name="generatorKind"
@@ -126,15 +129,15 @@ export const InviteLinkGeneratorCard = ({
       )}
 
       <Field
-        label="Идентификатор"
+        label="Для кого"
         htmlFor="admin-link-label"
-        hint="Видно только в журнале — чтобы понять, кому выдана ссылка."
+        hint="Имя, ник или почта — чтобы потом найти в журнале"
       >
         <Input
           id="admin-link-label"
           name="adminLinkLabel"
           value={adminLabel}
-          placeholder="Например: Аня / спец-оффер / блогер"
+          placeholder="Например: Аня или @anna"
           onChange={(event) => onAdminLabelChange(event.target.value)}
         />
       </Field>
@@ -147,7 +150,7 @@ export const InviteLinkGeneratorCard = ({
           disabled={isGenerateDisabled}
           loading={isGenerating}
         >
-          {isGenerating ? "Генерирую…" : "Сгенерировать ссылку"}
+          {isGenerating ? "Создаю…" : "Создать ссылку"}
         </AdminButton>
       </FormActions>
 
@@ -194,7 +197,7 @@ export const InviteLinkJournalCard = ({
       <EmptyState
         icon={<Link2 aria-hidden />}
         title="Ссылок пока нет"
-        text="Созданных администратором ссылок нет."
+        text="Здесь появятся ссылки, созданные в этом разделе."
       />
     ) : (
       <JournalList>
@@ -215,8 +218,8 @@ export const InviteLinkJournalCard = ({
               </Badge>
             </Row>
             <EntryMeta>
-              {entry.adminLabel || "Без идентификатора"} · создано{" "}
-              {formatDateTime(entry.createdAtIso)} · действует до{" "}
+              {entry.adminLabel || "Без имени"} · создано{" "}
+              {formatDateTime(entry.createdAtIso)} · войти по ссылке можно до{" "}
               {entry.tokenExpiresAt
                 ? formatDateTime(entry.tokenExpiresAt)
                 : "не определено"}

@@ -17,6 +17,7 @@ import {
   SalesNote,
 } from "../styles/catalog.styles";
 import type { AdminTone } from "../styles/tokens.styles";
+import { ConfirmDialog } from "../ui/feedback";
 import { Checkbox, StatusLine, Switch } from "../ui/forms";
 import {
   AdminButton,
@@ -47,6 +48,15 @@ const PRODUCT_TYPE_LABELS: Record<SalesProductEntry["type"], string> = {
   choreo: "Разбор",
   course: "Курс",
 };
+
+/** What a product is to Anna: the catalogue type alone calls the group and the library «курс». */
+const PRODUCT_KIND_BY_CODE: Record<string, string> = {
+  "inspiration-hub": "Библиотека",
+  "online-group-anna-strok": "Онлайн-группа",
+};
+
+const productKind = (product: SalesProductEntry) =>
+  PRODUCT_KIND_BY_CODE[product.code] ?? PRODUCT_TYPE_LABELS[product.type];
 
 // A product that needs an active cycle cannot be opened without one, but it can
 // always be closed - the switch never traps sales in the "on" position.
@@ -129,7 +139,7 @@ const SalesProductsTable = ({
               <td data-label="Продукт">
                 <span>
                   <CellPrimary>{product.title}</CellPrimary>
-                  <CellSecondary>{PRODUCT_TYPE_LABELS[product.type]}</CellSecondary>
+                  <CellSecondary>{productKind(product)}</CellSecondary>
                   {campaignMeta && <CellSecondary>{campaignMeta}</CellSecondary>}
                 </span>
               </td>
@@ -177,17 +187,17 @@ const SalesProductsTable = ({
                     )}
                   {product.missingLessonLanguages.length > 0 && (
                     <SalesHint>
-                      Настрой Telegram-каналы:{" "}
+                      Не подключены Telegram-каналы разбора (
                       {product.missingLessonLanguages
                         .map((language) => language.toUpperCase())
                         .join(", ")}
-                      .
+                      ). Их подключает разработчик.
                     </SalesHint>
                   )}
                   {isBlocked && !product.salesEnabled && (
                     <SalesHint>
-                      Запусти поток в разделе Online Group — без него оплату завершить
-                      нельзя.
+                      Нет текущего потока: оплату не завершить. Открой Online Group →
+                      «Потоки».
                     </SalesHint>
                   )}
                 </SalesControl>
@@ -236,9 +246,18 @@ export const SalesWorkspace = ({
     : undefined;
   const movedId = moved?.productId ?? "";
 
-  const switchProduct = (product: SalesProductEntry) => {
+  // Switching sales off stops purchases at once (for the Online Group also through
+  // renewal links), so it asks first; switching on does not.
+  const [closing, setClosing] = useState<SalesProductEntry | null>(null);
+
+  const applySwitch = (product: SalesProductEntry) => {
     setLastSwitched({ id: product.productId, wasOn: product.salesEnabled });
     void onToggle(product);
+  };
+
+  const switchProduct = (product: SalesProductEntry) => {
+    if (product.salesEnabled) setClosing(product);
+    else applySwitch(product);
   };
 
   const tableProps = {
@@ -251,7 +270,7 @@ export const SalesWorkspace = ({
 
   return (
     <Panel
-      title="Доступность продаж"
+      title="Что продаётся на сайте"
       description="Включённые продукты — сверху, выключенные свёрнуты ниже. Переключатель переносит продукт между группами."
       actions={
         <AdminButton
@@ -320,13 +339,29 @@ export const SalesWorkspace = ({
           // top of it would be a second, wrong explanation.
           <EmptyState
             icon={<Store aria-hidden />}
-            title="Каталог пуст"
-            text="Нечего показывать."
+            title="Продукты не загрузились"
+            text="Нажми «Обновить»; если снова пусто — напиши разработчику."
           />
         )}
 
         <StatusLine status={status} />
       </Stack>
+      <ConfirmDialog
+        open={closing !== null}
+        title={closing ? `Выключить продажи «${closing.title}»?` : ""}
+        description={
+          closing?.code === "online-group-anna-strok"
+            ? "Купить на сайте и по прямым ссылкам станет нельзя, ссылки продления тоже перестанут открывать оплату. Доступы прежних покупателей не изменятся."
+            : "Купить на сайте и по прямым ссылкам станет нельзя. Доступы прежних покупателей не изменятся."
+        }
+        confirmLabel="Выключить"
+        tone="danger"
+        onCancel={() => setClosing(null)}
+        onConfirm={() => {
+          if (closing) applySwitch(closing);
+          setClosing(null);
+        }}
+      />
     </Panel>
   );
 };

@@ -16,6 +16,7 @@ export const ADMIN_API_ENDPOINTS = {
   onlineGroupInviteLinks: "/admin/api/online-group-invite-links",
   onlineGroupSettings: "/admin/api/online-group-settings",
   onlineGroupCohorts: "/admin/api/online-group/cohorts",
+  onlineGroupNextCohort: "/admin/api/online-group/cohorts/next",
   onlineGroupCohortPostRetry: "/admin/api/online-group/cohorts/post-retry",
   operations: "/admin/api/operations",
   operationsReissueAccess: "/admin/api/operations/reissue-access",
@@ -77,7 +78,7 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   },
   "inspiration-hub": {
     description:
-      "Чат хаба, оплаченные периоды, проблемы с доступом и кого крон уберёт ночью.",
+      "Telegram-группа библиотеки, оплаченные доступы, проблемы с доступом и кого бот уберёт ночью.",
   },
   broadcasts: {
     description:
@@ -85,7 +86,7 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   },
   "invite-links": {
     description:
-      "Создай персональную одноразовую ссылку на курс и скопируй её из журнала, чтобы отправить.",
+      "Создай персональную одноразовую ссылку на курс или разбор и скопируй её из журнала, чтобы отправить.",
   },
   "online-group": {
     description: "Потоки, продажи Standard и Plus, ссылки продления и ручные доступы.",
@@ -96,7 +97,7 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   },
   purchases: {
     description:
-      "Продажи и покупатели: суммы за месяц, польские оплаты для внесения в фискальный терминал, поиск, переотправка письма и месячный отчет в CSV.",
+      "Продажи и покупатели: суммы за месяц, польские оплаты для внесения в кассу, поиск, повторная отправка письма и отчёт за месяц.",
   },
   sales: {
     description:

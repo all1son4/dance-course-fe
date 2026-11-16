@@ -47,7 +47,9 @@ export const BotRightsCheck = ({
       setError(
         result.errorCode === "rate_limited"
           ? "Слишком часто. Подожди минуту."
-          : "Telegram не ответил. Попробуй ещё раз.",
+          : result.errorCode === "telegram_chat_not_registered"
+            ? "Бот не знает этот чат: добавь бота и отправь в чате /register_chat."
+            : "Telegram не ответил. Попробуй ещё раз.",
       );
       return;
     }
@@ -84,6 +86,12 @@ export const BotRightsCheck = ({
             {flag.ok ? flag.yes : flag.no}
           </Badge>
         ))}
+      {rights && !allGood && (
+        <Muted>
+          Открой чат в Telegram → Управление → Администраторы → бот и включи: добавление
+          участников, блокировку{needsPin ? ", закрепление сообщений" : ""}.
+        </Muted>
+      )}
       {error && <Muted>{error}</Muted>}
     </Row>
   );

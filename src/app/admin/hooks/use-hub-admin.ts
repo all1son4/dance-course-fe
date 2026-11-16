@@ -7,6 +7,9 @@ import { requestAdminJson } from "../lib/admin-request";
 
 export type ReissuedLink = { accessUrl: string; label: string; tokenExpiresAt: string };
 
+/** What «Ссылка заново» ended with, for the message next to it. */
+export type ReissueOutcome = "failed" | "not_needed" | "ready" | "telegram_failed";
+
 export const useHubAdmin = ({
   isActive,
   isAuthorized,
@@ -59,7 +62,7 @@ export const useHubAdmin = ({
     void load(value);
   };
 
-  const reissue = async (paymentIntentId: string) => {
+  const reissue = async (paymentIntentId: string): Promise<ReissueOutcome> => {
     setReissuing(paymentIntentId);
     const result = await requestAdminJson<{ links?: ReissuedLink[]; status: string }>(
       ADMIN_API_ENDPOINTS.operationsReissueAccess,
@@ -68,14 +71,18 @@ export const useHubAdmin = ({
     setReissuing("");
     if (result.unauthorized) {
       onUnauthorized();
-      return false;
+      return "failed";
     }
-    if (!result.ok) return false;
+    if (!result.ok) return "failed";
+    // "no_links": the purchase needs a link but Telegram did not make one - a
+    // failure, not the "nothing to send" of "not_applicable".
+    if (result.data.status === "no_links") return "telegram_failed";
+    const links = result.data.links ?? [];
     setReissued((current) => ({
       ...current,
-      [paymentIntentId]: result.data.links?.length ? result.data.links : "none",
+      [paymentIntentId]: links.length ? links : "none",
     }));
-    return true;
+    return links.length ? "ready" : "not_needed";
   };
 
   return {

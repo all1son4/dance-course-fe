@@ -1,4 +1,5 @@
 import { CircleAlert, Download, Mail, RefreshCw, Search } from "lucide-react";
+import { useState } from "react";
 import styled from "styled-components";
 
 import { ACCOUNTING_TIME_ZONE, getAccountingMonthValue } from "@/lib/accounting-month";
@@ -16,6 +17,7 @@ import type {
 } from "../lib/admin.types";
 import { formatDateTime } from "../lib/admin.utils";
 import type { AdminTone } from "../styles/tokens.styles";
+import { ConfirmDialog } from "../ui/feedback";
 import { Checkbox, Input, Select, StatusLine } from "../ui/forms";
 import {
   AdminButton,
@@ -260,6 +262,7 @@ export const PurchasesWorkspace = ({
   summary,
   updatingTerminalPaymentIntentId,
 }: PurchasesWorkspaceProps) => {
+  const [resendCandidate, setResendCandidate] = useState<AdminPurchaseEntry | null>(null);
   const isReportDisabled =
     !monthValue || isLoading || isSendingReport || isDownloadingReport;
   const isRunningMonth = monthValue === getAccountingMonthValue(new Date());
@@ -303,7 +306,7 @@ export const PurchasesWorkspace = ({
     <Stack $gap={16}>
       <Panel
         title="Сводка за месяц"
-        description="Только подтверждённые продажи Stripe. Поступление, комиссия и сумма после комиссии совпадают с итогами CSV в PLN; исходная стоимость — в валюте покупателя. Бесплатные ссылки из админки не учитываются."
+        description="Только оплаты, подтверждённые Stripe. Суммы в злотых — как в отчёте; «Исходная стоимость» — сколько заплатил покупатель в своей валюте. Бесплатные доступы из админки не входят."
         actions={
           <>
             {months.length > 0 && (
@@ -335,7 +338,7 @@ export const PurchasesWorkspace = ({
           {summary ? (
             <Metrics>
               <Metric>
-                <span>Поступило в Stripe</span>
+                <span>Оплачено покупателями</span>
                 <b>{financialDataIncomplete ? "—" : summary.grossTotalLabel}</b>
                 <small>
                   {grossDelta !== null
@@ -344,7 +347,7 @@ export const PurchasesWorkspace = ({
                         formatMinorDelta(grossDelta, "pln"),
                         isRunningMonth,
                       )
-                    : "до комиссии · итог CSV"}
+                    : "до комиссии Stripe"}
                 </small>
               </Metric>
               <Metric>
@@ -368,7 +371,7 @@ export const PurchasesWorkspace = ({
               <Metric>
                 <span>Исходная стоимость</span>
                 <b>{originalAmountLabel}</b>
-                <small>до конвертации Stripe</small>
+                <small>в валюте покупателя</small>
               </Metric>
               <Metric>
                 <span>Продаж в отчёте</span>
@@ -386,9 +389,9 @@ export const PurchasesWorkspace = ({
                 </small>
               </Metric>
               <Metric>
-                <span>Неуспешных попыток</span>
+                <span>Не прошло оплат</span>
                 <b>{summary.failedAttempts}</b>
-                <small>отклонена или отменена</small>
+                <small>отказ банка или оплату бросили</small>
               </Metric>
             </Metrics>
           ) : (
@@ -401,9 +404,9 @@ export const PurchasesWorkspace = ({
 
           {summary && financialDataIncomplete && (
             <Callout tone="danger" icon={<CircleAlert aria-hidden />}>
-              Финансовые итоги скрыты: полный набор суммы, комиссии и нетто Stripe есть по{" "}
-              {summary.settledCount} из {summary.salesCount} продаж. CSV не сформируется,
-              пока данные не заполнятся.
+              Итоги пока скрыты: Stripe ещё не прислал комиссию по части продаж (готово{" "}
+              {summary.settledCount} из {summary.salesCount}). Отчёт можно будет скачать
+              позже.
             </Callout>
           )}
 
@@ -441,7 +444,7 @@ export const PurchasesWorkspace = ({
           )}
 
           <ReportBar>
-            <Muted>Отчёт за месяц — CSV по подтверждённым продажам.</Muted>
+            <Muted>Отчёт за месяц — таблица подтверждённых продаж.</Muted>
             <Row $gap={8}>
               <AdminButton
                 icon={<Download aria-hidden />}
@@ -606,7 +609,7 @@ export const PurchasesWorkspace = ({
                               icon={<Mail aria-hidden />}
                               disabled={Boolean(resendingPaymentIntentId)}
                               loading={isResending}
-                              onClick={() => void onResendEmail(purchase.paymentIntentId)}
+                              onClick={() => setResendCandidate(purchase)}
                             >
                               Письмо ещё раз
                             </AdminButton>
@@ -636,6 +639,19 @@ export const PurchasesWorkspace = ({
           )}
         </Stack>
       </Panel>
+
+      <ConfirmDialog
+        open={resendCandidate !== null}
+        title="Отправить письмо ещё раз?"
+        description={`Отправить письмо о покупке ещё раз на ${resendCandidate?.customerEmail || "почту покупателя"}?`}
+        confirmLabel="Отправить"
+        onCancel={() => setResendCandidate(null)}
+        onConfirm={() => {
+          const paymentIntentId = resendCandidate?.paymentIntentId ?? "";
+          setResendCandidate(null);
+          void onResendEmail(paymentIntentId);
+        }}
+      />
     </Stack>
   );
 };

@@ -1,4 +1,13 @@
-import { and, type AnyColumn, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
+import {
+  and,
+  type AnyColumn,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  notInArray,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
 import {
@@ -335,6 +344,17 @@ export const saveOnlineGroupCampaignInTransaction = async ({
     })
     .where(eq(onlineGroupCampaigns.status, "active"));
 
+  // Links into the current cohort stay, and so do links into its recorded successor:
+  // the transition creates them while the current cohort still runs, and an edit of
+  // the title or start here must not switch off links already sent to people.
+  const current = await findCohortByMainChat(tx, mainChatId);
+  const [successor] = current
+    ? await tx
+        .select({ mainChatId: onlineGroupCohorts.mainChatId })
+        .from(onlineGroupCohorts)
+        .where(eq(onlineGroupCohorts.previousCohortId, current.id))
+        .limit(1)
+    : [];
   await tx
     .update(renewalCampaigns)
     .set({
@@ -344,7 +364,10 @@ export const saveOnlineGroupCampaignInTransaction = async ({
     .where(
       and(
         eq(renewalCampaigns.status, "active"),
-        ne(renewalCampaigns.targetChatId, mainChatId),
+        notInArray(
+          renewalCampaigns.targetChatId,
+          successor ? [mainChatId, successor.mainChatId] : [mainChatId],
+        ),
       ),
     );
 

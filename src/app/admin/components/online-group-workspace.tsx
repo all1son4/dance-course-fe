@@ -1,5 +1,5 @@
 import { Pencil, X } from "lucide-react";
-import type { FormEvent } from "react";
+import { type FormEvent, useState } from "react";
 import styled from "styled-components";
 
 import { ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID } from "@/constants/sellable-products";
@@ -19,6 +19,7 @@ import {
   resolveOnlineGroupAccessTitle,
 } from "../lib/admin.utils";
 import { CopyField } from "../ui/copy";
+import { ConfirmDialog } from "../ui/feedback";
 import {
   Checkbox,
   Fact,
@@ -175,7 +176,7 @@ export const ActiveOnlineGroupCard = ({
           icon={isFormOpen ? <X aria-hidden /> : <Pencil aria-hidden />}
           onClick={onFormToggle}
         >
-          {isFormOpen ? "Отменить" : "Изменить"}
+          {isFormOpen ? "Отменить" : "Исправить название или дату"}
         </AdminButton>
       )
     }
@@ -187,8 +188,8 @@ export const ActiveOnlineGroupCard = ({
         <FactGrid>
           <Fact label="Поток" value={activeCampaign.title} />
           <Fact label="Старт" value={formatDateTime(activeCampaign.startsAt)} />
-          <Fact label="Основной чат" value={activeMainChatTitle} />
-          <Fact label="Inspiration Hub" value={inspirationChatTitle} />
+          <Fact label="Чат потока" value={activeMainChatTitle} />
+          <Fact label="Telegram-группа библиотеки" value={inspirationChatTitle} />
         </FactGrid>
       ) : (
         <Muted>Поток ещё не настроен — заполни форму ниже.</Muted>
@@ -197,11 +198,21 @@ export const ActiveOnlineGroupCard = ({
       {(isFormOpen || !activeCampaign) && (
         <Form onSubmit={onSubmit}>
           <FormGrid>
-            <Field label="Основной чат потока" htmlFor="og-main-chat">
+            <Field
+              label="Чат потока"
+              htmlFor="og-main-chat"
+              hint={
+                activeCampaign
+                  ? "Меняется сам, когда закрываешь поток в «Потоках»."
+                  : undefined
+              }
+            >
               <Select
                 id="og-main-chat"
                 value={mainChatId}
-                disabled={isLoading}
+                // The server refuses another chat for a running cohort: the closure
+                // moves it to the successor's chat (online_group_cohort_main_chat_fixed).
+                disabled={isLoading || Boolean(activeCampaign)}
                 onChange={(event) => onMainChatChange(event.target.value)}
               >
                 <option value="" disabled>
@@ -215,10 +226,14 @@ export const ActiveOnlineGroupCard = ({
               </Select>
             </Field>
             <Field
-              label="Чат Inspiration Hub"
+              label="Telegram-группа библиотеки"
               htmlFor="og-hub-chat"
               hint={
-                activeCampaign ? "Меняется только во вкладке Inspiration Hub." : undefined
+                activeCampaign
+                  ? "Выбрана один раз и не меняется."
+                  : mainChatId && mainChatId === libraryChatId
+                    ? "Чат потока и группа библиотеки должны отличаться."
+                    : undefined
               }
             >
               <Select
@@ -228,7 +243,7 @@ export const ActiveOnlineGroupCard = ({
                 onChange={(event) => onLibraryChatChange(event.target.value)}
               >
                 <option value="" disabled>
-                  Выбери чат хаба
+                  Выбери группу библиотеки
                 </option>
                 {telegramChatOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -245,7 +260,11 @@ export const ActiveOnlineGroupCard = ({
                 onChange={(event) => onStartsAtChange(event.target.value)}
               />
             </Field>
-            <Field label="Название потока" htmlFor="og-title">
+            <Field
+              label="Название потока"
+              htmlFor="og-title"
+              hint="Обязательно: его вводят при закрытии потока."
+            >
               <Input
                 id="og-title"
                 value={title}
@@ -285,6 +304,8 @@ type OnlineGroupInviteLinksCardProps = {
   onRefresh: () => void | Promise<void>;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   status: StatusMessage;
+  /** «Online Group 3.0» (чат «…»): where the access leads. */
+  target: string;
 };
 
 export const OnlineGroupInviteLinksCard = ({
@@ -298,11 +319,12 @@ export const OnlineGroupInviteLinksCard = ({
   onAdminLabelChange,
   onSubmit,
   status,
+  target,
 }: OnlineGroupInviteLinksCardProps) => (
   <Stack $gap={16}>
     <Panel
       title="Выдать доступ вручную"
-      description="Подарок или доступ без оплаты. Standard — основной чат, Plus — основной чат и Inspiration Hub."
+      description={`Доступ без оплаты в текущий поток${target ? ` ${target}` : ""}. Standard — чат потока, Plus — ещё и библиотека Inspiration Hub.`}
     >
       <Form onSubmit={onSubmit}>
         <FormGrid>
@@ -315,14 +337,14 @@ export const OnlineGroupInviteLinksCard = ({
                 onAccessModeChange(event.target.value as OnlineGroupAdminAccessMode)
               }
             >
-              <option value="standard">Standard — основной чат</option>
-              <option value="plus">Plus — основной чат и хаб</option>
+              <option value="standard">Standard — чат потока</option>
+              <option value="plus">Plus — чат потока и библиотека</option>
             </Select>
           </Field>
           <Field
             label="Для кого"
             htmlFor="og-grant-label"
-            hint="Видно только в админке, чтобы потом найти выдачу."
+            hint="Обязательно. Видно только в админке, чтобы потом найти выдачу."
           >
             <Input
               id="og-grant-label"
@@ -444,74 +466,93 @@ export const RenewalGeneratorCard = ({
   sourceChatIds,
   status,
   title,
-}: RenewalGeneratorCardProps) => (
-  <Panel
-    title="Создать ссылку продления"
-    description="Цена продления для тех, кто состоит в выбранных чатах. Сайт проверит членство в Telegram при оплате."
-  >
-    <Form onSubmit={onSubmit}>
-      <Field label="Кто сможет оплатить — люди из этих чатов">
-        {chats.length === 0 ? (
-          <Muted>Доступных чатов пока нет.</Muted>
-        ) : (
-          <ChatChoices>
-            {chats.map((chat) => (
-              <Checkbox
-                key={chat.chatId}
-                checked={sourceChatIds.includes(chat.chatId)}
-                disabled={isLoading}
-                label={chat.title}
-                onChange={(checked) => onSourceChatToggle(chat.chatId, checked)}
-              />
-            ))}
-          </ChatChoices>
-        )}
-      </Field>
-      <FormGrid>
-        <Field label="Тариф" htmlFor="renewal-offer">
-          <Select
-            id="renewal-offer"
-            value={offerId}
-            disabled={isLoading}
-            onChange={(event) => onOfferChange(event.target.value)}
-          >
-            <option value="" disabled>
-              Выбери тариф
-            </option>
-            {offerOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+}: RenewalGeneratorCardProps) => {
+  const [isReplaceConfirmOpen, setIsReplaceConfirmOpen] = useState(false);
+
+  return (
+    <Panel
+      title="Создать ссылку продления"
+      description="Цена продления для тех, кто состоит в выбранных чатах. Сайт проверит членство в Telegram при оплате."
+    >
+      <Form onSubmit={onSubmit}>
+        <Field label="Кто сможет оплатить — люди из этих чатов">
+          {chats.length === 0 ? (
+            <Muted>Доступных чатов пока нет.</Muted>
+          ) : (
+            <ChatChoices>
+              {chats.map((chat) => (
+                <Checkbox
+                  key={chat.chatId}
+                  checked={sourceChatIds.includes(chat.chatId)}
+                  disabled={isLoading}
+                  label={chat.title}
+                  onChange={(checked) => onSourceChatToggle(chat.chatId, checked)}
+                />
+              ))}
+            </ChatChoices>
+          )}
+        </Field>
+        <FormGrid>
+          <Field label="Тариф" htmlFor="renewal-offer">
+            <Select
+              id="renewal-offer"
+              value={offerId}
+              disabled={isLoading}
+              onChange={(event) => onOfferChange(event.target.value)}
+            >
+              <option value="" disabled>
+                Выбери тариф
               </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Название для админки" htmlFor="renewal-title">
-          <Input
-            id="renewal-title"
-            value={title}
-            placeholder="Например: поток 2 → поток 3"
-            onChange={(event) => onTitleChange(event.target.value)}
-          />
-        </Field>
-      </FormGrid>
-      <FormActions>
-        <AdminButton
-          type="submit"
-          variant="primary"
-          disabled={isDisabled}
-          loading={isGenerating}
-        >
-          Создать или показать
-        </AdminButton>
-        <AdminButton disabled={isDisabled || isGenerating} onClick={onRegenerate}>
-          Заменить ссылку новой
-        </AdminButton>
-      </FormActions>
-      <StatusLine status={status} />
-      {generatedLink && <CopyField label="Ссылка продления" value={generatedLink} />}
-    </Form>
-  </Panel>
-);
+              {offerOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Название для админки" htmlFor="renewal-title">
+            <Input
+              id="renewal-title"
+              value={title}
+              placeholder="Например: поток 2 → поток 3"
+              onChange={(event) => onTitleChange(event.target.value)}
+            />
+          </Field>
+        </FormGrid>
+        <FormActions>
+          <AdminButton
+            type="submit"
+            variant="primary"
+            disabled={isDisabled}
+            loading={isGenerating}
+          >
+            Создать или показать
+          </AdminButton>
+          <AdminButton
+            disabled={isDisabled || isGenerating}
+            onClick={() => setIsReplaceConfirmOpen(true)}
+          >
+            Заменить ссылку новой
+          </AdminButton>
+        </FormActions>
+        <StatusLine status={status} />
+        {generatedLink && <CopyField label="Ссылка продления" value={generatedLink} />}
+      </Form>
+      <ConfirmDialog
+        open={isReplaceConfirmOpen}
+        title="Заменить ссылку продления?"
+        description="Появится новый адрес, а старая ссылка перестанет открывать оплату. Её уже могли получить люди — им придётся отправить новую."
+        confirmLabel="Заменить"
+        tone="danger"
+        onCancel={() => setIsReplaceConfirmOpen(false)}
+        onConfirm={() => {
+          setIsReplaceConfirmOpen(false);
+          onRegenerate();
+        }}
+      />
+    </Panel>
+  );
+};
 
 type RenewalCampaignsCardProps = {
   campaigns: RenewalCampaignEntry[];
@@ -529,7 +570,10 @@ export const RenewalCampaignsCard = ({
     description="Выключенная ссылка перестаёт открывать оплату, включить её можно в любой момент."
   >
     {campaigns.length === 0 ? (
-      <EmptyState title="Ссылок продления пока нет" />
+      <EmptyState
+        title="Ссылок продления пока нет"
+        text="Создай их в «Потоки» → «Настроить переход»."
+      />
     ) : (
       <List>
         {campaigns.map((campaign) => {

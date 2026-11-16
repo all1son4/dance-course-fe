@@ -1,4 +1,4 @@
-import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { PERSONAL_TELEGRAM_HANDLE } from "@/constants/links";
 import {
   formatOfferPrice,
   INSPIRATION_HUB_ACCESS_OFFER_ID,
@@ -6,6 +6,7 @@ import {
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
 import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
+import type { PostButton } from "@/lib/telegram/post-markup";
 
 /** HUB-D24: the Hub of a Plus stays open this many Warsaw days after the cohort ends. */
 export const PLUS_HUB_GRACE_DAYS = 7;
@@ -58,24 +59,40 @@ const groupPrice = (code: string) => {
   return offer ? formatOfferPrice(offer.prices) : "";
 };
 
-/** «220 PLN / 50 € instead of 280 PLN / 65 €», or just the price when the other is unknown. */
+/**
+ * «*220 PLN / 50 €* instead of ~280 PLN / 65 €~» in the post markup (bold new price,
+ * struck regular one), or just the bold price when the other is unknown.
+ */
 const priceAgainst = (price: string, regular: string) =>
-  price && regular ? `${price} instead of ${regular}` : price;
+  price && regular ? `*${price}* instead of ~${regular}~` : price ? `*${price}*` : "";
 
-const IH = "Inspiration HUB";
+const IH = "Inspiration\u00a0HUB";
 
-const linkLines = (links: CohortRenewalLinks, { standard }: { standard: boolean }) =>
-  [
-    links.plus ? `Renew Plus: ${links.plus}` : null,
-    standard && links.standard ? `Renew Standard: ${links.standard}` : null,
-    `${IH} only: ${links.hub}`,
-  ].filter((line): line is string => line !== null);
+/** Each option has its own sign, the same in the text and on its button. */
+const SIGN = { hub: "📚", plus: "💎", standard: "💃" } as const;
 
 /**
- * Section 8, text 2б: the bot's post in the closed cohort's chat, in English (copy
- * reworked 2026-11-16: every option names its price against the regular one; the
- * Hub is «the Inspiration HUB library»; the chat stays until the next start). The
- * admin can still edit it in the closure window before it goes.
+ * The buttons under the closure post and the reminder: the payment links, one per
+ * row, instead of bare URLs in the text.
+ */
+export const cohortPostButtons = (
+  links: CohortRenewalLinks,
+  { standard }: { standard: boolean },
+): PostButton[] =>
+  [
+    links.plus ? { text: `${SIGN.plus} Renew Plus`, url: links.plus } : null,
+    standard && links.standard
+      ? { text: `${SIGN.standard} Renew Standard`, url: links.standard }
+      : null,
+    { text: `${SIGN.hub} ${IH} only`, url: links.hub },
+  ].filter((button): button is PostButton => button !== null);
+
+/**
+ * Section 8, text 2б: the bot's post in the closed cohort's chat, in English, in the
+ * post markup (`*bold*`, `~struck~`, `> ` quote; see post-markup.ts). Copy of
+ * 2026-11-16, laid out for Telegram the same day: prices bold against the struck
+ * regular price, a sign per option, the library notes as a quote, the payment links
+ * as buttons under the post. The admin can still edit it in the closure window.
  *
  * `plusHubEndsOn` is for a cohort whose Plus Hub keeps the old model (HUB-D26: it lasts
  * until the next cohort starts, not 7 days after closure); otherwise the date follows
@@ -104,58 +121,51 @@ export const buildCohortClosurePost = ({
   const standard = priceAgainst(groupPrice("renewal-discount"), groupPrice("standard"));
   const hub = priceAgainst(special, full);
 
-  // Anna's approved Russian text 2б, in English, with every option priced and the
-  // chat kept until the next start so there is time to decide.
   return [
-    "The cycle is over — thank you for these weeks together!",
+    "*The cycle is over — thank you for these weeks together!* 🤍",
     "",
     "We have removed the lessons from this chat, but the chat itself stays until the new cycle starts: you can still talk here and decide where to go next.",
     "",
-    "What's next",
-    `The new cycle starts on ${nextStart}. You are part of this cycle, so the renewal price applies to you. Choose what suits you:`,
+    "✨ *What's next*",
+    `The new cycle starts on *${nextStart}*. You are part of this cycle, so the renewal price applies to you. Choose what suits you:`,
     ...(links.plus
       ? [
           "",
-          `Online Group Plus — the classes of the new cycle and the ${IH} library.${plus ? ` ${plus}.` : ""}`,
-          `Renew: ${links.plus}`,
+          `${SIGN.plus} *Online Group Plus* — the classes of the new cycle and the ${IH} library.`,
+          ...(plus ? [plus] : []),
         ]
       : []),
     ...(links.standard
       ? [
           "",
-          `Online Group Standard — the classes of the new cycle.${standard ? ` ${standard}.` : ""}`,
-          `Renew: ${links.standard}`,
+          `${SIGN.standard} *Online Group Standard* — the classes of the new cycle.`,
+          ...(standard ? [standard] : []),
         ]
       : []),
     "",
-    `${IH} only — lessons from past cycles, including this one, and materials, without group classes. 8 weeks${hub ? ` for ${hub}` : ""}.`,
-    `Get it: ${links.hub}`,
+    `${SIGN.hub} *${IH} only* — lessons from past cycles, including this one, and materials, without group classes.`,
+    `8 weeks${hub ? ` for ${hub}` : ""}`,
     "",
-    `About ${IH}`,
-    `• If you had Plus, the library is open until ${hubLastDay} inclusive. To stay in it, renew Plus or get ${IH} alone before this date.`,
-    `• Get ${IH} alone now and your paid 8 weeks start right when your Plus access ends. Not a single day is lost.`,
-    "• If you had Standard, the 8 weeks start right after payment.",
+    `💡 *About ${IH}*`,
+    `> • If you had Plus, the library is open until *${hubLastDay}* inclusive. To stay in it, renew Plus or get ${IH} alone before this date.`,
+    `> • Get ${IH} alone now and your paid 8 weeks start right when your Plus access ends. Not a single day is lost.`,
+    "> • If you had Standard, the 8 weeks start right after payment.",
     ...(special && full
       ? [
-          `• The price ${special} is valid until ${priceLastDay} inclusive, then — ${full}.`,
+          `> • The price *${special}* is valid until *${priceLastDay}* inclusive, then — ${full}.`,
         ]
       : []),
     "",
-    "How to sign up",
-    "The link will ask you to confirm your Telegram: this is how we see you are from this chat and unlock the renewal price. It is one step before payment. Make sure your Telegram settings have a username (@username).",
-    "",
-    `Places in the group are limited. Questions — ${SUPPORT_TELEGRAM_URL}`,
+    `💬 Questions — ${PERSONAL_TELEGRAM_HANDLE}`,
   ].join("\n");
 };
 
 /** Section 8, text 2a: the reminder on the day before the Plus library's last day. */
 export const buildCohortGraceReminder = ({
   accessEndsAt,
-  links,
   nextCohortStartsAt,
 }: {
   accessEndsAt: Date;
-  links: CohortRenewalLinks;
   nextCohortStartsAt: Date;
 }) => {
   const lastDay = formatDay(getPlusHubLastDay(accessEndsAt));
@@ -166,9 +176,9 @@ export const buildCohortGraceReminder = ({
   const hub = priceAgainst(hubSpecialPrice(), hubPrice(INSPIRATION_HUB_ACCESS_OFFER_ID));
 
   return [
-    `Tomorrow, ${lastDay}, is the last day of the ${IH} library for those who had Plus in the previous cycle.`,
-    `Renew Plus for the cycle that starts on ${formatDay(nextCohortStartsAt)}${plus ? ` (${plus})` : ""} and the library stays with you. Or get ${IH} alone — 8 weeks${hub ? ` for ${hub}` : ""}; this price is valid until ${lastDay} inclusive.`,
+    `⏳ Tomorrow, *${lastDay}*, is the last day of the ${IH} library for those who had Plus in the previous cycle.`,
     "",
-    ...linkLines(links, { standard: false }),
+    `${SIGN.plus} Renew Plus for the cycle that starts on *${formatDay(nextCohortStartsAt)}*${plus ? ` (${plus})` : ""} and the library stays with you.`,
+    `${SIGN.hub} Or get ${IH} alone — 8 weeks${hub ? ` for ${hub}` : ""}; this price is valid until *${lastDay}* inclusive.`,
   ].join("\n");
 };

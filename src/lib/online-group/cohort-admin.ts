@@ -15,6 +15,7 @@ import {
 } from "@/db/online-group-campaigns";
 import {
   accessEntitlements,
+  inspirationHubSettings,
   onlineGroupCohorts,
   purchases,
   purchaseSideEffects,
@@ -36,10 +37,17 @@ import {
 import { logSafeError } from "@/lib/safe-error-log";
 import { normalizedSiteUrl } from "@/lib/seo";
 import { pinTelegramChatMessage, sendTelegramMessage } from "@/lib/telegram/bot-api";
+import {
+  type PostButton,
+  readPostButtons,
+  renderTelegramPostHtml,
+  toInlineKeyboard,
+} from "@/lib/telegram/post-markup";
 
 import {
   buildCohortClosurePost,
   buildCohortGraceReminder,
+  cohortPostButtons,
   type CohortRenewalLinks,
   getGraceReminderDay,
   getPlusHubLastDay,
@@ -268,6 +276,11 @@ export async function getCohortsOverview(now = new Date()) {
                 plusHubEndsOn: facts.legacyPlusHubRights > 0 ? next.startsAt : undefined,
               })
             : "",
+        // What the closure window shows under the draft: the same buttons go out.
+        postButtons:
+          next && links && !cohort.closedAt
+            ? cohortPostButtons(links, { standard: true })
+            : [],
         post: post
           ? {
               status: post.status,
@@ -280,6 +293,22 @@ export async function getCohortsOverview(now = new Date()) {
   );
 }
 
+/** The closure post's buttons: the links of the closed cohort to its successor. */
+const findClosurePostButtons = async (cohort: Cohort): Promise<PostButton[]> => {
+  const db = getDatabase();
+  const [next] = await db
+    .select({ mainChatId: onlineGroupCohorts.mainChatId })
+    .from(onlineGroupCohorts)
+    .where(eq(onlineGroupCohorts.previousCohortId, cohort.id))
+    .limit(1);
+  if (!next) return [];
+  const links = await findCohortRenewalLinks(db, {
+    cohortMainChatId: cohort.mainChatId,
+    nextMainChatId: next.mainChatId,
+  });
+  return cohortPostButtons(links, { standard: true });
+};
+
 const sendClosurePost = async ({
   cohort,
   pin,
@@ -290,10 +319,11 @@ const sendClosurePost = async ({
   text: string;
 }) => {
   const deduplicationKey = cohortClosurePostKey(cohort.id);
+  const buttons = await findClosurePostButtons(cohort);
   await enqueueOutboxJob({
     deduplicationKey,
     kind: "cohort_closure_post",
-    payload: { chatId: cohort.mainChatId, pin, text },
+    payload: { buttons, chatId: cohort.mainChatId, pin, text },
     provider: "telegram",
     recipient: cohort.mainChatId,
   });
@@ -471,11 +501,11 @@ export async function enqueueDueCohortGraceReminders(now = new Date()) {
       deduplicationKey: cohortGraceReminderKey(cohort.id),
       kind: "cohort_grace_reminder",
       payload: {
+        buttons: cohortPostButtons(links, { standard: false }),
         chatId: cohort.mainChatId,
         pin: false,
         text: buildCohortGraceReminder({
           accessEndsAt: cohort.accessEndsAt,
-          links,
           nextCohortStartsAt: nextCohort.startsAt,
         }),
       },
@@ -489,7 +519,10 @@ export async function enqueueDueCohortGraceReminders(now = new Date()) {
   return result;
 }
 
-/** Sends a cohort chat post of the queue; a failed pin is logged, not resent. */
+/**
+ * Sends a cohort chat post of the queue; a failed pin is logged, not resent. The text
+ * is in the post markup and goes out as HTML, the links as buttons under it.
+ */
 export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
   const chatId = typeof job.payload.chatId === "string" ? job.payload.chatId : "";
   const text = typeof job.payload.text === "string" ? job.payload.text : "";
@@ -503,7 +536,9 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
       chatId,
       disableWebPagePreview: true,
       maxAttempts: 3,
-      text,
+      parseMode: "HTML",
+      replyMarkup: toInlineKeyboard(readPostButtons(job.payload.buttons)),
+      text: renderTelegramPostHtml(text),
     });
   } catch (error) {
     // A timeout may mean Telegram posted it anyway; sendMessage has no idempotency
@@ -533,6 +568,93 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
 
 /** HUB-D44: the switch «Удалять из чата прошлого потока» of one cohort. */
 export const COHORT_DURATION_WEEKS = { max: 26, min: 1 } as const;
+
+/**
+ * «Завести следующий поток»: the record of the cohort that follows a running one.
+ * Sales stay closed until the running cohort is closed; the chat must be registered
+ * with /register_chat and belong to no other cohort and not be the library chat.
+ */
+export async function createNextCohortFromAdmin({
+  durationWeeks,
+  mainChatId,
+  previousCohortId,
+  startsAt,
+  title,
+}: {
+  durationWeeks: number;
+  mainChatId: string;
+  previousCohortId: string;
+  startsAt: Date;
+  title: string;
+}) {
+  const normalizedTitle = title.replace(/\s+/g, " ").trim();
+  const chatId = mainChatId.trim();
+
+  if (!normalizedTitle || !chatId || !Number.isFinite(startsAt.getTime())) {
+    throw new Error("next_cohort_incomplete");
+  }
+  if (
+    !Number.isInteger(durationWeeks) ||
+    durationWeeks < COHORT_DURATION_WEEKS.min ||
+    durationWeeks > COHORT_DURATION_WEEKS.max
+  ) {
+    throw new Error("cohort_duration_invalid");
+  }
+
+  const db = getDatabase();
+
+  return db.transaction(async (tx) => {
+    const [previous] = await tx
+      .select({ id: onlineGroupCohorts.id, startsAt: onlineGroupCohorts.startsAt })
+      .from(onlineGroupCohorts)
+      .where(eq(onlineGroupCohorts.id, previousCohortId))
+      .limit(1);
+    if (!previous) throw new Error("cohort_not_found");
+    if (startsAt.getTime() <= previous.startsAt.getTime()) {
+      throw new Error("next_cohort_starts_too_early");
+    }
+
+    const [successor] = await tx
+      .select({ id: onlineGroupCohorts.id })
+      .from(onlineGroupCohorts)
+      .where(eq(onlineGroupCohorts.previousCohortId, previous.id))
+      .limit(1);
+    if (successor) throw new Error("next_cohort_exists");
+
+    const [chat] = await tx
+      .select({ chatId: telegramChats.chatId, isActive: telegramChats.isActive })
+      .from(telegramChats)
+      .where(eq(telegramChats.chatId, chatId))
+      .limit(1);
+    if (!chat?.isActive) throw new Error("telegram_chat_not_registered");
+
+    const [library] = await tx
+      .select({ chatId: inspirationHubSettings.telegramChatId })
+      .from(inspirationHubSettings)
+      .limit(1);
+    if (library?.chatId === chatId) throw new Error("next_cohort_chat_is_library");
+
+    const [taken] = await tx
+      .select({ id: onlineGroupCohorts.id })
+      .from(onlineGroupCohorts)
+      .where(eq(onlineGroupCohorts.mainChatId, chatId))
+      .limit(1);
+    if (taken) throw new Error("next_cohort_chat_taken");
+
+    const [created] = await tx
+      .insert(onlineGroupCohorts)
+      .values({
+        durationWeeks,
+        mainChatId: chatId,
+        previousCohortId: previous.id,
+        startsAt,
+        title: normalizedTitle,
+      })
+      .returning({ id: onlineGroupCohorts.id });
+
+    return { id: created!.id };
+  });
+}
 
 /** HUB-D50: the planned length of a cohort, in weeks (the admin sets it). */
 export async function setCohortDurationWeeks({

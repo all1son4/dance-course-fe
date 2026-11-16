@@ -101,7 +101,8 @@ const telegramSignal = async (now: Date): Promise<PulseSignal> => {
         id: "telegram",
         label: "Telegram-бот",
         value: "Не подключён",
-        detail: "У бота нет адреса для обновлений: входы в чаты не обрабатываются.",
+        detail:
+          "Бот не получает сообщения из Telegram: входы в чаты не обрабатываются. Срочно напиши разработчику.",
         tone: "danger",
       };
     }
@@ -110,7 +111,8 @@ const telegramSignal = async (now: Date): Promise<PulseSignal> => {
         id: "telegram",
         label: "Telegram-бот",
         value: "Ошибки",
-        detail: `Последняя ${formatAgo(lastErrorAt, now)}: ${info.last_error_message ?? "без описания"}.`,
+        // Telegram's own error text is English and technical: only when and what to do.
+        detail: `Последняя ошибка — ${formatAgo(lastErrorAt, now)}. Входы в чаты могут не обрабатываться. Если повторяется — напиши разработчику.`,
         tone: "danger",
       };
     }
@@ -120,8 +122,8 @@ const telegramSignal = async (now: Date): Promise<PulseSignal> => {
       value: info.pending_update_count > 50 ? "Отстаёт" : "Работает",
       detail:
         info.pending_update_count > 0
-          ? `В очереди у Telegram: ${info.pending_update_count}.`
-          : `Обновления доходят до ${new URL(info.url).host}.`,
+          ? `Ждут обработки сообщений из Telegram: ${info.pending_update_count}.`
+          : "Бот работает, сообщения из Telegram доходят.",
       tone: info.pending_update_count > 50 ? "warning" : "success",
     };
   } catch {
@@ -157,7 +159,7 @@ export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
       id: "last-sale",
       label: "Последняя оплата",
       value: formatAgo(db.lastSaleAt && new Date(db.lastSaleAt), now),
-      detail: `Событие Stripe — ${formatAgo(db.lastStripeEventAt && new Date(db.lastStripeEventAt), now)}.`,
+      detail: `Последнее сообщение от Stripe — ${formatAgo(db.lastStripeEventAt && new Date(db.lastStripeEventAt), now)}.`,
       tone: "neutral",
     },
     {
@@ -166,8 +168,8 @@ export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
       value: stripeBacklog === 0 ? "Всё обработано" : String(stripeBacklog),
       detail:
         stripeBacklog === 0
-          ? "Каждое событие Stripe дошло до покупки."
-          : `Самое старое ждёт ${formatSeconds(stripeAgeMs)}.`,
+          ? "Все оплаты обработаны."
+          : `Дольше всех ждёт ${formatSeconds(stripeAgeMs)}.`,
       tone:
         stripeBacklog === 0
           ? "success"
@@ -205,11 +207,12 @@ export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
     {
       id: "queue",
       label: "Письма и Telegram",
-      value: queueBacklog === 0 ? "Очередь пуста" : `${queueBacklog} в очереди`,
+      value:
+        queueBacklog === 0 ? "Ничего не ждёт отправки" : `Ждут отправки: ${queueBacklog}`,
       detail:
         queueBacklog === 0
           ? `За сутки отправлено: ${db.sent24h}.`
-          : `Самая старая задача ждёт ${formatSeconds(queueAgeMs)}.`,
+          : `Дольше всех ждёт ${formatSeconds(queueAgeMs)}.`,
       tone:
         queueBacklog === 0
           ? "success"

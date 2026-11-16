@@ -165,7 +165,9 @@ export const BroadcastWorkspace = ({
                       <td data-label="Заявка">{formatDateTime(lead.createdAt)}</td>
                       <td data-label="Статус">
                         <Badge $tone={lead.status === "failed" ? "danger" : "info"}>
-                          {lead.status === "failed" ? "Ошибка — повторим" : "Ожидает"}
+                          {lead.status === "failed"
+                            ? "Не дошло — уйдёт при следующей отправке"
+                            : "Ожидает"}
                         </Badge>
                       </td>
                       <td data-label="Действия" data-actions>

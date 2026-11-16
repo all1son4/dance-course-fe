@@ -203,13 +203,13 @@ export const OverviewWorkspace = ({
             />
             <StatTile
               icon={<LibraryBig aria-hidden />}
-              label="Периодов хаба идёт"
+              label="Сейчас в библиотеке"
               value={metrics.hub.active}
               hint={
                 metrics.hub.endingSoon > 0
-                  ? `${metrics.hub.endingSoon} закончатся за 7 дней`
+                  ? `Доступ кончается за 7 дней: ${metrics.hub.endingSoon}`
                   : metrics.hub.scheduled > 0
-                    ? `${metrics.hub.scheduled} начнутся позже`
+                    ? `Начнут позже: ${metrics.hub.scheduled}`
                     : "Ничего не заканчивается на неделе"
               }
               hintTone={metrics.hub.endingSoon > 0 ? "warning" : undefined}
@@ -299,13 +299,13 @@ export const OverviewWorkspace = ({
                 icon={<Link2 aria-hidden />}
                 onClick={() => onNavigate("invite-links")}
               >
-                Выдать ссылку
+                Бесплатный доступ
               </AdminButton>
               <AdminButton
                 icon={<Store aria-hidden />}
                 onClick={() => onNavigate("sales")}
               >
-                Продажи вкл/выкл
+                Каталог
               </AdminButton>
               <AdminButton
                 icon={<Receipt aria-hidden />}

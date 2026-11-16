@@ -4,6 +4,8 @@ import test, { after, before } from "node:test";
 
 import postgres from "postgres";
 
+import { renderTelegramPostHtml } from "@/lib/telegram/post-markup";
+
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 const databaseUrl = getRequiredTestDatabaseUrl();
@@ -113,7 +115,12 @@ test("the closure window: overview, closure with a pinned post, next sales open"
     assert.equal(overview.next?.id, nextId);
     assert.match(overview.links?.plus ?? "", /renewal=rnw_plus_/u);
     assert.match(overview.links?.standard ?? "", /renewal=rnw_std_/u);
-    assert.match(overview.draftPost, /Online Group Plus[^\n]*\nRenew: .*rnw_plus_/u);
+    assert.match(overview.draftPost, /💎 \*Online Group Plus\*/u);
+    assert.deepEqual(
+      overview.postButtons.map((button) => button.text),
+      ["💎 Renew Plus", "💃 Renew Standard", "📚 Inspiration\u00a0HUB only"],
+    );
+    assert.match(overview.postButtons[0]?.url ?? "", /renewal=rnw_plus_/u);
     assert.equal(overview.post, null);
 
     await assert.rejects(
@@ -140,7 +147,15 @@ test("the closure window: overview, closure with a pinned post, next sales open"
     assert.equal(result.postStatus, "sent");
     const send = calls.find((call) => call.method === "sendMessage");
     assert.equal(send?.body.chat_id, chatId);
-    assert.equal(send?.body.text, overview.draftPost);
+    assert.equal(send?.body.text, renderTelegramPostHtml(overview.draftPost));
+    assert.equal(send?.body.parse_mode, "HTML");
+    const keyboard = send?.body.reply_markup as {
+      inline_keyboard: { text: string; url: string }[][];
+    };
+    assert.deepEqual(
+      keyboard.inline_keyboard.map(([button]) => button?.url),
+      overview.postButtons.map((button) => button.url),
+    );
     const pin = calls.find((call) => call.method === "pinChatMessage");
     assert.deepEqual([pin?.body.chat_id, pin?.body.message_id], [chatId, 4242]);
 
@@ -203,14 +218,20 @@ test("the grace reminder is queued on its day only, after a published post", asy
     assert.equal(none?.count, 0);
 
     await admin.enqueueDueCohortGraceReminders(reminderDay);
-    const [job] = await client<{ payload: { text: string } }[]>`
+    const [job] = await client<
+      { payload: { buttons: { text: string; url: string }[]; text: string } }[]
+    >`
       SELECT payload FROM purchase_side_effects
       WHERE deduplication_key = ${`cohort_grace_reminder:${cohortId}`}`;
     assert.match(
       job?.payload.text ?? "",
-      /^Tomorrow, .* is the last day of the Inspiration\sHUB library/u,
+      /^⏳ Tomorrow, .* is the last day of the Inspiration\sHUB library/u,
     );
-    assert.match(job?.payload.text ?? "", /Renew Plus: .*rnw_plus_/u);
+    assert.deepEqual(
+      job?.payload.buttons.map((button) => button.text),
+      ["💎 Renew Plus", "📚 Inspiration\u00a0HUB only"],
+    );
+    assert.match(job?.payload.buttons[0]?.url ?? "", /renewal=rnw_plus_/u);
   });
 });
 

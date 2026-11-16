@@ -11,10 +11,10 @@ import { useToast } from "../ui/feedback";
 import { AdminButton, Badge } from "../ui/primitives";
 
 const VIEW_LABELS: Record<AttentionItem["view"], string> = {
-  "inspiration-hub": "Хаб",
-  "online-group": "Поток",
+  "inspiration-hub": "Библиотека",
+  "online-group": "Online Group",
   operations: "Система",
-  purchases: "Касса",
+  purchases: "Покупки",
   sales: "Каталог",
 };
 
