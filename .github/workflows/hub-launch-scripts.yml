@@ -1,0 +1,131 @@
+name: Hub launch scripts
+run-name: Hub launch ${{ inputs.task }} @ ${{ github.ref_name }}
+
+# The production scripts of the Inspiration Hub launch (runbook А13), run from GitHub
+# because the owner's network may block the database port. Production only: the job
+# uses the Production environment, which requires the owner's approval and allows
+# only the main branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: What to run against production
+        required: true
+        type: choice
+        options:
+          - health
+          - transfer-dry-run
+          - transfer-write
+          - expiry-preview
+          - seed-catalog
+          - verify-catalog
+      at:
+        description: "expiry-preview only: the night to preview, e.g. 2026-11-24T03:00:00Z (empty = now)"
+        required: false
+        type: string
+        default: ""
+      confirmation:
+        description: Type run-<task> exactly, e.g. run-transfer-dry-run
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hub-launch-scripts
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Require main, the typed confirmation and a well-formed date
+        env:
+          AT: ${{ inputs.at }}
+          TASK: ${{ inputs.task }}
+          TYPED_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          # The full ref, so a tag named "main" cannot pass for the branch.
+          if [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            echo "::error::Production scripts run from branch main only."
+            exit 1
+          fi
+          if [ "${TYPED_CONFIRMATION}" != "run-${TASK}" ]; then
+            echo "::error::Type run-${TASK} exactly."
+            exit 1
+          fi
+          if [ -n "${AT}" ]; then
+            if [ "${TASK}" != "expiry-preview" ]; then
+              echo "::error::The date is only for expiry-preview."
+              exit 1
+            fi
+            if ! printf '%s' "${AT}" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{3})?Z$'; then
+              echo "::error::Write the date like 2026-11-24T03:00:00Z."
+              exit 1
+            fi
+          fi
+
+  run:
+    name: Run ${{ inputs.task }} on production
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: Production
+
+    env:
+      CI: true
+      HUSKY: "0"
+      DATABASE_ENV: production
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.18.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The database URL reaches only this step, not `npm ci`, whose dependency
+      # install scripts would otherwise see the production credential.
+      - name: Run the script
+        env:
+          AT: ${{ inputs.at }}
+          # The scripts accept only names scoped to production (…_PROD_…), so a bare
+          # DATABASE_URL can never point them at the wrong database.
+          DATABASE_PROD_DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          DATABASE_PROD_DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+          TASK: ${{ inputs.task }}
+        run: |
+          if [ -z "${DATABASE_PROD_DATABASE_URL_UNPOOLED}" ]; then
+            echo "::error::Add DATABASE_URL_UNPOOLED to the Production environment."
+            exit 1
+          fi
+          input="scripts/launch/hub-launch-transfer.prod.json"
+          case "${TASK}" in
+            health) npm run db:health ;;
+            transfer-dry-run) npm run db:hub:launch-transfer -- --input "${input}" ;;
+            transfer-write) npm run db:hub:launch-transfer -- --input "${input}" --write ;;
+            expiry-preview)
+              if [ -n "${AT}" ]; then
+                npm run db:hub:expiry-preview -- --at "${AT}"
+              else
+                npm run db:hub:expiry-preview
+              fi
+              ;;
+            seed-catalog) DB_SEED_CONFIRM=production npm run db:seed:products ;;
+            verify-catalog) npm run db:catalog:verify ;;
+            *) echo "::error::Unknown task ${TASK}"; exit 1 ;;
+          esac

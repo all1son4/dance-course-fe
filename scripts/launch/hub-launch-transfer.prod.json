@@ -1,0 +1,15 @@
+{
+  "cohort2": {
+    "title": "Online Group 2.0",
+    "mainChatId": "-1003922849512",
+    "startsAt": "2026-08-10T06:00:00.000Z",
+    "durationWeeks": 6
+  },
+  "cohort3": {
+    "title": "Online Group 3.0",
+    "mainChatId": "-1004349825268",
+    "startsAt": "2026-11-23T17:00:00.000Z",
+    "durationWeeks": 8
+  },
+  "hubChatId": "-1004423790392"
+}
