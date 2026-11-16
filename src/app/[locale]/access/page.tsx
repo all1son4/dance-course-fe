@@ -12,6 +12,10 @@ import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
 import { shouldNameOfferAtCheckout } from "@/lib/choreo-offer-presentation";
 import {
+  getMyAccessActionAnalytics,
+  getMyAccessAnalyticsProperties,
+} from "@/lib/my-access/analytics";
+import {
   buildMyAccessCards,
   type MyAccessCard,
   type MyAccessLine,
@@ -20,6 +24,7 @@ import { isMyAccessLinkConfigured, verifyMyAccessToken } from "@/lib/my-access/l
 import { OnlineGroup, OnlineInspiration, OnlineVideo } from "@/svg";
 
 import { getCompactSummaryTitle } from "../payment/payment.helpers";
+import AccessAnalytics from "./access-analytics";
 import {
   AccessCard,
   AccessHeading,
@@ -127,7 +132,12 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
 
   if (!snapshot) {
     return (
-      <AccessSection>
+      <AccessSection data-analytics-private>
+        <AccessAnalytics
+          properties={getMyAccessAnalyticsProperties(
+            rawToken ? "invalid_link" : "link_required",
+          )}
+        />
         <AccessPanel>
           <AccessHeading>
             <h1>{t("title")}</h1>
@@ -152,7 +162,13 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
   const cards = buildMyAccessCards(snapshot, now);
 
   return (
-    <AccessSection>
+    <AccessSection data-analytics-private>
+      <AccessAnalytics
+        properties={getMyAccessAnalyticsProperties(
+          cards.length ? "ready" : "empty",
+          cards,
+        )}
+      />
       <AccessPanel>
         <AccessHeading>
           <h1>{t("title")}</h1>
@@ -167,6 +183,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
               size="sm"
               variant="secondary"
               width="240px"
+              analytics={{ id: "my_access_browse_catalog", placement: "my_access_empty" }}
             />
           </EmptyState>
         ) : (
@@ -210,6 +227,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                       rel="nofollow"
                       size="sm"
                       width={card.action.key === "support" ? "240px" : "200px"}
+                      analytics={getMyAccessActionAnalytics(card)}
                       {...(card.action.key === "support"
                         ? { target: "_blank", variant: "secondary" as const }
                         : {})}
@@ -229,6 +247,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
             size="sm"
             variant="secondary"
             width="240px"
+            analytics={{ id: "my_access_contact_support", placement: "my_access_footer" }}
           />
         </HelpRow>
       </AccessPanel>

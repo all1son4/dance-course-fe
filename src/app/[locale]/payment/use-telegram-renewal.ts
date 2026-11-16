@@ -1,6 +1,12 @@
 import type { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 
+import { INSPIRATION_HUB_DISCOUNT_SLUG } from "@/constants/sellable-products";
+import {
+  type AnalyticsEventProperties,
+  trackAnalyticsEvent,
+} from "@/lib/mixpanel-analytics";
+
 import type { PaymentInputConfig } from "./payment.constants";
 import {
   canStartTelegramRenewalVerification,
@@ -29,6 +35,22 @@ type UseTelegramRenewalOptions = {
   renewalSlug: string;
   t: ReturnType<typeof useTranslations>;
 };
+
+const getVerificationProperties = (
+  paymentStore: PaymentStoreInstance,
+  renewalSlug: string,
+) => ({
+  currency: paymentStore.selectedCurrency,
+  is_renewal: true,
+  offer_code: paymentStore.selectedOffer.code,
+  offer_id: paymentStore.selectedOffer.id,
+  product_code: paymentStore.selectedProduct.code,
+  product_id: paymentStore.selectedProduct.id,
+  verification_kind:
+    renewalSlug === INSPIRATION_HUB_DISCOUNT_SLUG
+      ? ("hub_discount" as const)
+      : ("online_renewal" as const),
+});
 
 export const useTelegramRenewal = ({
   locale,
@@ -71,6 +93,7 @@ export const useTelegramRenewal = ({
     })
       .then(async (response) => {
         const data = (await response.json()) as RenewalCampaignResponse;
+        if (requestController.signal.aborted) return;
 
         if (!response.ok || data.status !== "ready" || !data.campaign) {
           throw new Error(data.errorCode ?? "renewal_campaign_load_failed");
@@ -97,9 +120,20 @@ export const useTelegramRenewal = ({
         setRenewalStatusText(
           data.verified ? t("renewal.status.verified") : t("renewal.status.ready"),
         );
+        void trackAnalyticsEvent("renewal_verification_loaded", {
+          ...getVerificationProperties(paymentStore, renewalSlug),
+          already_verified: Boolean(data.verified),
+        });
+        if (data.verified) {
+          void trackAnalyticsEvent("renewal_verification_result", {
+            ...getVerificationProperties(paymentStore, renewalSlug),
+            verification_stage: "restore",
+            result: "verified",
+          });
+        }
       })
       .catch((error) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (requestController.signal.aborted) {
           return;
         }
 
@@ -122,6 +156,11 @@ export const useTelegramRenewal = ({
         setRenewalStatus("error");
         setRenewalStatusText(t("renewal.status.loadFailed"));
         setIsRenewalUnavailable(isTerminalCampaignError);
+        void trackAnalyticsEvent("renewal_verification_result", {
+          ...getVerificationProperties(paymentStore, renewalSlug),
+          verification_stage: "load",
+          result: "error",
+        });
       });
 
     return () => {
@@ -157,6 +196,10 @@ export const useTelegramRenewal = ({
 
     setRenewalStatus("verifying");
     setRenewalStatusText(t("renewal.status.openingTelegram"));
+    const verificationProperties = getVerificationProperties(paymentStore, renewalSlug);
+    void trackAnalyticsEvent("renewal_verification_started", verificationProperties);
+    let verificationStage: AnalyticsEventProperties["renewal_verification_result"]["verification_stage"] =
+      "login";
 
     try {
       await loadTelegramLoginScript();
@@ -172,6 +215,7 @@ export const useTelegramRenewal = ({
       });
 
       setRenewalStatusText(t("renewal.status.checkingMembership"));
+      verificationStage = "membership";
 
       const { data, isSuccessful } = await verifyRenewalTelegramMembership({
         checkoutSessionId: paymentStore.checkoutSessionId,
@@ -188,6 +232,14 @@ export const useTelegramRenewal = ({
       if (verificationFailure?.kind === "status") {
         setRenewalStatus(verificationFailure.status);
         setRenewalStatusText(t(verificationFailure.messageKey));
+        void trackAnalyticsEvent("renewal_verification_result", {
+          ...verificationProperties,
+          verification_stage: verificationStage,
+          result:
+            verificationFailure.status === "not_member"
+              ? "not_member"
+              : "username_mismatch",
+        });
         return;
       }
 
@@ -196,6 +248,11 @@ export const useTelegramRenewal = ({
       }
 
       setRenewalStatus("verified");
+      void trackAnalyticsEvent("renewal_verification_result", {
+        ...verificationProperties,
+        verification_stage: verificationStage,
+        result: "verified",
+      });
       const hasPrefilledProfile = prefillRenewalCustomerProfile(
         paymentStore,
         data.customerProfile,
@@ -234,6 +291,11 @@ export const useTelegramRenewal = ({
     } catch {
       setRenewalStatus("error");
       setRenewalStatusText(t("renewal.status.failed"));
+      void trackAnalyticsEvent("renewal_verification_result", {
+        ...verificationProperties,
+        verification_stage: verificationStage,
+        result: "error",
+      });
     }
   };
 

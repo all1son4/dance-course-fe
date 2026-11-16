@@ -4,7 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent";
-import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import {
+  getPostPurchaseAccessAnalyticsProperties,
+  trackAnalyticsEvent,
+} from "@/lib/mixpanel-analytics";
 
 import { StatusCard, StatusMark, StatusSpinner, StatusText } from "../result-page.styles";
 import { AccessReadyAction } from "./success-entrance.styles";
@@ -108,76 +111,6 @@ const containsUnavailableAccess = (accesses: TelegramAccess[]): boolean =>
     (access) => access.status === "expired" || access.status === "unavailable",
   );
 
-const getAccessAnalyticsResult = ({
-  accesses,
-  accessUrl,
-  isContextValid,
-  statusKind,
-}: {
-  accesses: TelegramAccess[];
-  accessUrl: string;
-  isContextValid: boolean;
-  statusKind: AccessStatusKind;
-}) => {
-  if (!isContextValid) {
-    return {
-      active_access_count: 0,
-      ready_access_count: 0,
-      status: "invalid_context" as const,
-      unavailable_access_count: 0,
-    };
-  }
-
-  if (accessUrl) {
-    return {
-      active_access_count: 0,
-      ready_access_count: 1,
-      status: "ready" as const,
-      unavailable_access_count: 0,
-    };
-  }
-
-  if (accesses.length) {
-    // A paid period that starts later is as settled as an active one (HUB-D37).
-    const activeAccessCount = accesses.filter(
-      (access) => access.status === "active" || access.status === "scheduled",
-    ).length;
-    const readyAccessCount = accesses.filter(
-      (access) => access.status === "ready" && access.accessUrl,
-    ).length;
-    const unavailableAccessCount = accesses.filter(
-      (access) => access.status === "expired" || access.status === "unavailable",
-    ).length;
-    const hasAvailableAccess = activeAccessCount + readyAccessCount > 0;
-    const status =
-      unavailableAccessCount > 0 && hasAvailableAccess
-        ? ("partial" as const)
-        : readyAccessCount > 0
-          ? ("ready" as const)
-          : activeAccessCount > 0
-            ? ("already_active" as const)
-            : ("unavailable" as const);
-
-    return {
-      active_access_count: activeAccessCount,
-      ready_access_count: readyAccessCount,
-      status,
-      unavailable_access_count: unavailableAccessCount,
-    };
-  }
-
-  if (statusKind === "unavailable") {
-    return {
-      active_access_count: 0,
-      ready_access_count: 0,
-      status: "unavailable" as const,
-      unavailable_access_count: 0,
-    };
-  }
-
-  return null;
-};
-
 export default function TelegramAccessButton({
   accessNames,
   activeText,
@@ -206,7 +139,7 @@ export default function TelegramAccessButton({
   const trackedAccessResultsRef = useRef(new Set<string>());
   const accessAnalyticsResult = useMemo(
     () =>
-      getAccessAnalyticsResult({
+      getPostPurchaseAccessAnalyticsProperties({
         accesses,
         accessUrl,
         isContextValid,

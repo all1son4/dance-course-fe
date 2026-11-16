@@ -91,6 +91,19 @@ const hubPrice = (offerId: string) => {
   return offer ? formatOfferPrice(offer.prices) : "";
 };
 
+const withReminderAttribution = (
+  href: string,
+  kind: 7 | 3,
+  content: "renew_hub" | "online_group" | "my_access",
+) => {
+  const url = new URL(href, normalizedSiteUrl);
+  url.searchParams.set("utm_source", "inspiration_hub");
+  url.searchParams.set("utm_medium", "email");
+  url.searchParams.set("utm_campaign", `hub_expiry_${kind}d`);
+  url.searchParams.set("utm_content", content);
+  return url.toString();
+};
+
 export const buildHubExpiryReminderEmail = ({
   endsAt,
   kind,
@@ -108,8 +121,16 @@ export const buildHubExpiryReminderEmail = ({
   const resolvedLocale = resolveSellableProductsLocale(locale);
   const copy = COPY[resolvedLocale];
   const date = formatEmailDate(endsAt, locale);
-  const renewUrl = `${normalizedSiteUrl}/${resolvedLocale}/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`;
-  const onlineUrl = `${normalizedSiteUrl}/${resolvedLocale}/online/group`;
+  const renewUrl = withReminderAttribution(
+    `${normalizedSiteUrl}/${resolvedLocale}/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`,
+    kind,
+    "renew_hub",
+  );
+  const onlineUrl = withReminderAttribution(
+    `${normalizedSiteUrl}/${resolvedLocale}/online/group`,
+    kind,
+    "online_group",
+  );
   // The special price lasts as long as the Hub (its basis): the reminder names that deadline.
   const special = hubPrice(INSPIRATION_HUB_RENEWAL_OFFER_ID);
   const full = hubPrice(INSPIRATION_HUB_ACCESS_OFFER_ID);
@@ -117,7 +138,12 @@ export const buildHubExpiryReminderEmail = ({
   const online = onlineCohortStartsAt
     ? copy.online(formatEmailDate(onlineCohortStartsAt, locale))
     : "";
-  const myAccess = buildMyAccessEmailBlock({ locale, url: myAccessUrl });
+  const myAccess = buildMyAccessEmailBlock({
+    locale,
+    url: myAccessUrl
+      ? withReminderAttribution(myAccessUrl, kind, "my_access")
+      : myAccessUrl,
+  });
   const heading = copy.heading[kind];
 
   const text = [
