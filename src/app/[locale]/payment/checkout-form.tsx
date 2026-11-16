@@ -301,7 +301,8 @@ export type CheckoutFormProps = {
   /** Re-asks for the payment intent after a failure; absent when there is nothing to retry. */
   onRetryPaymentPreparation?: () => void;
   retryLabel: string;
-  onStepContinue: (stepId: PaymentStep) => void;
+  /** "keyboard" from Enter in the last field, "pointer" from the step's button. */
+  onStepContinue: (stepId: PaymentStep, intent: "keyboard" | "pointer") => void;
   onStepEdit: (stepId: PaymentStep) => void;
   stepCopy: { continue: string; edit: string };
   steps: CheckoutStepView[];
@@ -405,7 +406,7 @@ export const CheckoutForm = ({
       return;
     }
 
-    onStepContinue(openStep.id);
+    onStepContinue(openStep.id, "keyboard");
   };
 
   return (
@@ -419,6 +420,8 @@ export const CheckoutForm = ({
             key={step.id}
             aria-label={step.title}
             id={getCheckoutStepId(step.id)}
+            // Takes focus when a step opens without focusing a field (phones).
+            tabIndex={-1}
             $isOpen={step.isOpen}
           >
             <CheckoutStepHeader
@@ -486,7 +489,7 @@ export const CheckoutForm = ({
                             placement: "checkout",
                           }}
                           buttonText={stepCopy.continue}
-                          onClick={() => onStepContinue(step.id)}
+                          onClick={() => onStepContinue(step.id, "pointer")}
                           size="sm"
                           type="button"
                           width="fit-content"

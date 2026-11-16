@@ -92,7 +92,9 @@ import {
   type PaymentStep,
 } from "./payment.constants";
 import {
+  bringIntoViewIfNeeded,
   type CheckoutAgreement,
+  type CheckoutIntent,
   getCheckoutEnterKeyHint,
   getCheckoutSelectionFromSearch,
   getCompactSummaryTitle,
@@ -101,6 +103,8 @@ import {
   isReloadNavigation,
   PAYMENT_DRAFT_SAVE_DEBOUNCE_MS,
   PAYMENT_INTENT_CREATION_DELAY_MS,
+  pointCheckoutField,
+  shouldMoveCheckoutFocus,
   STRIPE_INTENT_ERROR_TRANSLATION_KEYS,
 } from "./payment.helpers";
 import { resolvePaymentValidationLocale } from "./payment.validation";
@@ -161,10 +165,6 @@ const PaymentPage = observer(function PaymentPage({
   const summaryCardTitle = checkoutTitle || selectedProductTitle;
   const selectedProductCompactTitle =
     checkoutTitle || getCompactSummaryTitle(selectedProductTitle);
-  const productPaymentInputs = getVisiblePaymentInputs({
-    isRenewalCheckout: false,
-    showsLessonLanguage,
-  });
   const visiblePaymentInputs = getVisiblePaymentInputs({
     isRenewalCheckout,
     showsLessonLanguage,
@@ -180,7 +180,6 @@ const PaymentPage = observer(function PaymentPage({
   } = useTelegramRenewal({
     locale,
     paymentStore,
-    productPaymentInputs,
     renewalSlug,
     t,
   });
@@ -669,7 +668,8 @@ const PaymentPage = observer(function PaymentPage({
 
     // Enter inside a details step means "continue", not "submit everything".
     if (openStep !== "payment") {
-      handleStepContinue(openStep);
+      // Enter in the last field: the buyer is typing, focus may follow.
+      handleStepContinue(openStep, "keyboard");
       return;
     }
 
@@ -841,8 +841,13 @@ const PaymentPage = observer(function PaymentPage({
   const progressRatio =
     progressItems.filter(Boolean).length / Math.max(progressItems.length, 1);
 
-  /** Moves the buyer into a step: the step scrolls into view, its first open question takes focus. */
-  const revealStep = (stepId: PaymentStep) => {
+  /**
+   * Moves the buyer into a step. Its first open question takes focus only when that
+   * will not pop a phone keyboard up uninvited (see shouldMoveCheckoutFocus); the
+   * step itself takes it otherwise, so a screen reader follows. The page scrolls
+   * only when the step is not already in view.
+   */
+  const revealStep = (stepId: PaymentStep, intent: CheckoutIntent) => {
     // After the fold/unfold has been committed, so the target is laid out.
     window.requestAnimationFrame(() => {
       const stepElement = document.getElementById(getCheckoutStepId(stepId));
@@ -859,22 +864,26 @@ const PaymentPage = observer(function PaymentPage({
               )?.id ?? "",
             );
 
-      focusTarget?.focus({ preventScroll: true });
+      if (shouldMoveCheckoutFocus(intent)) {
+        focusTarget?.focus({ preventScroll: true });
+      } else {
+        stepElement?.focus({ preventScroll: true });
+      }
       // The step above is still folding; measured now, the target would be
-      // overshot by its height. Scroll once the fold has settled.
+      // overshot by its height. Measure once the fold has settled.
       window.setTimeout(
-        () => stepElement?.scrollIntoView({ behavior: "smooth", block: "start" }),
+        () => stepElement && bringIntoViewIfNeeded(stepElement, "start"),
         prefersReducedMotion() ? 0 : STEP_FOLD_DURATION_MS,
       );
     });
   };
 
-  const handleStepContinue = (stepId: PaymentStep) => {
+  const handleStepContinue = (stepId: PaymentStep, intent: CheckoutIntent) => {
     if (stepId === "access" && !isRenewalVerified) {
-      // Every other field is locked until the blue button is pressed: the only
+      // Every other field is hidden until the blue button is pressed: the only
       // thing to point at is the handle it verifies.
       paymentStore.touchCustomerField("nickname");
-      document.getElementById("nickname")?.focus();
+      pointCheckoutField("nickname", intent);
       return;
     }
 
@@ -885,7 +894,7 @@ const PaymentPage = observer(function PaymentPage({
     if (invalidFields.length > 0) {
       // Shows what is missing right where it is, instead of moving on.
       invalidFields.forEach((field) => paymentStore.touchCustomerField(field.name));
-      document.getElementById(invalidFields[0].id)?.focus();
+      pointCheckoutField(invalidFields[0].id, intent);
       return;
     }
 
@@ -904,12 +913,12 @@ const PaymentPage = observer(function PaymentPage({
     }
 
     setOpenedStep(nextStep);
-    revealStep(nextStep);
+    revealStep(nextStep, intent);
   };
 
   const handleStepEdit = (stepId: PaymentStep) => {
     setOpenedStep(stepId);
-    revealStep(stepId);
+    revealStep(stepId, "pointer");
   };
 
   // Telegram has just confirmed a renewal and may have filled the profile in:
@@ -928,7 +937,11 @@ const PaymentPage = observer(function PaymentPage({
       .filter((field) => field.step === "access")
       .every((field) => paymentStore.isCustomerFieldValid(field.name));
 
-    setOpenedStep(isAccessFilled ? "billing" : "access");
+    const nextStep = isAccessFilled ? "billing" : "access";
+    setOpenedStep(nextStep);
+    // Back from Telegram: on a computer the next empty field takes focus, on a
+    // phone the step is only shown, the buyer taps the field when ready.
+    revealStep(nextStep, "auto");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on the status change only
   }, [renewalStatus]);
   const privacyPolicyLink = (chunks: ReactNode) => (

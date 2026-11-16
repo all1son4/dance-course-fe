@@ -7,14 +7,12 @@ import {
   trackAnalyticsEvent,
 } from "@/lib/mixpanel-analytics";
 
-import type { PaymentInputConfig } from "./payment.constants";
 import {
   canStartTelegramRenewalVerification,
-  focusNextCheckoutControl,
   formatTelegramUsernameInput,
   getTelegramRenewalEndpoint,
   type PaymentStoreInstance,
-  POST_VERIFICATION_FOCUS_DELAY_MS,
+  pointCheckoutField,
   prefillRenewalCustomerProfile,
   type RenewalCampaignResponse,
   type RenewalStatus,
@@ -31,7 +29,6 @@ import {
 type UseTelegramRenewalOptions = {
   locale: string;
   paymentStore: PaymentStoreInstance;
-  productPaymentInputs: PaymentInputConfig[];
   renewalSlug: string;
   t: ReturnType<typeof useTranslations>;
 };
@@ -55,7 +52,6 @@ const getVerificationProperties = (
 export const useTelegramRenewal = ({
   locale,
   paymentStore,
-  productPaymentInputs,
   renewalSlug,
   t,
 }: UseTelegramRenewalOptions) => {
@@ -178,7 +174,9 @@ export const useTelegramRenewal = ({
       // Shows the field's own message ("enter your handle") instead of a
       // button press that does nothing.
       paymentStore.touchCustomerField("nickname");
-      document.getElementById("nickname")?.focus();
+      // A tap on the icon expected Telegram, not a keyboard: on a phone the
+      // message under the field is enough.
+      pointCheckoutField("nickname", "pointer");
       return;
     }
 
@@ -281,13 +279,9 @@ export const useTelegramRenewal = ({
         paymentStore.setCustomerField("nickname", verifiedNickname);
       }
 
+      // Back from the Telegram window: the page opens the next step itself, and on
+      // a phone does not pop the keyboard up while the buyer is still switching back.
       window.focus();
-      window.setTimeout(() => {
-        focusNextCheckoutControl({
-          customerData: paymentStore.customerData,
-          inputs: productPaymentInputs,
-        });
-      }, POST_VERIFICATION_FOCUS_DELAY_MS);
     } catch {
       setRenewalStatus("error");
       setRenewalStatusText(t("renewal.status.failed"));
