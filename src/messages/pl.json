@@ -644,8 +644,6 @@
       "accessLabel": "Dostęp",
       "accessValue": "8 tygodni",
       "priceLabel": "Cena",
-      "priceNote": "Płatność za 8 tygodni, bez automatycznych obciążeń",
-      "renewalNote": "Przy przedłużeniu — specjalna cena",
       "buyButton": "Kup",
       "insideButton": "Co w środku"
     },
@@ -677,7 +675,7 @@
         },
         "4": {
           "title": "Specjalna cena przedłużenia",
-          "text": "Przedłużasz Hub albo ćwiczysz w grupie online? Obowiązuje Cię specjalna cena. Nowe tygodnie zaczynają się zaraz po obecnych, bez przerwy."
+          "text": "Przedłużasz Hub albo ćwiczysz w grupie online? <b>Obowiązuje Cię specjalna cena</b>. Nowe tygodnie zaczynają się zaraz po obecnych, bez przerwy."
         }
       }
     },
@@ -694,20 +692,20 @@
           "description": "Zaraz po płatności na stronie i w e-mailu pojawi się osobisty link do zamkniętego kanału na Telegramie. Otwórz go z konta Telegram, z którego będziesz korzystać: link działa jeden raz i tylko dla Ciebie."
         },
         "2": {
-          "title": "8 tygodni dostępu",
-          "description": "8 tygodni liczy się od płatności, a nie od wejścia do kanału: na przykład płatność 1 marca — dostęp do 26 kwietnia, nawet jeśli wejdziesz do kanału później. Dokładne daty zawsze widać na stronie „Mój dostęp”, przycisk do niej jest w każdej naszej wiadomości."
+          "title": "Czas dostępu",
+          "description": "Liczy się od płatności, a nie od wejścia do kanału: płatność 1 marca — dostęp do 26 kwietnia. Dokładne daty są na stronie „Mój dostęp”, przycisk do niej jest w każdej wiadomości."
         },
         "3": {
           "title": "Przedłużenie w specjalnej cenie",
-          "description": "Za każde 8 tygodni płacisz osobno, bez automatycznych obciążeń. Na 7 i na 3 dni przed końcem przyjdzie e-mail z przyciskiem „Przedłuż”, ten sam przycisk jest na stronie „Mój dostęp”. Możesz przedłużyć wcześniej: nowe 8 tygodni zacznie się zaraz po obecnych, żaden dzień nie przepadnie. Przedłużenie — w specjalnej cenie."
+          "description": "Bez automatycznych obciążeń: przedłużyć możesz w każdej chwili, nowy okres zacznie się zaraz po obecnym. Na 7 i na 3 dni przed końcem przyjdzie e-mail z przyciskiem „Przedłuż” — ten sam jest na stronie „Mój dostęp”."
         },
         "4": {
           "title": "Jeśli ćwiczysz w grupie online",
-          "description": "Pakiet Plus już zawiera Hub — na czas cyklu i jeszcze 7 dni po nim. Pod koniec cyklu na czacie grupy pojawia się link, żeby kupić Hub osobno w specjalnej cenie — przy Plus i przy Standard. Jeśli masz Plus, opłacone 8 tygodni zacznie się zaraz po Hubie z Plus — dni się nie nakładają."
+          "description": "Pakiet Plus już zawiera Hub — na czas cyklu i jeszcze 7 dni po nim. Pod koniec cyklu na czacie grupy pojawi się link do Hub w specjalnej cenie — przy Plus i przy Standard. Przy Plus opłacony okres zacznie się zaraz po Hubie z Plus."
         },
         "5": {
           "title": "Jeśli nie przedłużysz",
-          "description": "Po 8 tygodniach dostęp do kanału zamknie się sam. Możesz wrócić w każdej chwili: nowe 8 tygodni będzie liczone od płatności."
+          "description": "Na koniec okresu dostęp do kanału zamknie się sam. Możesz wrócić w każdej chwili — nowy okres będzie liczony od płatności."
         }
       }
     },
@@ -718,9 +716,13 @@
         "1": "Pełne programy Online Group 1.0 i 2.0",
         "2": "Lekcje bonusowe i materiały",
         "3": "Zamknięty kanał na Telegramie",
-        "4": "8 tygodni dostępu zaraz po płatności"
+        "4": "Dostęp otwiera się zaraz po płatności"
       },
-      "note": "Płatność za 8 tygodni, bez automatycznych obciążeń. Przy przedłużeniu — specjalna cena"
+      "priceLabel": "8 tygodni dostępu",
+      "notes": {
+        "1": "Bez automatycznych obciążeń",
+        "2": "Przy przedłużeniu — specjalna cena"
+      }
     }
   },
   "ChoreoPage": {

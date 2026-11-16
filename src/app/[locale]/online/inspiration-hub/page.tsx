@@ -44,6 +44,9 @@ import {
   LibraryPhoto,
   LibrarySection,
   LibraryText,
+  OfferClosed,
+  OfferNotes,
+  OfferPrice,
   StatementBand,
   TopicGrid,
   TopicsLabel,
@@ -55,8 +58,6 @@ import {
   ImageBox,
   IntroductionSection,
   MobileImagesBox,
-  PriceNote,
-  RenewalNote,
   StepsImage,
   StepsSection,
   StepsTextBox,
@@ -150,10 +151,6 @@ export default async function InspirationHubPage() {
         <FactsRow>
           <ProductFact label={t("hero.accessLabel")} value={t("hero.accessValue")} />
           <ProductFact label={t("hero.priceLabel")} value={price} />
-          <PriceNote>{t("hero.priceNote")}</PriceNote>
-          <RenewalNote>
-            <span>{t("hero.renewalNote")}</span>
-          </RenewalNote>
         </FactsRow>
 
         <ButtonBox>
@@ -217,12 +214,16 @@ export default async function InspirationHubPage() {
             sizes="(max-width: 1240px) 0px, 420px"
           />
           <FeatureRow>
-            {HUB_FEATURES.map(({ icon: Icon, id }, index) => (
-              <li key={id}>
+            {HUB_FEATURES.map(({ highlight, icon: Icon, id }, index) => (
+              <li key={id} data-highlight={highlight || undefined}>
                 <Icon />
                 <div>
                   <strong>{t(`inside.features.${index + 1}.title`)}</strong>
-                  <p>{t(`inside.features.${index + 1}.text`)}</p>
+                  <p>
+                    {t.rich(`inside.features.${index + 1}.text`, {
+                      b: (chunks) => <b>{chunks}</b>,
+                    })}
+                  </p>
                 </div>
               </li>
             ))}
@@ -268,7 +269,10 @@ export default async function InspirationHubPage() {
             </ValueList>
           </FinalCtaText>
           <FinalCtaOffer>
-            <strong>{price}</strong>
+            <OfferPrice>
+              <small>{t("cta.priceLabel")}</small>
+              <strong>{price}</strong>
+            </OfferPrice>
             {canBuy ? (
               <Button
                 buttonText={t("hero.buyButton")}
@@ -276,17 +280,19 @@ export default async function InspirationHubPage() {
                 prefetch={false}
                 rel="nofollow"
                 variant="white"
-                width="280px"
                 analytics={{ ...buyAnalytics, placement: "inspiration_hub_final" }}
               />
             ) : (
-              <small>
+              <OfferClosed>
                 {commonT(
                   saleState === "unavailable" ? "salesUnavailable" : "salesClosed",
                 )}
-              </small>
+              </OfferClosed>
             )}
-            <small>{t("cta.note")}</small>
+            <OfferNotes>
+              <li>{t("cta.notes.1")}</li>
+              <li data-accent>{t("cta.notes.2")}</li>
+            </OfferNotes>
           </FinalCtaOffer>
         </FinalCta>
         <Contacts layout="spaced" />

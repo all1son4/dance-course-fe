@@ -644,8 +644,6 @@
       "accessLabel": "Access",
       "accessValue": "8 weeks",
       "priceLabel": "Price",
-      "priceNote": "Payment for 8 weeks, no automatic charges",
-      "renewalNote": "Special price when you renew",
       "buyButton": "Buy",
       "insideButton": "What's inside"
     },
@@ -677,7 +675,7 @@
         },
         "4": {
           "title": "Special renewal price",
-          "text": "Renewing the Hub or training in the Online Group? You get a special price. The new weeks start right after the current ones, with no gap."
+          "text": "Renewing the Hub or training in the Online Group? <b>You get a special price</b>. The new weeks start right after the current ones, with no gap."
         }
       }
     },
@@ -694,20 +692,20 @@
           "description": "Right after payment, your personal link to the private Telegram channel appears on the page and in your email. Open it from the Telegram account you will use: the link works once and only for you."
         },
         "2": {
-          "title": "8 weeks of access",
-          "description": "The 8 weeks count from payment, not from joining the channel: for example, pay on 1 March and you have access until 26 April, even if you join the channel later. The exact dates are always on the “My access” page; every email from us has a button to it."
+          "title": "Access period",
+          "description": "It counts from payment, not from joining the channel: pay on 1 March and you have access until 26 April. The exact dates are on the “My access” page; every email has a button to it."
         },
         "3": {
           "title": "Renewal at a special price",
-          "description": "Each 8 weeks are paid separately, with no automatic charges. 7 and 3 days before the end you get an email with a “Renew” button; the same button is on the “My access” page. You can renew earlier too: the new 8 weeks start right after the current ones, so no day is lost. Renewal is at a special price."
+          "description": "There are no automatic charges: renew whenever you like, and the new period starts right after the current one. 7 and 3 days before the end you get an email with a “Renew” button — the same one is on the “My access” page."
         },
         "4": {
           "title": "If you are in the Online Group",
-          "description": "The Plus plan already includes the Hub — for the cycle and 7 more days after it. Near the end of the cycle, a link appears in the group chat to get the Hub separately at a special price — with Plus or Standard. If you have Plus, the paid 8 weeks start right after your Plus Hub access, so the days do not overlap."
+          "description": "The Plus plan already includes the Hub — for the cycle and 7 more days after it. Near the end of the cycle, a link to the Hub at a special price appears in the group chat — for Plus and Standard. With Plus, the paid period starts right after your Plus Hub access."
         },
         "5": {
           "title": "If you do not renew",
-          "description": "After 8 weeks, channel access closes by itself. You can come back at any time: the new 8 weeks count from payment."
+          "description": "At the end of the period, channel access closes by itself. You can come back at any time — the new period counts from payment."
         }
       }
     },
@@ -718,9 +716,13 @@
         "1": "Full Online Group 1.0 and 2.0 programmes",
         "2": "Bonus lessons and materials",
         "3": "A private Telegram channel",
-        "4": "8 weeks of access right after payment"
+        "4": "Access opens right after payment"
       },
-      "note": "Payment for 8 weeks, no automatic charges. Special price when you renew"
+      "priceLabel": "8 weeks of access",
+      "notes": {
+        "1": "No automatic charges",
+        "2": "Special price when you renew"
+      }
     }
   },
   "ChoreoPage": {

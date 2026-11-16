@@ -200,6 +200,17 @@ export const FeatureRow = styled.ul`
     flex-direction: column;
   }
 
+  /* The renewal price card: a warm tint and a brand edge, nothing louder. */
+  li[data-highlight] {
+    border-color: rgba(124, 0, 2, 0.22);
+    background: linear-gradient(160deg, rgba(124, 0, 2, 0.06), rgba(124, 0, 2, 0.015));
+  }
+
+  p b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
   @media (max-width: 1399px) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -407,12 +418,40 @@ export const ValueList = styled.ul`
   }
 `;
 
+/** The offer as a frosted card on the red band: price, button, two short facts. */
 export const FinalCtaOffer = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  min-width: 280px;
+  gap: 20px;
+  flex: 0 0 auto;
+  width: 360px;
+  padding: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.07);
+  box-sizing: border-box;
+
+  @media (max-width: 920px) {
+    width: 100%;
+    max-width: 420px;
+  }
+
+  @media (max-width: 550px) {
+    padding: 24px 20px;
+    border-radius: 24px;
+  }
+`;
+
+export const OfferPrice = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  small {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: var(--text-caption);
+    letter-spacing: 0.04em;
+  }
 
   strong {
     font-size: var(--text-fact);
@@ -420,14 +459,48 @@ export const FinalCtaOffer = styled.div`
     line-height: 1.1;
     white-space: nowrap;
   }
+`;
 
-  small {
+export const OfferClosed = styled.p`
+  margin: 0;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+`;
+
+export const OfferNotes = styled.ul`
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 16px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
     color: rgba(255, 255, 255, 0.72);
     font-size: var(--text-caption);
+    line-height: 1.45;
   }
 
-  @media (max-width: 920px) {
-    width: 100%;
-    min-width: 0;
+  li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+  }
+
+  li[data-accent] {
+    color: var(--ink-inverse);
+    font-weight: 500;
+  }
+
+  li[data-accent]::before {
+    background: var(--ink-inverse);
   }
 `;
