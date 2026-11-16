@@ -817,7 +817,7 @@
       },
       "status": {
         "loading": "Preparing check…",
-        "ready": "Tap the blue icon to confirm Telegram.",
+        "ready": "Tap the blue icon in the field — once Telegram is checked, the email and the rest of the form open.",
         "openingTelegram": "Confirm the login in Telegram. After confirmation, we will try to return you to checkout automatically.",
         "checkingMembership": "Checking chat…",
         "verified": "Done.",
@@ -825,8 +825,8 @@
         "verifiedAsWithProfile": "Done: {username}. Your details are filled in — please review them.",
         "notMember": "We couldn't find this account in the Online Group chat. Check the username or message support.",
         "usernameMismatch": "The username does not match the confirmed Telegram account. Enter the same one or confirm again.",
-        "loadFailed": "We could not start the check. Please try again.",
-        "failed": "Could not confirm Telegram."
+        "loadFailed": "We could not start the check. Refresh the page and try again.",
+        "failed": "Could not confirm Telegram. Please try again."
       },
       "unavailable": {
         "title": "Renewal unavailable",
@@ -907,7 +907,8 @@
     },
     "steps": {
       "access": {
-        "title": "Where to send your access"
+        "title": "Where to send your access",
+        "titleVerify": "Confirm it's you"
       },
       "billing": {
         "title": "Receipt details"

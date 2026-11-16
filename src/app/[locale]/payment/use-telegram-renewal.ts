@@ -14,6 +14,7 @@ import {
   type RenewalStatus,
   resolveRenewalStatusTone,
   resolveRenewalVerificationFailure,
+  TELEGRAM_USERNAME_PATTERN,
 } from "./payment.helpers";
 import {
   loadTelegramLoginScript,
@@ -133,6 +134,14 @@ export const useTelegramRenewal = ({
     // The handle is stored as typed until blur; the claim must be the settled form.
     paymentStore.normalizeCustomerField("nickname");
     const claimedUsername = paymentStore.customerData.nickname.trim();
+
+    if (!TELEGRAM_USERNAME_PATTERN.test(claimedUsername)) {
+      // Shows the field's own message ("enter your handle") instead of a
+      // button press that does nothing.
+      paymentStore.touchCustomerField("nickname");
+      document.getElementById("nickname")?.focus();
+      return;
+    }
 
     if (
       !canStartTelegramRenewalVerification({

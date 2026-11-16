@@ -237,14 +237,17 @@ export const isRenewalInputDisabled = ({
     : !isRenewalVerified;
 };
 
+/**
+ * The button stays pressable with an empty or mistyped handle: pressing it
+ * points at the field and says what is wrong, where a greyed-out button said
+ * nothing at all.
+ */
 export const isTelegramVerificationDisabled = ({
   clientId,
-  nickname,
   nonce,
   status,
 }: {
   clientId: string;
-  nickname: string;
   nonce: string;
   status: RenewalStatus;
 }) =>
@@ -252,8 +255,7 @@ export const isTelegramVerificationDisabled = ({
   status === "verified" ||
   status === "verifying" ||
   !clientId ||
-  !nonce ||
-  !TELEGRAM_USERNAME_PATTERN.test(nickname.trim());
+  !nonce;
 
 export const canStartTelegramRenewalVerification = ({
   claimedUsername,
