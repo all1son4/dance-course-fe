@@ -228,6 +228,15 @@ export async function POST(request: Request) {
       );
     }
 
+    if (errorMessage === "renewal_campaign_sources_changed") {
+      return jsonNoStore(
+        {
+          errorCode: errorMessage,
+        },
+        { status: 400 },
+      );
+    }
+
     logSafeError("Failed to create renewal campaign", error);
 
     return jsonErrorNoStore("renewal_campaign_failed", { status: 500 });
@@ -287,11 +296,17 @@ export async function PATCH(request: Request) {
       const onlineGroupCampaign = await getActiveOnlineGroupCampaign();
       const campaign = await getRenewalCampaignBySlug(body.slug);
 
-      if (
-        !campaign ||
-        !onlineGroupCampaign ||
-        campaign.targetChatId !== onlineGroupCampaign.regularChatId
-      ) {
+      // A link may lead into the current cohort or, while it runs, into its recorded
+      // successor: the same rule as for creating one, so a link switched off by
+      // mistake can always be switched back on.
+      const allowedTargets = onlineGroupCampaign
+        ? new Set([
+            onlineGroupCampaign.regularChatId,
+            await resolveRenewalTargetChatId(onlineGroupCampaign.regularChatId),
+          ])
+        : new Set<string>();
+
+      if (!campaign || !allowedTargets.has(campaign.targetChatId)) {
         return jsonErrorNoStore("renewal_campaign_inactive", { status: 409 });
       }
     }

@@ -108,7 +108,9 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     (input: ToastInput) => {
       const id = nextId.current++;
       setToasts((current) => [...current.slice(-3), { ...input, id }]);
-      window.setTimeout(() => dismiss(id), input.tone === "danger" ? 7000 : 4000);
+      // A problem stays until it is closed: it usually says what to do next, and
+      // it must not vanish while the admin is still reading the window behind it.
+      if (input.tone !== "danger") window.setTimeout(() => dismiss(id), 4000);
     },
     [dismiss],
   );
@@ -143,8 +145,8 @@ export const useToast = () => useContext(ToastContext);
 
 /* ---------- Confirm dialog ---------- */
 
-const Dialog = styled.dialog`
-  width: min(520px, calc(100vw - 32px));
+const Dialog = styled.dialog<{ $wide?: boolean }>`
+  width: min(${({ $wide }) => ($wide ? "760px" : "520px")}, calc(100vw - 32px));
   max-height: min(86dvh, 760px);
   padding: 0;
   border: 1px solid var(--a-border);
@@ -282,10 +284,10 @@ export const ConfirmDialog = ({
     }
   }, [open]);
 
+  // Letter case and extra spaces do not matter: the text only proves intent.
+  const normalize = (value: string) => value.replace(/\s+/g, " ").trim().toLowerCase();
   const matches = useMemo(
-    () =>
-      !requireText ||
-      typed.replace(/\s+/g, " ").trim() === requireText.replace(/\s+/g, " ").trim(),
+    () => !requireText || normalize(typed) === normalize(requireText),
     [requireText, typed],
   );
 
@@ -314,6 +316,7 @@ export const ConfirmDialog = ({
               autoComplete="off"
               spellCheck={false}
             />
+            {typed.trim() && !matches && <small>Название не совпадает.</small>}
           </FieldLabel>
         )}
       </DialogBody>
@@ -329,6 +332,58 @@ export const ConfirmDialog = ({
         >
           {confirmLabel}
         </AdminButton>
+      </DialogFooter>
+    </Dialog>
+  );
+};
+
+/**
+ * A plain window for a task with its own steps or form (no confirm button of its
+ * own): Escape, the backdrop and «Закрыть» close it.
+ */
+export const SheetDialog = ({
+  children,
+  footer,
+  onClose,
+  open,
+  title,
+}: {
+  children: ReactNode;
+  footer?: ReactNode;
+  onClose: () => void;
+  open: boolean;
+  title: string;
+}) => {
+  const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    if (open && !dialog.open) dialog.showModal();
+    else if (!open && dialog.open) dialog.close();
+  }, [open]);
+
+  return (
+    <Dialog
+      ref={ref}
+      $wide
+      aria-labelledby={titleId}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === ref.current) onClose();
+      }}
+    >
+      <DialogBody>
+        <h2 id={titleId}>{title}</h2>
+        {children}
+      </DialogBody>
+      <DialogFooter>
+        {footer}
+        <AdminButton onClick={onClose}>Закрыть</AdminButton>
       </DialogFooter>
     </Dialog>
   );

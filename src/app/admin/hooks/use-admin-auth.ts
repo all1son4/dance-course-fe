@@ -10,7 +10,7 @@ import {
 } from "../lib/admin-auth-check";
 import { ADMIN_NETWORK_ERROR_CODE, requestAdminJson } from "../lib/admin-request";
 
-const AUTH_NOT_CONFIGURED_STATUS_TEXT = "Не задан ADMIN_PASSWORD на сервере.";
+const AUTH_NOT_CONFIGURED_STATUS_TEXT = "Вход не настроен. Напиши разработчику.";
 
 const UNLOCK_ERROR_MESSAGES: Record<string, string> = {
   auth_not_configured: AUTH_NOT_CONFIGURED_STATUS_TEXT,
@@ -215,7 +215,7 @@ export const useAdminAuth = () => {
         changeSessionCheckUnavailable(false);
         setAuthPassword("");
         onLoggedOut?.();
-        setAuthStatus({ text: "Вы вышли из админки.", tone: "info" });
+        setAuthStatus({ text: "Выход выполнен.", tone: "info" });
       } else {
         // A lost/malformed DELETE response does not tell us whether the
         // browser received the cookie deletion. Reconcile with the server.
@@ -230,7 +230,7 @@ export const useAdminAuth = () => {
         } else if (outcome === "unauthorized") {
           setAuthPassword("");
           onLoggedOut?.();
-          setAuthStatus({ text: "Вы вышли из админки.", tone: "info" });
+          setAuthStatus({ text: "Выход выполнен.", tone: "info" });
         }
       }
     } finally {
@@ -284,7 +284,7 @@ export const useAdminAuth = () => {
         setAuthStatus({
           text:
             UNLOCK_ERROR_MESSAGES[result.errorCode] ??
-            "Не удалось авторизоваться. Попробуй снова.",
+            "Не удалось войти. Попробуй снова.",
           tone: "error",
         });
       }

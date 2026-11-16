@@ -14,7 +14,7 @@ import styled from "styled-components";
 
 import type { HubAdminOverview, HubPeriodState } from "@/lib/admin/hub-admin";
 
-import type { ReissuedLink } from "../hooks/use-hub-admin";
+import type { ReissuedLink, ReissueOutcome } from "../hooks/use-hub-admin";
 import type { AdminFeatureId } from "../lib/admin.types";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
@@ -44,7 +44,10 @@ const STATE_LABELS: Record<HubPeriodState, { label: string; tone: AdminTone }> =
   waiting: { label: "После потока", tone: "info" },
 };
 
-type Filter = "all" | "active" | "upcoming" | "ended";
+type Filter = "all" | "active" | "endingSoon" | "upcoming" | "ended";
+
+/** The same 7-day window as the overview counts (ENDING_SOON_DAYS in hub-admin.ts). */
+const ENDING_SOON_MS = 7 * 24 * 60 * 60 * 1000;
 
 const Columns = styled.div`
   display: grid;
@@ -134,7 +137,7 @@ type HubWorkspaceProps = {
   onOpenPurchase: (paymentIntentId: string) => void;
   onPreviewAtChange: (value: string) => void;
   onRefresh: () => void;
-  onReissue: (paymentIntentId: string) => Promise<boolean>;
+  onReissue: (paymentIntentId: string) => Promise<ReissueOutcome>;
   onUnauthorized: () => void;
   previewAt: string;
   reissued: Record<string, ReissuedLink[] | "none">;
@@ -161,10 +164,16 @@ export const HubWorkspace = ({
 
   const periods = useMemo(() => {
     const needle = search.trim().toLowerCase();
+    // Counted from the moment the server built the overview, like the tile itself.
+    const endingSoonBefore = Date.parse(hub?.generatedAt ?? "") + ENDING_SOON_MS;
     return (hub?.periods ?? []).filter((period) => {
       const matchesFilter =
         filter === "all" ||
         (filter === "active" && period.state === "active") ||
+        (filter === "endingSoon" &&
+          period.state === "active" &&
+          period.expiresAt !== null &&
+          Date.parse(period.expiresAt) <= endingSoonBefore) ||
         (filter === "upcoming" &&
           (period.state === "scheduled" || period.state === "waiting")) ||
         (filter === "ended" && period.state === "ended");
@@ -188,13 +197,13 @@ export const HubWorkspace = ({
       <Stack $gap={20}>
         <PageHeader
           title="Inspiration Hub"
-          description="Загружаю периоды и состояние хаба…"
+          description="Загружаю периоды и состояние библиотеки…"
         />
         {failed ? (
           <Panel>
             <EmptyState
               icon={<CircleAlert aria-hidden />}
-              title="Не удалось загрузить хаб"
+              title="Не удалось загрузить библиотеку"
               action={<AdminButton onClick={onRefresh}>Обновить</AdminButton>}
             />
           </Panel>
@@ -218,19 +227,31 @@ export const HubWorkspace = ({
   ];
 
   const reissue = async (paymentIntentId: string) => {
-    const ok = await onReissue(paymentIntentId);
+    const outcome = await onReissue(paymentIntentId);
     toast(
-      ok
+      outcome === "ready"
         ? {
             tone: "success",
-            title: "Готово",
-            description: "Ссылка ниже, в строке покупки.",
+            title: "Ссылка готова",
+            description: "Она ниже, в строке покупки.",
           }
-        : {
-            tone: "danger",
-            title: "Ссылку выдать не удалось",
-            description: "Попробуй ещё раз через минуту.",
-          },
+        : outcome === "not_needed"
+          ? {
+              tone: "info",
+              title: "Новая ссылка не нужна",
+              description: "Доступ уже активен или ещё не начался.",
+            }
+          : outcome === "telegram_failed"
+            ? {
+                tone: "danger",
+                title: "Telegram не создал ссылку",
+                description: "Проверь права бота в группе библиотеки и попробуй ещё раз.",
+              }
+            : {
+                tone: "danger",
+                title: "Ссылку выдать не удалось",
+                description: "Попробуй ещё раз через минуту.",
+              },
     );
   };
 
@@ -264,19 +285,19 @@ export const HubWorkspace = ({
             <Callout
               tone="danger"
               icon={<CircleAlert aria-hidden />}
-              title="Не задан чат хаба"
+              title="Не выбрана Telegram-группа библиотеки"
             >
-              Ссылки в хаб не выдаются, а крон не помечает конец периодов. Его задаёт
-              перенос при запуске.
+              Ссылки в библиотеку не выдаются, окончания доступа не отслеживаются. Напиши
+              разработчику.
             </Callout>
           )}
           {problems.stalledPaymentIntentIds.length > 0 && (
             <Callout
               tone="danger"
               icon={<CircleAlert aria-hidden />}
-              title="Продолжения без дат после закрытия потока"
+              title="Покупки библиотеки без дат после закрытия потока"
             >
-              Люди пока остаются в хабе. Это разбирает разработчик:{" "}
+              Люди пока остаются в библиотеке. Напиши разработчику; покупки:{" "}
               {problems.stalledPaymentIntentIds.map((id) => (
                 <AdminButton
                   key={id}
@@ -326,10 +347,11 @@ export const HubWorkspace = ({
               ? "Хороший момент напомнить о продлении"
               : "Спокойная неделя"
           }
+          onClick={() => setFilter("endingSoon")}
         />
         <StatTile
           icon={<Store aria-hidden />}
-          label="Продажи хаба"
+          label="Продажи библиотеки"
           value={hub.salesEnabled ? "Открыты" : "Закрыты"}
           hint="Переключаются в «Каталоге»"
           hintTone={hub.salesEnabled ? "success" : undefined}
@@ -339,7 +361,7 @@ export const HubWorkspace = ({
 
       <Columns>
         <Panel
-          title="Чат хаба"
+          title="Telegram-группа библиотеки"
           description={hub.chat ? `ID ${hub.chat.chatId}` : "Не настроен"}
         >
           {hub.chat ? (
@@ -348,25 +370,43 @@ export const HubWorkspace = ({
               <BotRightsCheck chatId={hub.chat.chatId} onUnauthorized={onUnauthorized} />
             </Stack>
           ) : (
-            <Muted>Чат появится после переноса при запуске.</Muted>
+            <Muted>Группа не выбрана. Напиши разработчику.</Muted>
           )}
         </Panel>
 
         <Panel
-          title="Кого крон уберёт"
-          description={`Расчёт тем же кодом, что у крона, без изменений. Ближайший запуск — ${formatDateTime(hub.nextCronAt)}.`}
+          title="Кого бот уберёт из библиотеки ночью"
+          description={`Это предпросмотр — он никого не удаляет. Ближайшая проверка: ${formatDateTime(hub.nextCronAt)}. Можно выбрать другую дату.`}
           actions={
-            <TextField
-              type="date"
-              aria-label="Дата проверки"
-              value={previewAt ? toDateInput(previewAt) : toDateInput(hub.nextCronAt)}
-              onChange={(event) =>
-                onPreviewAtChange(
-                  event.target.value ? `${event.target.value}T03:00:00.000Z` : "",
-                )
-              }
-              style={{ width: 160, minHeight: 34 }}
-            />
+            <Row $gap={6}>
+              <TextField
+                type="date"
+                aria-label="Дата проверки"
+                // The server previews at most 120 days ahead.
+                min={toDateInput(hub.nextCronAt)}
+                max={toDateInput(
+                  new Date(
+                    Date.parse(hub.nextCronAt) + 120 * 24 * 60 * 60 * 1000,
+                  ).toISOString(),
+                )}
+                value={previewAt ? toDateInput(previewAt) : toDateInput(hub.nextCronAt)}
+                onChange={(event) =>
+                  onPreviewAtChange(
+                    event.target.value ? `${event.target.value}T03:00:00.000Z` : "",
+                  )
+                }
+                style={{ width: 160, minHeight: 34 }}
+              />
+              {previewAt && (
+                <AdminButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onPreviewAtChange("")}
+                >
+                  Сбросить
+                </AdminButton>
+              )}
+            </Row>
           }
         >
           {hub.preview.removals.length === 0 ? (
@@ -394,7 +434,7 @@ export const HubWorkspace = ({
 
       <Panel
         flush
-        title="Покупки хаба"
+        title="Покупки библиотеки"
         description="Последние 300 периодов. Поиск по имени, email, @username или номеру платежа."
         actions={
           <Row $gap={8}>
@@ -403,7 +443,7 @@ export const HubWorkspace = ({
               <TextField
                 type="search"
                 placeholder="Найти"
-                aria-label="Найти покупку хаба"
+                aria-label="Найти покупку библиотеки"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 style={{ minHeight: 34 }}
@@ -416,6 +456,7 @@ export const HubWorkspace = ({
               items={[
                 { id: "all", label: "Все" },
                 { id: "active", label: "Идут" },
+                { id: "endingSoon", label: "Скоро закончатся" },
                 { id: "upcoming", label: "Начнутся" },
                 { id: "ended", label: "Закончились" },
               ]}
@@ -482,7 +523,7 @@ export const HubWorkspace = ({
                         <td data-actions>
                           <Stack $gap={8}>
                             <Row $gap={6} $justify="flex-end">
-                              {period.state !== "ended" && (
+                              {period.state === "active" && (
                                 <AdminButton
                                   size="sm"
                                   icon={<Link2 aria-hidden />}
@@ -500,6 +541,10 @@ export const HubWorkspace = ({
                                 Покупка
                               </AdminButton>
                             </Row>
+                            {(period.state === "scheduled" ||
+                              period.state === "waiting") && (
+                              <Muted>Ссылка придёт в день начала.</Muted>
+                            )}
                             {links === "none" && (
                               <Muted>
                                 Ссылка не нужна: доступ уже активен или ещё не начался.

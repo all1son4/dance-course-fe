@@ -12,6 +12,7 @@ import type { useCohortsAdmin } from "../hooks/use-cohorts-admin";
 import type { useOnlineGroupAdmin } from "../hooks/use-online-group-admin";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { AdminFeatureId } from "../lib/admin.types";
+import { parseWarsawDateTimeInput } from "../lib/admin.utils";
 import { requestAdminJson } from "../lib/admin-request";
 import {
   AdminButton,
@@ -22,7 +23,7 @@ import {
   Stack,
 } from "../ui/primitives";
 import { AttentionList } from "./attention-list";
-import type { RenewalLinkKind } from "./cohort-transition-guide";
+import type { NextCohortInput, RenewalLinkKind } from "./cohort-transition-guide";
 import { CohortsPanel } from "./cohorts-panel";
 import {
   ActiveOnlineGroupCard,
@@ -32,6 +33,19 @@ import {
 } from "./online-group-workspace";
 
 type Section = "cohorts" | "stream" | "renewals" | "manual";
+
+const NEXT_COHORT_ERRORS: Record<string, string> = {
+  cohort_duration_invalid: "Длительность — целое число недель от 1 до 26.",
+  cohort_not_found: "Предыдущий поток не найден. Обнови страницу.",
+  next_cohort_chat_is_library: "Это чат Inspiration Hub — для потока нужен свой чат.",
+  next_cohort_chat_taken: "Этот чат уже занят другим потоком.",
+  next_cohort_exists: "Следующий поток уже заведён. Обнови страницу.",
+  next_cohort_incomplete: "Заполни название, чат и дату старта.",
+  next_cohort_starts_too_early: "Старт должен быть позже старта предыдущего потока.",
+  rate_limited: "Слишком много попыток. Подожди минуту.",
+  telegram_chat_not_registered:
+    "Чат не зарегистрирован: добавь бота в чат администратором и отправь /register_chat.",
+};
 
 type OnlineGroupTabProps = {
   attention: AttentionItem[];
@@ -66,6 +80,43 @@ export const OnlineGroupTab = ({
     void cohorts.load();
     void settings.load();
     onProblemsChanged();
+  };
+
+  /** «Завести следующий поток»: the record that follows the newest cohort. */
+  const createNextCohort = async (
+    previous: CohortOverview,
+    input: NextCohortInput,
+  ): Promise<{ ok: true } | { ok: false; message: string }> => {
+    const startsAt = parseWarsawDateTimeInput(input.startsAt);
+    if (!startsAt) return { ok: false, message: "Укажи дату и время старта." };
+
+    const response = await requestAdminJson<{ status?: string; errorCode?: string }>(
+      ADMIN_API_ENDPOINTS.onlineGroupNextCohort,
+      {
+        body: {
+          durationWeeks: input.durationWeeks,
+          mainChatId: input.mainChatId,
+          previousCohortId: previous.id,
+          startsAt,
+          title: input.title,
+        },
+        method: "POST",
+      },
+    );
+    if (response.unauthorized) {
+      onUnauthorized();
+      return { ok: false, message: "Сессия закончилась. Войди заново." };
+    }
+    if (response.ok && response.data.status === "created") {
+      await Promise.all([cohorts.load(), settings.load()]);
+      return { ok: true };
+    }
+    return {
+      ok: false,
+      message:
+        NEXT_COHORT_ERRORS[response.data.errorCode ?? response.errorCode] ??
+        "Не получилось завести поток. Попробуй ещё раз.",
+    };
   };
 
   /** One click from the transition guide: the running cohort's chat is the only source. */
@@ -145,6 +196,9 @@ export const OnlineGroupTab = ({
           onReload={cohorts.load}
           onRetryPost={cohorts.retryPost}
           onCreateRenewalLink={createRenewalLink}
+          onCreateNextCohort={createNextCohort}
+          chats={settings.telegramChats}
+          libraryChatId={settings.activeCampaign?.inspirationChatId ?? ""}
           onSetDurationWeeks={cohorts.setDurationWeeks}
           onSetPreviousChatRemoval={cohorts.setPreviousChatRemoval}
           onUnauthorized={onUnauthorized}
@@ -155,14 +209,14 @@ export const OnlineGroupTab = ({
       {section === "stream" && (
         <Stack $gap={12}>
           <Callout tone="info" icon={<Info aria-hidden />}>
-            Переход на следующий поток делается во вкладке «Потоки» по шагам: ссылки
-            продления, пост, закрытие. Здесь ничего менять не нужно — закрытие само
-            сделает следующий поток текущим.
+            Переход на следующий поток делается во вкладке «Потоки» → «Настроить переход»:
+            ссылки продления, пост, закрытие. Закрытие само сделает следующий поток
+            текущим, здесь для этого ничего менять не нужно.
           </Callout>
           {settings.activeCampaign && (
             <Callout tone="info" icon={<Info aria-hidden />}>
-              Plus подключает Inspiration Hub: {settings.inspirationChatTitle}. Чат хаба и
-              его состояние — во вкладке{" "}
+              Plus даёт доступ в библиотеку Inspiration Hub (группа «
+              {settings.inspirationChatTitle}»). Всё о ней — в разделе{" "}
               <AdminButton
                 size="sm"
                 variant="ghost"
@@ -187,7 +241,12 @@ export const OnlineGroupTab = ({
             onMainChatChange={settings.changeMainChat}
             onRefresh={settings.load}
             onStartsAtChange={settings.changeStartsAt}
-            onSubmit={submit(settings.saveSettings)}
+            onSubmit={submit(async () => {
+              await settings.saveSettings();
+              // A new start or title shows in the cohort cards and the overview too.
+              void cohorts.load();
+              onProblemsChanged();
+            })}
             onTitleChange={settings.setTitle}
             startsAt={settings.startsAt}
             status={settings.status}
@@ -239,6 +298,11 @@ export const OnlineGroupTab = ({
       {section === "manual" &&
         (settings.hasConfiguredCampaign ? (
           <OnlineGroupInviteLinksCard
+            target={
+              settings.activeCampaign
+                ? `«${settings.activeCampaign.title}» (чат «${settings.activeMainChatTitle}»)`
+                : ""
+            }
             accessMode={settings.adminAccessMode}
             adminLabel={settings.adminLabel}
             grants={settings.adminGrants}

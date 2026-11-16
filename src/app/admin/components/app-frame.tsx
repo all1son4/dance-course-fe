@@ -523,7 +523,7 @@ export const AdminFrame = ({
             <span>
               {isSessionCheckUnavailable
                 ? "Не удалось проверить сессию"
-                : "Сессия подтверждена"}
+                : "Вход выполнен"}
             </span>
             <IconButton
               type="button"

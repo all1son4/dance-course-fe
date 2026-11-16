@@ -7,6 +7,7 @@ import {
 } from "@/lib/accounting-month";
 import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
 import { getCohortsOverview } from "@/lib/online-group/cohort-admin";
+import { PLUS_HUB_GRACE_DAYS } from "@/lib/online-group/cohort-messages";
 import {
   getOnlineGroupSale,
   ONLINE_GROUP_SALE_REFUSAL_LABELS,
@@ -170,7 +171,7 @@ export async function getAdminOverview(now = new Date()) {
       id: "system-dead-letters",
       view: "operations",
       severity: "danger",
-      title: `${deadLetters} ${plural(deadLetters, "задача не выполнилась", "задачи не выполнились", "задач не выполнились")} после всех попыток`,
+      title: `${deadLetters} ${plural(deadLetters, "задача не выполнилась", "задачи не выполнились", "задач не выполнено")} после всех попыток`,
       detail: "Письма, оплаты или уведомления. Можно запустить ещё раз.",
     });
   }
@@ -179,7 +180,7 @@ export async function getAdminOverview(now = new Date()) {
       id: "system-link-failed",
       view: "operations",
       severity: "warning",
-      title: `${operations.access.linkFailed} ${plural(operations.access.linkFailed, "ссылка в Telegram не создалась", "ссылки в Telegram не создались", "ссылок в Telegram не создались")}`,
+      title: `${operations.access.linkFailed} ${plural(operations.access.linkFailed, "ссылка в Telegram не создалась", "ссылки в Telegram не создались", "ссылок в Telegram не создано")}`,
       detail: "Выдай ссылку заново в разделе «Система».",
     });
   }
@@ -188,8 +189,8 @@ export async function getAdminOverview(now = new Date()) {
       id: "system-stale",
       view: "operations",
       severity: "warning",
-      title: "Есть зависшие задачи в очереди",
-      detail: "Они вернутся в работу сами; если висят дольше часа — посмотри «Систему».",
+      title: "Часть писем или уведомлений задерживается",
+      detail: "Обычно проходит само; если дольше часа — открой «Систему».",
     });
   }
 
@@ -203,8 +204,9 @@ export async function getAdminOverview(now = new Date()) {
       id: "hub-settings",
       view: "inspiration-hub",
       severity: "danger",
-      title: "Не задан чат Inspiration Hub",
-      detail: "Без него ссылки в хаб не выдаются и крон не помечает конец периодов.",
+      title: "Не выбрана Telegram-группа библиотеки",
+      detail:
+        "Ссылки в библиотеку не выдаются, окончания доступа не отслеживаются. Напиши разработчику.",
     });
   }
   if (hub.problems.stalledPaymentIntentIds.length > 0) {
@@ -213,8 +215,9 @@ export async function getAdminOverview(now = new Date()) {
       id: "hub-stalled",
       view: "inspiration-hub",
       severity: "danger",
-      title: `${count} ${plural(count, "оплаченное продолжение хаба", "оплаченных продолжения хаба", "оплаченных продолжений хаба")} без дат`,
-      detail: "Поток закрыт, а даты не записались. Человек пока остаётся в хабе.",
+      title: `${count} ${plural(count, "покупка библиотеки", "покупки библиотеки", "покупок библиотеки")} без дат`,
+      detail:
+        "После закрытия потока даты не проставились. Люди пока в библиотеке. Напиши разработчику.",
     });
   }
   const ownerless =
@@ -225,7 +228,7 @@ export async function getAdminOverview(now = new Date()) {
       id: "hub-ownerless",
       view: "inspiration-hub",
       severity: "warning",
-      title: `${ownerless} ${plural(ownerless, "покупка хаба", "покупки хаба", "покупок хаба")} без Telegram-аккаунта`,
+      title: `${ownerless} ${plural(ownerless, "покупка библиотеки", "покупки библиотеки", "покупок библиотеки")} без Telegram-аккаунта`,
       detail:
         "Ссылкой не воспользовались больше 3 дней. Напиши на email из покупки или выдай ссылку заново.",
     });
@@ -239,7 +242,9 @@ export async function getAdminOverview(now = new Date()) {
         view: "online-group",
         severity: "danger",
         title: `Пост о закрытии «${cohort.title}» не опубликован`,
-        detail: cohort.post.error ?? "Бот не смог отправить сообщение в чат потока.",
+        // Telegram's own error text is English and technical: say what to do instead.
+        detail:
+          "Бот не смог отправить пост в чат потока. Проверь права бота в карточке потока и нажми «Повторить».",
         fix: { kind: "retry-cohort-post", cohortId: cohort.id, label: "Повторить" },
       });
     }
@@ -255,8 +260,7 @@ export async function getAdminOverview(now = new Date()) {
         view: "online-group",
         severity: "warning",
         title: `Закрой «${cohort.title}», чтобы открыть продажи «${next.title}»`,
-        detail:
-          "Продажи следующего потока открываются только после закрытия предыдущего.",
+        detail: "Продажи следующего потока откроются, когда закроешь текущий.",
       });
     }
   }
@@ -284,7 +288,7 @@ export async function getAdminOverview(now = new Date()) {
       id: "polish-terminal",
       view: "purchases",
       severity: "warning",
-      title: `${polish} ${plural(polish, "польская оплата не внесена", "польские оплаты не внесены", "польских оплат не внесены")} в кассу`,
+      title: `${polish} ${plural(polish, "польская оплата не внесена", "польские оплаты не внесены", "польских оплат не внесено")} в кассу`,
       detail: "Отметь их в разделе «Покупки», когда пробьёшь чек.",
     });
   }
@@ -303,13 +307,18 @@ export async function getAdminOverview(now = new Date()) {
       });
     }
     if (cohort.accessEndsAt) {
-      const graceEnd = addWarsawCalendarDays(new Date(cohort.accessEndsAt), 7).getTime();
-      if (graceEnd > now.getTime() && graceEnd < windowEnd) {
+      // The library stays open PLUS_HUB_GRACE_DAYS days after the cohort's access
+      // ends; the event marks the start of the last of them, the day the cohort card
+      // shows as «Библиотека у Plus до», and stays until that day is over.
+      const accessEndsAt = new Date(cohort.accessEndsAt);
+      const graceEnd = addWarsawCalendarDays(accessEndsAt, PLUS_HUB_GRACE_DAYS).getTime();
+      const lastDay = addWarsawCalendarDays(accessEndsAt, PLUS_HUB_GRACE_DAYS - 1);
+      if (graceEnd > now.getTime() && lastDay.getTime() < windowEnd) {
         events.push({
           id: `grace-${cohort.id}`,
-          at: new Date(graceEnd).toISOString(),
+          at: lastDay.toISOString(),
           view: "inspiration-hub",
-          title: `Кончается хаб для Plus «${cohort.title}»`,
+          title: `Последний день библиотеки у Plus «${cohort.title}»`,
         });
       }
     }
@@ -320,7 +329,7 @@ export async function getAdminOverview(now = new Date()) {
       id: "cron-removals",
       at: hub.preview.at,
       view: "inspiration-hub",
-      title: `Крон уберёт из хаба ${count} ${plural(count, "человека", "человек", "человек")}`,
+      title: `Ночью бот уберёт из библиотеки ${count} ${plural(count, "человека", "человека", "человек")}`,
     });
   }
   if (hubCounts.endingSoon > 0) {
@@ -328,7 +337,7 @@ export async function getAdminOverview(now = new Date()) {
       id: "hub-ending",
       at: new Date(now.getTime() + 7 * DAY_MS).toISOString(),
       view: "inspiration-hub",
-      title: `До этой даты закончатся ${hubCounts.endingSoon} ${plural(hubCounts.endingSoon, "период", "периода", "периодов")} хаба`,
+      title: `До этой даты ${plural(hubCounts.endingSoon, "закончится", "закончатся", "закончатся")} ${hubCounts.endingSoon} ${plural(hubCounts.endingSoon, "оплаченный доступ", "оплаченных доступа", "оплаченных доступов")} к библиотеке`,
     });
   }
   events.sort((left, right) => Date.parse(left.at) - Date.parse(right.at));

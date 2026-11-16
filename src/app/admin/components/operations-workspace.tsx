@@ -87,15 +87,15 @@ const SYSTEM_BADGES: Record<SystemState, { label: string; tone: AdminTone }> = {
 };
 
 const OUTBOX_KIND_LABELS: Record<string, string> = {
-  admin_telegram_alert: "Telegram-алерт о покупке",
+  admin_telegram_alert: "Уведомление о покупке в Telegram",
   campaign_email_delivery: "Письмо рассылки",
-  monthly_report_delivery: "Месячный отчет",
+  monthly_report_delivery: "Месячный отчёт",
   polish_terminal_reminder: "Напоминание о польских продажах",
   choreo_access_expiry_reminder: "Окончание доступа к разбору",
   cohort_closure_post: "Пост о закрытии потока",
-  cohort_grace_reminder: "Напоминание об отсрочке хаба Plus",
-  hub_expiry_reminder: "Напоминание о конце хаба",
-  hub_period_start_invite: "Ссылка в хаб в день начала",
+  cohort_grace_reminder: "Напоминание Plus о последнем дне библиотеки",
+  hub_expiry_reminder: "Напоминание о конце доступа к библиотеке",
+  hub_period_start_invite: "Ссылка в библиотеку в день начала",
   online_group_previous_chat_removal: "Удаление из чата прошлого потока",
   purchase_success_email: "Письмо о покупке",
   telegram_access_delivery: "Выдача Telegram-доступа",
@@ -106,7 +106,7 @@ const ENTITLEMENT_STATUS_META: Record<
   { label: string; tone: AdminTone }
 > = {
   link_failed: { label: "Ссылка не создалась", tone: "danger" },
-  manual_pending: { label: "Ждет ручной выдачи", tone: "warning" },
+  manual_pending: { label: "Ждёт ручной выдачи", tone: "warning" },
 };
 
 // Fresh queue items clear themselves within seconds; only items older than
@@ -149,13 +149,13 @@ const buildQueueSystem = ({
 
   if (queue.staleLeases > 0) {
     notes.push(
-      `Зависло в работе: ${queue.staleLeases}. Воркер подберет такие задачи сам — обнови статус через пару минут, и если число не уходит, повтори задачу после появления в списке ниже.`,
+      `Задержалось: ${queue.staleLeases}. Обычно проходит само за пару минут. Если число не уменьшается — нажми «Обновить»: задача появится ниже с кнопкой «Повторить».`,
     );
   }
 
   if (isQueueStuck) {
     notes.push(
-      `В очереди: ${queue.ready}, самая старая задача ждет ${oldestAge}. Очередь двигается вебхуками и ежедневным обслуживанием — если ожидание растет весь день, что-то не так.`,
+      `Ждут обработки: ${queue.ready}, дольше всех — ${oldestAge}. Если так весь день — напиши разработчику.`,
     );
   }
 
@@ -179,7 +179,7 @@ const buildQueueSystem = ({
         ? "Есть ожидающие задачи. Разверни строку, чтобы посмотреть детали."
         : queue.ready > 0 || queue.working > 0
           ? `Сейчас в обработке: ${queue.ready + queue.working}. Вмешательство не нужно.`
-          : "Очередь пуста, все обработано.";
+          : "Всё обработано.";
 
   return {
     deadLetters,
@@ -227,7 +227,7 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
         : manualPendingCount > 0
           ? `Ждут ручной выдачи: ${manualPendingCount}. Разверни строку, чтобы посмотреть кому.`
           : snapshot.access.pending > 0
-            ? `Выдается прямо сейчас: ${snapshot.access.pending}. Вмешательство не нужно.`
+            ? `Выдаётся прямо сейчас: ${snapshot.access.pending}. Вмешательство не нужно.`
             : "Все купленные доступы выданы.",
     entitlements: problemEntitlements,
     key: "access",
@@ -249,7 +249,7 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
     buildQueueSystem({
       deadLetters: outboxDeadLetters,
       key: "outbox",
-      name: "Письма и алерты",
+      name: "Письма и уведомления",
       problemNoun: "Не доставлено",
       queue: snapshot.outbox,
     }),
@@ -259,14 +259,14 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
       detail:
         failedReports > 0
           ? `С ошибкой отправки: ${failedReports}. Разверни строку, чтобы узнать, как починить.`
-          : `Отправлено за все время: ${sentReports}.`,
+          : `Отправлено за всё время: ${sentReports}.`,
       entitlements: [],
       key: "reports",
-      name: "Месячные отчеты",
+      name: "Месячные отчёты",
       notes:
         failedReports > 0
           ? [
-              "Открой раздел «Покупки», выбери нужный месяц и нажми «Отправить на почту» — это создаст свежую доставку отчета взамен упавшей.",
+              "Открой раздел «Покупки», выбери нужный месяц и нажми «Отправить на почту» — отчёт уйдёт заново.",
             ]
           : [],
       state: failedReports > 0 ? "alert" : "ok",
@@ -297,12 +297,11 @@ const ReissuedLinks = ({ links }: { links: ReissuedAccessLink[] }) => (
     {links.map((link) => (
       <div key={link.accessKey}>
         <CopyField label={link.label || "Ссылка"} value={link.accessUrl} />
-        <LinkCaption>
-          {link.label}
-          {link.tokenExpiresAt
-            ? ` · действует до ${formatDateTime(link.tokenExpiresAt)}`
-            : ""}
-        </LinkCaption>
+        {link.tokenExpiresAt && (
+          <LinkCaption>
+            Войти по ссылке можно до {formatDateTime(link.tokenExpiresAt)}
+          </LinkCaption>
+        )}
       </div>
     ))}
   </Stack>
@@ -323,7 +322,7 @@ const DeadLetterTable = ({
         <tr>
           <th scope="col">Задача</th>
           <th scope="col">Ошибка</th>
-          <th scope="col">Упала</th>
+          <th scope="col">Когда</th>
           <th scope="col">Попыток</th>
           <th scope="col" aria-label="Действие" />
         </tr>
@@ -343,7 +342,7 @@ const DeadLetterTable = ({
                   {entry.errorMessage ? ` — ${entry.errorMessage}` : ""}
                 </CellSecondary>
               </td>
-              <td data-label="Упала">
+              <td data-label="Когда">
                 {entry.deadLetteredAt ? formatDateTime(entry.deadLetteredAt) : "—"}
               </td>
               <td data-label="Попыток">
@@ -437,7 +436,7 @@ export const OperationsWorkspace = ({
   return (
     <Stack $gap={16}>
       <Callout tone={banner.tone} icon={banner.icon} title={banner.title}>
-        {bannerText} Снимок от {formatDateTime(snapshot.capturedAt)}.
+        {bannerText} Проверено в {formatDateTime(snapshot.capturedAt)}.
       </Callout>
 
       <StatusLine status={status} />
@@ -540,8 +539,7 @@ export const OperationsWorkspace = ({
                             </div>
                           ) : (
                             <ItemMeta>
-                              Для этого тарифа доступ выдается вручную — например, через
-                              раздел Online Group.
+                              Выдай доступ в Online Group → «Ручной доступ».
                             </ItemMeta>
                           )}
                           {links.length > 0 && <ReissuedLinks links={links} />}
@@ -590,7 +588,7 @@ export const OperationsWorkspace = ({
               </dd>
             </div>
             <div>
-              <dt>Исторические события без подписи (наследие миграции, не влияет)</dt>
+              <dt>Старые события, до переезда сайта (ни на что не влияют)</dt>
               <dd>{snapshot.projection.unverifiedEvents}</dd>
             </div>
             <div>

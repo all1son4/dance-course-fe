@@ -7,7 +7,7 @@ import type { CohortOverview } from "@/lib/online-group/cohort-admin";
 import type { CloseCohortInput, CloseCohortResult } from "../hooks/use-cohorts-admin";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
-import { ConfirmDialog, useToast } from "../ui/feedback";
+import { ConfirmDialog, SheetDialog, useToast } from "../ui/feedback";
 import { Input, Switch } from "../ui/forms";
 import {
   AdminButton,
@@ -15,13 +15,22 @@ import {
   Callout,
   EmptyState,
   focusVisible,
+  Muted,
   Panel,
   Row,
   Skeleton,
   Stack,
 } from "../ui/primitives";
 import { BotRightsCheck } from "./bot-rights-check";
-import { CohortTransitionGuide, type RenewalLinkKind } from "./cohort-transition-guide";
+import {
+  CohortTransitionBanner,
+  CohortTransitionGuide,
+  initialNextCohortInput,
+  NextCohortForm,
+  type NextCohortInput,
+  type RenewalLinkKind,
+} from "./cohort-transition-guide";
+import { TelegramPostPreview } from "./telegram-post-preview";
 
 const formatDate = (iso: string, withTime = false) =>
   new Intl.DateTimeFormat("ru-RU", {
@@ -303,6 +312,12 @@ type CohortsPanelProps = {
   onClosed: () => void;
   onReload: () => Promise<void> | void;
   onRetryPost: (cohortId: string) => Promise<boolean>;
+  chats: { chatId: string; title: string }[];
+  libraryChatId: string;
+  onCreateNextCohort: (
+    previous: CohortOverview,
+    input: NextCohortInput,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
   onCreateRenewalLink: (
     cohort: CohortOverview,
     kind: RenewalLinkKind,
@@ -323,6 +338,9 @@ export const CohortsPanel = ({
   onClosed,
   onReload,
   onRetryPost,
+  chats,
+  libraryChatId,
+  onCreateNextCohort,
   onCreateRenewalLink,
   onSetDurationWeeks,
   onSetPreviousChatRemoval,
@@ -356,7 +374,16 @@ export const CohortsPanel = ({
     }
   };
 
+  // Switching removal on means the bot will remove people from the previous chat:
+  // it asks first. Switching it off is harmless.
+  const [removalConfirm, setRemovalConfirm] = useState<CohortOverview | null>(null);
+
   const switchPreviousChatRemoval = async (cohort: CohortOverview, enabled: boolean) => {
+    if (enabled && removalConfirm?.id !== cohort.id) {
+      setRemovalConfirm(cohort);
+      return;
+    }
+    setRemovalConfirm(null);
     setSwitchingId(cohort.id);
     const ok = await onSetPreviousChatRemoval(cohort.id, enabled);
     setSwitchingId("");
@@ -369,6 +396,7 @@ export const CohortsPanel = ({
   const [publish, setPublish] = useState(true);
   const [pin, setPin] = useState(true);
   const [postText, setPostText] = useState("");
+  const [isEditingPost, setIsEditingPost] = useState(false);
   const [closeError, setCloseError] = useState("");
 
   const ordered = orderCohorts(cohorts ?? [], loadedAt);
@@ -377,6 +405,34 @@ export const CohortsPanel = ({
     (cohort) => !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt,
   );
   const [creatingKind, setCreatingKind] = useState<RenewalLinkKind | "">("");
+  const [transitionOpen, setTransitionOpen] = useState(false);
+  // The newest cohort record: the one a «следующий поток» would follow.
+  const latest = [...(cohorts ?? [])].sort(
+    (left, right) => Date.parse(right.startsAt) - Date.parse(left.startsAt),
+  )[0];
+  const [nextForm, setNextForm] = useState<NextCohortInput | null>(null);
+  const [nextError, setNextError] = useState("");
+  const [isCreatingNext, setIsCreatingNext] = useState(false);
+  // A chat that already belongs to a cohort, or the library chat, cannot start one.
+  const freeChats = chats.filter(
+    (chat) =>
+      chat.chatId !== libraryChatId &&
+      !(cohorts ?? []).some((cohort) => cohort.mainChatId === chat.chatId),
+  );
+
+  const submitNextCohort = async () => {
+    if (!latest || !nextForm) return;
+    setIsCreatingNext(true);
+    setNextError("");
+    const outcome = await onCreateNextCohort(latest, nextForm);
+    setIsCreatingNext(false);
+    if (!outcome.ok) {
+      setNextError(outcome.message);
+      return;
+    }
+    setNextForm(null);
+    toast({ tone: "success", title: `«${nextForm.title}» заведён` });
+  };
 
   const createRenewalLink = async (kind: RenewalLinkKind) => {
     if (!running) return;
@@ -400,6 +456,7 @@ export const CohortsPanel = ({
     setPublish(Boolean(cohort.draftPost));
     setPin(true);
     setPostText(cohort.draftPost);
+    setIsEditingPost(false);
     setCloseError("");
   };
 
@@ -434,14 +491,14 @@ export const CohortsPanel = ({
         tone: "danger",
         title: "Следующий поток не стал текущим",
         description:
-          "Открой «Настройки потока» и сохрани следующий поток вручную: без этого ссылки продления не откроют оплату.",
+          "Открой «Настройки потока» → «Исправить название или дату», сохрани без изменений — следующий поток станет текущим. Пока этого нет, ссылки продления не открывают оплату.",
       });
     }
     if (result.continuations.failures.length > 0) {
       toast({
         tone: "danger",
-        title: `${result.continuations.failures.length} продолжений хаба не получили даты`,
-        description: "Они видны во вкладке Inspiration Hub. Напиши разработчику.",
+        title: `У ${result.continuations.failures.length} покупок библиотеки не проставились даты`,
+        description: "Они видны в разделе Inspiration Hub. Напиши разработчику.",
       });
     }
     onClosed();
@@ -485,18 +542,20 @@ export const CohortsPanel = ({
       ) : ordered.length === 0 ? (
         <EmptyState
           title="Записей потоков пока нет"
-          text="Они появятся после переноса при запуске хаба. До этого работает форма «Настройки потока»."
+          text="Потоков пока нет. Напиши разработчику — первый поток заводится вместе с ним."
         />
       ) : (
         <List>
-          {running && (
-            <CohortTransitionGuide
-              cohort={running}
-              creatingKind={creatingKind}
-              onCreateLink={(kind) => void createRenewalLink(kind)}
-              onOpenClose={() => openCloseWindow(running)}
-            />
-          )}
+          <CohortTransitionBanner
+            latest={latest}
+            running={running}
+            onOpenTransition={() => setTransitionOpen(true)}
+            onCreateNext={() => {
+              if (!latest) return;
+              setNextError("");
+              setNextForm(initialNextCohortInput(latest));
+            }}
+          />
           {ordered.map((cohort) => {
             const status = cohortStatus(cohort, ordered, loadedAt);
             const isCurrent = !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt;
@@ -545,7 +604,7 @@ export const CohortsPanel = ({
                       )}
                       {cohort.accessEndsAt && (
                         <>
-                          <dt>Хаб Plus до</dt>
+                          <dt>Библиотека у Plus до</dt>
                           <dd>{formatWarsawDay(cohort.plusHubLastDay)} включительно</dd>
                         </>
                       )}
@@ -562,7 +621,7 @@ export const CohortsPanel = ({
                         <b>{cohort.facts.plusPurchases}</b>
                       </div>
                       <div>
-                        <small>Продолжений хаба</small>
+                        <small>Купили библиотеку после потока</small>
                         <b>{cohort.facts.continuations}</b>
                       </div>
                     </Facts>
@@ -598,6 +657,12 @@ export const CohortsPanel = ({
                           Сохранить
                         </AdminButton>
                       </DurationEditor>
+                    )}
+                    {!cohort.closedAt && (
+                      <Muted>
+                        Меняет дату окончания по плану — её видят покупатели Plus в «Моём
+                        доступе». Сам поток закрывается только кнопкой «Закрыть поток».
+                      </Muted>
                     )}
                     {cohort.previousCohortId && !cohort.closedAt && (
                       <SwitchSetting>
@@ -641,7 +706,7 @@ export const CohortsPanel = ({
                               ? "Пост о закрытии опубликован"
                               : postFailed
                                 ? "Пост о закрытии не опубликован"
-                                : "Пост о закрытии в очереди"}
+                                : "Пост о закрытии отправляется…"}
                           </Badge>
                           {postFailed && (
                             <AdminButton
@@ -675,8 +740,8 @@ export const CohortsPanel = ({
                             />
                           )}
                           <CopyField
-                            caption="Хаб"
-                            label="Ссылка на хаб"
+                            caption="Библиотека"
+                            label="Ссылка на покупку библиотеки"
                             value={cohort.links.hub}
                           />
                         </Stack>
@@ -700,9 +765,27 @@ export const CohortsPanel = ({
       )}
 
       <ConfirmDialog
+        open={removalConfirm !== null}
+        title="Удалять из чата прошлого потока?"
+        description={
+          removalConfirm
+            ? `Каждый, кто войдёт в «${removalConfirm.mainChatTitle}» по своей покупке, будет удалён из «${
+                cohorts?.find((c) => c.id === removalConfirm.previousCohortId)
+                  ?.mainChatTitle ?? "чата прошлого потока"
+              }». Админов и создателя чата бот не трогает.`
+            : ""
+        }
+        confirmLabel="Включить"
+        tone="danger"
+        onCancel={() => setRemovalConfirm(null)}
+        onConfirm={() => {
+          if (removalConfirm) void switchPreviousChatRemoval(removalConfirm, true);
+        }}
+      />
+      <ConfirmDialog
         open={closing !== null}
         title={closing ? `Закрыть «${closing.title}»` : ""}
-        description="Закрытие необратимо. Чат остаётся со всеми, кто в нём есть, а уроков в нём больше нет."
+        description="Закрытие нельзя отменить. Люди останутся в чате до старта следующего потока, но уроков там уже не будет."
         confirmLabel="Закрыть поток"
         tone="danger"
         busy={isClosing}
@@ -715,23 +798,23 @@ export const CohortsPanel = ({
           <Stack $gap={12}>
             <Facts>
               <div>
-                <small>Доступ закончится</small>
-                <b>завтра 00:00</b>
+                <small>Уроки потока недоступны с</small>
+                <b>завтра, 00:00 по Варшаве</b>
               </div>
               <div>
-                <small>Хаб Plus до</small>
+                <small>Библиотека у Plus до</small>
                 <b>{formatWarsawDay(closing.plusHubLastDay)}</b>
               </div>
               <div>
-                <small>Продолжений хаба</small>
+                <small>Купили библиотеку после потока</small>
                 <b>{closing.facts.continuations}</b>
               </div>
             </Facts>
             {closing.facts.legacyPlusHubRights > 0 && (
               <Callout tone="info" icon={<CircleAlert aria-hidden />}>
                 {closing.next
-                  ? `У ${closing.facts.legacyPlusHubRights} покупок Plus Inspiration Hub по прежней схеме: он продлится до старта «${closing.next.title}» (${formatDate(closing.next.startsAt)}). Этот срок поставится сам при закрытии.`
-                  : `У ${closing.facts.legacyPlusHubRights} покупок Plus Inspiration Hub по прежней схеме: он закончится со стартом следующего потока, а его пока нет. Напиши разработчику.`}
+                  ? `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта «${closing.next.title}» (${formatDate(closing.next.startsAt)}). Дата поставится сама при закрытии.`
+                  : `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта следующего потока, а его пока нет. Сначала заведи следующий поток.`}
               </Callout>
             )}
             {!closing.next && (
@@ -743,7 +826,7 @@ export const CohortsPanel = ({
               <Callout tone="warning" icon={<CircleAlert aria-hidden />}>
                 По плану поток идёт до {formatDate(closing.plannedEndsAt)} (
                 {closing.durationWeeks} {weeksWord(closing.durationWeeks)}). Если закрыть
-                сейчас, хаб Plus закончится раньше — через 7 дней после закрытия.
+                сейчас, библиотека у Plus закончится раньше — через 7 дней после закрытия.
               </Callout>
             )}
             <Check>
@@ -754,9 +837,14 @@ export const CohortsPanel = ({
               />
               <span>
                 Уроки из чата убраны
-                <small>Сначала проверь, что они сохранены в хабе.</small>
+                <small>Сначала проверь, что они сохранены в библиотеке.</small>
               </span>
             </Check>
+            {!lessonsCleared && (
+              <Muted>
+                Пока галочка «Уроки из чата убраны» не стоит, закрыть поток нельзя.
+              </Muted>
+            )}
             {closing.next && (
               <Check>
                 <input
@@ -793,19 +881,95 @@ export const CohortsPanel = ({
                       />
                       <span>Закрепить пост</span>
                     </Check>
-                    <PostEditor
-                      aria-label="Текст поста"
-                      value={postText}
-                      onChange={(event) => setPostText(event.target.value)}
-                    />
+                    <Muted>
+                      Пост на английском — чаты международные. Цены и даты уже
+                      подставлены, ссылки на оплату — кнопками под постом.
+                    </Muted>
+                    {isEditingPost ? (
+                      <>
+                        <PostEditor
+                          aria-label="Текст поста"
+                          value={postText}
+                          onChange={(event) => setPostText(event.target.value)}
+                        />
+                        <Muted>
+                          *Звёздочки* — жирный, ~тильды~ — зачёркнутый, строки с «&gt; » в
+                          начале — цитата.
+                        </Muted>
+                      </>
+                    ) : (
+                      <TelegramPostPreview
+                        text={postText}
+                        buttons={closing.postButtons}
+                      />
+                    )}
+                    <Row>
+                      <AdminButton
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setIsEditingPost((editing) => !editing)}
+                      >
+                        {isEditingPost ? "Показать как в Telegram" : "Изменить текст"}
+                      </AdminButton>
+                    </Row>
                   </>
                 )}
               </>
+            )}
+            {closing.next && !closing.draftPost && !closing.closedAt && (
+              <Callout tone="info" icon={<CircleAlert aria-hidden />}>
+                Пост о закрытии не предложен: сначала создай ссылки продления в «Настроить
+                переход».
+              </Callout>
             )}
             {closeError && <Callout tone="danger">{closeError}</Callout>}
           </Stack>
         )}
       </ConfirmDialog>
+      {running?.next && (
+        <SheetDialog
+          open={transitionOpen}
+          onClose={() => setTransitionOpen(false)}
+          title={`Переход «${running.title}» → «${running.next.title}»`}
+        >
+          <CohortTransitionGuide
+            cohort={running}
+            creatingKind={creatingKind}
+            onCreateLink={(kind) => void createRenewalLink(kind)}
+            onOpenClose={() => {
+              setTransitionOpen(false);
+              openCloseWindow(running);
+            }}
+          />
+        </SheetDialog>
+      )}
+      {latest && nextForm && (
+        <SheetDialog
+          open
+          onClose={() => setNextForm(null)}
+          title="Завести следующий поток"
+          footer={
+            <AdminButton
+              variant="primary"
+              loading={isCreatingNext}
+              disabled={
+                !nextForm.title.trim() || !nextForm.mainChatId || !nextForm.startsAt
+              }
+              onClick={() => void submitNextCohort()}
+            >
+              Завести поток
+            </AdminButton>
+          }
+        >
+          <NextCohortForm
+            chats={freeChats}
+            error={nextError}
+            latest={latest}
+            value={nextForm}
+            onChange={setNextForm}
+          />
+        </SheetDialog>
+      )}
     </Panel>
   );
 };

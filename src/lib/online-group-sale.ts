@@ -38,9 +38,8 @@ export async function getOnlineGroupSale(): Promise<OnlineGroupSale> {
 /** Russian, for the admin: what keeps the Online Group closed. */
 export const ONLINE_GROUP_SALE_REFUSAL_LABELS: Record<OnlineGroupSaleRefusal, string> = {
   campaign_missing: "Поток не запущен",
-  cohort_closed: "Поток с этим основным чатом уже закрыт",
-  cohort_not_found: "Нет записи потока для основного чата: её заводит разработчик",
-  cohort_sales_disabled:
-    "Продажи потока ещё не открыты: их открывает закрытие предыдущего",
+  cohort_closed: "Текущий поток закрыт, а следующий ещё не стал текущим",
+  cohort_not_found: "Следующий поток не заведён — заведи его в Online Group → Потоки",
+  cohort_sales_disabled: "Продажи следующего потока откроются, когда закроешь текущий",
   previous_cohort_open: "Предыдущий поток не закрыт",
 };

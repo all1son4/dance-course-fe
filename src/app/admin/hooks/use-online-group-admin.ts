@@ -29,16 +29,18 @@ type UseOnlineGroupAdminOptions = {
 };
 
 const ADMIN_ACCESS_ERROR_MESSAGES: Record<string, string> = {
-  missing_admin_label: "Добавь идентификатор получателя.",
-  network_error: "Ошибка сети при генерации ссылок доступа.",
+  missing_admin_label: "Напиши, для кого этот доступ.",
+  network_error: "Нет связи с сайтом. Проверь интернет и попробуй ещё раз.",
   online_group_settings_not_configured:
-    "Сначала настрой и активируй поток с основным чатом и Inspiration Hub.",
+    "Сначала настрой текущий поток в «Настройках потока».",
   rate_limited: RATE_LIMITED_STATUS_TEXT,
 };
 
 const RENEWAL_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при создании ссылки продления.",
-  renewal_offer_not_seeded: "Скидочный offer не найден в БД. Запусти seed продуктов.",
+  network_error: "Нет связи с сайтом. Проверь интернет и попробуй ещё раз.",
+  renewal_campaign_sources_changed:
+    "Ссылка на этот тариф уже есть — для других чатов. Скопируй её из списка ниже. Если чаты правда нужно поменять, нажми «Заменить ссылку новой».",
+  renewal_offer_not_seeded: "Тариф продления не найден. Напиши разработчику.",
   same_source_and_target_chat:
     "Чат, в который ведёт ссылка, не может быть среди источников: сними его галочку.",
   telegram_chat_not_registered:
@@ -46,23 +48,23 @@ const RENEWAL_ERROR_MESSAGES: Record<string, string> = {
 };
 
 const SETTINGS_ERROR_MESSAGES: Record<string, string> = {
-  inspiration_chat_is_fixed: "Inspiration Hub уже закреплен и не может быть заменен.",
-  invalid_start_date: "Укажи корректную дату старта потока.",
-  network_error: "Ошибка сети при сохранении настроек Online Group.",
-  online_group_cohort_closed:
-    "Поток с этим основным чатом уже закрыт: дату его старта менять нельзя.",
+  inspiration_chat_is_fixed: "Telegram-группа библиотеки уже выбрана и не меняется.",
+  invalid_start_date: "Укажи дату и время старта.",
+  missing_chat_selection: "Выбери чат потока.",
+  network_error: "Нет связи с сайтом. Проверь интернет и попробуй ещё раз.",
+  online_group_cohort_closed: "Этот поток уже закрыт — его дату менять нельзя.",
   online_group_cohort_main_chat_fixed:
-    "Следующий поток станет текущим сам, когда ты закроешь этот во вкладке «Потоки». Ссылки продления на него можно создать уже сейчас во вкладке «Продления».",
+    "Чат потока меняется сам, когда закрываешь поток в «Потоках». Ссылки продления на следующий поток — там же, в «Настроить переход».",
   online_group_cohort_start_has_continuations:
-    "От этой даты старта уже идут оплаченные продолжения хаба. Перенос с пересчётом делает разработчик.",
-  same_main_and_inspiration_chat: "Основной чат и Inspiration Hub должны отличаться.",
-  telegram_chat_not_registered: "Один из чатов не зарегистрирован через /register_chat.",
+    "С этой даты уже начинаются оплаченные периоды библиотеки. Перенести дату может только разработчик.",
+  same_main_and_inspiration_chat: "Чат потока и группа библиотеки должны отличаться.",
+  telegram_chat_not_registered:
+    "Бот не знает этот чат. Добавь бота администратором, отправь в чате /register_chat и обнови страницу.",
 };
 
 const RENEWAL_TOGGLE_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при изменении состояния ссылки.",
-  renewal_campaign_inactive:
-    "Эта ссылка относится к старому потоку и не может быть включена.",
+  network_error: "Нет связи с сайтом. Проверь интернет и попробуй ещё раз.",
+  renewal_campaign_inactive: "Эта ссылка ведёт в прошлый поток — включить её нельзя.",
   renewal_campaign_not_found: "Ссылка продления не найдена.",
 };
 
@@ -98,7 +100,8 @@ export const useOnlineGroupAdmin = ({
   const [updatingRenewalSlug, setUpdatingRenewalSlug] = useState("");
 
   const telegramChatSelectOptions: SelectOption[] = telegramChats.map((chat) => ({
-    label: `${chat.title} (${chat.chatId})`,
+    // The title is what the admin knows the chat by; the id says nothing to her.
+    label: chat.title,
     value: chat.chatId,
   }));
   const activeCampaign = campaigns.find((campaign) => campaign.status === "active");
@@ -121,11 +124,13 @@ export const useOnlineGroupAdmin = ({
     isGeneratingAdminAccess || isLoading || !hasConfiguredCampaign || !adminLabel.trim();
   const isRenewalGenerateDisabled =
     isGeneratingRenewal || renewalSourceChatIds.length === 0 || !activeCampaign;
+  // The title is typed again to confirm the closure, so it is never left to a fallback.
   const isSaveDisabled =
     isSaving ||
     !mainChatId ||
     !libraryChatId ||
     !startsAt ||
+    !title.trim() ||
     mainChatId === libraryChatId;
   const renewalOfferSelectOptions: SelectOption[] = [
     {
@@ -236,7 +241,8 @@ export const useOnlineGroupAdmin = ({
           chats.some((chat) => chat.chatId === chatId),
         );
 
-        return validValues.length ? validValues : chats[0] ? [chats[0].chatId] : [];
+        // Nothing is ticked in advance: a wrong source set would replace a sent link.
+        return validValues;
       });
     }
 
@@ -304,7 +310,7 @@ export const useOnlineGroupAdmin = ({
 
     setIsGeneratingAdminAccess(true);
     setAdminStatus({
-      text: "Генерирую персональные invite-ссылки...",
+      text: "Создаю ссылки…",
       tone: "info",
     });
 
@@ -356,8 +362,8 @@ export const useOnlineGroupAdmin = ({
           ? {
               text:
                 grant.accessMode === "plus"
-                  ? "Ссылки в основной чат и Inspiration Hub готовы."
-                  : "Ссылка в основной чат готова.",
+                  ? "Ссылки в чат потока и библиотеку готовы."
+                  : "Ссылка в чат потока готова.",
               tone: "success",
             }
           : grantStatus === "partial"
@@ -391,8 +397,8 @@ export const useOnlineGroupAdmin = ({
       setGeneratedRenewalLink("");
       setRenewalStatus({
         text: regenerate
-          ? "Перегенерирую checkout-ссылку продления..."
-          : "Получаю checkout-ссылку продления...",
+          ? "Создаю новую ссылку вместо старой…"
+          : "Готовлю ссылку продления…",
         tone: "info",
       });
 
@@ -428,50 +434,23 @@ export const useOnlineGroupAdmin = ({
         setGeneratedRenewalLink(campaign.checkoutUrl);
         setRenewalStatus({
           text: reused
-            ? "Активная checkout-ссылка уже была создана, можно копировать."
-            : "Checkout-ссылка продления готова.",
+            ? "Такая ссылка уже есть — можно копировать."
+            : "Ссылка продления готова.",
           tone: "success",
         });
-        setRenewalCampaigns((previousCampaigns) => {
-          const nextCampaign: RenewalCampaignEntry = {
-            checkoutUrl: campaign.checkoutUrl,
-            createdAt: campaign.createdAt ?? new Date().toISOString(),
-            id: campaign.id ?? "",
-            offerId: campaign.offerId ?? renewalOfferId,
-            slug: campaign.slug ?? "",
-            sourceChatId: renewalSourceChatIds[0] ?? "",
-            sourceChatIds: campaign.sourceChatIds ?? renewalSourceChatIds,
-            sourceChatTitle:
-              campaign.sourceChatTitles?.[0] ?? renewalSourceChatIds[0] ?? "",
-            sourceChatTitles: campaign.sourceChatTitles ?? renewalSourceChatIds,
-            status: "active",
-            targetChatId: activeCampaign?.mainChatId ?? "",
-            title: campaign.title ?? renewalTitle,
-          };
-
-          return [
-            nextCampaign,
-            ...previousCampaigns
-              .filter(
-                (previousCampaign) =>
-                  previousCampaign.id !== nextCampaign.id &&
-                  previousCampaign.slug !== nextCampaign.slug,
-              )
-              .map((previousCampaign) =>
-                previousCampaign.offerId === nextCampaign.offerId &&
-                previousCampaign.targetChatId === nextCampaign.targetChatId
-                  ? { ...previousCampaign, status: "archived" }
-                  : previousCampaign,
-              ),
-          ];
-        });
+        // Which links a new one replaced is the server's call; read the list back.
+        const refreshed = await requestAdminJson<RenewalCampaignsResponse>(
+          ADMIN_API_ENDPOINTS.renewalCampaigns,
+        );
+        if (refreshed.ok && Array.isArray(refreshed.data.campaigns)) {
+          setRenewalCampaigns(refreshed.data.campaigns);
+        }
         setRenewalTitle("");
       }
 
       setIsGeneratingRenewal(false);
     },
     [
-      activeCampaign,
       isRenewalGenerateDisabled,
       onUnauthorized,
       renewalOfferId,
@@ -523,14 +502,14 @@ export const useOnlineGroupAdmin = ({
             campaign.status === "active" ? { ...campaign, status: "archived" } : campaign,
           ),
       ]);
-      setRenewalCampaigns((currentCampaigns) =>
-        currentCampaigns.map((campaign) =>
-          campaign.status === "active" &&
-          campaign.targetChatId !== savedCampaign.mainChatId
-            ? { ...campaign, status: "archived" }
-            : campaign,
-        ),
+      // The server decides which renewal links stay on (the current cohort's and its
+      // successor's); the list is read back instead of guessed here.
+      const refreshedRenewals = await requestAdminJson<RenewalCampaignsResponse>(
+        ADMIN_API_ENDPOINTS.renewalCampaigns,
       );
+      if (refreshedRenewals.ok && Array.isArray(refreshedRenewals.data.campaigns)) {
+        setRenewalCampaigns(refreshedRenewals.data.campaigns);
+      }
 
       const generatedCampaign = renewalCampaigns.find(
         (campaign) => campaign.checkoutUrl === generatedRenewalLink,
@@ -544,7 +523,11 @@ export const useOnlineGroupAdmin = ({
       }
 
       setStatus({
-        text: reused ? "Настройки уже актуальны." : "Новый поток активирован.",
+        text: reused
+          ? "Настройки уже актуальны."
+          : activeCampaign
+            ? "Изменения сохранены."
+            : "Поток открыт.",
         tone: "success",
       });
       setIsFormOpen(false);
@@ -552,6 +535,7 @@ export const useOnlineGroupAdmin = ({
 
     setIsSaving(false);
   }, [
+    activeCampaign,
     generatedRenewalLink,
     isSaveDisabled,
     libraryChatId,

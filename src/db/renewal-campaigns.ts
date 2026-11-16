@@ -295,7 +295,12 @@ const getExistingRenewalCampaignUpdateState = async ({
     normalizedSourceChatIds.some((chatId) => !existingSourceChatIds.includes(chatId));
 
   // A source-set change invalidates the audience represented by a distributed
-  // link, therefore it follows the same slug rotation path as an explicit reset.
+  // link, therefore it follows the same slug rotation path as an explicit reset -
+  // but only on an explicit reset: a different tick in the form must not swap a link
+  // people already received for a new address behind the admin's back.
+  if (sourceChatsChanged && !regenerate) {
+    throw new Error("renewal_campaign_sources_changed");
+  }
   const shouldRegenerateSlug = regenerate || sourceChatsChanged;
   const campaignChanged =
     shouldRegenerateSlug ||

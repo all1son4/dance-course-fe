@@ -25,13 +25,13 @@ const LOAD_ERROR_MESSAGES: Record<string, string> = {
 const SEND_ERROR_MESSAGES: Record<string, string> = {
   network_error: "Ошибка сети при отправке рассылки.",
   product_sales_closed:
-    "Продажи First Touch выключены. Включи их в разделе «Продажи» — иначе в письме будет нерабочая ссылка на оплату.",
+    "Продажи First Touch выключены. Включи их в разделе «Каталог» — иначе в письме будет нерабочая ссылка на оплату.",
   sales_state_unavailable:
-    "Не удалось проверить состояние продаж в базе. Рассылка не отправлена — попробуй ещё раз.",
+    "Не удалось проверить, открыты ли продажи. Рассылка не отправлена — попробуй ещё раз.",
 };
 
 const EXCLUDE_ERROR_MESSAGES: Record<string, string> = {
-  broadcast_in_progress: "Сейчас идет отправка. Дождись завершения и попробуй снова.",
+  broadcast_in_progress: "Сейчас идёт отправка. Дождись завершения и попробуй снова.",
   lead_not_actionable: "Статус пользователя уже изменился. Обнови список.",
   network_error: "Ошибка сети при изменении участия в рассылке.",
 };
@@ -98,7 +98,7 @@ export const useBroadcastAdmin = ({
       setStatus({
         text:
           SEND_ERROR_MESSAGES[result.errorCode] ??
-          "Не удалось отправить рассылку. Проверь настройки Resend и таблицу.",
+          "Рассылка не ушла. Попробуй через несколько минут; если повторится — напиши разработчику.",
         tone: "error",
       });
     } else {
@@ -112,7 +112,7 @@ export const useBroadcastAdmin = ({
         setStats(sendStats ?? sendResult);
         setAudience(sendAudience ?? []);
         setStatus({
-          text: `Рассылка обработана. Попыток: ${sendResult.attempted}. Отправлено: ${sendResult.sent}. Ошибок: ${sendResult.failed}.`,
+          text: `Рассылка обработана. Попыток: ${sendResult.attempted}. Отправлено: ${sendResult.sent}.${sendResult.failed > 0 ? ` Не дошло: ${sendResult.failed} — уйдут при следующей отправке.` : ""}`,
           tone: sendResult.failed > 0 ? "info" : "success",
         });
       }
@@ -161,7 +161,7 @@ export const useBroadcastAdmin = ({
           text:
             scope === "global"
               ? `${lead.email} больше не будет включаться в будущие рассылки.`
-              : `${lead.email} исключен из этой рассылки.`,
+              : `${lead.email} исключён из этой рассылки.`,
           tone: "success",
         });
       }

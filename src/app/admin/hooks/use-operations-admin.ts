@@ -18,31 +18,29 @@ type UseOperationsAdminOptions = {
 };
 
 const REPLAY_RESULT_LABELS: Record<string, string> = {
-  dead_letter: "Задача снова упала в dead letters. Смотри ошибку в списке.",
-  failed: "Доставка снова не прошла. Задача уйдет в автоповтор.",
-  pending: "Задача поставлена в очередь и будет обработана в ближайший прогон.",
-  processed: "Событие успешно обработано.",
-  sent: "Доставка прошла успешно.",
-  skipped: "Задача обработана и помечена как пропущенная.",
+  dead_letter: "Снова не получилось. Причина — в строке задачи.",
+  failed: "Снова не получилось. Система сама попробует ещё раз.",
+  pending: "Задача запущена заново — нажми «Обновить» через пару минут.",
+  processed: "Готово: оплата обработана.",
+  sent: "Готово: доставлено.",
+  skipped: "Готово: делать ничего не пришлось.",
 };
 
 const LOAD_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при загрузке операционного статуса.",
+  network_error: "Статус не загрузился: нет связи. Проверь интернет и нажми «Обновить».",
 };
 
 const REPLAY_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при повторе доставки.",
+  network_error: "Повтор не запущен: нет связи. Проверь интернет и повтори.",
   rate_limited: RATE_LIMITED_STATUS_TEXT,
-  replay_event_not_verified:
-    "У события нет подтвержденной подписи Stripe (наследие миграции) — повтор невозможен.",
+  replay_event_not_verified: "Это старое событие, до переезда сайта: повторить нельзя.",
   replay_job_not_found: "Задача не найдена или уже обработана. Обнови статус.",
-  replay_kind_unsupported:
-    "Эту задачу нельзя повторить из админки — для нее нет автоматического обработчика. Напиши разработчику.",
+  replay_kind_unsupported: "Эту задачу нельзя повторить отсюда. Напиши разработчику.",
 };
 
 const REISSUE_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при перевыпуске ссылок.",
-  purchase_not_found: "Покупка не найдена в базе.",
+  network_error: "Ссылки не перевыпущены: нет связи. Проверь интернет и повтори.",
+  purchase_not_found: "Покупка не найдена. Нажми «Обновить».",
   purchase_not_succeeded:
     "Эта оплата не завершилась успехом — выдавать доступ не за что.",
   rate_limited: RATE_LIMITED_STATUS_TEXT,
@@ -75,8 +73,7 @@ export const useOperationsAdmin = ({
     } else if (!result.ok) {
       setStatus({
         text:
-          LOAD_ERROR_MESSAGES[result.errorCode] ??
-          "Не удалось загрузить операционный статус.",
+          LOAD_ERROR_MESSAGES[result.errorCode] ?? "Не удалось загрузить статус систем.",
         tone: "error",
       });
     } else {
@@ -100,7 +97,7 @@ export const useOperationsAdmin = ({
 
       setReplayingKey(key);
       setStatus({
-        text: "Повторяю доставку...",
+        text: "Повторяю…",
         tone: "info",
       });
 
@@ -127,7 +124,7 @@ export const useOperationsAdmin = ({
         setStatus({
           text:
             REPLAY_RESULT_LABELS[replayStatus ?? ""] ??
-            `Задача переведена в статус «${replayStatus ?? "pending"}».`,
+            "Повтор запущен. Нажми «Обновить» через минуту.",
           tone:
             replayStatus === "dead_letter" || replayStatus === "failed"
               ? "error"
@@ -149,7 +146,7 @@ export const useOperationsAdmin = ({
 
       setReissuingPaymentIntentId(paymentIntentId);
       setStatus({
-        text: "Перевыпускаю ссылки доступа...",
+        text: "Перевыпускаю ссылки доступа…",
         tone: "info",
       });
 
@@ -191,11 +188,11 @@ export const useOperationsAdmin = ({
                 }
               : reissueStatus === "not_applicable"
                 ? {
-                    text: "Для этой покупки ссылки не создаются: доступ выдается вручную.",
+                    text: "Для этой покупки ссылки не создаются: доступ выдаётся вручную.",
                     tone: "info",
                   }
                 : {
-                    text: "Telegram не отдал новые ссылки. Попробуй позже или проверь настройки бота.",
+                    text: "Telegram не выдал новые ссылки. Попробуй позже; если повторится — проверь права бота в чате.",
                     tone: "error",
                   },
         );

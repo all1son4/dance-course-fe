@@ -1,11 +1,13 @@
-import { Check, ChevronDown, Lock, Plus } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Lock, Plus } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import styled from "styled-components";
 
 import type { CohortOverview } from "@/lib/online-group/cohort-admin";
 
 import { CopyField } from "../ui/copy";
-import { AdminButton, Muted } from "../ui/primitives";
+import { Field, FormGrid, Input, Select } from "../ui/forms";
+import { AdminButton, Muted, Stack } from "../ui/primitives";
+import { TelegramPostPreview } from "./telegram-post-preview";
 
 export type RenewalLinkKind = "plus" | "standard";
 
@@ -23,26 +25,6 @@ const weeksWord = (weeks: number) => {
   if (last === 1) return "неделя";
   return last >= 2 && last <= 4 ? "недели" : "недель";
 };
-
-const Guide = styled.section`
-  display: grid;
-  gap: 16px;
-  padding: 20px;
-  border: 1px solid var(--a-accent-ring);
-  border-radius: var(--a-radius-lg);
-  background: var(--a-accent-soft);
-
-  h3 {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 600;
-  }
-
-  > p {
-    margin: 4px 0 0;
-    color: var(--a-ink-2);
-  }
-`;
 
 const Steps = styled.ol`
   display: grid;
@@ -107,18 +89,6 @@ const Warning = styled.p`
   }
 `;
 
-const PostPreview = styled.pre`
-  margin: 0;
-  max-height: 320px;
-  overflow: auto;
-  padding: 12px;
-  border-radius: var(--a-radius-sm);
-  background: var(--a-surface-sunken);
-  font-family: var(--a-font);
-  font-size: var(--a-text-xs);
-  white-space: pre-wrap;
-`;
-
 const Toggle = styled.button`
   justify-self: start;
   display: inline-flex;
@@ -177,39 +147,20 @@ export const CohortTransitionGuide = ({
 }) => {
   const [showPost, setShowPost] = useState(false);
   const next = cohort.next;
-
-  if (!next) {
-    return (
-      <Guide aria-labelledby="transition-title">
-        <div>
-          <h3 id="transition-title">Переход на следующий поток</h3>
-          <p>
-            Следующий поток ещё не заведён. Его запись (чат, дата старта, длительность)
-            заводит разработчик — после этого здесь появятся шаги перехода.
-          </p>
-        </div>
-      </Guide>
-    );
-  }
+  if (!next) return null;
 
   const hasPlus = Boolean(cohort.links?.plus);
   const hasStandard = Boolean(cohort.links?.standard);
   const linksReady = hasPlus && hasStandard;
 
   return (
-    <Guide aria-labelledby="transition-title">
-      <div>
-        <h3 id="transition-title">
-          Переход «{cohort.title}» → «{next.title}»
-        </h3>
-        <p>Делай по порядку. Готовые шаги отмечаются сами.</p>
-      </div>
-
+    <Stack $gap={12}>
+      <Muted>Делай по порядку. Готовые шаги отмечаются сами.</Muted>
       <Steps>
         <Step done index={1} title="Следующий поток заведён">
           <p>
             «{next.title}»: старт {formatDay(next.startsAt)}. Длительность меняется в его
-            карточке ниже.
+            карточке в «Потоках».
           </p>
         </Step>
 
@@ -266,7 +217,12 @@ export const CohortTransitionGuide = ({
                 {showPost ? "Скрыть пост" : "Показать пост"}
                 <ChevronDown aria-hidden />
               </Toggle>
-              {showPost && <PostPreview>{cohort.draftPost}</PostPreview>}
+              {showPost && (
+                <TelegramPostPreview
+                  text={cohort.draftPost}
+                  buttons={cohort.postButtons}
+                />
+              )}
             </>
           )}
         </Step>
@@ -295,15 +251,197 @@ export const CohortTransitionGuide = ({
               icon={<Lock aria-hidden />}
               onClick={onOpenClose}
             >
-              Открыть окно закрытия
+              Перейти к закрытию
             </AdminButton>
           </Actions>
           <Muted>
-            {cohort.durationWeeks} {weeksWord(cohort.durationWeeks)} по плану, до{" "}
-            {formatDay(cohort.plannedEndsAt)}.
+            «{cohort.title}»: {cohort.durationWeeks} {weeksWord(cohort.durationWeeks)} по
+            плану, до {formatDay(cohort.plannedEndsAt)}.
           </Muted>
         </Step>
       </Steps>
-    </Guide>
+    </Stack>
   );
 };
+
+/** How many of the five steps are already done (the last two are confirmed at closure). */
+export const transitionProgress = (cohort: CohortOverview) =>
+  cohort.links?.plus && cohort.links?.standard ? 3 : 1;
+
+/**
+ * The line on top of «Потоки»: either the move into the recorded next cohort, or
+ * the invitation to record it. One button opens the steps or the form.
+ */
+export const CohortTransitionBanner = ({
+  latest,
+  onCreateNext,
+  onOpenTransition,
+  running,
+}: {
+  latest: CohortOverview | undefined;
+  onCreateNext: () => void;
+  onOpenTransition: () => void;
+  running: CohortOverview | undefined;
+}) => {
+  if (running?.next) {
+    const done = transitionProgress(running);
+    return (
+      <Banner>
+        <div>
+          <b>
+            Переход «{running.title}» → «{running.next.title}»
+          </b>
+          <Muted>
+            Старт {formatDay(running.next.startsAt)} · готово {done} из 5 шагов
+          </Muted>
+        </div>
+        <AdminButton
+          variant="primary"
+          icon={<ArrowRight aria-hidden />}
+          onClick={onOpenTransition}
+        >
+          Настроить переход
+        </AdminButton>
+      </Banner>
+    );
+  }
+
+  if (latest && !latest.next) {
+    return (
+      <Banner>
+        <div>
+          <b>Следующий поток после «{latest.title}» не заведён</b>
+          <Muted>
+            Заведи его заранее: чат, дата старта и длительность. Потом здесь появится
+            «Настроить переход».
+          </Muted>
+        </div>
+        <AdminButton icon={<Plus aria-hidden />} onClick={onCreateNext}>
+          Завести следующий поток
+        </AdminButton>
+      </Banner>
+    );
+  }
+
+  return null;
+};
+
+const Banner = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--a-accent-ring);
+  border-radius: var(--a-radius-lg);
+  background: var(--a-accent-soft);
+
+  > div {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  b {
+    font-weight: 600;
+  }
+`;
+
+export type NextCohortInput = {
+  durationWeeks: number;
+  mainChatId: string;
+  startsAt: string;
+  title: string;
+};
+
+/** «Online Group 3.0» → «Online Group 4.0»; anything else is left for the admin. */
+const suggestNextTitle = (title: string) => {
+  const match = /^(.*?)(\d+)(\.\d+)?\s*$/u.exec(title);
+  return match ? `${match[1]}${Number(match[2]) + 1}${match[3] ?? ""}` : "";
+};
+
+/** The form of «Завести следующий поток». */
+export const NextCohortForm = ({
+  chats,
+  error,
+  latest,
+  onChange,
+  value,
+}: {
+  chats: { chatId: string; title: string }[];
+  error: string;
+  latest: CohortOverview;
+  onChange: (value: NextCohortInput) => void;
+  value: NextCohortInput;
+}) => (
+  <Stack $gap={12}>
+    <Muted>
+      Это только запись потока: продажи откроются, когда закроешь «{latest.title}».
+      Сначала создай чат потока в Telegram, добавь бота администратором и отправь в чате
+      /register_chat — тогда он появится в списке.
+    </Muted>
+    <Field label="Название" htmlFor="next-cohort-title">
+      <Input
+        id="next-cohort-title"
+        value={value.title}
+        onChange={(event) => onChange({ ...value, title: event.target.value })}
+      />
+    </Field>
+    <Field
+      label="Чат потока"
+      htmlFor="next-cohort-chat"
+      hint={chats.length === 0 ? "Свободных зарегистрированных чатов нет." : undefined}
+    >
+      <Select
+        id="next-cohort-chat"
+        value={value.mainChatId}
+        onChange={(event) => onChange({ ...value, mainChatId: event.target.value })}
+      >
+        <option value="" disabled>
+          Выбери чат
+        </option>
+        {chats.map((chat) => (
+          <option key={chat.chatId} value={chat.chatId}>
+            {chat.title}
+          </option>
+        ))}
+      </Select>
+    </Field>
+    <FormGrid>
+      <Field
+        label="Старт"
+        htmlFor="next-cohort-start"
+        hint="По Варшаве. Час можно не уточнять."
+      >
+        <Input
+          id="next-cohort-start"
+          type="datetime-local"
+          value={value.startsAt}
+          onChange={(event) => onChange({ ...value, startsAt: event.target.value })}
+        />
+      </Field>
+      <Field label="Длительность, недель" htmlFor="next-cohort-weeks">
+        <Input
+          id="next-cohort-weeks"
+          type="number"
+          min={1}
+          max={26}
+          inputMode="numeric"
+          value={String(value.durationWeeks)}
+          onChange={(event) =>
+            onChange({ ...value, durationWeeks: Number(event.target.value) })
+          }
+        />
+      </Field>
+    </FormGrid>
+    {error && <Warning>{error}</Warning>}
+  </Stack>
+);
+
+export const initialNextCohortInput = (latest: CohortOverview): NextCohortInput => ({
+  durationWeeks: latest.durationWeeks,
+  mainChatId: "",
+  startsAt: "",
+  title: suggestNextTitle(latest.title),
+});

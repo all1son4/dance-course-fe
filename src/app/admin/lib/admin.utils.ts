@@ -90,23 +90,27 @@ export const parseWarsawDateTimeInput = (value: string): string => {
 };
 
 export const resolveLinkStateLabel = (state: LinkState) =>
-  state === "used" ? "Использована" : state === "expired" ? "Истекла" : "Активна";
+  state === "used"
+    ? "Использована"
+    : state === "expired"
+      ? "Истекла"
+      : "Ещё не использована";
 
 export const resolveOnlineGroupAccessStateLabel = (
   state: OnlineGroupAdminAccessState,
 ) => {
-  if (state === "issued") return "Ссылка активна";
+  if (state === "issued") return "Ещё не использована";
   if (state === "used") return "Использована";
   if (state === "expired") return "Истекла";
   if (state === "revoked") return "Отозвана";
-  if (state === "left") return "Покинул(а) чат";
-  if (state === "failed") return "Ошибка создания";
+  if (state === "left") return "Вышли из чата";
+  if (state === "failed") return "Ссылка не создалась";
   return "Подготавливается";
 };
 
 export const resolveOnlineGroupAccessTitle = (
   accessKey: OnlineGroupAdminAccess["accessKey"],
-) => (accessKey === "inspiration-hub" ? "Inspiration Hub" : "Основной чат");
+) => (accessKey === "inspiration-hub" ? "Библиотека Inspiration Hub" : "Чат потока");
 
 export const getChoreoSelections = () =>
   SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo")
@@ -129,20 +133,21 @@ export const getChoreoSelections = () =>
     .sort((left, right) => left.label.localeCompare(right.label, "ru"));
 
 const GENERATOR_ERROR_MESSAGES: Record<string, string> = {
-  invalid_offer_selection:
-    "Выбранные параметры невалидны. Проверь параметры и попробуй снова.",
-  invalid_origin: "Запрос отклонен по Origin. Открой страницу напрямую и попробуй снова.",
-  network_error: "Ошибка сети при генерации ссылки.",
+  invalid_offer_selection: "Такой вариант выдать нельзя. Обнови страницу и выбери снова.",
+  invalid_origin: "Открой админку заново по обычному адресу и повтори.",
+  network_error: "Нет связи с сервером — ссылка не создана. Проверь интернет и повтори.",
   rate_limited: RATE_LIMITED_STATUS_TEXT,
-  unauthorized: "Сессия истекла. Введи пароль еще раз.",
+  unauthorized: "Сессия закончилась. Введи пароль ещё раз.",
 };
 
 const GENERATOR_REASON_MESSAGES: Record<string, string> = {
-  channel_not_configured: "Для выбранного оффера не настроен Telegram-канал.",
-  offer_not_supported: "Этот оффер сейчас не поддерживает выдачу invite-ссылки.",
+  channel_not_configured:
+    "У этого курса или разбора не подключён Telegram-канал. Напиши разработчику.",
+  offer_not_supported:
+    "Для этого варианта бесплатный доступ не выдаётся. Напиши разработчику.",
 };
 
 export const resolveGeneratorErrorMessage = (errorCode: string, reason: string) =>
   GENERATOR_ERROR_MESSAGES[errorCode] ??
   GENERATOR_REASON_MESSAGES[reason] ??
-  "Не удалось сгенерировать ссылку. Проверь настройки и попробуй снова.";
+  "Ссылка не создалась. Попробуй ещё раз; если повторится — напиши разработчику.";

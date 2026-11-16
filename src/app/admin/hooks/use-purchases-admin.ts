@@ -33,28 +33,28 @@ type PurchasesOverview = {
   summary: AdminPurchasesSummary | null;
 };
 
-const INVALID_REPORT_MONTH_STATUS_TEXT =
-  "Выбранный месяц невалиден. Обнови страницу и попробуй снова.";
+const INVALID_REPORT_MONTH_STATUS_TEXT = "Такого месяца нет в списке. Обнови страницу.";
 const SEND_REPORT_FALLBACK_ERROR_TEXT =
-  "Не удалось отправить отчет. Проверь настройки и попробуй снова.";
+  "Отчёт не отправился. Попробуй ещё раз; если повторится — напиши разработчику.";
 
 const LOAD_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при загрузке продаж.",
+  network_error:
+    "Покупки не загрузились: нет связи. Проверь интернет и нажми «Обновить».",
 };
 
 const RESEND_EMAIL_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при переотправке письма.",
+  network_error: "Письмо не отправлено: нет связи. Проверь интернет и повтори.",
   purchase_not_succeeded: "Эта оплата не завершилась успехом — письмо не отправляется.",
   rate_limited: RATE_LIMITED_STATUS_TEXT,
   succeeded_event_missing:
-    "У покупки нет подтвержденного Stripe-события — так бывает со старыми продажами, перенесенными из таблиц. Отправь письмо вручную.",
+    "Это старая продажа, до переезда сайта: письмо для неё автоматически не собрать. Напиши покупателю со своей почты.",
 };
 
 const SEND_REPORT_ERROR_MESSAGES: Record<string, string> = {
   future_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
   invalid_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
   monthly_sales_report_stripe_data_incomplete:
-    "Отчет не сформирован: по одной или нескольким продажам Stripe еще не подтвердил полный набор финансовых данных (сумму, комиссию и нетто).",
+    "Отчёт пока не собрать: Stripe ещё не прислал комиссию по части продаж. Попробуй позже.",
   network_error: SEND_REPORT_FALLBACK_ERROR_TEXT,
 };
 
@@ -62,11 +62,11 @@ const DOWNLOAD_REPORT_ERROR_MESSAGES: Record<string, string> = {
   future_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
   invalid_monthly_sales_report_month: INVALID_REPORT_MONTH_STATUS_TEXT,
   monthly_sales_report_stripe_data_incomplete:
-    "CSV не сформирован: по одной или нескольким продажам Stripe еще не подтвердил полный набор финансовых данных (сумму, комиссию и нетто).",
+    "Файл отчёта пока не собрать: Stripe ещё не прислал комиссию по части продаж. Попробуй позже.",
 };
 
 const TERMINAL_UPDATE_ERROR_MESSAGES: Record<string, string> = {
-  network_error: "Ошибка сети при сохранении отметки терминала.",
+  network_error: "Отметка не сохранилась: нет связи. Повтори.",
   polish_sale_not_eligible:
     "Эта запись больше не является успешной продажей из Польши. Обнови список.",
   rate_limited: RATE_LIMITED_STATUS_TEXT,
@@ -127,7 +127,7 @@ export const usePurchasesAdmin = ({
         onUnauthorized();
       } else if (!result.ok) {
         setStatus({
-          text: LOAD_ERROR_MESSAGES[result.errorCode] ?? "Не удалось загрузить продажи.",
+          text: LOAD_ERROR_MESSAGES[result.errorCode] ?? "Не удалось загрузить покупки.",
           tone: "error",
         });
       } else {
@@ -202,7 +202,7 @@ export const usePurchasesAdmin = ({
 
       setResendingPaymentIntentId(paymentIntentId);
       setStatus({
-        text: "Переотправляю письмо о покупке...",
+        text: "Отправляю письмо о покупке ещё раз…",
         tone: "info",
       });
 
@@ -221,7 +221,7 @@ export const usePurchasesAdmin = ({
         setStatus({
           text:
             RESEND_EMAIL_ERROR_MESSAGES[result.errorCode] ??
-            "Не удалось переотправить письмо.",
+            "Письмо не отправилось. Попробуй ещё раз.",
           tone: "error",
         });
       } else {
@@ -273,7 +273,7 @@ export const usePurchasesAdmin = ({
         setStatus({
           text:
             TERMINAL_UPDATE_ERROR_MESSAGES[result.errorCode] ??
-            "Не удалось сохранить отметку терминала.",
+            "Не удалось сохранить отметку о кассе.",
           tone: "error",
         });
       } else {
@@ -293,8 +293,8 @@ export const usePurchasesAdmin = ({
         );
         setStatus({
           text: terminalRecorded
-            ? "Продажа отмечена как внесенная в фискальный терминал."
-            : "Отметка терминала снята — продажа снова попадет в напоминание.",
+            ? "Отмечено: внесено в кассу."
+            : "Отметка снята — продажа снова попадёт в напоминание о кассе.",
           tone: terminalRecorded ? "success" : "info",
         });
       }
@@ -311,7 +311,7 @@ export const usePurchasesAdmin = ({
 
     setIsSendingReport(true);
     setReportStatus({
-      text: "Генерирую и отправляю отчет...",
+      text: "Собираю и отправляю отчёт…",
       tone: "info",
     });
 
@@ -347,7 +347,7 @@ export const usePurchasesAdmin = ({
               tone: "info",
             }
           : {
-              text: `Отчет отправлен на ${deliveredTo || "адрес из RESEND_REPLY_TO"}. Продаж: ${rowCount ?? 0}.`,
+              text: `Отчёт отправлен на ${deliveredTo || "почту для ответов"}. Продаж: ${rowCount ?? 0}.`,
               tone: "success",
             },
       );
@@ -386,7 +386,7 @@ export const usePurchasesAdmin = ({
         setReportStatus({
           text:
             DOWNLOAD_REPORT_ERROR_MESSAGES[data.errorCode ?? ""] ??
-            "Не удалось сформировать CSV. Попробуй снова.",
+            "Не удалось скачать отчёт. Попробуй снова.",
           tone: "error",
         });
         return;
@@ -403,12 +403,12 @@ export const usePurchasesAdmin = ({
       anchor.remove();
       URL.revokeObjectURL(objectUrl);
       setReportStatus({
-        text: "CSV сформирован и скачивается.",
+        text: "Отчёт скачивается.",
         tone: "success",
       });
     } catch {
       setReportStatus({
-        text: "Ошибка сети при скачивании CSV.",
+        text: "Отчёт не скачался: нет связи. Проверь интернет и повтори.",
         tone: "error",
       });
     } finally {
