@@ -140,7 +140,7 @@ const EMAIL_COPY = {
       telegramInspirationHub: {
         title: "Join Inspiration Hub",
         ready:
-          "Use the button below to join Inspiration Hub. The personal invite works once and is valid for up to 30 days. Your 8 weeks count from payment, not from joining the channel.",
+          "Use the button below to join Inspiration Hub. The personal invite works once and is valid for up to 30 days. Your 8 weeks count from payment, not from joining the library.",
         active:
           "You're already in Inspiration Hub — your access is extended, nothing to do.",
         pending:
@@ -255,7 +255,7 @@ const EMAIL_COPY = {
       telegramInspirationHub: {
         title: "Dostęp do Inspiration Hub",
         ready:
-          "Użyj przycisku poniżej, aby dołączyć do Inspiration Hub. Osobisty link działa jeden raz i jest ważny do 30 dni. 8 tygodni liczy się od płatności, a nie od wejścia do kanału.",
+          "Użyj przycisku poniżej, aby dołączyć do Inspiration Hub. Osobisty link działa jeden raz i jest ważny do 30 dni. 8 tygodni liczy się od płatności, a nie od wejścia do biblioteki.",
         active:
           "Jesteś już w Inspiration Hub — dostęp został przedłużony, nic nie musisz robić.",
         pending:
@@ -368,7 +368,7 @@ const EMAIL_COPY = {
       telegramInspirationHub: {
         title: "Доступ в Inspiration Hub",
         ready:
-          "Нажми кнопку ниже, чтобы войти в Inspiration Hub. Персональная ссылка одноразовая и действует до 30 дней. 8 недель считаются с момента оплаты, а не со входа в канал.",
+          "Нажми кнопку ниже, чтобы войти в Inspiration Hub. Персональная ссылка одноразовая и действует до 30 дней. 8 недель считаются с момента оплаты, а не со входа в библиотеку.",
         active: "Ты уже в Inspiration Hub — доступ продлён, ничего делать не нужно.",
         pending:
           "Персональная ссылка в Inspiration Hub готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",

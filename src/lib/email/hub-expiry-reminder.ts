@@ -29,7 +29,7 @@ const COPY = {
       7: "До конца Inspiration Hub — 7 дней",
     },
     intro:
-      "Продли Hub ещё на 8 недель — уроки, материалы и закрытый канал останутся с тобой без перерыва.",
+      "Продли Hub ещё на 8 недель — библиотека уроков и материалов останется с тобой без перерыва.",
     price: (special: string, full: string, date: string) =>
       `Продление — ${special} вместо ${full}. Эта цена действует только до конца твоего Hub — ${date}.`,
     verify:
@@ -48,7 +48,7 @@ const COPY = {
       7: "Your Inspiration Hub ends in 7 days",
     },
     intro:
-      "Renew the Hub for another 8 weeks and keep the lessons, materials and private channel without a break.",
+      "Renew the Hub for another 8 weeks and keep the library of lessons and materials without a break.",
     price: (special: string, full: string, date: string) =>
       `Renewal is ${special} instead of ${full}. This price holds only until your Hub ends — ${date}.`,
     verify:
@@ -70,7 +70,7 @@ const COPY = {
       7: "Do końca Inspiration Hub — 7 dni",
     },
     intro:
-      "Przedłuż Hub o kolejne 8 tygodni — lekcje, materiały i zamknięty kanał zostaną z Tobą bez przerwy.",
+      "Przedłuż Hub o kolejne 8 tygodni — biblioteka lekcji i materiałów zostanie z Tobą bez przerwy.",
     price: (special: string, full: string, date: string) =>
       `Przedłużenie — ${special} zamiast ${full}. Ta cena obowiązuje tylko do końca Twojego Hub — ${date}.`,
     verify:

@@ -64,7 +64,7 @@
       },
       "inspirationHub": {
         "title": "Inspiration HUB: Frame Up Strip lesson library",
-        "description": "Lessons from completed Online Group cycles, bonus materials and training music in a private Telegram channel. 8 weeks of access right after payment.",
+        "description": "Lessons from completed Online Group cycles, bonus materials and training music — in a private library on Telegram. 8 weeks of access right after payment.",
         "ogImageAlt": "Inspiration HUB by Anna Strok",
         "heroImageAlt": "Anna Strok, Inspiration HUB"
       }
@@ -121,7 +121,11 @@
         "highlight": "by Anna Strok"
       },
       "3": "Choreography tutorials",
-      "4": "The Birthday Drop"
+      "4": "The Birthday Drop",
+      "hub": {
+        "prefix": "Lesson library",
+        "highlight": "Inspiration HUB"
+      }
     }
   },
   "NotFoundPage": {
@@ -670,7 +674,7 @@
           "text": "Pay at any time and your 8 weeks of access to all materials start right away. No schedules and no deadlines: choose what to learn and practise when it suits you."
         },
         "3": {
-          "title": "Private Telegram channel",
+          "title": "A private library on Telegram",
           "text": "All lessons and materials are kept in a convenient private space that is always at hand."
         },
         "4": {
@@ -689,11 +693,11 @@
       "items": {
         "1": {
           "title": "Payment and joining",
-          "description": "Right after payment, your personal link to the private Telegram channel appears on the page and in your email. Open it from the Telegram account you will use: the link works once and only for you."
+          "description": "Right after payment, your personal link to the library appears on the page and in your email — the library is on Telegram. Open it from the Telegram account you will use: the link works once and only for you."
         },
         "2": {
           "title": "Access period",
-          "description": "It counts from payment, not from joining the channel: pay on 1 March and you have access until 26 April. The exact dates are on the “My access” page; every email has a button to it."
+          "description": "It counts from payment, not from joining the library: pay on 1 March and you have access until 26 April. The exact dates are on the “My access” page; every email has a button to it."
         },
         "3": {
           "title": "Renewal at a special price",
@@ -701,11 +705,11 @@
         },
         "4": {
           "title": "If you are in the Online Group",
-          "description": "The Plus plan already includes the Hub — for the cycle and 7 more days after it. Near the end of the cycle, a link to the Hub at a special price appears in the group chat — for Plus and Standard. With Plus, the paid period starts right after your Plus Hub access."
+          "description": "The Plus plan already includes Inspiration HUB for the whole cycle. When the cycle ends, you can continue with Inspiration HUB alone, without group classes, at a special price. This works with either plan, Plus or Standard: the link appears in the group chat."
         },
         "5": {
           "title": "If you do not renew",
-          "description": "At the end of the period, channel access closes by itself. You can come back at any time — the new period counts from payment."
+          "description": "At the end of the period, library access closes by itself. You can come back at any time, but at the regular price — the new period counts from payment."
         }
       }
     },
@@ -715,7 +719,7 @@
       "items": {
         "1": "Full Online Group 1.0 and 2.0 programmes",
         "2": "Bonus lessons and materials",
-        "3": "A private Telegram channel",
+        "3": "A private library on Telegram",
         "4": "Access opens right after payment"
       },
       "priceLabel": "8 weeks of access",
@@ -1148,7 +1152,7 @@
       "title": "Inspiration Hub",
       "shortTitle": "Inspiration Hub",
       "description": {
-        "1": "Access to the private Inspiration Hub Telegram channel for 8 weeks."
+        "1": "Access to the private Inspiration Hub library on Telegram for 8 weeks."
       },
       "accessNote": "After payment, we will send you a personal one-time link to Inspiration Hub.",
       "offers": {

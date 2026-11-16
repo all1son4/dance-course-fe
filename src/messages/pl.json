@@ -64,7 +64,7 @@
       },
       "inspirationHub": {
         "title": "Inspiration HUB: biblioteka lekcji Frame Up Strip",
-        "description": "Lekcje z zakończonych cykli grupy online, materiały bonusowe i muzyka do treningów w zamkniętym kanale na Telegramie. 8 tygodni dostępu od razu po płatności.",
+        "description": "Lekcje z zakończonych cykli grupy online, materiały bonusowe i muzyka do treningów — w zamkniętej bibliotece na Telegramie. 8 tygodni dostępu od razu po płatności.",
         "ogImageAlt": "Inspiration HUB by Anna Strok",
         "heroImageAlt": "Anna Strok, Inspiration HUB"
       }
@@ -121,7 +121,11 @@
         "highlight": "by Anna Strok"
       },
       "3": "Tutoriale choreografii",
-      "4": "The Birthday Drop"
+      "4": "The Birthday Drop",
+      "hub": {
+        "prefix": "Biblioteka lekcji",
+        "highlight": "Inspiration HUB"
+      }
     }
   },
   "NotFoundPage": {
@@ -670,7 +674,7 @@
           "text": "Zapłać w dowolnym momencie — 8 tygodni dostępu do wszystkich materiałów zacznie się od razu. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
         },
         "3": {
-          "title": "Zamknięty kanał na Telegramie",
+          "title": "Zamknięta biblioteka na Telegramie",
           "text": "Wszystkie lekcje i materiały są w wygodnej, zamkniętej przestrzeni, zawsze pod ręką."
         },
         "4": {
@@ -689,11 +693,11 @@
       "items": {
         "1": {
           "title": "Płatność i wejście",
-          "description": "Zaraz po płatności na stronie i w e-mailu pojawi się osobisty link do zamkniętego kanału na Telegramie. Otwórz go z konta Telegram, z którego będziesz korzystać: link działa jeden raz i tylko dla Ciebie."
+          "description": "Zaraz po płatności na stronie i w e-mailu pojawi się osobisty link do biblioteki — jest na Telegramie. Otwórz go z konta Telegram, z którego będziesz korzystać: link działa jeden raz i tylko dla Ciebie."
         },
         "2": {
           "title": "Czas dostępu",
-          "description": "Liczy się od płatności, a nie od wejścia do kanału: płatność 1 marca — dostęp do 26 kwietnia. Dokładne daty są na stronie „Mój dostęp”, przycisk do niej jest w każdej wiadomości."
+          "description": "Liczy się od płatności, a nie od wejścia do biblioteki: płatność 1 marca — dostęp do 26 kwietnia. Dokładne daty są na stronie „Mój dostęp”, przycisk do niej jest w każdej wiadomości."
         },
         "3": {
           "title": "Przedłużenie w specjalnej cenie",
@@ -701,11 +705,11 @@
         },
         "4": {
           "title": "Jeśli ćwiczysz w grupie online",
-          "description": "Pakiet Plus już zawiera Hub — na czas cyklu i jeszcze 7 dni po nim. Pod koniec cyklu na czacie grupy pojawi się link do Hub w specjalnej cenie — przy Plus i przy Standard. Przy Plus opłacony okres zacznie się zaraz po Hubie z Plus."
+          "description": "Pakiet Plus już zawiera Inspiration HUB na cały czas cyklu. Gdy cykl się skończy, możesz kontynuować tylko z Inspiration HUB, bez zajęć w grupie — w specjalnej cenie. To możliwe przy każdym pakiecie, Plus lub Standard: link pojawi się na czacie grupy."
         },
         "5": {
           "title": "Jeśli nie przedłużysz",
-          "description": "Na koniec okresu dostęp do kanału zamknie się sam. Możesz wrócić w każdej chwili — nowy okres będzie liczony od płatności."
+          "description": "Na koniec okresu dostęp do biblioteki zamknie się sam. Możesz wrócić w każdej chwili, ale już w zwykłej cenie — nowy okres będzie liczony od płatności."
         }
       }
     },
@@ -715,7 +719,7 @@
       "items": {
         "1": "Pełne programy Online Group 1.0 i 2.0",
         "2": "Lekcje bonusowe i materiały",
-        "3": "Zamknięty kanał na Telegramie",
+        "3": "Zamknięta biblioteka na Telegramie",
         "4": "Dostęp otwiera się zaraz po płatności"
       },
       "priceLabel": "8 tygodni dostępu",
@@ -1148,7 +1152,7 @@
       "title": "Inspiration Hub",
       "shortTitle": "Inspiration Hub",
       "description": {
-        "1": "Dostęp do zamkniętego kanału Inspiration Hub na Telegramie przez 8 tygodni."
+        "1": "Dostęp do zamkniętej biblioteki Inspiration Hub na Telegramie przez 8 tygodni."
       },
       "accessNote": "Po płatności wyślemy Ci osobisty jednorazowy link do Inspiration Hub.",
       "offers": {

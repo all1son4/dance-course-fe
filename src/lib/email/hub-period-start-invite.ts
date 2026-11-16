@@ -9,7 +9,7 @@ const COPY = {
     subject: "Твой доступ в Inspiration Hub начался",
     heading: "Доступ в Inspiration Hub начался",
     intro:
-      "Сегодня начались твои оплаченные 8 недель. Нажми кнопку ниже, чтобы войти в закрытый Telegram-канал.",
+      "Сегодня начались твои оплаченные 8 недель. Нажми кнопку ниже, чтобы войти в библиотеку в Telegram.",
     dateLabel: "Доступ до",
     deadlineLine: (deadline: string) => `Доступ открыт до ${deadline}.`,
     linkNote:
@@ -21,7 +21,7 @@ const COPY = {
     subject: "Your Inspiration Hub access has started",
     heading: "Your Inspiration Hub access has started",
     intro:
-      "Your paid 8 weeks begin today. Use the button below to join the private Telegram channel.",
+      "Your paid 8 weeks begin today. Use the button below to open the library on Telegram.",
     dateLabel: "Access until",
     deadlineLine: (deadline: string) => `Access until ${deadline}.`,
     linkNote:
@@ -33,7 +33,7 @@ const COPY = {
     subject: "Twój dostęp do Inspiration Hub się rozpoczął",
     heading: "Dostęp do Inspiration Hub się rozpoczął",
     intro:
-      "Dziś zaczyna się Twoje opłacone 8 tygodni. Użyj przycisku poniżej, aby dołączyć do prywatnego kanału Telegram.",
+      "Dziś zaczyna się Twoje opłacone 8 tygodni. Użyj przycisku poniżej, aby wejść do biblioteki na Telegramie.",
     dateLabel: "Dostęp ważny do",
     deadlineLine: (deadline: string) => `Dostęp ważny do ${deadline}.`,
     linkNote:
@@ -49,19 +49,19 @@ const PLUS_COPY = {
     subject: "Поток стартовал — Inspiration Hub открыт",
     heading: "Inspiration Hub открыт",
     intro:
-      "Сегодня стартовал твой поток, и Inspiration Hub из тарифа Plus открыт. Нажми кнопку ниже, чтобы войти в закрытый Telegram-канал.",
+      "Сегодня стартовал твой поток, и Inspiration Hub из тарифа Plus открыт. Нажми кнопку ниже, чтобы войти в библиотеку в Telegram.",
   },
   en: {
     subject: "Your cycle has started — Inspiration Hub is open",
     heading: "Inspiration Hub is open",
     intro:
-      "Your cycle starts today, and the Inspiration Hub of your Plus plan is open. Use the button below to join the private Telegram channel.",
+      "Your cycle starts today, and the Inspiration Hub of your Plus plan is open. Use the button below to open the library on Telegram.",
   },
   pl: {
     subject: "Cykl wystartował — Inspiration Hub jest otwarty",
     heading: "Inspiration Hub jest otwarty",
     intro:
-      "Dziś startuje Twój cykl, a Inspiration Hub z pakietu Plus jest otwarty. Użyj przycisku poniżej, aby dołączyć do prywatnego kanału Telegram.",
+      "Dziś startuje Twój cykl, a Inspiration Hub z pakietu Plus jest otwarty. Użyj przycisku poniżej, aby wejść do biblioteki na Telegramie.",
   },
 } as const;
 

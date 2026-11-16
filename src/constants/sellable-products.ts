@@ -475,7 +475,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
       "После оплаты мы отправим персональную одноразовую ссылку для входа в Inspiration Hub.",
     accessNoteKey: "inspirationHub.accessNote",
     code: "inspiration-hub",
-    description: ["Доступ в закрытый Telegram-канал Inspiration Hub на 8 недель."],
+    description: ["Доступ к закрытой библиотеке Inspiration Hub в Telegram на 8 недель."],
     descriptionKeys: ["inspirationHub.description.1"],
     id: INSPIRATION_HUB_PRODUCT_ID,
     salesEnabled: false,
