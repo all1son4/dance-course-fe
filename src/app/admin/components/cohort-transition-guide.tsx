@@ -195,9 +195,15 @@ export const CohortTransitionGuide = ({
               </AdminButton>
             )}
           </Actions>
-          {cohort.links?.plus && <CopyField label="Plus" value={cohort.links.plus} />}
+          {cohort.links?.plus && (
+            <CopyField caption="Plus" label="Ссылка Plus" value={cohort.links.plus} />
+          )}
           {cohort.links?.standard && (
-            <CopyField label="Standard" value={cohort.links.standard} />
+            <CopyField
+              caption="Standard"
+              label="Ссылка Standard"
+              value={cohort.links.standard}
+            />
           )}
         </Step>
 

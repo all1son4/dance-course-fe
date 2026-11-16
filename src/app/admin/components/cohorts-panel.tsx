@@ -14,6 +14,7 @@ import {
   Badge,
   Callout,
   EmptyState,
+  FieldNote,
   focusVisible,
   Muted,
   Panel,
@@ -64,6 +65,13 @@ const DurationEditor = styled.div`
   ${Input} {
     width: 88px;
   }
+
+  /* Phones: the label above, the field and its button together under it. */
+  @container admin-content (max-width: 520px) {
+    label {
+      flex-basis: 100%;
+    }
+  }
 `;
 
 const cohortStatus = (
@@ -110,7 +118,8 @@ const CohortCard = styled.article<{ $current: boolean; $closed: boolean }>`
 
   dl {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    /* One label width for every card, so the values line up down the list. */
+    grid-template-columns: minmax(0, 11em) minmax(0, 1fr);
     gap: 6px 16px;
     margin: 0;
     font-size: var(--a-text-sm);
@@ -157,12 +166,13 @@ const CardBody = styled.div`
   gap: 16px 28px;
   align-items: start;
 
-  @container admin-content (max-width: 760px) {
+  /* Below this the left column gets too narrow for the figures and the editor. */
+  @container admin-content (max-width: 980px) {
     grid-template-columns: minmax(0, 1fr);
   }
 `;
 
-const Facts = styled.div`
+const Facts = styled.div<{ $rows?: boolean }>`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -198,6 +208,7 @@ const Facts = styled.div`
     div {
       flex-direction: row;
       align-items: center;
+      gap: 12px;
     }
 
     small {
@@ -206,8 +217,32 @@ const Facts = styled.div`
 
     b {
       font-size: var(--a-text-md);
+      text-align: right;
     }
   }
+
+  /* The closure window: rows always, its values are phrases, not numbers. */
+  ${({ $rows }) =>
+    $rows &&
+    css`
+      grid-template-columns: minmax(0, 1fr);
+      max-width: none;
+
+      div {
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+      }
+
+      small {
+        font-size: var(--a-text-sm);
+      }
+
+      b {
+        font-size: var(--a-text-md);
+        text-align: right;
+      }
+    `}
 `;
 
 const CardFooter = styled.div`
@@ -659,10 +694,10 @@ export const CohortsPanel = ({
                       </DurationEditor>
                     )}
                     {!cohort.closedAt && (
-                      <Muted>
+                      <FieldNote>
                         Меняет дату окончания по плану — её видят покупатели Plus в «Моём
                         доступе». Сам поток закрывается только кнопкой «Закрыть поток».
-                      </Muted>
+                      </FieldNote>
                     )}
                     {cohort.previousCohortId && !cohort.closedAt && (
                       <SwitchSetting>
@@ -796,7 +831,7 @@ export const CohortsPanel = ({
       >
         {closing && (
           <Stack $gap={12}>
-            <Facts>
+            <Facts $rows>
               <div>
                 <small>Уроки потока недоступны с</small>
                 <b>завтра, 00:00 по Варшаве</b>
@@ -841,9 +876,9 @@ export const CohortsPanel = ({
               </span>
             </Check>
             {!lessonsCleared && (
-              <Muted>
+              <FieldNote>
                 Пока галочка «Уроки из чата убраны» не стоит, закрыть поток нельзя.
-              </Muted>
+              </FieldNote>
             )}
             {closing.next && (
               <Check>

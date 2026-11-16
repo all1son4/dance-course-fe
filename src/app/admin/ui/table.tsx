@@ -1,7 +1,7 @@
 import styled from "styled-components";
 
 /**
- * The admin's data table. Below 760px every row becomes a card and each cell shows
+ * The admin's data table. Below 900px every row becomes a card and each cell shows
  * its column name from `data-label`, so nothing scrolls sideways on a phone.
  */
 export const DataTable = styled.table`
@@ -48,7 +48,7 @@ export const DataTable = styled.table`
     white-space: nowrap;
   }
 
-  @container admin-content (max-width: 760px) {
+  @container admin-content (max-width: 900px) {
     thead {
       position: absolute;
       width: 1px;
@@ -86,6 +86,14 @@ export const DataTable = styled.table`
       border: 0;
     }
 
+    /* Every value of a cell (a name and its email, say) stays in the value
+       column; only the column name sits on the left. */
+    td > * {
+      grid-column: 2;
+      justify-self: start;
+      max-width: 100%;
+    }
+
     td::before {
       content: attr(data-label);
       color: var(--a-ink-3);
@@ -104,6 +112,10 @@ export const DataTable = styled.table`
     td[data-actions]::before {
       content: none;
     }
+
+    td[data-actions] > * {
+      grid-column: auto;
+    }
   }
 
   /* Phones: the column name sits above its value, so values get the full width. */
@@ -112,26 +124,32 @@ export const DataTable = styled.table`
       grid-template-columns: minmax(0, 1fr);
       gap: 2px;
     }
+
+    td > * {
+      grid-column: auto;
+    }
   }
 `;
 
 export const TableScroller = styled.div`
   overflow-x: auto;
 
-  @container admin-content (max-width: 760px) {
+  @container admin-content (max-width: 900px) {
     overflow: visible;
   }
 `;
 
+// break-word, not anywhere: "anywhere" lets a column shrink to one letter, so the
+// browser squeezed names and emails into a vertical strip.
 export const CellPrimary = styled.span`
   display: block;
   font-weight: 600;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 `;
 
 export const CellSecondary = styled.span`
   display: block;
   color: var(--a-ink-2);
   font-size: var(--a-text-sm);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 `;

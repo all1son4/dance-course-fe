@@ -578,6 +578,11 @@ const TabsRoot = styled.div`
   @container admin-content (max-width: 520px) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    /* An odd last item takes the whole row instead of hanging alone. */
+    & > :last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
     justify-self: stretch;
     border-radius: 14px;
 
@@ -677,6 +682,34 @@ export const Row = styled.div<{ $gap?: number; $wrap?: boolean; $justify?: strin
 
 export const Muted = styled.span`
   color: var(--a-ink-2);
+`;
+
+/** A link-looking button that sits inside a sentence, on its baseline. */
+export const TextButton = styled.button`
+  display: inline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--a-accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  ${focusVisible}
+
+  &:hover {
+    color: var(--a-accent-hover);
+  }
+`;
+
+/** Small grey help text under a control. */
+export const FieldNote = styled.p`
+  margin: 0;
+  max-width: 560px;
+  color: var(--a-ink-3);
+  font-size: var(--a-text-xs);
+  line-height: 1.45;
 `;
 
 export const Mono = styled.span`

@@ -21,6 +21,7 @@ import {
   Panel,
   SegmentedTabs,
   Stack,
+  TextButton,
 } from "../ui/primitives";
 import { AttentionList } from "./attention-list";
 import type { NextCohortInput, RenewalLinkKind } from "./cohort-transition-guide";
@@ -217,13 +218,10 @@ export const OnlineGroupTab = ({
             <Callout tone="info" icon={<Info aria-hidden />}>
               Plus даёт доступ в библиотеку Inspiration Hub (группа «
               {settings.inspirationChatTitle}»). Всё о ней — в разделе{" "}
-              <AdminButton
-                size="sm"
-                variant="ghost"
-                onClick={() => onNavigate("inspiration-hub")}
-              >
+              <TextButton type="button" onClick={() => onNavigate("inspiration-hub")}>
                 Inspiration Hub
-              </AdminButton>
+              </TextButton>
+              .
             </Callout>
           )}
           <ActiveOnlineGroupCard
