@@ -113,7 +113,7 @@ test("the closure window: overview, closure with a pinned post, next sales open"
     assert.equal(overview.next?.id, nextId);
     assert.match(overview.links?.plus ?? "", /renewal=rnw_plus_/u);
     assert.match(overview.links?.standard ?? "", /renewal=rnw_std_/u);
-    assert.match(overview.draftPost, /Онлайн-группа Plus[^\n]*\nПродлить: .*rnw_plus_/u);
+    assert.match(overview.draftPost, /Online Group Plus[^\n]*\nRenew: .*rnw_plus_/u);
     assert.equal(overview.post, null);
 
     await assert.rejects(
@@ -208,8 +208,8 @@ test("the grace reminder is queued on its day only, after a published post", asy
       WHERE deduplication_key = ${`cohort_grace_reminder:${cohortId}`}`;
     assert.match(
       job?.payload.text ?? "",
-      /^Завтра, .* последний день библиотеки Inspiration\sHUB/u,
+      /^Tomorrow, .* is the last day of the Inspiration\sHUB library/u,
     );
-    assert.match(job?.payload.text ?? "", /Продлить Plus: .*rnw_plus_/u);
+    assert.match(job?.payload.text ?? "", /Renew Plus: .*rnw_plus_/u);
   });
 });

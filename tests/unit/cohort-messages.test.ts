@@ -23,30 +23,36 @@ test("the Plus Hub stays open 7 Warsaw days and the reminder comes the day befor
   assert.equal(getGraceReminderDay(ACCESS_ENDS_AT), "2027-01-23");
 });
 
-test("the closure post names the dates, both prices, all three links and support", () => {
+test("the closure post names the dates, every price, all three links and support", () => {
   const post = buildCohortClosurePost({
     accessEndsAt: ACCESS_ENDS_AT,
     links: LINKS,
     nextCohortStartsAt: NEXT_START,
   });
 
-  assert.match(post, /^Поток завершён — спасибо за эти недели вместе!/u);
-  assert.match(post, /Новый поток стартует 1 февраля\./u);
-  assert.match(post, /библиотека открыта до 24 января включительно/u);
-  assert.match(post, /8 недель за 155\sPLN \/ 35\s€ вместо 200\sPLN \/ 45\s€\./u);
+  assert.match(post, /^The cycle is over — thank you for these weeks together!/u);
+  assert.match(post, /stays open until the new cycle starts on 1 February/u);
   assert.match(
     post,
-    /Специальная цена 155\sPLN \/ 35\s€ действует до 24 января включительно\. Потом — 200\sPLN \/ 45\s€\./u,
+    /Online Group Plus[^\n]*220\sPLN \/ 50\s€ instead of 280\sPLN \/ 65\s€\.\nRenew: .*rnw_plus/u,
   );
-  assert.match(post, /Онлайн-группа Plus[^\n]*\nПродлить: .*rnw_plus/u);
-  assert.match(post, /Онлайн-группа Standard[^\n]*\nПродлить: .*rnw_standard/u);
-  assert.match(post, /Оформить: .*renewal=inspiration-hub/u);
+  assert.match(
+    post,
+    /Online Group Standard[^\n]*175\sPLN \/ 40\s€ instead of 220\sPLN \/ 50\s€\.\nRenew: .*rnw_standard/u,
+  );
+  assert.match(post, /8 weeks for 155\sPLN \/ 35\s€ instead of 200\sPLN \/ 45\s€\./u);
+  assert.match(
+    post,
+    /The special price 155\sPLN \/ 35\s€ is valid until 24 January inclusive\. After that — 200\sPLN \/ 45\s€\./u,
+  );
+  assert.match(post, /the library stays open until 24 January inclusive/u);
+  assert.match(post, /Get it: .*renewal=inspiration-hub/u);
   assert.match(post, /@username/u);
-  assert.match(post, /Вопросы — https:\/\/t\.me\/annastrok_dance$/u);
-  assert.doesNotMatch(post, /(?<![\p{L}])[Хх]аб|(?<![\p{L}])Hub(?![\p{L}])/u);
+  assert.match(post, /Questions — https:\/\/t\.me\/annastrok_dance$/u);
+  assert.doesNotMatch(post, /[А-яЁё]/u);
 });
 
-test("an old-model cohort names the next start as the Plus Hub's last day", () => {
+test("an old-model cohort names the next start as the Plus library's last day", () => {
   const post = buildCohortClosurePost({
     accessEndsAt: ACCESS_ENDS_AT,
     links: LINKS,
@@ -54,9 +60,9 @@ test("an old-model cohort names the next start as the Plus Hub's last day", () =
     plusHubEndsOn: NEXT_START,
   });
 
-  assert.match(post, /библиотека открыта до 1 февраля включительно/u);
+  assert.match(post, /the library stays open until 1 February inclusive/u);
   // The special price still follows the closure.
-  assert.match(post, /действует до 24 января включительно/u);
+  assert.match(post, /is valid until 24 January inclusive/u);
 });
 
 test("a missing renewal link leaves its block out", () => {
@@ -65,21 +71,21 @@ test("a missing renewal link leaves its block out", () => {
     links: { ...LINKS, standard: null },
     nextCohortStartsAt: NEXT_START,
   });
-  assert.doesNotMatch(post, /Онлайн-группа Standard/u);
+  assert.doesNotMatch(post, /Online Group Standard/u);
   assert.doesNotMatch(post, /rnw_standard/u);
 });
 
-test("the reminder speaks to Plus members and offers Plus and the Hub only", () => {
+test("the reminder speaks to Plus members and offers Plus and the library only", () => {
   const reminder = buildCohortGraceReminder({
     accessEndsAt: ACCESS_ENDS_AT,
     links: LINKS,
     nextCohortStartsAt: NEXT_START,
   });
 
-  assert.match(reminder, /^Завтра, 24 января, — последний день/u);
-  assert.match(reminder, /стартует 1 февраля/u);
+  assert.match(reminder, /^Tomorrow, 24 January, is the last day/u);
+  assert.match(reminder, /starts on 1 February \(220\sPLN \/ 50\s€ instead of 280\sPLN/u);
+  assert.match(reminder, /this price is valid until 24 January inclusive/u);
   assert.doesNotMatch(reminder, /Standard/u);
-  assert.match(reminder, /Только Inspiration\sHUB: /u);
-  assert.match(reminder, /эта цена действует до 24 января включительно/u);
-  assert.doesNotMatch(reminder, /(?<![\p{L}])[Хх]аб/u);
+  assert.match(reminder, /Inspiration\sHUB only: /u);
+  assert.doesNotMatch(reminder, /[А-яЁё]/u);
 });

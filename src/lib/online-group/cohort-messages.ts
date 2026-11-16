@@ -16,8 +16,9 @@ export type CohortRenewalLinks = {
   standard: string | null;
 };
 
+// The posts are in English (2026-11-16): the group chats are international.
 const formatDay = (date: Date) =>
-  new Intl.DateTimeFormat("ru-RU", {
+  new Intl.DateTimeFormat("en-GB", {
     day: "numeric",
     month: "long",
     timeZone: "Europe/Warsaw",
@@ -49,20 +50,32 @@ const hubPrice = (offerId: string) => {
 
 const hubSpecialPrice = () => hubPrice(INSPIRATION_HUB_RENEWAL_OFFER_ID);
 
+/** An Online Group offer's price by its code, e.g. the Plus renewal. */
+const groupPrice = (code: string) => {
+  const offer = SELLABLE_PRODUCTS["online-group-anna-strok"].offers.find(
+    (candidate) => candidate.code === code,
+  );
+  return offer ? formatOfferPrice(offer.prices) : "";
+};
+
+/** «220 PLN / 50 € instead of 280 PLN / 65 €», or just the price when the other is unknown. */
+const priceAgainst = (price: string, regular: string) =>
+  price && regular ? `${price} instead of ${regular}` : price;
+
 const IH = "Inspiration HUB";
 
 const linkLines = (links: CohortRenewalLinks, { standard }: { standard: boolean }) =>
   [
-    links.plus ? `Продлить Plus: ${links.plus}` : null,
-    standard && links.standard ? `Продлить Standard: ${links.standard}` : null,
-    `Только ${IH}: ${links.hub}`,
+    links.plus ? `Renew Plus: ${links.plus}` : null,
+    standard && links.standard ? `Renew Standard: ${links.standard}` : null,
+    `${IH} only: ${links.hub}`,
   ].filter((line): line is string => line !== null);
 
 /**
- * Section 8, text 2б: the bot's post in the closed cohort's chat (copy reworked
- * 2026-11-16: the Hub is «библиотека Inspiration HUB», never «хаб»; PLN first; the
- * special price names its deadline). The admin can still edit it in the closure
- * window before it goes.
+ * Section 8, text 2б: the bot's post in the closed cohort's chat, in English (copy
+ * reworked 2026-11-16: every option names its price against the regular one; the
+ * Hub is «the Inspiration HUB library»; the chat stays until the next start). The
+ * admin can still edit it in the closure window before it goes.
  *
  * `plusHubEndsOn` is for a cohort whose Plus Hub keeps the old model (HUB-D26: it lasts
  * until the next cohort starts, not 7 days after closure); otherwise the date follows
@@ -81,47 +94,54 @@ export const buildCohortClosurePost = ({
 }) => {
   const priceLastDay = formatDay(getPlusHubLastDay(accessEndsAt));
   const hubLastDay = plusHubEndsOn ? formatDay(plusHubEndsOn) : priceLastDay;
+  const nextStart = formatDay(nextCohortStartsAt);
   const special = hubSpecialPrice();
   const full = hubPrice(INSPIRATION_HUB_ACCESS_OFFER_ID);
+  const plus = priceAgainst(
+    groupPrice("renewal-library-access"),
+    groupPrice("library-access"),
+  );
+  const standard = priceAgainst(groupPrice("renewal-discount"), groupPrice("standard"));
+  const hub = priceAgainst(special, full);
 
   return [
-    "Поток завершён — спасибо за эти недели вместе!",
+    "The cycle is over — thank you for these weeks together!",
     "",
-    "Уроки из этого чата мы убрали, а сам чат остаётся: здесь по-прежнему можно общаться.",
+    `We have removed the lessons from this chat. The chat itself stays open until the new cycle starts on ${nextStart}, so you have time to decide where to go next.`,
     "",
-    "Что дальше",
-    `Новый поток стартует ${formatDay(nextCohortStartsAt)}. Ты из этого потока, поэтому для тебя действует цена продления. Выбери, что подходит:`,
+    "What's next",
+    "You are part of this cycle, so the renewal prices below apply to you. Choose what suits you:",
     ...(links.plus
       ? [
           "",
-          `Онлайн-группа Plus — занятия нового потока и библиотека ${IH}.`,
-          `Продлить: ${links.plus}`,
+          `Online Group Plus — the classes of the new cycle and the ${IH} library.${plus ? ` ${plus}.` : ""}`,
+          `Renew: ${links.plus}`,
         ]
       : []),
     ...(links.standard
       ? [
           "",
-          "Онлайн-группа Standard — занятия нового потока.",
-          `Продлить: ${links.standard}`,
+          `Online Group Standard — the classes of the new cycle.${standard ? ` ${standard}.` : ""}`,
+          `Renew: ${links.standard}`,
         ]
       : []),
     "",
-    `Только ${IH} — библиотека уроков прошлых потоков и материалов, без занятий в группе. 8 недель${special ? ` за ${special}${full ? ` вместо ${full}` : ""}` : ""}.`,
-    `Оформить: ${links.hub}`,
+    `${IH} only — the library of lessons from all past cycles, including this one, without group classes. 8 weeks${hub ? ` for ${hub}` : ""}.`,
+    `Get it: ${links.hub}`,
     "",
-    `Про ${IH}`,
+    `About ${IH}`,
     ...(special && full
       ? [
-          `• Специальная цена ${special} действует до ${priceLastDay} включительно. Потом — ${full}.`,
+          `• The special price ${special} is valid until ${priceLastDay} inclusive. After that — ${full}.`,
         ]
       : []),
-    `• Если у тебя был Plus, библиотека открыта до ${hubLastDay} включительно. Оформишь ${IH} заранее — оплаченные 8 недель начнутся сразу, как закончится этот доступ, ни один день не пропадёт.`,
-    "• Если у тебя был Standard, 8 недель начнутся сразу после оплаты.",
+    `• If you had Plus, the library stays open until ${hubLastDay} inclusive. Get ${IH} in advance and your paid 8 weeks start right when that access ends — not a single day is lost.`,
+    "• If you had Standard, the 8 weeks start right after payment.",
     "",
-    "Как оформить",
-    "По ссылке мы попросим подтвердить твой Telegram: так мы увидим, что ты из этого чата, и откроем цену продления. Проверь, что в настройках Telegram у тебя указано имя пользователя (@username).",
+    "How to sign up",
+    "The link asks you to confirm your Telegram: this is how we see you are from this chat and unlock the renewal price. Make sure your Telegram settings have a username (@username).",
     "",
-    `Места в группе ограничены. Вопросы — ${SUPPORT_TELEGRAM_URL}`,
+    `Places in the group are limited. Questions — ${SUPPORT_TELEGRAM_URL}`,
   ].join("\n");
 };
 
@@ -136,11 +156,15 @@ export const buildCohortGraceReminder = ({
   nextCohortStartsAt: Date;
 }) => {
   const lastDay = formatDay(getPlusHubLastDay(accessEndsAt));
-  const special = hubSpecialPrice();
+  const plus = priceAgainst(
+    groupPrice("renewal-library-access"),
+    groupPrice("library-access"),
+  );
+  const hub = priceAgainst(hubSpecialPrice(), hubPrice(INSPIRATION_HUB_ACCESS_OFFER_ID));
 
   return [
-    `Завтра, ${lastDay}, — последний день библиотеки ${IH} для тех, у кого был Plus в прошлом потоке.`,
-    `Продли Plus на поток, который стартует ${formatDay(nextCohortStartsAt)}, — и библиотека останется с тобой. Или оформи только ${IH} на 8 недель${special ? ` за ${special}` : ""}: эта цена действует до ${lastDay} включительно.`,
+    `Tomorrow, ${lastDay}, is the last day of the ${IH} library for those who had Plus in the previous cycle.`,
+    `Renew Plus for the cycle that starts on ${formatDay(nextCohortStartsAt)}${plus ? ` (${plus})` : ""} and the library stays with you. Or get ${IH} alone — 8 weeks${hub ? ` for ${hub}` : ""}; this price is valid until ${lastDay} inclusive.`,
     "",
     ...linkLines(links, { standard: false }),
   ].join("\n");
