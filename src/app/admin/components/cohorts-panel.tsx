@@ -8,7 +8,7 @@ import type { CloseCohortInput, CloseCohortResult } from "../hooks/use-cohorts-a
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { ConfirmDialog, useToast } from "../ui/feedback";
-import { Switch } from "../ui/forms";
+import { Input, Switch } from "../ui/forms";
 import {
   AdminButton,
   Badge,
@@ -36,6 +36,25 @@ const formatWarsawDay = (day: string) =>
     month: "long",
     timeZone: "UTC",
   }).format(new Date(`${day}T12:00:00Z`));
+
+const weeksWord = (weeks: number) => {
+  const lastTwo = weeks % 100;
+  const last = weeks % 10;
+  if (lastTwo >= 11 && lastTwo <= 14) return "недель";
+  if (last === 1) return "неделя";
+  return last >= 2 && last <= 4 ? "недели" : "недель";
+};
+
+const DurationEditor = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  ${Input} {
+    width: 88px;
+  }
+`;
 
 const cohortStatus = (
   cohort: CohortOverview,
@@ -283,6 +302,7 @@ type CohortsPanelProps = {
   onClosed: () => void;
   onReload: () => Promise<void> | void;
   onRetryPost: (cohortId: string) => Promise<boolean>;
+  onSetDurationWeeks: (cohortId: string, durationWeeks: number) => Promise<boolean>;
   onSetPreviousChatRemoval: (cohortId: string, enabled: boolean) => Promise<boolean>;
   onUnauthorized: () => void;
   retryingId: string;
@@ -298,12 +318,37 @@ export const CohortsPanel = ({
   onClosed,
   onReload,
   onRetryPost,
+  onSetDurationWeeks,
   onSetPreviousChatRemoval,
   onUnauthorized,
   retryingId,
 }: CohortsPanelProps) => {
   const toast = useToast();
   const [switchingId, setSwitchingId] = useState("");
+  // HUB-D50: the length being typed per cohort, until it is saved.
+  const [durationDrafts, setDurationDrafts] = useState<Record<string, string>>({});
+  const [savingDurationId, setSavingDurationId] = useState("");
+
+  const saveDuration = async (cohort: CohortOverview) => {
+    const weeks = Number(durationDrafts[cohort.id]);
+    if (!Number.isInteger(weeks) || weeks < 1 || weeks > 26) {
+      toast({ tone: "danger", title: "Длительность — целое число недель от 1 до 26." });
+      return;
+    }
+    setSavingDurationId(cohort.id);
+    const ok = await onSetDurationWeeks(cohort.id, weeks);
+    setSavingDurationId("");
+    if (ok) {
+      setDurationDrafts((drafts) => {
+        const rest = { ...drafts };
+        delete rest[cohort.id];
+        return rest;
+      });
+      toast({ tone: "success", title: `Длительность: ${weeks} ${weeksWord(weeks)}.` });
+    } else {
+      toast({ tone: "danger", title: "Не получилось сохранить. Попробуй ещё раз." });
+    }
+  };
 
   const switchPreviousChatRemoval = async (cohort: CohortOverview, enabled: boolean) => {
     setSwitchingId(cohort.id);
@@ -441,6 +486,11 @@ export const CohortsPanel = ({
                     <dl>
                       <dt>Старт</dt>
                       <dd>{formatDate(cohort.startsAt, true)}</dd>
+                      <dt>Длительность</dt>
+                      <dd>
+                        {cohort.durationWeeks} {weeksWord(cohort.durationWeeks)} · по
+                        плану до {formatDate(cohort.plannedEndsAt)}
+                      </dd>
                       {cohort.closedAt && (
                         <>
                           <dt>
@@ -474,6 +524,39 @@ export const CohortsPanel = ({
                         <b>{cohort.facts.continuations}</b>
                       </div>
                     </Facts>
+                    {!cohort.closedAt && (
+                      <DurationEditor>
+                        <label htmlFor={`cohort-weeks-${cohort.id}`}>
+                          Длительность, недель
+                        </label>
+                        <Input
+                          id={`cohort-weeks-${cohort.id}`}
+                          type="number"
+                          min={1}
+                          max={26}
+                          inputMode="numeric"
+                          value={
+                            durationDrafts[cohort.id] ?? String(cohort.durationWeeks)
+                          }
+                          onChange={(event) =>
+                            setDurationDrafts((drafts) => ({
+                              ...drafts,
+                              [cohort.id]: event.target.value,
+                            }))
+                          }
+                        />
+                        <AdminButton
+                          disabled={
+                            savingDurationId === cohort.id ||
+                            durationDrafts[cohort.id] === undefined ||
+                            durationDrafts[cohort.id] === String(cohort.durationWeeks)
+                          }
+                          onClick={() => void saveDuration(cohort)}
+                        >
+                          Сохранить
+                        </AdminButton>
+                      </DurationEditor>
+                    )}
                     {cohort.previousCohortId && !cohort.closedAt && (
                       <SwitchSetting>
                         <Switch
@@ -612,6 +695,13 @@ export const CohortsPanel = ({
             {!closing.next && (
               <Callout tone="warning" icon={<CircleAlert aria-hidden />}>
                 Следующий поток не заведён — продажи открывать нечему.
+              </Callout>
+            )}
+            {loadedAt < Date.parse(closing.plannedEndsAt) && (
+              <Callout tone="warning" icon={<CircleAlert aria-hidden />}>
+                По плану поток идёт до {formatDate(closing.plannedEndsAt)} (
+                {closing.durationWeeks} {weeksWord(closing.durationWeeks)}). Если закрыть
+                сейчас, хаб Plus закончится раньше — через 7 дней после закрытия.
               </Callout>
             )}
             <Check>

@@ -229,6 +229,11 @@ export const onlineGroupCohorts = pgTable(
     removesPreviousChatMembers: boolean("removes_previous_chat_members")
       .notNull()
       .default(false),
+    /**
+     * HUB-D50: how long the cohort runs, set in the admin. Shown on the group page and
+     * in «Мой доступ»; the closure window warns when closing before it is over.
+     */
+    durationWeeks: integer("duration_weeks").notNull().default(6),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -244,6 +249,10 @@ export const onlineGroupCohorts = pgTable(
       name: "online_group_cohorts_previous_fk",
     }).onDelete("restrict"),
     check("online_group_cohorts_title_check", sql`BTRIM(${table.title}) <> ''`),
+    check(
+      "online_group_cohorts_duration_weeks_check",
+      sql`${table.durationWeeks} BETWEEN 1 AND 26`,
+    ),
     check(
       "online_group_cohorts_previous_not_self_check",
       sql`${table.previousCohortId} IS NULL OR ${table.previousCohortId} <> ${table.id}`,

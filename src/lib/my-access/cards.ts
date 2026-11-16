@@ -4,7 +4,7 @@ import {
   isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
-import { isStartDayReached } from "@/lib/inspiration-hub/calendar";
+import { addWarsawCalendarDays, isStartDayReached } from "@/lib/inspiration-hub/calendar";
 import { getPlusHubLastDay } from "@/lib/online-group/cohort-messages";
 import {
   getOfferAccessDurationDaysByOfferId,
@@ -56,6 +56,8 @@ export type MyAccessCohort = {
   startsAt: Date;
   closedAt: Date | null;
   accessEndsAt: Date | null;
+  /** HUB-D50: the planned length; the real end is the closure. */
+  durationWeeks: number;
 };
 
 export type MyAccessSnapshot = {
@@ -274,12 +276,13 @@ const buildPlusHubCard = ({
       : null;
   }
 
+  // HUB-D49: the library is open from payment; the library opens before the start.
   if (cohort && !isStartDayReached(cohort.startsAt, now)) {
     return {
       ...base,
       status: { key: "plusHub.included" },
-      note: { key: "plusHub.opensOnStart", values: { date: iso(cohort.startsAt) } },
-      urgency: 2,
+      note: { key: "plusHub.openBeforeStart", values: { date: iso(cohort.startsAt) } },
+      urgency: 1,
       sortAt: cohort.startsAt.getTime(),
     };
   }
@@ -287,7 +290,14 @@ const buildPlusHubCard = ({
   return {
     ...base,
     status: { key: "plusHub.included" },
-    note: { key: "plusHub.duringCohort" },
+    note: cohort
+      ? {
+          key: "plusHub.duringCohortUntil",
+          values: {
+            date: iso(addWarsawCalendarDays(cohort.startsAt, cohort.durationWeeks * 7)),
+          },
+        }
+      : { key: "plusHub.duringCohort" },
     urgency: 1,
     sortAt: Number.MAX_SAFE_INTEGER - 1,
   };
@@ -427,11 +437,7 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
   ) {
     return "endsSoon";
   }
-  if (
-    key === "hub.scheduled" ||
-    key === "hub.afterCohort" ||
-    card.note?.key === "plusHub.opensOnStart"
-  ) {
+  if (key === "hub.scheduled" || key === "hub.afterCohort") {
     return "upcoming";
   }
   if (card.action?.key === "support") return "linkExpired";

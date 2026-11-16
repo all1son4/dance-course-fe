@@ -5,7 +5,7 @@ import type {
   HubReminderPlusRight,
 } from "@/lib/inspiration-hub/expiry-reminders";
 
-import { accessEntitlements, onlineGroupCohorts, purchases } from "./schema";
+import { accessEntitlements, purchases } from "./schema";
 import type { DatabaseExecutor } from "./transaction";
 
 /*
@@ -55,17 +55,13 @@ export async function listHubReminderPlusRights(
 
   const rows = await database
     .select({
-      cohortStartsAt: onlineGroupCohorts.startsAt,
       entitlementOwner: accessEntitlements.telegramUserId,
       expiresAt: accessEntitlements.expiresAt,
+      paidAt: purchases.succeededAt,
       purchaseOwner: purchases.telegramUserId,
     })
     .from(accessEntitlements)
     .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
-    .leftJoin(
-      onlineGroupCohorts,
-      eq(onlineGroupCohorts.id, purchases.onlineGroupCohortId),
-    )
     .where(
       and(
         eq(accessEntitlements.accessKey, "inspiration-hub"),
@@ -89,7 +85,8 @@ export async function listHubReminderPlusRights(
       ? [
           {
             expiresAt: row.expiresAt,
-            startsAt: row.cohortStartsAt,
+            // HUB-D49: Plus opens the library at payment, not at the cohort start.
+            startsAt: row.paidAt,
             telegramUserId: owner,
           },
         ]

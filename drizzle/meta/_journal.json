@@ -204,6 +204,13 @@
       "when": 1794699298062,
       "tag": "0028_cohort_previous_chat_removal",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1794838075009,
+      "tag": "0029_cohort_duration_weeks",
+      "breakpoints": true
     }
   ]
 }

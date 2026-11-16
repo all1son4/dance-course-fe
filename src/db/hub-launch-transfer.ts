@@ -23,7 +23,13 @@ import {
 } from "./schema";
 import type { DatabaseTransaction } from "./transaction";
 
-type CohortInput = { title: string; mainChatId: string; startsAt: string };
+type CohortInput = {
+  title: string;
+  mainChatId: string;
+  startsAt: string;
+  /** HUB-D50: the planned length in weeks; the column default (6) when left out. */
+  durationWeeks?: number;
+};
 
 /** Values the owner reads off the production report (handoff, step А12). */
 export type HubLaunchTransferInput = {
@@ -87,6 +93,14 @@ export function validateHubLaunchTransferInput(input: HubLaunchTransferInput) {
       throw new Error(`hub_launch_transfer_cohort_incomplete:${label}`);
     }
     parseDate(cohort.startsAt, `${label}.startsAt`);
+    if (
+      cohort.durationWeeks !== undefined &&
+      (!Number.isInteger(cohort.durationWeeks) ||
+        cohort.durationWeeks < 1 ||
+        cohort.durationWeeks > 26)
+    ) {
+      throw new Error(`hub_launch_transfer_duration_invalid:${label}`);
+    }
   }
   if (input.cohort2.mainChatId.trim() === input.cohort3.mainChatId.trim()) {
     throw new Error("hub_launch_transfer_same_main_chat");
@@ -126,6 +140,7 @@ async function ensureCohort(
     mainChatId: input.mainChatId.trim(),
     startsAt: parseDate(input.startsAt, `${label}.startsAt`),
     previousCohortId,
+    ...(input.durationWeeks === undefined ? {} : { durationWeeks: input.durationWeeks }),
   };
   const [existing] = await tx
     .select()

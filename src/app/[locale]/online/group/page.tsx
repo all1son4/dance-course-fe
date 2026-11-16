@@ -15,6 +15,7 @@ import {
   SELLABLE_PRODUCTS,
   type SellableProductOffer,
 } from "@/constants/sellable-products";
+import { readNewestCohortDurationWeeks } from "@/db/cohort-duration";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { getOpenPublicProductOffers } from "@/lib/public-sales";
 import {
@@ -73,18 +74,20 @@ export default async function OnlineGroupPage() {
   // 150-300ms after the page on Vercel: everything below it jumped down,
   // "Choose a plan" was a dead click until then and /online/group#tariffs
   // missed its target.
-  const [t, metadataT, onlineT, saleState, catalogProducts] = await Promise.all([
+  const [t, metadataT, onlineT, saleState, catalogProducts, weeks] = await Promise.all([
     getTranslations("OnlineGroupPage"),
     getTranslations("Metadata"),
     getTranslations("OnlinePage"),
     getProductSaleState(configuredProduct.id),
     getStorefrontSellableProducts(),
+    // HUB-D50: «Длительность потока — N недель» follows the cohort set in the admin.
+    readNewestCohortDurationWeeks(),
   ]);
   const product =
     catalogProducts.find((candidate) => candidate.id === configuredProduct.id) ??
     configuredProduct;
   const availableOffers = getOpenPublicProductOffers(product);
-  const onlineSuggestions = getGroupSuggestions((key) => t(key));
+  const onlineSuggestions = getGroupSuggestions((key) => t(key, { weeks }));
   const purchaseOffers = product.offers.filter(
     (offer) => offer.code === "standard" || offer.code === "library-access",
   );
@@ -222,7 +225,7 @@ export default async function OnlineGroupPage() {
                           <TariffContentList>
                             <li>{t("tariffs.standard.features.1")}</li>
                             <li>{t("tariffs.standard.features.2")}</li>
-                            <li>{t("tariffs.standard.features.3")}</li>
+                            <li>{t("tariffs.standard.features.3", { weeks })}</li>
                             <li>{t("tariffs.standard.features.4")}</li>
                             <li>{t("tariffs.standard.features.5")}</li>
                             <li>{t("tariffs.standard.features.6")}</li>

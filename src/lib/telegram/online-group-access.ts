@@ -14,7 +14,6 @@ import { findPreviousChatRemoval } from "@/db/previous-chat-removal";
 import { recordPurchaseTelegramOwnerInTransaction } from "@/db/purchase-access-source";
 import {
   accessEntitlements,
-  onlineGroupCohorts,
   purchases,
   telegramAccessTokens,
   telegramUserBindings,
@@ -953,22 +952,6 @@ const findPlusHubEnd = async (purchase: OnlineGroupPurchase): Promise<Date | nul
     : purchase.inspirationAccessExpiresAtSnapshot;
 };
 
-/**
- * HUB-D43: the Plus Hub of a cohort that has not started opens on the start day.
- * Someone already in the Hub is answered "active" before this matters.
- */
-const findPlusHubStart = async (purchase: OnlineGroupPurchase, now: Date) => {
-  if (!purchase.onlineGroupCohortId) return undefined;
-
-  const [cohort] = await getDatabase()
-    .select({ startsAt: onlineGroupCohorts.startsAt })
-    .from(onlineGroupCohorts)
-    .where(eq(onlineGroupCohorts.id, purchase.onlineGroupCohortId))
-    .limit(1);
-
-  return cohort && !isStartDayReached(cohort.startsAt, now) ? cohort.startsAt : undefined;
-};
-
 const ensureOnlineGroupAccessForPaymentInternal = async (
   paymentRecord: PaymentRecordSnapshot,
   reissue: boolean,
@@ -999,17 +982,12 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
     inspirationChatId: purchase.inspirationChatIdSnapshot,
   });
 
-  const plusHubStartsAt = targets.some((target) => target.accessKey === "inspiration-hub")
-    ? await findPlusHubStart(purchase, new Date())
-    : undefined;
-
+  // HUB-D49 (replaces HUB-D43): Plus opens the library right at payment; the days
+  // before the cohort starts are a gift, so both invites go out at once.
   return Promise.all(
     targets.map((target) =>
       ensureTargetAccess({
         ...target,
-        ...(target.accessKey === "inspiration-hub" && plusHubStartsAt
-          ? { accessStartsAt: plusHubStartsAt }
-          : {}),
         paymentRecord,
         purchase,
         reissue,

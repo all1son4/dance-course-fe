@@ -129,6 +129,20 @@ export const useCohortsAdmin = ({
     return response.ok;
   };
 
+  /** HUB-D50: the planned length of a cohort, in weeks. */
+  const setDurationWeeks = async (cohortId: string, durationWeeks: number) => {
+    const response = await requestAdminJson<{ durationWeeks: number }>(
+      ADMIN_API_ENDPOINTS.onlineGroupCohorts,
+      { body: { cohortId, durationWeeks }, method: "PATCH" },
+    );
+    if (response.unauthorized) {
+      onUnauthorized();
+      return false;
+    }
+    await load();
+    return response.ok;
+  };
+
   return {
     close,
     cohorts,
@@ -139,6 +153,7 @@ export const useCohortsAdmin = ({
     loadedAt,
     retryPost,
     retryingId,
+    setDurationWeeks,
     setPreviousChatRemoval,
   };
 };

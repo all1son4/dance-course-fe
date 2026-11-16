@@ -8,6 +8,7 @@ import {
 import {
   closeCohortFromAdmin,
   getCohortsOverview,
+  setCohortDurationWeeks,
   setCohortPreviousChatRemoval,
 } from "@/lib/online-group/cohort-admin";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
@@ -147,12 +148,21 @@ export async function PATCH(request: Request) {
   try {
     const { body, errorResponse } = await parseJsonBody<{
       cohortId?: unknown;
+      durationWeeks?: unknown;
       removesPreviousChatMembers?: unknown;
     }>(request, 1024);
     if (errorResponse) return errorResponse;
 
     const cohortId = typeof body?.cohortId === "string" ? body.cohortId.trim() : "";
-    if (!cohortId || typeof body?.removesPreviousChatMembers !== "boolean") {
+    if (!cohortId) return jsonErrorNoStore("invalid_request_body", { status: 400 });
+
+    // One setting per request: the cohort length (HUB-D50) or the HUB-D44 switch.
+    if (typeof body?.durationWeeks === "number") {
+      return jsonNoStore(
+        await setCohortDurationWeeks({ cohortId, durationWeeks: body.durationWeeks }),
+      );
+    }
+    if (typeof body?.removesPreviousChatMembers !== "boolean") {
       return jsonErrorNoStore("invalid_request_body", { status: 400 });
     }
 
@@ -164,7 +174,11 @@ export async function PATCH(request: Request) {
     );
   } catch (error) {
     const errorCode = error instanceof Error ? error.message : "";
-    if (errorCode === "cohort_not_found" || errorCode === "cohort_has_no_previous") {
+    if (
+      errorCode === "cohort_not_found" ||
+      errorCode === "cohort_has_no_previous" ||
+      errorCode === "cohort_duration_invalid"
+    ) {
       return jsonNoStore({ errorCode }, { status: 409 });
     }
     logSafeError("Failed to switch the previous chat removal", error);

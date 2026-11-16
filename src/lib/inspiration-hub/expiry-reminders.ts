@@ -20,7 +20,7 @@ export type HubReminderPeriod = {
 export type HubReminderPlusRight = {
   telegramUserId: string;
   expiresAt: Date | null;
-  /** The Plus cohort's start: a Plus starting after the Hub ends does not cover it. */
+  /** When the Plus opened the library (its payment, HUB-D49); a later one does not cover an earlier end. */
   startsAt: Date | null;
 };
 

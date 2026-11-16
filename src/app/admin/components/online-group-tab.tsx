@@ -112,6 +112,7 @@ export const OnlineGroupTab = ({
           }}
           onReload={cohorts.load}
           onRetryPost={cohorts.retryPost}
+          onSetDurationWeeks={cohorts.setDurationWeeks}
           onSetPreviousChatRemoval={cohorts.setPreviousChatRemoval}
           onUnauthorized={onUnauthorized}
           retryingId={cohorts.retryingId}

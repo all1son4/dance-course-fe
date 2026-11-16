@@ -134,10 +134,11 @@ test("an ended Hub offers a new purchase; a revoked one is not shown", () => {
   assert.equal(revoked.length, 0);
 });
 
-test("Plus: the Hub opens with the cycle start, then stays until 7 days after the end", () => {
+test("Plus: the library is open from payment (a gift before the start), then a week after the end", () => {
   const cohort = {
     accessEndsAt: null,
     closedAt: null,
+    durationWeeks: 8,
     id: "c3",
     startsAt: new Date("2027-01-10T17:00:00.000Z"),
   };
@@ -187,14 +188,42 @@ test("Plus: the Hub opens with the cycle start, then stays until 7 days after th
     ],
   });
 
+  // The library is usable now, so it comes before the group that starts later.
   assert.deepEqual(
     before.map((card) => card.status.key),
-    ["group.startsOn", "plusHub.included"],
+    ["plusHub.included", "group.startsOn"],
   );
-  assert.equal(
-    before.find((card) => card.title === "hub")?.note?.key,
-    "plusHub.opensOnStart",
-  );
+  const giftCard = before.find((card) => card.title === "hub");
+  assert.deepEqual(giftCard?.note, {
+    key: "plusHub.openBeforeStart",
+    values: { date: "2027-01-10T17:00:00.000Z" },
+  });
+  assert.equal(giftCard?.chip, "active");
+
+  // Running: the planned end is the start plus the cohort length (8 weeks).
+  const running = cardsOf({
+    cohorts: [{ ...cohort, startsAt: new Date("2026-12-01T17:00:00.000Z") }],
+    purchases: [
+      purchase({
+        cohortId: "c3",
+        id: "p",
+        offerExternalId: PLUS_OFFER,
+        productExternalId: "x",
+      }),
+    ],
+    rights: [
+      right({ purchaseId: "p" }),
+      right({
+        accessKey: "inspiration-hub",
+        purchaseId: "p",
+        sourceKind: "online_group",
+      }),
+    ],
+  });
+  assert.deepEqual(running.find((card) => card.title === "hub")?.note, {
+    key: "plusHub.duringCohortUntil",
+    values: { date: "2027-01-26T17:00:00.000Z" },
+  });
   // The cycle closed on 28 December: Standard/Plus ended at midnight, the Plus Hub stays a week.
   assert.deepEqual(
     closed.map((card) => card.status.key),
@@ -261,6 +290,7 @@ test("Plus of cycle #2 keeps its recorded Hub end, even after the cycle closes",
   const cohort2 = {
     accessEndsAt: new Date("2026-12-28T23:00:00.000Z"),
     closedAt: new Date("2026-12-28T10:00:00.000Z"),
+    durationWeeks: 6,
     id: "c2",
     startsAt: new Date("2026-08-10T06:00:00.000Z"),
   };
@@ -373,6 +403,7 @@ test("§11: a closed Plus does not push a renewal on someone who already renewed
   const closedCohort2 = {
     accessEndsAt: new Date("2026-12-28T23:00:00.000Z"),
     closedAt: new Date("2026-12-28T10:00:00.000Z"),
+    durationWeeks: 6,
     id: "c2",
     startsAt: new Date("2026-10-05T16:00:00.000Z"),
   };

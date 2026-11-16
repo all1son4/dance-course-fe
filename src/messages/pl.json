@@ -563,7 +563,7 @@
         },
         "library": {
           "title": "Plus",
-          "description": "Grupa online z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
+          "description": "Grupa online i biblioteka Inspiration HUB z lekcjami z poprzednich cykli — dostęp zaraz po płatności."
         }
       },
       "programButton": "Co na Ciebie czeka"
@@ -580,7 +580,7 @@
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
-          "3": "Czas trwania cyklu — 6 tygodni",
+          "3": "Czas trwania cyklu — {weeks, plural, one {# tydzień} few {# tygodnie} many {# tygodni} other {# tygodnia}}",
           "4": "Dostęp do zamkniętego czatu na Telegramie",
           "5": "Kontakt i wsparcie w grupie",
           "6": "Dodatkowe materiały do inspiracji"
@@ -592,10 +592,10 @@
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
-          "3": "Czas trwania cyklu — 6 tygodni",
+          "3": "Czas trwania cyklu — {weeks, plural, one {# tydzień} few {# tygodnie} many {# tygodni} other {# tygodnia}}",
           "4": "Dostęp do zamkniętego czatu na Telegramie",
           "5": "Kontakt i wsparcie w grupie",
-          "6": "Dostęp do Inspiration Hub na czas trwania cyklu",
+          "6": "Inspiration HUB — zaraz po płatności i przez cały cykl",
           "7": "Lekcje ze wszystkich poprzednich cykli",
           "8": "Dodatkowe ćwiczenia",
           "9": "Playlisty, moodboardy i inspirujące filmy",
@@ -623,12 +623,12 @@
         "text": "Ćwiczysz, wykonujesz zadania, wysyłasz filmy i otrzymujesz moje komentarze, korekty oraz wskazówki."
       },
       "4": {
-        "title": "6-tygodniowy program treningowy",
-        "text": "W ciągu sześciu tygodni realizujesz 5 nowych lekcji, wykonujesz zadania domowe i otrzymujesz feedback do swojej pracy."
+        "title": "Program treningowy na {weeks, plural, one {# tydzień} few {# tygodnie} many {# tygodni} other {# tygodnia}}",
+        "text": "W ciągu {weeks, plural, one {# tygodnia} few {# tygodni} many {# tygodni} other {# tygodnia}} realizujesz 5 nowych lekcji, wykonujesz zadania domowe i otrzymujesz feedback do swojej pracy."
       },
       "5": {
         "title": "Pakiet Plus z Inspiration Hub",
-        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub trwa przez cały cykl i jeszcze 7 dni po jego zakończeniu. Jeśli w tym czasie przedłużysz Plus na kolejny cykl, Hub zostanie z Tobą bez przerwy aż do jego startu."
+        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration HUB. Biblioteka otwiera się zaraz po płatności i działa przez cały cykl oraz jeszcze 7 dni po jego zakończeniu. Jeśli w tym czasie przedłużysz Plus na kolejny cykl, biblioteka zostanie z Tobą bez przerwy."
       },
       "6": {
         "title": "Zamknięty czat Telegram",
@@ -810,7 +810,7 @@
       "summaryCard": {
         "description": "Kontynuacja udziału w grupie online na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
-        "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
+        "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration HUB. Biblioteka otwiera się od razu i działa przez cały cykl."
       },
       "buttons": {
         "verify": "Potwierdź Telegram"
@@ -972,7 +972,7 @@
       "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 120 dni od dołączenia.",
       "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 60 dni od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Inspiration HUB jest otwarty od razu i działa przez cały cykl.",
       "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze.",
       "inspirationHub": "Link jest ważny do 30 dni. Dostęp do Inspiration Hub trwa 8 tygodni."
     },
@@ -1127,7 +1127,7 @@
         "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
       },
       "accessNote": "Po płatności wyślemy Ci osobisty jednorazowy link do grupy Telegram.",
-      "accessNotePlus": "Po płatności wyślemy Ci osobiste jednorazowe linki do grupy Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu.",
+      "accessNotePlus": "Po płatności wyślemy Ci osobiste jednorazowe linki do grupy Telegram i Inspiration HUB. Biblioteka otwiera się od razu i działa przez cały cykl.",
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",
@@ -1362,10 +1362,11 @@
       "plusHub": {
         "included": "W Twoim pakiecie Plus",
         "duringCohort": "Dostęp trwa przez cały cykl i jeszcze 7 dni po nim",
-        "opensOnStart": "Hub otworzy się wraz ze startem cyklu, {date}. Link przyjdzie mailem",
         "closed": "Cykl się zakończył. Hub z pakietu Plus jest dostępny do {date}",
         "keep": "Przedłuż Plus albo sam Hub, aby nie stracić dostępu",
-        "until": "W Twoim pakiecie Plus — do {date}"
+        "until": "W Twoim pakiecie Plus — do {date}",
+        "duringCohortUntil": "Działa do końca cyklu (według planu — {date}) i jeszcze 7 dni po nim",
+        "openBeforeStart": "Otwarty już teraz, cykl startuje {date}"
       },
       "group": {
         "running": "Cykl trwa",

@@ -44,7 +44,7 @@ const stubTelegram = (context: TestContext) =>
     });
   });
 
-test("HUB-D43: a new Plus buyer outside the Hub gets the Hub invite on the start day", async (t) => {
+test("HUB-D49: a new Plus buyer outside the Hub gets the Hub invite at payment, before the start", async (t) => {
   stubTelegram(t);
   const mainChat = `plus_hub_main_${randomUUID()}`;
   const hubChat = `plus_hub_hub_${randomUUID()}`;
@@ -76,28 +76,16 @@ test("HUB-D43: a new Plus buyer outside the Hub gets the Hub invite on the start
     await client`UPDATE purchases SET online_group_cohort_id = ${cohort!.id}
       WHERE payment_intent_id = ${record.payment_intent_id}`;
 
-    // At payment: the group invite now, the Hub on the start day.
+    // HUB-D49: both invites at payment; the days before the start are a gift.
     const atPayment = (await ensureOnlineGroupAccessForPayment(record)) ?? [];
     const main = atPayment.find((access) => access.accessKey === "main-group");
     const hub = atPayment.find((access) => access.accessKey === "inspiration-hub");
     assert.equal(main?.status, "ready");
-    assert.equal(hub?.status, "scheduled");
-    assert.equal(hub?.accessStartsAt, startsAt.toISOString());
-    assert.equal(hub?.accessUrl, "");
+    assert.equal(hub?.status, "ready");
+    assert.match(hub?.accessUrl ?? "", /^https:\/\/t\.me\//u);
+    assert.equal(hub?.accessStartsAt, "");
 
-    const before = await listStartedPlusHubsWithoutInvite(getDatabase(), {
-      livemode: false,
-      now: new Date(),
-    });
-    assert.equal(
-      before.some((item) => item.paymentIntentId === record.payment_intent_id),
-      false,
-      "not before the start",
-    );
-
-    // The cohort has started: the daily job lists the purchase and the invite is issued.
-    // Start day reached: the cohort begins later today (Warsaw), the 03:00 UTC run of
-    // that morning already sends the invite — a few hours early, never a day late.
+    // The start-day job has nothing left to send for this purchase.
     await client`UPDATE online_group_cohorts
       SET starts_at = (date_trunc('day', now() AT TIME ZONE 'Europe/Warsaw')
         + interval '23 hours 59 minutes') AT TIME ZONE 'Europe/Warsaw'
@@ -108,24 +96,8 @@ test("HUB-D43: a new Plus buyer outside the Hub gets the Hub invite on the start
     });
     assert.equal(
       due.some((item) => item.paymentIntentId === record.payment_intent_id),
-      true,
-    );
-
-    const onStartDay = (await ensureOnlineGroupAccessForPayment(record)) ?? [];
-    const startedHub = onStartDay.find(
-      (access) => access.accessKey === "inspiration-hub",
-    );
-    assert.equal(startedHub?.status, "ready");
-    assert.match(startedHub?.accessUrl ?? "", /^https:\/\/t\.me\//u);
-
-    const afterInvite = await listStartedPlusHubsWithoutInvite(getDatabase(), {
-      livemode: false,
-      now: new Date(),
-    });
-    assert.equal(
-      afterInvite.some((item) => item.paymentIntentId === record.payment_intent_id),
       false,
-      "one invite only",
+      "the invite went out at payment",
     );
   } finally {
     await client`DELETE FROM purchases WHERE payment_intent_id = ${record.payment_intent_id}`;

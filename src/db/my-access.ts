@@ -135,6 +135,7 @@ export async function readMyAccessSnapshot(
           .select({
             accessEndsAt: onlineGroupCohorts.accessEndsAt,
             closedAt: onlineGroupCohorts.closedAt,
+            durationWeeks: onlineGroupCohorts.durationWeeks,
             id: onlineGroupCohorts.id,
             startsAt: onlineGroupCohorts.startsAt,
           })

@@ -25,7 +25,10 @@ import {
   processOutboxJobByDeduplicationKey,
   replayOutboxJob,
 } from "@/db/transactional-outbox";
-import { getStartOfNextWarsawDay } from "@/lib/inspiration-hub/calendar";
+import {
+  addWarsawCalendarDays,
+  getStartOfNextWarsawDay,
+} from "@/lib/inspiration-hub/calendar";
 import { logSafeError } from "@/lib/safe-error-log";
 import { normalizedSiteUrl } from "@/lib/seo";
 import { pinTelegramChatMessage, sendTelegramMessage } from "@/lib/telegram/bot-api";
@@ -236,6 +239,11 @@ export async function getCohortsOverview(now = new Date()) {
         salesEnabled: cohort.salesEnabled,
         previousCohortId: cohort.previousCohortId,
         removesPreviousChatMembers: cohort.removesPreviousChatMembers,
+        durationWeeks: cohort.durationWeeks,
+        plannedEndsAt: addWarsawCalendarDays(
+          cohort.startsAt,
+          cohort.durationWeeks * 7,
+        ).toISOString(),
         next: next
           ? {
               id: next.id,
@@ -450,6 +458,35 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
 }
 
 /** HUB-D44: the switch «Удалять из чата прошлого потока» of one cohort. */
+export const COHORT_DURATION_WEEKS = { max: 26, min: 1 } as const;
+
+/** HUB-D50: the planned length of a cohort, in weeks (the admin sets it). */
+export async function setCohortDurationWeeks({
+  cohortId,
+  durationWeeks,
+}: {
+  cohortId: string;
+  durationWeeks: number;
+}) {
+  if (
+    !Number.isInteger(durationWeeks) ||
+    durationWeeks < COHORT_DURATION_WEEKS.min ||
+    durationWeeks > COHORT_DURATION_WEEKS.max
+  ) {
+    throw new Error("cohort_duration_invalid");
+  }
+
+  const updated = await getDatabase()
+    .update(onlineGroupCohorts)
+    .set({ durationWeeks, updatedAt: new Date() })
+    .where(eq(onlineGroupCohorts.id, cohortId))
+    .returning({ id: onlineGroupCohorts.id });
+
+  if (updated.length === 0) throw new Error("cohort_not_found");
+
+  return { durationWeeks };
+}
+
 export async function setCohortPreviousChatRemoval({
   cohortId,
   enabled,
