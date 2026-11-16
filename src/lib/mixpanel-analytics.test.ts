@@ -2,12 +2,21 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  INSPIRATION_HUB_ACCESS_OFFER_ID,
+  INSPIRATION_HUB_PRODUCT_ID,
+  INSPIRATION_HUB_RENEWAL_OFFER_ID,
+  SELLABLE_PRODUCTS,
+} from "@/constants/sellable-products";
+
+import {
   getApiErrorAnalyticsProperties,
   getAppErrorAnalyticsProperties,
+  getCommerceAnalyticsContext,
   getCtaEventProperties,
   getInitialMixpanelAttributionProperties,
   getMixpanelAttributionProperties,
   getMixpanelPageProperties,
+  getPostPurchaseAccessAnalyticsProperties,
   getSafeDestinationProperties,
   getWebVitalAnalyticsProperties,
   MIXPANEL_BROWSER_CONFIG,
@@ -234,4 +243,182 @@ test("CTA properties carry a semantic id and a query-free destination only", () 
   });
   // Without a browser origin (server render) nothing is derived.
   assert.deepEqual(getSafeDestinationProperties("https://t.me/support"), {});
+});
+
+test("personal access routes block recording and autocapture even without a token query", () => {
+  for (const path of ["/access", "/ru/access", "/en/access/"]) {
+    assert.equal(shouldTrackMixpanelPath(path), true);
+    assert.equal(shouldRecordMixpanelPath(path), false);
+    assert.equal(shouldRecordMixpanelLocation(path, ""), false);
+    const config = MIXPANEL_BROWSER_CONFIG.autocapture;
+    assert.ok(config && typeof config === "object");
+    assert.ok(
+      config.block_url_regexes?.some((pattern) =>
+        pattern.test(`https://example.test${path}?k=private`),
+      ),
+    );
+  }
+  assert.equal(shouldRecordMixpanelPath("/online/inspiration-hub"), true);
+  assert.equal(shouldRecordMixpanelPath("/ru/online/inspiration-hub"), true);
+  assert.deepEqual(
+    getSafeDestinationProperties(
+      "/ru/access?k=personal_hmac&email=private@example.test",
+      "https://example.test",
+    ),
+    {
+      destination_path: "/ru/access",
+    },
+  );
+});
+
+test("Hub full and member prices are distinct without claiming a previous Hub purchase", () => {
+  for (const [offer, kind] of [
+    [INSPIRATION_HUB_ACCESS_OFFER_ID, "full_price"],
+    [INSPIRATION_HUB_RENEWAL_OFFER_ID, "member_price"],
+  ] as const) {
+    assert.deepEqual(
+      getCommerceAnalyticsContext({
+        product_id: INSPIRATION_HUB_PRODUCT_ID,
+        offer_id: offer,
+      }),
+      {
+        checkout_kind: kind,
+        hub_access: "standalone",
+      },
+    );
+  }
+});
+
+test("all Online tariffs consistently distinguish Plus Hub and renewal prices", () => {
+  const product = SELLABLE_PRODUCTS["online-group-anna-strok"];
+  for (const offer of product.offers) {
+    assert.deepEqual(
+      getCommerceAnalyticsContext({ product_id: product.id, offer_id: offer.id }),
+      {
+        checkout_kind: offer.code.startsWith("renewal-") ? "renewal" : "full_price",
+        hub_access: offer.code.endsWith("library-access") ? "plus" : "none",
+      },
+    );
+  }
+  const firstTouch = SELLABLE_PRODUCTS["first-touch"];
+  assert.deepEqual(
+    getCommerceAnalyticsContext({
+      product_id: firstTouch.id,
+      offer_id: firstTouch.offers[0].id,
+    }),
+    {
+      checkout_kind: "full_price",
+      hub_access: "none",
+    },
+  );
+});
+
+test("commerce classification omits unknown, incomplete and mismatched catalogue selections", () => {
+  for (const properties of [
+    {},
+    { product_id: INSPIRATION_HUB_PRODUCT_ID },
+    { product_id: "unknown", offer_id: INSPIRATION_HUB_RENEWAL_OFFER_ID },
+    { product_id: INSPIRATION_HUB_PRODUCT_ID, offer_id: "unknown" },
+    {
+      product_id: SELLABLE_PRODUCTS["online-group-anna-strok"].id,
+      offer_id: INSPIRATION_HUB_RENEWAL_OFFER_ID,
+    },
+    { product_id: null, offer_id: 123 },
+  ])
+    assert.deepEqual(getCommerceAnalyticsContext(properties), {});
+});
+
+const accessContext = {
+  accessUrl: "",
+  isContextValid: true,
+  statusKind: "pending" as const,
+};
+
+test("a scheduled Hub is counted separately and dates/invites never enter its delivery event", () => {
+  const result = getPostPurchaseAccessAnalyticsProperties({
+    ...accessContext,
+    accesses: [{ status: "scheduled", accessUrl: "" }],
+  });
+  assert.deepEqual(result, {
+    active_access_count: 0,
+    ready_access_count: 0,
+    scheduled_access_count: 1,
+    unavailable_access_count: 0,
+    status: "scheduled",
+  });
+});
+
+test("mixed Plus delivery preserves ready, active, scheduled and unavailable counts", () => {
+  const result = getPostPurchaseAccessAnalyticsProperties({
+    ...accessContext,
+    accesses: [
+      { status: "ready", accessUrl: "https://t.me/private-invite" },
+      { status: "active", accessUrl: "" },
+      { status: "scheduled", accessUrl: "" },
+      { status: "expired", accessUrl: "" },
+    ],
+  });
+  assert.deepEqual(result, {
+    active_access_count: 1,
+    ready_access_count: 1,
+    scheduled_access_count: 1,
+    unavailable_access_count: 1,
+    status: "partial",
+  });
+  assert.doesNotMatch(JSON.stringify(result), /https|private|t\.me/u);
+});
+
+test("legacy and unavailable deliveries retain their analytics behavior", () => {
+  assert.equal(
+    getPostPurchaseAccessAnalyticsProperties({ ...accessContext, accesses: [] }),
+    null,
+  );
+  assert.equal(
+    getPostPurchaseAccessAnalyticsProperties({
+      ...accessContext,
+      accesses: [],
+      accessUrl: "private",
+    })?.status,
+    "ready",
+  );
+  assert.equal(
+    getPostPurchaseAccessAnalyticsProperties({
+      ...accessContext,
+      accesses: [],
+      isContextValid: false,
+    })?.status,
+    "invalid_context",
+  );
+  assert.equal(
+    getPostPurchaseAccessAnalyticsProperties({
+      ...accessContext,
+      accesses: [],
+      statusKind: "unavailable",
+    })?.status,
+    "unavailable",
+  );
+  for (const [status, expected] of [
+    ["active", "already_active"],
+    ["expired", "unavailable"],
+    ["unavailable", "unavailable"],
+    ["ready", "unavailable"],
+  ] as const) {
+    assert.equal(
+      getPostPurchaseAccessAnalyticsProperties({
+        ...accessContext,
+        accesses: [{ status, accessUrl: "" }],
+      })?.status,
+      expected,
+    );
+  }
+  assert.equal(
+    getPostPurchaseAccessAnalyticsProperties({
+      ...accessContext,
+      accesses: [
+        { status: "scheduled", accessUrl: "" },
+        { status: "ready", accessUrl: "invite" },
+      ],
+    })?.status,
+    "ready",
+  );
 });

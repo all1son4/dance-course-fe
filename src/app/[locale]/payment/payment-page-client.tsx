@@ -1214,7 +1214,21 @@ const PaymentPage = observer(function PaymentPage({
                 // П17: the same Hub at full price, in the currency already chosen.
                 <>
                   {t("hubDiscount.notEligible")}{" "}
-                  <AgreementLink href={hubFullPriceHref}>
+                  <AgreementLink
+                    href={hubFullPriceHref}
+                    onClick={() => {
+                      void trackCtaClick(
+                        {
+                          id: "hub_discount_full_price",
+                          placement: "hub_discount_not_eligible",
+                          currency: paymentStore.selectedCurrency,
+                          offer_id: INSPIRATION_HUB_ACCESS_OFFER_ID,
+                          product_id: paymentStore.selectedProduct.id,
+                        },
+                        hubFullPriceHref,
+                      );
+                    }}
+                  >
                     {t("hubDiscount.fullPriceLink")}
                   </AgreementLink>
                 </>

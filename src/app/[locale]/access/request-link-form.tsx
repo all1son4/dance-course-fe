@@ -4,6 +4,7 @@ import { type FormEvent, useState } from "react";
 
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
+import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import { RequestForm, RequestMessage, RequestRow } from "./page.styles";
 
@@ -35,11 +36,15 @@ export default function RequestLinkForm({ locale, texts }: RequestLinkFormProps)
 
     if (!EMAIL_PATTERN.test(value)) {
       setInvalid(true);
+      void trackAnalyticsEvent("my_access_link_request_result", {
+        result: "invalid_email",
+      });
       return;
     }
 
     setInvalid(false);
     setState("sending");
+    void trackAnalyticsEvent("my_access_link_requested", {});
 
     try {
       const response = await fetch("/api/access/link", {
@@ -48,8 +53,16 @@ export default function RequestLinkForm({ locale, texts }: RequestLinkFormProps)
         method: "POST",
       });
       setState(response.ok ? "sent" : "error");
+      void trackAnalyticsEvent("my_access_link_request_result", {
+        result: response.ok
+          ? "accepted"
+          : response.status === 429
+            ? "rate_limited"
+            : "error",
+      });
     } catch {
       setState("error");
+      void trackAnalyticsEvent("my_access_link_request_result", { result: "error" });
     }
   };
 

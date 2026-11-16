@@ -1,5 +1,13 @@
 import type { Config, Mixpanel } from "mixpanel-browser";
 
+import {
+  getSellableProductById,
+  getSellableProductOfferById,
+  INSPIRATION_HUB_PRODUCT_ID,
+  INSPIRATION_HUB_RENEWAL_OFFER_ID,
+  isOnlineGroupLibraryOfferId,
+  isOnlineGroupRenewalOfferId,
+} from "@/constants/sellable-products";
 import { routing } from "@/i18n/routing";
 import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -29,7 +37,10 @@ const PRIVATE_URL_PROPERTIES = [
   "current_url_search",
 ];
 
-const AUTOCAPTURE_BLOCKED_URLS = [/\/(?:admin)(?:[/?#]|$)/u, /\/(?:payment)(?:[/?#]|$)/u];
+const AUTOCAPTURE_BLOCKED_URLS = [
+  /\/(?:admin)(?:[/?#]|$)/u,
+  /\/(?:payment|access)(?:[/?#]|$)/u,
+];
 
 const AUTOCAPTURE_PRIVATE_SELECTORS = [
   "form",
@@ -52,7 +63,9 @@ const AUTOCAPTURE_PRIVATE_ATTRIBUTES = [
 ];
 
 type CommerceEventProperties = {
+  checkout_kind?: "full_price" | "member_price" | "renewal";
   currency?: "eur" | "pln";
+  hub_access?: "standalone" | "plus" | "none";
   is_renewal?: boolean;
   offer_code?: string;
   offer_id?: string;
@@ -62,6 +75,10 @@ type CommerceEventProperties = {
 };
 
 type CtaEventProperties = CommerceEventProperties & {
+  access_action?: "renewHub" | "buyHub" | "support";
+  access_kind?: "hub" | "group" | "channel" | "lifetime";
+  access_state?:
+    "active" | "endsSoon" | "notJoined" | "linkExpired" | "upcoming" | "ended";
   cta_id: string;
   destination_domain?: string;
   destination_hash?: string;
@@ -150,6 +167,17 @@ export type AnalyticsEventProperties = {
     from_locale: string;
     to_locale: string;
   };
+  my_access_viewed: {
+    status: "link_required" | "invalid_link" | "ready" | "empty";
+    card_count: number;
+    hub_card_count: number;
+    hub_states: NonNullable<CtaEventProperties["access_state"]>[];
+    has_renewal_action: boolean;
+  };
+  my_access_link_requested: Record<string, never>;
+  my_access_link_request_result: {
+    result: "accepted" | "invalid_email" | "rate_limited" | "error";
+  };
   payment_attempted: CommerceEventProperties;
   payment_failed: CommerceEventProperties & {
     failure_stage: "confirmation" | "exception" | "result_page";
@@ -158,10 +186,29 @@ export type AnalyticsEventProperties = {
   post_purchase_access_result: CommerceEventProperties & {
     active_access_count: number;
     ready_access_count: number;
-    status: "already_active" | "invalid_context" | "partial" | "ready" | "unavailable";
+    scheduled_access_count: number;
+    status:
+      | "already_active"
+      | "invalid_context"
+      | "partial"
+      | "ready"
+      | "scheduled"
+      | "unavailable";
     unavailable_access_count: number;
   };
   purchase_completed: CommerceEventProperties;
+  renewal_verification_loaded: CommerceEventProperties & {
+    verification_kind: "hub_discount" | "online_renewal";
+    already_verified: boolean;
+  };
+  renewal_verification_started: CommerceEventProperties & {
+    verification_kind: "hub_discount" | "online_renewal";
+  };
+  renewal_verification_result: CommerceEventProperties & {
+    verification_kind: "hub_discount" | "online_renewal";
+    verification_stage: "restore" | "load" | "login" | "membership";
+    result: "verified" | "not_member" | "username_mismatch" | "error";
+  };
   review_navigated: {
     direction: "next" | "previous";
     review_id?: number;
@@ -212,10 +259,11 @@ export type AnalyticsEventProperties = {
 
 export type AnalyticsEventName = keyof AnalyticsEventProperties;
 
-export type ButtonAnalyticsMetadata = CommerceEventProperties & {
-  id: string;
-  placement?: string;
-};
+export type ButtonAnalyticsMetadata = CommerceEventProperties &
+  Pick<CtaEventProperties, "access_action" | "access_kind" | "access_state"> & {
+    id: string;
+    placement?: string;
+  };
 
 export type ApiErrorInput = {
   endpoint: string;
@@ -245,7 +293,9 @@ export const shouldTrackMixpanelPath = (pathname: string) =>
  * a sanitized page-view event, but never a DOM/session recording.
  */
 export const shouldRecordMixpanelPath = (pathname: string) =>
-  shouldTrackMixpanelPath(pathname) && !hasRouteSegment(pathname, "payment");
+  shouldTrackMixpanelPath(pathname) &&
+  !hasRouteSegment(pathname, "payment") &&
+  !hasRouteSegment(pathname, "access");
 
 export const shouldRecordMixpanelLocation = (pathname: string, search: string) =>
   shouldRecordMixpanelPath(pathname) && search.length === 0;
@@ -306,6 +356,93 @@ export const getMixpanelPageProperties = (pathname: string, localeHint?: string)
     ...(locale ? { locale } : {}),
     ...(MIXPANEL_RELEASE_ID ? { release_id: MIXPANEL_RELEASE_ID } : {}),
   };
+};
+
+/** Public catalogue identifiers give every commerce event the same segmentation. */
+export const getCommerceAnalyticsContext = (
+  properties: object,
+): Pick<CommerceEventProperties, "checkout_kind" | "hub_access"> => {
+  if (
+    !("product_id" in properties) ||
+    typeof properties.product_id !== "string" ||
+    !("offer_id" in properties) ||
+    typeof properties.offer_id !== "string"
+  ) {
+    return {};
+  }
+
+  const product = getSellableProductById(properties.product_id);
+  const offer = product && getSellableProductOfferById(product, properties.offer_id);
+  if (!product || !offer) return {};
+
+  if (product.id === INSPIRATION_HUB_PRODUCT_ID) {
+    return {
+      checkout_kind:
+        offer.id === INSPIRATION_HUB_RENEWAL_OFFER_ID ? "member_price" : "full_price",
+      hub_access: "standalone",
+    };
+  }
+
+  return {
+    checkout_kind: isOnlineGroupRenewalOfferId(offer.id) ? "renewal" : "full_price",
+    hub_access: isOnlineGroupLibraryOfferId(offer.id) ? "plus" : "none",
+  };
+};
+
+/** Scheduled delivery is reported separately from access that has already begun. */
+export const getPostPurchaseAccessAnalyticsProperties = ({
+  accesses,
+  accessUrl,
+  isContextValid,
+  statusKind,
+}: {
+  accesses: readonly {
+    status: "active" | "expired" | "ready" | "scheduled" | "unavailable";
+    accessUrl: string;
+  }[];
+  accessUrl: string;
+  isContextValid: boolean;
+  statusKind: "pending" | "unavailable";
+}): AnalyticsEventProperties["post_purchase_access_result"] | null => {
+  const counts = {
+    active_access_count: 0,
+    ready_access_count: 0,
+    scheduled_access_count: 0,
+    unavailable_access_count: 0,
+  };
+
+  if (!isContextValid) return { ...counts, status: "invalid_context" };
+  if (accessUrl) return { ...counts, ready_access_count: 1, status: "ready" };
+
+  if (accesses.length) {
+    for (const access of accesses) {
+      if (access.status === "active") counts.active_access_count += 1;
+      if (access.status === "ready" && access.accessUrl) counts.ready_access_count += 1;
+      if (access.status === "scheduled") counts.scheduled_access_count += 1;
+      if (access.status === "expired" || access.status === "unavailable") {
+        counts.unavailable_access_count += 1;
+      }
+    }
+
+    const hasAvailableAccess =
+      counts.active_access_count +
+        counts.ready_access_count +
+        counts.scheduled_access_count >
+      0;
+    const status =
+      counts.unavailable_access_count > 0 && hasAvailableAccess
+        ? "partial"
+        : counts.ready_access_count > 0
+          ? "ready"
+          : counts.active_access_count > 0
+            ? "already_active"
+            : counts.scheduled_access_count > 0
+              ? "scheduled"
+              : "unavailable";
+    return { ...counts, status };
+  }
+
+  return statusKind === "unavailable" ? { ...counts, status: "unavailable" } : null;
 };
 
 const sanitizeDiagnosticToken = (value: string | undefined, fallback: string) => {
@@ -601,7 +738,9 @@ export const trackAnalyticsEvent = async <EventName extends AnalyticsEventName>(
         window.location.pathname,
         document.documentElement.lang,
       ),
+      ...getMixpanelAttributionProperties(window.location.search),
       ...properties,
+      ...getCommerceAnalyticsContext(properties),
     });
   } catch (error) {
     logSafeError(`Failed to track Mixpanel event: ${eventName}`, error);

@@ -195,10 +195,15 @@ export default function SuccessContent({
           <Button
             buttonText={myAccessButtonText}
             href={myAccessUrl}
+            analytics={{
+              id: "open_my_access",
+              placement: "success_result",
+              offer_id: offerId,
+              product_id: productId,
+            }}
             prefetch={false}
             rel="nofollow"
             variant="secondary"
-            analytics={{ id: "open_my_access", placement: "success_result" }}
           />
         ) : null}
         <Button
