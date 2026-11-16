@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 
+import { keepClassifiedAccessPeriod } from "./classified-access";
 import { getDatabase } from "./client";
 import {
   getPaymentOutcomeTransitionCondition,
@@ -321,13 +322,13 @@ export const projectPaymentStateInTransaction = async ({
         updatedAt: command.projectedAt,
       })
       .onConflictDoUpdate({
-        set: {
+        set: keepClassifiedAccessPeriod({
           ...command.access,
           customerId,
           offerId: catalog.offerId,
           productId: catalog.productId,
           updatedAt: command.projectedAt,
-        },
+        }),
         target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
       });
   }

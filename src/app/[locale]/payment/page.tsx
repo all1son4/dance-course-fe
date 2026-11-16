@@ -8,6 +8,7 @@ import {
 } from "@/constants/sellable-products";
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
 
+import { getCheckoutSelectionFromSearch } from "./payment.helpers";
 import PaymentRouteClient from "./payment-page-client";
 
 type PaymentPageProps = {
@@ -65,6 +66,12 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
     loadAuthoritativeCheckoutCatalog(),
   ]);
 
+  const initialSearchKey = serializeSearchParams(resolvedSearchParams);
+  // The same reading as on the client, so the first HTML already shows the product
+  // a short Hub link stands for instead of flashing the default one.
+  const initialSelection = getCheckoutSelectionFromSearch(
+    new URLSearchParams(initialSearchKey),
+  );
   const currencyParam = firstSearchParam(resolvedSearchParams.currency);
   const currency = currencyParam
     ? getResolvedCheckoutCurrency(currencyParam)
@@ -75,11 +82,11 @@ export default async function PaymentPage({ searchParams }: PaymentPageProps) {
       // Resolved here so the select carries its final, sorted labels in the
       // first HTML instead of ISO codes that get relabelled after hydration.
       countryOptions={getLocalizedCountryOptions(locale)}
-      initialSearchKey={serializeSearchParams(resolvedSearchParams)}
+      initialSearchKey={initialSearchKey}
       paymentInitialization={{
         currency,
-        offerId: firstSearchParam(resolvedSearchParams.offer),
-        productId: firstSearchParam(resolvedSearchParams.product),
+        offerId: initialSelection.offerId ?? undefined,
+        productId: initialSelection.productId ?? undefined,
         renewalCampaignSlug: firstSearchParam(resolvedSearchParams.renewal),
         sellableProducts,
       }}

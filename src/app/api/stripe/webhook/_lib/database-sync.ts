@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
+import { isInspirationHubOfferId } from "@/constants/sellable-products";
 import { getDatabase } from "@/db/client";
 import { type PaymentProjectionCommand } from "@/db/payment-projection";
 import { purchases } from "@/db/schema";
@@ -377,20 +378,27 @@ export const createStripePaymentProjectionCommand = ({
   const checkoutCurrency = nullIfEmpty(paymentRecord.checkout_currency) as
     "pln" | "eur" | null;
   return {
-    access: {
-      accessKey: "primary",
-      accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
-      currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
-      deliveryChannel: nullIfEmpty(paymentRecord.delivery_channel),
-      expiresAt: parseDate(paymentRecord.telegram_access_expires_at),
-      externalTargetType: getExternalTargetType(paymentRecord),
-      revokedAt: parseDate(paymentRecord.telegram_access_revoked_at),
-      startsAt: parseDate(paymentRecord.telegram_token_used_at),
-      status: normalizeAccessStatus(paymentRecord.telegram_access_status, paymentRecord),
-      telegramChatId: nullIfEmpty(paymentRecord.telegram_channel_chat_id),
-      telegramUserId: nullIfEmpty(paymentRecord.telegram_user_id),
-      telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
-    },
+    // А9: a Hub purchase has no main-group right; its only right is the Hub period
+    // the access job writes.
+    access: isInspirationHubOfferId(paymentRecord.offer_id)
+      ? null
+      : {
+          accessKey: "primary",
+          accessWorkflow: nullIfEmpty(paymentRecord.access_workflow),
+          currentTokenId: nullIfEmpty(paymentRecord.telegram_token_id),
+          deliveryChannel: nullIfEmpty(paymentRecord.delivery_channel),
+          expiresAt: parseDate(paymentRecord.telegram_access_expires_at),
+          externalTargetType: getExternalTargetType(paymentRecord),
+          revokedAt: parseDate(paymentRecord.telegram_access_revoked_at),
+          startsAt: parseDate(paymentRecord.telegram_token_used_at),
+          status: normalizeAccessStatus(
+            paymentRecord.telegram_access_status,
+            paymentRecord,
+          ),
+          telegramChatId: nullIfEmpty(paymentRecord.telegram_channel_chat_id),
+          telegramUserId: nullIfEmpty(paymentRecord.telegram_user_id),
+          telegramUsername: nullIfEmpty(paymentRecord.telegram_username),
+        },
     catalog: {
       offerExternalId: nullIfEmpty(paymentRecord.offer_id),
       productExternalId: nullIfEmpty(paymentRecord.product_id),

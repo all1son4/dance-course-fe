@@ -152,10 +152,7 @@ test("an alert that needs action names the action in its second line", () => {
     lines[0],
     "<b>⚠️ 170 PLN · Бандл «Still Alive» + «Her Lies» · С куратором</b>",
   );
-  assert.equal(
-    lines[1],
-    "<i>Требует внимания · Куратор: нужно связаться с покупательницей</i>",
-  );
+  assert.equal(lines[1], "<i>Требует внимания · Куратор: нужно выйти на связь</i>");
   // Problems come before the steps that went through.
   assert.ok(
     alertText.indexOf("⚠️ Куратор") < alertText.indexOf("✅ Платёж"),

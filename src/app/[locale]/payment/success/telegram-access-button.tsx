@@ -18,10 +18,13 @@ type TelegramAccessButtonProps = {
   inspirationButtonText: string;
   mainButtonText: string;
   onInspirationExpiryChange?: (expiresAt: string) => void;
+  onMyAccessUrlChange?: (url: string) => void;
   offerId: string;
   paymentIntentId: string;
   pendingText: string;
   productId: string;
+  /** HUB-D37: when the invite of a paid period that starts later will come. */
+  scheduledText: (accessStartsAt: string) => string;
   supportButtonText: string;
   supportHref: string;
   unavailableText: string;
@@ -30,14 +33,17 @@ type TelegramAccessButtonProps = {
 type TelegramAccess = {
   accessExpiresAt: string;
   accessKey: "inspiration-hub" | "main-group";
+  accessStartsAt?: string;
   accessUrl: string;
-  status: "active" | "expired" | "ready" | "unavailable";
+  status: "active" | "expired" | "ready" | "scheduled" | "unavailable";
   tokenExpiresAt: string;
 };
 
 type AccessLinkResponse = {
   accesses?: TelegramAccess[];
   accessUrl?: string;
+  /** The buyer's «Мой доступ» link (HUB-D31), once the purchase is recorded. */
+  myAccessUrl?: string;
   status: "not_available" | "pending" | "ready";
   tokenExpiresAt?: string;
 };
@@ -132,8 +138,9 @@ const getAccessAnalyticsResult = ({
   }
 
   if (accesses.length) {
+    // A paid period that starts later is as settled as an active one (HUB-D37).
     const activeAccessCount = accesses.filter(
-      (access) => access.status === "active",
+      (access) => access.status === "active" || access.status === "scheduled",
     ).length;
     const readyAccessCount = accesses.filter(
       (access) => access.status === "ready" && access.accessUrl,
@@ -179,10 +186,12 @@ export default function TelegramAccessButton({
   inspirationButtonText,
   mainButtonText,
   onInspirationExpiryChange,
+  onMyAccessUrlChange,
   offerId,
   paymentIntentId,
   pendingText,
   productId,
+  scheduledText,
   supportButtonText,
   supportHref,
   unavailableText,
@@ -320,6 +329,10 @@ export default function TelegramAccessButton({
           return;
         }
 
+        if (data.myAccessUrl) {
+          onMyAccessUrlChange?.(data.myAccessUrl);
+        }
+
         if (data.status === "ready" && data.accessUrl) {
           setAccessUrl(data.accessUrl);
           return;
@@ -367,6 +380,7 @@ export default function TelegramAccessButton({
     checkoutSessionId,
     isContextValid,
     offerId,
+    onMyAccessUrlChange,
     paymentIntentId,
     pendingText,
     productId,
@@ -446,7 +460,9 @@ export default function TelegramAccessButton({
         {otherAccesses.map((access) =>
           renderNotice(
             access.accessKey,
-            `${nameOf(access)}: ${access.status === "active" ? activeText : unavailableText}`,
+            access.status === "scheduled"
+              ? scheduledText(access.accessStartsAt ?? "")
+              : `${nameOf(access)}: ${access.status === "active" ? activeText : unavailableText}`,
           ),
         )}
         {hasUnavailableAccess ? renderSupportButton("secondary") : null}

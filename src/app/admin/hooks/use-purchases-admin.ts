@@ -166,6 +166,19 @@ export const usePurchasesAdmin = ({
     await load({ month: monthValue, search: normalizedSearch });
   }, [load, monthValue, searchInput]);
 
+  // The top-bar search and "Покупка" buttons elsewhere: same lookup as the
+  // purchase alert's deep link, across all months.
+  const searchFor = useCallback(
+    async (query: string) => {
+      const normalizedSearch = query.trim();
+
+      setSearchInput(normalizedSearch);
+      setAppliedSearch(normalizedSearch);
+      await load({ search: normalizedSearch });
+    },
+    [load],
+  );
+
   const clearSearch = useCallback(async () => {
     setSearchInput("");
 
@@ -444,6 +457,7 @@ export const usePurchasesAdmin = ({
     reportStatus,
     resendEmail,
     resendingPaymentIntentId,
+    searchFor,
     searchInput,
     selectMonth,
     sendReport,

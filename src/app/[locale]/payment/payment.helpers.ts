@@ -2,6 +2,9 @@ import type { ReactNode } from "react";
 
 import {
   DEFAULT_CHECKOUT_PRODUCT,
+  INSPIRATION_HUB_DISCOUNT_SLUG,
+  INSPIRATION_HUB_PRODUCT_ID,
+  INSPIRATION_HUB_RENEWAL_OFFER_ID,
   type SellableProduct,
 } from "@/constants/sellable-products";
 import { prefersReducedMotion } from "@/lib/reveal";
@@ -21,8 +24,33 @@ export const POST_VERIFICATION_FOCUS_DELAY_MS = 120;
 const LEGACY_NAVIGATION_TYPE_RELOAD = 1;
 export const TELEGRAM_USERNAME_PATTERN = /^@[A-Za-z0-9_]{1,32}$/;
 export const PAYMENT_API_ENDPOINTS = {
+  hubDiscount: "/api/telegram/hub-discount",
   telegramRenewal: "/api/telegram/renewal",
 } as const;
+
+/**
+ * What the address asks to buy. The Hub's special-price link is pasted into chat
+ * posts by hand, so its slug alone is enough: without `product` and `offer` it still
+ * opens the Hub at the special price instead of the default product.
+ */
+export const getCheckoutSelectionFromSearch = (searchParams: URLSearchParams) => {
+  const isHubDiscount =
+    searchParams.get("renewal")?.trim() === INSPIRATION_HUB_DISCOUNT_SLUG;
+
+  return {
+    offerId:
+      searchParams.get("offer") ||
+      (isHubDiscount ? INSPIRATION_HUB_RENEWAL_OFFER_ID : null),
+    productId:
+      searchParams.get("product") || (isHubDiscount ? INSPIRATION_HUB_PRODUCT_ID : null),
+  };
+};
+
+/** The discounted Hub runs the same form against its own check (HUB-D17). */
+export const getTelegramRenewalEndpoint = (slug: string) =>
+  slug === INSPIRATION_HUB_DISCOUNT_SLUG
+    ? PAYMENT_API_ENDPOINTS.hubDiscount
+    : PAYMENT_API_ENDPOINTS.telegramRenewal;
 const RENEWAL_PROFILE_FIELDS = [
   "fullName",
   "email",
@@ -34,10 +62,12 @@ const RENEWAL_PROFILE_FIELDS = [
 export const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
   catalog_unavailable: "errors.catalogUnavailable",
   consent_evidence_failed: "errors.consentEvidenceFailed",
+  hub_discount_verification_required: "errors.telegramRenewalVerificationRequired",
   invalid_customer_data: "errors.invalidCustomerData",
   missing_client_secret: "errors.missingClientSecret",
   missing_secret_key: "errors.missingSecretKey",
   online_group_campaign_not_configured: "errors.onlineGroupCampaignNotConfigured",
+  online_group_cohort_unavailable: "errors.onlineGroupCampaignNotConfigured",
   payment_intent_failed: "errors.paymentIntentFailed",
   payment_intent_request_failed: "errors.paymentIntentRequestFailed",
   rate_limited: "errors.rateLimited",

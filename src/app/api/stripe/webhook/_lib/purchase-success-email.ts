@@ -7,11 +7,19 @@ import {
 } from "@/constants/links";
 import { formatPrice } from "@/constants/sellable-products";
 import { formatEmailDate } from "@/lib/email/dates";
+import { buildMyAccessEmailBlock } from "@/lib/email/my-access";
 
 const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
   DEFAULT_SITE_HOME_URL;
+/** HUB-D43: the Plus Hub of a cohort that has not started opens on its start day. */
+const PLUS_HUB_SCHEDULED_COPY = {
+  en: "Inspiration Hub opens when your cycle starts, on {date}. That day your personal Hub invite will arrive at this address.",
+  pl: "Inspiration Hub otworzy się wraz ze startem cyklu, {date}. Tego dnia na ten adres przyjdzie osobisty link do Hub.",
+  ru: "Inspiration Hub откроется со стартом потока, {date}. В этот день на этот адрес придёт персональная ссылка в Hub.",
+} as const;
+
 const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
 
 const getRussianDays = (days: number) => {
@@ -21,6 +29,24 @@ const getRussianDays = (days: number) => {
   if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "дней";
   if (lastDigit === 1) return "день";
   return lastDigit >= 2 && lastDigit <= 4 ? "дня" : "дней";
+};
+
+const getRussianWeeks = (weeks: number) => {
+  const lastTwoDigits = weeks % 100;
+  const lastDigit = weeks % 10;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "недель";
+  if (lastDigit === 1) return "неделя";
+  return lastDigit >= 2 && lastDigit <= 4 ? "недели" : "недель";
+};
+
+const getPolishWeeks = (weeks: number) => {
+  if (weeks === 1) return "tydzień";
+  const lastTwoDigits = weeks % 100;
+  const lastDigit = weeks % 10;
+  return lastDigit >= 2 && lastDigit <= 4 && !(lastTwoDigits >= 12 && lastTwoDigits <= 14)
+    ? "tygodnie"
+    : "tygodni";
 };
 
 const EMAIL_COPY = {
@@ -33,6 +59,7 @@ const EMAIL_COPY = {
       privateLesson: "date and time to be agreed",
     },
     formatDays: (days: number) => `${days} ${days === 1 ? "day" : "days"}`,
+    formatWeeks: (weeks: number) => `${weeks} ${weeks === 1 ? "week" : "weeks"}`,
     inspirationHubAccessUntil: "Inspiration Hub access until {date}",
     amountLabel: "Amount",
     autoReplyNote:
@@ -96,10 +123,10 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Access your course",
         ready:
-          "Use the button below to open your personal one-time invite link to the private Telegram chat with the course materials. Access to the lessons is provided for {days} from joining.",
+          "Use the button below to open your personal one-time invite link to the private Telegram group with the course materials. Access to the lessons is provided for {days} from joining.",
         pending:
-          "Your personal Telegram chat invite link is being prepared. Lesson access is provided for {days} from joining. If the button is missing, contact support and we will send access manually.",
-        cta: "Open Telegram chat",
+          "Your personal Telegram group invite link is being prepared. Lesson access is provided for {days} from joining. If the button is missing, contact support and we will send access manually.",
+        cta: "Open Telegram group",
       },
       telegramOnlineGroup: {
         title: "Join the Online Group",
@@ -109,6 +136,20 @@ const EMAIL_COPY = {
         pending:
           "Your personal Telegram group invite is being prepared. If the button is missing, contact support and we will send access manually.",
         cta: "Open Telegram group",
+      },
+      telegramInspirationHub: {
+        title: "Join Inspiration Hub",
+        ready:
+          "Use the button below to join Inspiration Hub. The personal invite works once and is valid for up to 30 days. Your 8 weeks count from payment, not from joining the library.",
+        active:
+          "You're already in Inspiration Hub — your access is extended, nothing to do.",
+        pending:
+          "Your personal Inspiration Hub invite is being prepared. If the button is missing, contact support and we will send access manually.",
+        scheduled:
+          "Your paid 8 weeks begin on {date}. On that day your personal Inspiration Hub invite will arrive at this address.",
+        scheduledAfterCohort:
+          "Your paid 8 weeks begin right after your cohort ends. On that day your personal Inspiration Hub invite will arrive at this address.",
+        cta: "Open Inspiration Hub",
       },
       telegramRenewal: {
         title: "Join the new Online Group cycle",
@@ -130,6 +171,7 @@ const EMAIL_COPY = {
       privateLesson: "termin do ustalenia",
     },
     formatDays: (days: number) => `${days} ${days === 1 ? "dzień" : "dni"}`,
+    formatWeeks: (weeks: number) => `${weeks} ${getPolishWeeks(weeks)}`,
     inspirationHubAccessUntil: "Dostęp do Inspiration Hub ważny do {date}",
     amountLabel: "Kwota",
     autoReplyNote:
@@ -196,10 +238,10 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Dostęp do kursu",
         ready:
-          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnego czatu Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na {days} od dołączenia.",
+          "Użyj przycisku poniżej, aby otworzyć osobisty jednorazowy link zaproszenia do prywatnej grupy Telegram z materiałami kursu. Dostęp do lekcji otrzymujesz na {days} od dołączenia.",
         pending:
-          "Twój osobisty link zaproszenia do czatu Telegram jest przygotowywany. Dostęp do lekcji otrzymujesz na {days} od dołączenia. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
-        cta: "Otwórz czat Telegram",
+          "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Dostęp do lekcji otrzymujesz na {days} od dołączenia. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        cta: "Otwórz grupę Telegram",
       },
       telegramOnlineGroup: {
         title: "Dostęp do grupy online",
@@ -209,6 +251,20 @@ const EMAIL_COPY = {
         pending:
           "Twój osobisty link zaproszenia do grupy Telegram jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         cta: "Otwórz grupę Telegram",
+      },
+      telegramInspirationHub: {
+        title: "Dostęp do Inspiration Hub",
+        ready:
+          "Użyj przycisku poniżej, aby dołączyć do Inspiration Hub. Osobisty link działa jeden raz i jest ważny do 30 dni. 8 tygodni liczy się od płatności, a nie od wejścia do biblioteki.",
+        active:
+          "Jesteś już w Inspiration Hub — dostęp został przedłużony, nic nie musisz robić.",
+        pending:
+          "Twój osobisty link do Inspiration Hub jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
+        scheduled:
+          "Opłacone 8 tygodni zaczyna się {date}. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
+        scheduledAfterCohort:
+          "Opłacone 8 tygodni zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
+        cta: "Otwórz Inspiration Hub",
       },
       telegramRenewal: {
         title: "Dostęp do nowego cyklu grupy online",
@@ -230,6 +286,7 @@ const EMAIL_COPY = {
       privateLesson: "дата и время — по договорённости",
     },
     formatDays: (days: number) => `${days} ${getRussianDays(days)}`,
+    formatWeeks: (weeks: number) => `${weeks} ${getRussianWeeks(weeks)}`,
     inspirationHubAccessUntil: "Доступ к Inspiration Hub — до {date}",
     amountLabel: "Сумма",
     autoReplyNote:
@@ -294,10 +351,10 @@ const EMAIL_COPY = {
       telegramChat: {
         title: "Доступ к курсу",
         ready:
-          "Нажми кнопку ниже, чтобы открыть персональную одноразовую ссылку-приглашение в приватный Telegram-чат с материалами курса. Доступ к урокам предоставляется на {days} с момента вступления.",
+          "Нажми кнопку ниже, чтобы открыть персональную одноразовую ссылку-приглашение в приватную Telegram-группу с материалами курса. Доступ к урокам предоставляется на {days} с момента вступления.",
         pending:
-          "Персональная ссылка-приглашение в Telegram-чат готовится. Доступ к урокам предоставляется на {days} с момента вступления. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
-        cta: "Открыть Telegram-чат",
+          "Персональная ссылка-приглашение в Telegram-группу готовится. Доступ к урокам предоставляется на {days} с момента вступления. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
+        cta: "Открыть Telegram-группу",
       },
       telegramOnlineGroup: {
         title: "Доступ в онлайн-группу",
@@ -307,6 +364,19 @@ const EMAIL_COPY = {
         pending:
           "Персональная ссылка-приглашение в Telegram-группу готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         cta: "Открыть Telegram-группу",
+      },
+      telegramInspirationHub: {
+        title: "Доступ в Inspiration Hub",
+        ready:
+          "Нажми кнопку ниже, чтобы войти в Inspiration Hub. Персональная ссылка одноразовая и действует до 30 дней. 8 недель считаются с момента оплаты, а не со входа в библиотеку.",
+        active: "Ты уже в Inspiration Hub — доступ продлён, ничего делать не нужно.",
+        pending:
+          "Персональная ссылка в Inspiration Hub готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
+        scheduled:
+          "Оплаченные 8 недель начнутся {date}. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
+        scheduledAfterCohort:
+          "Оплаченные 8 недель начнутся сразу после окончания твоего потока. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
+        cta: "Открыть Inspiration Hub",
       },
       telegramRenewal: {
         title: "Доступ в новый поток онлайн-группы",
@@ -329,6 +399,7 @@ export type PurchaseSuccessEmailAccessKind =
   | "telegram-channel"
   | "telegram-channel-lifetime"
   | "telegram-chat"
+  | "telegram-inspiration-hub"
   | "telegram-online-group"
   | "telegram-renewal";
 
@@ -391,11 +462,15 @@ export type BuildPurchaseSuccessEmailInput = {
   /** One-line name for the subject: "Разбор «Her Lies»"; the product title when absent. */
   subjectLine?: string;
   accessKind: PurchaseSuccessEmailAccessKind;
+  /** The buyer's «Мой доступ» link (HUB-D31); no button without it. */
+  myAccessUrl?: string | null;
   telegramAccessUrl?: string | null;
   telegramAccessLinks?: Array<{
     accessKey: "inspiration-hub" | "main-group";
     accessUrl: string;
-    status: "active" | "expired" | "ready" | "unavailable";
+    status: "active" | "expired" | "ready" | "scheduled" | "unavailable";
+    /** For "scheduled": the period start, "" while it waits for a cohort to end. */
+    accessStartsAt?: string;
   }>;
 };
 
@@ -416,6 +491,7 @@ const isTelegramAccessKind = (accessKind: PurchaseSuccessEmailAccessKind): boole
   accessKind === "telegram-channel" ||
   accessKind === "telegram-channel-lifetime" ||
   accessKind === "telegram-chat" ||
+  accessKind === "telegram-inspiration-hub" ||
   accessKind === "telegram-online-group" ||
   accessKind === "telegram-renewal";
 
@@ -424,7 +500,11 @@ const hasCompleteOnlineGroupAccess = (
 ): boolean =>
   telegramAccessLinks.length > 0 &&
   telegramAccessLinks.every(
-    (access) => access.status === "ready" || access.status === "active",
+    // "scheduled" is settled too: the Hub invite comes on its start day (HUB-D37/D43).
+    (access) =>
+      access.status === "ready" ||
+      access.status === "active" ||
+      access.status === "scheduled",
   );
 
 const formatAccessExpiry = (value: string, locale: EmailLocale): string => {
@@ -442,6 +522,7 @@ const resolveAccessContent = ({
   copy,
   hasAccessButton,
   hasOnlineGroupAccess,
+  scheduledStart,
   showMentorFollowupNote,
   telegramLink,
 }: {
@@ -450,9 +531,22 @@ const resolveAccessContent = ({
   /** False when every invite is already used, so the email renders no button. */
   hasAccessButton: boolean;
   hasOnlineGroupAccess: boolean;
+  /** HUB-D37: the formatted start of a paid period not begun yet, "" if unknown. */
+  scheduledStart: string | null;
   showMentorFollowupNote: boolean;
   telegramLink: string | null;
 }): AccessContent => {
+  if (accessKind === "telegram-inspiration-hub" && scheduledStart !== null) {
+    return {
+      cta: copy.access.telegramInspirationHub.cta,
+      description: scheduledStart
+        ? copy.access.telegramInspirationHub.scheduled.replace("{date}", scheduledStart)
+        : copy.access.telegramInspirationHub.scheduledAfterCohort,
+      mentorFollowupNote: "",
+      title: copy.access.telegramInspirationHub.title,
+    };
+  }
+
   switch (accessKind) {
     case "telegram-channel-lifetime":
       return {
@@ -495,6 +589,18 @@ const resolveAccessContent = ({
             : copy.access.telegramRenewal.pending,
         mentorFollowupNote: "",
         title: copy.access.telegramRenewal.title,
+      };
+    case "telegram-inspiration-hub":
+      return {
+        cta: copy.access.telegramInspirationHub.cta,
+        description:
+          telegramLink || hasOnlineGroupAccess
+            ? hasAccessButton
+              ? copy.access.telegramInspirationHub.ready
+              : copy.access.telegramInspirationHub.active
+            : copy.access.telegramInspirationHub.pending,
+        mentorFollowupNote: "",
+        title: copy.access.telegramInspirationHub.title,
       };
     case "telegram-online-group":
       return {
@@ -611,6 +717,14 @@ const getTelegramAccessStatusLabel = (
     ? copy.inspirationHubName
     : copy.telegramGroupName;
 
+/**
+ * With no invite to open, the access text already says «ты уже в…»; a second
+ * «доступ уже активен» line would repeat it. Next to an invite button it tells
+ * which of the chats is already open.
+ */
+const mentionsActiveAccess = (telegramAccessLinks: TelegramAccessLink[]) =>
+  telegramAccessLinks.some((access) => access.status === "ready" && access.accessUrl);
+
 const renderOnlineGroupAccessButtons = ({
   accessCta,
   copy,
@@ -636,10 +750,17 @@ const renderOnlineGroupAccessButtons = ({
         `;
       }
 
+      // The access text already says when the invite comes.
+      if (access.status === "scheduled") {
+        return "";
+      }
+
       const statusLabel = getTelegramAccessStatusLabel(access, copy);
 
       if (access.status === "active") {
-        return `<p style="margin:8px 0;color:#5f5f5f;font-size:14px;line-height:22px;">${statusLabel}: ${copy.accessAlreadyActive}</p>`;
+        return mentionsActiveAccess(telegramAccessLinks)
+          ? `<p style="margin:8px 0;color:#5f5f5f;font-size:14px;line-height:22px;">${statusLabel}: ${copy.accessAlreadyActive}</p>`
+          : "";
       }
 
       const statusText =
@@ -744,6 +865,12 @@ const getAccessSummary = ({
     case "telegram-online-group":
     case "telegram-renewal":
       return copy.accessSummary.onlineGroup;
+    // The Hub is sold as «8 недель» everywhere, so the email says weeks too.
+    case "telegram-inspiration-hub":
+      if (accessDurationDays <= 0) return "";
+      return accessDurationDays % 7 === 0
+        ? copy.formatWeeks(accessDurationDays / 7)
+        : copy.formatDays(accessDurationDays);
     case "private-lesson":
       return [offerLabel, copy.accessSummary.privateLesson].filter(Boolean).join(", ");
     case "manual-admin":
@@ -760,6 +887,7 @@ const renderPurchaseSuccessEmailHtml = ({
   intro,
   limitedAccessValidityParagraph,
   mentorFollowupParagraph,
+  myAccessBlock,
   onlineGroupAccessButtons,
   receiptButton,
   safeAccessSummary,
@@ -771,6 +899,7 @@ const renderPurchaseSuccessEmailHtml = ({
   safeSupportTelegramUrl,
 }: {
   accessButton: string;
+  myAccessBlock: string;
   safeAccessSummary: string;
   accessContent: AccessContent;
   copy: EmailCopy;
@@ -836,6 +965,7 @@ const renderPurchaseSuccessEmailHtml = ({
           ${onlineGroupAccessButtons || accessButton}
           ${limitedAccessValidityParagraph}
           ${mentorFollowupParagraph}
+          ${myAccessBlock}
         </div>
 
         <div style="background:#f7f7f5;border-radius:16px;padding:16px 18px;margin:0 0 22px 0;">
@@ -877,10 +1007,16 @@ const renderTelegramAccessTextLines = ({
       return `${label}: ${access.accessUrl}`;
     }
 
+    if (access.status === "scheduled") {
+      return "";
+    }
+
     const statusLabel = getTelegramAccessStatusLabel(access, copy);
 
     if (access.status === "active") {
-      return `${statusLabel}: ${copy.accessAlreadyActive}`;
+      return mentionsActiveAccess(telegramAccessLinks)
+        ? `${statusLabel}: ${copy.accessAlreadyActive}`
+        : "";
     }
 
     return `${statusLabel}: ${
@@ -961,6 +1097,7 @@ export const buildPurchaseSuccessEmail = ({
   inspirationAccessExpiresAt,
   offerLabel,
   productTitle,
+  myAccessUrl,
   receiptKind,
   receiptLink,
   showMentorFollowupNote = false,
@@ -970,6 +1107,23 @@ export const buildPurchaseSuccessEmail = ({
   telegramAccessLinks = [],
 }: BuildPurchaseSuccessEmailInput) => {
   const locale = getResolvedCheckoutLocale(checkoutLocale);
+  const myAccessBlock = buildMyAccessEmailBlock({ locale, url: myAccessUrl });
+  const scheduledPlusHub = telegramAccessLinks.some(
+    (access) => access.accessKey === "main-group",
+  )
+    ? telegramAccessLinks.find(
+        (access) =>
+          access.accessKey === "inspiration-hub" &&
+          access.status === "scheduled" &&
+          access.accessStartsAt,
+      )
+    : undefined;
+  const plusHubScheduledLine = scheduledPlusHub?.accessStartsAt
+    ? PLUS_HUB_SCHEDULED_COPY[locale].replace(
+        "{date}",
+        formatEmailDate(new Date(scheduledPlusHub.accessStartsAt), locale),
+      )
+    : "";
   const copy = EMAIL_COPY[locale];
   const telegramLink = telegramAccessUrl ?? null;
   const hasOnlineGroupAccess = hasCompleteOnlineGroupAccess(telegramAccessLinks);
@@ -1004,11 +1158,19 @@ export const buildPurchaseSuccessEmail = ({
           (access) => access.status === "ready" && access.accessUrl,
         )
       : Boolean(telegramLink);
+  const scheduledAccess = telegramAccessLinks.find(
+    (access) => access.status === "scheduled",
+  );
   const resolvedAccessContent = resolveAccessContent({
     accessKind,
     copy,
     hasAccessButton,
     hasOnlineGroupAccess,
+    scheduledStart: scheduledAccess
+      ? scheduledAccess.accessStartsAt
+        ? formatAccessExpiry(scheduledAccess.accessStartsAt, locale)
+        : ""
+      : null,
     showMentorFollowupNote,
     telegramLink,
   });
@@ -1050,9 +1212,10 @@ export const buildPurchaseSuccessEmail = ({
     copy,
     telegramAccessLinks,
   });
-  const hasInspirationHubAccess = telegramAccessLinks.some(
-    (access) => access.accessKey === "inspiration-hub",
-  );
+  // "For the time of the cohort" describes the Hub inside Plus, not a paid Hub period.
+  const hasInspirationHubAccess =
+    accessKind !== "telegram-inspiration-hub" &&
+    telegramAccessLinks.some((access) => access.accessKey === "inspiration-hub");
   const inspirationAccessText = getInspirationAccessText({
     copy,
     formattedInspirationExpiry,
@@ -1076,6 +1239,11 @@ export const buildPurchaseSuccessEmail = ({
     intro,
     limitedAccessValidityParagraph: limitedAccessValidity.paragraph,
     mentorFollowupParagraph,
+    myAccessBlock: `${
+      plusHubScheduledLine
+        ? `<p style="margin:12px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">${escapeHtml(plusHubScheduledLine)}</p>`
+        : ""
+    }${myAccessBlock.html}`,
     onlineGroupAccessButtons,
     receiptButton,
     safeAccessSummary: escapeHtml(accessSummary),
@@ -1107,6 +1275,6 @@ export const buildPurchaseSuccessEmail = ({
   return {
     html,
     subject,
-    text,
+    text: [text, plusHubScheduledLine, myAccessBlock.text].filter(Boolean).join("\n"),
   };
 };

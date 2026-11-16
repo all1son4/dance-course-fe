@@ -1,8 +1,6 @@
-import { LoaderCircle, RefreshCw } from "lucide-react";
+import { Link2, RefreshCw } from "lucide-react";
 import type { FormEvent } from "react";
-
-import Button from "@/components/common/Button";
-import Input from "@/components/common/Input";
+import styled from "styled-components";
 
 import { JOURNAL_SKELETON_COUNT } from "../lib/admin.constants";
 import type {
@@ -12,31 +10,56 @@ import type {
   StatusMessage,
 } from "../lib/admin.types";
 import { formatDateTime, resolveLinkStateLabel } from "../lib/admin.utils";
+import { CopyField } from "../ui/copy";
+import { Field, FormActions, Input, Select, StatusLine } from "../ui/forms";
 import {
-  ButtonRow,
-  Form,
-  FormControl,
-  IconActionButton,
-  JournalEmptyState,
-  JournalSkeletonCard,
-  JournalSkeletonList,
-  LinkStateBadge,
-  RecentLinkCard,
-  RecentLinkHeader,
-  RecentLinkMeta,
-  RecentLinksList,
-  SkeletonLine,
-  StatusText,
-  SurfaceCard,
-  SurfaceHeaderRow,
-  SurfaceTitle,
-} from "../page.styles";
-import { CopyableLink } from "./copyable-link";
+  AdminButton,
+  Badge,
+  EmptyState,
+  Muted,
+  Panel,
+  Row,
+  Skeleton,
+  Stack,
+} from "../ui/primitives";
+
+const GeneratorForm = styled.form`
+  display: grid;
+  gap: 14px;
+`;
+
+const JournalList = styled.ul`
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+
+const JournalEntry = styled.li`
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-radius);
+  background: var(--a-surface);
+
+  strong {
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+`;
+
+const EntryMeta = styled(Muted)`
+  font-size: var(--a-text-sm);
+  overflow-wrap: anywhere;
+`;
 
 type InviteLinkGeneratorCardProps = {
   adminLabel: string;
   choreoSelectOptions: SelectOption[];
-  copyingUrl: string;
   generatedLink: string;
   generatorStatus: StatusMessage;
   isGenerateDisabled: boolean;
@@ -45,7 +68,6 @@ type InviteLinkGeneratorCardProps = {
   kindSelectOptions: SelectOption[];
   onAdminLabelChange: (value: string) => void;
   onChoreoSelectionChange: (value: string) => void;
-  onCopy: (link: string) => void | Promise<void>;
   onKindChange: (kind: GeneratorKind) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   selectedChoreoKey: string;
@@ -54,7 +76,6 @@ type InviteLinkGeneratorCardProps = {
 export const InviteLinkGeneratorCard = ({
   adminLabel,
   choreoSelectOptions,
-  copyingUrl,
   generatedLink,
   generatorStatus,
   isGenerateDisabled,
@@ -63,148 +84,147 @@ export const InviteLinkGeneratorCard = ({
   kindSelectOptions,
   onAdminLabelChange,
   onChoreoSelectionChange,
-  onCopy,
   onKindChange,
   onSubmit,
   selectedChoreoKey,
 }: InviteLinkGeneratorCardProps) => (
-  <SurfaceCard>
-    <SurfaceTitle>Генератор доступа</SurfaceTitle>
-    <Form onSubmit={onSubmit}>
-      <FormControl>
-        <Input
+  <Panel title="Генератор доступа">
+    <GeneratorForm onSubmit={onSubmit}>
+      <Field label="Что генерируем" htmlFor="generator-kind">
+        <Select
           id="generator-kind"
           name="generatorKind"
-          label="Что генерируем"
           value={kind}
           onChange={(event) => onKindChange(event.target.value as GeneratorKind)}
-          selectOptions={kindSelectOptions}
-          width="100%"
-        />
-      </FormControl>
+        >
+          {kindSelectOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </Field>
 
       {kind === "choreo" && (
-        <FormControl>
-          <Input
+        <Field label="Разбор / язык / тип" htmlFor="choreo-selection">
+          <Select
             id="choreo-selection"
             name="choreoSelection"
-            label="Разбор / язык / тип"
             value={selectedChoreoKey}
-            placeholder="Выбери нужный разбор"
-            selectOptions={choreoSelectOptions}
             onChange={(event) => onChoreoSelectionChange(event.target.value)}
-            width="100%"
-          />
-        </FormControl>
+          >
+            <option value="" disabled hidden>
+              Выбери нужный разбор
+            </option>
+            {choreoSelectOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
       )}
 
-      <FormControl>
+      <Field
+        label="Идентификатор"
+        htmlFor="admin-link-label"
+        hint="Видно только в журнале — чтобы понять, кому выдана ссылка."
+      >
         <Input
           id="admin-link-label"
           name="adminLinkLabel"
-          label="Идентификатор"
           value={adminLabel}
           placeholder="Например: Аня / спец-оффер / блогер"
           onChange={(event) => onAdminLabelChange(event.target.value)}
-          width="100%"
         />
-      </FormControl>
+      </Field>
 
-      <ButtonRow>
-        <Button
-          buttonText={isGenerating ? "Генерирую..." : "Сгенерировать ссылку"}
+      <FormActions>
+        <AdminButton
           type="submit"
+          variant="primary"
+          icon={<Link2 aria-hidden />}
           disabled={isGenerateDisabled}
-          isLoading={isGenerating}
-          width="100%"
-        />
-      </ButtonRow>
+          loading={isGenerating}
+        >
+          {isGenerating ? "Генерирую…" : "Сгенерировать ссылку"}
+        </AdminButton>
+      </FormActions>
 
-      {generatorStatus && (
-        <StatusText $tone={generatorStatus.tone}>{generatorStatus.text}</StatusText>
-      )}
+      <StatusLine status={generatorStatus} />
 
-      {generatedLink && (
-        <CopyableLink
-          isCopying={copyingUrl === generatedLink}
-          link={generatedLink}
-          onCopy={onCopy}
-        />
-      )}
-    </Form>
-  </SurfaceCard>
+      {generatedLink && <CopyField label="Ссылка" value={generatedLink} />}
+    </GeneratorForm>
+  </Panel>
 );
 
 type InviteLinkJournalCardProps = {
-  copyingUrl: string;
   isInitialLoading: boolean;
   isLoading: boolean;
   links: GeneratedLinkEntry[];
-  onCopy: (link: string) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
 };
 
 export const InviteLinkJournalCard = ({
-  copyingUrl,
   isInitialLoading,
   isLoading,
   links,
-  onCopy,
   onRefresh,
 }: InviteLinkJournalCardProps) => (
-  <SurfaceCard>
-    <SurfaceHeaderRow>
-      <SurfaceTitle>Журнал последних ссылок</SurfaceTitle>
-      <IconActionButton
-        type="button"
-        onClick={onRefresh}
-        disabled={isLoading}
-        $isLoading={isLoading}
-        aria-label="Обновить журнал"
-        title="Обновить журнал"
+  <Panel
+    title="Журнал последних ссылок"
+    actions={
+      <AdminButton
+        size="sm"
+        icon={<RefreshCw aria-hidden />}
+        loading={isLoading}
+        onClick={() => void onRefresh()}
       >
-        {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-      </IconActionButton>
-    </SurfaceHeaderRow>
+        Обновить
+      </AdminButton>
+    }
+  >
     {isInitialLoading ? (
-      <JournalSkeletonList>
+      <Stack $gap={10}>
         {Array.from({ length: JOURNAL_SKELETON_COUNT }, (_, index) => (
-          <JournalSkeletonCard key={`journal-skeleton-${index}`}>
-            <SkeletonLine $width="58%" />
-            <SkeletonLine $width="36%" />
-            <SkeletonLine $width="100%" $height="36px" />
-          </JournalSkeletonCard>
+          <Skeleton key={`journal-skeleton-${index}`} $height={96} />
         ))}
-      </JournalSkeletonList>
+      </Stack>
     ) : links.length === 0 ? (
-      <JournalEmptyState>Созданных администратором ссылок нет.</JournalEmptyState>
+      <EmptyState
+        icon={<Link2 aria-hidden />}
+        title="Ссылок пока нет"
+        text="Созданных администратором ссылок нет."
+      />
     ) : (
-      <RecentLinksList>
+      <JournalList>
         {links.map((entry) => (
-          <RecentLinkCard key={`${entry.accessUrl}-${entry.createdAtIso}`}>
-            <RecentLinkHeader>
-              <RecentLinkMeta>{entry.selectionLabel}</RecentLinkMeta>
-              <LinkStateBadge $state={entry.linkState}>
+          <JournalEntry key={`${entry.accessUrl}-${entry.createdAtIso}`}>
+            <Row $justify="space-between" $gap={10} $wrap={false}>
+              <strong>{entry.selectionLabel}</strong>
+              <Badge
+                $tone={
+                  entry.linkState === "active"
+                    ? "success"
+                    : entry.linkState === "expired"
+                      ? "warning"
+                      : "neutral"
+                }
+              >
                 {resolveLinkStateLabel(entry.linkState)}
-              </LinkStateBadge>
-            </RecentLinkHeader>
-
-            <RecentLinkMeta>Идентификатор: {entry.adminLabel || "-"}</RecentLinkMeta>
-            <RecentLinkMeta>
-              Создано: {formatDateTime(entry.createdAtIso)} | Токен до:{" "}
+              </Badge>
+            </Row>
+            <EntryMeta>
+              {entry.adminLabel || "Без идентификатора"} · создано{" "}
+              {formatDateTime(entry.createdAtIso)} · действует до{" "}
               {entry.tokenExpiresAt
                 ? formatDateTime(entry.tokenExpiresAt)
                 : "не определено"}
-            </RecentLinkMeta>
-
-            <CopyableLink
-              isCopying={copyingUrl === entry.accessUrl}
-              link={entry.accessUrl}
-              onCopy={onCopy}
-            />
-          </RecentLinkCard>
+            </EntryMeta>
+            <CopyField label="Ссылка" value={entry.accessUrl} />
+          </JournalEntry>
         ))}
-      </RecentLinksList>
+      </JournalList>
     )}
-  </SurfaceCard>
+  </Panel>
 );

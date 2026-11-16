@@ -31,6 +31,7 @@ export const PAGE_OG_IMAGE_PATHS: Partial<Record<string, string>> = {
   onlineGroup: "/images/og/onlineGroup.jpg",
   firstTouch: "/images/og/firstTouch.jpg",
   offline: "/images/og/offline.jpg",
+  inspirationHub: "/images/og/inspirationHub.jpg",
 };
 const instagramUrl = INSTAGRAM_PROFILE_URL;
 const telegramUrl = PERSONAL_TELEGRAM_URL;

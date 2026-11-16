@@ -16,6 +16,7 @@ export const getOnlineCoursesArray = (
   t: Translate,
   commonT: Translate,
   choreoSaleState: ProductSaleState = "closed",
+  hubSaleState: ProductSaleState = "closed",
 ): InteractiveCourseCard[] => [
   // The Birthday Drop is retired (see BIRTHDAY_CAMPAIGN_ENABLED); its page
   // answers 404, so the card stays out until the campaign returns.
@@ -38,6 +39,50 @@ export const getOnlineCoursesArray = (
   //   buttonHref: "/online/birthday-drop",
   //   buttonPrefetch: false,
   // },
+  {
+    id: "online-group",
+    title: t("cards.onlineGroup.title"),
+    headerPhoto: "/images/photos/card_online_group.webp",
+    topRowContent: (
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.onlineGroup.description.1")}</DetailText>
+        <DetailText>{t("cards.onlineGroup.description.2")}</DetailText>
+      </ContentStack>
+    ),
+    bottomRowContent: (
+      <ContentStack>
+        <DetailText>{t("cards.onlineGroup.startLabel")}</DetailText>
+        <DetailFactText>{t("cards.onlineGroup.startValue")}</DetailFactText>
+      </ContentStack>
+    ),
+    buttonText: commonT("details"),
+    buttonHref: "/online/group",
+    buttonPrefetch: false,
+  },
+  {
+    id: "inspiration-hub",
+    title: t("cards.inspirationHub.title"),
+    headerPhoto: "/images/photos/card_inspiration_hub.webp",
+    topRowContent: (
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.inspirationHub.description.1")}</DetailText>
+      </ContentStack>
+    ),
+    bottomRowContent: (
+      <ContentStack>
+        <DetailText>{t("cards.inspirationHub.accessLabel")}</DetailText>
+        <DetailFactText>
+          {hubSaleState === "open"
+            ? t("cards.inspirationHub.accessValue")
+            : commonT("salesUnavailable")}
+        </DetailFactText>
+      </ContentStack>
+    ),
+    // Like every card here, it leads to the course page, where the buy button is.
+    buttonText: commonT("details"),
+    buttonHref: "/online/inspiration-hub",
+    buttonPrefetch: false,
+  },
   {
     id: "choreo",
     title: t("cards.choreo.title"),
@@ -66,26 +111,6 @@ export const getOnlineCoursesArray = (
     ),
     buttonText: commonT("details"),
     buttonHref: "/online/choreo",
-  },
-  {
-    id: "online-group",
-    title: t("cards.onlineGroup.title"),
-    headerPhoto: "/images/photos/card_online_group.webp",
-    topRowContent: (
-      <ContentStack $gap="16px">
-        <DetailText>{t("cards.onlineGroup.description.1")}</DetailText>
-        <DetailText>{t("cards.onlineGroup.description.2")}</DetailText>
-      </ContentStack>
-    ),
-    bottomRowContent: (
-      <ContentStack>
-        <DetailText>{t("cards.onlineGroup.startLabel")}</DetailText>
-        <DetailFactText>{t("cards.onlineGroup.startValue")}</DetailFactText>
-      </ContentStack>
-    ),
-    buttonText: commonT("details"),
-    buttonHref: "/online/group",
-    buttonPrefetch: false,
   },
   {
     id: "first-touch",

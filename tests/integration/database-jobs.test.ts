@@ -19,11 +19,19 @@ import {
   claimNextOutboxJob,
   enqueueOutboxJob,
   enqueueOutboxJobInTransaction,
+  type OutboxJobKind,
   processNextOutboxJob,
   replayOutboxJob,
 } from "@/db/transactional-outbox";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
+
+// The queue mechanics below are kind-agnostic (delivery is a stand-in), and "next job"
+// claims are global. Test-only kinds keep them from taking another file's jobs when
+// files run at the same time; production code never enqueues these.
+const QUEUE_MECHANICS_KIND = "test_queue_mechanics" as OutboxJobKind;
+const QUEUE_DEAD_LETTER_KIND = "test_queue_dead_letter" as OutboxJobKind;
+const QUEUE_CLAIM_KIND = "test_queue_claim" as OutboxJobKind;
 
 const databaseUrl = getRequiredTestDatabaseUrl();
 
@@ -136,13 +144,13 @@ test("deduplicates concurrent outbox enqueue and preserves the first payload", a
     const results = await Promise.all([
       enqueueOutboxJob({
         deduplicationKey,
-        kind: "campaign_email_delivery",
+        kind: QUEUE_MECHANICS_KIND,
         payload: { marker: "first" },
         provider: "resend",
       }),
       enqueueOutboxJob({
         deduplicationKey,
-        kind: "campaign_email_delivery",
+        kind: QUEUE_MECHANICS_KIND,
         payload: { marker: "duplicate" },
         provider: "resend",
       }),
@@ -177,7 +185,7 @@ test("retries an uncertain outbox response without a second visible delivery", a
   try {
     await enqueueOutboxJob({
       deduplicationKey,
-      kind: "campaign_email_delivery",
+      kind: QUEUE_MECHANICS_KIND,
       payload: { campaignKey: "db05-test" },
       provider: "resend",
     });
@@ -194,11 +202,11 @@ test("retries an uncertain outbox response without a second visible delivery", a
     };
     const firstAttempt = await processNextOutboxJob({
       deliver,
-      kinds: ["campaign_email_delivery"],
+      kinds: [QUEUE_MECHANICS_KIND],
     });
     const secondAttempt = await processNextOutboxJob({
       deliver,
-      kinds: ["campaign_email_delivery"],
+      kinds: [QUEUE_MECHANICS_KIND],
       now: new Date(Date.now() + 2 * 60 * 60 * 1000),
     });
 
@@ -238,18 +246,18 @@ test("persists skipped delivery and dead-letters a non-retryable provider result
   try {
     await enqueueOutboxJob({
       deduplicationKey: skippedKey,
-      kind: "campaign_email_delivery",
+      kind: QUEUE_MECHANICS_KIND,
       provider: "resend",
     });
     await enqueueOutboxJob({
       deduplicationKey: deadLetterKey,
-      kind: "telegram_access_delivery",
+      kind: QUEUE_DEAD_LETTER_KIND,
       provider: "telegram",
     });
 
     const skipped = await processNextOutboxJob({
       deliver: async () => ({ skipped: true }),
-      kinds: ["campaign_email_delivery"],
+      kinds: [QUEUE_MECHANICS_KIND],
     });
     const deadLettered = await processNextOutboxJob({
       deliver: async () => {
@@ -257,7 +265,7 @@ test("persists skipped delivery and dead-letters a non-retryable provider result
           retryable: false,
         });
       },
-      kinds: ["telegram_access_delivery"],
+      kinds: [QUEUE_DEAD_LETTER_KIND],
     });
     const stored = await client<
       { deduplication_key: string; sent_at: Date | null; status: string }[]
@@ -306,7 +314,7 @@ test("replays dead-letter inbox and outbox rows without erasing attempt evidence
     });
     await enqueueOutboxJob({
       deduplicationKey: outboxKey,
-      kind: "campaign_email_delivery",
+      kind: QUEUE_MECHANICS_KIND,
       provider: "resend",
     });
     await processNextStripeInboxEvent({
@@ -320,7 +328,7 @@ test("replays dead-letter inbox and outbox rows without erasing attempt evidence
       deliver: async () => {
         throw new Error("delivery failed");
       },
-      kinds: ["campaign_email_delivery"],
+      kinds: [QUEUE_MECHANICS_KIND],
       maxAttempts: 1,
     });
 
@@ -349,15 +357,13 @@ test("allows exactly one concurrent worker to claim an outbox job", async () => 
   try {
     await enqueueOutboxJob({
       deduplicationKey,
-      kind: "monthly_report_delivery",
+      kind: QUEUE_CLAIM_KIND,
       payload: { reportKey: "db06-test" },
       provider: "resend",
     });
 
     const claims = await Promise.all(
-      Array.from({ length: 8 }, () =>
-        claimNextOutboxJob({ kinds: ["monthly_report_delivery"] }),
-      ),
+      Array.from({ length: 8 }, () => claimNextOutboxJob({ kinds: [QUEUE_CLAIM_KIND] })),
     );
 
     assert.equal(claims.filter((claim) => claim !== null).length, 1);
@@ -390,7 +396,7 @@ test("commits projection, outbox, and inbox completion atomically", async () => 
       project: async ({ event, transaction }) => {
         await enqueueOutboxJobInTransaction(transaction, {
           deduplicationKey: outboxKey,
-          kind: "campaign_email_delivery",
+          kind: QUEUE_MECHANICS_KIND,
           payload: { stripeEventId: event.stripeEventId },
           provider: "resend",
         });
@@ -561,7 +567,7 @@ test("rolls back projected jobs before scheduling an inbox retry", async () => {
       project: async ({ transaction }) => {
         await enqueueOutboxJobInTransaction(transaction, {
           deduplicationKey: outboxKey,
-          kind: "campaign_email_delivery",
+          kind: QUEUE_MECHANICS_KIND,
           provider: "resend",
         });
         throw new Error("projection_failed_after_outbox_enqueue");

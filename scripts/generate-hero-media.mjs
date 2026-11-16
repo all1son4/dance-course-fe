@@ -12,6 +12,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ASSETS = [
   ["/svg/MainPageBackgroundPhoto.webp", [480, 720, 960, 1200]],
   ["/svg/OnlinePageBackgroundPhoto.webp", [480, 720, 960]],
+  ["/svg/InspirationHubHeroPhoto.webp", [480, 720, 960]],
   ["/svg/OnlineChoreoPageBackgroundPhoto.webp", [480, 720, 960, 1200]],
   ["/svg/FirstTouchPageBackgroundPhoto.webp", [480, 720, 960]],
   ["/svg/OfflinePageBackgroundPhoto.webp", [480, 720, 960]],

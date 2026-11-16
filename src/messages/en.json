@@ -61,6 +61,12 @@
       },
       "payment": {
         "title": "Secure checkout"
+      },
+      "inspirationHub": {
+        "title": "Inspiration HUB: Frame Up Strip lesson library",
+        "description": "Lessons from completed Online Group cycles, bonus materials and training music — in a private library on Telegram. 8 weeks of access right after payment.",
+        "ogImageAlt": "Inspiration HUB by Anna Strok",
+        "heroImageAlt": "Anna Strok, Inspiration HUB"
       }
     },
     "breadcrumbHome": "Home"
@@ -115,7 +121,11 @@
         "highlight": "by Anna Strok"
       },
       "3": "Choreography tutorials",
-      "4": "The Birthday Drop"
+      "4": "The Birthday Drop",
+      "hub": {
+        "prefix": "Lesson library",
+        "highlight": "Inspiration HUB"
+      }
     }
   },
   "NotFoundPage": {
@@ -170,7 +180,7 @@
       },
       "4": {
         "question": "Is Frame Up right for me if I feel shy or afraid to move?",
-        "answer": "Frame Up helps you open up naturally. Classes are held in a safe atmosphere where every woman feels support and respect. Shyness usually fades after the first sessions."
+        "answer": "Frame Up helps you open up naturally. Classes are held in a safe atmosphere where everyone feels support and respect. Shyness usually fades after the first sessions."
       },
       "5": {
         "question": "What is the difference between offline and online classes?",
@@ -182,11 +192,11 @@
       },
       "7": {
         "question": "Can I train if my movement isn't fluid yet?",
-        "answer": "Fluidity is a skill you can develop. Frame Up gently helps you open up your body, improve mobility and feel more feminine."
+        "answer": "Fluidity is a skill you can develop. Frame Up gently helps you open up your body, improve mobility and feel more at ease in your body."
       },
       "8": {
         "question": "Is Frame Up suitable for any age?",
-        "answer": "Absolutely. Frame Up is about femininity, confidence and the joy of movement, not age limits."
+        "answer": "Absolutely. Frame Up is about sensuality, confidence and the joy of movement, not age limits."
       }
     }
   },
@@ -246,7 +256,7 @@
     "hero": {
       "title": "Frame Up",
       "subtitle": "Discover yourself in Frame Up style",
-      "description": "Learn to dance beautifully, boldly and sensually in an atmosphere of freedom and feminine strength.",
+      "description": "Learn to dance beautifully, boldly and sensually in an atmosphere of freedom and inner strength.",
       "hint": "Choose your learning format",
       "buttons": {
         "online": "Online",
@@ -283,8 +293,8 @@
         }
       },
       "quote": {
-        "1": "Today I develop Frame Up in Poland: I lead groups where women open up through movement, and I continue to learn from European masters to grow together with my students.",
-        "2": "My goal is to strengthen Frame Up culture and inspire women to be bold, free and expressive by creating a space where each woman can feel her strength, beauty and creative energy."
+        "1": "Today I develop Frame Up in Poland: I lead groups where people open up through movement, and I continue to learn from European masters to grow together with my students.",
+        "2": "My goal is to strengthen Frame Up culture and inspire people to be bold, free and expressive by creating a space where everyone can feel their strength, beauty and creative energy."
       },
       "imageAlt": "Photo of Anna Strok"
     },
@@ -359,6 +369,14 @@
         },
         "salesLabel": "Sales open until 7 September",
         "salesValue": "Lifetime access!"
+      },
+      "inspirationHub": {
+        "title": "Inspiration HUB",
+        "description": {
+          "1": "A library of video lessons and useful materials. Get access to lessons from previous Online Group cycles, practise at your own pace and find new ideas for your dance."
+        },
+        "accessLabel": "Access to materials",
+        "accessValue": "Right after purchase, for 8 weeks"
       }
     },
     "studio": {
@@ -545,7 +563,7 @@
         },
         "library": {
           "title": "Plus",
-          "description": "Online Group with cycle-long access to Inspiration Hub and materials from previous cycles."
+          "description": "Online Group and the Inspiration HUB library with lessons from previous cycles — access right after payment."
         }
       },
       "programButton": "What to expect"
@@ -562,7 +580,7 @@
         "features": {
           "1": "5 new lessons",
           "2": "Homework with feedback",
-          "3": "Cycle duration — 6 weeks",
+          "3": "Cycle duration — {weeks, plural, one {# week} other {# weeks}}",
           "4": "Access to the private Telegram chat",
           "5": "Communication and support within the group",
           "6": "Extra materials for inspiration"
@@ -574,10 +592,10 @@
         "features": {
           "1": "5 new lessons",
           "2": "Homework with feedback",
-          "3": "Cycle duration — 6 weeks",
+          "3": "Cycle duration — {weeks, plural, one {# week} other {# weeks}}",
           "4": "Access to the private Telegram chat",
           "5": "Communication and support within the group",
-          "6": "Inspiration Hub access for the duration of the cycle",
+          "6": "Inspiration HUB — right after payment and for the whole cycle",
           "7": "Lessons from all previous cycles",
           "8": "Additional exercises",
           "9": "Playlists, moodboards and inspiration videos",
@@ -605,12 +623,12 @@
         "text": "You practise, complete assignments, send videos and receive my comments, corrections and recommendations for growth."
       },
       "4": {
-        "title": "A 6-week training programme",
-        "text": "Over six weeks, you complete 5 new lessons, submit homework and receive feedback on your work."
+        "title": "A {weeks, plural, one {#-week} other {#-week}} training programme",
+        "text": "Over {weeks, plural, one {# week} other {# weeks}}, you complete 5 new lessons, submit homework and receive feedback on your work."
       },
       "5": {
         "title": "Plus plan with Inspiration Hub",
-        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration Hub materials to explore independently at your convenience. Hub access stays active for the duration of the cycle."
+        "text": "With the Plus plan, you get lessons from previous cycles and additional Inspiration HUB materials. The library opens right after payment and lasts for the cycle and 7 more days after it ends. If you renew Plus for the next cycle within those days, the library stays with you without a break."
       },
       "6": {
         "title": "Private Telegram chat",
@@ -619,6 +637,95 @@
       "7": {
         "title": "Continue without a break",
         "text": "Current Online Group participants receive a special price when renewing for the next cycle."
+      }
+    }
+  },
+  "InspirationHubPage": {
+    "hero": {
+      "title": "Inspiration HUB",
+      "titlePlain": "Inspiration HUB",
+      "lead": "A library of video lessons on technique, choreography and improvisation, plus useful materials. Get access to lessons from previous Online Group cycles (10+ lessons) and find new ideas for your dance.",
+      "accessLabel": "Access",
+      "accessValue": "8 weeks",
+      "priceLabel": "Price",
+      "buyButton": "Buy",
+      "insideButton": "What's inside"
+    },
+    "inside": {
+      "title": "What awaits you inside Inspiration HUB",
+      "lead": "Full programmes of the completed Online Group 1.0 and 2.0 cycles: 5 full lessons.",
+      "topicsLabel": "In the lessons",
+      "topics": {
+        "1": "Leg technique",
+        "2": "Arm technique",
+        "3": "Flow",
+        "4": "Hair work",
+        "5": "Improvisation",
+        "6": "Basic acrobatics",
+        "7": "Choreography"
+      },
+      "features": {
+        "1": {
+          "title": "Extra materials",
+          "text": "Bonus lessons to vary your training and develop your technique. Training music, ideas for inspiration, tips on dancewear and choosing shoes, and news about dance events."
+        },
+        "2": {
+          "title": "Practise whenever you like",
+          "text": "Pay at any time and your 8 weeks of access to all materials start right away. No schedules and no deadlines: choose what to learn and practise when it suits you."
+        },
+        "3": {
+          "title": "A private library on Telegram",
+          "text": "All lessons and materials are kept in a convenient private space that is always at hand."
+        },
+        "4": {
+          "title": "Special renewal price",
+          "text": "Renewing the Hub or training in the Online Group? <b>You get a special price</b>. The new weeks start right after the current ones, with no gap."
+        }
+      }
+    },
+    "statement": {
+      "text": "Your space for inspiration, practice and growth in dance.",
+      "caption": "Inspiration HUB"
+    },
+    "steps": {
+      "title": "How it works",
+      "imageAlt": "Anna Strok",
+      "items": {
+        "1": {
+          "title": "Payment and joining",
+          "description": "Right after payment, your personal link to the library appears on the page and in your email — the library is on Telegram. Open it from the Telegram account you will use: the link works once and only for you."
+        },
+        "2": {
+          "title": "Access period",
+          "description": "It counts from payment, not from joining the library: pay on 1 March and you have access until 26 April. The exact dates are on the “My access” page; every email has a button to it."
+        },
+        "3": {
+          "title": "Renewal at a special price",
+          "description": "There are no automatic charges. You can renew any time while your access is open — the new period starts right after the current one, so no day is lost. 7 and 3 days before the end you get an email with a “Renew” button; the same one is on the “My access” page."
+        },
+        "4": {
+          "title": "After the Online Group",
+          "description": "Haven’t finished all the lessons of your cycle? When it ends, you don’t have to move on to a new one: choose Inspiration HUB alone and catch up at your own pace — it holds the lessons of all past cycles, including your current one. You get it at a special price with either plan; we post the link in the group chat."
+        },
+        "5": {
+          "title": "If you do not renew",
+          "description": "At the end of the period, library access closes by itself. You can come back at any time, but at the regular price — the new period counts from payment."
+        }
+      }
+    },
+    "cta": {
+      "title": "Join Inspiration HUB",
+      "text": "Everything inside, from day one:",
+      "items": {
+        "1": "Full Online Group 1.0 and 2.0 programmes",
+        "2": "Bonus lessons and materials",
+        "3": "A private library on Telegram",
+        "4": "Access opens right after payment"
+      },
+      "priceLabel": "8 weeks of access",
+      "notes": {
+        "1": "No automatic charges",
+        "2": "Special price when you renew"
       }
     }
   },
@@ -703,7 +810,7 @@
       "summaryCard": {
         "description": "Renew your Online Group access for the next cycle at the special price.",
         "accessNote": "After payment, you will receive a personal one-time invite to the new Telegram chat.",
-        "accessNotePlus": "After payment, you will receive personal one-time invites to the new Telegram chat and Inspiration Hub. Hub access is provided for the duration of the cycle."
+        "accessNotePlus": "After payment, you will receive personal one-time invites to the new Telegram chat and Inspiration HUB. The library opens right away and lasts for the whole cycle."
       },
       "buttons": {
         "verify": "Confirm Telegram"
@@ -725,6 +832,12 @@
         "title": "Renewal unavailable",
         "description": "Message us for help renewing your access."
       }
+    },
+    "hubDiscount": {
+      "description": "Special price for Online Group participants and Inspiration Hub subscribers. Confirm your Telegram account.",
+      "summaryDescription": "Inspiration Hub for 8 weeks at the special price.",
+      "notEligible": "We could not find this account in the current or a recently finished Online Group cycle, or in Inspiration Hub.",
+      "fullPriceLink": "Buy at full price"
     },
     "inputs": {
       "fullName": {
@@ -849,14 +962,19 @@
       "birthdayDrop": {
         "line1": "We’re preparing your personal access to the materials.",
         "line2": "The link will appear below and is also sent to your email."
+      },
+      "inspirationHub": {
+        "line1": "We are preparing your personal access to Inspiration Hub.",
+        "line2": "The link will appear below and will also arrive by email."
       }
     },
     "accessNotice": {
       "firstTouch": "Invite valid for 30 days. Lesson access: 120 days after joining.",
       "choreo": "Invite valid for 30 days. Material access: 60 days after joining.",
       "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
-      "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration Hub access is provided for the duration of the cycle.",
-      "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever."
+      "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration HUB opens right away and lasts for the whole cycle.",
+      "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever.",
+      "inspirationHub": "The link is valid for up to 30 days. Inspiration Hub access lasts 8 weeks."
     },
     "telegram": {
       "active": "access is already active",
@@ -868,10 +986,14 @@
       "unavailable": "The link is not ready yet. Please contact support.",
       "contactSupport": "Support",
       "nameMainGroup": "Online Group",
-      "nameInspiration": "Inspiration Hub"
+      "nameInspiration": "Inspiration Hub",
+      "scheduled": "Your paid 8 weeks of Inspiration Hub begin on {date}. On that day your personal invite will arrive by email.",
+      "scheduledPlus": "Inspiration Hub opens when your cycle starts, on {date}. That day a personal link to join will arrive in your email.",
+      "scheduledAfterCohort": "Your paid 8 weeks of Inspiration Hub begin right after your cohort ends. On that day your personal invite will arrive by email."
     },
     "buttons": {
-      "home": "Back to home"
+      "home": "Back to home",
+      "myAccess": "My access"
     }
   },
   "PaymentFailedPage": {
@@ -934,7 +1056,7 @@
         "1": "For those who have never danced but want to feel their body, gain confidence and learn to move.",
         "2": "We'll work on basic technique, footwork and emotion, and finish by learning your first choreography."
       },
-      "accessNote": "The course runs for 1.5 months. Lessons stay available for 120 days after joining the private Telegram chat.",
+      "accessNote": "The course runs for 1.5 months. Lessons stay available for 120 days after joining the private Telegram group.",
       "offers": {
         "standard": "Standard access"
       }
@@ -1005,7 +1127,7 @@
         "2": "If you can't come to my studio classes, you can still learn new things, practise at home and stay in touch with me wherever you are."
       },
       "accessNote": "After payment, we will send you a personal one-time invite link to the Telegram group.",
-      "accessNotePlus": "After payment, we will send you personal one-time invite links to the Telegram group and Inspiration Hub. Hub access is provided for the duration of the cycle.",
+      "accessNotePlus": "After payment, we will send you personal one-time invite links to the Telegram group and Inspiration HUB. The library opens right away and lasts for the whole cycle.",
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",
@@ -1024,6 +1146,18 @@
       "accessNote": "Access to materials for 60 days from joining the private Telegram channel.",
       "offers": {
         "withoutMentor": "Without mentor"
+      }
+    },
+    "inspirationHub": {
+      "title": "Inspiration Hub",
+      "shortTitle": "Inspiration Hub",
+      "description": {
+        "1": "Access to the private Inspiration Hub library on Telegram for 8 weeks."
+      },
+      "accessNote": "After payment, we will send you a personal one-time link to Inspiration Hub.",
+      "offers": {
+        "hubAccess": "Full price",
+        "hubRenewal": "Special price"
       }
     },
     "privateLesson": {
@@ -1122,7 +1256,7 @@
       },
       "2": {
         "title": "2. Categories we use",
-        "text": "The website uses the following storage technologies:\na) Necessary (always active):\n- `NEXT_LOCALE` cookie (our website) to remember the selected interface language, up to 12 months;\n- `cookie-consent:v2` in localStorage (our website) to store your cookie choice, kept until you change the choice or clear browser data;\n- technical Stripe cookies (for example `__stripe_mid`, `__stripe_sid`) when the payment form is used.\n- the Telegram login script (telegram.org) is loaded only on the checkout page when you confirm your Telegram account; during that authorization Telegram may use its own cookies on its domain.\nb) Functional (consent-based):\n- `payment-checkout-draft:v1` in sessionStorage for checkout draft recovery, kept until the tab is closed or storage is cleared.\nc) Analytics (consent-based):\n- Mixpanel stores a pseudonymous browser identifier and consent marker in localStorage and may temporarily use IndexedDB for session replay. It measures page views, traffic source, device/browser, approximate location, scroll and selected product interactions. Session recordings mask all text and form inputs and are disabled on admin and payment pages. Analytics is processed using Mixpanel's EU data residency."
+        "text": "The website uses the following storage technologies:\na) Necessary (always active):\n- `NEXT_LOCALE` cookie (our website) to remember the selected interface language, up to 12 months;\n- `cookie-consent:v2` in localStorage (our website) to store your cookie choice, kept until you change the choice or clear browser data;\n- technical Stripe cookies (for example `__stripe_mid`, `__stripe_sid`) when the payment form is used.\n- the Telegram login script (telegram.org) is loaded only on the checkout page when you confirm your Telegram account; during that authorization Telegram may use its own cookies on its domain.\nb) Functional (consent-based):\n- `payment-checkout-draft:v1` in sessionStorage for checkout draft recovery, kept until the tab is closed or storage is cleared.\nc) Analytics (consent-based):\n- Mixpanel stores a pseudonymous browser identifier and consent marker in localStorage and may temporarily use IndexedDB for session replay. It measures page views, traffic source, device/browser, approximate location, scroll and selected product interactions. Session recordings mask all text and form inputs and are disabled on admin and payment pages. Analytics is processed using Mixpanel's EU data residency.\n- `analytics-event:*` entries in sessionStorage (our website) — short markers so the same event is not counted twice in one visit; kept until the tab is closed."
       },
       "3": {
         "title": "3. Legal basis",
@@ -1130,7 +1264,7 @@
       },
       "4": {
         "title": "4. Storage period",
-        "text": "Storage duration depends on the technology:\n- `NEXT_LOCALE` — up to 12 months;\n- `cookie-consent:v2` (localStorage) — until you change your choice or clear browser data;\n- `payment-checkout-draft:v1` (sessionStorage) — until the tab is closed;\n- Telegram cookies during authorization — for the periods defined by Telegram's policy;\n- Stripe cookies and Mixpanel analytics data — according to each provider's retention policy. Withdrawing analytics consent clears the Mixpanel identifier and stops future collection on this device."
+        "text": "Storage duration depends on the technology:\n- `NEXT_LOCALE` — up to 12 months;\n- `cookie-consent:v2` (localStorage) — until you change your choice or clear browser data;\n- `payment-checkout-draft:v1` (sessionStorage) — until the tab is closed;\n- `analytics-event:*` (sessionStorage) — until the tab is closed;\n- Telegram cookies during authorization — for the periods defined by Telegram's policy;\n- Stripe cookies and Mixpanel analytics data — according to each provider's retention policy. Withdrawing analytics consent clears the Mixpanel identifier and stops future collection on this device."
       },
       "5": {
         "title": "5. How to change or withdraw consent",
@@ -1187,5 +1321,79 @@
       }
     },
     "closedNotice": "Sales are temporarily closed"
+  },
+  "MyAccessPage": {
+    "metaTitle": "My access",
+    "title": "My access",
+    "intro": "All your purchases are here: Inspiration Hub, groups and tutorials — with their dates.",
+    "empty": {
+      "text": "You have no active access right now. Have a look at the programmes — everything you can start today is there.",
+      "button": "See the programmes"
+    },
+    "help": {
+      "text": "Something wrong with your access? Message us and we will help.",
+      "button": "Contact support"
+    },
+    "request": {
+      "lead": "Open this page with the “My access” button from any of our emails. No email at hand? Enter your address and we will send you the link.",
+      "invalidLink": "This link does not work. Enter your email and we will send a new one.",
+      "emailLabel": "Email",
+      "submit": "Send the link",
+      "sent": "If this address has purchases, we have sent the link to it. Check your spam folder too.",
+      "invalid": "Check the email",
+      "error": "Could not send. Please try again a little later."
+    },
+    "cards": {
+      "hubTitle": "Inspiration Hub",
+      "fallbackTitle": "Purchase",
+      "daysLeft": "{count, plural, one {# day left} other {# days left}}",
+      "linkInEmail": "The link to join is in your payment email",
+      "lifetime": "Lifetime access",
+      "hub": {
+        "activeUntil": "Until {date}",
+        "notJoined": "Your time is already running. The link to join is in your payment email",
+        "renewed": "Renewal paid",
+        "scheduled": "From {start} to {end}",
+        "linkOnStart": "The link to join will arrive by email on the start day",
+        "afterCohort": "8 weeks paid, starting when the current cycle ends",
+        "ended": "Access ended on {date}",
+        "notJoinedExpired": "Your time is running, but the emailed link no longer works — message us for a new one"
+      },
+      "plusHub": {
+        "included": "Included in your Plus",
+        "duringCohort": "Access lasts for the cycle and 7 more days after it",
+        "closed": "The cycle has ended. Your Plus Hub stays open until {date}",
+        "keep": "Renew Plus or just the Hub to keep your access",
+        "until": "Included in your Plus — until {date}",
+        "duringCohortUntil": "Lasts until the cycle ends (planned for {date}) and 7 more days after it",
+        "openBeforeStart": "Open already; the cycle starts on {date}"
+      },
+      "group": {
+        "running": "The cycle is running",
+        "startsOn": "Starts on {date}",
+        "closed": "The cycle has ended, access until {date}",
+        "until": "Until {date}"
+      },
+      "channel": {
+        "until": "Until {date}",
+        "startsOnJoin": "Paid: {count, plural, one {# day starts} other {# days start}} when you join the channel",
+        "paid": "Paid: your time starts when you join the channel"
+      },
+      "actions": {
+        "renewHub": "Renew the Hub",
+        "buyHub": "Buy the Hub",
+        "support": "Contact support"
+      },
+      "chips": {
+        "active": "Active",
+        "endsSoon": "Ending soon",
+        "notJoined": "Not joined yet",
+        "upcoming": "Starting soon",
+        "ended": "Ended",
+        "linkExpired": "New link needed"
+      },
+      "linkExpired": "The link from the email no longer works — message us and we will send a new one",
+      "count": "{count, plural, one {# purchase} other {# purchases}}"
+    }
   }
 }

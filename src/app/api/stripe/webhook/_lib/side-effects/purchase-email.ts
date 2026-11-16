@@ -1,8 +1,11 @@
 import type Stripe from "stripe";
 
+import { getDatabase } from "@/db/client";
+import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
 import { ensureInvoiceNumberForPayment } from "@/lib/invoices/invoice-numbering";
 import { buildPurchaseInvoiceAttachment } from "@/lib/invoices/purchase-invoice";
+import { buildMyAccessUrl } from "@/lib/my-access/link";
 import {
   formatPurchaseLine,
   getLocalizedOfferMetadataByOfferId,
@@ -65,6 +68,13 @@ const getPurchaseSuccessEmailAccessKind = ({
     return "telegram-online-group";
   }
 
+  if (
+    configuredAccessWorkflow === "telegram-inspiration-hub" ||
+    configuredAccessWorkflow === "telegram-hub-renewal"
+  ) {
+    return "telegram-inspiration-hub";
+  }
+
   if (configuredAccessWorkflow === "telegram-channel-lifetime") {
     return "telegram-channel-lifetime";
   }
@@ -80,8 +90,11 @@ const getPurchaseSuccessEmailAccessKind = ({
   return "support";
 };
 
+// Resend's test sender may only write to the account owner: on previews such a 403 is
+// expected. On production it means the domain or sender broke, and every purchase email
+// with its access link would be silently skipped — so there it fails and is retried.
 const isExpectedResendRestrictionError = (error: unknown) => {
-  if (!(error instanceof Error)) {
+  if (!(error instanceof Error) || process.env.VERCEL_ENV === "production") {
     return false;
   }
 
@@ -149,9 +162,28 @@ const resolvePurchaseEmailRecipient = ({
 }): string =>
   paymentRecord.customer_email || paymentIntent.receipt_email || receipt.recipientEmail;
 
+/** «Мой доступ» in the email (HUB-D31); a failed lookup only leaves the button out. */
+const resolveMyAccessUrl = async (
+  paymentRecord: PurchasePaymentRecord,
+  checkoutLocale: CheckoutLocale,
+): Promise<string | null> => {
+  try {
+    return buildMyAccessUrl(
+      await findMyAccessCustomerIdForPaymentIntent(
+        getDatabase(),
+        paymentRecord.payment_intent_id,
+      ),
+      checkoutLocale,
+    );
+  } catch {
+    return null;
+  }
+};
+
 const buildPreparedPurchaseSuccessEmail = ({
   checkoutLocale,
   localizedOfferMetadata,
+  myAccessUrl,
   onlineGroupAccess,
   paymentIntent,
   paymentRecord,
@@ -160,6 +192,7 @@ const buildPreparedPurchaseSuccessEmail = ({
 }: {
   checkoutLocale: CheckoutLocale;
   localizedOfferMetadata: LocalizedOfferMetadata;
+  myAccessUrl: string | null;
   onlineGroupAccess: PurchaseEmailAccess["onlineGroupAccess"];
   paymentIntent: Stripe.PaymentIntent;
   paymentRecord: PurchasePaymentRecord;
@@ -195,6 +228,7 @@ const buildPreparedPurchaseSuccessEmail = ({
     inspirationAccessExpiresAt: onlineGroupAccess?.find(
       (access) => access.accessKey === "inspiration-hub",
     )?.accessExpiresAt,
+    myAccessUrl,
     offerLabel,
     productTitle,
     receiptKind: receipt.receiptKind,
@@ -267,6 +301,7 @@ export const deliverPurchaseSuccessEmailFromOutbox = async ({
   const content = buildPreparedPurchaseSuccessEmail({
     checkoutLocale,
     localizedOfferMetadata,
+    myAccessUrl: await resolveMyAccessUrl(paymentRecord, checkoutLocale),
     onlineGroupAccess: access.onlineGroupAccess,
     paymentIntent,
     paymentRecord,

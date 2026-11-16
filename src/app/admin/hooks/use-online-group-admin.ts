@@ -19,7 +19,7 @@ import type {
   TelegramChatOption,
   TelegramChatsResponse,
 } from "../lib/admin.types";
-import { formatDateTimeInput } from "../lib/admin.utils";
+import { formatDateTimeInput, parseWarsawDateTimeInput } from "../lib/admin.utils";
 import { ADMIN_NETWORK_ERROR_CODE, requestAdminJson } from "../lib/admin-request";
 
 type UseOnlineGroupAdminOptions = {
@@ -48,6 +48,12 @@ const SETTINGS_ERROR_MESSAGES: Record<string, string> = {
   inspiration_chat_is_fixed: "Inspiration Hub уже закреплен и не может быть заменен.",
   invalid_start_date: "Укажи корректную дату старта потока.",
   network_error: "Ошибка сети при сохранении настроек Online Group.",
+  online_group_cohort_closed:
+    "Поток с этим основным чатом уже закрыт: дату его старта менять нельзя.",
+  online_group_cohort_main_chat_fixed:
+    "Основной чат меняется только на следующий поток и только после закрытия текущего. Запись нового потока заводит разработчик.",
+  online_group_cohort_start_has_continuations:
+    "От этой даты старта уже идут оплаченные продолжения хаба. Перенос с пересчётом делает разработчик.",
   same_main_and_inspiration_chat: "Основной чат и Inspiration Hub должны отличаться.",
   telegram_chat_not_registered: "Один из чатов не зарегистрирован через /register_chat.",
 };
@@ -240,9 +246,17 @@ export const useOnlineGroupAdmin = ({
     setIsLoading(false);
   }, [onUnauthorized]);
 
+  // «Отменить» drops the edits: a later «Изменить» starts from the saved stream again.
   const toggleForm = useCallback(() => {
-    setIsFormOpen((currentValue) => !currentValue);
-  }, []);
+    if (isFormOpen && activeCampaign) {
+      setMainChatId(activeCampaign.mainChatId);
+      setLibraryChatId(activeCampaign.inspirationChatId);
+      setStartsAt(formatDateTimeInput(activeCampaign.startsAt));
+      setTitle(activeCampaign.title);
+      setStatus(null);
+    }
+    setIsFormOpen(!isFormOpen);
+  }, [activeCampaign, isFormOpen]);
 
   const changeMainChat = useCallback((value: string) => {
     setMainChatId(value);
@@ -485,7 +499,7 @@ export const useOnlineGroupAdmin = ({
         body: {
           inspirationChatId: libraryChatId,
           mainChatId,
-          startsAt: new Date(startsAt).toISOString(),
+          startsAt: parseWarsawDateTimeInput(startsAt),
           title,
         },
         method: "POST",

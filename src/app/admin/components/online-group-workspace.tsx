@@ -1,10 +1,7 @@
-import { LoaderCircle, RefreshCw } from "lucide-react";
+import { Pencil, X } from "lucide-react";
 import type { FormEvent } from "react";
+import styled from "styled-components";
 
-import Button from "@/components/common/Button";
-import Checkbox from "@/components/common/Checkbox";
-import Input from "@/components/common/Input";
-import ToggleSwitch from "@/components/common/ToggleSwitch";
 import { ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID } from "@/constants/sellable-products";
 
 import type {
@@ -21,38 +18,108 @@ import {
   resolveOnlineGroupAccessStateLabel,
   resolveOnlineGroupAccessTitle,
 } from "../lib/admin.utils";
+import { CopyField } from "../ui/copy";
 import {
-  ButtonRow,
-  CheckboxList,
-  Form,
-  FormControl,
+  Checkbox,
+  Fact,
+  FactGrid,
+  Field,
+  FormActions,
   FormGrid,
-  IconActionButton,
-  JournalEmptyState,
-  JournalSkeletonCard,
-  JournalSkeletonList,
-  LinkStateBadge,
-  PolicyLabel,
-  RecentLinkCard,
-  RecentLinkHeader,
-  RecentLinkMeta,
-  RecentLinksList,
-  RenewalLinkControls,
-  RenewalLinksList,
-  SectionHeading,
-  SkeletonLine,
-  StatusText,
-  SummaryGrid,
-  SummaryItem,
-  SummaryLabel,
-  SummaryValue,
-  SurfaceCard,
-  SurfaceDescription,
-  SurfaceHeaderActions,
-  SurfaceHeaderRow,
-  SurfaceTitle,
-} from "../page.styles";
-import { CopyableLink } from "./copyable-link";
+  Input,
+  Select,
+  StatusLine,
+  Switch,
+} from "../ui/forms";
+import {
+  AdminButton,
+  Badge,
+  EmptyState,
+  Muted,
+  Panel,
+  Row,
+  Skeleton,
+  Stack,
+} from "../ui/primitives";
+
+const Form = styled.form`
+  display: grid;
+  gap: 16px;
+`;
+
+const List = styled.ul`
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li {
+    display: grid;
+    gap: 8px;
+    padding: 14px 0;
+    border-top: 1px solid var(--a-border);
+  }
+
+  > li:first-child {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  > li:last-child {
+    padding-bottom: 0;
+  }
+`;
+
+const ItemHead = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+
+  strong {
+    min-width: 0;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+  }
+
+  > :last-child:not(strong) {
+    margin-left: auto;
+  }
+`;
+
+const Meta = styled.p`
+  margin: 0;
+  color: var(--a-ink-2);
+  font-size: var(--a-text-sm);
+  overflow-wrap: anywhere;
+`;
+
+const AccessRow = styled.div`
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--a-radius-sm);
+  background: var(--a-surface-sunken);
+`;
+
+const ChatChoices = styled.div`
+  display: grid;
+  gap: 2px;
+  max-height: 232px;
+  overflow-y: auto;
+  padding: 6px 10px;
+  border: 1px solid var(--a-border-strong);
+  border-radius: var(--a-radius-sm);
+
+  > label {
+    padding: 6px 0;
+  }
+`;
+
+const tariffLabel = (offerId: string) =>
+  offerId === ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID ? "Plus" : "Standard";
+
+/* ---------- Current cohort settings ---------- */
 
 type ActiveOnlineGroupCardProps = {
   activeCampaign: OnlineGroupCampaignEntry | undefined;
@@ -90,7 +157,6 @@ export const ActiveOnlineGroupCard = ({
   onFormToggle,
   onLibraryChatChange,
   onMainChatChange,
-  onRefresh,
   onStartsAtChange,
   onSubmit,
   onTitleChange,
@@ -99,132 +165,123 @@ export const ActiveOnlineGroupCard = ({
   telegramChatOptions,
   title,
 }: ActiveOnlineGroupCardProps) => (
-  <SurfaceCard $wide>
-    <SurfaceHeaderRow>
-      <SurfaceTitle>Активный поток</SurfaceTitle>
-      <SurfaceHeaderActions>
-        {activeCampaign && (
-          <Button
-            buttonText={isFormOpen ? "Скрыть форму" : "Изменить"}
-            type="button"
-            onClick={onFormToggle}
-            size="sm"
-            variant="secondary"
-            width="auto"
-          />
-        )}
-        <IconActionButton
-          type="button"
-          onClick={onRefresh}
-          disabled={isLoading}
-          $isLoading={isLoading}
-          aria-label="Обновить Online Group"
-          title="Обновить Online Group"
+  <Panel
+    title="Текущий поток"
+    description="Поток, который сейчас продаётся: его чат, дата старта и название."
+    actions={
+      activeCampaign && (
+        <AdminButton
+          size="sm"
+          icon={isFormOpen ? <X aria-hidden /> : <Pencil aria-hidden />}
+          onClick={onFormToggle}
         >
-          {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-        </IconActionButton>
-      </SurfaceHeaderActions>
-    </SurfaceHeaderRow>
-    {activeCampaign ? (
-      <SummaryGrid>
-        <SummaryItem>
-          <SummaryLabel>Поток</SummaryLabel>
-          <SummaryValue>{activeCampaign.title}</SummaryValue>
-        </SummaryItem>
-        <SummaryItem>
-          <SummaryLabel>Старт потока</SummaryLabel>
-          <SummaryValue>{formatDateTime(activeCampaign.startsAt)}</SummaryValue>
-        </SummaryItem>
-        <SummaryItem>
-          <SummaryLabel>Основной чат</SummaryLabel>
-          <SummaryValue>{activeMainChatTitle}</SummaryValue>
-        </SummaryItem>
-        <SummaryItem>
-          <SummaryLabel>Inspiration Hub</SummaryLabel>
-          <SummaryValue>{inspirationChatTitle}</SummaryValue>
-        </SummaryItem>
-      </SummaryGrid>
-    ) : (
-      <StatusText $tone="info">Активный поток еще не настроен.</StatusText>
-    )}
-    {(isFormOpen || !activeCampaign) && (
-      <Form onSubmit={onSubmit}>
-        <FormGrid>
-          <FormControl>
-            <Input
-              id="online-group-regular-chat"
-              name="onlineGroupRegularChat"
-              label="Основной чат потока"
-              value={mainChatId}
-              placeholder="Выбери новый чат Online Group"
-              selectOptions={telegramChatOptions}
-              onChange={(event) => onMainChatChange(event.target.value)}
-              disabled={isLoading}
-              width="100%"
-            />
-          </FormControl>
-          <FormControl>
-            <Input
-              id="online-group-library-chat"
-              name="onlineGroupLibraryChat"
-              label="Постоянный Inspiration Hub"
-              value={libraryChatId}
-              placeholder="Выбери чат Inspiration Hub"
-              selectOptions={telegramChatOptions}
-              onChange={(event) => onLibraryChatChange(event.target.value)}
-              disabled={isLoading || Boolean(activeCampaign)}
-              width="100%"
-            />
-          </FormControl>
-          <FormControl>
-            <Input
-              id="online-group-starts-at"
-              name="onlineGroupStartsAt"
-              label="Дата и время старта"
-              value={startsAt}
-              type="datetime-local"
-              onChange={(event) => onStartsAtChange(event.target.value)}
-              width="100%"
-            />
-          </FormControl>
-          <FormControl>
-            <Input
-              id="online-group-title"
-              name="onlineGroupTitle"
-              label="Название потока"
-              value={title}
-              placeholder="Например: Online Group — август"
-              onChange={(event) => onTitleChange(event.target.value)}
-              width="100%"
-            />
-          </FormControl>
-        </FormGrid>
-        <ButtonRow>
-          <Button
-            buttonText={isSaving ? "Сохраняю..." : "Сохранить и активировать поток"}
-            type="submit"
-            disabled={isSaveDisabled}
-            isLoading={isSaving}
-            width="100%"
-          />
-        </ButtonRow>
-      </Form>
-    )}
-    {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-  </SurfaceCard>
+          {isFormOpen ? "Отменить" : "Изменить"}
+        </AdminButton>
+      )
+    }
+  >
+    <Stack $gap={16}>
+      {isLoading && !activeCampaign ? (
+        <Skeleton $height={64} />
+      ) : activeCampaign ? (
+        <FactGrid>
+          <Fact label="Поток" value={activeCampaign.title} />
+          <Fact label="Старт" value={formatDateTime(activeCampaign.startsAt)} />
+          <Fact label="Основной чат" value={activeMainChatTitle} />
+          <Fact label="Inspiration Hub" value={inspirationChatTitle} />
+        </FactGrid>
+      ) : (
+        <Muted>Поток ещё не настроен — заполни форму ниже.</Muted>
+      )}
+
+      {(isFormOpen || !activeCampaign) && (
+        <Form onSubmit={onSubmit}>
+          <FormGrid>
+            <Field label="Основной чат потока" htmlFor="og-main-chat">
+              <Select
+                id="og-main-chat"
+                value={mainChatId}
+                disabled={isLoading}
+                onChange={(event) => onMainChatChange(event.target.value)}
+              >
+                <option value="" disabled>
+                  Выбери чат потока
+                </option>
+                {telegramChatOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field
+              label="Чат Inspiration Hub"
+              htmlFor="og-hub-chat"
+              hint={
+                activeCampaign ? "Меняется только во вкладке Inspiration Hub." : undefined
+              }
+            >
+              <Select
+                id="og-hub-chat"
+                value={libraryChatId}
+                disabled={isLoading || Boolean(activeCampaign)}
+                onChange={(event) => onLibraryChatChange(event.target.value)}
+              >
+                <option value="" disabled>
+                  Выбери чат хаба
+                </option>
+                {telegramChatOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Дата и время старта" htmlFor="og-starts-at" hint="По Варшаве.">
+              <Input
+                id="og-starts-at"
+                type="datetime-local"
+                value={startsAt}
+                onChange={(event) => onStartsAtChange(event.target.value)}
+              />
+            </Field>
+            <Field label="Название потока" htmlFor="og-title">
+              <Input
+                id="og-title"
+                value={title}
+                placeholder="Например: Online Group 3.0"
+                onChange={(event) => onTitleChange(event.target.value)}
+              />
+            </Field>
+          </FormGrid>
+          <FormActions>
+            <AdminButton
+              type="submit"
+              variant="primary"
+              disabled={isSaveDisabled}
+              loading={isSaving}
+            >
+              {activeCampaign ? "Сохранить изменения" : "Сохранить и открыть поток"}
+            </AdminButton>
+          </FormActions>
+        </Form>
+      )}
+      <StatusLine status={status} />
+    </Stack>
+  </Panel>
 );
+
+/* ---------- Manual access ---------- */
 
 type OnlineGroupInviteLinksCardProps = {
   accessMode: OnlineGroupAdminAccessMode;
   adminLabel: string;
-  copyingUrl: string;
   grants: OnlineGroupAdminGrant[];
   isDisabled: boolean;
   isGenerating: boolean;
   isLoading: boolean;
   onAccessModeChange: (value: OnlineGroupAdminAccessMode) => void;
   onAdminLabelChange: (value: string) => void;
-  onCopy: (link: string) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   status: StatusMessage;
@@ -233,165 +290,134 @@ type OnlineGroupInviteLinksCardProps = {
 export const OnlineGroupInviteLinksCard = ({
   accessMode,
   adminLabel,
-  copyingUrl,
   grants,
   isDisabled,
   isGenerating,
   isLoading,
   onAccessModeChange,
   onAdminLabelChange,
-  onCopy,
-  onRefresh,
   onSubmit,
   status,
 }: OnlineGroupInviteLinksCardProps) => (
-  <SurfaceCard $wide>
-    <SurfaceHeaderRow>
-      <SurfaceTitle>Выдать доступ вручную</SurfaceTitle>
-      <IconActionButton
-        type="button"
-        onClick={onRefresh}
-        disabled={isLoading}
-        $isLoading={isLoading}
-        aria-label="Обновить журнал ручных доступов"
-        title="Обновить журнал ручных доступов"
-      >
-        {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-      </IconActionButton>
-    </SurfaceHeaderRow>
-    <SurfaceDescription>
-      Standard — основной чат. Plus — основной чат и Inspiration Hub.
-    </SurfaceDescription>
+  <Stack $gap={16}>
+    <Panel
+      title="Выдать доступ вручную"
+      description="Подарок или доступ без оплаты. Standard — основной чат, Plus — основной чат и Inspiration Hub."
+    >
+      <Form onSubmit={onSubmit}>
+        <FormGrid>
+          <Field label="Тариф" htmlFor="og-grant-mode">
+            <Select
+              id="og-grant-mode"
+              value={accessMode}
+              disabled={isLoading}
+              onChange={(event) =>
+                onAccessModeChange(event.target.value as OnlineGroupAdminAccessMode)
+              }
+            >
+              <option value="standard">Standard — основной чат</option>
+              <option value="plus">Plus — основной чат и хаб</option>
+            </Select>
+          </Field>
+          <Field
+            label="Для кого"
+            htmlFor="og-grant-label"
+            hint="Видно только в админке, чтобы потом найти выдачу."
+          >
+            <Input
+              id="og-grant-label"
+              value={adminLabel}
+              placeholder="Например: Аня, подарок"
+              disabled={isLoading}
+              onChange={(event) => onAdminLabelChange(event.target.value)}
+            />
+          </Field>
+        </FormGrid>
+        <FormActions>
+          <AdminButton
+            type="submit"
+            variant="primary"
+            disabled={isDisabled}
+            loading={isGenerating}
+          >
+            Создать ссылки доступа
+          </AdminButton>
+        </FormActions>
+        <StatusLine status={status} />
+      </Form>
+    </Panel>
 
-    <Form onSubmit={onSubmit}>
-      <FormGrid>
-        <FormControl>
-          <Input
-            id="online-group-admin-access-mode"
-            name="onlineGroupAdminAccessMode"
-            label="Тариф доступа"
-            value={accessMode}
-            selectOptions={[
-              { label: "Standard — только основной чат", value: "standard" },
-              { label: "Plus — основной чат + Hub", value: "plus" },
-            ]}
-            onChange={(event) =>
-              onAccessModeChange(event.target.value as OnlineGroupAdminAccessMode)
-            }
-            disabled={isLoading}
-            width="100%"
-          />
-        </FormControl>
-        <FormControl>
-          <Input
-            id="online-group-admin-label"
-            name="onlineGroupAdminLabel"
-            label="Идентификатор"
-            value={adminLabel}
-            placeholder="Например: Аня / подарок / спец-доступ"
-            onChange={(event) => onAdminLabelChange(event.target.value)}
-            disabled={isLoading}
-            width="100%"
-          />
-        </FormControl>
-      </FormGrid>
-      <ButtonRow>
-        <Button
-          buttonText={isGenerating ? "Генерирую..." : "Создать ссылки доступа"}
-          type="submit"
-          disabled={isDisabled}
-          isLoading={isGenerating}
-          width="100%"
-        />
-      </ButtonRow>
-      {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-    </Form>
-
-    <SectionHeading>Журнал выдач</SectionHeading>
-    {isLoading && grants.length === 0 ? (
-      <JournalSkeletonList>
-        {Array.from({ length: 2 }, (_, index) => (
-          <JournalSkeletonCard key={`online-group-grant-skeleton-${index}`}>
-            <SkeletonLine $width="58%" />
-            <SkeletonLine $width="36%" />
-            <SkeletonLine $width="100%" $height="36px" />
-          </JournalSkeletonCard>
-        ))}
-      </JournalSkeletonList>
-    ) : grants.length === 0 ? (
-      <JournalEmptyState>Ручных выдач для Online Group пока нет.</JournalEmptyState>
-    ) : (
-      <RecentLinksList>
-        {grants.map((grant) => (
-          <RecentLinkCard key={grant.paymentIntentId}>
-            <RecentLinkHeader>
-              <RecentLinkMeta>{grant.adminLabel}</RecentLinkMeta>
-              <LinkStateBadge $state="active">
-                {grant.accessMode === "plus" ? "Plus" : "Standard"}
-              </LinkStateBadge>
-            </RecentLinkHeader>
-            <RecentLinkMeta>Создано: {formatDateTime(grant.createdAtIso)}</RecentLinkMeta>
-
-            {grant.accesses.length === 0 ? (
-              <StatusText $tone="error">Ссылки для этой выдачи не созданы.</StatusText>
-            ) : (
-              grant.accesses.map((access) => (
-                <RecentLinkCard
-                  key={`${grant.paymentIntentId}-${access.accessKey}-${access.chatId}`}
-                >
-                  <RecentLinkHeader>
-                    <RecentLinkMeta>
-                      {resolveOnlineGroupAccessTitle(access.accessKey)}
-                    </RecentLinkMeta>
-                    <LinkStateBadge
-                      $state={access.state === "issued" ? "active" : "used"}
-                    >
-                      {resolveOnlineGroupAccessStateLabel(access.state)}
-                    </LinkStateBadge>
-                  </RecentLinkHeader>
-                  <RecentLinkMeta>
-                    Чат: {access.chatTitle || access.chatId || "не определён"}
-                  </RecentLinkMeta>
-                  <RecentLinkMeta>
-                    Токен до:{" "}
-                    {access.tokenExpiresAt
-                      ? formatDateTime(access.tokenExpiresAt)
-                      : "не определено"}
-                    {access.accessExpiresAt
-                      ? ` | Доступ до: ${formatDateTime(access.accessExpiresAt)}`
-                      : ""}
-                  </RecentLinkMeta>
-                  {access.accessUrl ? (
-                    <CopyableLink
-                      isCopying={copyingUrl === access.accessUrl}
-                      link={access.accessUrl}
-                      onCopy={onCopy}
-                    />
-                  ) : (
-                    <StatusText $tone={access.state === "failed" ? "error" : "info"}>
-                      Активной ссылки для копирования нет.
-                    </StatusText>
-                  )}
-                </RecentLinkCard>
-              ))
-            )}
-          </RecentLinkCard>
-        ))}
-      </RecentLinksList>
-    )}
-  </SurfaceCard>
+    <Panel title="Журнал выдач" description="Последние ручные доступы и их ссылки.">
+      {isLoading && grants.length === 0 ? (
+        <Stack $gap={10}>
+          <Skeleton $height={72} />
+          <Skeleton $height={72} />
+        </Stack>
+      ) : grants.length === 0 ? (
+        <EmptyState title="Ручных выдач пока нет" />
+      ) : (
+        <List>
+          {grants.map((grant) => (
+            <li key={grant.paymentIntentId}>
+              <ItemHead>
+                <strong>{grant.adminLabel}</strong>
+                <Badge $tone={grant.accessMode === "plus" ? "accent" : "neutral"}>
+                  {grant.accessMode === "plus" ? "Plus" : "Standard"}
+                </Badge>
+                <Muted>{formatDateTime(grant.createdAtIso)}</Muted>
+              </ItemHead>
+              {grant.accesses.length === 0 ? (
+                <Meta>Ссылки для этой выдачи не созданы.</Meta>
+              ) : (
+                grant.accesses.map((access) => (
+                  <AccessRow key={`${access.accessKey}-${access.chatId}`}>
+                    <ItemHead>
+                      <strong>{resolveOnlineGroupAccessTitle(access.accessKey)}</strong>
+                      <Badge
+                        $tone={
+                          access.state === "issued"
+                            ? "success"
+                            : access.state === "failed"
+                              ? "danger"
+                              : "neutral"
+                        }
+                      >
+                        {resolveOnlineGroupAccessStateLabel(access.state)}
+                      </Badge>
+                    </ItemHead>
+                    <Meta>
+                      {access.chatTitle || access.chatId || "Чат не определён"}
+                      {access.tokenExpiresAt
+                        ? ` · ссылка до ${formatDateTime(access.tokenExpiresAt)}`
+                        : ""}
+                      {access.accessExpiresAt
+                        ? ` · доступ до ${formatDateTime(access.accessExpiresAt)}`
+                        : ""}
+                    </Meta>
+                    {access.accessUrl && (
+                      <CopyField label="Ссылка доступа" value={access.accessUrl} />
+                    )}
+                  </AccessRow>
+                ))
+              )}
+            </li>
+          ))}
+        </List>
+      )}
+    </Panel>
+  </Stack>
 );
+
+/* ---------- Renewal links ---------- */
 
 type RenewalGeneratorCardProps = {
   chats: TelegramChatOption[];
-  copyingUrl: string;
   generatedLink: string;
   isDisabled: boolean;
   isGenerating: boolean;
   isLoading: boolean;
   offerId: string;
   offerOptions: SelectOption[];
-  onCopy: (link: string) => void | Promise<void>;
   onOfferChange: (value: string) => void;
   onRegenerate: () => void;
   onSourceChatToggle: (chatId: string, checked: boolean) => void;
@@ -404,14 +430,12 @@ type RenewalGeneratorCardProps = {
 
 export const RenewalGeneratorCard = ({
   chats,
-  copyingUrl,
   generatedLink,
   isDisabled,
   isGenerating,
   isLoading,
   offerId,
   offerOptions,
-  onCopy,
   onOfferChange,
   onRegenerate,
   onSourceChatToggle,
@@ -421,151 +445,125 @@ export const RenewalGeneratorCard = ({
   status,
   title,
 }: RenewalGeneratorCardProps) => (
-  <SurfaceCard>
-    <SurfaceTitle>Создать ссылку продления</SurfaceTitle>
+  <Panel
+    title="Создать ссылку продления"
+    description="Цена продления для тех, кто состоит в выбранных чатах. Сайт проверит членство в Telegram при оплате."
+  >
     <Form onSubmit={onSubmit}>
-      <FormControl>
-        <PolicyLabel>Участники из этих чатов смогут оплатить</PolicyLabel>
+      <Field label="Кто сможет оплатить — люди из этих чатов">
         {chats.length === 0 ? (
-          <StatusText $tone="info">Доступных чатов пока нет.</StatusText>
+          <Muted>Доступных чатов пока нет.</Muted>
         ) : (
-          <CheckboxList>
+          <ChatChoices>
             {chats.map((chat) => (
               <Checkbox
                 key={chat.chatId}
                 checked={sourceChatIds.includes(chat.chatId)}
                 disabled={isLoading}
-                name={`renewal-source-${chat.chatId}`}
-                onChange={(event) =>
-                  onSourceChatToggle(chat.chatId, event.target.checked)
-                }
-                placeholder={`${chat.title} (${chat.chatId})`}
+                label={chat.title}
+                onChange={(checked) => onSourceChatToggle(chat.chatId, checked)}
               />
             ))}
-          </CheckboxList>
+          </ChatChoices>
         )}
-      </FormControl>
+      </Field>
       <FormGrid>
-        <FormControl>
-          <Input
+        <Field label="Тариф" htmlFor="renewal-offer">
+          <Select
             id="renewal-offer"
-            name="renewalOffer"
-            label="Тариф"
             value={offerId}
-            placeholder="Выбери тариф"
-            selectOptions={offerOptions}
-            onChange={(event) => onOfferChange(event.target.value)}
             disabled={isLoading}
-            width="100%"
-          />
-        </FormControl>
-        <FormControl>
+            onChange={(event) => onOfferChange(event.target.value)}
+          >
+            <option value="" disabled>
+              Выбери тариф
+            </option>
+            {offerOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Название для админки" htmlFor="renewal-title">
           <Input
             id="renewal-title"
-            name="renewalTitle"
-            label="Название для админки"
             value={title}
-            placeholder="Например: поток 1 → поток 2"
+            placeholder="Например: поток 2 → поток 3"
             onChange={(event) => onTitleChange(event.target.value)}
-            width="100%"
           />
-        </FormControl>
+        </Field>
       </FormGrid>
-      <FormGrid>
-        <ButtonRow>
-          <Button
-            buttonText={isGenerating ? "Готовлю..." : "Создать или показать"}
-            type="submit"
-            disabled={isDisabled}
-            isLoading={isGenerating}
-            width="100%"
-          />
-        </ButtonRow>
-        <ButtonRow>
-          <Button
-            buttonText={isGenerating ? "Заменяю..." : "Заменить ссылку новой"}
-            type="button"
-            onClick={onRegenerate}
-            disabled={isDisabled}
-            isLoading={isGenerating}
-            variant="secondary"
-            width="100%"
-          />
-        </ButtonRow>
-      </FormGrid>
-      {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-      {generatedLink && (
-        <CopyableLink
-          ariaLabel="Копировать ссылку продления"
-          isCopying={copyingUrl === generatedLink}
-          link={generatedLink}
-          onCopy={onCopy}
-          title="Копировать ссылку продления"
-        />
-      )}
+      <FormActions>
+        <AdminButton
+          type="submit"
+          variant="primary"
+          disabled={isDisabled}
+          loading={isGenerating}
+        >
+          Создать или показать
+        </AdminButton>
+        <AdminButton disabled={isDisabled || isGenerating} onClick={onRegenerate}>
+          Заменить ссылку новой
+        </AdminButton>
+      </FormActions>
+      <StatusLine status={status} />
+      {generatedLink && <CopyField label="Ссылка продления" value={generatedLink} />}
     </Form>
-  </SurfaceCard>
+  </Panel>
 );
 
 type RenewalCampaignsCardProps = {
   campaigns: RenewalCampaignEntry[];
-  copyingUrl: string;
-  onCopy: (link: string) => void | Promise<void>;
   onToggleStatus: (slug: string, active: boolean) => void | Promise<void>;
   updatingSlug: string;
 };
 
 export const RenewalCampaignsCard = ({
   campaigns,
-  copyingUrl,
-  onCopy,
   onToggleStatus,
   updatingSlug,
 }: RenewalCampaignsCardProps) => (
-  <SurfaceCard>
-    <SurfaceTitle>Ссылки продления</SurfaceTitle>
+  <Panel
+    title="Ссылки продления"
+    description="Выключенная ссылка перестаёт открывать оплату, включить её можно в любой момент."
+  >
     {campaigns.length === 0 ? (
-      <JournalEmptyState>Ссылок пока нет.</JournalEmptyState>
+      <EmptyState title="Ссылок продления пока нет" />
     ) : (
-      <RenewalLinksList>
+      <List>
         {campaigns.map((campaign) => {
           const isActive = campaign.status === "active";
-
           return (
-            <RecentLinkCard key={campaign.slug}>
-              <RecentLinkHeader>
-                <RecentLinkMeta>{campaign.title}</RecentLinkMeta>
-                <RenewalLinkControls>
-                  <LinkStateBadge $state={isActive ? "active" : "used"}>
-                    {campaign.offerId === ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID
-                      ? "Plus"
-                      : "Standard"}
-                  </LinkStateBadge>
-                  <ToggleSwitch
-                    ariaLabel={`${isActive ? "Выключить" : "Включить"} ссылку ${campaign.title}`}
+            <li key={campaign.slug}>
+              <ItemHead>
+                <strong>{campaign.title}</strong>
+                <Badge
+                  $tone={tariffLabel(campaign.offerId) === "Plus" ? "accent" : "neutral"}
+                >
+                  {tariffLabel(campaign.offerId)}
+                </Badge>
+                <Row $gap={8} $wrap={false}>
+                  <Muted>{isActive ? "Включена" : "Выключена"}</Muted>
+                  <Switch
                     checked={isActive}
                     disabled={Boolean(updatingSlug)}
+                    label={`${isActive ? "Выключить" : "Включить"} ссылку ${campaign.title}`}
                     onChange={(checked) => void onToggleStatus(campaign.slug, checked)}
                   />
-                </RenewalLinkControls>
-              </RecentLinkHeader>
-              <RecentLinkMeta>
-                Проверяем: {campaign.sourceChatTitles.join(", ")}
-              </RecentLinkMeta>
-              <RecentLinkMeta>
-                Создано: {formatDateTime(campaign.createdAt)}
-              </RecentLinkMeta>
-              <CopyableLink
-                disabled={!isActive}
-                isCopying={copyingUrl === campaign.checkoutUrl}
-                link={campaign.checkoutUrl}
-                onCopy={onCopy}
-                title={isActive ? "Копировать ссылку" : "Сначала включи ссылку"}
-              />
-            </RecentLinkCard>
+                </Row>
+              </ItemHead>
+              <Meta>
+                Для чатов: {campaign.sourceChatTitles.join(", ")} · создана{" "}
+                {formatDateTime(campaign.createdAt)}
+              </Meta>
+              {isActive && (
+                <CopyField label="Ссылка продления" value={campaign.checkoutUrl} />
+              )}
+            </li>
           );
         })}
-      </RenewalLinksList>
+      </List>
     )}
-  </SurfaceCard>
+  </Panel>
 );

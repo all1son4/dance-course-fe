@@ -29,8 +29,13 @@ const isRetryableTelegramHttpError = (
   data: TelegramApiResponse<unknown> | null,
 ) => status === 429 || status >= 500 || data?.error_code === 429;
 
-const isRetryableTelegramNetworkError = (error: unknown) =>
-  error instanceof TypeError || isAbortError(error);
+// A timed-out send or invite may have gone through: repeating it posts the message twice
+// (a second pinned closure post) or leaves an orphan invite. Only those two wait for 429.
+const NOT_REPEATED_AFTER_TIMEOUT = new Set(["createChatInviteLink", "sendMessage"]);
+
+const isRetryableTelegramNetworkError = (method: string, error: unknown) =>
+  error instanceof TypeError ||
+  (isAbortError(error) && !NOT_REPEATED_AFTER_TIMEOUT.has(method));
 
 // A member who already left the chat, or was never in it, cannot be kicked. Both
 // access subsystems treat that as a completed revocation rather than a failure.
@@ -147,7 +152,7 @@ const callTelegramApi = async <T>(
       throw new Error(`telegram_api_failed:${method}:${description}`);
     } catch (error) {
       const shouldRetry =
-        attempt < maxAttempts - 1 && isRetryableTelegramNetworkError(error);
+        attempt < maxAttempts - 1 && isRetryableTelegramNetworkError(method, error);
 
       if (shouldRetry) {
         await wait(
@@ -205,6 +210,22 @@ export const sendTelegramMessage = async ({
       botToken,
       maxAttempts,
     },
+  );
+
+/** HUB-D29: the cohort closure post is pinned in the old cohort chat. */
+export const pinTelegramChatMessage = async ({
+  botToken,
+  chatId,
+  messageId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+  messageId: number;
+}) =>
+  callTelegramApi<boolean>(
+    "pinChatMessage",
+    { chat_id: chatId, disable_notification: false, message_id: messageId },
+    { botToken },
   );
 
 export const copyTelegramMessage = async ({
@@ -366,4 +387,19 @@ export const getTelegramChatMember = async ({
     {
       botToken,
     },
+  );
+
+export type TelegramWebhookInfo = {
+  last_error_date?: number;
+  last_error_message?: string;
+  pending_update_count: number;
+  url: string;
+};
+
+/** Read-only: where Telegram delivers the bot's updates and whether it is failing. */
+export const getTelegramWebhookInfo = async ({ botToken }: { botToken?: string } = {}) =>
+  callTelegramApi<TelegramWebhookInfo>(
+    "getWebhookInfo",
+    {},
+    { botToken, maxAttempts: 1 },
   );

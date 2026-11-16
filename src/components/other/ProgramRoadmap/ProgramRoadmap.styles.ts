@@ -14,7 +14,8 @@ export const IconBox = styled.div`
   align-items: center;
   position: absolute;
   left: -20.5px;
-  top: -11.5px;
+  /* The 40px point is centred on the title's first line (font size × line height 1.3). */
+  top: calc(var(--text-body) * 1.3 / 2 - 20px);
   z-index: 20;
 
   // & svg circle:first-of-type {

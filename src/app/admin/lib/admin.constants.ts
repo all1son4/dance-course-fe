@@ -10,10 +10,13 @@ export const ADMIN_API_ENDPOINTS = {
   firstTouchBroadcast: "/admin/api/broadcasts/first-touch-sales-start",
   inviteLinks: "/admin/api/invite-links",
   inviteLinksHistory: "/admin/api/invite-links/history",
+  hub: "/admin/api/hub",
   monthlySalesReport: "/admin/api/reports/monthly-sales",
   monthlySalesReportDownload: "/admin/api/reports/monthly-sales/download",
   onlineGroupInviteLinks: "/admin/api/online-group-invite-links",
   onlineGroupSettings: "/admin/api/online-group-settings",
+  onlineGroupCohorts: "/admin/api/online-group/cohorts",
+  onlineGroupCohortPostRetry: "/admin/api/online-group/cohorts/post-retry",
   operations: "/admin/api/operations",
   operationsReissueAccess: "/admin/api/operations/reissue-access",
   operationsReplay: "/admin/api/operations/replay",
@@ -21,7 +24,10 @@ export const ADMIN_API_ENDPOINTS = {
   purchasesResendEmail: "/admin/api/purchases/resend-email",
   renewalCampaigns: "/admin/api/renewal-campaigns",
   sales: "/admin/api/sales",
+  systemPulse: "/admin/api/system/pulse",
+  telegramBotRights: "/admin/api/telegram/bot-rights",
   telegramChats: "/admin/api/telegram/chats",
+  overview: "/admin/api/overview",
 } as const;
 
 export const ADMIN_SESSION_HEARTBEAT_MS = 5 * 60_000;
@@ -32,13 +38,22 @@ export const RATE_LIMITED_STATUS_TEXT =
   "Слишком много запросов. Подожди немного и попробуй снова.";
 
 export const ADMIN_FEATURES: AdminFeature[] = [
-  { id: "invite-links", label: "Invite-ссылки" },
-  { id: "online-group", label: "Online Group" },
-  { id: "sales", label: "Каталог" },
-  { id: "purchases", label: "Продажи" },
-  { id: "broadcasts", label: "Рассылки" },
-  { id: "operations", label: "Статус" },
+  { id: "overview", label: "Обзор", group: "home" },
+  { id: "purchases", label: "Покупки", group: "sales" },
+  { id: "sales", label: "Каталог", group: "sales" },
+  { id: "online-group", label: "Online Group", group: "products" },
+  { id: "inspiration-hub", label: "Inspiration Hub", group: "products" },
+  { id: "invite-links", label: "Ссылки доступа", group: "products" },
+  { id: "broadcasts", label: "Рассылки", group: "more" },
+  { id: "operations", label: "Система", group: "more" },
 ];
+
+export const ADMIN_FEATURE_GROUP_LABELS: Record<AdminFeature["group"], string> = {
+  home: "",
+  more: "Ещё",
+  products: "Продукты",
+  sales: "Продажи",
+};
 
 export const KIND_OPTIONS: Array<{ label: string; value: GeneratorKind }> = [
   { label: "Курс «First Touch»", value: "first-touch" },
@@ -56,21 +71,28 @@ export const LESSON_LANGUAGE_LABELS: Record<LessonLanguage, string> = {
 };
 
 export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }> = {
+  overview: {
+    description:
+      "Всё, что требует внимания, ключевые цифры и ближайшие события — в одном месте.",
+  },
+  "inspiration-hub": {
+    description:
+      "Чат хаба, оплаченные периоды, проблемы с доступом и кого крон уберёт ночью.",
+  },
   broadcasts: {
     description:
       "Проверь количество получателей и запусти разовую рассылку. Повторный запуск не затронет адреса, на которые письмо уже ушло.",
   },
   "invite-links": {
     description:
-      "Создай персональную одноразовую ссылку на курс и скопируй её из журнала для отправки участнику.",
+      "Создай персональную одноразовую ссылку на курс и скопируй её из журнала, чтобы отправить.",
   },
   "online-group": {
-    description:
-      "Настрой активный поток. После запуска здесь появятся ручная выдача доступа и управление продлениями.",
+    description: "Потоки, продажи Standard и Plus, ссылки продления и ручные доступы.",
   },
   operations: {
     description:
-      "Один взгляд — и понятно, все ли доставилось: оплаты, письма, доступы. Если что-то застряло, оно появится в блоке «Требует действий» с кнопкой починки.",
+      "Всё ли доставилось: оплаты, письма и доступы. Если что-то застряло, здесь же кнопка починки.",
   },
   purchases: {
     description:
@@ -78,6 +100,6 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   },
   sales: {
     description:
-      "Управляй продажами продуктов и выбирай доступные тарифы разборов. Общий переключатель ставит продажи на паузу и сохраняет выбранные тарифы. Доступы прежних покупателей сохраняются.",
+      "Какие продукты и тарифы сейчас продаются на сайте. Доступы прежних покупателей не меняются.",
   },
 };

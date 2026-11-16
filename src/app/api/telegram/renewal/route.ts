@@ -1,4 +1,3 @@
-import { getActiveOnlineGroupCampaign } from "@/db/online-group-campaigns";
 import {
   findRenewalCustomerProfile,
   findValidRenewalVerification,
@@ -11,9 +10,11 @@ import {
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
+import { getOnlineGroupSale } from "@/lib/online-group-sale";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-import { getTelegramChatMember, type TelegramChatMember } from "@/lib/telegram/bot-api";
+import { getTelegramChatMember } from "@/lib/telegram/bot-api";
+import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
 import {
   createTelegramLoginNonce,
   getTelegramLoginClientId,
@@ -70,20 +71,6 @@ const normalizeSlug = (value: string | null | undefined) =>
 const normalizeUsername = (value: string | null | undefined) =>
   (value ?? "").trim().replace(/^@/, "").toLowerCase().slice(0, 32);
 
-const isActiveTelegramMember = (member: TelegramChatMember | undefined) => {
-  const status = member?.status?.trim() ?? "";
-
-  if (status === "member" || status === "administrator" || status === "creator") {
-    return true;
-  }
-
-  if (status === "restricted") {
-    return member?.is_member === true;
-  }
-
-  return false;
-};
-
 const resolveActiveRenewalCampaign = async (
   slug: string,
 ): Promise<ActiveRenewalCampaignResult> => {
@@ -98,11 +85,13 @@ const resolveActiveRenewalCampaign = async (
     };
   }
 
-  const onlineGroupCampaign = await getActiveOnlineGroupCampaign();
+  // HUB-D13 (П9): the renewal sells the cohort of the active campaign, so it is
+  // offered only when the payment would accept that cohort.
+  const onlineGroupSale = await getOnlineGroupSale();
 
   if (
-    !onlineGroupCampaign ||
-    onlineGroupCampaign.regularChatId !== campaign.targetChatId
+    !onlineGroupSale.open ||
+    onlineGroupSale.campaign.regularChatId !== campaign.targetChatId
   ) {
     return {
       campaign: null,

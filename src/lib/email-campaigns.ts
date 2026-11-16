@@ -1,10 +1,6 @@
 import { createHash } from "node:crypto";
 
-import {
-  DEFAULT_SITE_HOME_URL,
-  INSTAGRAM_PROFILE_URL,
-  PERSONAL_TELEGRAM_URL,
-} from "@/constants/links";
+import { DEFAULT_SITE_HOME_URL, SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
   buildCheckoutHref,
   getDefaultProductOffer,
@@ -227,7 +223,14 @@ const normalizeSiteOrigin = (value: string) => {
   }
 };
 
-const getFirstTouchCheckoutUrl = () => {
+// The locale segment sets the checkout language (the site keeps no prefix and turns
+// /pl/payment into /payment with a PL cookie); without it an EN or PL lead could land
+// on a checkout in another language.
+const getFirstTouchCheckoutUrl = (locale: string) => {
+  const normalizedLocale = locale.trim().toLowerCase().slice(0, 2);
+  const localeSegment = ["en", "pl", "ru"].includes(normalizedLocale)
+    ? `/${normalizedLocale}`
+    : "";
   const product = SELLABLE_PRODUCTS["first-touch"];
   const offer = getDefaultProductOffer(product);
   const checkoutHref = buildCheckoutHref({
@@ -235,7 +238,7 @@ const getFirstTouchCheckoutUrl = () => {
     productId: product.id,
   });
 
-  return `${normalizeSiteOrigin(SITE_HOME_URL)}${checkoutHref}`;
+  return `${normalizeSiteOrigin(SITE_HOME_URL)}${localeSegment}${checkoutHref}`;
 };
 
 const getFirstTouchEmailCopy = (locale: string) => {
@@ -246,8 +249,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
       button: "Go to payment",
       contactIntro:
         "If you have any questions, your plans change, or you are not sure which step to take next, message us and we will help.",
-      contactInstagramButton: "Message on Instagram",
-      contactTelegramButton: "Message on Telegram",
+      contactTelegramButton: "Message support",
       description: [
         "First Touch is a beginner course for those who have never danced but want to learn body awareness, confidence and movement.",
         "Inside the course we work on basic technique, footwork, emotions, and by the end you will learn your first choreography.",
@@ -270,8 +272,7 @@ const getFirstTouchEmailCopy = (locale: string) => {
       button: "Przejdź do płatności",
       contactIntro:
         "Jeśli masz pytania, zmieniły Ci się plany albo nie wiesz, jaki jest kolejny krok, napisz do nas — pomożemy.",
-      contactInstagramButton: "Napisz na Instagramie",
-      contactTelegramButton: "Napisz na Telegramie",
+      contactTelegramButton: "Napisz do wsparcia",
       description: [
         "First Touch to kurs dla początkujących osób, które nigdy nie tańczyły, ale chcą nauczyć się czucia ciała, pewności siebie i ruchu.",
         "Na kursie pracujemy nad bazową techniką, stopami i emocjami, a na końcu poznasz swoją pierwszą choreografię.",
@@ -292,9 +293,8 @@ const getFirstTouchEmailCopy = (locale: string) => {
   return {
     button: "Перейти к оплате",
     contactIntro:
-      "Если есть вопросы, изменились планы или ты не уверена в следующем шаге, напиши нам — поможем.",
-    contactInstagramButton: "Написать в Instagram",
-    contactTelegramButton: "Написать в Telegram",
+      "Если есть вопросы, изменились планы или есть сомнения насчёт следующего шага, напиши нам — поможем.",
+    contactTelegramButton: "Написать в поддержку",
     description: [
       "First Touch — курс для тех, кто никогда не танцевал, но хочет научиться чувствовать тело, уверенность и движение.",
       "На курсе мы работаем над базовой техникой, стопами и эмоциями, а в конце ты выучишь свою первую хореографию.",
@@ -314,25 +314,23 @@ const getFirstTouchEmailCopy = (locale: string) => {
 
 const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadRecord) => {
   const copy = getFirstTouchEmailCopy(lead.locale);
-  const checkoutUrl = getFirstTouchCheckoutUrl();
+  const checkoutUrl = getFirstTouchCheckoutUrl(lead.locale);
   const safeCheckoutUrl = escapeHtml(checkoutUrl);
   const safeTitle = escapeHtml(copy.title);
   const safeIntro = escapeHtml(copy.intro);
   const safeButton = escapeHtml(copy.button);
   const safeContactIntro = escapeHtml(copy.contactIntro);
-  const safeContactInstagramButton = escapeHtml(copy.contactInstagramButton);
   const safeContactTelegramButton = escapeHtml(copy.contactTelegramButton);
   const safeDescription = copy.description.map((item) => escapeHtml(item));
-  const safeInstagramUrl = escapeHtml(INSTAGRAM_PROFILE_URL);
   const safeStepsTitle = escapeHtml(copy.stepsTitle);
   const safeSteps = copy.steps.map((item) => escapeHtml(item));
-  const safeTelegramUrl = escapeHtml(PERSONAL_TELEGRAM_URL);
+  const safeTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
 
   return {
     html: `
       <div style="margin:0;padding:32px 12px;background:#f3f2ef;font-family:Arial,'Helvetica Neue',Helvetica,sans-serif;color:#121212;">
         <div style="max-width:620px;margin:0 auto;background:#ffffff;border:1px solid rgba(18,18,18,0.08);border-radius:24px;padding:32px;">
-          <p style="margin:0 0 10px 0;font-size:12px;line-height:18px;letter-spacing:0.1em;text-transform:uppercase;color:#7c0002;font-weight:700;">Frame Up Strip</p>
+          <p style="margin:0 0 10px 0;font-size:12px;line-height:18px;letter-spacing:0.1em;text-transform:uppercase;color:#7c0002;font-weight:700;">Anna Strok · Frame Up Strip</p>
           <h1 style="margin:0 0 12px 0;font-size:28px;line-height:34px;font-weight:700;color:#121212;">${safeTitle}</h1>
           <p style="margin:0 0 18px 0;font-size:15px;line-height:24px;color:#444444;">${safeIntro}</p>
           ${safeDescription
@@ -348,8 +346,7 @@ const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadRecord) => {
           <a href="${safeCheckoutUrl}" style="display:inline-block;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">${safeButton}</a>
           <p style="margin:28px 0 12px 0;font-size:15px;line-height:24px;color:#444444;">${safeContactIntro}</p>
           <div style="display:block;margin:0;">
-            <a href="${safeTelegramUrl}" style="display:inline-block;margin:0 8px 8px 0;padding:11px 18px;border-radius:999px;background:#ffffff;color:#7c0002;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">${safeContactTelegramButton}</a>
-            <a href="${safeInstagramUrl}" style="display:inline-block;margin:0 0 8px 0;padding:11px 18px;border-radius:999px;background:#ffffff;color:#7c0002;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">${safeContactInstagramButton}</a>
+            <a href="${safeTelegramUrl}" style="display:inline-block;margin:0 0 8px 0;padding:11px 18px;border-radius:999px;background:#ffffff;color:#7c0002;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">${safeContactTelegramButton}</a>
           </div>
         </div>
       </div>
@@ -368,8 +365,7 @@ const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadRecord) => {
       checkoutUrl,
       "",
       copy.contactIntro,
-      `${copy.contactTelegramButton}: ${PERSONAL_TELEGRAM_URL}`,
-      `${copy.contactInstagramButton}: ${INSTAGRAM_PROFILE_URL}`,
+      `${copy.contactTelegramButton}: ${SUPPORT_TELEGRAM_URL}`,
     ].join("\n"),
   };
 };

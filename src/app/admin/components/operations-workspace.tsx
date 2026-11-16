@@ -2,11 +2,11 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
-  LoaderCircle,
   RefreshCw,
   RotateCcw,
   TriangleAlert,
 } from "lucide-react";
+import type { ReactNode } from "react";
 
 import type {
   OperationsQueueStatus,
@@ -17,47 +17,36 @@ import type {
 } from "../lib/admin.types";
 import { formatDateTime } from "../lib/admin.utils";
 import {
-  BroadcastActionButton,
-  CardEntityName,
-  HealthBanner,
-  HealthBannerBody,
-  HealthBannerText,
-  HealthBannerTitle,
-  IconActionButton,
-  JournalEmptyState,
-  JournalSkeletonCard,
-  JournalSkeletonList,
-  MonoMeta,
-  RecentLinkCard,
-  RecentLinkHeader,
-  RecentLinkMeta,
-  SalesStatusBadge,
-  SkeletonLine,
-  StatusText,
-  SurfaceCard,
-  SurfaceDescription,
-  SurfaceHeaderRow,
-  SurfaceTitle,
+  ItemCard,
+  ItemHead,
+  ItemMeta,
+  LinkCaption,
   SystemAccordion,
   SystemBody,
-  SystemBodyNote,
-  SystemDetail,
   SystemInfo,
   SystemList,
-  SystemName,
   SystemRow,
   SystemRowStatic,
   SystemSummaryEnd,
-  TechDetailRow,
   TechDetails,
-  WorkspaceStack,
-} from "../page.styles";
-import { CopyableLink } from "./copyable-link";
+} from "../styles/operations.styles";
+import type { AdminTone } from "../styles/tokens.styles";
+import { CopyField } from "../ui/copy";
+import { StatusLine } from "../ui/forms";
+import {
+  AdminButton,
+  Badge,
+  Callout,
+  EmptyState,
+  Mono,
+  Panel,
+  Skeleton,
+  Stack,
+} from "../ui/primitives";
+import { CellPrimary, CellSecondary, DataTable, TableScroller } from "../ui/table";
 
 type OperationsWorkspaceProps = {
-  copyingUrl: string;
   isLoading: boolean;
-  onCopy: (link: string) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
   onReissueAccess: (paymentIntentId: string) => void | Promise<void>;
   onReplay: (queue: "inbox" | "outbox", key: string) => void | Promise<void>;
@@ -91,13 +80,10 @@ type SystemHealth = {
   state: SystemState;
 };
 
-const SYSTEM_BADGES: Record<
-  SystemState,
-  { label: string; state: "blocked" | "closed" | "open" }
-> = {
-  alert: { label: "Сбой", state: "closed" },
-  ok: { label: "Работает", state: "open" },
-  warn: { label: "Внимание", state: "blocked" },
+const SYSTEM_BADGES: Record<SystemState, { label: string; tone: AdminTone }> = {
+  alert: { label: "Сбой", tone: "danger" },
+  ok: { label: "Работает", tone: "success" },
+  warn: { label: "Внимание", tone: "warning" },
 };
 
 const OUTBOX_KIND_LABELS: Record<string, string> = {
@@ -106,16 +92,21 @@ const OUTBOX_KIND_LABELS: Record<string, string> = {
   monthly_report_delivery: "Месячный отчет",
   polish_terminal_reminder: "Напоминание о польских продажах",
   choreo_access_expiry_reminder: "Окончание доступа к разбору",
+  cohort_closure_post: "Пост о закрытии потока",
+  cohort_grace_reminder: "Напоминание об отсрочке хаба Plus",
+  hub_expiry_reminder: "Напоминание о конце хаба",
+  hub_period_start_invite: "Ссылка в хаб в день начала",
+  online_group_previous_chat_removal: "Удаление из чата прошлого потока",
   purchase_success_email: "Письмо о покупке",
   telegram_access_delivery: "Выдача Telegram-доступа",
 };
 
 const ENTITLEMENT_STATUS_META: Record<
   ProblemAccessEntitlement["status"],
-  { label: string; state: "blocked" | "closed" }
+  { label: string; tone: AdminTone }
 > = {
-  link_failed: { label: "Ссылка не создалась", state: "closed" },
-  manual_pending: { label: "Ждет ручной выдачи", state: "blocked" },
+  link_failed: { label: "Ссылка не создалась", tone: "danger" },
+  manual_pending: { label: "Ждет ручной выдачи", tone: "warning" },
 };
 
 // Fresh queue items clear themselves within seconds; only items older than
@@ -183,9 +174,9 @@ const buildQueueSystem = ({
         : "ok";
   const detail =
     state === "alert"
-      ? `${problemNoun}: ${Math.max(queue.deadLetters, deadLetters.length)}. Разверни строку, чтобы повторить доставку.`
+      ? `${problemNoun}: ${Math.max(queue.deadLetters, deadLetters.length)}. Ниже можно повторить доставку.`
       : notes.length > 0
-        ? `Есть ожидающие задачи. Разверни строку, чтобы посмотреть детали.`
+        ? "Есть ожидающие задачи. Разверни строку, чтобы посмотреть детали."
         : queue.ready > 0 || queue.working > 0
           ? `Сейчас в обработке: ${queue.ready + queue.working}. Вмешательство не нужно.`
           : "Очередь пуста, все обработано.";
@@ -232,7 +223,7 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
     deadLetters: [],
     detail:
       linkFailedCount > 0
-        ? `Ссылка не создалась: ${linkFailedCount}. Разверни строку, чтобы перевыпустить.`
+        ? `Ссылка не создалась: ${linkFailedCount}. Ниже можно перевыпустить.`
         : manualPendingCount > 0
           ? `Ждут ручной выдачи: ${manualPendingCount}. Разверни строку, чтобы посмотреть кому.`
           : snapshot.access.pending > 0
@@ -275,7 +266,7 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
       notes:
         failedReports > 0
           ? [
-              "Открой вкладку «Продажи», выбери нужный месяц и нажми «Отправить на почту» — это создаст свежую доставку отчета взамен упавшей.",
+              "Открой раздел «Покупки», выбери нужный месяц и нажми «Отправить на почту» — это создаст свежую доставку отчета взамен упавшей.",
             ]
           : [],
       state: failedReports > 0 ? "alert" : "ok",
@@ -283,22 +274,102 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
   ];
 };
 
-const OperationsSkeleton = () => (
-  <JournalSkeletonList>
-    {Array.from({ length: 3 }, (_, index) => (
-      <JournalSkeletonCard key={`operations-skeleton-${index}`}>
-        <SkeletonLine $width="42%" />
-        <SkeletonLine $width="86%" />
-        <SkeletonLine $height="32px" $width="100%" />
-      </JournalSkeletonCard>
+const BANNER: Record<SystemState, { icon: ReactNode; title: string; tone: AdminTone }> = {
+  alert: {
+    icon: <CircleAlert aria-hidden />,
+    title: "Есть сбои — нужно вмешаться",
+    tone: "danger",
+  },
+  ok: {
+    icon: <CircleCheck aria-hidden />,
+    title: "Все системы работают штатно",
+    tone: "success",
+  },
+  warn: {
+    icon: <TriangleAlert aria-hidden />,
+    title: "Работает, но есть ожидающие задачи",
+    tone: "warning",
+  },
+};
+
+const ReissuedLinks = ({ links }: { links: ReissuedAccessLink[] }) => (
+  <Stack $gap={8}>
+    {links.map((link) => (
+      <div key={link.accessKey}>
+        <CopyField label={link.label || "Ссылка"} value={link.accessUrl} />
+        <LinkCaption>
+          {link.label}
+          {link.tokenExpiresAt
+            ? ` · действует до ${formatDateTime(link.tokenExpiresAt)}`
+            : ""}
+        </LinkCaption>
+      </div>
     ))}
-  </JournalSkeletonList>
+  </Stack>
+);
+
+const DeadLetterTable = ({
+  entries,
+  onReplay,
+  replayingKey,
+}: {
+  entries: DeadLetterEntry[];
+  onReplay: OperationsWorkspaceProps["onReplay"];
+  replayingKey: string;
+}) => (
+  <TableScroller>
+    <DataTable>
+      <thead>
+        <tr>
+          <th scope="col">Задача</th>
+          <th scope="col">Ошибка</th>
+          <th scope="col">Упала</th>
+          <th scope="col">Попыток</th>
+          <th scope="col" aria-label="Действие" />
+        </tr>
+      </thead>
+      <tbody>
+        {entries.map((entry) => {
+          const isReplaying = replayingKey === entry.itemKey;
+          return (
+            <tr key={`${entry.queue}-${entry.itemKey}`}>
+              <td data-label="Задача">
+                <CellPrimary>{entry.taskLabel}</CellPrimary>
+                <Mono>{entry.taskMeta}</Mono>
+              </td>
+              <td data-label="Ошибка">
+                <CellSecondary>
+                  {entry.errorCode || "неизвестно"}
+                  {entry.errorMessage ? ` — ${entry.errorMessage}` : ""}
+                </CellSecondary>
+              </td>
+              <td data-label="Упала">
+                {entry.deadLetteredAt ? formatDateTime(entry.deadLetteredAt) : "—"}
+              </td>
+              <td data-label="Попыток">
+                <Badge $tone="danger">{entry.attemptCount}</Badge>
+              </td>
+              <td data-actions>
+                <AdminButton
+                  size="sm"
+                  icon={<RotateCcw aria-hidden />}
+                  loading={isReplaying}
+                  disabled={Boolean(replayingKey) && !isReplaying}
+                  onClick={() => void onReplay(entry.queue, entry.itemKey)}
+                >
+                  {isReplaying ? "Повторяю…" : "Повторить"}
+                </AdminButton>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </DataTable>
+  </TableScroller>
 );
 
 export const OperationsWorkspace = ({
-  copyingUrl,
   isLoading,
-  onCopy,
   onRefresh,
   onReissueAccess,
   onReplay,
@@ -309,36 +380,35 @@ export const OperationsWorkspace = ({
   status,
 }: OperationsWorkspaceProps) => {
   const refreshButton = (
-    <IconActionButton
-      type="button"
-      onClick={onRefresh}
-      disabled={isLoading}
-      $isLoading={isLoading}
-      aria-label="Обновить статус"
-      title="Обновить статус"
+    <AdminButton
+      size="sm"
+      icon={<RefreshCw aria-hidden />}
+      loading={isLoading}
+      onClick={() => void onRefresh()}
     >
-      {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-    </IconActionButton>
+      Обновить
+    </AdminButton>
   );
 
   if (!snapshot) {
     return (
-      <WorkspaceStack>
-        <SurfaceCard>
-          <SurfaceHeaderRow>
-            <SurfaceTitle>Статус систем</SurfaceTitle>
-            {refreshButton}
-          </SurfaceHeaderRow>
+      <Stack $gap={16}>
+        <StatusLine status={status} />
+        <Panel title="Статус систем" actions={refreshButton}>
           {isLoading ? (
-            <OperationsSkeleton />
+            <Stack $gap={12}>
+              <Skeleton $height={44} />
+              <Skeleton $height={44} />
+              <Skeleton $height={44} />
+            </Stack>
           ) : (
-            <JournalEmptyState>
-              Статус пока не загружен. Нажми «Обновить».
-            </JournalEmptyState>
+            <EmptyState
+              title="Статус пока не загружен"
+              text="Нажми «Обновить», чтобы проверить оплаты, письма и доступы."
+            />
           )}
-          {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-        </SurfaceCard>
-      </WorkspaceStack>
+        </Panel>
+      </Stack>
     );
   }
 
@@ -354,50 +424,29 @@ export const OperationsWorkspace = ({
   );
   const alertSystems = systems.filter((system) => system.state === "alert");
   const warnSystems = systems.filter((system) => system.state === "warn");
-  const bannerTone: SystemState =
+  const bannerState: SystemState =
     alertSystems.length > 0 ? "alert" : warnSystems.length > 0 ? "warn" : "ok";
-  const bannerTitle =
-    bannerTone === "alert"
-      ? "Есть сбои — нужно вмешаться"
-      : bannerTone === "warn"
-        ? "Работает, но есть ожидающие задачи"
-        : "Все системы работают штатно";
+  const banner = BANNER[bannerState];
   const bannerText =
-    bannerTone === "ok"
+    bannerState === "ok"
       ? "Оплаты обрабатываются, письма доставлены, доступы выданы."
       : `${[...alertSystems, ...warnSystems]
           .map((system) => system.name)
-          .join(", ")} — разверни строку ниже, чтобы увидеть проблему и починить.`;
+          .join(", ")} — подробности и починка в строке ниже.`;
 
   return (
-    <WorkspaceStack>
-      <HealthBanner $tone={bannerTone}>
-        <HealthBannerBody>
-          {bannerTone === "ok" ? (
-            <CircleCheck aria-hidden />
-          ) : bannerTone === "warn" ? (
-            <TriangleAlert aria-hidden />
-          ) : (
-            <CircleAlert aria-hidden />
-          )}
-          <div>
-            <HealthBannerTitle>{bannerTitle}</HealthBannerTitle>
-            <HealthBannerText>
-              {bannerText} Снимок от {formatDateTime(snapshot.capturedAt)}.
-            </HealthBannerText>
-          </div>
-        </HealthBannerBody>
-        {refreshButton}
-      </HealthBanner>
+    <Stack $gap={16}>
+      <Callout tone={banner.tone} icon={banner.icon} title={banner.title}>
+        {bannerText} Снимок от {formatDateTime(snapshot.capturedAt)}.
+      </Callout>
 
-      {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
+      <StatusLine status={status} />
 
-      <SurfaceCard>
-        <SurfaceTitle>Системы</SurfaceTitle>
-        <SurfaceDescription>
-          Строку с пометкой «Сбой» или «Внимание» можно развернуть: внутри — что случилось
-          и кнопка починки, если она возможна.
-        </SurfaceDescription>
+      <Panel
+        title="Системы"
+        description="Строки со сбоем раскрыты сразу; «Внимание» раскрывается по нажатию. Внутри — что случилось и кнопка починки, если она возможна."
+        actions={refreshButton}
+      >
         <SystemList>
           {systems.map((system) => {
             const badge = SYSTEM_BADGES[system.state];
@@ -411,12 +460,12 @@ export const OperationsWorkspace = ({
             const header = (
               <>
                 <SystemInfo>
-                  <SystemName>{system.name}</SystemName>
-                  <SystemDetail>{system.detail}</SystemDetail>
+                  <strong>{system.name}</strong>
+                  <span>{system.detail}</span>
                 </SystemInfo>
                 <SystemSummaryEnd>
-                  <SalesStatusBadge $state={badge.state}>{badge.label}</SalesStatusBadge>
-                  {hasExpandableContent && <ChevronRight aria-hidden />}
+                  <Badge $tone={badge.tone}>{badge.label}</Badge>
+                  {hasExpandableContent && <ChevronRight aria-hidden data-chevron />}
                 </SystemSummaryEnd>
               </>
             );
@@ -431,49 +480,22 @@ export const OperationsWorkspace = ({
 
             return (
               <SystemRow key={system.key}>
-                <SystemAccordion>
+                <SystemAccordion open={system.state === "alert" || showsHealedLinks}>
                   <summary>{header}</summary>
                   <SystemBody>
                     {system.notes.map((note) => (
-                      <SystemBodyNote key={note}>{note}</SystemBodyNote>
+                      <Callout key={note} tone="info">
+                        {note}
+                      </Callout>
                     ))}
 
-                    {system.deadLetters.map((entry) => {
-                      const isReplaying = replayingKey === entry.itemKey;
-
-                      return (
-                        <RecentLinkCard key={`${entry.queue}-${entry.itemKey}`}>
-                          <RecentLinkHeader>
-                            <CardEntityName>{entry.taskLabel}</CardEntityName>
-                            <SalesStatusBadge $state="closed">
-                              Попыток: {entry.attemptCount}
-                            </SalesStatusBadge>
-                          </RecentLinkHeader>
-                          <RecentLinkMeta>
-                            Ошибка: {entry.errorCode || "неизвестно"}
-                            {entry.errorMessage ? ` — ${entry.errorMessage}` : ""}
-                          </RecentLinkMeta>
-                          {entry.deadLetteredAt && (
-                            <RecentLinkMeta>
-                              Упала: {formatDateTime(entry.deadLetteredAt)}
-                            </RecentLinkMeta>
-                          )}
-                          <MonoMeta>{entry.taskMeta}</MonoMeta>
-                          <BroadcastActionButton
-                            type="button"
-                            onClick={() => onReplay(entry.queue, entry.itemKey)}
-                            disabled={Boolean(replayingKey)}
-                          >
-                            {isReplaying ? (
-                              <LoaderCircle aria-hidden />
-                            ) : (
-                              <RotateCcw aria-hidden />
-                            )}
-                            {isReplaying ? "Повторяю..." : "Повторить доставку"}
-                          </BroadcastActionButton>
-                        </RecentLinkCard>
-                      );
-                    })}
+                    {system.deadLetters.length > 0 && (
+                      <DeadLetterTable
+                        entries={system.deadLetters}
+                        onReplay={onReplay}
+                        replayingKey={replayingKey}
+                      />
+                    )}
 
                     {system.entitlements.map((entitlement) => {
                       const statusMeta = ENTITLEMENT_STATUS_META[entitlement.status];
@@ -482,91 +504,65 @@ export const OperationsWorkspace = ({
                       const links = reissuedLinks[entitlement.paymentIntentId] ?? [];
 
                       return (
-                        <RecentLinkCard key={entitlement.entitlementId}>
-                          <RecentLinkHeader>
-                            <CardEntityName>
+                        <ItemCard key={entitlement.entitlementId}>
+                          <ItemHead>
+                            <strong>
                               {entitlement.customerName ||
                                 entitlement.customerEmail ||
                                 "Без имени"}
-                            </CardEntityName>
-                            <SalesStatusBadge $state={statusMeta.state}>
-                              {statusMeta.label}
-                            </SalesStatusBadge>
-                          </RecentLinkHeader>
+                            </strong>
+                            <Badge $tone={statusMeta.tone}>{statusMeta.label}</Badge>
+                          </ItemHead>
                           {entitlement.customerName && entitlement.customerEmail && (
-                            <RecentLinkMeta>{entitlement.customerEmail}</RecentLinkMeta>
+                            <ItemMeta>{entitlement.customerEmail}</ItemMeta>
                           )}
-                          <RecentLinkMeta>
-                            {entitlement.productTitle || "Покупка"} | Обновлено:{" "}
+                          <ItemMeta>
+                            {entitlement.productTitle || "Покупка"} · обновлено{" "}
                             {formatDateTime(entitlement.updatedAt)}
-                          </RecentLinkMeta>
-                          <MonoMeta>{entitlement.paymentIntentId}</MonoMeta>
+                          </ItemMeta>
+                          <Mono>{entitlement.paymentIntentId}</Mono>
                           {entitlement.status === "link_failed" ? (
-                            <BroadcastActionButton
-                              type="button"
-                              onClick={() => onReissueAccess(entitlement.paymentIntentId)}
-                              disabled={Boolean(reissuingPaymentIntentId)}
-                            >
-                              {isReissuing ? (
-                                <LoaderCircle aria-hidden />
-                              ) : (
-                                <RotateCcw aria-hidden />
-                              )}
-                              {isReissuing ? "Перевыпускаю..." : "Перевыпустить ссылку"}
-                            </BroadcastActionButton>
+                            <div>
+                              <AdminButton
+                                size="sm"
+                                variant="primary"
+                                icon={<RotateCcw aria-hidden />}
+                                loading={isReissuing}
+                                disabled={
+                                  Boolean(reissuingPaymentIntentId) && !isReissuing
+                                }
+                                onClick={() =>
+                                  void onReissueAccess(entitlement.paymentIntentId)
+                                }
+                              >
+                                {isReissuing ? "Перевыпускаю…" : "Перевыпустить ссылку"}
+                              </AdminButton>
+                            </div>
                           ) : (
-                            <RecentLinkMeta>
+                            <ItemMeta>
                               Для этого тарифа доступ выдается вручную — например, через
                               раздел Online Group.
-                            </RecentLinkMeta>
+                            </ItemMeta>
                           )}
-                          {links.map((link) => (
-                            <div key={`${entitlement.entitlementId}-${link.accessKey}`}>
-                              <RecentLinkMeta>
-                                {link.label}
-                                {link.tokenExpiresAt
-                                  ? ` | Действует до: ${formatDateTime(link.tokenExpiresAt)}`
-                                  : ""}
-                              </RecentLinkMeta>
-                              <CopyableLink
-                                isCopying={copyingUrl === link.accessUrl}
-                                link={link.accessUrl}
-                                onCopy={onCopy}
-                              />
-                            </div>
-                          ))}
-                        </RecentLinkCard>
+                          {links.length > 0 && <ReissuedLinks links={links} />}
+                        </ItemCard>
                       );
                     })}
 
                     {showsHealedLinks &&
                       healedReissuedLinks.map(([paymentIntentId, links]) => (
-                        <RecentLinkCard key={`healed-${paymentIntentId}`}>
-                          <RecentLinkHeader>
-                            <CardEntityName>Ссылки перевыпущены</CardEntityName>
-                            <SalesStatusBadge $state="open">Готово</SalesStatusBadge>
-                          </RecentLinkHeader>
-                          <RecentLinkMeta>
+                        <ItemCard key={`healed-${paymentIntentId}`}>
+                          <ItemHead>
+                            <strong>Ссылки перевыпущены</strong>
+                            <Badge $tone="success">Готово</Badge>
+                          </ItemHead>
+                          <ItemMeta>
                             Доступ восстановлен — скопируй ссылки и отправь покупателю
-                            (или переотправь письмо со вкладки «Продажи»).
-                          </RecentLinkMeta>
-                          <MonoMeta>{paymentIntentId}</MonoMeta>
-                          {links.map((link) => (
-                            <div key={`healed-${paymentIntentId}-${link.accessKey}`}>
-                              <RecentLinkMeta>
-                                {link.label}
-                                {link.tokenExpiresAt
-                                  ? ` | Действует до: ${formatDateTime(link.tokenExpiresAt)}`
-                                  : ""}
-                              </RecentLinkMeta>
-                              <CopyableLink
-                                isCopying={copyingUrl === link.accessUrl}
-                                link={link.accessUrl}
-                                onCopy={onCopy}
-                              />
-                            </div>
-                          ))}
-                        </RecentLinkCard>
+                            (или переотправь письмо в разделе «Покупки»).
+                          </ItemMeta>
+                          <Mono>{paymentIntentId}</Mono>
+                          <ReissuedLinks links={links} />
+                        </ItemCard>
                       ))}
                   </SystemBody>
                 </SystemAccordion>
@@ -580,28 +576,30 @@ export const OperationsWorkspace = ({
             <ChevronRight aria-hidden />
             Технические детали
           </summary>
-          <TechDetailRow>
-            <span>Задач в работе прямо сейчас</span>
-            <span>
-              события: {snapshot.inbox.working} · письма: {snapshot.outbox.working}
-            </span>
-          </TechDetailRow>
-          <TechDetailRow>
-            <span>Доставлено не с первой попытки</span>
-            <span>
-              события: {snapshot.inbox.retries} · письма: {snapshot.outbox.retries}
-            </span>
-          </TechDetailRow>
-          <TechDetailRow>
-            <span>Исторические события без подписи (наследие миграции, не влияет)</span>
-            <span>{snapshot.projection.unverifiedEvents}</span>
-          </TechDetailRow>
-          <TechDetailRow>
-            <span>Обработанные события без привязки к покупке</span>
-            <span>{snapshot.projection.unlinkedProcessedEvents}</span>
-          </TechDetailRow>
+          <dl>
+            <div>
+              <dt>Задач в работе прямо сейчас</dt>
+              <dd>
+                события: {snapshot.inbox.working} · письма: {snapshot.outbox.working}
+              </dd>
+            </div>
+            <div>
+              <dt>Доставлено не с первой попытки</dt>
+              <dd>
+                события: {snapshot.inbox.retries} · письма: {snapshot.outbox.retries}
+              </dd>
+            </div>
+            <div>
+              <dt>Исторические события без подписи (наследие миграции, не влияет)</dt>
+              <dd>{snapshot.projection.unverifiedEvents}</dd>
+            </div>
+            <div>
+              <dt>Обработанные события без привязки к покупке</dt>
+              <dd>{snapshot.projection.unlinkedProcessedEvents}</dd>
+            </div>
+          </dl>
         </TechDetails>
-      </SurfaceCard>
-    </WorkspaceStack>
+      </Panel>
+    </Stack>
   );
 };

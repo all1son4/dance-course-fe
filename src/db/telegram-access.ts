@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 
+import { keepClassifiedAccessPeriod } from "./classified-access";
 import { getDatabase } from "./client";
 import { findPaymentRecordByIntentIdFromDatabase } from "./payment-records";
 import { accessEntitlements, purchases } from "./schema";
@@ -93,7 +94,7 @@ export const updateTelegramAccessInDatabase = async (
         ...set,
       })
       .onConflictDoUpdate({
-        set,
+        set: keepClassifiedAccessPeriod(set),
         target: [accessEntitlements.purchaseId, accessEntitlements.accessKey],
       });
   });

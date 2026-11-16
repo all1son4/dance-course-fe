@@ -229,63 +229,6 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
-  if (!isAdminInviteLinksRequestAuthenticated(request)) {
-    return jsonErrorNoStore("unauthorized", { status: 401 });
-  }
-
-  const requestErrorResponse = getBrowserJsonRequestErrorResponse(
-    request,
-    MAX_RENEWAL_CAMPAIGN_BODY_BYTES,
-  );
-
-  if (requestErrorResponse) {
-    return requestErrorResponse;
-  }
-
-  const rateLimit = await consumeRequestRateLimit({
-    keyPrefix: "admin:renewal-campaigns:archive",
-    limit: 30,
-    onBackendUnavailable: "deny",
-    request,
-    windowMs: 60_000,
-  });
-
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-
-  if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      status: 429,
-    });
-  }
-
-  const { body, errorResponse: bodyErrorResponse } = await parseJsonBody<{
-    slug?: string;
-  }>(request, MAX_RENEWAL_CAMPAIGN_BODY_BYTES);
-
-  if (bodyErrorResponse) {
-    return bodyErrorResponse;
-  }
-  const campaign = body?.slug
-    ? await setRenewalCampaignStatus({
-        slug: body.slug,
-        status: "archived",
-      })
-    : null;
-
-  if (!campaign) {
-    return jsonErrorNoStore("renewal_campaign_not_found", { status: 404 });
-  }
-
-  return jsonNoStore({
-    slug: campaign.slug,
-    status: "archived",
-  });
-}
-
 export async function PATCH(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {
     return jsonErrorNoStore("unauthorized", { status: 401 });
@@ -332,30 +275,37 @@ export async function PATCH(request: Request) {
     return jsonErrorNoStore("invalid_request_body", { status: 400 });
   }
 
-  if (body.active) {
-    const onlineGroupCampaign = await getActiveOnlineGroupCampaign();
-    const campaign = await getRenewalCampaignBySlug(body.slug);
+  // A database error answers with the route's own error, not a bare 500 page the
+  // admin would read as "network error".
+  try {
+    if (body.active) {
+      const onlineGroupCampaign = await getActiveOnlineGroupCampaign();
+      const campaign = await getRenewalCampaignBySlug(body.slug);
 
-    if (
-      !campaign ||
-      !onlineGroupCampaign ||
-      campaign.targetChatId !== onlineGroupCampaign.regularChatId
-    ) {
-      return jsonErrorNoStore("renewal_campaign_inactive", { status: 409 });
+      if (
+        !campaign ||
+        !onlineGroupCampaign ||
+        campaign.targetChatId !== onlineGroupCampaign.regularChatId
+      ) {
+        return jsonErrorNoStore("renewal_campaign_inactive", { status: 409 });
+      }
     }
+
+    const campaign = await setRenewalCampaignStatus({
+      slug: body.slug,
+      status: body.active ? "active" : "archived",
+    });
+
+    if (!campaign) {
+      return jsonErrorNoStore("renewal_campaign_not_found", { status: 404 });
+    }
+
+    return jsonNoStore({
+      slug: campaign.slug,
+      status: campaign.status,
+    });
+  } catch (error) {
+    logSafeError("Failed to switch a renewal campaign", error);
+    return jsonErrorNoStore("renewal_campaign_failed", { status: 500 });
   }
-
-  const campaign = await setRenewalCampaignStatus({
-    slug: body.slug,
-    status: body.active ? "active" : "archived",
-  });
-
-  if (!campaign) {
-    return jsonErrorNoStore("renewal_campaign_not_found", { status: 404 });
-  }
-
-  return jsonNoStore({
-    slug: campaign.slug,
-    status: campaign.status,
-  });
 }

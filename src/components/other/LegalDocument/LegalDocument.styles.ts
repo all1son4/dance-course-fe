@@ -140,11 +140,7 @@ export const LegalItem = styled.section`
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  scroll-margin-top: calc(var(--header-clearance) + var(--safe-area-top, 0px));
-
-  @media (max-width: 767px) {
-    scroll-margin-top: calc(var(--header-clearance-mobile) + var(--safe-area-top, 0px));
-  }
+  /* The header offset comes from the page's scroll-padding-top (globals.css). */
 `;
 
 export const LegalItemTitle = styled.p`

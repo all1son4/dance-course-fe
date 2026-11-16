@@ -6,15 +6,18 @@ import {
 } from "@/lib/business-operation-outbox";
 import { enqueueDueChoreoAccessReminders } from "@/lib/choreo-access-reminder-delivery";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import { enqueueDueHubExpiryReminders } from "@/lib/hub-expiry-reminder-delivery";
+import { enqueueStartedHubPeriodInvites } from "@/lib/hub-period-start-invite-delivery";
 import {
   generateAndDeliverMonthlySalesReport,
   getScheduledMonthlySalesReportPeriod,
   toMonthlySalesReportDeliveryResponse,
 } from "@/lib/monthly-sales-report";
+import { enqueueDueCohortGraceReminders } from "@/lib/online-group/cohort-admin";
 import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
 import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
-import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-access";
+import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-hub-expiry";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -47,6 +50,18 @@ export async function GET(request: Request) {
     ReturnType<typeof enqueueDueChoreoAccessReminders>
   > | null = null;
   let choreoRemindersError: string | null = null;
+  let hubStartInvitesResult: Awaited<
+    ReturnType<typeof enqueueStartedHubPeriodInvites>
+  > | null = null;
+  let hubStartInvitesError: string | null = null;
+  let hubRemindersResult: Awaited<
+    ReturnType<typeof enqueueDueHubExpiryReminders>
+  > | null = null;
+  let hubRemindersError: string | null = null;
+  let cohortRemindersResult: Awaited<
+    ReturnType<typeof enqueueDueCohortGraceReminders>
+  > | null = null;
+  let cohortRemindersError: string | null = null;
   let businessJobsError: string | null = null;
   let businessJobsResult: Awaited<
     ReturnType<typeof runBusinessOperationOutboxJobs>
@@ -125,10 +140,36 @@ export async function GET(request: Request) {
   try {
     choreoRemindersResult = await enqueueDueChoreoAccessReminders(now);
   } catch (error) {
-    console.error("Daily maintenance: failed to schedule choreography access reminders", {
-      errorName: error instanceof Error ? error.name : "UnknownError",
-    });
+    logSafeError(
+      "Daily maintenance: failed to schedule choreography access reminders",
+      error,
+    );
     choreoRemindersError = "choreo_access_reminders_failed";
+  }
+
+  // HUB-D37: invites for paid Hub periods that began today; the business outbox run
+  // below creates and mails them.
+  try {
+    hubStartInvitesResult = await enqueueStartedHubPeriodInvites(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to schedule Hub start invites", error);
+    hubStartInvitesError = "hub_start_invites_failed";
+  }
+
+  // HUB-06: emails 7 and 3 days before a self-paid Hub ends.
+  try {
+    hubRemindersResult = await enqueueDueHubExpiryReminders(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to schedule Hub reminders", error);
+    hubRemindersError = "hub_reminders_failed";
+  }
+
+  // HUB-D29: the bot's reminder in a closed cohort's chat a day before the Plus Hub ends.
+  try {
+    cohortRemindersResult = await enqueueDueCohortGraceReminders(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to schedule cohort reminders", error);
+    cohortRemindersError = "cohort_reminders_failed";
   }
 
   try {
@@ -160,6 +201,9 @@ export async function GET(request: Request) {
   const hasFailure = Boolean(
     accessRevocationError ||
     choreoRemindersError ||
+    hubStartInvitesError ||
+    hubRemindersError ||
+    cohortRemindersError ||
     businessJobsError ||
     monthlySalesReportError ||
     polishTerminalReminderError ||
@@ -172,6 +216,12 @@ export async function GET(request: Request) {
       accessRevocationResult,
       choreoRemindersError,
       choreoRemindersResult,
+      hubStartInvitesError,
+      hubStartInvitesResult,
+      hubRemindersError,
+      hubRemindersResult,
+      cohortRemindersError,
+      cohortRemindersResult,
       businessJobsError,
       businessJobsResult,
       monthlySalesReportError,

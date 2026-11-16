@@ -11,9 +11,12 @@ export const formatEmailDate = (
   const dateLocale = { ru: "ru-RU", en: "en-GB", pl: "pl-PL" }[
     resolveSellableProductsLocale(locale)
   ];
+  // Russian adds «г.» after the year; a sentence ending in a date then reads «г..».
   return new Intl.DateTimeFormat(dateLocale, {
     dateStyle: "long",
     ...(includeTime ? { timeStyle: "short" as const } : {}),
     timeZone: "Europe/Warsaw",
-  }).format(date);
+  })
+    .format(date)
+    .replace(/\s?г\./u, "");
 };

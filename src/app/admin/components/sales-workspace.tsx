@@ -1,4 +1,5 @@
-import { LoaderCircle, RefreshCw } from "lucide-react";
+import { ChevronRight, RefreshCw, Store } from "lucide-react";
+import { useState } from "react";
 
 import { CHOREO_CATALOGUE_PRODUCT_CODES } from "@/constants/sellable-products";
 
@@ -8,29 +9,26 @@ import type {
   StatusMessage,
 } from "../lib/admin.types";
 import {
-  IconActionButton,
-  JournalEmptyState,
-  JournalSkeletonCard,
-  JournalSkeletonList,
-  SalesArchive,
-  SalesOfferList,
-  SalesProductMeta,
-  SalesProductName,
-  SalesStatusBadge,
-  SalesTable,
-  SalesTableWrap,
-  SalesToggle,
-  SalesToggleCell,
-  SalesToggleHint,
-  SalesToggleLabel,
-  SalesWorkspaceLayout,
-  SkeletonLine,
-  StatusText,
-  SurfaceCard,
-  SurfaceDescription,
-  SurfaceHeaderRow,
-  SurfaceTitle,
-} from "../page.styles";
+  CatalogArchive,
+  CatalogTable,
+  OfferList,
+  SalesControl,
+  SalesHint,
+  SalesNote,
+} from "../styles/catalog.styles";
+import type { AdminTone } from "../styles/tokens.styles";
+import { Checkbox, StatusLine, Switch } from "../ui/forms";
+import {
+  AdminButton,
+  Badge,
+  EmptyState,
+  Muted,
+  Panel,
+  Row,
+  Skeleton,
+  Stack,
+} from "../ui/primitives";
+import { CellPrimary, CellSecondary, TableScroller } from "../ui/table";
 
 type SalesWorkspaceProps = {
   activeCampaignTitle: string;
@@ -55,24 +53,26 @@ const PRODUCT_TYPE_LABELS: Record<SalesProductEntry["type"], string> = {
 const isBlockedByMissingCampaign = (product: SalesProductEntry) =>
   product.requiresActiveCampaign && !product.hasActiveCampaign;
 
-const getStatusBadge = (product: SalesProductEntry) => {
+const getStatusBadge = (
+  product: SalesProductEntry,
+): { label: string; tone: AdminTone } => {
   if (product.missingLessonLanguages.length > 0) {
-    return { label: "Нужны каналы", state: "blocked" as const };
+    return { label: "Нужны каналы", tone: "warning" };
   }
 
   if (product.salesEnabled && product.offers.some((offer) => offer.salesEnabled)) {
-    return { label: "Продается", state: "open" as const };
+    return { label: "Продаётся", tone: "success" };
   }
 
   if (product.salesEnabled) {
-    return { label: "Тарифы выключены", state: "closed" as const };
+    return { label: "Тарифы выключены", tone: "warning" };
   }
 
   if (isBlockedByMissingCampaign(product)) {
-    return { label: "Нужен поток", state: "blocked" as const };
+    return { label: "Нужен поток", tone: "warning" };
   }
 
-  return { label: "Закрыто", state: "closed" as const };
+  return { label: "Закрыто", tone: "neutral" };
 };
 
 const getCampaignMeta = (product: SalesProductEntry, activeCampaignTitle: string) => {
@@ -82,26 +82,31 @@ const getCampaignMeta = (product: SalesProductEntry, activeCampaignTitle: string
 
   return product.hasActiveCampaign
     ? `Активный поток: ${activeCampaignTitle || "без названия"}`
-    : "Поток не запущен";
+    : product.campaignIssue || "Поток не запущен";
 };
 
 const SalesProductsTable = ({
   activeCampaignTitle,
+  label,
+  movedId,
+  onSwitch,
   onToggle,
   products,
   updatingProductId,
-  label = "Доступность продаж по продуктам",
 }: Pick<
   SalesWorkspaceProps,
   "activeCampaignTitle" | "onToggle" | "products" | "updatingProductId"
-> & { label?: string }) => (
-  <SalesTableWrap>
-    <SalesTable aria-label={label}>
+> & {
+  label: string;
+  movedId: string;
+  onSwitch: (product: SalesProductEntry) => void;
+}) => (
+  <TableScroller>
+    <CatalogTable aria-label={label}>
       <thead>
         <tr>
           <th>Продукт</th>
           <th>Тарифы</th>
-          <th>Статус</th>
           <th>Продажи</th>
         </tr>
       </thead>
@@ -117,96 +122,82 @@ const SalesProductsTable = ({
               !product.salesEnabled);
 
           return (
-            <tr key={product.productId}>
+            <tr
+              key={product.productId}
+              data-moved={movedId === product.productId || undefined}
+            >
               <td data-label="Продукт">
                 <span>
-                  <SalesProductName>{product.title}</SalesProductName>
-                  <SalesProductMeta>{PRODUCT_TYPE_LABELS[product.type]}</SalesProductMeta>
-                  {campaignMeta && <SalesProductMeta>{campaignMeta}</SalesProductMeta>}
+                  <CellPrimary>{product.title}</CellPrimary>
+                  <CellSecondary>{PRODUCT_TYPE_LABELS[product.type]}</CellSecondary>
+                  {campaignMeta && <CellSecondary>{campaignMeta}</CellSecondary>}
                 </span>
               </td>
               <td data-label="Тарифы">
-                <SalesOfferList>
+                <OfferList>
                   {product.offers.map((offer) => (
                     <li key={offer.offerId}>
-                      <span>
-                        {/* A lone tariff has no name worth showing: it is just the price. */}
+                      {product.type === "choreo" ? (
+                        <Checkbox
+                          checked={offer.salesEnabled}
+                          disabled={Boolean(updatingProductId)}
+                          label={offer.label}
+                          onChange={() => void onToggle(product, offer)}
+                        />
+                      ) : (
+                        // A lone tariff has no name worth showing: it is just the price.
                         <span>{product.offers.length > 1 ? offer.label : "Цена"}</span>
-                        <strong>{offer.price}</strong>
-                      </span>
-                      {product.type === "choreo" && (
-                        <SalesToggleCell>
-                          <SalesToggle
-                            type="button"
-                            role="switch"
-                            aria-checked={offer.salesEnabled}
-                            aria-label={`Тариф «${offer.label}» — «${product.title}»`}
-                            $isOn={offer.salesEnabled}
-                            disabled={Boolean(updatingProductId)}
-                            onClick={() => onToggle(product, offer)}
-                          />
-                          <SalesToggleLabel $isOn={offer.salesEnabled}>
-                            {offer.salesEnabled ? "Включён" : "Выключен"}
-                          </SalesToggleLabel>
-                        </SalesToggleCell>
                       )}
+                      <strong>{offer.price}</strong>
                     </li>
                   ))}
-                </SalesOfferList>
-              </td>
-              <td data-label="Статус">
-                <SalesStatusBadge $state={badge.state}>{badge.label}</SalesStatusBadge>
+                </OfferList>
               </td>
               <td data-label="Продажи">
-                <SalesToggleCell>
-                  <SalesToggle
-                    type="button"
-                    role="switch"
-                    aria-checked={product.salesEnabled}
-                    aria-label={`Продажи «${product.title}»`}
-                    $isOn={product.salesEnabled}
-                    disabled={isToggleDisabled}
-                    onClick={() => onToggle(product)}
-                  />
-                  <SalesToggleLabel $isOn={product.salesEnabled}>
-                    {isUpdating
-                      ? "Сохраняю..."
-                      : product.salesEnabled
-                        ? "Включены"
-                        : "Выключены"}
-                  </SalesToggleLabel>
-                </SalesToggleCell>
-                {product.type === "choreo" && !product.salesEnabled && (
-                  <SalesProductMeta>Тарифы сохранены; продажи на паузе.</SalesProductMeta>
-                )}
-                {product.salesEnabled &&
-                  !product.offers.some((offer) => offer.salesEnabled) && (
-                    <SalesToggleHint>
-                      Включи хотя бы один тариф для покупки.
-                    </SalesToggleHint>
+                <SalesControl>
+                  <Row $gap={10} $wrap={false}>
+                    <Switch
+                      checked={product.salesEnabled}
+                      disabled={isToggleDisabled}
+                      label={`Продажи «${product.title}»`}
+                      onChange={() => onSwitch(product)}
+                    />
+                    {isUpdating ? (
+                      <Muted>Сохраняю…</Muted>
+                    ) : (
+                      <Badge $tone={badge.tone}>{badge.label}</Badge>
+                    )}
+                  </Row>
+                  {product.type === "choreo" && !product.salesEnabled && (
+                    <SalesNote>Тарифы сохранены; продажи на паузе.</SalesNote>
                   )}
-                {product.missingLessonLanguages.length > 0 && (
-                  <SalesToggleHint>
-                    Настрой Telegram-каналы:{" "}
-                    {product.missingLessonLanguages
-                      .map((language) => language.toUpperCase())
-                      .join(", ")}
-                    .
-                  </SalesToggleHint>
-                )}
-                {isBlocked && !product.salesEnabled && (
-                  <SalesToggleHint>
-                    Запусти поток в разделе Online Group — без него оплату завершить
-                    нельзя.
-                  </SalesToggleHint>
-                )}
+                  {product.salesEnabled &&
+                    !product.offers.some((offer) => offer.salesEnabled) && (
+                      <SalesHint>Включи хотя бы один тариф для покупки.</SalesHint>
+                    )}
+                  {product.missingLessonLanguages.length > 0 && (
+                    <SalesHint>
+                      Настрой Telegram-каналы:{" "}
+                      {product.missingLessonLanguages
+                        .map((language) => language.toUpperCase())
+                        .join(", ")}
+                      .
+                    </SalesHint>
+                  )}
+                  {isBlocked && !product.salesEnabled && (
+                    <SalesHint>
+                      Запусти поток в разделе Online Group — без него оплату завершить
+                      нельзя.
+                    </SalesHint>
+                  )}
+                </SalesControl>
               </td>
             </tr>
           );
         })}
       </tbody>
-    </SalesTable>
-  </SalesTableWrap>
+    </CatalogTable>
+  </TableScroller>
 );
 
 export const SalesWorkspace = ({
@@ -218,80 +209,124 @@ export const SalesWorkspace = ({
   status,
   updatingProductId,
 }: SalesWorkspaceProps) => {
-  const isCurrentChoreo = (product: SalesProductEntry) =>
-    CHOREO_CATALOGUE_PRODUCT_CODES.some((code) => code === product.code);
-  const currentProducts = products
-    .filter((product) => product.type !== "choreo" || isCurrentChoreo(product))
-    .sort(
-      (left, right) => Number(isCurrentChoreo(right)) - Number(isCurrentChoreo(left)),
-    );
-  const otherChoreos = products.filter(
-    (product) => product.type === "choreo" && !isCurrentChoreo(product),
+  const [showClosed, setShowClosed] = useState(false);
+  // The product whose switch was flipped last and what it was before: once the
+  // saved state differs, it has moved to the other group.
+  const [lastSwitched, setLastSwitched] = useState<{ id: string; wasOn: boolean } | null>(
+    null,
   );
 
-  return (
-    <SalesWorkspaceLayout>
-      <SurfaceCard>
-        <SurfaceHeaderRow>
-          <SurfaceTitle>Доступность продаж</SurfaceTitle>
-          <IconActionButton
-            type="button"
-            onClick={onRefresh}
-            disabled={isLoading}
-            $isLoading={isLoading}
-            aria-label="Обновить состояние продаж"
-            title="Обновить состояние продаж"
-          >
-            {isLoading ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-          </IconActionButton>
-        </SurfaceHeaderRow>
-        <SurfaceDescription>
-          Включи продажи продукта и выбери доступные тарифы. Общий переключатель ставит
-          продажи на паузу, сохраняя выбор тарифов и доступы покупателей.
-        </SurfaceDescription>
+  const isCurrentChoreo = (product: SalesProductEntry) =>
+    CHOREO_CATALOGUE_PRODUCT_CODES.some((code) => code === product.code);
+  // Courses and the choreos on the site's catalogue first, older choreos after.
+  const ordered = [...products].sort(
+    (left, right) =>
+      Number(left.type === "choreo" && !isCurrentChoreo(left)) -
+      Number(right.type === "choreo" && !isCurrentChoreo(right)),
+  );
+  const onSale = ordered.filter((product) => product.salesEnabled);
+  const closed = ordered.filter((product) => !product.salesEnabled);
 
+  const moved = lastSwitched
+    ? products.find(
+        (product) =>
+          product.productId === lastSwitched.id &&
+          product.salesEnabled !== lastSwitched.wasOn,
+      )
+    : undefined;
+  const movedId = moved?.productId ?? "";
+
+  const switchProduct = (product: SalesProductEntry) => {
+    setLastSwitched({ id: product.productId, wasOn: product.salesEnabled });
+    void onToggle(product);
+  };
+
+  const tableProps = {
+    activeCampaignTitle,
+    movedId,
+    onSwitch: switchProduct,
+    onToggle,
+    updatingProductId,
+  };
+
+  return (
+    <Panel
+      title="Доступность продаж"
+      description="Включённые продукты — сверху, выключенные свёрнуты ниже. Переключатель переносит продукт между группами."
+      actions={
+        <AdminButton
+          size="sm"
+          icon={<RefreshCw aria-hidden />}
+          loading={isLoading}
+          onClick={() => void onRefresh()}
+        >
+          Обновить
+        </AdminButton>
+      }
+    >
+      <Stack $gap={16}>
         {products.length > 0 ? (
           <>
-            <SalesProductsTable
-              activeCampaignTitle={activeCampaignTitle}
-              products={currentProducts}
-              onToggle={onToggle}
-              updatingProductId={updatingProductId}
-            />
-            {otherChoreos.length > 0 && (
-              <SalesArchive>
+            {onSale.length > 0 ? (
+              <SalesProductsTable
+                {...tableProps}
+                label="Сейчас продаются"
+                products={onSale}
+              />
+            ) : (
+              <EmptyState
+                icon={<Store aria-hidden />}
+                title="Сейчас ничего не продаётся"
+                text="Включи продукт в группе «Выключены»."
+              />
+            )}
+
+            {moved && !moved.salesEnabled && !showClosed && (
+              <Row $gap={8}>
+                <Muted>{moved.title} — выключен и перенесён в «Выключены».</Muted>
+                <AdminButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowClosed(true)}
+                >
+                  Показать
+                </AdminButton>
+              </Row>
+            )}
+
+            {closed.length > 0 && (
+              <CatalogArchive
+                open={showClosed}
+                onToggle={(event) => setShowClosed(event.currentTarget.open)}
+              >
                 <summary>
-                  Другие разборы <span>{otherChoreos.length}</span>
+                  <ChevronRight aria-hidden />
+                  Выключены
+                  <Badge>{closed.length}</Badge>
                 </summary>
-                <p>Скрыты в каталоге сайта. Прежние покупки и доступы сохранены.</p>
-                <SalesProductsTable
-                  activeCampaignTitle={activeCampaignTitle}
-                  products={otherChoreos}
-                  onToggle={onToggle}
-                  updatingProductId={updatingProductId}
-                  label="Другие разборы"
-                />
-              </SalesArchive>
+                <p>Не продаются на сайте. Прежние покупки и доступы сохранены.</p>
+                <SalesProductsTable {...tableProps} label="Выключены" products={closed} />
+              </CatalogArchive>
             )}
           </>
         ) : isLoading ? (
-          <JournalSkeletonList>
+          <Stack $gap={10}>
             {Array.from({ length: 3 }, (_, index) => (
-              <JournalSkeletonCard key={`sales-skeleton-${index}`}>
-                <SkeletonLine $width="46%" />
-                <SkeletonLine $width="72%" />
-                <SkeletonLine $height="32px" $width="100%" />
-              </JournalSkeletonCard>
+              <Skeleton key={`sales-skeleton-${index}`} $height={56} />
             ))}
-          </JournalSkeletonList>
+          </Stack>
         ) : status?.tone === "error" ? null : (
           // A failed load already says so below; claiming the catalogue is empty on
           // top of it would be a second, wrong explanation.
-          <JournalEmptyState>Каталог пуст — нечего показывать.</JournalEmptyState>
+          <EmptyState
+            icon={<Store aria-hidden />}
+            title="Каталог пуст"
+            text="Нечего показывать."
+          />
         )}
 
-        {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-      </SurfaceCard>
-    </SalesWorkspaceLayout>
+        <StatusLine status={status} />
+      </Stack>
+    </Panel>
   );
 };

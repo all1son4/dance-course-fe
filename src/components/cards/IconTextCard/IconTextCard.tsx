@@ -36,7 +36,13 @@ export default function IconTextCard(props: IconTextCardProps) {
     }
 
     return link ? (
-      <ContactCardLink target="_blank" rel="noopener noreferrer" href={link}>
+      <ContactCardLink
+        // tel:/mailto: open the dialer or mail app in place; a new tab stays empty.
+        {...(/^https?:/u.test(link)
+          ? { target: "_blank", rel: "noopener noreferrer" }
+          : {})}
+        href={link}
+      >
         {content}
       </ContactCardLink>
     ) : (

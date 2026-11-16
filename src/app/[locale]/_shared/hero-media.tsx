@@ -20,10 +20,11 @@ type HeroMediaProps = {
   boxes: {
     MobileImagesBox: BoxComponent;
     ImageBox: BoxComponent;
-    IconBox: BoxComponent;
+    IconBox?: BoxComponent;
   };
   photo: HeroMediaImage;
-  icon: HeroMediaImage;
+  /** The floating art next to the photo; a page may show the photo alone. */
+  icon?: HeroMediaImage;
 };
 
 const MOBILE_MEDIA = "(max-width: 767px)";
@@ -52,9 +53,15 @@ export default function HeroMedia({
             priority
           />
         </ImageBox>
-        <IconBox id="mobile-only-icon-box">
-          <HeroPicture asset={icon.asset} media={MOBILE_MEDIA} sizes={icon.mobileSizes} />
-        </IconBox>
+        {icon && IconBox ? (
+          <IconBox id="mobile-only-icon-box">
+            <HeroPicture
+              asset={icon.asset}
+              media={MOBILE_MEDIA}
+              sizes={icon.mobileSizes}
+            />
+          </IconBox>
+        ) : null}
       </MobileImagesBox>
       <ImageBox id="desktop-only-image-box">
         <HeroPicture
@@ -65,9 +72,15 @@ export default function HeroMedia({
           priority
         />
       </ImageBox>
-      <IconBox id="desktop-only-icon-box">
-        <HeroPicture asset={icon.asset} media={DESKTOP_MEDIA} sizes={icon.desktopSizes} />
-      </IconBox>
+      {icon && IconBox ? (
+        <IconBox id="desktop-only-icon-box">
+          <HeroPicture
+            asset={icon.asset}
+            media={DESKTOP_MEDIA}
+            sizes={icon.desktopSizes}
+          />
+        </IconBox>
+      ) : null}
     </>
   );
 }

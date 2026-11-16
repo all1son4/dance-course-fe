@@ -61,6 +61,8 @@ type PurchaseInvoiceDocumentProps = {
   dueDateLabel: string;
   invoiceNumber: string;
   issueDateLabel: string;
+  /** Fixed, so a retried email carries a byte-identical PDF (Resend idempotency). */
+  issuedAt: Date;
 };
 
 const styles = StyleSheet.create({
@@ -346,9 +348,12 @@ const PurchaseInvoiceDocument = ({
   dueDateLabel,
   invoiceNumber,
   issueDateLabel,
+  issuedAt,
 }: PurchaseInvoiceDocumentProps) => (
   <Document
     author={SELLER_NAME}
+    creationDate={issuedAt}
+    modificationDate={issuedAt}
     creator="dance-course-frontend"
     producer="dance-course-frontend"
     subject={`Invoice ${invoiceNumber}`}
@@ -460,6 +465,7 @@ export const buildPurchaseInvoiceAttachment = async ({
       dueDateLabel={dueDateLabel}
       invoiceNumber={invoiceNumber}
       issueDateLabel={issueDateLabel}
+      issuedAt={issuedAt}
     />,
   );
 

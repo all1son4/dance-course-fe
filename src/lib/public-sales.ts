@@ -5,11 +5,13 @@ import {
 
 /** Renewal offers have their own verified links and cannot open public sales. */
 export const getPublicProductOffers = (product: SellableProduct) =>
-  product.offers.filter((offer) =>
-    product.code === "online-group-anna-strok"
-      ? offer.code === "standard" || offer.code === "library-access"
-      : true,
-  );
+  product.offers.filter((offer) => {
+    if (product.code === "online-group-anna-strok") {
+      return offer.code === "standard" || offer.code === "library-access";
+    }
+    if (product.code === "inspiration-hub") return offer.code === "hub-access";
+    return true;
+  });
 
 export const getOpenPublicProductOffers = (product: SellableProduct) =>
   product.salesEnabled

@@ -1,6 +1,5 @@
-import { Ban, Check, LoaderCircle, MailX, RefreshCw, X } from "lucide-react";
-
-import Button from "@/components/common/Button";
+import { Ban, Check, MailCheck, MailX, RefreshCw, Send, X } from "lucide-react";
+import { useState } from "react";
 
 import type {
   BroadcastAudienceLead,
@@ -10,31 +9,14 @@ import type {
 } from "../lib/admin.types";
 import { formatDateTime } from "../lib/admin.utils";
 import {
-  BroadcastActionButton,
-  BroadcastActionGroup,
-  BroadcastAudienceEmail,
-  BroadcastAudienceName,
-  BroadcastAudienceTable,
-  BroadcastAudienceTableWrap,
-  BroadcastAudienceWorkspace as BroadcastWorkspaceLayout,
-  BroadcastStatusBadge,
-  ButtonRow,
-  Form,
-  IconActionButton,
-  JournalEmptyState,
-  JournalSkeletonCard,
-  JournalSkeletonList,
-  SkeletonLine,
-  StatusText,
-  SummaryGrid,
-  SummaryItem,
-  SummaryLabel,
-  SummaryValue,
-  SurfaceCard,
-  SurfaceDescription,
-  SurfaceHeaderRow,
-  SurfaceTitle,
-} from "../page.styles";
+  AudienceActions,
+  AudienceFacts,
+  AudienceTable,
+} from "../styles/broadcast.styles";
+import { ConfirmDialog } from "../ui/feedback";
+import { Fact, FormActions, StatusLine } from "../ui/forms";
+import { AdminButton, Badge, EmptyState, Panel, Skeleton, Stack } from "../ui/primitives";
+import { CellPrimary, CellSecondary, TableScroller } from "../ui/table";
 
 type BroadcastWorkspaceProps = {
   audience: BroadcastAudienceLead[];
@@ -56,6 +38,14 @@ type BroadcastWorkspaceProps = {
   status: StatusMessage;
 };
 
+const plural = (count: number, one: string, few: string, many: string) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+};
+
 export const BroadcastWorkspace = ({
   audience,
   confirmingGlobalLeadId,
@@ -71,177 +61,183 @@ export const BroadcastWorkspace = ({
   pendingCount,
   stats,
   status,
-}: BroadcastWorkspaceProps) => (
-  <BroadcastWorkspaceLayout>
-    <SurfaceCard>
-      <SurfaceHeaderRow>
-        <SurfaceTitle>First Touch: старт продаж</SurfaceTitle>
-        <IconActionButton
-          type="button"
-          onClick={onRefresh}
-          disabled={isLoadingStats}
-          $isLoading={isLoadingStats}
-          aria-label="Обновить данные рассылки"
-          title="Обновить данные рассылки"
-        >
-          {isLoadingStats ? <LoaderCircle aria-hidden /> : <RefreshCw aria-hidden />}
-        </IconActionButton>
-      </SurfaceHeaderRow>
-      <SurfaceDescription>Уже отправленные адреса не затрагиваются.</SurfaceDescription>
-      <Form as="div">
-        <SummaryGrid>
-          <SummaryItem>
-            <SummaryLabel>Всего заявок</SummaryLabel>
-            <SummaryValue>{stats?.total ?? 0}</SummaryValue>
-          </SummaryItem>
-          <SummaryItem>
-            <SummaryLabel>Ожидают</SummaryLabel>
-            <SummaryValue>{stats?.pending ?? 0}</SummaryValue>
-          </SummaryItem>
-          <SummaryItem>
-            <SummaryLabel>С ошибкой</SummaryLabel>
-            <SummaryValue>{stats?.failed ?? 0}</SummaryValue>
-          </SummaryItem>
-          <SummaryItem>
-            <SummaryLabel>Отправлено</SummaryLabel>
-            <SummaryValue>{stats?.sent ?? 0}</SummaryValue>
-          </SummaryItem>
-          <SummaryItem>
-            <SummaryLabel>Исключено</SummaryLabel>
-            <SummaryValue>{stats?.excluded ?? 0}</SummaryValue>
-          </SummaryItem>
-        </SummaryGrid>
-        <ButtonRow>
-          <Button
-            buttonText={
-              isSending
-                ? "Отправляю..."
+}: BroadcastWorkspaceProps) => {
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
+  const confirmSend = async () => {
+    try {
+      await onSend();
+    } finally {
+      setIsConfirmOpen(false);
+    }
+  };
+
+  return (
+    <Stack $gap={16}>
+      <Panel
+        title="First Touch: старт продаж"
+        description="Уже отправленные адреса не затрагиваются."
+        actions={
+          <AdminButton
+            size="sm"
+            icon={<RefreshCw aria-hidden />}
+            loading={isLoadingStats}
+            onClick={() => void onRefresh()}
+          >
+            Обновить
+          </AdminButton>
+        }
+      >
+        <Stack $gap={14}>
+          <AudienceFacts>
+            <Fact label="Всего заявок" value={stats?.total ?? 0} />
+            <Fact label="Ожидают" value={stats?.pending ?? 0} />
+            <Fact label="С ошибкой" value={stats?.failed ?? 0} />
+            <Fact label="Отправлено" value={stats?.sent ?? 0} />
+            <Fact label="Исключено" value={stats?.excluded ?? 0} />
+          </AudienceFacts>
+          <FormActions>
+            <AdminButton
+              variant="primary"
+              icon={<Send aria-hidden />}
+              loading={isSending}
+              disabled={isDisabled}
+              onClick={() => setIsConfirmOpen(true)}
+            >
+              {isSending
+                ? "Отправляю…"
                 : isLoadingStats
-                  ? "Загружаю данные..."
+                  ? "Загружаю данные…"
                   : pendingCount === 0
                     ? "Нет адресов для отправки"
-                    : "Отправить рассылку"
-            }
-            type="button"
-            onClick={onSend}
-            disabled={isDisabled}
-            isLoading={isSending}
-            width="100%"
+                    : "Отправить рассылку"}
+            </AdminButton>
+          </FormActions>
+          <StatusLine status={status} />
+        </Stack>
+      </Panel>
+
+      <Panel
+        title="Ожидают отправки"
+        description="Здесь только те, кому письмо ещё не отправлено."
+      >
+        {isLoadingStats && audience.length === 0 ? (
+          <Stack $gap={10}>
+            {Array.from({ length: 3 }, (_, index) => (
+              <Skeleton key={`broadcast-audience-skeleton-${index}`} $height={44} />
+            ))}
+          </Stack>
+        ) : audience.length === 0 ? (
+          <EmptyState
+            icon={<MailCheck aria-hidden />}
+            title="Всё готово"
+            text="Ожидающих отправки нет."
           />
-        </ButtonRow>
-        {status && <StatusText $tone={status.tone}>{status.text}</StatusText>}
-      </Form>
-    </SurfaceCard>
+        ) : (
+          <TableScroller>
+            <AudienceTable aria-label="Пользователи, ожидающие рассылки">
+              <thead>
+                <tr>
+                  <th>Имя</th>
+                  <th>Контакт</th>
+                  <th>Язык</th>
+                  <th>Заявка</th>
+                  <th>Статус</th>
+                  <th aria-label="Действия" />
+                </tr>
+              </thead>
+              <tbody>
+                {audience.map((lead) => {
+                  const isUpdating = isUpdatingLeadId === lead.leadId;
+                  const isConfirmingGlobal = confirmingGlobalLeadId === lead.leadId;
+                  const isLocked = isSending || Boolean(isUpdatingLeadId);
 
-    <SurfaceCard>
-      <SurfaceTitle>Ожидают отправки</SurfaceTitle>
-      <SurfaceDescription>
-        Здесь только те, кому письмо еще не отправлено.
-      </SurfaceDescription>
+                  return (
+                    <tr key={lead.leadId}>
+                      <td data-label="Имя">
+                        <span>
+                          <CellPrimary>{lead.fullName || "Без имени"}</CellPrimary>
+                          <CellSecondary>{lead.email}</CellSecondary>
+                        </span>
+                      </td>
+                      <td data-label="Контакт">{lead.socialContact || "—"}</td>
+                      <td data-label="Язык">{lead.locale.toUpperCase() || "—"}</td>
+                      <td data-label="Заявка">{formatDateTime(lead.createdAt)}</td>
+                      <td data-label="Статус">
+                        <Badge $tone={lead.status === "failed" ? "danger" : "info"}>
+                          {lead.status === "failed" ? "Ошибка — повторим" : "Ожидает"}
+                        </Badge>
+                      </td>
+                      <td data-label="Действия" data-actions>
+                        <AudienceActions>
+                          {isConfirmingGlobal ? (
+                            <>
+                              <AdminButton
+                                size="sm"
+                                variant="danger"
+                                icon={<Check aria-hidden />}
+                                loading={isUpdating}
+                                disabled={isLocked}
+                                onClick={() => void onExclude(lead, "global")}
+                                title="Подтвердить исключение из будущих рассылок"
+                              >
+                                Подтвердить
+                              </AdminButton>
+                              <AdminButton
+                                size="sm"
+                                variant="ghost"
+                                icon={<X aria-hidden />}
+                                disabled={Boolean(isUpdatingLeadId)}
+                                onClick={onGlobalExcludeCancel}
+                              >
+                                Отмена
+                              </AdminButton>
+                            </>
+                          ) : (
+                            <>
+                              <AdminButton
+                                size="sm"
+                                icon={<MailX aria-hidden />}
+                                loading={isUpdating}
+                                disabled={isLocked}
+                                onClick={() => void onExclude(lead, "campaign")}
+                                title="Не отправлять письмо в этой рассылке"
+                              >
+                                Не отправлять
+                              </AdminButton>
+                              <AdminButton
+                                size="sm"
+                                variant="ghost"
+                                icon={<Ban aria-hidden />}
+                                disabled={isLocked}
+                                onClick={() => onGlobalExcludeRequest(lead.leadId)}
+                                title="Не включать этот email в будущие рассылки"
+                              >
+                                Исключить везде
+                              </AdminButton>
+                            </>
+                          )}
+                        </AudienceActions>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </AudienceTable>
+          </TableScroller>
+        )}
+      </Panel>
 
-      {isLoadingStats && audience.length === 0 ? (
-        <JournalSkeletonList>
-          {Array.from({ length: 3 }, (_, index) => (
-            <JournalSkeletonCard key={`broadcast-audience-skeleton-${index}`}>
-              <SkeletonLine $width="42%" />
-              <SkeletonLine $width="68%" />
-              <SkeletonLine $height="32px" $width="100%" />
-            </JournalSkeletonCard>
-          ))}
-        </JournalSkeletonList>
-      ) : audience.length === 0 ? (
-        <JournalEmptyState>Все готово — ожидающих отправки нет.</JournalEmptyState>
-      ) : (
-        <BroadcastAudienceTableWrap>
-          <BroadcastAudienceTable aria-label="Пользователи, ожидающие рассылки">
-            <thead>
-              <tr>
-                <th>Участник</th>
-                <th>Контакт</th>
-                <th>Язык</th>
-                <th>Заявка</th>
-                <th>Статус</th>
-                <th>Действия</th>
-              </tr>
-            </thead>
-            <tbody>
-              {audience.map((lead) => {
-                const isUpdating = isUpdatingLeadId === lead.leadId;
-                const isConfirmingGlobal = confirmingGlobalLeadId === lead.leadId;
-
-                return (
-                  <tr key={lead.leadId}>
-                    <td data-label="Участник">
-                      <span>
-                        <BroadcastAudienceName>
-                          {lead.fullName || "Без имени"}
-                        </BroadcastAudienceName>
-                        <BroadcastAudienceEmail>{lead.email}</BroadcastAudienceEmail>
-                      </span>
-                    </td>
-                    <td data-label="Контакт">{lead.socialContact || "—"}</td>
-                    <td data-label="Язык">{lead.locale.toUpperCase() || "—"}</td>
-                    <td data-label="Заявка">{formatDateTime(lead.createdAt)}</td>
-                    <td data-label="Статус">
-                      <BroadcastStatusBadge $status={lead.status}>
-                        {lead.status === "failed" ? "Ошибка — повторим" : "Ожидает"}
-                      </BroadcastStatusBadge>
-                    </td>
-                    <td data-label="Действия">
-                      <BroadcastActionGroup>
-                        {isConfirmingGlobal ? (
-                          <>
-                            <BroadcastActionButton
-                              type="button"
-                              $danger
-                              onClick={() => onExclude(lead, "global")}
-                              disabled={isSending || Boolean(isUpdatingLeadId)}
-                              title="Подтвердить исключение из будущих рассылок"
-                            >
-                              <Check aria-hidden />
-                              {isUpdating ? "Сохраняю..." : "Подтвердить"}
-                            </BroadcastActionButton>
-                            <BroadcastActionButton
-                              type="button"
-                              onClick={onGlobalExcludeCancel}
-                              disabled={Boolean(isUpdatingLeadId)}
-                            >
-                              <X aria-hidden />
-                              Отмена
-                            </BroadcastActionButton>
-                          </>
-                        ) : (
-                          <>
-                            <BroadcastActionButton
-                              type="button"
-                              onClick={() => onExclude(lead, "campaign")}
-                              disabled={isSending || Boolean(isUpdatingLeadId)}
-                              title="Не отправлять письмо в этой рассылке"
-                            >
-                              <MailX aria-hidden />
-                              {isUpdating ? "Сохраняю..." : "Не отправлять"}
-                            </BroadcastActionButton>
-                            <BroadcastActionButton
-                              type="button"
-                              $danger
-                              onClick={() => onGlobalExcludeRequest(lead.leadId)}
-                              disabled={isSending || Boolean(isUpdatingLeadId)}
-                              title="Не включать этот email в будущие рассылки"
-                            >
-                              <Ban aria-hidden />
-                              Исключить везде
-                            </BroadcastActionButton>
-                          </>
-                        )}
-                      </BroadcastActionGroup>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </BroadcastAudienceTable>
-        </BroadcastAudienceTableWrap>
-      )}
-    </SurfaceCard>
-  </BroadcastWorkspaceLayout>
-);
+      <ConfirmDialog
+        open={isConfirmOpen}
+        title="Отправить рассылку First Touch?"
+        description={`Письмо о старте продаж уйдёт на ${pendingCount} ${plural(pendingCount, "адрес", "адреса", "адресов")}: ожидающим и тем, у кого прошлая попытка не удалась. Уже отправленные адреса не затрагиваются.`}
+        confirmLabel="Отправить"
+        busy={isSending}
+        confirmDisabled={isDisabled && !isSending}
+        onCancel={() => setIsConfirmOpen(false)}
+        onConfirm={() => void confirmSend()}
+      />
+    </Stack>
+  );
+};

@@ -176,7 +176,7 @@ type CheckoutInputProps = {
   renewalClientId: string;
   renewalNonce: string;
   renewalStatus: RenewalStatus;
-  renewalStatusText: string;
+  renewalStatusText: ReactNode;
   renewalStatusTone: RenewalStatusTone;
   verifyLabel: string;
 };
@@ -300,7 +300,7 @@ export type CheckoutFormProps = {
   renewalClientId: string;
   renewalNonce: string;
   renewalStatus: RenewalStatus;
-  renewalStatusText: string;
+  renewalStatusText: ReactNode;
   renewalStatusTone: RenewalStatusTone;
   /** Re-asks for the payment intent after a failure; absent when there is nothing to retry. */
   onRetryPaymentPreparation?: () => void;

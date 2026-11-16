@@ -445,8 +445,17 @@ export default function NavigationProgress() {
     };
   }, [clearTimers, startProgress]);
 
+  // The patch below is installed once; the latest callback is read through a ref, so a
+  // re-render never reinstalls it (each reinstall used to wrap fetch in one more bound
+  // copy, growing with every navigation).
+  const maybeCompleteWhenQuietRef = useRef(maybeCompleteWhenQuiet);
+
   useEffect(() => {
-    const originalFetch = window.fetch.bind(window);
+    maybeCompleteWhenQuietRef.current = maybeCompleteWhenQuiet;
+  }, [maybeCompleteWhenQuiet]);
+
+  useEffect(() => {
+    const originalFetch = window.fetch;
     const xhrPrototype = window.XMLHttpRequest.prototype;
     const originalOpen = xhrPrototype.open as XHROpen;
     const originalSend = xhrPrototype.send;
@@ -468,7 +477,7 @@ export default function NavigationProgress() {
 
       completedRequestCountRef.current += 1;
       inFlightRequestsRef.current = Math.max(0, inFlightRequestsRef.current - 1);
-      maybeCompleteWhenQuiet();
+      maybeCompleteWhenQuietRef.current();
     };
 
     window.fetch = (async (input, init) => {
@@ -480,7 +489,7 @@ export default function NavigationProgress() {
       }
 
       try {
-        return await originalFetch(input, init);
+        return await originalFetch.call(window, input, init);
       } finally {
         if (shouldTrack) {
           registerRequestEnd();
@@ -541,7 +550,7 @@ export default function NavigationProgress() {
       xhrPrototype.open = originalOpen;
       xhrPrototype.send = originalSend;
     };
-  }, [maybeCompleteWhenQuiet]);
+  }, []);
 
   useEffect(() => {
     if (!hasMountedRef.current) {

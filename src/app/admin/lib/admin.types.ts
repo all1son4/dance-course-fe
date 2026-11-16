@@ -18,16 +18,25 @@ export type {
 export type PurchaseOutcome = AdminPurchaseEntry["outcome"];
 
 export type AdminFeatureId =
-  "sales" | "invite-links" | "online-group" | "broadcasts" | "purchases" | "operations";
+  | "overview"
+  | "purchases"
+  | "sales"
+  | "online-group"
+  | "inspiration-hub"
+  | "invite-links"
+  | "broadcasts"
+  | "operations";
+export type AdminFeatureGroup = "home" | "sales" | "products" | "more";
 export type GeneratorKind = "choreo" | "first-touch";
 export type LessonLanguage = "en" | "ru";
-export type LinkState = "active" | "used";
+export type LinkState = "active" | "expired" | "used";
 export type StatusTone = "error" | "info" | "success";
 export type AuthState = "authorized" | "checking" | "locked";
 
 export type AdminFeature = {
   id: AdminFeatureId;
   label: string;
+  group: AdminFeatureGroup;
 };
 
 export type ChoreoSelection = {
@@ -330,6 +339,8 @@ export type SalesProductOffer = {
 };
 
 export type SalesProductEntry = {
+  /** Why the Online Group cannot be sold now (HUB-D13); empty otherwise. */
+  campaignIssue: string;
   code: string;
   hasActiveCampaign: boolean;
   offers: SalesProductOffer[];

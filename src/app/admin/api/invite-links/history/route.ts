@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 const HISTORY_CACHE_TTL_MS = 30_000;
 const STALE_HISTORY_CACHE_TTL_MS = 5 * 60_000;
 
-type LinkState = "active" | "used";
+type LinkState = "active" | "expired" | "used";
 
 type HistoryEntry = {
   accessUrl: string;
@@ -84,7 +84,12 @@ const fetchHistoryItems = async () => {
       accessUrl: row.accessUrl,
       adminLabel,
       createdAtIso: row.createdAt,
-      linkState: row.tokenUsedAt.trim() ? "used" : "active",
+      // An unused link past its expiry no longer opens: never offer it as active.
+      linkState: row.tokenUsedAt.trim()
+        ? "used"
+        : row.tokenExpiresAt && Date.parse(row.tokenExpiresAt) <= Date.now()
+          ? "expired"
+          : "active",
       selectionLabel: buildSelectionLabel({
         language: row.lessonLanguage,
         offerId: row.offerId,

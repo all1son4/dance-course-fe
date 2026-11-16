@@ -129,6 +129,9 @@ export async function POST(request: Request) {
       "invalid_start_date",
       "inspiration_chat_is_fixed",
       "missing_chat_selection",
+      "online_group_cohort_closed",
+      "online_group_cohort_main_chat_fixed",
+      "online_group_cohort_start_has_continuations",
       "same_main_and_inspiration_chat",
       "telegram_chat_not_registered",
     ]);

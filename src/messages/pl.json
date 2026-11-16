@@ -61,6 +61,12 @@
       },
       "payment": {
         "title": "Bezpieczna płatność"
+      },
+      "inspirationHub": {
+        "title": "Inspiration HUB: biblioteka lekcji Frame Up Strip",
+        "description": "Lekcje z zakończonych cykli grupy online, materiały bonusowe i muzyka do treningów — w zamkniętej bibliotece na Telegramie. 8 tygodni dostępu od razu po płatności.",
+        "ogImageAlt": "Inspiration HUB by Anna Strok",
+        "heroImageAlt": "Anna Strok, Inspiration HUB"
       }
     },
     "breadcrumbHome": "Strona główna"
@@ -115,7 +121,11 @@
         "highlight": "by Anna Strok"
       },
       "3": "Tutoriale choreografii",
-      "4": "The Birthday Drop"
+      "4": "The Birthday Drop",
+      "hub": {
+        "prefix": "Biblioteka lekcji",
+        "highlight": "Inspiration HUB"
+      }
     }
   },
   "NotFoundPage": {
@@ -157,7 +167,7 @@
     "title": "Pytania i odpowiedzi",
     "items": {
       "1": {
-        "question": "Czy Frame Up jest dla mnie, jeśli nigdy nie tańczyłam?",
+        "question": "Czy Frame Up jest dla mnie, jeśli nie mam doświadczenia w tańcu?",
         "answer": "Tak, ten styl jest odpowiedni dla początkujących. W grupie dla początkujących w Warszawie doświadczenie taneczne nie jest potrzebne: start 4 grudnia, zajęcia w piątki 18:00–19:00 na Woli. Szczegóły i formularz zapisów znajdziesz na stronie „Offline”. Możesz też zacząć od kursu online dla początkujących „First Touch”. Najważniejsze są chęć próbowania i radość z procesu."
       },
       "2": {
@@ -170,7 +180,7 @@
       },
       "4": {
         "question": "Czy Frame Up jest dla mnie, jeśli się wstydzę lub boję się ruchu?",
-        "answer": "Frame Up pomaga się otworzyć. Zajęcia odbywają się w bezpiecznej atmosferze, gdzie każda kobieta czuje wsparcie i szacunek. Nieśmiałość zwykle znika po pierwszych treningach."
+        "answer": "Frame Up pomaga się otworzyć. Zajęcia odbywają się w bezpiecznej atmosferze, w której wszyscy czują wsparcie i szacunek. Nieśmiałość zwykle znika po pierwszych treningach."
       },
       "5": {
         "question": "Jaka jest różnica między zajęciami offline i online?",
@@ -182,11 +192,11 @@
       },
       "7": {
         "question": "Czy mogę ćwiczyć, jeśli brakuje mi plastyki ruchu?",
-        "answer": "Plastyka ruchu to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się bardziej kobieco."
+        "answer": "Plastyka ruchu to umiejętność, którą można rozwijać. Frame Up pomaga łagodnie otworzyć ciało, poprawić mobilność i poczuć się swobodniej we własnym ciele."
       },
       "8": {
         "question": "Czy Frame Up jest odpowiedni w każdym wieku?",
-        "answer": "Zdecydowanie tak. Frame Up to kobiecość, pewność siebie i przyjemność z ruchu, a nie ograniczenia wiekowe."
+        "answer": "Zdecydowanie tak. Frame Up to zmysłowość, pewność siebie i przyjemność z ruchu, a nie ograniczenia wiekowe."
       }
     }
   },
@@ -198,7 +208,7 @@
       "next": "Następna opinia"
     },
     "a11y": {
-      "container": "Opinie kursantek",
+      "container": "Opinie o zajęciach",
       "carousel": "Karuzela",
       "item": "Opinia",
       "slide": "{index} z {slidesLength}"
@@ -234,11 +244,11 @@
       },
       "4": {
         "title": "Lekcja 4: Wyraz w tańcu — spojrzenie i emocja",
-        "description": "Taniec to nie tylko technika, ale też historia. Uczymy się pracować nad wyrazem: spojrzeniem, mimiką i stanem wewnętrznym. Jak przekazać emocję, przyciągnąć widza, być pewną siebie i prawdziwą na scenie i na sali."
+        "description": "Taniec to nie tylko technika, ale też historia. Uczymy się pracować nad wyrazem: spojrzeniem, mimiką i stanem wewnętrznym. Jak przekazać emocję, przyciągnąć widza, czuć pewność siebie i pozostać sobą na scenie i na sali."
       },
       "5": {
         "title": "Lekcja 5: Składamy wszystko w choreografię",
-        "description": "Łączymy wszystko, czego się nauczyłaś, w pierwszą pełną choreografię. Tańczymy, przeżywamy i czerpiemy z tego radość. To moment, gdy technika staje się sztuką, a ruch staje się Twoim stylem."
+        "description": "Łączymy wszystko, co już umiesz, w pierwszą pełną choreografię. Tańczymy, przeżywamy i czerpiemy z tego radość. To moment, gdy technika staje się sztuką, a ruch staje się Twoim stylem."
       }
     }
   },
@@ -246,7 +256,7 @@
     "hero": {
       "title": "Frame Up",
       "subtitle": "Odkryj siebie w stylu Frame Up",
-      "description": "Ucz się tańczyć pięknie, odważnie i zmysłowo w atmosferze wolności i kobiecej siły.",
+      "description": "Ucz się tańczyć pięknie, odważnie i zmysłowo w atmosferze wolności i wewnętrznej siły.",
       "hint": "Wybierz swój format nauki",
       "buttons": {
         "online": "Online",
@@ -283,8 +293,8 @@
         }
       },
       "quote": {
-        "1": "Dziś rozwijam Frame Up w Polsce: prowadzę grupy, w których kobiety otwierają się przez ruch, i dalej uczę się od europejskich mistrzów, aby rozwijać się razem z moimi uczennicami.",
-        "2": "Moim celem jest wzmacnianie kultury Frame Up, inspirowanie kobiet do odwagi, wolności i ekspresji oraz tworzenie przestrzeni, w której każda może poczuć swoją siłę, piękno i energię twórczą."
+        "1": "Dziś rozwijam Frame Up w Polsce: prowadzę grupy, w których można otworzyć się przez ruch, i dalej uczę się od europejskich mistrzów, aby rozwijać się razem z osobami, które ze mną tańczą.",
+        "2": "Moim celem jest wzmacnianie kultury Frame Up, inspirowanie do odwagi, wolności i ekspresji oraz tworzenie przestrzeni, w której można poczuć swoją siłę, piękno i energię twórczą."
       },
       "imageAlt": "Zdjęcie Anny Strok"
     },
@@ -317,7 +327,7 @@
       "location": "W Telegramie",
       "description": {
         "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia — i to jest całkowicie normalne. Taniec ma dawać radość, a nie stres.",
-        "2": "Jeśli jeszcze nie jesteś gotowa na zajęcia offline, mieszkasz w innym mieście albo chcesz zacząć w komfortowych warunkach, możesz rozpocząć od moich kursów online."
+        "2": "Jeśli na zajęcia offline jest dla Ciebie jeszcze za wcześnie, mieszkasz w innym mieście albo chcesz zacząć w komfortowych warunkach, możesz rozpocząć od moich kursów online."
       }
     },
     "cards": {
@@ -359,6 +369,14 @@
         },
         "salesLabel": "Sprzedaż otwarta do 7 września",
         "salesValue": "Dostęp na zawsze!"
+      },
+      "inspirationHub": {
+        "title": "Inspiration HUB",
+        "description": {
+          "1": "Biblioteka lekcji wideo i przydatnych materiałów. Zyskaj dostęp do lekcji z poprzednich cykli Online Group, ćwicz we własnym tempie i odkrywaj nowe pomysły na swój taniec."
+        },
+        "accessLabel": "Dostęp do materiałów",
+        "accessValue": "Od razu po zakupie, na 8 tygodni"
       }
     },
     "studio": {
@@ -429,7 +447,7 @@
       "title": "Nie możesz uczestniczyć w zajęciach offline?",
       "description": {
         "1": "Nie każdy ma możliwość lub odwagę, by przyjść do studia — i to jest normalne. Taniec powinien dawać radość, a nie stres.",
-        "2": "Jeśli nie jesteś jeszcze gotowa na zajęcia offline, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
+        "2": "Jeśli na zajęcia offline jest dla Ciebie jeszcze za wcześnie, mieszkasz w innym mieście albo chcesz zacząć komfortowo, masz alternatywę w moich kursach online."
       }
     }
   },
@@ -500,7 +518,7 @@
     "suggestions": {
       "1": {
         "title": "Nauka w grupie z moim osobistym wsparciem",
-        "text": "Nie uczysz się sama — prowadzę Cię krok po kroku, koryguję technikę i pomagam rozwinąć ekspresję ciała."
+        "text": "Nie uczysz się w pojedynkę — prowadzę Cię krok po kroku, koryguję technikę i pomagam rozwinąć ekspresję ciała."
       },
       "2": {
         "title": "Zadania domowe z omówieniem i feedbackiem",
@@ -545,7 +563,7 @@
         },
         "library": {
           "title": "Plus",
-          "description": "Grupa online z dostępem do Inspiration Hub na czas cyklu oraz materiałami z poprzednich cykli."
+          "description": "Grupa online i biblioteka Inspiration HUB z lekcjami z poprzednich cykli — dostęp zaraz po płatności."
         }
       },
       "programButton": "Co na Ciebie czeka"
@@ -562,7 +580,7 @@
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
-          "3": "Czas trwania cyklu — 6 tygodni",
+          "3": "Czas trwania cyklu — {weeks, plural, one {# tydzień} few {# tygodnie} many {# tygodni} other {# tygodnia}}",
           "4": "Dostęp do zamkniętego czatu na Telegramie",
           "5": "Kontakt i wsparcie w grupie",
           "6": "Dodatkowe materiały do inspiracji"
@@ -574,10 +592,10 @@
         "features": {
           "1": "5 nowych lekcji",
           "2": "Zadania domowe z feedbackiem",
-          "3": "Czas trwania cyklu — 6 tygodni",
+          "3": "Czas trwania cyklu — {weeks, plural, one {# tydzień} few {# tygodnie} many {# tygodni} other {# tygodnia}}",
           "4": "Dostęp do zamkniętego czatu na Telegramie",
           "5": "Kontakt i wsparcie w grupie",
-          "6": "Dostęp do Inspiration Hub na czas trwania cyklu",
+          "6": "Inspiration HUB — zaraz po płatności i przez cały cykl",
           "7": "Lekcje ze wszystkich poprzednich cykli",
           "8": "Dodatkowe ćwiczenia",
           "9": "Playlisty, moodboardy i inspirujące filmy",
@@ -605,12 +623,12 @@
         "text": "Ćwiczysz, wykonujesz zadania, wysyłasz filmy i otrzymujesz moje komentarze, korekty oraz wskazówki."
       },
       "4": {
-        "title": "6-tygodniowy program treningowy",
-        "text": "W ciągu sześciu tygodni realizujesz 5 nowych lekcji, wykonujesz zadania domowe i otrzymujesz feedback do swojej pracy."
+        "title": "Program treningowy na {weeks, plural, one {# tydzień} few {# tygodnie} many {# tygodni} other {# tygodnia}}",
+        "text": "W ciągu {weeks, plural, one {# tygodnia} few {# tygodni} many {# tygodni} other {# tygodnia}} realizujesz 5 nowych lekcji, wykonujesz zadania domowe i otrzymujesz feedback do swojej pracy."
       },
       "5": {
         "title": "Pakiet Plus z Inspiration Hub",
-        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration Hub, które możesz przerabiać samodzielnie w dogodnym czasie. Dostęp do Hub jest aktywny na czas trwania cyklu."
+        "text": "W pakiecie Plus otrzymujesz lekcje z poprzednich cykli i dodatkowe materiały Inspiration HUB. Biblioteka otwiera się zaraz po płatności i działa przez cały cykl oraz jeszcze 7 dni po jego zakończeniu. Jeśli w tym czasie przedłużysz Plus na kolejny cykl, biblioteka zostanie z Tobą bez przerwy."
       },
       "6": {
         "title": "Zamknięty czat Telegram",
@@ -619,6 +637,95 @@
       "7": {
         "title": "Kontynuacja bez przerwy",
         "text": "Uczestnicy obecnej grupy otrzymują specjalną cenę przy kontynuacji w kolejnym cyklu."
+      }
+    }
+  },
+  "InspirationHubPage": {
+    "hero": {
+      "title": "Inspiration HUB",
+      "titlePlain": "Inspiration HUB",
+      "lead": "Biblioteka lekcji wideo z techniki, choreografii i improwizacji oraz przydatnych materiałów. Zyskaj dostęp do lekcji z poprzednich cykli Online Group (10+ lekcji) i odkrywaj nowe pomysły na swój taniec.",
+      "accessLabel": "Dostęp",
+      "accessValue": "8 tygodni",
+      "priceLabel": "Cena",
+      "buyButton": "Kup",
+      "insideButton": "Co w środku"
+    },
+    "inside": {
+      "title": "Co czeka na Ciebie w Inspiration HUB",
+      "lead": "Pełne programy zakończonych cykli Online Group 1.0 i 2.0: 5 pełnych lekcji.",
+      "topicsLabel": "W lekcjach",
+      "topics": {
+        "1": "Technika nóg",
+        "2": "Technika rąk",
+        "3": "Flow",
+        "4": "Hair work",
+        "5": "Improwizacja",
+        "6": "Podstawy akrobatyki",
+        "7": "Choreografie"
+      },
+      "features": {
+        "1": {
+          "title": "Materiały dodatkowe",
+          "text": "Lekcje bonusowe, które urozmaicą treningi i pomogą rozwijać technikę. Muzyka do treningów, inspiracje, wskazówki dotyczące stroju do tańca i wyboru butów oraz informacje o wydarzeniach tanecznych."
+        },
+        "2": {
+          "title": "Ćwicz, kiedy chcesz",
+          "text": "Zapłać w dowolnym momencie — 8 tygodni dostępu do wszystkich materiałów zacznie się od razu. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
+        },
+        "3": {
+          "title": "Zamknięta biblioteka na Telegramie",
+          "text": "Wszystkie lekcje i materiały są w wygodnej, zamkniętej przestrzeni, zawsze pod ręką."
+        },
+        "4": {
+          "title": "Specjalna cena przedłużenia",
+          "text": "Przedłużasz Hub albo ćwiczysz w grupie online? <b>Obowiązuje Cię specjalna cena</b>. Nowe tygodnie zaczynają się zaraz po obecnych, bez przerwy."
+        }
+      }
+    },
+    "statement": {
+      "text": "Twoja przestrzeń inspiracji, praktyki i rozwoju w tańcu.",
+      "caption": "Inspiration HUB"
+    },
+    "steps": {
+      "title": "Jak to działa",
+      "imageAlt": "Anna Strok",
+      "items": {
+        "1": {
+          "title": "Płatność i wejście",
+          "description": "Zaraz po płatności na stronie i w e-mailu pojawi się osobisty link do biblioteki — jest na Telegramie. Otwórz go z konta Telegram, z którego będziesz korzystać: link działa jeden raz i tylko dla Ciebie."
+        },
+        "2": {
+          "title": "Czas dostępu",
+          "description": "Liczy się od płatności, a nie od wejścia do biblioteki: płatność 1 marca — dostęp do 26 kwietnia. Dokładne daty są na stronie „Mój dostęp”, przycisk do niej jest w każdej wiadomości."
+        },
+        "3": {
+          "title": "Przedłużenie w specjalnej cenie",
+          "description": "Bez automatycznych obciążeń. Przedłużyć możesz w każdej chwili, dopóki masz dostęp — nowy okres zacznie się zaraz po obecnym, żaden dzień nie przepadnie. Na 7 i na 3 dni przed końcem przyjdzie e-mail z przyciskiem „Przedłuż”, ten sam jest na stronie „Mój dostęp”."
+        },
+        "4": {
+          "title": "Po grupie online",
+          "description": "Nie zdążasz przerobić wszystkich lekcji cyklu? Gdy cykl się skończy, nie musisz przechodzić do nowego: możesz wybrać tylko Inspiration HUB i we własnym tempie nadrobić zaległości — tu są lekcje wszystkich poprzednich cykli, łącznie z Twoim obecnym. Dla Ciebie w specjalnej cenie, przy dowolnym pakiecie; link wyślemy na czat grupy."
+        },
+        "5": {
+          "title": "Jeśli nie przedłużysz",
+          "description": "Na koniec okresu dostęp do biblioteki zamknie się sam. Możesz wrócić w każdej chwili, ale już w zwykłej cenie — nowy okres będzie liczony od płatności."
+        }
+      }
+    },
+    "cta": {
+      "title": "Dołącz do Inspiration HUB",
+      "text": "Wszystko w środku — od pierwszego dnia:",
+      "items": {
+        "1": "Pełne programy Online Group 1.0 i 2.0",
+        "2": "Lekcje bonusowe i materiały",
+        "3": "Zamknięta biblioteka na Telegramie",
+        "4": "Dostęp otwiera się zaraz po płatności"
+      },
+      "priceLabel": "8 tygodni dostępu",
+      "notes": {
+        "1": "Bez automatycznych obciążeń",
+        "2": "Przy przedłużeniu — specjalna cena"
       }
     }
   },
@@ -703,7 +810,7 @@
       "summaryCard": {
         "description": "Kontynuacja udziału w grupie online na kolejny cykl w specjalnej cenie.",
         "accessNote": "Po płatności otrzymasz osobisty jednorazowy link do nowego czatu Telegram.",
-        "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu."
+        "accessNotePlus": "Po płatności otrzymasz osobiste jednorazowe linki do nowego czatu Telegram i Inspiration HUB. Biblioteka otwiera się od razu i działa przez cały cykl."
       },
       "buttons": {
         "verify": "Potwierdź Telegram"
@@ -725,6 +832,12 @@
         "title": "Przedłużenie niedostępne",
         "description": "Napisz do nas — pomożemy przedłużyć udział."
       }
+    },
+    "hubDiscount": {
+      "description": "Specjalna cena dla uczestników grupy online i subskrybentów Inspiration Hub. Potwierdź swoje konto Telegram.",
+      "summaryDescription": "Inspiration Hub na 8 tygodni w specjalnej cenie.",
+      "notEligible": "Nie znaleźliśmy tego konta w obecnym ani w niedawno zakończonym cyklu grupy online ani w Inspiration Hub.",
+      "fullPriceLink": "Kup w pełnej cenie"
     },
     "inputs": {
       "fullName": {
@@ -770,11 +883,11 @@
     "agreements": {
       "immediateAccessConsent": "Wyrażam zgodę na rozpoczęcie świadczenia usługi / udostępnienie treści cyfrowych (kursu online) natychmiast po opłaceniu, przed upływem 14-dniowego terminu odstąpienia od umowy.",
       "withdrawalNoticeAcknowledgement": "Przyjmuję do wiadomości, że po uzyskaniu natychmiastowego dostępu do treści cyfrowych tracę prawo do odstąpienia od umowy w ciągu 14 dni.",
-      "privacyPolicyAcknowledgement": "Oświadczam, że zapoznałam się z <link>polityką prywatności</link>.",
+      "privacyPolicyAcknowledgement": "Potwierdzam zapoznanie się z <link>polityką prywatności</link>.",
       "digitalContentAgreement": "Akceptuję warunki i zawieram umowę o dostarczenie treści cyfrowych.",
       "acceptAll": {
         "title": "Akceptuję warunki zakupu",
-        "summary": "Chcę otrzymać dostęp od razu po płatności i rozumiem, że tracę wtedy prawo do odstąpienia od umowy w ciągu 14 dni. Akceptuję warunki dostarczenia treści cyfrowych i zapoznałam się z <link>polityką prywatności</link>.",
+        "summary": "Chcę otrzymać dostęp od razu po płatności i rozumiem, że tracę wtedy prawo do odstąpienia od umowy w ciągu 14 dni. Akceptuję warunki dostarczenia treści cyfrowych i potwierdzam zapoznanie się z <link>polityką prywatności</link>.",
         "show": "Pokaż wszystkie punkty ({count})",
         "hide": "Zwiń"
       }
@@ -849,14 +962,19 @@
       "birthdayDrop": {
         "line1": "Przygotowujemy Twój osobisty dostęp do materiałów.",
         "line2": "Link pojawi się poniżej i wyślemy go również e-mailem."
+      },
+      "inspirationHub": {
+        "line1": "Przygotowujemy Twój osobisty dostęp do Inspiration Hub.",
+        "line2": "Link pojawi się poniżej i trafi też na Twój email."
       }
     },
     "accessNotice": {
       "firstTouch": "Link ważny przez 30 dni. Dostęp do lekcji: 120 dni od dołączenia.",
       "choreo": "Link ważny przez 30 dni. Dostęp do materiałów: 60 dni od dołączenia.",
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
-      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Dostęp do Inspiration Hub jest przyznawany na czas trwania cyklu.",
-      "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze."
+      "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Inspiration HUB jest otwarty od razu i działa przez cały cykl.",
+      "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze.",
+      "inspirationHub": "Link jest ważny do 30 dni. Dostęp do Inspiration Hub trwa 8 tygodni."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
@@ -868,10 +986,14 @@
       "unavailable": "Link nie jest jeszcze gotowy. Napisz do nas.",
       "contactSupport": "Pomoc",
       "nameMainGroup": "Grupa online",
-      "nameInspiration": "Inspiration Hub"
+      "nameInspiration": "Inspiration Hub",
+      "scheduled": "Opłacone 8 tygodni w Inspiration Hub zaczyna się {date}. Tego dnia osobisty link przyjdzie na Twój e-mail.",
+      "scheduledPlus": "Inspiration Hub otworzy się wraz ze startem cyklu, {date}. Tego dnia na Twój email przyjdzie osobisty link do wejścia.",
+      "scheduledAfterCohort": "Opłacone 8 tygodni w Inspiration Hub zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia osobisty link przyjdzie na Twój e-mail."
     },
     "buttons": {
-      "home": "Wróć na stronę główną"
+      "home": "Wróć na stronę główną",
+      "myAccess": "Mój dostęp"
     }
   },
   "PaymentFailedPage": {
@@ -934,7 +1056,7 @@
         "1": "Dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czuć swoje ciało, nabrać pewności siebie i swobody w ruchu.",
         "2": "Pracujemy nad podstawową techniką, pracą stóp i emocjami, a na końcu nauczysz się swojej pierwszej choreografii."
       },
-      "accessNote": "Kurs trwa 1,5 miesiąca. Lekcje pozostają dostępne przez 120 dni od dołączenia do prywatnego czatu Telegram.",
+      "accessNote": "Kurs trwa 1,5 miesiąca. Lekcje pozostają dostępne przez 120 dni od dołączenia do prywatnej grupy Telegram.",
       "offers": {
         "standard": "Dostęp standardowy"
       }
@@ -1005,7 +1127,7 @@
         "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
       },
       "accessNote": "Po płatności wyślemy Ci osobisty jednorazowy link do grupy Telegram.",
-      "accessNotePlus": "Po płatności wyślemy Ci osobiste jednorazowe linki do grupy Telegram i Inspiration Hub. Dostęp do Hub jest przyznawany na czas trwania cyklu.",
+      "accessNotePlus": "Po płatności wyślemy Ci osobiste jednorazowe linki do grupy Telegram i Inspiration HUB. Biblioteka otwiera się od razu i działa przez cały cykl.",
       "offers": {
         "standard": "Standard",
         "libraryAccess": "Plus",
@@ -1024,6 +1146,18 @@
       "accessNote": "Dostęp do materiałów przez 60 dni od dołączenia do prywatnego kanału Telegram.",
       "offers": {
         "withoutMentor": "Bez mentora"
+      }
+    },
+    "inspirationHub": {
+      "title": "Inspiration Hub",
+      "shortTitle": "Inspiration Hub",
+      "description": {
+        "1": "Dostęp do zamkniętej biblioteki Inspiration Hub na Telegramie przez 8 tygodni."
+      },
+      "accessNote": "Po płatności wyślemy Ci osobisty jednorazowy link do Inspiration Hub.",
+      "offers": {
+        "hubAccess": "Pełna cena",
+        "hubRenewal": "Cena specjalna"
       }
     },
     "privateLesson": {
@@ -1122,7 +1256,7 @@
       },
       "2": {
         "title": "2. Jakie kategorie stosujemy",
-        "text": "W serwisie stosujemy następujące technologie przechowywania:\na) Niezbędne (zawsze aktywne):\n- cookie `NEXT_LOCALE` (nasz serwis) do zapamiętania wybranego języka interfejsu, do 12 miesięcy;\n- wpis `cookie-consent:v2` w localStorage (nasz serwis) do zapisania Twojego wyboru cookies, przechowywany do zmiany decyzji albo wyczyszczenia danych przeglądarki;\n- techniczne cookies dostawcy płatności Stripe (np. `__stripe_mid`, `__stripe_sid`) podczas korzystania z formularza płatności.\n- skrypt logowania Telegram (telegram.org) jest ładowany wyłącznie na stronie płatności, gdy potwierdzasz swoje konto Telegram; w ramach tej autoryzacji Telegram może używać własnych cookies w swojej domenie.\nb) Funkcjonalne (na podstawie zgody):\n- `payment-checkout-draft:v1` w sessionStorage do przywracania szkicu płatności, przechowywany do zamknięcia karty lub wyczyszczenia pamięci.\nc) Analityczne (na podstawie zgody):\n- Mixpanel zapisuje w localStorage pseudonimowy identyfikator przeglądarki i znacznik zgody oraz może tymczasowo używać IndexedDB do nagrań sesji. Mierzy odsłony, źródło ruchu, urządzenie/przeglądarkę, przybliżoną lokalizację, przewijanie i wybrane interakcje produktowe. Nagrania maskują cały tekst i pola formularzy oraz są wyłączone na stronach administracji i płatności. Analityka korzysta z przechowywania danych Mixpanel w UE."
+        "text": "W serwisie stosujemy następujące technologie przechowywania:\na) Niezbędne (zawsze aktywne):\n- cookie `NEXT_LOCALE` (nasz serwis) do zapamiętania wybranego języka interfejsu, do 12 miesięcy;\n- wpis `cookie-consent:v2` w localStorage (nasz serwis) do zapisania Twojego wyboru cookies, przechowywany do zmiany decyzji albo wyczyszczenia danych przeglądarki;\n- techniczne cookies dostawcy płatności Stripe (np. `__stripe_mid`, `__stripe_sid`) podczas korzystania z formularza płatności.\n- skrypt logowania Telegram (telegram.org) jest ładowany wyłącznie na stronie płatności, gdy potwierdzasz swoje konto Telegram; w ramach tej autoryzacji Telegram może używać własnych cookies w swojej domenie.\nb) Funkcjonalne (na podstawie zgody):\n- `payment-checkout-draft:v1` w sessionStorage do przywracania szkicu płatności, przechowywany do zamknięcia karty lub wyczyszczenia pamięci.\nc) Analityczne (na podstawie zgody):\n- Mixpanel zapisuje w localStorage pseudonimowy identyfikator przeglądarki i znacznik zgody oraz może tymczasowo używać IndexedDB do nagrań sesji. Mierzy odsłony, źródło ruchu, urządzenie/przeglądarkę, przybliżoną lokalizację, przewijanie i wybrane interakcje produktowe. Nagrania maskują cały tekst i pola formularzy oraz są wyłączone na stronach administracji i płatności. Analityka korzysta z przechowywania danych Mixpanel w UE.\n- wpisy `analytics-event:*` w sessionStorage (nasz serwis) — krótkie znaczniki, aby to samo zdarzenie nie było liczone dwa razy podczas jednej wizyty; przechowywane do zamknięcia karty."
       },
       "3": {
         "title": "3. Podstawa prawna",
@@ -1130,7 +1264,7 @@
       },
       "4": {
         "title": "4. Okres przechowywania",
-        "text": "Okres przechowywania zależy od technologii:\n- `NEXT_LOCALE` — do 12 miesięcy;\n- `cookie-consent:v2` (localStorage) — do zmiany wyboru lub wyczyszczenia danych przeglądarki;\n- `payment-checkout-draft:v1` (sessionStorage) — do zamknięcia karty;\n- cookies Telegram podczas autoryzacji — przez okres określony w polityce Telegram;\n- cookies Stripe i dane analityczne Mixpanel — przez okresy wynikające z polityk tych dostawców. Wycofanie zgody analitycznej usuwa identyfikator Mixpanel i zatrzymuje przyszłe zbieranie na tym urządzeniu."
+        "text": "Okres przechowywania zależy od technologii:\n- `NEXT_LOCALE` — do 12 miesięcy;\n- `cookie-consent:v2` (localStorage) — do zmiany wyboru lub wyczyszczenia danych przeglądarki;\n- `payment-checkout-draft:v1` (sessionStorage) — do zamknięcia karty;\n- `analytics-event:*` (sessionStorage) — do zamknięcia karty;\n- cookies Telegram podczas autoryzacji — przez okres określony w polityce Telegram;\n- cookies Stripe i dane analityczne Mixpanel — przez okresy wynikające z polityk tych dostawców. Wycofanie zgody analitycznej usuwa identyfikator Mixpanel i zatrzymuje przyszłe zbieranie na tym urządzeniu."
       },
       "5": {
         "title": "5. Jak zmienić lub wycofać zgodę",
@@ -1187,5 +1321,79 @@
       }
     },
     "closedNotice": "Sprzedaż jest tymczasowo zamknięta"
+  },
+  "MyAccessPage": {
+    "metaTitle": "Mój dostęp",
+    "title": "Mój dostęp",
+    "intro": "Tu są wszystkie Twoje zakupy: Inspiration Hub, grupy i tutoriale — z terminami.",
+    "empty": {
+      "text": "Nie masz teraz aktywnych dostępów. Zajrzyj do programów — znajdziesz tam wszystko, co możesz zacząć od razu.",
+      "button": "Zobacz programy"
+    },
+    "help": {
+      "text": "Coś nie tak z dostępem? Napisz do nas — pomożemy.",
+      "button": "Napisz do wsparcia"
+    },
+    "request": {
+      "lead": "Otwórz tę stronę przyciskiem „Mój dostęp” z dowolnej naszej wiadomości. Nie masz jej pod ręką? Wpisz email, a wyślemy link.",
+      "invalidLink": "Ten link nie działa. Wpisz email, a wyślemy nowy.",
+      "emailLabel": "Email",
+      "submit": "Wyślij link",
+      "sent": "Jeśli pod tym adresem są zakupy, wysłaliśmy na niego link. Sprawdź też folder „Spam”.",
+      "invalid": "Sprawdź email",
+      "error": "Nie udało się wysłać. Spróbuj ponownie za chwilę."
+    },
+    "cards": {
+      "hubTitle": "Inspiration Hub",
+      "fallbackTitle": "Zakup",
+      "daysLeft": "{count, plural, one {Został # dzień} few {Zostały # dni} many {Zostało # dni} other {Zostało # dnia}}",
+      "linkInEmail": "Link do wejścia jest w wiadomości o płatności",
+      "lifetime": "Dostęp bezterminowy",
+      "hub": {
+        "activeUntil": "Do {date}",
+        "notJoined": "Czas już biegnie. Link do wejścia jest w wiadomości o płatności",
+        "renewed": "Przedłużenie opłacone",
+        "scheduled": "Od {start} do {end}",
+        "linkOnStart": "Link do wejścia przyjdzie mailem w dniu startu",
+        "afterCohort": "Opłacone 8 tygodni po zakończeniu obecnego cyklu",
+        "ended": "Dostęp zakończył się {date}",
+        "notJoinedExpired": "Czas już biegnie, a link z wiadomości nie działa — napisz do nas, wyślemy nowy"
+      },
+      "plusHub": {
+        "included": "W Twoim pakiecie Plus",
+        "duringCohort": "Dostęp trwa przez cały cykl i jeszcze 7 dni po nim",
+        "closed": "Cykl się zakończył. Hub z pakietu Plus jest dostępny do {date}",
+        "keep": "Przedłuż Plus albo sam Hub, aby nie stracić dostępu",
+        "until": "W Twoim pakiecie Plus — do {date}",
+        "duringCohortUntil": "Działa do końca cyklu (według planu — {date}) i jeszcze 7 dni po nim",
+        "openBeforeStart": "Otwarty już teraz, cykl startuje {date}"
+      },
+      "group": {
+        "running": "Cykl trwa",
+        "startsOn": "Start {date}",
+        "closed": "Cykl się zakończył, dostęp do {date}",
+        "until": "Do {date}"
+      },
+      "channel": {
+        "until": "Do {date}",
+        "startsOnJoin": "Opłacone: {count, plural, one {# dzień zacznie się} few {# dni zaczną się} many {# dni zacznie się} other {# dnia zacznie się}}, gdy dołączysz do kanału",
+        "paid": "Opłacone: czas zacznie biec, gdy dołączysz do kanału"
+      },
+      "actions": {
+        "renewHub": "Przedłuż Hub",
+        "buyHub": "Kup Hub",
+        "support": "Napisz do wsparcia"
+      },
+      "chips": {
+        "active": "Aktywny",
+        "endsSoon": "Wkrótce się kończy",
+        "notJoined": "Czeka na wejście",
+        "upcoming": "Wkrótce start",
+        "ended": "Zakończony",
+        "linkExpired": "Potrzebny nowy link"
+      },
+      "linkExpired": "Link z wiadomości już nie działa — napisz do nas, wyślemy nowy",
+      "count": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}"
+    }
   }
 }

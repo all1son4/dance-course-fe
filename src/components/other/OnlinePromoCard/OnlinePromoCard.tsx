@@ -12,7 +12,7 @@ type OnlinePromoCardProps = {
 
 /**
  * The "what is online" teaser card shown on the home and offline pages: same
- * four bullets and the same "Details" link to /online on both, so the copy
+ * bullets and the same "Details" link to /online on both, so the copy
  * lives in one namespace and the markup in one place.
  */
 export default function OnlinePromoCard({ bgColor, icon }: OnlinePromoCardProps) {
@@ -32,6 +32,10 @@ export default function OnlinePromoCard({ bgColor, icon }: OnlinePromoCardProps)
           </li>
           <li>
             {t("items.2.prefix")} <HighlightText>{t("items.2.highlight")}</HighlightText>
+          </li>
+          <li>
+            {t("items.hub.prefix")}{" "}
+            <HighlightText>{t("items.hub.highlight")}</HighlightText>
           </li>
           <li>{t("items.3")}</li>
           {/* <li>

@@ -1,5 +1,5 @@
 import {
-  PAYMENT_API_ENDPOINTS,
+  getTelegramRenewalEndpoint,
   type RenewalVerificationResponse,
 } from "./payment.helpers";
 
@@ -120,7 +120,7 @@ export const verifyRenewalTelegramMembership = async ({
   nonce: string;
   slug: string;
 }) => {
-  const response = await fetch(PAYMENT_API_ENDPOINTS.telegramRenewal, {
+  const response = await fetch(getTelegramRenewalEndpoint(slug), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

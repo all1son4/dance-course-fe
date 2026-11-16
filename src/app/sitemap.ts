@@ -12,6 +12,7 @@ const indexableRoutes = [
   "/",
   "/online",
   "/online/group",
+  "/online/inspiration-hub",
   "/online/first-touch",
   "/online/choreo",
   // Retired with BIRTHDAY_CAMPAIGN_ENABLED; the page answers 404 meanwhile.

@@ -15,7 +15,14 @@ import {
 
 export const runtime = "nodejs";
 const MAX_PAYMENT_CANCEL_BODY_BYTES = 8 * 1024;
-const NON_CANCELABLE_PAYMENT_INTENT_STATUSES = new Set(["canceled", "succeeded"]);
+// A payment the bank is already processing (or holding for capture) is never canceled
+// from here, whatever the client asks: only a leftover, unused intent is.
+const NON_CANCELABLE_PAYMENT_INTENT_STATUSES = new Set([
+  "canceled",
+  "processing",
+  "requires_capture",
+  "succeeded",
+]);
 
 type CancelPaymentIntentBody = {
   checkoutSessionId?: string;

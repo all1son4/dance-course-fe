@@ -1,112 +1,48 @@
 import styled from "styled-components";
 
-import { focusRing } from "./shared.styles";
+import { focusVisible } from "../ui/primitives";
 
-export type HealthToneStyleProps = {
-  $tone: "alert" | "ok" | "warn";
-};
-
-const HEALTH_TONE_COLORS = {
-  alert: {
-    background: "rgba(176, 24, 33, 0.055)",
-    border: "rgba(176, 24, 33, 0.18)",
-    text: "rgba(138, 18, 27, 0.94)",
-  },
-  ok: {
-    background: "rgba(24, 112, 58, 0.055)",
-    border: "rgba(24, 112, 58, 0.18)",
-    text: "rgba(21, 88, 44, 0.94)",
-  },
-  warn: {
-    background: "rgba(160, 96, 12, 0.06)",
-    border: "rgba(160, 96, 12, 0.2)",
-    text: "rgba(128, 76, 8, 0.94)",
-  },
-} as const;
-
-export const HealthBanner = styled.section<HealthToneStyleProps>`
-  border-radius: 18px;
-  border: 1px solid ${({ $tone }) => HEALTH_TONE_COLORS[$tone].border};
-  background: ${({ $tone }) => HEALTH_TONE_COLORS[$tone].background};
-  padding: clamp(14px, 1.5vw, 18px);
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  color: ${({ $tone }) => HEALTH_TONE_COLORS[$tone].text};
-`;
-
-export const HealthBannerBody = styled.div`
-  min-width: 0;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-
-  > svg {
-    width: 21px;
-    height: 21px;
-    flex: 0 0 auto;
-    margin-top: 1px;
-    stroke-width: 2;
-  }
-`;
-
-export const HealthBannerTitle = styled.p`
-  margin: 0;
-  font-size: 14px;
-  font-weight: 680;
-  line-height: 1.35;
-  letter-spacing: -0.01em;
-`;
-
-export const HealthBannerText = styled.p`
-  margin: 3px 0 0;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  line-height: 1.5;
-  opacity: 0.82;
-`;
+/* The «Система» section: one row per system, problem rows unfold in place. */
 
 export const SystemList = styled.ul`
-  margin: 6px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
 `;
 
 export const SystemRow = styled.li`
-  border-bottom: 1px solid rgba(24, 24, 24, 0.06);
+  border-top: 1px solid var(--a-border);
 
-  &:last-child {
-    border-bottom: 0;
+  &:first-child {
+    border-top: 0;
   }
 `;
 
-export const SystemRowStatic = styled.div`
+const summaryLayout = `
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 2px;
+  padding: 14px 0;
+`;
 
-  @media (max-width: 620px) {
+export const SystemRowStatic = styled.div`
+  ${summaryLayout}
+
+  @container admin-content (max-width: 520px) {
     align-items: flex-start;
   }
 `;
 
 export const SystemAccordion = styled.details`
   summary {
-    ${focusRing}
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 12px 2px;
+    ${summaryLayout}
     list-style: none;
+    border-radius: var(--a-radius-sm);
     cursor: pointer;
+    ${focusVisible}
 
-    @media (max-width: 620px) {
+    @container admin-content (max-width: 520px) {
       align-items: flex-start;
     }
   }
@@ -115,88 +51,122 @@ export const SystemAccordion = styled.details`
     display: none;
   }
 
-  &[open] summary {
-    padding-bottom: 8px;
+  @media (hover: hover) and (pointer: fine) {
+    summary:hover [data-chevron] {
+      color: var(--a-ink);
+    }
+  }
+`;
+
+export const SystemInfo = styled.div`
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+
+  strong {
+    color: var(--a-ink);
+    font-size: var(--a-text);
+    font-weight: 650;
+  }
+
+  span {
+    color: var(--a-ink-2);
+    font-size: var(--a-text-sm);
+    overflow-wrap: anywhere;
   }
 `;
 
 export const SystemSummaryEnd = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex-shrink: 0;
 
-  > svg {
-    width: 15px;
-    height: 15px;
-    color: rgba(70, 70, 70, 0.55);
-    transition: transform 0.18s ease;
+  [data-chevron] {
+    width: 16px;
+    height: 16px;
+    color: var(--a-ink-3);
+    transition:
+      transform 160ms ease,
+      color 120ms ease;
   }
 
-  details[open] & > svg {
+  details[open] & [data-chevron] {
     transform: rotate(90deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-chevron] {
+      transition: none;
+    }
   }
 `;
 
 export const SystemBody = styled.div`
-  padding: 0 2px 13px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  gap: 10px;
+  padding: 0 0 16px;
+`;
+
+/** One problem item (a buyer without access, a re-issued link set). */
+export const ItemCard = styled.article`
+  display: grid;
   gap: 8px;
-`;
-
-export const SystemBodyNote = styled.p`
-  margin: 0;
-  padding: 9px 11px;
-  border: 1px dashed rgba(24, 24, 24, 0.12);
-  border-radius: 11px;
-  background: rgba(248, 248, 247, 0.6);
-  color: rgba(58, 58, 58, 0.78);
-  font-size: 11.5px;
-  line-height: 1.5;
-`;
-
-export const SystemInfo = styled.div`
   min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--a-border);
+  border-radius: var(--a-radius);
+  background: var(--a-surface);
 `;
 
-export const SystemName = styled.p`
+export const ItemHead = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+
+  strong {
+    min-width: 0;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+  }
+`;
+
+export const ItemMeta = styled.p`
   margin: 0;
-  color: rgba(22, 22, 22, 0.94);
-  font-size: 13px;
-  font-weight: 620;
-  line-height: 1.4;
+  color: var(--a-ink-2);
+  font-size: var(--a-text-sm);
+  overflow-wrap: anywhere;
 `;
 
-export const SystemDetail = styled.p`
+export const LinkCaption = styled.p`
   margin: 2px 0 0;
-  overflow-wrap: anywhere;
-  color: rgba(58, 58, 58, 0.72);
-  font-size: 11.5px;
-  line-height: 1.45;
+  color: var(--a-ink-2);
+  font-size: var(--a-text-xs);
 `;
 
 export const TechDetails = styled.details`
-  margin-top: 10px;
-  border-top: 1px dashed rgba(24, 24, 24, 0.1);
-  padding-top: 10px;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--a-border);
 
   summary {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    width: fit-content;
     list-style: none;
+    border-radius: 6px;
+    color: var(--a-ink-2);
+    font-size: var(--a-text-sm);
+    font-weight: 600;
     cursor: pointer;
-    color: rgba(72, 72, 72, 0.66);
-    font-size: 11px;
-    font-weight: 620;
-    letter-spacing: 0.03em;
+    ${focusVisible}
 
     svg {
-      width: 13px;
-      height: 13px;
-      transition: transform 0.18s ease;
+      width: 15px;
+      height: 15px;
+      transition: transform 160ms ease;
     }
   }
 
@@ -207,21 +177,42 @@ export const TechDetails = styled.details`
   &[open] summary svg {
     transform: rotate(90deg);
   }
-`;
 
-export const TechDetailRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 5px 2px 0;
-  color: rgba(58, 58, 58, 0.74);
-  font-size: 11px;
-  line-height: 1.5;
+  dl {
+    display: grid;
+    margin: 10px 0 0;
+  }
 
-  > span:last-child {
+  dl > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 8px 0;
+    border-top: 1px solid var(--a-border);
+    font-size: var(--a-text-sm);
+  }
+
+  dl > div:first-child {
+    border-top: 0;
+  }
+
+  dt {
+    min-width: 0;
+    color: var(--a-ink-2);
+  }
+
+  dd {
     flex-shrink: 0;
-    color: rgba(24, 24, 24, 0.88);
+    margin: 0;
+    color: var(--a-ink);
     font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    summary svg {
+      transition: none;
+    }
   }
 `;

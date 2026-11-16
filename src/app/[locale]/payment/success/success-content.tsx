@@ -28,6 +28,8 @@ type SuccessContentProps = {
   dateLocale: string;
   descriptionLine1: string;
   descriptionLine2: string;
+  /** «Мой доступ» button label (HUB-D31); the link itself arrives with the access answer. */
+  myAccessButtonText: string;
   homeButtonText: string;
   isTelegramAccessPurchase: boolean;
   isRenewalPurchase: boolean;
@@ -47,6 +49,8 @@ type SuccessContentProps = {
   telegramMainGroupLinkText: string;
   telegramOpenLinkText: string;
   telegramPendingText: string;
+  telegramScheduledAfterCohortText: string;
+  telegramScheduledText: string;
   telegramUnavailableText: string;
   title: string;
 };
@@ -59,6 +63,7 @@ export default function SuccessContent({
   descriptionLine1,
   descriptionLine2,
   homeButtonText,
+  myAccessButtonText,
   isTelegramAccessPurchase,
   isRenewalPurchase,
   offerCode,
@@ -76,6 +81,8 @@ export default function SuccessContent({
   telegramMainGroupLinkText,
   telegramOpenLinkText,
   telegramPendingText,
+  telegramScheduledAfterCohortText,
+  telegramScheduledText,
   telegramUnavailableText,
   title,
 }: SuccessContentProps) {
@@ -125,6 +132,7 @@ export default function SuccessContent({
     purchaseValue,
   ]);
   const [inspirationAccessExpiresAt, setInspirationAccessExpiresAt] = useState("");
+  const [myAccessUrl, setMyAccessUrl] = useState("");
   // Russian long dates already end in "г." - no second full stop after those.
   const formattedInspirationExpiry = inspirationAccessExpiresAt
     ? new Intl.DateTimeFormat(dateLocale, {
@@ -132,6 +140,16 @@ export default function SuccessContent({
         timeZone: "Europe/Warsaw",
       }).format(new Date(inspirationAccessExpiresAt))
     : "";
+  const formatScheduledText = (accessStartsAt: string) =>
+    accessStartsAt
+      ? telegramScheduledText.replace(
+          "{date}",
+          new Intl.DateTimeFormat(dateLocale, {
+            dateStyle: "long",
+            timeZone: "Europe/Warsaw",
+          }).format(new Date(accessStartsAt)),
+        )
+      : telegramScheduledAfterCohortText;
   const inspirationAccessExpiryText = formattedInspirationExpiry
     ? `${telegramInspirationUntilLabel} ${formattedInspirationExpiry}${formattedInspirationExpiry.endsWith(".") ? "" : "."}`
     : "";
@@ -165,10 +183,22 @@ export default function SuccessContent({
             paymentIntentId={paymentIntentId}
             pendingText={telegramPendingText}
             productId={productId}
+            scheduledText={formatScheduledText}
             supportButtonText={telegramContactSupportText}
             supportHref={SUPPORT_TELEGRAM_URL}
             unavailableText={telegramUnavailableText}
             onInspirationExpiryChange={setInspirationAccessExpiresAt}
+            onMyAccessUrlChange={setMyAccessUrl}
+          />
+        ) : null}
+        {myAccessUrl ? (
+          <Button
+            buttonText={myAccessButtonText}
+            href={myAccessUrl}
+            prefetch={false}
+            rel="nofollow"
+            variant="secondary"
+            analytics={{ id: "open_my_access", placement: "success_result" }}
           />
         ) : null}
         <Button

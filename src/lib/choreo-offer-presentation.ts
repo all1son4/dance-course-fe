@@ -15,6 +15,8 @@ export const isChoreoTutorialProduct = (product: SellableProduct) =>
  */
 export const shouldShowOfferLabel = (product: SellableProduct, offerId: string) => {
   if (product.code === "online-group-anna-strok") return true;
+  // The Hub's two prices are not tariffs to the buyer: «Полная/Специальная цена» stays internal.
+  if (product.code === "inspiration-hub") return false;
   if (product.offers.length === 1) return false;
 
   const enabledOffers = product.offers.filter((offer) => offer.salesEnabled);

@@ -81,6 +81,16 @@ export const sendResendEmail = async ({
   if (!response.ok) {
     const responseText = await response.text();
 
+    // The key was already used for this email: an earlier attempt that timed out on
+    // our side was delivered. Sending again would only duplicate it.
+    if (
+      idempotencyKey?.trim() &&
+      response.status === 409 &&
+      responseText.includes("invalid_idempotent_request")
+    ) {
+      return { emailId: "" };
+    }
+
     throw new Error(`resend_request_failed:${response.status}:${responseText}`);
   }
 

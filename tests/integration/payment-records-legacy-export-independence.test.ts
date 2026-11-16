@@ -9,7 +9,10 @@ import {
   findPaymentRecordByIntentIdFromDatabase,
   upsertPaymentRecordToDatabase,
 } from "@/db/payment-records";
-import { createEmptyPaymentRecord } from "@/lib/payment-record";
+import {
+  createEmptyPaymentRecord,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -83,5 +86,83 @@ test("payment persistence stays independent and rejects retired export rows", as
       DELETE FROM purchases
       WHERE payment_intent_id = ${paymentIntentId}
     `;
+  }
+});
+
+test("legacy payment projection preserves classified cohort, owner and access source", async () => {
+  const suffix = randomUUID();
+  const paymentIntentId = `pi_hub_source_projection_${suffix}`;
+  const chatId = `hub_source_projection_${suffix}`;
+  const cohortId = randomUUID();
+  const telegramUserId = "123456789";
+  const record: PaymentRecordSnapshot = {
+    ...createEmptyPaymentRecord(),
+    access_workflow: "telegram-online-group",
+    amount: "5000",
+    currency: "eur",
+    delivery_channel: "telegram",
+    first_seen_at: "2026-09-14T08:00:00.000Z",
+    outcome: "succeeded",
+    payment_intent_id: paymentIntentId,
+    status: "succeeded",
+    telegram_access_status: "activated",
+    telegram_channel_chat_id: chatId,
+    telegram_token_used_at: "2026-09-14T08:01:00.000Z",
+    telegram_user_id: telegramUserId,
+    updated_at: "2026-09-14T08:02:00.000Z",
+  };
+
+  try {
+    await client`
+      INSERT INTO telegram_chats (chat_id, title, type)
+      VALUES (${chatId}, 'Classified purchase regression', 'supergroup')
+    `;
+    await client`
+      INSERT INTO online_group_cohorts (id, title, main_chat_id, starts_at)
+      VALUES (${cohortId}, 'Classified purchase regression', ${chatId},
+        '2026-09-01T08:00:00.000Z')
+    `;
+    await upsertPaymentRecordToDatabase(record);
+
+    const [purchase] = await client<{ id: string }[]>`
+      UPDATE purchases
+      SET online_group_cohort_id = ${cohortId}, telegram_user_id = ${telegramUserId}
+      WHERE payment_intent_id = ${paymentIntentId}
+      RETURNING id
+    `;
+    assert.ok(purchase);
+    await client`
+      UPDATE access_entitlements SET source_kind = 'online_group'
+      WHERE purchase_id = ${purchase.id} AND access_key = 'primary'
+    `;
+
+    await upsertPaymentRecordToDatabase({
+      ...record,
+      updated_at: "2026-09-14T08:03:00.000Z",
+    });
+
+    const [provenance] = await client<
+      {
+        online_group_cohort_id: string;
+        telegram_user_id: string;
+        source_kind: string;
+      }[]
+    >`
+      SELECT purchase.online_group_cohort_id, purchase.telegram_user_id,
+        entitlement.source_kind
+      FROM purchases purchase
+      JOIN access_entitlements entitlement ON entitlement.purchase_id = purchase.id
+      WHERE purchase.id = ${purchase.id} AND entitlement.access_key = 'primary'
+    `;
+
+    assert.deepEqual(provenance, {
+      online_group_cohort_id: cohortId,
+      telegram_user_id: telegramUserId,
+      source_kind: "online_group",
+    });
+  } finally {
+    await client`DELETE FROM purchases WHERE payment_intent_id = ${paymentIntentId}`;
+    await client`DELETE FROM online_group_cohorts WHERE id = ${cohortId}`;
+    await client`DELETE FROM telegram_chats WHERE chat_id = ${chatId}`;
   }
 });

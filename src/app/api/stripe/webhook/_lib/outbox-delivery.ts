@@ -4,16 +4,43 @@ import type Stripe from "stripe";
 import { getDatabase } from "@/db/client";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import { stripeEvents } from "@/db/schema";
-import type { ClaimedOutboxJob, OutboxDeliveryResult } from "@/db/transactional-outbox";
+import {
+  type ClaimedOutboxJob,
+  findPurchaseOutboxJobState,
+  type OutboxDeliveryResult,
+} from "@/db/transactional-outbox";
 
+import { deliverPurchaseAccessFromOutbox } from "./side-effects/purchase-access";
 import { deliverPurchaseSuccessEmailFromOutbox } from "./side-effects/purchase-email";
 import { deliverPurchaseAlertFromOutbox } from "./side-effects/purchase-telegram-alert";
 import type { StripeWebhookSyncResult } from "./side-effects/types";
 
+// The registry order is also the delivery order: access, then email, then alert.
 export const STRIPE_OUTBOX_KINDS = [
+  "telegram_access_delivery",
   "purchase_success_email",
   "admin_telegram_alert",
 ] as const;
+
+const UNFINISHED_JOB_STATUSES = new Set(["pending", "sending", "failed"]);
+
+/**
+ * The purchase email waits until the access job of the same purchase is final. A
+ * rejected access job lets the email go: the purchase stands and the alert names
+ * the reason.
+ */
+const waitForPurchaseAccessJob = async (purchaseId: string | null) => {
+  if (!purchaseId) return;
+
+  const accessJob = await findPurchaseOutboxJobState(
+    purchaseId,
+    "telegram_access_delivery",
+  );
+
+  if (accessJob && UNFINISHED_JOB_STATUSES.has(accessJob.status)) {
+    throw new Error("purchase_email_waiting_for_access_delivery");
+  }
+};
 
 class NonRetryableOutboxDeliveryError extends Error {
   readonly retryable = false;
@@ -90,7 +117,18 @@ export const deliverStripeOutboxJob = async ({
 }): Promise<OutboxDeliveryResult> => {
   const context = await loadDeliveryContext(job);
 
+  if (job.kind === "telegram_access_delivery") {
+    return deliverPurchaseAccessFromOutbox({
+      event: context.event,
+      paymentRecord: context.paymentRecord,
+      purchaseId: job.purchaseId,
+      stripe,
+    });
+  }
+
   if (job.kind === "purchase_success_email") {
+    await waitForPurchaseAccessJob(job.purchaseId);
+
     const providerIdempotencyKey =
       typeof job.payload.providerIdempotencyKey === "string"
         ? job.payload.providerIdempotencyKey.trim()
@@ -108,6 +146,7 @@ export const deliverStripeOutboxJob = async ({
     return deliverPurchaseAlertFromOutbox({
       event: context.event,
       handledEvent: context.handledEvent,
+      purchaseId: job.purchaseId,
     });
   }
 

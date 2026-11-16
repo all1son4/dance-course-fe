@@ -23,6 +23,12 @@
     "db:audit:legacy-contract": "tsx src/db/audit-legacy-contract.ts",
     "db:audit:legacy-contract:postflight": "tsx src/db/audit-legacy-contract-postflight.ts",
     "db:audit:monthly-sales-report": "tsx src/db/audit-monthly-sales-report.ts",
+    "db:audit:online-group-configuration": "tsx src/db/audit-online-group-configuration.ts",
+    "db:audit:online-group-configuration:dev": "DATABASE_ENV=development npm run db:audit:online-group-configuration",
+    "db:audit:online-group-configuration:prod": "DATABASE_ENV=production npm run db:audit:online-group-configuration",
+    "db:audit:online-group-reconciliation": "tsx src/db/audit-online-group-configuration.ts --include-purchases",
+    "db:audit:online-group-reconciliation:dev": "DATABASE_ENV=development npm run db:audit:online-group-reconciliation",
+    "db:audit:online-group-reconciliation:prod": "DATABASE_ENV=production npm run db:audit:online-group-reconciliation",
     "db:backfill:stripe-settlement": "tsx src/db/backfill-stripe-settlement.ts",
     "db:backfill:stripe-settlement:dev": "env -u STRIPE_SECRET_KEY NODE_ENV=development DATABASE_ENV=development tsx src/db/backfill-stripe-settlement.ts",
     "db:backfill:stripe-settlement:prod": "NODE_ENV=production DATABASE_ENV=production tsx src/db/backfill-stripe-settlement.ts",
@@ -33,6 +39,15 @@
     "db:health": "tsx src/db/health.ts",
     "db:health:dev": "DATABASE_ENV=development npm run db:health",
     "db:health:prod": "DATABASE_ENV=production npm run db:health",
+    "db:hub:expiry-preview": "tsx src/db/run-hub-expiry-preview.ts",
+    "db:hub:expiry-preview:dev": "DATABASE_ENV=development npm run db:hub:expiry-preview --",
+    "db:hub:expiry-preview:prod": "DATABASE_ENV=production npm run db:hub:expiry-preview --",
+    "db:hub:classify-plus": "tsx src/db/run-plus-hub-classification.ts",
+    "db:hub:classify-plus:dev": "DATABASE_ENV=development npm run db:hub:classify-plus --",
+    "db:hub:classify-plus:prod": "DATABASE_ENV=production npm run db:hub:classify-plus --",
+    "db:hub:launch-transfer": "tsx src/db/run-hub-launch-transfer.ts",
+    "db:hub:launch-transfer:dev": "DATABASE_ENV=development npm run db:hub:launch-transfer --",
+    "db:hub:launch-transfer:prod": "DATABASE_ENV=production npm run db:hub:launch-transfer --",
     "db:migrate": "tsx src/db/run-migrations.ts",
     "db:migrate:check": "MIGRATION_DRY_RUN=1 tsx src/db/run-migrations.ts",
     "db:operations:status": "tsx src/db/operational-status.ts",
@@ -97,7 +112,16 @@
     "typescript": "^6.0.3"
   },
   "overrides": {
-    "@react-pdf/textkit": "6.3.0"
+    "@react-pdf/textkit": "6.3.0",
+    "eslint-plugin-import": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-jsx-a11y": {
+      "eslint": "$eslint"
+    },
+    "eslint-plugin-react": {
+      "eslint": "$eslint"
+    }
   },
   "allowScripts": {
     "@parcel/watcher@2.6.0": true,

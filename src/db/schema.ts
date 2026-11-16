@@ -67,6 +67,8 @@ export const productOffers = pgTable(
         | "with-mentor"
         | "renewal-discount"
         | "renewal-library-access"
+        | "hub-access"
+        | "hub-renewal"
       >(),
     label: text("label").notNull(),
     labelKey: text("label_key"),
@@ -88,7 +90,9 @@ export const productOffers = pgTable(
         'without-mentor',
         'with-mentor',
         'renewal-discount',
-        'renewal-library-access'
+        'renewal-library-access',
+        'hub-access',
+        'hub-renewal'
       )`,
     ),
     check(
@@ -119,6 +123,24 @@ export const telegramChats = pgTable(
   (table) => [
     index("telegram_chats_is_active_idx").on(table.isActive),
     index("telegram_chats_title_idx").on(table.title),
+  ],
+);
+
+export const inspirationHubSettings = pgTable(
+  "inspiration_hub_settings",
+  {
+    id: integer("id").primaryKey().default(1),
+    telegramChatId: text("telegram_chat_id").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check("inspiration_hub_settings_singleton_check", sql`${table.id} = 1`),
+    foreignKey({
+      columns: [table.telegramChatId],
+      foreignColumns: [telegramChats.chatId],
+      name: "inspiration_hub_settings_chat_fk",
+    }).onDelete("restrict"),
   ],
 );
 
@@ -188,6 +210,82 @@ export const renewalCampaignSourceChats = pgTable(
   ],
 );
 
+export const onlineGroupCohorts = pgTable(
+  "online_group_cohorts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    title: text("title").notNull(),
+    mainChatId: text("main_chat_id").notNull(),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    previousCohortId: uuid("previous_cohort_id"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    accessEndsAt: timestamp("access_ends_at", { withTimezone: true }),
+    lessonsClearedAt: timestamp("lessons_cleared_at", { withTimezone: true }),
+    salesEnabled: boolean("sales_enabled").notNull().default(false),
+    /**
+     * HUB-D44: a buyer who joins this cohort's main chat is removed from the previous
+     * cohort's chat (plan, section 6.5). Off until the owner turns it on.
+     */
+    removesPreviousChatMembers: boolean("removes_previous_chat_members")
+      .notNull()
+      .default(false),
+    /**
+     * HUB-D50: how long the cohort runs, set in the admin. Shown on the group page and
+     * in «Мой доступ»; the closure window warns when closing before it is over.
+     */
+    durationWeeks: integer("duration_weeks").notNull().default(6),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.mainChatId],
+      foreignColumns: [telegramChats.chatId],
+      name: "online_group_cohorts_main_chat_fk",
+    }).onDelete("restrict"),
+    foreignKey({
+      columns: [table.previousCohortId],
+      foreignColumns: [table.id],
+      name: "online_group_cohorts_previous_fk",
+    }).onDelete("restrict"),
+    check("online_group_cohorts_title_check", sql`BTRIM(${table.title}) <> ''`),
+    check(
+      "online_group_cohorts_duration_weeks_check",
+      sql`${table.durationWeeks} BETWEEN 1 AND 26`,
+    ),
+    check(
+      "online_group_cohorts_previous_not_self_check",
+      sql`${table.previousCohortId} IS NULL OR ${table.previousCohortId} <> ${table.id}`,
+    ),
+    check(
+      "online_group_cohorts_closure_pair_check",
+      sql`(${table.closedAt} IS NULL) = (${table.accessEndsAt} IS NULL)`,
+    ),
+    check(
+      "online_group_cohorts_closure_time_check",
+      sql`${table.closedAt} IS NULL OR (
+        ${table.closedAt} >= ${table.startsAt}
+        AND ${table.accessEndsAt} > ${table.closedAt}
+      )`,
+    ),
+    check(
+      "online_group_cohorts_lessons_cleared_check",
+      sql`${table.closedAt} IS NULL OR (
+        ${table.lessonsClearedAt} IS NOT NULL
+        AND ${table.lessonsClearedAt} <= ${table.closedAt}
+      )`,
+    ),
+    check(
+      "online_group_cohorts_sales_open_check",
+      sql`${table.closedAt} IS NULL OR ${table.salesEnabled} = false`,
+    ),
+    uniqueIndex("online_group_cohorts_main_chat_idx").on(table.mainChatId),
+    uniqueIndex("online_group_cohorts_previous_cohort_idx")
+      .on(table.previousCohortId)
+      .where(sql`${table.previousCohortId} IS NOT NULL`),
+  ],
+);
+
 export const onlineGroupCampaigns = pgTable(
   "online_group_campaigns",
   {
@@ -247,6 +345,62 @@ export const telegramRenewalVerifications = pgTable(
     ),
     index("telegram_renewal_verifications_user_idx").on(table.telegramUserId),
     index("telegram_renewal_verifications_expires_idx").on(table.expiresAt),
+  ],
+);
+
+// One Telegram check per checkout session for the discounted Hub price. Unlike
+// `telegram_renewal_verifications` it needs no renewal campaign or chat pair: the
+// basis is either the buyer's own active Hub period or the chat of a cohort.
+export const hubDiscountVerifications = pgTable(
+  "hub_discount_verifications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    checkoutSessionId: text("checkout_session_id").notNull(),
+    telegramUserId: text("telegram_user_id").notNull(),
+    telegramUsername: text("telegram_username"),
+    basis: text("basis").$type<"cohort_chat" | "active_hub">(),
+    cohortId: uuid("cohort_id"),
+    status: text("status").notNull().$type<"verified" | "not_member" | "failed">(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    lastError: text("last_error"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (table) => [
+    check(
+      "hub_discount_verifications_status_check",
+      sql`${table.status} IN ('verified', 'not_member', 'failed')`,
+    ),
+    check(
+      "hub_discount_verifications_basis_check",
+      sql`${table.basis} IS NULL OR ${table.basis} IN ('cohort_chat', 'active_hub')`,
+    ),
+    // Only a passed check has a basis and a time; a cohort accompanies exactly
+    // the cohort-chat basis.
+    check(
+      "hub_discount_verifications_verified_check",
+      sql`CASE
+        WHEN ${table.status} = 'verified'
+          THEN ${table.basis} IS NOT NULL AND ${table.verifiedAt} IS NOT NULL
+        ELSE ${table.basis} IS NULL
+      END`,
+    ),
+    check(
+      "hub_discount_verifications_cohort_check",
+      sql`(${table.basis} IS NOT DISTINCT FROM 'cohort_chat') = (${table.cohortId} IS NOT NULL)`,
+    ),
+    check(
+      "hub_discount_verifications_ids_check",
+      sql`BTRIM(${table.checkoutSessionId}) <> ''
+        AND BTRIM(${table.telegramUserId}) <> ''`,
+    ),
+    foreignKey({
+      columns: [table.cohortId],
+      foreignColumns: [onlineGroupCohorts.id],
+      name: "hub_discount_verifications_cohort_fk",
+    }).onDelete("restrict"),
+    uniqueIndex("hub_discount_verifications_checkout_idx").on(table.checkoutSessionId),
   ],
 );
 
@@ -349,6 +503,8 @@ export const purchases = pgTable(
     firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    onlineGroupCohortId: uuid("online_group_cohort_id"),
+    telegramUserId: text("telegram_user_id"),
     // Preserve the historical invite-list date independently of retired export rows.
     // Null keeps DB-native purchases on their immutable firstSeenAt fallback.
     inviteHistoryCreatedAt: timestamp("invite_history_created_at", {
@@ -394,11 +550,20 @@ export const purchases = pgTable(
       "purchases_source_check",
       sql`${table.source} IN ('stripe', 'admin_offer_link')`,
     ),
+    check(
+      "purchases_telegram_user_id_check",
+      sql`${table.telegramUserId} IS NULL OR BTRIM(${table.telegramUserId}) <> ''`,
+    ),
     foreignKey({
       columns: [table.offerId, table.productId],
       foreignColumns: [productOffers.id, productOffers.productId],
       name: "purchases_offer_product_fk",
     }),
+    foreignKey({
+      columns: [table.onlineGroupCohortId],
+      foreignColumns: [onlineGroupCohorts.id],
+      name: "purchases_online_group_cohort_fk",
+    }).onDelete("restrict"),
     uniqueIndex("purchases_payment_intent_id_idx").on(table.paymentIntentId),
     index("purchases_checkout_session_id_idx").on(table.checkoutSessionId),
     index("purchases_customer_id_idx").on(table.customerId),
@@ -411,6 +576,7 @@ export const purchases = pgTable(
     index("purchases_stripe_balance_transaction_id_idx").on(
       table.stripeBalanceTransactionId,
     ),
+    index("purchases_online_group_cohort_idx").on(table.onlineGroupCohortId),
   ],
 );
 
@@ -574,6 +740,11 @@ export const purchaseSideEffects = pgTable(
         | "polish_terminal_recorded"
         | "polish_terminal_reminder"
         | "choreo_access_expiry_reminder"
+        | "hub_period_start_invite"
+        | "hub_expiry_reminder"
+        | "online_group_previous_chat_removal"
+        | "cohort_closure_post"
+        | "cohort_grace_reminder"
       >(),
     provider: text("provider").$type<"resend" | "telegram" | "internal">(),
     payload: jsonb("payload")
@@ -734,6 +905,9 @@ export const accessEntitlements = pgTable(
       >(),
     startsAt: timestamp("starts_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }),
+    periodStartMode: text("period_start_mode").$type<"payment" | "after_entitlement">(),
+    paidDurationDays: integer("paid_duration_days"),
+    startsAfterEntitlementId: uuid("starts_after_entitlement_id"),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     revokedReason: text("revoked_reason"),
     externalTargetType: text("external_target_type").$type<
@@ -743,6 +917,9 @@ export const accessEntitlements = pgTable(
     telegramUserId: text("telegram_user_id"),
     telegramUsername: text("telegram_username"),
     currentTokenId: text("current_token_id"),
+    sourceKind: text("source_kind").$type<
+      "online_group" | "standalone_hub" | "hub_bridge"
+    >(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -767,16 +944,95 @@ export const accessEntitlements = pgTable(
       sql`${table.externalTargetType} IS NULL
         OR ${table.externalTargetType} IN ('telegram_chat', 'telegram_bot', 'manual')`,
     ),
+    check(
+      "access_entitlements_source_kind_check",
+      sql`${table.sourceKind} IS NULL OR ${table.sourceKind} IN ('online_group', 'standalone_hub', 'hub_bridge')`,
+    ),
+    check(
+      "access_entitlements_source_key_check",
+      sql`
+        CASE
+          WHEN ${table.sourceKind} = 'online_group'
+            THEN ${table.accessKey} IN ('primary', 'inspiration-hub')
+          WHEN ${table.sourceKind} = 'standalone_hub'
+            THEN ${table.accessKey} = 'inspiration-hub'
+          WHEN ${table.sourceKind} = 'hub_bridge'
+            THEN ${table.accessKey} = 'inspiration-hub-bridge'
+          ELSE TRUE
+        END
+      `,
+    ),
+    check(
+      "access_entitlements_period_start_mode_check",
+      sql`${table.periodStartMode} IS NULL OR ${table.periodStartMode} IN ('payment', 'after_entitlement')`,
+    ),
+    check(
+      "access_entitlements_paid_period_metadata_check",
+      sql`
+        CASE
+          WHEN ${table.periodStartMode} IS NULL
+            THEN ${table.paidDurationDays} IS NULL
+              AND ${table.startsAfterEntitlementId} IS NULL
+          ELSE ${table.sourceKind} IS NOT NULL
+            AND ${table.sourceKind} = 'standalone_hub'
+            AND ${table.paidDurationDays} IS NOT NULL
+            AND ${table.paidDurationDays} = 56
+        END
+      `,
+    ),
+    check(
+      "access_entitlements_period_dependency_check",
+      sql`
+        CASE
+          WHEN ${table.periodStartMode} = 'payment'
+            THEN ${table.startsAfterEntitlementId} IS NULL
+          WHEN ${table.periodStartMode} = 'after_entitlement'
+            THEN ${table.startsAfterEntitlementId} IS NOT NULL
+          ELSE TRUE
+        END
+      `,
+    ),
+    check(
+      "access_entitlements_period_dates_check",
+      sql`
+        CASE
+          WHEN ${table.periodStartMode} = 'payment'
+            THEN ${table.startsAt} IS NOT NULL
+              AND ${table.expiresAt} IS NOT NULL
+              AND ${table.expiresAt} > ${table.startsAt}
+          WHEN ${table.periodStartMode} = 'after_entitlement'
+            THEN (${table.startsAt} IS NULL AND ${table.expiresAt} IS NULL)
+              OR (
+                ${table.startsAt} IS NOT NULL
+                AND ${table.expiresAt} IS NOT NULL
+                AND ${table.expiresAt} > ${table.startsAt}
+              )
+          ELSE TRUE
+        END
+      `,
+    ),
+    check(
+      "access_entitlements_period_not_self_check",
+      sql`${table.startsAfterEntitlementId} IS NULL OR ${table.startsAfterEntitlementId} <> ${table.id}`,
+    ),
     foreignKey({
       columns: [table.offerId, table.productId],
       foreignColumns: [productOffers.id, productOffers.productId],
       name: "access_entitlements_offer_product_fk",
     }),
+    foreignKey({
+      columns: [table.startsAfterEntitlementId],
+      foreignColumns: [table.id],
+      name: "access_entitlements_starts_after_fk",
+    }).onDelete("restrict"),
     uniqueIndex("access_entitlements_purchase_key_idx").on(
       table.purchaseId,
       table.accessKey,
     ),
     uniqueIndex("access_entitlements_id_purchase_id_idx").on(table.id, table.purchaseId),
+    uniqueIndex("access_entitlements_starts_after_idx")
+      .on(table.startsAfterEntitlementId)
+      .where(sql`${table.startsAfterEntitlementId} IS NOT NULL`),
     index("access_entitlements_status_idx").on(table.status),
     index("access_entitlements_telegram_user_idx").on(table.telegramUserId),
     index("access_entitlements_expires_at_idx").on(table.expiresAt),

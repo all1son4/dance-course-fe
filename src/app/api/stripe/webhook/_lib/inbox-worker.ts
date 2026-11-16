@@ -15,6 +15,7 @@ import {
   type StripeSettlementSnapshot,
 } from "./database-sync";
 import { shouldRunPurchaseSuccessSideEffects } from "./side-effects/eligibility";
+import { needsPurchaseAccessJob } from "./side-effects/purchase-access";
 import {
   isSupportedStripePaymentIntentEvent,
   prepareStripePaymentEventForDatabase,
@@ -70,6 +71,17 @@ const createPurchaseOutboxJobs = ({
   };
 
   const jobs: PaymentProjectionCommand["outboxJobs"] = [
+    // Hub and Online Group purchases join the Hub period model in their own job,
+    // outside the purchase transaction; the email waits for it.
+    ...(needsPurchaseAccessJob(paymentRecord.offer_id)
+      ? [
+          {
+            kind: "telegram_access_delivery" as const,
+            payload: sharedPayload,
+            provider: "internal" as const,
+          },
+        ]
+      : []),
     {
       kind: "purchase_success_email" as const,
       payload: {

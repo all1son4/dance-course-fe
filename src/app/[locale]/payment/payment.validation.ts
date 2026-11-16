@@ -134,6 +134,8 @@ export const getPaymentCustomerSchema = (
       .string()
       .transform((value) => (typeof value === "string" ? value.trim() : ""))
       .email(messages.emailInvalid)
+      // yup accepts "anna@gmailcom": the purchase email with the access link would bounce.
+      .matches(/@[^@\s]+\.[^@\s.]{2,}$/u, messages.emailInvalid)
       .required(messages.emailRequired),
     nickname: yup
       .string()

@@ -7,7 +7,8 @@ export type SellableProductCode =
   | "choreo-love-me-in-the-morning"
   | "choreo-bundle"
   | "choreo-birthday-drop"
-  | "online-group-anna-strok";
+  | "online-group-anna-strok"
+  | "inspiration-hub";
 
 export type SellableProductOfferCode =
   | "standard"
@@ -15,7 +16,9 @@ export type SellableProductOfferCode =
   | "without-mentor"
   | "with-mentor"
   | "renewal-discount"
-  | "renewal-library-access";
+  | "renewal-library-access"
+  | "hub-access"
+  | "hub-renewal";
 
 export type SellableProductPrices = Record<SupportedCheckoutCurrency, number>;
 
@@ -58,11 +61,15 @@ export type SellableProduct = {
 };
 
 const ONLINE_GROUP_STANDARD_OFFER_ID = "off_R6vN2cH9sW4y";
-const ONLINE_GROUP_LIBRARY_OFFER_ID = "off_online_group_anna_strok_library_access";
+export const ONLINE_GROUP_LIBRARY_OFFER_ID = "off_online_group_anna_strok_library_access";
 export const ONLINE_GROUP_RENEWAL_OFFER_ID =
   "off_online_group_anna_strok_renewal_discount";
 export const ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID =
   "off_online_group_anna_strok_renewal_library_access";
+
+export const INSPIRATION_HUB_PRODUCT_ID = "prd_inspiration_hub";
+export const INSPIRATION_HUB_ACCESS_OFFER_ID = "off_inspiration_hub_access";
+export const INSPIRATION_HUB_RENEWAL_OFFER_ID = "off_inspiration_hub_renewal";
 
 export const BIRTHDAY_DROP_PRODUCT_ID = "prd_choreo_birthday_drop";
 export const BIRTHDAY_DROP_OFFER_ID = "off_choreo_birthday_drop_standard";
@@ -90,6 +97,16 @@ export const isOnlineGroupNewOfferId = (offerId: string) =>
 
 export const isOnlineGroupRenewalOfferId = (offerId: string) =>
   (ONLINE_GROUP_RENEWAL_OFFER_IDS as readonly string[]).includes(offerId);
+
+/**
+ * The `renewal` value of the discounted Hub checkout link. The payment page uses the
+ * Online renewal form for it, but the check runs against the Hub rules (HUB-D17).
+ */
+export const INSPIRATION_HUB_DISCOUNT_SLUG = "inspiration-hub";
+
+export const isInspirationHubOfferId = (offerId: string) =>
+  offerId === INSPIRATION_HUB_ACCESS_OFFER_ID ||
+  offerId === INSPIRATION_HUB_RENEWAL_OFFER_ID;
 
 type CheckoutHrefOptions = {
   offerId?: string;
@@ -377,7 +394,7 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     code: "online-group-anna-strok",
     description: [
       "Формат регулярных тренировок для тех, кто хочет продолжать развиваться, поддерживать форму и работать с телом.",
-      "Если у тебя нет возможности посещать мои офлайн-занятия, ты сможешь получать новые знания, практиковаться дома и быть на связи со мной, где бы ты ни находилась.",
+      "Если у тебя нет возможности посещать мои офлайн-занятия, ты сможешь получать новые знания, практиковаться дома и быть на связи со мной из любой точки мира.",
     ],
     descriptionKeys: [
       "onlineGroupAnnaStrok.description.1",
@@ -448,6 +465,55 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
           eur: 50,
         },
         telegramAccessDurationDays: 0,
+      },
+    ],
+  },
+  // The 56 days are owned by the Hub period service; the duration here only
+  // names the term in emails and alerts.
+  "inspiration-hub": {
+    accessNote:
+      "После оплаты мы отправим персональную одноразовую ссылку для входа в Inspiration Hub.",
+    accessNoteKey: "inspirationHub.accessNote",
+    code: "inspiration-hub",
+    description: ["Доступ к закрытой библиотеке Inspiration Hub в Telegram на 8 недель."],
+    descriptionKeys: ["inspirationHub.description.1"],
+    id: INSPIRATION_HUB_PRODUCT_ID,
+    salesEnabled: false,
+    slug: "inspiration-hub",
+    shortTitle: "Inspiration Hub",
+    shortTitleKey: "inspirationHub.shortTitle",
+    title: "Inspiration Hub",
+    titleKey: "inspirationHub.title",
+    type: "course",
+    defaultOfferId: INSPIRATION_HUB_ACCESS_OFFER_ID,
+    offers: [
+      {
+        accessWorkflow: "telegram-inspiration-hub",
+        code: "hub-access",
+        deliveryChannel: "telegram",
+        id: INSPIRATION_HUB_ACCESS_OFFER_ID,
+        label: "Полная цена",
+        labelKey: "inspirationHub.offers.hubAccess",
+        salesEnabled: true,
+        prices: {
+          pln: 200,
+          eur: 45,
+        },
+        telegramAccessDurationDays: 56,
+      },
+      {
+        accessWorkflow: "telegram-hub-renewal",
+        code: "hub-renewal",
+        deliveryChannel: "telegram",
+        id: INSPIRATION_HUB_RENEWAL_OFFER_ID,
+        label: "Специальная цена",
+        labelKey: "inspirationHub.offers.hubRenewal",
+        salesEnabled: true,
+        prices: {
+          pln: 155,
+          eur: 35,
+        },
+        telegramAccessDurationDays: 56,
       },
     ],
   },
