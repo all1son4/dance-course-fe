@@ -9,7 +9,7 @@ import {
   TriangleAlert,
   UserMinus,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import styled from "styled-components";
 
 import type { HubAdminOverview, HubPeriodState } from "@/lib/admin/hub-admin";
@@ -32,6 +32,7 @@ import {
   Skeleton,
   Stack,
   StatTile,
+  TextButton,
   TileGrid,
 } from "../ui/primitives";
 import { CellPrimary, CellSecondary, DataTable, TableScroller } from "../ui/table";
@@ -128,6 +129,10 @@ const formatDateTime = (iso: string) =>
   }).format(new Date(iso));
 
 const toDateInput = (iso: string) => iso.slice(0, 10);
+
+const Nowrap = styled.span`
+  white-space: nowrap;
+`;
 
 type HubWorkspaceProps = {
   failed: boolean;
@@ -298,16 +303,15 @@ export const HubWorkspace = ({
               title="Покупки библиотеки без дат после закрытия потока"
             >
               Люди пока остаются в библиотеке. Напиши разработчику; покупки:{" "}
-              {problems.stalledPaymentIntentIds.map((id) => (
-                <AdminButton
-                  key={id}
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onOpenPurchase(id)}
-                >
-                  {id}
-                </AdminButton>
+              {problems.stalledPaymentIntentIds.map((id, index) => (
+                <Fragment key={id}>
+                  {index > 0 && ", "}
+                  <TextButton type="button" onClick={() => onOpenPurchase(id)}>
+                    {id}
+                  </TextButton>
+                </Fragment>
               ))}
+              .
             </Callout>
           )}
           {ownerless.length > 0 && (
@@ -362,7 +366,11 @@ export const HubWorkspace = ({
       <Columns>
         <Panel
           title="Telegram-группа библиотеки"
-          description={hub.chat ? `ID ${hub.chat.chatId}` : "Не настроен"}
+          description={
+            hub.chat
+              ? "Сюда бот добавляет купивших библиотеку и отсюда убирает по окончании."
+              : "Не выбрана"
+          }
         >
           {hub.chat ? (
             <Stack $gap={10}>
@@ -496,12 +504,15 @@ export const HubWorkspace = ({
                             {period.offerLabel || "Inspiration Hub"}
                           </CellPrimary>
                           <CellSecondary>
-                            Оплата {formatDate(period.paidAt)}
+                            Оплата <Nowrap>{formatDate(period.paidAt)}</Nowrap>
                           </CellSecondary>
                         </td>
                         <td data-label="Период">
                           {period.startsAt ? (
-                            `${formatDate(period.startsAt)} — ${formatDate(period.expiresAt)}`
+                            <span>
+                              <Nowrap>{formatDate(period.startsAt)}</Nowrap> —{" "}
+                              <Nowrap>{formatDate(period.expiresAt)}</Nowrap>
+                            </span>
                           ) : (
                             <Muted>После окончания потока</Muted>
                           )}
@@ -518,7 +529,15 @@ export const HubWorkspace = ({
                           )}
                         </td>
                         <td data-label="Состояние">
-                          <Badge $tone={state.tone}>{state.label}</Badge>
+                          <Stack $gap={4}>
+                            <span>
+                              <Badge $tone={state.tone}>{state.label}</Badge>
+                            </span>
+                            {(period.state === "scheduled" ||
+                              period.state === "waiting") && (
+                              <CellSecondary>Ссылка придёт в день начала</CellSecondary>
+                            )}
+                          </Stack>
                         </td>
                         <td data-actions>
                           <Stack $gap={8}>
@@ -541,10 +560,6 @@ export const HubWorkspace = ({
                                 Покупка
                               </AdminButton>
                             </Row>
-                            {(period.state === "scheduled" ||
-                              period.state === "waiting") && (
-                              <Muted>Ссылка придёт в день начала.</Muted>
-                            )}
                             {links === "none" && (
                               <Muted>
                                 Ссылка не нужна: доступ уже активен или ещё не начался.
