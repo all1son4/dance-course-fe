@@ -41,7 +41,6 @@ import {
   TelegramVerifyButton,
 } from "./page.styles";
 import {
-  normalizeTelegramNickname,
   type PaymentAgreementFieldName,
   type PaymentFieldStep,
   type PaymentStep,
@@ -239,9 +238,6 @@ const CheckoutInput = ({
               aria-label={verifyLabel}
               disabled={isTelegramVerificationDisabled({
                 clientId: renewalClientId,
-                // The field holds the handle as typed until blur; the button
-                // judges the form it will take.
-                nickname: normalizeTelegramNickname(field.value),
                 nonce: renewalNonce,
                 status: renewalStatus,
               })}
@@ -349,6 +345,11 @@ export const CheckoutForm = ({
   const consentListId = useId();
   const areAllAgreementsAccepted = agreements.every((agreement) => agreement.checked);
   const areAgreementsDisabled = agreements.some((agreement) => agreement.disabled);
+  // Until Telegram confirms a renewal only the handle is asked for: the other
+  // fields used to sit there greyed out and read as a broken form. They open
+  // after the check, often already filled in from the last purchase.
+  const isFieldShown = (field: CheckoutFormField) =>
+    isRenewalVerified || field.name === "nickname";
   const renderInput = (field: CheckoutFormField) => (
     <CheckoutInput
       key={field.name}
@@ -386,6 +387,12 @@ export const CheckoutForm = ({
     }
 
     event.preventDefault();
+
+    // The handle is all there is to answer before the check: Enter starts it.
+    if (isRenewalCheckout && !isRenewalVerified && target.id === "nickname") {
+      void onVerify();
+      return;
+    }
 
     const stepFieldIds = fields
       .filter((field) => field.step === openStep.id)
@@ -467,7 +474,9 @@ export const CheckoutForm = ({
                 ) : (
                   <>
                     <Inputs>
-                      {fields.filter((field) => field.step === step.id).map(renderInput)}
+                      {fields
+                        .filter((field) => field.step === step.id && isFieldShown(field))
+                        .map(renderInput)}
                     </Inputs>
                     {step.canContinue ? (
                       <StepActions>

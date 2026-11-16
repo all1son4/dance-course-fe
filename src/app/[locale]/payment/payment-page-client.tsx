@@ -818,7 +818,13 @@ const PaymentPage = observer(function PaymentPage({
     number: index + 1,
     state: stepId === openStep ? "current" : isStepComplete(stepId) ? "done" : "upcoming",
     summary: getStepSummary(stepId),
-    title: t(`steps.${stepId}.title`),
+    // A renewal opens on the Telegram check, so the first step says so; once
+    // confirmed it is the usual "where to send your access".
+    title: t(
+      stepId === "access" && !isRenewalVerified
+        ? "steps.access.titleVerify"
+        : `steps.${stepId}.title`,
+    ),
   }));
   const stepText =
     isCheckoutReady && openStep === "payment"

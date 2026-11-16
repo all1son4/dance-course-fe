@@ -817,7 +817,7 @@
       },
       "status": {
         "loading": "Przygotowujemy weryfikację...",
-        "ready": "Kliknij niebieską ikonę, aby potwierdzić konto Telegram.",
+        "ready": "Kliknij niebieską ikonę w polu — po sprawdzeniu otworzą się e-mail i pozostałe pola.",
         "openingTelegram": "Potwierdź logowanie w Telegramie. Po potwierdzeniu spróbujemy automatycznie przenieść Cię z powrotem do płatności.",
         "checkingMembership": "Sprawdzamy czat...",
         "verified": "Gotowe.",
@@ -825,8 +825,8 @@
         "verifiedAsWithProfile": "Gotowe: {username}. Dane zostały uzupełnione — sprawdź je.",
         "notMember": "Nie znaleźliśmy tego konta w starym czacie. Sprawdź nazwę użytkownika lub napisz do nas.",
         "usernameMismatch": "Nazwa użytkownika nie zgadza się z potwierdzonym kontem Telegram. Wpisz tę samą lub potwierdź ponownie.",
-        "loadFailed": "Nie udało się rozpocząć weryfikacji. Spróbuj ponownie.",
-        "failed": "Nie udało się potwierdzić Telegrama."
+        "loadFailed": "Nie udało się rozpocząć weryfikacji. Odśwież stronę i spróbuj ponownie.",
+        "failed": "Nie udało się potwierdzić Telegrama. Spróbuj ponownie."
       },
       "unavailable": {
         "title": "Przedłużenie niedostępne",
@@ -907,7 +907,8 @@
     },
     "steps": {
       "access": {
-        "title": "Gdzie wysłać dostęp"
+        "title": "Gdzie wysłać dostęp",
+        "titleVerify": "Potwierdź, że to Ty"
       },
       "billing": {
         "title": "Dane do paragonu"
