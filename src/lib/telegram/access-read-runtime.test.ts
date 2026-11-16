@@ -19,7 +19,6 @@ import {
   findLatestTelegramAccessTokenRecordByPaymentIntentId,
   findPaymentRecordByIntentId,
   findTelegramAccessTokenRecordByTokenHash,
-  findTelegramAccessTokenRecordByTokenValue,
   findTelegramUserBindingByPaymentIntentId,
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,
@@ -62,7 +61,6 @@ const createSource = (
   findLatestTokenByPaymentIntentId: async () => null,
   findPaymentByIntentId: async () => null,
   findTokenByHash: async () => null,
-  findTokenByValue: async () => null,
   ...overrides,
 });
 
@@ -110,10 +108,6 @@ test("routes every Telegram access read to PostgreSQL with unchanged lookup keys
       calls.push(`token-hash:${tokenHash}`);
       return tokenRecord;
     },
-    findTokenByValue: async (tokenValue) => {
-      calls.push(`token-value:${tokenValue}`);
-      return tokenRecord;
-    },
   });
   const options = { dependencies };
 
@@ -121,7 +115,6 @@ test("routes every Telegram access read to PostgreSQL with unchanged lookup keys
     findPaymentRecordByIntentId("pi_test", options),
     findLatestTelegramAccessTokenRecordByPaymentIntentId("pi_test", options),
     findTelegramAccessTokenRecordByTokenHash("token_hash_test", options),
-    findTelegramAccessTokenRecordByTokenValue("bearer_test", options),
     findTelegramUserBindingByPaymentIntentId("pi_test", options),
     findTelegramUserBindingsByCustomerEmail("Customer@Example.com", options),
     findTelegramUserBindingsByTelegramUserId("user_test", options),
@@ -136,7 +129,6 @@ test("routes every Telegram access read to PostgreSQL with unchanged lookup keys
     paymentRecord,
     tokenRecord,
     tokenRecord,
-    tokenRecord,
     bindingRecord,
     [bindingRecord],
     [bindingRecord],
@@ -147,7 +139,6 @@ test("routes every Telegram access read to PostgreSQL with unchanged lookup keys
     "payment:pi_test",
     "token-payment:pi_test",
     "token-hash:token_hash_test",
-    "token-value:bearer_test",
     "binding-payment:pi_test",
     "binding-email:Customer@Example.com",
     "binding-user:user_test",
@@ -161,7 +152,7 @@ test("keeps missing PostgreSQL records missing without fallback", async () => {
 
   assert.equal(await findPaymentRecordByIntentId("pi_missing", options), null);
   assert.equal(
-    await findTelegramAccessTokenRecordByTokenValue("token_missing", options),
+    await findTelegramAccessTokenRecordByTokenHash("token_missing", options),
     null,
   );
   assert.deepEqual(

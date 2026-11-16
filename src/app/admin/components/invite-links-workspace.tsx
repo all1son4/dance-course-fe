@@ -201,8 +201,8 @@ export const InviteLinkJournalCard = ({
       />
     ) : (
       <JournalList>
-        {links.map((entry) => (
-          <JournalEntry key={`${entry.accessUrl}-${entry.createdAtIso}`}>
+        {links.map((entry, index) => (
+          <JournalEntry key={`${entry.createdAtIso}-${index}`}>
             <Row $justify="space-between" $gap={10} $wrap={false}>
               <strong>{entry.selectionLabel}</strong>
               <Badge
@@ -224,7 +224,7 @@ export const InviteLinkJournalCard = ({
                 ? formatDateTime(entry.tokenExpiresAt)
                 : "не определено"}
             </EntryMeta>
-            <CopyField label="Ссылка" value={entry.accessUrl} />
+            {entry.accessUrl && <CopyField label="Ссылка" value={entry.accessUrl} />}
           </JournalEntry>
         ))}
       </JournalList>

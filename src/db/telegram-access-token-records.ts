@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, lte, ne, or } from "drizzle-orm";
+import { and, desc, eq, gt, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
 
 import type { TelegramAccessTokenRecord } from "@/lib/telegram/access-records";
 
@@ -116,25 +116,6 @@ export const findTelegramAccessTokenRecordByTokenHashFromDatabase = async (
   return record ?? null;
 };
 
-export const findTelegramAccessTokenRecordByTokenValueFromDatabase = async (
-  tokenValue: string,
-) => {
-  const normalizedTokenValue = tokenValue.trim();
-
-  if (!normalizedTokenValue) {
-    return null;
-  }
-
-  const [row] = await getDatabase()
-    .select()
-    .from(telegramAccessTokens)
-    .where(eq(telegramAccessTokens.tokenValue, normalizedTokenValue))
-    .limit(1);
-  const [record] = row ? await hydrateTelegramAccessTokenRecords([row]) : [];
-
-  return record ?? null;
-};
-
 export const findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase = async (
   paymentIntentId: string,
 ) => {
@@ -205,6 +186,7 @@ export const claimTelegramAccessTokenRecordInDatabase = async ({
         lastError: null,
         status: "used",
         telegramUserId: normalizedUserId,
+        tokenValue: null,
         telegramUsername: normalizedUsername || null,
         updatedAt: claimTime,
         usedAt: claimTime,
@@ -274,6 +256,7 @@ export const claimTelegramAccessTokenRecordInDatabase = async ({
         .update(telegramAccessTokens)
         .set({
           status: "expired",
+          tokenValue: null,
           updatedAt: claimTime,
         })
         .where(
@@ -333,6 +316,7 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
   const entitlement = await getEntitlementByPurchaseId(purchase.id, record.chat_id);
   const now = new Date();
   const createdAt = parseRequiredDate(record.created_at, now);
+  const status = normalizeTelegramTokenStatus(record.status);
   const values = {
     accessExpiresAt: parseDate(record.access_expires_at),
     chatId: nullIfEmpty(record.chat_id),
@@ -346,11 +330,13 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
     offerId: purchase.offerId,
     productId: purchase.productId,
     purchaseId: purchase.id,
-    status: normalizeTelegramTokenStatus(record.status),
+    status,
     telegramUserId: nullIfEmpty(record.telegram_user_id),
     telegramUsername: nullIfEmpty(record.telegram_username),
     tokenHash: trim(record.token_hash),
-    tokenValue: nullIfEmpty(record.token_value),
+    // HARD-03: only an issued link is kept; Telegram links are single-use and
+    // time-limited, so a used, expired or revoked one is never shown again.
+    tokenValue: status === "issued" ? nullIfEmpty(record.token_value) : null,
     updatedAt: now,
     usedAt: parseDate(record.used_at),
   };
@@ -379,4 +365,27 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
   return (
     (await findTelegramAccessTokenRecordByTokenIdFromDatabase(record.token_id)) ?? record
   );
+};
+
+/**
+ * HARD-03: erases the clear link of every token that can no longer be used: any
+ * status other than `issued`, or an issued token past its expiry. Covers writers
+ * that change the status directly, and old rows. Run daily; repeating it is a no-op.
+ */
+export const eraseSpentTelegramAccessTokenValues = async (now = new Date()) => {
+  const erasedRows = await getDatabase()
+    .update(telegramAccessTokens)
+    .set({ tokenValue: null })
+    .where(
+      and(
+        isNotNull(telegramAccessTokens.tokenValue),
+        or(
+          ne(telegramAccessTokens.status, "issued"),
+          lte(telegramAccessTokens.expiresAt, now),
+        ),
+      ),
+    )
+    .returning({ id: telegramAccessTokens.id });
+
+  return { erasedCount: erasedRows.length };
 };

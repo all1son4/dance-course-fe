@@ -1,5 +1,6 @@
 import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
 import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales";
+import { eraseSpentTelegramAccessTokenValues } from "@/db/telegram-access-token-records";
 import {
   enqueuePolishTerminalReminder,
   runBusinessOperationOutboxJobs,
@@ -74,6 +75,10 @@ export async function GET(request: Request) {
   let paymentJobsResult: Awaited<ReturnType<typeof runStripeBackgroundJobs>> | null =
     null;
   let polishTerminalReminderError: string | null = null;
+  let spentInviteLinksError: string | null = null;
+  let spentInviteLinksResult: Awaited<
+    ReturnType<typeof eraseSpentTelegramAccessTokenValues>
+  > | null = null;
   let polishTerminalReminderResult: {
     outstandingCount: number;
     status: "duplicate" | "empty" | "enqueued";
@@ -198,6 +203,15 @@ export async function GET(request: Request) {
     paymentJobsError = "stripe_background_recovery_failed";
   }
 
+  // HARD-03: after revocation, which may still need an issued link, erase the
+  // clear links that can no longer be used.
+  try {
+    spentInviteLinksResult = await eraseSpentTelegramAccessTokenValues(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to erase spent invite links", error);
+    spentInviteLinksError = "erase_spent_invite_links_failed";
+  }
+
   const hasFailure = Boolean(
     accessRevocationError ||
     choreoRemindersError ||
@@ -207,7 +221,8 @@ export async function GET(request: Request) {
     businessJobsError ||
     monthlySalesReportError ||
     polishTerminalReminderError ||
-    paymentJobsError,
+    paymentJobsError ||
+    spentInviteLinksError,
   );
 
   return jsonNoStore(
@@ -228,6 +243,8 @@ export async function GET(request: Request) {
       monthlySalesReportResult,
       paymentJobsError,
       paymentJobsResult,
+      spentInviteLinksError,
+      spentInviteLinksResult,
       polishTerminalReminderError,
       polishTerminalReminderResult,
       ok: !hasFailure,

@@ -207,7 +207,6 @@ export {
   findLatestTelegramAccessTokenRecordByPaymentIntentId,
   findPaymentRecordByIntentId,
   findTelegramAccessTokenRecordByTokenHash,
-  findTelegramAccessTokenRecordByTokenValue,
   findTelegramUserBindingByPaymentIntentId,
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,

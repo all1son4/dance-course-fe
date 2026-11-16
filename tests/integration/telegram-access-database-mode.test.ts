@@ -15,7 +15,6 @@ import {
   findLatestTelegramAccessTokenRecordByPaymentIntentId,
   findPaymentRecordByIntentId,
   findTelegramAccessTokenRecordByTokenHash,
-  findTelegramAccessTokenRecordByTokenValue,
   findTelegramUserBindingByPaymentIntentId,
   findTelegramUserBindingsByCustomerEmail,
   findTelegramUserBindingsByTelegramUserId,
@@ -159,7 +158,6 @@ test("activates legacy Telegram access through PostgreSQL without Sheets", async
       runtimePayment,
       latestToken,
       tokenByHash,
-      tokenByValue,
       runtimeBinding,
       bindingsByEmail,
       bindingsByUser,
@@ -169,7 +167,6 @@ test("activates legacy Telegram access through PostgreSQL without Sheets", async
       findPaymentRecordByIntentId(paymentIntentId),
       findLatestTelegramAccessTokenRecordByPaymentIntentId(paymentIntentId),
       findTelegramAccessTokenRecordByTokenHash(tokenHash),
-      findTelegramAccessTokenRecordByTokenValue(tokenValue),
       findTelegramUserBindingByPaymentIntentId(paymentIntentId),
       findTelegramUserBindingsByCustomerEmail("WRITE04@example.test"),
       findTelegramUserBindingsByTelegramUserId("write04-user"),
@@ -184,7 +181,6 @@ test("activates legacy Telegram access through PostgreSQL without Sheets", async
     assert.ok(latestToken);
     assert.ok(latestToken.token_id.startsWith("tga_"));
     assert.equal(tokenByHash?.token_id, latestToken.token_id);
-    assert.equal(tokenByValue?.token_id, latestToken.token_id);
     assert.equal(runtimeBinding?.payment_intent_id, paymentIntentId);
     assert.ok(
       bindingsByEmail.some((record) => record.payment_intent_id === paymentIntentId),
@@ -334,7 +330,7 @@ test("[BEH-TG-01] preserves timed join and leave semantics in PostgreSQL-only mo
         expires_at
       ) VALUES (
         ${`tgi_write04_${suffix}`},
-        ${`hash_write04_${suffix}`},
+        ${createHash("sha256").update(inviteLink).digest("hex")},
         ${inviteLink},
         ${purchase.id},
         ${entitlement.id},
