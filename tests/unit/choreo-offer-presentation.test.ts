@@ -74,3 +74,10 @@ test("invoice descriptions omit a single tariff without changing the stored purc
     assert.deepEqual(payment, before);
   }
 });
+
+test("the Hub never names its full or special price as a tariff to the buyer", () => {
+  const hub = SELLABLE_PRODUCTS["inspiration-hub"];
+  for (const offer of hub.offers) {
+    assert.equal(shouldShowOfferLabel(hub, offer.id), false);
+  }
+});

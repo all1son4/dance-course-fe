@@ -75,6 +75,17 @@ test("a Hub ending within 7 days offers the renewal and comes first", () => {
   assert.equal(cards[1]?.status.key, "lifetime");
 });
 
+test("a running Hub can be renewed any time; only the last week is urgent", () => {
+  const cards = cardsOf({
+    purchases: [purchase({ id: "hub" })],
+    rights: [hubPeriod("hub", "2026-12-20T11:00:00.000Z", "2027-02-14T11:00:00.000Z")],
+  });
+
+  assert.deepEqual(cards[0]?.action, { href: HUB_RENEWAL_HREF, key: "renewHub" });
+  assert.equal(cards[0]?.urgency, 1);
+  assert.equal(cards[0]?.chip, "active");
+});
+
 test("a renewed Hub shows the paid end and no urgent renewal", () => {
   const cards = cardsOf({
     purchases: [purchase({ id: "a" }), purchase({ id: "b" })],

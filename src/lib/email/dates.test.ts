@@ -22,3 +22,11 @@ test("email dates use local month names instead of machine timestamps", () => {
   assert.doesNotMatch(formatEmailDate("2026-11-18T19:00:00Z", "ru"), /20:00/u);
   assert.throws(() => formatEmailDate("invalid-date", "ru"), /email_date_invalid/u);
 });
+
+test("a Russian date can end a sentence: no «г.» before the full stop", () => {
+  assert.equal(formatEmailDate("2026-12-01T17:00:00Z", "ru"), "1 декабря 2026");
+  assert.equal(
+    `Старт ${formatEmailDate("2026-12-01T17:00:00Z", "ru")}.`,
+    "Старт 1 декабря 2026.",
+  );
+});

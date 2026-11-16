@@ -75,8 +75,26 @@ export const MobileImagesBox = styled(GroupMobileImagesBox)`
   }
 `;
 
-/** «Разовая оплата — без автопродления»: its own line under both facts. */
+/** «Оплата за 8 недель…»: its own line under both facts. */
 export const PriceNote = styled(StartNote)`
   flex: 0 0 100%;
   margin: -8px 0 0;
+`;
+
+/** «При продлении — специальная цена», set apart so members notice it. */
+export const RenewalNote = styled.p`
+  flex: 0 0 100%;
+  margin: -10px 0 0;
+
+  span {
+    display: inline-block;
+    max-width: 100%;
+    padding: 4px 12px;
+    border-radius: 12px;
+    background: rgba(124, 0, 2, 0.08);
+    color: var(--brand);
+    font-size: var(--text-small);
+    font-weight: 500;
+    line-height: 1.5;
+  }
 `;

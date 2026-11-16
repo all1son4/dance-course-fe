@@ -644,7 +644,8 @@
       "accessLabel": "Access",
       "accessValue": "8 weeks",
       "priceLabel": "Price",
-      "priceNote": "One-time payment — no auto-renewal",
+      "priceNote": "Payment for 8 weeks, no automatic charges",
+      "renewalNote": "Special price when you renew",
       "buyButton": "Buy",
       "insideButton": "What's inside"
     },
@@ -668,15 +669,15 @@
         },
         "2": {
           "title": "Practise whenever you like",
-          "text": "Join at any time and get access to all materials for 8 weeks. No schedules and no deadlines: choose what to learn and practise when it suits you."
+          "text": "Pay at any time and your 8 weeks of access to all materials start right away. No schedules and no deadlines: choose what to learn and practise when it suits you."
         },
         "3": {
           "title": "Private Telegram channel",
           "text": "All lessons and materials are kept in a convenient private space that is always at hand."
         },
         "4": {
-          "title": "Continue without a break",
-          "text": "Current Online Group participants and Inspiration HUB subscribers get a special price when they continue to the next cycle."
+          "title": "Special renewal price",
+          "text": "Renewing the Hub or training in the Online Group? You get a special price. The new weeks start right after the current ones, with no gap."
         }
       }
     },
@@ -689,20 +690,24 @@
       "imageAlt": "Anna Strok",
       "items": {
         "1": {
-          "title": "Payment",
-          "description": "Check out on the site: it is a one-time payment with no automatic charges. Your personal link to the private Telegram channel appears right after payment and arrives by email."
+          "title": "Payment and joining",
+          "description": "Right after payment, your personal link to the private Telegram channel appears on the page and in your email. Open it from the Telegram account you will use: the link works once and only for you."
         },
         "2": {
-          "title": "Joining the channel",
-          "description": "Open the link from the Telegram account you will use: it works once and only for you."
+          "title": "8 weeks of access",
+          "description": "The 8 weeks count from payment, not from joining the channel: for example, pay on 1 March and you have access until 26 April, even if you join the channel later. The exact dates are always on the “My access” page; every email from us has a button to it."
         },
         "3": {
-          "title": "Renewal",
-          "description": "You can renew in advance, and the next 8 weeks start right after the current ones."
+          "title": "Renewal at a special price",
+          "description": "Each 8 weeks are paid separately, with no automatic charges. 7 and 3 days before the end you get an email with a “Renew” button; the same button is on the “My access” page. You can renew earlier too: the new 8 weeks start right after the current ones, so no day is lost. Renewal is at a special price."
         },
         "4": {
-          "title": "End of access",
-          "description": "If you do not renew, channel access closes by itself 8 weeks after payment. You can come back at any time."
+          "title": "If you are in the Online Group",
+          "description": "The Plus plan already includes the Hub — for the cycle and 7 more days after it. Near the end of the cycle, a link appears in the group chat to get the Hub separately at a special price — with Plus or Standard. If you have Plus, the paid 8 weeks start right after your Plus Hub access, so the days do not overlap."
+        },
+        "5": {
+          "title": "If you do not renew",
+          "description": "After 8 weeks, channel access closes by itself. You can come back at any time: the new 8 weeks count from payment."
         }
       }
     },
@@ -715,7 +720,7 @@
         "3": "A private Telegram channel",
         "4": "8 weeks of access right after payment"
       },
-      "note": "One-time payment — no auto-renewal"
+      "note": "Payment for 8 weeks, no automatic charges. Special price when you renew"
     }
   },
   "ChoreoPage": {
@@ -1045,7 +1050,7 @@
         "1": "For those who have never danced but want to feel their body, gain confidence and learn to move.",
         "2": "We'll work on basic technique, footwork and emotion, and finish by learning your first choreography."
       },
-      "accessNote": "The course runs for 1.5 months. Lessons stay available for 120 days after joining the private Telegram chat.",
+      "accessNote": "The course runs for 1.5 months. Lessons stay available for 120 days after joining the private Telegram group.",
       "offers": {
         "standard": "Standard access"
       }

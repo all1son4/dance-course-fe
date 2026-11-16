@@ -644,7 +644,8 @@
       "accessLabel": "Dostęp",
       "accessValue": "8 tygodni",
       "priceLabel": "Cena",
-      "priceNote": "Jednorazowa płatność — bez automatycznego odnawiania",
+      "priceNote": "Płatność za 8 tygodni, bez automatycznych obciążeń",
+      "renewalNote": "Przy przedłużeniu — specjalna cena",
       "buyButton": "Kup",
       "insideButton": "Co w środku"
     },
@@ -668,15 +669,15 @@
         },
         "2": {
           "title": "Ćwicz, kiedy chcesz",
-          "text": "Dołącz w dowolnym momencie i miej dostęp do wszystkich materiałów przez 8 tygodni. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
+          "text": "Zapłać w dowolnym momencie — 8 tygodni dostępu do wszystkich materiałów zacznie się od razu. Bez grafików i terminów — wybieraj, czego się uczyć, i ćwicz, kiedy Ci wygodnie."
         },
         "3": {
           "title": "Zamknięty kanał na Telegramie",
           "text": "Wszystkie lekcje i materiały są w wygodnej, zamkniętej przestrzeni, zawsze pod ręką."
         },
         "4": {
-          "title": "Kontynuacja bez przerwy",
-          "text": "Uczestnicy obecnej grupy online i subskrybenci Inspiration HUB mają specjalną cenę przy kontynuacji w kolejnym cyklu."
+          "title": "Specjalna cena przedłużenia",
+          "text": "Przedłużasz Hub albo ćwiczysz w grupie online? Obowiązuje Cię specjalna cena. Nowe tygodnie zaczynają się zaraz po obecnych, bez przerwy."
         }
       }
     },
@@ -689,20 +690,24 @@
       "imageAlt": "Anna Strok",
       "items": {
         "1": {
-          "title": "Płatność",
-          "description": "Kup dostęp na stronie: płatność jest jednorazowa, bez automatycznych obciążeń. Osobisty link do zamkniętego kanału na Telegramie pojawi się zaraz po płatności i przyjdzie na email."
+          "title": "Płatność i wejście",
+          "description": "Zaraz po płatności na stronie i w e-mailu pojawi się osobisty link do zamkniętego kanału na Telegramie. Otwórz go z konta Telegram, z którego będziesz korzystać: link działa jeden raz i tylko dla Ciebie."
         },
         "2": {
-          "title": "Wejście do kanału",
-          "description": "Otwórz link z konta Telegram, z którego będziesz korzystać: działa jeden raz i tylko dla Ciebie."
+          "title": "8 tygodni dostępu",
+          "description": "8 tygodni liczy się od płatności, a nie od wejścia do kanału: na przykład płatność 1 marca — dostęp do 26 kwietnia, nawet jeśli wejdziesz do kanału później. Dokładne daty zawsze widać na stronie „Mój dostęp”, przycisk do niej jest w każdej naszej wiadomości."
         },
         "3": {
-          "title": "Przedłużenie",
-          "description": "Możesz przedłużyć dostęp wcześniej — kolejne 8 tygodni zacznie się zaraz po obecnych."
+          "title": "Przedłużenie w specjalnej cenie",
+          "description": "Za każde 8 tygodni płacisz osobno, bez automatycznych obciążeń. Na 7 i na 3 dni przed końcem przyjdzie e-mail z przyciskiem „Przedłuż”, ten sam przycisk jest na stronie „Mój dostęp”. Możesz przedłużyć wcześniej: nowe 8 tygodni zacznie się zaraz po obecnych, żaden dzień nie przepadnie. Przedłużenie — w specjalnej cenie."
         },
         "4": {
-          "title": "Koniec dostępu",
-          "description": "Jeśli nie przedłużysz, dostęp do kanału zamknie się sam po 8 tygodniach od płatności. Możesz wrócić w każdej chwili."
+          "title": "Jeśli ćwiczysz w grupie online",
+          "description": "Pakiet Plus już zawiera Hub — na czas cyklu i jeszcze 7 dni po nim. Pod koniec cyklu na czacie grupy pojawia się link, żeby kupić Hub osobno w specjalnej cenie — przy Plus i przy Standard. Jeśli masz Plus, opłacone 8 tygodni zacznie się zaraz po Hubie z Plus — dni się nie nakładają."
+        },
+        "5": {
+          "title": "Jeśli nie przedłużysz",
+          "description": "Po 8 tygodniach dostęp do kanału zamknie się sam. Możesz wrócić w każdej chwili: nowe 8 tygodni będzie liczone od płatności."
         }
       }
     },
@@ -715,7 +720,7 @@
         "3": "Zamknięty kanał na Telegramie",
         "4": "8 tygodni dostępu zaraz po płatności"
       },
-      "note": "Jednorazowa płatność — bez automatycznego odnawiania"
+      "note": "Płatność za 8 tygodni, bez automatycznych obciążeń. Przy przedłużeniu — specjalna cena"
     }
   },
   "ChoreoPage": {
@@ -1045,7 +1050,7 @@
         "1": "Dla osób, które nigdy nie tańczyły, ale chcą nauczyć się czuć swoje ciało, nabrać pewności siebie i swobody w ruchu.",
         "2": "Pracujemy nad podstawową techniką, pracą stóp i emocjami, a na końcu nauczysz się swojej pierwszej choreografii."
       },
-      "accessNote": "Kurs trwa 1,5 miesiąca. Lekcje pozostają dostępne przez 120 dni od dołączenia do prywatnego czatu Telegram.",
+      "accessNote": "Kurs trwa 1,5 miesiąca. Lekcje pozostają dostępne przez 120 dni od dołączenia do prywatnej grupy Telegram.",
       "offers": {
         "standard": "Dostęp standardowy"
       }

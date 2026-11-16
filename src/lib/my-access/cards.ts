@@ -141,7 +141,9 @@ const buildStandaloneHubCard = ({
 
   if (current && paidUntil) {
     const left = daysLeft(paidUntil, now);
-    const endsSoon = later.length === 0 && left <= HUB_RENEWAL_WINDOW_DAYS && !hasPlusHub;
+    // Renewing early loses no day, so the button is there for the whole period.
+    const canRenew = later.length === 0 && !hasPlusHub;
+    const endsSoon = canRenew && left <= HUB_RENEWAL_WINDOW_DAYS;
     const notJoined = !isJoined(current) && !hasPlusHub;
 
     return {
@@ -160,7 +162,9 @@ const buildStandaloneHubCard = ({
         ? { action: { key: "renewHub" as const, href: HUB_RENEWAL_HREF } }
         : notJoined && current.hasLiveInvite === false
           ? { action: SUPPORT_ACTION }
-          : {}),
+          : canRenew
+            ? { action: { key: "renewHub" as const, href: HUB_RENEWAL_HREF } }
+            : {}),
       urgency: endsSoon || notJoined ? 0 : 1,
       sortAt: paidUntil.getTime(),
     };
@@ -414,7 +418,15 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
 
   if (key === "hub.ended") return "ended";
   if (key === "plusHub.closed" || key === "group.closed") return "endsSoon";
-  if (card.action?.key === "renewHub") return "endsSoon";
+  // A running Hub can be renewed any time; only its last week is "ending soon".
+  if (
+    card.action?.key === "renewHub" &&
+    (key !== "hub.activeUntil" ||
+      (card.period &&
+        daysLeft(new Date(card.period.end), now) <= HUB_RENEWAL_WINDOW_DAYS))
+  ) {
+    return "endsSoon";
+  }
   if (
     key === "hub.scheduled" ||
     key === "hub.afterCohort" ||

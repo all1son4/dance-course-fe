@@ -496,8 +496,8 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
         labelKey: "inspirationHub.offers.hubAccess",
         salesEnabled: true,
         prices: {
-          pln: 175,
-          eur: 40,
+          pln: 200,
+          eur: 45,
         },
         telegramAccessDurationDays: 56,
       },

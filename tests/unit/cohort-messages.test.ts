@@ -33,8 +33,8 @@ test("the closure post names the dates, both prices, all three links and support
   assert.match(post, /^Поток завершён — спасибо за эти недели вместе!/u);
   assert.match(post, /Новый поток стартует 1 февраля\./u);
   assert.match(post, /Hub открыт до 24 января включительно/u);
-  assert.match(post, /8 недель за 35 EUR \/ 155 PLN\./u);
-  assert.match(post, /до 24 января включительно, потом — 40 EUR \/ 175 PLN\./u);
+  assert.match(post, /8 недель за 155\sPLN \/ 35\s€\./u);
+  assert.match(post, /до 24 января включительно, потом — 200\sPLN \/ 45\s€\./u);
   assert.match(post, /Онлайн-группа Plus[^\n]*\nПродлить: .*rnw_plus/u);
   assert.match(post, /Онлайн-группа Standard[^\n]*\nПродлить: .*rnw_standard/u);
   assert.match(post, /Оформить: .*renewal=inspiration-hub/u);

@@ -56,6 +56,7 @@ import {
   IntroductionSection,
   MobileImagesBox,
   PriceNote,
+  RenewalNote,
   StepsImage,
   StepsSection,
   StepsTextBox,
@@ -65,7 +66,7 @@ import {
 } from "./page.styles";
 
 const PATH = "/online/inspiration-hub";
-const STEP_COUNT = 4;
+const STEP_COUNT = 5;
 
 export const generateMetadata = () =>
   buildLocalizedPageMetadata({ pageKey: "inspirationHub", path: PATH });
@@ -150,6 +151,9 @@ export default async function InspirationHubPage() {
           <ProductFact label={t("hero.accessLabel")} value={t("hero.accessValue")} />
           <ProductFact label={t("hero.priceLabel")} value={price} />
           <PriceNote>{t("hero.priceNote")}</PriceNote>
+          <RenewalNote>
+            <span>{t("hero.renewalNote")}</span>
+          </RenewalNote>
         </FactsRow>
 
         <ButtonBox>

@@ -40,35 +40,6 @@ export const getOnlineCoursesArray = (
   //   buttonPrefetch: false,
   // },
   {
-    id: "choreo",
-    title: t("cards.choreo.title"),
-    headerPhoto: "/images/photos/card_choreo.webp",
-    topRowContent: (
-      <ContentStack $gap="16px">
-        <DetailText>{t("cards.choreo.description.1")}</DetailText>
-        <DetailText>{t("cards.choreo.description.2")}</DetailText>
-      </ContentStack>
-    ),
-    bottomRowContent: (
-      <ContentStack>
-        <DetailText>
-          {t(
-            choreoSaleState === "open"
-              ? "cards.choreo.startLabel"
-              : "cards.choreo.salesLabel",
-          )}
-        </DetailText>
-        <DetailFactText>
-          {choreoSaleState === "open"
-            ? t("cards.choreo.startValue")
-            : commonT("salesUnavailable")}
-        </DetailFactText>
-      </ContentStack>
-    ),
-    buttonText: commonT("details"),
-    buttonHref: "/online/choreo",
-  },
-  {
     id: "online-group",
     title: t("cards.onlineGroup.title"),
     headerPhoto: "/images/photos/card_online_group.webp",
@@ -111,6 +82,35 @@ export const getOnlineCoursesArray = (
     buttonText: commonT("details"),
     buttonHref: "/online/inspiration-hub",
     buttonPrefetch: false,
+  },
+  {
+    id: "choreo",
+    title: t("cards.choreo.title"),
+    headerPhoto: "/images/photos/card_choreo.webp",
+    topRowContent: (
+      <ContentStack $gap="16px">
+        <DetailText>{t("cards.choreo.description.1")}</DetailText>
+        <DetailText>{t("cards.choreo.description.2")}</DetailText>
+      </ContentStack>
+    ),
+    bottomRowContent: (
+      <ContentStack>
+        <DetailText>
+          {t(
+            choreoSaleState === "open"
+              ? "cards.choreo.startLabel"
+              : "cards.choreo.salesLabel",
+          )}
+        </DetailText>
+        <DetailFactText>
+          {choreoSaleState === "open"
+            ? t("cards.choreo.startValue")
+            : commonT("salesUnavailable")}
+        </DetailFactText>
+      </ContentStack>
+    ),
+    buttonText: commonT("details"),
+    buttonHref: "/online/choreo",
   },
   {
     id: "first-touch",

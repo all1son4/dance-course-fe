@@ -129,7 +129,11 @@ test("the reminder email names the end date, the renewal link and its price", ()
   assert.equal(email.subject, "Inspiration Hub: осталось 3 дня");
   assert.match(email.text, /5 января 2027/u);
   assert.match(email.text, /payment\?renewal=inspiration-hub/u);
-  assert.match(email.text, /35 EUR \/ 155 PLN/u);
+  assert.match(email.text, /155\sPLN \/ 35\s€ вместо 200\sPLN \/ 45\s€/u);
+  assert.match(email.text, /^До конца Inspiration Hub — 3 дня/u);
+  assert.match(email.text, /действует только до конца твоего Hub — 5 января 2027\./u);
+  // One date in the whole email: the end of the Hub, which is also the price deadline.
+  assert.equal(email.text.match(/2027/gu)?.length, 1);
   assert.match(email.text, /access\?k=x/u);
   assert.doesNotMatch(email.text, /онлайн-группы/u);
 

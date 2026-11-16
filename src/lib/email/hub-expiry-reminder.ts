@@ -1,5 +1,7 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
+  formatOfferPrice,
+  INSPIRATION_HUB_ACCESS_OFFER_ID,
   INSPIRATION_HUB_DISCOUNT_SLUG,
   INSPIRATION_HUB_RENEWAL_OFFER_ID,
   SELLABLE_PRODUCTS,
@@ -22,14 +24,18 @@ const COPY = {
       3: "Inspiration Hub: осталось 3 дня",
       7: "Inspiration Hub: осталась неделя",
     },
-    heading: (date: string) => `Твой Inspiration Hub действует до ${date}`,
+    heading: {
+      3: "До конца Inspiration Hub — 3 дня",
+      7: "До конца Inspiration Hub — 7 дней",
+    },
     intro:
-      "Оплаченные 8 недель скоро закончатся. Продли Hub ещё на 8 недель — уроки, материалы и закрытый канал останутся с тобой без перерыва.",
-    price: (price: string) =>
-      `Для тебя действует цена продления — ${price}. Перед оплатой мы попросим подтвердить твой Telegram: так мы увидим, что ты уже в Hub.`,
-    note: "Оплата разовая, без автопродления. Новые 8 недель начнутся сразу после текущих — ни один день не пропадёт.",
+      "Продли Hub ещё на 8 недель — уроки, материалы и закрытый канал останутся с тобой без перерыва.",
+    price: (special: string, full: string, date: string) =>
+      `Продление — ${special} вместо ${full}. Эта цена действует только до конца твоего Hub — ${date}.`,
+    verify:
+      "Перед оплатой мы попросим подтвердить твой Telegram: так мы увидим, что ты уже в Hub.",
+    note: "Оплата за 8 недель, без автоматических списаний. Новые 8 недель начнутся сразу после текущих — ни один день не пропадёт.",
     button: "Продлить Hub",
-    dateLabel: "Доступ до",
     online: (date: string) =>
       `Новый поток онлайн-группы стартует ${date}. В тарифе Plus Hub входит на всё время потока.`,
     onlineLink: "Об онлайн-группе",
@@ -37,14 +43,18 @@ const COPY = {
   },
   en: {
     subject: { 3: "Inspiration Hub: 3 days left", 7: "Inspiration Hub: one week left" },
-    heading: (date: string) => `Your Inspiration Hub runs until ${date}`,
+    heading: {
+      3: "Your Inspiration Hub ends in 3 days",
+      7: "Your Inspiration Hub ends in 7 days",
+    },
     intro:
-      "Your paid 8 weeks end soon. Renew the Hub for another 8 weeks and keep the lessons, materials and private channel without a break.",
-    price: (price: string) =>
-      `Your renewal price is ${price}. Before paying we will ask you to confirm your Telegram, so we can see you are already in the Hub.`,
-    note: "A one-off payment, no auto-renewal. The new 8 weeks start right after the current ones — not a single day is lost.",
+      "Renew the Hub for another 8 weeks and keep the lessons, materials and private channel without a break.",
+    price: (special: string, full: string, date: string) =>
+      `Renewal is ${special} instead of ${full}. This price holds only until your Hub ends — ${date}.`,
+    verify:
+      "Before paying we will ask you to confirm your Telegram, so we can see you are already in the Hub.",
+    note: "Payment for 8 weeks, no automatic charges. The new 8 weeks start right after the current ones — not a single day is lost.",
     button: "Renew the Hub",
-    dateLabel: "Access until",
     online: (date: string) =>
       `A new Online Group cycle starts on ${date}. With the Plus plan, the Hub is included for the whole cycle.`,
     onlineLink: "About the Online Group",
@@ -55,14 +65,18 @@ const COPY = {
       3: "Inspiration Hub: zostały 3 dni",
       7: "Inspiration Hub: został tydzień",
     },
-    heading: (date: string) => `Twój Inspiration Hub jest aktywny do ${date}`,
+    heading: {
+      3: "Do końca Inspiration Hub — 3 dni",
+      7: "Do końca Inspiration Hub — 7 dni",
+    },
     intro:
-      "Opłacone 8 tygodni wkrótce się kończy. Przedłuż Hub o kolejne 8 tygodni — lekcje, materiały i zamknięty kanał zostaną z Tobą bez przerwy.",
-    price: (price: string) =>
-      `Masz cenę przedłużenia — ${price}. Przed płatnością poprosimy o potwierdzenie Twojego Telegramu, aby zobaczyć, że już jesteś w Hub.`,
-    note: "Płatność jednorazowa, bez automatycznego odnawiania. Nowe 8 tygodni zacznie się zaraz po obecnych — nie stracisz ani jednego dnia.",
+      "Przedłuż Hub o kolejne 8 tygodni — lekcje, materiały i zamknięty kanał zostaną z Tobą bez przerwy.",
+    price: (special: string, full: string, date: string) =>
+      `Przedłużenie — ${special} zamiast ${full}. Ta cena obowiązuje tylko do końca Twojego Hub — ${date}.`,
+    verify:
+      "Przed płatnością poprosimy o potwierdzenie Twojego Telegramu, aby zobaczyć, że już jesteś w Hub.",
+    note: "Płatność za 8 tygodni, bez automatycznych obciążeń. Nowe 8 tygodni zacznie się zaraz po obecnych — nie stracisz ani jednego dnia.",
     button: "Przedłuż Hub",
-    dateLabel: "Dostęp do",
     online: (date: string) =>
       `Nowy cykl grupy online startuje ${date}. W pakiecie Plus Hub jest w cenie na cały cykl.`,
     onlineLink: "O grupie online",
@@ -70,11 +84,11 @@ const COPY = {
   },
 } as const;
 
-const renewalPrice = () => {
+const hubPrice = (offerId: string) => {
   const offer = SELLABLE_PRODUCTS["inspiration-hub"].offers.find(
-    (candidate) => candidate.id === INSPIRATION_HUB_RENEWAL_OFFER_ID,
+    (candidate) => candidate.id === offerId,
   );
-  return offer ? `${offer.prices.eur} EUR / ${offer.prices.pln} PLN` : "";
+  return offer ? formatOfferPrice(offer.prices) : "";
 };
 
 export const buildHubExpiryReminderEmail = ({
@@ -96,17 +110,21 @@ export const buildHubExpiryReminderEmail = ({
   const date = formatEmailDate(endsAt, locale);
   const renewUrl = `${normalizedSiteUrl}/${resolvedLocale}/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`;
   const onlineUrl = `${normalizedSiteUrl}/${resolvedLocale}/online/group`;
-  const price = renewalPrice();
+  // The special price lasts as long as the Hub (its basis): the reminder names that deadline.
+  const special = hubPrice(INSPIRATION_HUB_RENEWAL_OFFER_ID);
+  const full = hubPrice(INSPIRATION_HUB_ACCESS_OFFER_ID);
+  const priceLine = special && full ? copy.price(special, full, date) : "";
   const online = onlineCohortStartsAt
     ? copy.online(formatEmailDate(onlineCohortStartsAt, locale))
     : "";
   const myAccess = buildMyAccessEmailBlock({ locale, url: myAccessUrl });
-  const heading = copy.heading(date);
+  const heading = copy.heading[kind];
 
   const text = [
     heading,
     copy.intro,
-    price ? copy.price(price) : "",
+    priceLine,
+    copy.verify,
     `${copy.button}: ${renewUrl}`,
     copy.note,
     online ? `${online}\n${copy.onlineLink}: ${onlineUrl}` : "",
@@ -123,13 +141,10 @@ export const buildHubExpiryReminderEmail = ({
     <p style="margin:0 0 20px;color:#7c0002;font-size:11px;font-weight:700;letter-spacing:1.5px;">ANNA STROK · FRAME UP STRIP</p>
     <h1 style="margin:0 0 12px;font-size:26px;line-height:1.25;font-weight:600;">${escapeEmailHtml(heading)}</h1>
     <p style="margin:0 0 16px;font-size:16px;line-height:1.5;">${escapeEmailHtml(copy.intro)}</p>
-    ${price ? `<p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#444;">${escapeEmailHtml(copy.price(price))}</p>` : ""}
+    ${priceLine ? `<p style="margin:0 0 10px;padding:14px 16px;border-radius:14px;background:#f6e9e9;color:#7c0002;font-size:15px;line-height:1.5;font-weight:600;">${escapeEmailHtml(priceLine)}</p>` : ""}
+    <p style="margin:0 0 24px;font-size:13px;line-height:1.6;color:#555;">${escapeEmailHtml(copy.verify)}</p>
     <a href="${escapeEmailHtml(renewUrl)}" style="display:inline-block;padding:13px 22px;background:#7c0002;border-radius:999px;color:#fff;text-decoration:none;font-size:14px;font-weight:600;">${escapeEmailHtml(copy.button)}</a>
     <p style="margin:16px 0 0;font-size:13px;line-height:1.6;color:#555;">${escapeEmailHtml(copy.note)}</p>
-    <div style="margin-top:22px;padding:18px 20px;border-radius:16px;background:#f8f6f3;">
-      <p style="margin:0 0 6px;font-size:12px;color:#6f6a65;">${escapeEmailHtml(copy.dateLabel)}</p>
-      <p style="margin:0;font-size:20px;line-height:1.4;font-weight:600;">${escapeEmailHtml(date)}</p>
-    </div>
     ${
       online
         ? `<p style="margin:22px 0 0;font-size:14px;line-height:1.6;color:#444;">${escapeEmailHtml(online)} <a href="${escapeEmailHtml(onlineUrl)}" style="color:#7c0002;">${escapeEmailHtml(copy.onlineLink)}</a></p>`

@@ -1,5 +1,6 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
+  formatOfferPrice,
   INSPIRATION_HUB_ACCESS_OFFER_ID,
   INSPIRATION_HUB_RENEWAL_OFFER_ID,
   SELLABLE_PRODUCTS,
@@ -43,7 +44,7 @@ const hubPrice = (offerId: string) => {
   const offer = SELLABLE_PRODUCTS["inspiration-hub"].offers.find(
     (candidate) => candidate.id === offerId,
   );
-  return offer ? `${offer.prices.eur} EUR / ${offer.prices.pln} PLN` : "";
+  return offer ? formatOfferPrice(offer.prices) : "";
 };
 
 const hubSpecialPrice = () => hubPrice(INSPIRATION_HUB_RENEWAL_OFFER_ID);

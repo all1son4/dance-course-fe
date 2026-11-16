@@ -120,9 +120,9 @@ test("[BEH-TG-02] keeps the accepted product, offer, price, and access-duration 
     },
     {
       durationDays: 56,
-      eur: 40,
+      eur: 45,
       offer: "hub-access",
-      pln: 175,
+      pln: 200,
       product: "inspiration-hub",
     },
     {
