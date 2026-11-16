@@ -1,11 +1,18 @@
 import { Info, RefreshCw } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
+import {
+  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
+  ONLINE_GROUP_RENEWAL_OFFER_ID,
+} from "@/constants/sellable-products";
 import type { AttentionItem } from "@/lib/admin/overview";
+import type { CohortOverview } from "@/lib/online-group/cohort-admin";
 
 import type { useCohortsAdmin } from "../hooks/use-cohorts-admin";
 import type { useOnlineGroupAdmin } from "../hooks/use-online-group-admin";
+import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { AdminFeatureId } from "../lib/admin.types";
+import { requestAdminJson } from "../lib/admin-request";
 import {
   AdminButton,
   Callout,
@@ -15,6 +22,7 @@ import {
   Stack,
 } from "../ui/primitives";
 import { AttentionList } from "./attention-list";
+import type { RenewalLinkKind } from "./cohort-transition-guide";
 import { CohortsPanel } from "./cohorts-panel";
 import {
   ActiveOnlineGroupCard,
@@ -58,6 +66,30 @@ export const OnlineGroupTab = ({
     void cohorts.load();
     void settings.load();
     onProblemsChanged();
+  };
+
+  /** One click from the transition guide: the running cohort's chat is the only source. */
+  const createRenewalLink = async (cohort: CohortOverview, kind: RenewalLinkKind) => {
+    const response = await requestAdminJson<{ status?: string }>(
+      ADMIN_API_ENDPOINTS.renewalCampaigns,
+      {
+        body: {
+          offerId:
+            kind === "plus"
+              ? ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID
+              : ONLINE_GROUP_RENEWAL_OFFER_ID,
+          sourceChatIds: [cohort.mainChatId],
+          title: `${cohort.title} → ${cohort.next?.title ?? ""}`.trim(),
+        },
+        method: "POST",
+      },
+    );
+    if (response.unauthorized) {
+      onUnauthorized();
+      return false;
+    }
+    await Promise.all([cohorts.load(), settings.load()]);
+    return response.ok && response.data.status === "ready";
   };
 
   return (
@@ -112,6 +144,7 @@ export const OnlineGroupTab = ({
           }}
           onReload={cohorts.load}
           onRetryPost={cohorts.retryPost}
+          onCreateRenewalLink={createRenewalLink}
           onSetDurationWeeks={cohorts.setDurationWeeks}
           onSetPreviousChatRemoval={cohorts.setPreviousChatRemoval}
           onUnauthorized={onUnauthorized}
@@ -121,6 +154,11 @@ export const OnlineGroupTab = ({
 
       {section === "stream" && (
         <Stack $gap={12}>
+          <Callout tone="info" icon={<Info aria-hidden />}>
+            Переход на следующий поток делается во вкладке «Потоки» по шагам: ссылки
+            продления, пост, закрытие. Здесь ничего менять не нужно — закрытие само
+            сделает следующий поток текущим.
+          </Callout>
           {settings.activeCampaign && (
             <Callout tone="info" icon={<Info aria-hidden />}>
               Plus подключает Inspiration Hub: {settings.inspirationChatTitle}. Чат хаба и
@@ -162,6 +200,11 @@ export const OnlineGroupTab = ({
       {section === "renewals" &&
         (settings.activeCampaign || settings.renewalCampaigns.length > 0 ? (
           <Stack $gap={16}>
+            <Callout tone="info" icon={<Info aria-hidden />}>
+              Ссылки Plus и Standard для перехода на следующий поток удобнее создать в
+              «Потоках» одной кнопкой. Здесь — для особых случаев: несколько
+              чатов-источников или замена ссылки.
+            </Callout>
             {settings.activeCampaign && (
               <RenewalGeneratorCard
                 chats={settings.telegramChats}

@@ -104,13 +104,15 @@ export const buildCohortClosurePost = ({
   const standard = priceAgainst(groupPrice("renewal-discount"), groupPrice("standard"));
   const hub = priceAgainst(special, full);
 
+  // Anna's approved Russian text 2б, in English, with every option priced and the
+  // chat kept until the next start so there is time to decide.
   return [
     "The cycle is over — thank you for these weeks together!",
     "",
-    `We have removed the lessons from this chat. The chat itself stays open until the new cycle starts on ${nextStart}, so you have time to decide where to go next.`,
+    "We have removed the lessons from this chat, but the chat itself stays until the new cycle starts: you can still talk here and decide where to go next.",
     "",
     "What's next",
-    "You are part of this cycle, so the renewal prices below apply to you. Choose what suits you:",
+    `The new cycle starts on ${nextStart}. You are part of this cycle, so the renewal price applies to you. Choose what suits you:`,
     ...(links.plus
       ? [
           "",
@@ -126,20 +128,21 @@ export const buildCohortClosurePost = ({
         ]
       : []),
     "",
-    `${IH} only — the library of lessons from all past cycles, including this one, without group classes. 8 weeks${hub ? ` for ${hub}` : ""}.`,
+    `${IH} only — lessons from past cycles, including this one, and materials, without group classes. 8 weeks${hub ? ` for ${hub}` : ""}.`,
     `Get it: ${links.hub}`,
     "",
     `About ${IH}`,
+    `• If you had Plus, the library is open until ${hubLastDay} inclusive. To stay in it, renew Plus or get ${IH} alone before this date.`,
+    `• Get ${IH} alone now and your paid 8 weeks start right when your Plus access ends. Not a single day is lost.`,
+    "• If you had Standard, the 8 weeks start right after payment.",
     ...(special && full
       ? [
-          `• The special price ${special} is valid until ${priceLastDay} inclusive. After that — ${full}.`,
+          `• The price ${special} is valid until ${priceLastDay} inclusive, then — ${full}.`,
         ]
       : []),
-    `• If you had Plus, the library stays open until ${hubLastDay} inclusive. Get ${IH} in advance and your paid 8 weeks start right when that access ends — not a single day is lost.`,
-    "• If you had Standard, the 8 weeks start right after payment.",
     "",
     "How to sign up",
-    "The link asks you to confirm your Telegram: this is how we see you are from this chat and unlock the renewal price. Make sure your Telegram settings have a username (@username).",
+    "The link will ask you to confirm your Telegram: this is how we see you are from this chat and unlock the renewal price. It is one step before payment. Make sure your Telegram settings have a username (@username).",
     "",
     `Places in the group are limited. Questions — ${SUPPORT_TELEGRAM_URL}`,
   ].join("\n");

@@ -12,6 +12,7 @@ import {
   jsonNoStore,
   parseJsonBody,
 } from "@/lib/http-security";
+import { resolveRenewalTargetChatId } from "@/lib/online-group/cohort-admin";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 
@@ -164,7 +165,11 @@ export async function POST(request: Request) {
       .map(normalizeChatId)
       .filter(Boolean);
     const onlineGroupSettings = await getActiveOnlineGroupCampaign();
-    const targetChatId = normalizeChatId(onlineGroupSettings?.regularChatId);
+    // While the current cohort runs, links lead to the recorded next cohort.
+    const activeMainChatId = normalizeChatId(onlineGroupSettings?.regularChatId);
+    const targetChatId = activeMainChatId
+      ? await resolveRenewalTargetChatId(activeMainChatId)
+      : "";
 
     if (!sourceChatIds.length || !onlineGroupSettings || !targetChatId) {
       return jsonNoStore(

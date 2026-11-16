@@ -39,7 +39,8 @@ const ADMIN_ACCESS_ERROR_MESSAGES: Record<string, string> = {
 const RENEWAL_ERROR_MESSAGES: Record<string, string> = {
   network_error: "Ошибка сети при создании ссылки продления.",
   renewal_offer_not_seeded: "Скидочный offer не найден в БД. Запусти seed продуктов.",
-  same_source_and_target_chat: "Старый и новый чат должны отличаться.",
+  same_source_and_target_chat:
+    "Чат, в который ведёт ссылка, не может быть среди источников: сними его галочку.",
   telegram_chat_not_registered:
     "Один из чатов не зарегистрирован. Добавь бота в чат и отправь /register_chat.",
 };
@@ -51,7 +52,7 @@ const SETTINGS_ERROR_MESSAGES: Record<string, string> = {
   online_group_cohort_closed:
     "Поток с этим основным чатом уже закрыт: дату его старта менять нельзя.",
   online_group_cohort_main_chat_fixed:
-    "Основной чат меняется только на следующий поток и только после закрытия текущего. Запись нового потока заводит разработчик.",
+    "Следующий поток станет текущим сам, когда ты закроешь этот во вкладке «Потоки». Ссылки продления на него можно создать уже сейчас во вкладке «Продления».",
   online_group_cohort_start_has_continuations:
     "От этой даты старта уже идут оплаченные продолжения хаба. Перенос с пересчётом делает разработчик.",
   same_main_and_inspiration_chat: "Основной чат и Inspiration Hub должны отличаться.",
@@ -119,10 +120,7 @@ export const useOnlineGroupAdmin = ({
   const isAdminGenerateDisabled =
     isGeneratingAdminAccess || isLoading || !hasConfiguredCampaign || !adminLabel.trim();
   const isRenewalGenerateDisabled =
-    isGeneratingRenewal ||
-    renewalSourceChatIds.length === 0 ||
-    !activeCampaign ||
-    renewalSourceChatIds.includes(activeCampaign.mainChatId);
+    isGeneratingRenewal || renewalSourceChatIds.length === 0 || !activeCampaign;
   const isSaveDisabled =
     isSaving ||
     !mainChatId ||

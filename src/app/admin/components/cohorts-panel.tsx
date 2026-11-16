@@ -21,6 +21,7 @@ import {
   Stack,
 } from "../ui/primitives";
 import { BotRightsCheck } from "./bot-rights-check";
+import { CohortTransitionGuide, type RenewalLinkKind } from "./cohort-transition-guide";
 
 const formatDate = (iso: string, withTime = false) =>
   new Intl.DateTimeFormat("ru-RU", {
@@ -302,6 +303,10 @@ type CohortsPanelProps = {
   onClosed: () => void;
   onReload: () => Promise<void> | void;
   onRetryPost: (cohortId: string) => Promise<boolean>;
+  onCreateRenewalLink: (
+    cohort: CohortOverview,
+    kind: RenewalLinkKind,
+  ) => Promise<boolean>;
   onSetDurationWeeks: (cohortId: string, durationWeeks: number) => Promise<boolean>;
   onSetPreviousChatRemoval: (cohortId: string, enabled: boolean) => Promise<boolean>;
   onUnauthorized: () => void;
@@ -318,6 +323,7 @@ export const CohortsPanel = ({
   onClosed,
   onReload,
   onRetryPost,
+  onCreateRenewalLink,
   onSetDurationWeeks,
   onSetPreviousChatRemoval,
   onUnauthorized,
@@ -366,6 +372,26 @@ export const CohortsPanel = ({
   const [closeError, setCloseError] = useState("");
 
   const ordered = orderCohorts(cohorts ?? [], loadedAt);
+  // The running cohort: the transition guide walks it into the next one.
+  const running = ordered.find(
+    (cohort) => !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt,
+  );
+  const [creatingKind, setCreatingKind] = useState<RenewalLinkKind | "">("");
+
+  const createRenewalLink = async (kind: RenewalLinkKind) => {
+    if (!running) return;
+    setCreatingKind(kind);
+    const ok = await onCreateRenewalLink(running, kind);
+    setCreatingKind("");
+    toast(
+      ok
+        ? {
+            tone: "success",
+            title: `Ссылка ${kind === "plus" ? "Plus" : "Standard"} готова`,
+          }
+        : { tone: "danger", title: "Не получилось создать ссылку. Попробуй ещё раз." },
+    );
+  };
 
   const openCloseWindow = (cohort: CohortOverview) => {
     setClosing(cohort);
@@ -403,6 +429,14 @@ export const CohortsPanel = ({
             ? "Продажи следующего потока открыты."
             : undefined,
     });
+    if (result.campaignSwitch === "failed") {
+      toast({
+        tone: "danger",
+        title: "Следующий поток не стал текущим",
+        description:
+          "Открой «Настройки потока» и сохрани следующий поток вручную: без этого ссылки продления не откроют оплату.",
+      });
+    }
     if (result.continuations.failures.length > 0) {
       toast({
         tone: "danger",
@@ -455,6 +489,14 @@ export const CohortsPanel = ({
         />
       ) : (
         <List>
+          {running && (
+            <CohortTransitionGuide
+              cohort={running}
+              creatingKind={creatingKind}
+              onCreateLink={(kind) => void createRenewalLink(kind)}
+              onOpenClose={() => openCloseWindow(running)}
+            />
+          )}
           {ordered.map((cohort) => {
             const status = cohortStatus(cohort, ordered, loadedAt);
             const isCurrent = !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt;
@@ -686,10 +728,10 @@ export const CohortsPanel = ({
               </div>
             </Facts>
             {closing.facts.legacyPlusHubRights > 0 && (
-              <Callout tone="warning" icon={<CircleAlert aria-hidden />}>
-                У {closing.facts.legacyPlusHubRights} покупок Plus хаб в старой модели:
-                закрытие не поставит им конец. Для обычного потока сначала попроси
-                разработчика перевести их (команда db:hub:classify-plus).
+              <Callout tone="info" icon={<CircleAlert aria-hidden />}>
+                {closing.next
+                  ? `У ${closing.facts.legacyPlusHubRights} покупок Plus Inspiration Hub по прежней схеме: он продлится до старта «${closing.next.title}» (${formatDate(closing.next.startsAt)}). Этот срок поставится сам при закрытии.`
+                  : `У ${closing.facts.legacyPlusHubRights} покупок Plus Inspiration Hub по прежней схеме: он закончится со стартом следующего потока, а его пока нет. Напиши разработчику.`}
               </Callout>
             )}
             {!closing.next && (
