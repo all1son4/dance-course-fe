@@ -25,6 +25,8 @@ const toQueueStatus = (row: QueueStatusRow | undefined) =>
 
 export const readOperationalDatabaseStatus = async () => {
   const client = getDatabaseClient();
+  // The production database also holds test-mode purchases made while checking the site.
+  const livemode = getDatabaseEnvSelection().deploymentEnvironment === "production";
   const [inboxRows, outboxRows, accessRows, projectionRows, reportRows] =
     await Promise.all([
       client<QueueStatusRow[]>`
@@ -80,10 +82,17 @@ export const readOperationalDatabaseStatus = async () => {
         }[]
       >`
         SELECT
-          count(*) FILTER (WHERE status = 'pending')::int AS "pending",
-          count(*) FILTER (WHERE status = 'link_failed')::int AS "linkFailed",
-          count(*) FILTER (WHERE status = 'manual_pending')::int AS "manualPending"
-        FROM access_entitlements
+          -- An entitlement is written when the payment starts, so an unpaid or
+          -- abandoned checkout leaves one in "pending" for good: only paid ones count.
+          count(*) FILTER (
+            WHERE e.status = 'pending'
+              AND p.succeeded_at IS NOT NULL
+              AND p.livemode = ${livemode}
+          )::int AS "pending",
+          count(*) FILTER (WHERE e.status = 'link_failed')::int AS "linkFailed",
+          count(*) FILTER (WHERE e.status = 'manual_pending')::int AS "manualPending"
+        FROM access_entitlements e
+        JOIN purchases p ON p.id = e.purchase_id
       `,
       client<
         {
