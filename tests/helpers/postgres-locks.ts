@@ -3,6 +3,12 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import type postgres from "postgres";
 
+/**
+ * Waits until `waitingPid` is stuck behind `blockingPid`, directly or through a
+ * chain. Files run in parallel, and another file's `CREATE TRIGGER` on the same
+ * table queues for a lock the blocking session holds; the waiter then queues behind
+ * that request, so its direct blocker is the other file's session.
+ */
 export const waitForPostgresBlock = async (
   client: postgres.Sql,
   waitingPid: number,
@@ -11,7 +17,13 @@ export const waitForPostgresBlock = async (
   const deadline = Date.now() + 5000;
   while (Date.now() < deadline) {
     const [row] = await client<{ blocked: boolean }[]>`
-      SELECT ${blockingPid} = ANY(pg_blocking_pids(${waitingPid})) AS blocked
+      WITH RECURSIVE blockers (pid) AS (
+        SELECT unnest(pg_blocking_pids(${waitingPid}))
+        UNION
+        SELECT next.pid
+        FROM blockers, unnest(pg_blocking_pids(blockers.pid)) AS next (pid)
+      )
+      SELECT ${blockingPid} IN (SELECT pid FROM blockers) AS blocked
     `;
     if (row?.blocked) return;
     await delay(10);
