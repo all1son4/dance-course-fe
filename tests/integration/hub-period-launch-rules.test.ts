@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after, type TestContext } from "node:test";
 
-import { and, eq, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -394,6 +394,9 @@ test("К5: a running Hub purchase without an owner is reported after three days"
 test("К6: without the shared Hub setting the cron marks no standalone right and reports it", async (t) => {
   stubTelegram(t);
   await withTransaction(async (tx) => {
+    // Other files commit the shared row while this runs; when it is already absent
+    // the delete locks nothing, so the table lock keeps it absent until rollback.
+    await tx.execute(sql`LOCK TABLE ${inspirationHubSettings} IN EXCLUSIVE MODE`);
     await tx.delete(inspirationHubSettings);
     const ended = await insertStandaloneRight(tx, {
       telegramUserId: createTestTelegramUserId(),
