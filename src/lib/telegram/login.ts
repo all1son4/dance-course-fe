@@ -4,7 +4,10 @@ const TELEGRAM_OAUTH_ISSUER = "https://oauth.telegram.org";
 const TELEGRAM_JWKS_URL = `${TELEGRAM_OAUTH_ISSUER}/.well-known/jwks.json`;
 const TELEGRAM_JWKS_CACHE_TTL_MS = 60 * 60 * 1000;
 const TELEGRAM_ID_TOKEN_CLOCK_SKEW_SECONDS = 60;
-const TELEGRAM_LOGIN_NONCE_TTL_SECONDS = 15 * 60;
+// The nonce only ties a Telegram login to this checkout page; the ID token's own
+// expiry keeps the login fresh. It is issued once per page view, and 15 minutes
+// failed every buyer who left the tab open a while, with no way out but a reload.
+const TELEGRAM_LOGIN_NONCE_TTL_SECONDS = 3 * 60 * 60;
 
 type TelegramJwk = JsonWebKey & {
   kid?: string;

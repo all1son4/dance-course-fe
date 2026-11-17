@@ -208,6 +208,8 @@ export type AnalyticsEventProperties = {
     verification_kind: "hub_discount" | "online_renewal";
     verification_stage: "restore" | "load" | "login" | "membership";
     result: "verified" | "not_member" | "username_mismatch" | "error";
+    /** For result "error": a known failure code (e.g. "popup_closed") or "other". */
+    error_code?: string;
   };
   review_navigated: {
     direction: "next" | "previous";

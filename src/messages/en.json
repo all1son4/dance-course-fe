@@ -826,7 +826,9 @@
         "notMember": "We couldn't find this account in the Online Group chat. Check the username or message support.",
         "usernameMismatch": "The username does not match the confirmed Telegram account. Enter the same one or confirm again.",
         "loadFailed": "We could not start the check. Refresh the page and try again.",
-        "failed": "Could not confirm Telegram. Please try again."
+        "failed": "Could not confirm Telegram. Please try again — or open this page in Chrome or Safari.",
+        "noTelegramWindow": "If the Telegram window did not open or did not bring you back here, open this page in Chrome or Safari and tap the blue icon again.",
+        "telegramClosed": "The Telegram window closed before the confirmation. Tap the blue icon again."
       },
       "unavailable": {
         "title": "Renewal unavailable",

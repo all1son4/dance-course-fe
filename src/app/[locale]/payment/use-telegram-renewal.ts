@@ -1,5 +1,5 @@
 import type { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { INSPIRATION_HUB_DISCOUNT_SLUG } from "@/constants/sellable-products";
 import {
@@ -25,6 +25,17 @@ import {
   requestTelegramIdToken,
   verifyRenewalTelegramMembership,
 } from "./payment.telegram";
+
+/** How long the page may sit in front with no answer from Telegram before the icon unlocks. */
+const TELEGRAM_WINDOW_CHECK_MS = 3000;
+
+/** Failures the page answers differently; anything else is reported as "other". */
+const KNOWN_LOGIN_ERRORS = new Set([
+  "invalid_telegram_login_nonce",
+  "popup_closed",
+  "telegram_login_script_failed",
+  "telegram_login_unavailable",
+]);
 
 type UseTelegramRenewalOptions = {
   locale: string;
@@ -60,6 +71,11 @@ export const useTelegramRenewal = ({
   const [renewalStatus, setRenewalStatus] = useState<RenewalStatus>("idle");
   const [renewalStatusText, setRenewalStatusText] = useState("");
   const [isRenewalUnavailable, setIsRenewalUnavailable] = useState(false);
+  // Bumped to fetch a fresh login nonce after the server found the old one expired.
+  const [campaignLoadKey, setCampaignLoadKey] = useState(0);
+  // Only the latest press may change the page: Telegram reports "popup_closed" for an
+  // earlier window when a new press replaces it.
+  const verificationAttemptRef = useRef(0);
 
   const renewalStatusTone = resolveRenewalStatusTone(renewalStatus);
 
@@ -116,6 +132,11 @@ export const useTelegramRenewal = ({
         setRenewalStatusText(
           data.verified ? t("renewal.status.verified") : t("renewal.status.ready"),
         );
+        if (!data.verified) {
+          // Loaded now, so a press opens the Telegram window straight away: a window
+          // opened after a network wait is no longer "from the tap", and Safari blocks it.
+          void loadTelegramLoginScript().catch(() => undefined);
+        }
         void trackAnalyticsEvent("renewal_verification_loaded", {
           ...getVerificationProperties(paymentStore, renewalSlug),
           already_verified: Boolean(data.verified),
@@ -162,7 +183,7 @@ export const useTelegramRenewal = ({
     return () => {
       requestController.abort();
     };
-  }, [paymentStore, paymentStore.checkoutSessionId, renewalSlug, t]);
+  }, [campaignLoadKey, paymentStore, paymentStore.checkoutSessionId, renewalSlug, t]);
 
   const verifyTelegramRenewal = async () => {
     const numericClientId = Number(renewalClientId);
@@ -192,6 +213,8 @@ export const useTelegramRenewal = ({
       return;
     }
 
+    const attempt = ++verificationAttemptRef.current;
+    const isLatestAttempt = () => attempt === verificationAttemptRef.current;
     setRenewalStatus("verifying");
     setRenewalStatusText(t("renewal.status.openingTelegram"));
     const verificationProperties = getVerificationProperties(paymentStore, renewalSlug);
@@ -200,18 +223,46 @@ export const useTelegramRenewal = ({
       "login";
 
     try {
-      await loadTelegramLoginScript();
+      // Preloaded with the campaign; waiting here only when that load failed.
+      if (!window.Telegram?.Login?.auth) {
+        await loadTelegramLoginScript();
+      }
 
       if (!window.Telegram?.Login?.auth) {
         throw new Error("telegram_login_unavailable");
       }
 
+      // A blocked window, or a confirmation that never finds its way back, leaves
+      // Telegram silent: no answer comes and the icon would stay locked. Once the
+      // page has been in front for a moment while still waiting, the icon works
+      // again, with a hint where the login will work.
+      let inFrontSince: number | null = Date.now();
+      const waitingWatch = window.setInterval(() => {
+        if (document.visibilityState !== "visible" || !document.hasFocus()) {
+          inFrontSince = null;
+          return;
+        }
+
+        inFrontSince ??= Date.now();
+
+        if (Date.now() - inFrontSince >= TELEGRAM_WINDOW_CHECK_MS && isLatestAttempt()) {
+          window.clearInterval(waitingWatch);
+          setRenewalStatus("ready");
+          setRenewalStatusText(t("renewal.status.noTelegramWindow"));
+        }
+      }, 500);
+
       const idToken = await requestTelegramIdToken({
         clientId: numericClientId,
         locale,
         nonce: renewalNonce,
-      });
+      }).finally(() => window.clearInterval(waitingWatch));
 
+      if (!isLatestAttempt()) {
+        return;
+      }
+
+      setRenewalStatus("verifying");
       setRenewalStatusText(t("renewal.status.checkingMembership"));
       verificationStage = "membership";
 
@@ -282,11 +333,33 @@ export const useTelegramRenewal = ({
       // Back from the Telegram window: the page opens the next step itself, and on
       // a phone does not pop the keyboard up while the buyer is still switching back.
       window.focus();
-    } catch {
-      setRenewalStatus("error");
-      setRenewalStatusText(t("renewal.status.failed"));
+    } catch (error) {
+      if (!isLatestAttempt()) {
+        return;
+      }
+
+      const errorCode =
+        error instanceof Error && KNOWN_LOGIN_ERRORS.has(error.message)
+          ? error.message
+          : "other";
+
+      if (errorCode === "invalid_telegram_login_nonce") {
+        // The page outlived its login nonce: a fresh one makes the next press work,
+        // instead of failing every retry until a reload.
+        setCampaignLoadKey((key) => key + 1);
+      } else {
+        setRenewalStatus("error");
+        setRenewalStatusText(
+          t(
+            errorCode === "popup_closed"
+              ? "renewal.status.telegramClosed"
+              : "renewal.status.failed",
+          ),
+        );
+      }
       void trackAnalyticsEvent("renewal_verification_result", {
         ...verificationProperties,
+        error_code: errorCode,
         verification_stage: verificationStage,
         result: "error",
       });

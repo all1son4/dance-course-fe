@@ -826,7 +826,9 @@
         "notMember": "Nie znaleźliśmy tego konta w starym czacie. Sprawdź nazwę użytkownika lub napisz do nas.",
         "usernameMismatch": "Nazwa użytkownika nie zgadza się z potwierdzonym kontem Telegram. Wpisz tę samą lub potwierdź ponownie.",
         "loadFailed": "Nie udało się rozpocząć weryfikacji. Odśwież stronę i spróbuj ponownie.",
-        "failed": "Nie udało się potwierdzić Telegrama. Spróbuj ponownie."
+        "failed": "Nie udało się potwierdzić Telegrama. Spróbuj ponownie — albo otwórz tę stronę w Chrome lub Safari.",
+        "noTelegramWindow": "Jeśli okno Telegrama się nie otworzyło albo nie przeniosło Cię tutaj z powrotem, otwórz tę stronę w Chrome lub Safari i kliknij niebieską ikonę jeszcze raz.",
+        "telegramClosed": "Okno Telegrama zamknęło się przed potwierdzeniem. Kliknij niebieską ikonę jeszcze raz."
       },
       "unavailable": {
         "title": "Przedłużenie niedostępne",

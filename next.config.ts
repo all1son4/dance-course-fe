@@ -6,6 +6,9 @@ const isProduction = process.env.NODE_ENV === "production";
 const vercelLiveSource = "https://vercel.live";
 const mixpanelRecorderSource = "https://cdn.mxpnl.com";
 const mixpanelEuApiSource = "https://api-eu.mixpanel.com";
+// Inside Telegram's in-app browser the login script fetches the result from here
+// instead of opening a window; blocked, the renewal check never came back.
+const telegramOauthSource = "https://oauth.telegram.org";
 const publicReleaseId =
   process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
   process.env.NEXT_PUBLIC_APP_VERSION?.trim() ||
@@ -31,7 +34,7 @@ const contentSecurityPolicy = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
-  `connect-src 'self' https://api.stripe.com https://r.stripe.com https://js.stripe.com https://hooks.stripe.com ${mixpanelEuApiSource} https://fonts.googleapis.com ${
+  `connect-src 'self' https://api.stripe.com https://r.stripe.com https://js.stripe.com https://hooks.stripe.com ${mixpanelEuApiSource} ${telegramOauthSource} https://fonts.googleapis.com ${
     isProduction ? "" : vercelLiveSource
   }`.trim(),
   "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.youtube.com https://www.youtube-nocookie.com",
