@@ -5,6 +5,7 @@ import test, { after } from "node:test";
 import postgres from "postgres";
 
 import { getDatabaseClient } from "@/db/client";
+import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { readSalesMetrics } from "@/lib/admin/overview";
 import { getSystemPulse } from "@/lib/admin/system-pulse";
 
@@ -86,6 +87,47 @@ test("overview revenue counts only sales confirmed by a processed Stripe event",
   } finally {
     await client`DELETE FROM stripe_events WHERE payment_intent_id IN (${confirmed}, ${unconfirmed})`;
     await client`DELETE FROM purchases WHERE payment_intent_id IN (${confirmed}, ${unconfirmed})`;
+  }
+});
+
+test("access in progress counts only paid purchases of this Stripe mode", async () => {
+  const suffix = randomUUID().replaceAll("-", "");
+  const ids = {
+    abandoned: `pi_access_abandoned_${suffix}`,
+    otherMode: `pi_access_other_mode_${suffix}`,
+    paid: `pi_access_paid_${suffix}`,
+  };
+  const now = new Date().toISOString();
+  const pendingOf = async () => (await readOperationalDatabaseStatus()).access.pending;
+
+  try {
+    const before = await pendingOf();
+    await insertPurchase({
+      createdAt: now,
+      outcome: "failed",
+      paymentIntentId: ids.abandoned,
+    });
+    await insertPurchase({
+      createdAt: now,
+      outcome: "succeeded",
+      paymentIntentId: ids.paid,
+    });
+    await insertPurchase({
+      createdAt: now,
+      outcome: "succeeded",
+      paymentIntentId: ids.otherMode,
+    });
+    // The test database is "development", so only test-mode purchases are its own.
+    await client`UPDATE purchases SET livemode = true WHERE payment_intent_id = ${ids.otherMode}`;
+    // Every checkout writes its entitlement up front, paid or not.
+    await client`
+      INSERT INTO access_entitlements (purchase_id)
+      SELECT id FROM purchases WHERE payment_intent_id IN ${client(Object.values(ids))}
+    `;
+
+    assert.equal((await pendingOf()) - before, 1);
+  } finally {
+    await client`DELETE FROM purchases WHERE payment_intent_id IN ${client(Object.values(ids))}`;
   }
 });
 
