@@ -9,7 +9,7 @@ import { processNextStripeWebhookInboxJob } from "@/app/api/stripe/webhook/_lib/
 import { deliverStripeOutboxJob } from "@/app/api/stripe/webhook/_lib/outbox-delivery";
 import { getDatabaseClient } from "@/db/client";
 import { recordVerifiedStripeEvent } from "@/db/stripe-event-inbox";
-import { processNextOutboxJob } from "@/db/transactional-outbox";
+import { processOutboxJobByDeduplicationKey } from "@/db/transactional-outbox";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -108,6 +108,28 @@ const createStripeFixture = (paymentIntentId: string) =>
     },
   }) as unknown as Stripe;
 
+// "Next job" claims are global, and purchase-access-job enqueues these kinds at the
+// same time, so each delivery here claims this purchase's own job by its key.
+const deliverPurchaseJob = async ({
+  kind,
+  paymentIntentId,
+  stripe,
+}: {
+  kind: "admin_telegram_alert" | "purchase_success_email";
+  paymentIntentId: string;
+  stripe: Stripe;
+}) => {
+  const [purchase] = await client<{ id: string }[]>`
+    SELECT id FROM purchases WHERE payment_intent_id = ${paymentIntentId}
+  `;
+  assert.ok(purchase);
+
+  return processOutboxJobByDeduplicationKey({
+    deduplicationKey: `purchase:${purchase.id}:${kind}`,
+    deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
+  });
+};
+
 test("projects a verified success and its two delivery jobs atomically", async () => {
   const runId = randomUUID();
   const eventId = `evt_write02_${runId}`;
@@ -129,13 +151,15 @@ test("projects a verified success and its two delivery jobs atomically", async (
       eventTypes: [event.type],
       stripe,
     });
-    const emailDelivery = await processNextOutboxJob({
-      deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
-      kinds: ["purchase_success_email"],
+    const emailDelivery = await deliverPurchaseJob({
+      kind: "purchase_success_email",
+      paymentIntentId,
+      stripe,
     });
-    const alertDelivery = await processNextOutboxJob({
-      deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
-      kinds: ["admin_telegram_alert"],
+    const alertDelivery = await deliverPurchaseJob({
+      kind: "admin_telegram_alert",
+      paymentIntentId,
+      stripe,
     });
     const [stored] = await client<
       {
@@ -260,13 +284,15 @@ test("completes the purchase without any export despite a stale legacy flag", as
       eventTypes: [event.type],
       stripe,
     });
-    const emailDelivery = await processNextOutboxJob({
-      deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
-      kinds: ["purchase_success_email"],
+    const emailDelivery = await deliverPurchaseJob({
+      kind: "purchase_success_email",
+      paymentIntentId,
+      stripe,
     });
-    const alertDelivery = await processNextOutboxJob({
-      deliver: (job) => deliverStripeOutboxJob({ job, stripe }),
-      kinds: ["admin_telegram_alert"],
+    const alertDelivery = await deliverPurchaseJob({
+      kind: "admin_telegram_alert",
+      paymentIntentId,
+      stripe,
     });
     const [stored] = await client<
       {

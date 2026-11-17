@@ -1,3 +1,5 @@
+import type postgres from "postgres";
+
 import { getDatabaseClient } from "./client";
 import { getDatabaseEnvSelection } from "./env";
 import { loadDatabaseEnvConfig } from "./load-env";
@@ -23,8 +25,10 @@ const toQueueStatus = (row: QueueStatusRow | undefined) =>
     working: 0,
   };
 
-export const readOperationalDatabaseStatus = async () => {
-  const client = getDatabaseClient();
+// `client` lets a test read inside its own transaction.
+export const readOperationalDatabaseStatus = async (
+  client: postgres.ISql = getDatabaseClient(),
+) => {
   // The production database also holds test-mode purchases made while checking the site.
   const livemode = getDatabaseEnvSelection().deploymentEnvironment === "production";
   const [inboxRows, outboxRows, accessRows, projectionRows, reportRows] =

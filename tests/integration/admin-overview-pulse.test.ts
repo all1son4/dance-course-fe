@@ -30,13 +30,15 @@ const insertPurchase = async ({
   outcome,
   paymentIntentId,
   settlementMinor,
+  sql = client,
 }: {
   createdAt: string;
   outcome: string;
   paymentIntentId: string;
   settlementMinor?: number;
+  sql?: postgres.ISql;
 }) => {
-  await client`
+  await sql`
     INSERT INTO purchases (
       payment_intent_id, amount_minor, currency, stripe_status, outcome, source,
       settlement_amount_minor, settlement_currency,
@@ -98,36 +100,46 @@ test("access in progress counts only paid purchases of this Stripe mode", async 
     paid: `pi_access_paid_${suffix}`,
   };
   const now = new Date().toISOString();
-  const pendingOf = async () => (await readOperationalDatabaseStatus()).access.pending;
+  const rollback = new Error("rollback_access_in_progress_fixture");
 
   try {
-    const before = await pendingOf();
-    await insertPurchase({
-      createdAt: now,
-      outcome: "failed",
-      paymentIntentId: ids.abandoned,
-    });
-    await insertPurchase({
-      createdAt: now,
-      outcome: "succeeded",
-      paymentIntentId: ids.paid,
-    });
-    await insertPurchase({
-      createdAt: now,
-      outcome: "succeeded",
-      paymentIntentId: ids.otherMode,
-    });
-    // The test database is "development", so only test-mode purchases are its own.
-    await client`UPDATE purchases SET livemode = true WHERE payment_intent_id = ${ids.otherMode}`;
-    // Every checkout writes its entitlement up front, paid or not.
-    await client`
-      INSERT INTO access_entitlements (purchase_id)
-      SELECT id FROM purchases WHERE payment_intent_id IN ${client(Object.values(ids))}
-    `;
+    // The count is database-wide and other files commit paid purchases meanwhile, so
+    // both reads share one snapshot that sees only this test's rows change.
+    await client.begin("isolation level repeatable read", async (tx) => {
+      const pendingOf = async () =>
+        (await readOperationalDatabaseStatus(tx)).access.pending;
+      const before = await pendingOf();
+      await insertPurchase({
+        createdAt: now,
+        outcome: "failed",
+        paymentIntentId: ids.abandoned,
+        sql: tx,
+      });
+      await insertPurchase({
+        createdAt: now,
+        outcome: "succeeded",
+        paymentIntentId: ids.paid,
+        sql: tx,
+      });
+      await insertPurchase({
+        createdAt: now,
+        outcome: "succeeded",
+        paymentIntentId: ids.otherMode,
+        sql: tx,
+      });
+      // The test database is "development", so only test-mode purchases are its own.
+      await tx`UPDATE purchases SET livemode = true WHERE payment_intent_id = ${ids.otherMode}`;
+      // Every checkout writes its entitlement up front, paid or not.
+      await tx`
+        INSERT INTO access_entitlements (purchase_id)
+        SELECT id FROM purchases WHERE payment_intent_id IN ${tx(Object.values(ids))}
+      `;
 
-    assert.equal((await pendingOf()) - before, 1);
-  } finally {
-    await client`DELETE FROM purchases WHERE payment_intent_id IN ${client(Object.values(ids))}`;
+      assert.equal((await pendingOf()) - before, 1);
+      throw rollback;
+    });
+  } catch (error) {
+    if (error !== rollback) throw error;
   }
 });
 
