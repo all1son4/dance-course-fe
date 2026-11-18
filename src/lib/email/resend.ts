@@ -1,5 +1,20 @@
 const resendApiKey = process.env.RESEND_API_KEY?.trim() ?? "";
-const resendFromEmail = process.env.RESEND_FROM_EMAIL?.trim() ?? "onboarding@resend.dev";
+/**
+ * Two senders (owner, 2026-11-18): payments — the purchase email with its invoice
+ * and the monthly report — come from RESEND_BILLING_EMAIL; reminders, broadcasts,
+ * access notices and the «Мой доступ» link from RESEND_HELLO_EMAIL. Until those
+ * are set, the old single RESEND_FROM_EMAIL stands in for both. Read on each send,
+ * so a variable added in Vercel works from the next deployment without code.
+ */
+export type ResendSender = "billing" | "hello";
+
+const fromAddress = (sender: ResendSender) => {
+  const billing =
+    process.env.RESEND_BILLING_EMAIL?.trim() ||
+    process.env.RESEND_FROM_EMAIL?.trim() ||
+    "onboarding@resend.dev";
+  return sender === "hello" ? process.env.RESEND_HELLO_EMAIL?.trim() || billing : billing;
+};
 const resendReplyTo = process.env.RESEND_REPLY_TO?.trim() ?? "";
 const RESEND_REQUEST_TIMEOUT_MS = 4_000;
 
@@ -14,6 +29,8 @@ export type SendResendEmailInput = {
   headers?: Record<string, string>;
   html: string;
   idempotencyKey?: string;
+  /** Which address it comes from; payments (`billing`) unless said otherwise. */
+  sender?: ResendSender;
   subject: string;
   text: string;
   to: string;
@@ -35,6 +52,7 @@ export const sendResendEmail = async ({
   headers,
   html,
   idempotencyKey,
+  sender = "billing",
   subject,
   text,
   to,
@@ -44,7 +62,7 @@ export const sendResendEmail = async ({
   }
 
   const payload: Record<string, unknown> = {
-    from: resendFromEmail,
+    from: fromAddress(sender),
     html,
     subject: normalizeEmailSubject(subject),
     text,

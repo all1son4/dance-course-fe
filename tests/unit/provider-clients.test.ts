@@ -115,6 +115,55 @@ test("Resend fixture records normalized email and idempotency data", async (t) =
   });
 });
 
+test("payments come from the billing address, everything else from hello", async (t) => {
+  const names = [
+    "RESEND_API_KEY",
+    "RESEND_BILLING_EMAIL",
+    "RESEND_FROM_EMAIL",
+    "RESEND_HELLO_EMAIL",
+  ] as const;
+  const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
+  process.env.RESEND_API_KEY = "re_fixture";
+
+  t.after(() => {
+    for (const name of names) restoreEnvironmentVariable(name, previous[name]);
+  });
+
+  const calls = installJsonFetchFixture(
+    t,
+    Array.from({ length: 4 }, (_, index) => ({ body: { id: `email_${index}` } })),
+  );
+  const { sendResendEmail } = await import("@/lib/email/resend");
+  const send = (sender?: "billing" | "hello") =>
+    sendResendEmail({
+      html: "<p>x</p>",
+      sender,
+      subject: "x",
+      text: "x",
+      to: "a@example.com",
+    });
+  const fromOf = (index: number) => JSON.parse(calls[index]?.body ?? "{}").from;
+
+  // Only the old single variable: it stands in for both.
+  delete process.env.RESEND_BILLING_EMAIL;
+  delete process.env.RESEND_HELLO_EMAIL;
+  process.env.RESEND_FROM_EMAIL = "Old <old@example.com>";
+  await send("hello");
+  await send();
+
+  process.env.RESEND_BILLING_EMAIL = "Anna Strok Payments <billing@example.com>";
+  process.env.RESEND_HELLO_EMAIL = "Anna Strok <hello@example.com>";
+  await send("hello");
+  await send();
+
+  assert.deepEqual([0, 1, 2, 3].map(fromOf), [
+    "Old <old@example.com>",
+    "Old <old@example.com>",
+    "Anna Strok <hello@example.com>",
+    "Anna Strok Payments <billing@example.com>",
+  ]);
+});
+
 const restoreEnvironmentVariable = (name: string, value: string | undefined) => {
   if (value === undefined) {
     delete process.env[name];
