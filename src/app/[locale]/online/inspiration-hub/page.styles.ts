@@ -54,8 +54,14 @@ export const FactsRow = styled(InfoBoxGroup)`
   }
 `;
 
-/** Two buttons instead of the group's one: on tablets they keep off the photo. */
+/**
+ * Two buttons instead of the group's one, so they share the row equally: the
+ * group's 52/48 split made Buy look bigger than its neighbour. On tablets they
+ * keep off the photo; below 625px they stack full width, as on every page.
+ */
 export const ButtonBox = styled(GroupButtonBox)`
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
   @media (min-width: 768px) and (max-width: 920px) {
     max-width: 500px;
   }
