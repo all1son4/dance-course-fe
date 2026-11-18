@@ -261,9 +261,13 @@ const Main = styled.div`
 `;
 
 /* The gutter is kept even on a short page, so switching sections never shifts
-   the content sideways either. */
+   the content sideways either. position: relative makes it the containing
+   block of absolutely placed bits inside (a checkbox's hidden input, a visually
+   hidden table head): without it they were placed against the page and
+   stretched it, which brought back the page's own scrollbar. */
 const ContentScroll = styled.div`
   @media (min-width: 1024px) {
+    position: relative;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
