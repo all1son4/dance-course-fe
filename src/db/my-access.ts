@@ -143,6 +143,7 @@ export async function readMyAccessSnapshot(
             durationWeeks: onlineGroupCohorts.durationWeeks,
             id: onlineGroupCohorts.id,
             startsAt: onlineGroupCohorts.startsAt,
+            title: onlineGroupCohorts.title,
           })
           .from(onlineGroupCohorts)
           .where(inArray(onlineGroupCohorts.id, cohortIds))

@@ -1450,7 +1450,8 @@
       "hint": "Zaproś kogoś do tańca",
       "live": "trwa teraz",
       "bought": "Kupiono {date}",
-      "lastBought": "Ostatni zakup {date}"
+      "lastBought": "Ostatni zakup {date}",
+      "completedCohorts": "{count, plural, one {# cykl ukończony} few {# cykle ukończone} many {# cykli ukończonych} other {# cyklu ukończonego}}"
     },
     "calendar": {
       "add": "Do kalendarza",

@@ -2,13 +2,17 @@ import {
   INSPIRATION_HUB_PRODUCT_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
+import { isOnlineGroupAccessOfferId } from "@/lib/telegram/offer-access";
 
 import type { MyAccessCard, MyAccessSnapshot } from "./cards";
+
+const ONLINE_GROUP_PRODUCT_ID = SELLABLE_PRODUCTS["online-group-anna-strok"].id;
 
 /*
  * «Твой путь»: the products a customer has bought, in the order she first bought
  * them, each with the day of its purchase — the latest one for the group and the
- * Hub, which are bought again cycle after cycle. Only facts from purchases.
+ * Hub, which are bought again cycle after cycle — and, for the group, how many of
+ * its cycles are behind. Only facts from purchases and closed cohorts.
  */
 
 /** Bought again and again: the path shows the latest purchase. */
@@ -25,6 +29,8 @@ export type MyAccessJourneyStep = {
   purchasedAt: string;
   /** An access of it runs right now: the path marks it live. */
   live: boolean;
+  /** The Online Group: how many of the cycles bought have already ended. */
+  completedCohorts?: number;
 };
 
 const productOf = (card: MyAccessCard) =>
@@ -74,6 +80,25 @@ export const buildMyAccessJourney = (
     ) {
       step.purchasedAt = at;
     }
+  }
+
+  // The group's step counts the cycles behind: bought, and closed since.
+  const groupStep = steps.get(ONLINE_GROUP_PRODUCT_ID);
+  if (groupStep) {
+    const closed = new Set(
+      snapshot.cohorts.filter((cohort) => cohort.closedAt).map((cohort) => cohort.id),
+    );
+    const completed = new Set(
+      snapshot.purchases.flatMap((purchase) =>
+        purchase.succeededAt &&
+        purchase.cohortId &&
+        closed.has(purchase.cohortId) &&
+        isOnlineGroupAccessOfferId(purchase.offerExternalId)
+          ? [purchase.cohortId]
+          : [],
+      ),
+    ).size;
+    if (completed > 0) groupStep.completedCohorts = completed;
   }
 
   // One product is not a path yet.

@@ -1464,7 +1464,8 @@
       "hint": "Позови кого-нибудь на танцы",
       "live": "идёт сейчас",
       "bought": "Куплено {date}",
-      "lastBought": "Последняя покупка {date}"
+      "lastBought": "Последняя покупка {date}",
+      "completedCohorts": "{count, plural, one {# поток пройден} few {# потока пройдено} many {# потоков пройдено} other {# потока пройдено}}"
     },
     "calendar": {
       "add": "В календарь",

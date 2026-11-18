@@ -1450,7 +1450,8 @@
       "hint": "Bring someone to dance",
       "live": "running now",
       "bought": "Bought {date}",
-      "lastBought": "Last bought {date}"
+      "lastBought": "Last bought {date}",
+      "completedCohorts": "{count, plural, one {# cycle completed} other {# cycles completed}}"
     },
     "calendar": {
       "add": "Add to calendar",
