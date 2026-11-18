@@ -1447,8 +1447,10 @@
       "eyebrow": "Twoja droga",
       "share": "Udostępnij: {title}",
       "copied": "Link do kursu skopiowany",
-      "hint": "Kliknij, aby udostępnić",
-      "live": "trwa teraz"
+      "hint": "Zaproś kogoś do tańca",
+      "live": "trwa teraz",
+      "bought": "Kupiono {date}",
+      "lastBought": "Ostatni zakup {date}"
     },
     "calendar": {
       "add": "Do kalendarza",

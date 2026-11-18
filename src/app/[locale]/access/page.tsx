@@ -396,12 +396,17 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     const title = getAccessCardTitle(card, t, productT);
     const detailsId = `access-card-${card.id}`;
     const summary = !counted && (detail ?? note);
+    // Folding pays only when the open card shows more than the folded one.
+    const foldable =
+      Boolean(card.action || card.calendar) ||
+      [detail, note].some((line) => line && line !== summary);
 
     return (
       <FoldingCard
         // What waits on the reader stays open: its button must be in sight.
         defaultOpen={zone === "action"}
         detailsId={detailsId}
+        foldable={foldable}
         key={card.id}
         label={title}
       >
@@ -642,7 +647,12 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                           {step.live && <em aria-hidden>LIVE</em>}
                         </b>
                         <span>
-                          {purchaseDay(step.purchasedAt)}
+                          {t(
+                            step.purchasedAt === step.since
+                              ? "journey.bought"
+                              : "journey.lastBought",
+                            { date: purchaseDay(step.purchasedAt) },
+                          )}
                           {step.live && (
                             <VisuallyHidden> · {t("journey.live")}</VisuallyHidden>
                           )}

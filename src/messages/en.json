@@ -1447,8 +1447,10 @@
       "eyebrow": "Your path",
       "share": "Share: {title}",
       "copied": "Course link copied",
-      "hint": "Tap to share",
-      "live": "running now"
+      "hint": "Bring someone to dance",
+      "live": "running now",
+      "bought": "Bought {date}",
+      "lastBought": "Last bought {date}"
     },
     "calendar": {
       "add": "Add to calendar",
