@@ -1495,8 +1495,7 @@
         "closed": "The cycle has ended. Your Plus Hub stays open until {date}",
         "keep": "Renew Plus or just the Hub to keep your access",
         "until": "Included in your Plus — until {date}",
-        "duringCohortUntil": "Lasts until the cycle ends (planned for {date}) and 7 more days after it",
-        "openBeforeStart": "Open already; the cycle starts on {date}"
+        "duringCohortUntil": "Lasts until the cycle ends (planned for {date}) and 7 more days after it"
       },
       "group": {
         "running": "The cycle is running",
@@ -1524,8 +1523,7 @@
         "linkExpired": "Email link expired",
         "notJoinedChannel": "Not in the channel yet",
         "notJoinedGroup": "Not in the group chat yet",
-        "notJoinedHub": "Not in the Hub yet",
-        "endsSoonDays": "{days, plural, =1 {Last day} other {Last # days}}"
+        "notJoinedHub": "Not in the Hub yet"
       },
       "linkExpired": "We'll send a new one to the email you bought with",
       "count": "{count, plural, one {# purchase} other {# purchases}}",

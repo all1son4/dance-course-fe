@@ -1495,8 +1495,7 @@
         "closed": "Cykl się zakończył. Hub z pakietu Plus jest dostępny do {date}",
         "keep": "Przedłuż Plus albo sam Hub, aby nie stracić dostępu",
         "until": "W Twoim pakiecie Plus — do {date}",
-        "duringCohortUntil": "Działa do końca cyklu (według planu — {date}) i jeszcze 7 dni po nim",
-        "openBeforeStart": "Otwarty już teraz, cykl startuje {date}"
+        "duringCohortUntil": "Działa do końca cyklu (według planu — {date}) i jeszcze 7 dni po nim"
       },
       "group": {
         "running": "Cykl trwa",
@@ -1524,8 +1523,7 @@
         "linkExpired": "Link z wiadomości wygasł",
         "notJoinedChannel": "Jeszcze nie w kanale",
         "notJoinedGroup": "Jeszcze nie w czacie grupy",
-        "notJoinedHub": "Jeszcze nie w Hubie",
-        "endsSoonDays": "{days, plural, =1 {Ostatni dzień} one {Ostatni # dzień} few {Ostatnie # dni} many {Ostatnie # dni} other {Ostatnie # dnia}}"
+        "notJoinedHub": "Jeszcze nie w Hubie"
       },
       "linkExpired": "Nowy wyślemy na e-mail z zakupu",
       "count": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}",

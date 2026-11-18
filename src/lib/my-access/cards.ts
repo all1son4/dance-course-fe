@@ -366,32 +366,80 @@ const buildPlusHubCard = ({
       : null;
   }
 
-  // HUB-D49: the library is open from payment; the library opens before the start.
-  // No calendar date: the library is already open, the start is the group's own.
-  if (cohort && !isStartDayReached(cohort.startsAt, now)) {
-    return {
-      ...base,
-      status: { key: "plusHub.included" },
-      note: { key: "plusHub.openBeforeStart", values: { date: iso(cohort.startsAt) } },
-      urgency: 1,
-      sortAt: cohort.startsAt.getTime(),
-    };
-  }
+  // HUB-D49: the library is open from payment, before the start too; the note says
+  // until when, so «открыт сейчас» never stands without an end. No calendar date:
+  // the library is already open, the start is the group's own.
+  const note = cohort
+    ? {
+        key: "plusHub.duringCohortUntil",
+        values: {
+          date: iso(addWarsawCalendarDays(cohort.startsAt, cohort.durationWeeks * 7)),
+        },
+      }
+    : { key: "plusHub.duringCohort" };
 
   return {
     ...base,
     status: { key: "plusHub.included" },
-    note: cohort
-      ? {
-          key: "plusHub.duringCohortUntil",
-          values: {
-            date: iso(addWarsawCalendarDays(cohort.startsAt, cohort.durationWeeks * 7)),
-          },
-        }
-      : { key: "plusHub.duringCohort" },
+    note,
     urgency: 1,
-    sortAt: Number.MAX_SAFE_INTEGER - 1,
+    sortAt:
+      cohort && !isStartDayReached(cohort.startsAt, now)
+        ? cohort.startsAt.getTime()
+        : Number.MAX_SAFE_INTEGER - 1,
   };
+};
+
+/**
+ * Until when a Hub card's access is open right now, or null if it is not open now
+ * (scheduled, after the cycle, ended). A Plus Hub without a closure lasts the
+ * planned cycle and a week after it, or indefinitely while no cycle is recorded.
+ */
+const hubOpenUntil = (card: BaseCard): number | null => {
+  if (card.title !== "hub") return null;
+  const { key } = card.status;
+
+  if (key === "hub.activeUntil" && card.period) return Date.parse(card.period.end);
+  if (
+    (key === "plusHub.closed" || key === "plusHub.until") &&
+    card.calendar?.kind === "end"
+  )
+    return Date.parse(card.calendar.at);
+  if (key === "plusHub.included") {
+    const planned = card.note?.values?.date;
+    return typeof planned === "string"
+      ? Date.parse(planned) + PLUS_HUB_WEEK_AFTER_MS
+      : Number.MAX_SAFE_INTEGER;
+  }
+  return null;
+};
+
+const PLUS_HUB_WEEK_AFTER_MS = 7 * DAY_MS;
+
+/**
+ * One Hub at a time (owner, 2026-11-18): when the Hub is open now and goes on past
+ * another open Hub card's end, that earlier card only confuses («осталось 5 дней»
+ * next to a Hub that does not end) and is left out. Such a card never asks for
+ * anything: next to an open Hub the rules above give it no button.
+ */
+const withoutCoveredHubs = (
+  cards: BaseCard[],
+  /** The Telegram identity of each Hub card: every account has its own access. */
+  identityOf: Map<BaseCard, string>,
+) => {
+  const longest = new Map<string, number>();
+  for (const card of cards) {
+    const until = hubOpenUntil(card);
+    const identity = identityOf.get(card);
+    if (until === null || identity === undefined) continue;
+    longest.set(identity, Math.max(until, longest.get(identity) ?? until));
+  }
+
+  return cards.filter((card) => {
+    const until = hubOpenUntil(card);
+    const identity = identityOf.get(card);
+    return until === null || identity === undefined || until >= longest.get(identity)!;
+  });
 };
 
 /** Standard or Plus of one cohort (the title names the tariff): runs while the cohort runs. */
@@ -614,6 +662,7 @@ export const buildMyAccessCards = (
   const cards: BaseCard[] = [];
   const hubGroups = new Map<string, MyAccessRight[]>();
   const plusHubIdentities = new Set<string>();
+  const hubIdentity = new Map<BaseCard, string>();
 
   for (const purchase of snapshot.purchases) {
     const rights = rightsByPurchase.get(purchase.id) ?? [];
@@ -655,6 +704,7 @@ export const buildMyAccessCards = (
       if (plusHubCard) {
         cards.push(plusHubCard);
         plusHubIdentities.add(purchase.telegramUserId ?? purchase.id);
+        hubIdentity.set(plusHubCard, purchase.telegramUserId ?? purchase.id);
       }
       continue;
     }
@@ -691,13 +741,18 @@ export const buildMyAccessCards = (
       periods,
       sales,
     });
-    if (card) cards.push(card);
+    if (card) {
+      cards.push(card);
+      hubIdentity.set(card, groupId);
+    }
   }
 
   // Identical cards (the same product bought and left unopened twice) read as one;
   // a folded «new link» asks for the first purchase's, one working invite is enough.
   const folded = new Map<string, MyAccessCard>();
-  for (const card of cards.map((base) => withPresentation(base, now))) {
+  for (const card of withoutCoveredHubs(cards, hubIdentity).map((base) =>
+    withPresentation(base, now),
+  )) {
     const key = JSON.stringify([
       card.title,
       card.status,
