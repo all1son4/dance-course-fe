@@ -62,7 +62,9 @@ const ToastCard = styled.div<{ $tone: Toast["tone"] }>`
   align-items: flex-start;
   gap: 10px;
   padding: 12px 10px 12px 14px;
-  border: 1px solid var(--a-border);
+  /* The frame carries the tone too, softened, so the kind reads at a glance. */
+  border: 1px solid
+    color-mix(in srgb, ${({ $tone }) => toneColors[$tone].color} 45%, transparent);
   border-radius: var(--a-radius);
   background: var(--a-surface);
   box-shadow: var(--a-shadow-lg);

@@ -226,6 +226,14 @@ const EnvPill = styled.span<{ $environment: AdminEnvironment }>`
   }
 `;
 
+/* Desktop shows the address in the top bar; the menu keeps it only where the bar
+   has no room for it (phones). */
+const MenuEnvPill = styled(EnvPill)`
+  @media (min-width: 1024px) {
+    display: none;
+  }
+`;
+
 const SessionLine = styled.div<{ $unavailable: boolean }>`
   justify-self: stretch;
   display: flex;
@@ -239,10 +247,28 @@ const SessionLine = styled.div<{ $unavailable: boolean }>`
   }
 `;
 
+/* Desktop: the frame is one screen tall and only the content under the top bar
+   scrolls, so a scrollbar appearing on a long page never narrows the bar. Phones
+   keep the page's own scroll (iOS hides its address bar on it). */
 const Main = styled.div`
   min-width: 0;
   display: flex;
   flex-direction: column;
+
+  @media (min-width: 1024px) {
+    height: 100dvh;
+  }
+`;
+
+/* The gutter is kept even on a short page, so switching sections never shifts
+   the content sideways either. */
+const ContentScroll = styled.div`
+  @media (min-width: 1024px) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
 `;
 
 const Topbar = styled.header`
@@ -423,6 +449,7 @@ export const AdminFrame = ({
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [query, setQuery] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
   const wasMenuOpen = useRef(false);
@@ -461,6 +488,8 @@ export const AdminFrame = ({
   const navigate = (id: AdminFeatureId) => {
     onNavigate(id);
     setMenuOpen(false);
+    // Whichever scrolls — the content block on desktop, the page on phones.
+    scrollRef.current?.scrollTo({ top: 0 });
     window.scrollTo({ top: 0 });
   };
 
@@ -518,7 +547,9 @@ export const AdminFrame = ({
           })}
         </nav>
         <SidebarFooter>
-          {environment && <EnvPill $environment={environment}>{hostLabel}</EnvPill>}
+          {environment && (
+            <MenuEnvPill $environment={environment}>{hostLabel}</MenuEnvPill>
+          )}
           <SessionLine $unavailable={isSessionCheckUnavailable} role="status">
             <span>
               {isSessionCheckUnavailable
@@ -596,7 +627,9 @@ export const AdminFrame = ({
             </MobileOnly>
           </TopbarEnd>
         </Topbar>
-        <Content>{children}</Content>
+        <ContentScroll ref={scrollRef}>
+          <Content>{children}</Content>
+        </ContentScroll>
       </Main>
     </Root>
   );
