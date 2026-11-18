@@ -41,10 +41,17 @@ import { getCompactSummaryTitle } from "../payment/payment.helpers";
 
 type Translate = (key: string) => string;
 
+/**
+ * The Online Group's name is a brand, like the cycles' own «Online Group 3.0»: the
+ * page shows it untranslated in every language (owner, 2026-11-19).
+ */
+const ONLINE_GROUP_NAME = "Online Group";
+
 /** The product as the checkout names it, or null for a product not in the catalogue. */
 export const getAccessProductTitle = (productId: string, productT: Translate) => {
   const product = getSellableProductById(productId);
   if (!product) return null;
+  if (product.code === "online-group-anna-strok") return ONLINE_GROUP_NAME;
 
   return product.checkoutTitleKey
     ? productT(product.checkoutTitleKey)
@@ -73,15 +80,17 @@ export const getAccessCardTitle = (
 ) => {
   if (card.title === "hub") return t("cards.hubTitle");
 
-  // A cycle goes by its own name and the tariff only, «Online Group 3.0 · Plus»:
-  // whether it was a renewal does not matter on the card (owner, 2026-11-18).
-  if (card.title.cohortName) {
-    return `${card.title.cohortName} · ${
+  const product = getSellableProductById(card.title.productExternalId);
+
+  // The group goes by its cycle's name (the brand without one) and the tariff only,
+  // «Online Group 3.0 · Plus»: whether it was a renewal does not matter on the card
+  // (owner, 2026-11-18).
+  if (product?.code === "online-group-anna-strok") {
+    return `${card.title.cohortName ?? ONLINE_GROUP_NAME} · ${
       isOnlineGroupLibraryOfferId(card.title.offerExternalId) ? "Plus" : "Standard"
     }`;
   }
 
-  const product = getSellableProductById(card.title.productExternalId);
   const title = getAccessProductTitle(card.title.productExternalId, productT);
   if (!product || !title) return t("cards.fallbackTitle");
 
