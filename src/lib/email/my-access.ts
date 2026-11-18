@@ -56,22 +56,26 @@ const SECONDARY_BUTTON_STYLE =
 
 /** The quiet «Мой доступ» row other emails append; empty when there is no link. */
 export const buildMyAccessEmailBlock = ({
+  line,
   locale,
   url,
 }: {
+  /** Replaces the standard line above the button. */
+  line?: string;
   locale: string | null | undefined;
   url: string | null | undefined;
 }): { html: string; text: string } => {
   if (!url) return { html: "", text: "" };
 
   const copy = COPY[resolveSellableProductsLocale(locale)];
+  const blockLine = line ?? copy.blockLine;
 
   return {
     html: `<div style="margin-top:22px;">
-      <p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#555;">${escapeEmailHtml(copy.blockLine)}</p>
+      <p style="margin:0 0 10px;font-size:13px;line-height:1.5;color:#555;">${escapeEmailHtml(blockLine)}</p>
       <a href="${escapeEmailHtml(url)}" style="${SECONDARY_BUTTON_STYLE}">${escapeEmailHtml(copy.button)}</a>
     </div>`,
-    text: `${copy.blockLine}\n${copy.button}: ${url}`,
+    text: `${blockLine}\n${copy.button}: ${url}`,
   };
 };
 

@@ -19,7 +19,8 @@ const CALENDAR_TOKEN_PURPOSE = "my-access-calendar:v1";
 const MIN_SECRET_LENGTH = 32;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
-const getSecret = () => {
+/** The server secret of our signed links; empty when it is missing or too short. */
+export const getAccessLinkSecret = () => {
   const secret = process.env.ACCESS_LINK_SECRET?.trim() ?? "";
 
   return secret.length >= MIN_SECRET_LENGTH ? secret : "";
@@ -28,10 +29,10 @@ const getSecret = () => {
 const sign = (secret: string, purpose: string, customerId: string) =>
   createHmac("sha256", secret).update(`${purpose}:${customerId}`).digest("base64url");
 
-export const isMyAccessLinkConfigured = () => getSecret() !== "";
+export const isMyAccessLinkConfigured = () => getAccessLinkSecret() !== "";
 
 const createToken = (purpose: string, customerId: string): string | null => {
-  const secret = getSecret();
+  const secret = getAccessLinkSecret();
   const id = customerId.trim().toLowerCase();
 
   if (!secret || !UUID_PATTERN.test(id)) {
@@ -42,7 +43,7 @@ const createToken = (purpose: string, customerId: string): string | null => {
 };
 
 const verifyToken = (purpose: string, token: string | null | undefined) => {
-  const secret = getSecret();
+  const secret = getAccessLinkSecret();
   const [id = "", signature = "", ...rest] = (token ?? "").trim().split(".");
 
   if (!secret || rest.length > 0 || !UUID_PATTERN.test(id) || !signature) {

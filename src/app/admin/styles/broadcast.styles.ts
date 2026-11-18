@@ -37,3 +37,10 @@ export const AudienceFacts = styled(FactGrid)`
     }
   }
 `;
+
+/** The campaign tiles of «Рассылки»: as many across as fit, one on phones. */
+export const CampaignTiles = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 12px;
+`;

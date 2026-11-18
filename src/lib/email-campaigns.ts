@@ -111,7 +111,14 @@ const getEmailCampaignLeadDedupeKey = ({
   email: string;
 }) => `${campaignKey.trim()}:${normalizeEmailCampaignEmail(email)}`;
 
-const createLeadId = ({ campaignKey, email }: { campaignKey: string; email: string }) =>
+/** The deterministic row id of one address in one campaign. */
+export const createLeadId = ({
+  campaignKey,
+  email,
+}: {
+  campaignKey: string;
+  email: string;
+}) =>
   `lead_${createHash("sha256")
     .update(getEmailCampaignLeadDedupeKey({ campaignKey, email }))
     .digest("hex")
