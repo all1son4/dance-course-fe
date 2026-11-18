@@ -397,16 +397,14 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
 
   /**
    * The chip in a card's corner, short but saying what is wrong: which link
-   * expired, where the reader is not yet, how many days are left.
+   * expired, where the reader is not yet, that it ends soon. The number of days
+   * is the count's to say; the chip never repeats it.
    */
-  const chipText = (card: MyAccessCard, counted: MyAccessCount | null) => {
+  const chipText = (card: MyAccessCard) => {
     if (card.chip === "notJoined") {
       const where =
         card.kind === "group" ? "Group" : card.kind === "hub" ? "Hub" : "Channel";
       return t(`cards.chips.notJoined${where}`);
-    }
-    if (card.chip === "endsSoon" && counted?.kind === "left") {
-      return t("cards.chips.endsSoonDays", { days: counted.days });
     }
     return t(`cards.chips.${card.chip}`);
   };
@@ -443,7 +441,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           </CardTitle>
           {ATTENTION_CHIPS.has(card.chip) && (
             <StatusChip $tone={card.chip as "linkExpired" | "notJoined" | "endsSoon"}>
-              {chipText(card, counted)}
+              {chipText(card)}
             </StatusChip>
           )}
         </CardHead>

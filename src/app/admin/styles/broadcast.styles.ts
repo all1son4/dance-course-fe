@@ -158,7 +158,7 @@ const CELL_COLORS = {
   sent: "var(--a-ink-3)",
 } as const;
 
-/** The day's Resend limit, one cell per email, and its legend. */
+/** The day's Resend limit in four parts, and its legend with the numbers. */
 export const QuotaMeter = styled.div`
   display: grid;
   gap: 10px;
@@ -184,17 +184,22 @@ export const QuotaMeter = styled.div`
   }
 
   [data-cells] {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
+    display: flex;
     gap: 3px;
   }
 
+  /* One part per kind, as wide as its share of the day; a small part stays visible. */
   [data-cell] {
+    flex-basis: 0;
+    min-width: 6px;
     height: 18px;
-    border-radius: 4px;
+    border-radius: 5px;
     box-shadow: inset 0 0 0 1px var(--a-border);
-    transition: background 140ms ease;
+    transition: flex-grow 220ms var(--ease-standard, ease);
+  }
+
+  [data-cell][hidden] {
+    display: none;
   }
 
   ${Object.entries(CELL_COLORS)
@@ -241,13 +246,8 @@ export const QuotaMeter = styled.div`
   @container admin-content (max-width: 480px) {
     padding: 12px;
 
-    [data-cells] {
-      gap: 2px;
-    }
-
     [data-cell] {
       height: 16px;
-      border-radius: 3px;
     }
 
     ul {

@@ -1509,8 +1509,7 @@
         "closed": "Поток завершён. Hub от Plus доступен до {date}",
         "keep": "Продли Plus или только Hub, чтобы не потерять доступ",
         "until": "Входит в твой Plus — до {date}",
-        "duringCohortUntil": "Действует до окончания потока (по плану — {date}) и ещё 7 дней после",
-        "openBeforeStart": "Открыт уже сейчас, поток стартует {date}"
+        "duringCohortUntil": "Действует до окончания потока (по плану — {date}) и ещё 7 дней после"
       },
       "group": {
         "running": "Поток идёт",
@@ -1538,8 +1537,7 @@
         "linkExpired": "Ссылка из письма истекла",
         "notJoinedChannel": "Ты ещё не в канале",
         "notJoinedGroup": "Ты ещё не в чате группы",
-        "notJoinedHub": "Ты ещё не в Hub",
-        "endsSoonDays": "{days, plural, =1 {Последний день} one {Последний # день} few {Последние # дня} many {Последние # дней} other {Последние # дня}}"
+        "notJoinedHub": "Ты ещё не в Hub"
       },
       "linkExpired": "Новую пришлём на почту из покупки",
       "count": "{count, plural, one {# покупка} few {# покупки} many {# покупок} other {# покупки}}",

@@ -4,7 +4,7 @@ import type { AdminTone } from "../styles/tokens.styles";
 
 /*
  * What «Приглашение в поток» shows, computed from the snapshot: the batch the
- * number field describes, the day's quota cells, the tile of «Рассылки».
+ * number field describes, the day's quota, the tile of «Рассылки».
  * Pure, so the rules are tested without rendering.
  */
 
@@ -64,14 +64,14 @@ export const getBatchBoundary = ({
 export const showsFirstSteps = (counts: Pick<Snapshot["counts"], "remaining" | "sent">) =>
   counts.sent === 0 && counts.remaining > 0;
 
-export type QuotaCell = "sent" | "batch" | "free" | "reserve";
+export type QuotaPart = "sent" | "batch" | "free" | "reserve";
 
 /**
- * The day's Resend limit as one cell per email, in the order they are spent:
- * sent in the last 24 hours, this batch, still free today, the reserve for
- * purchase emails and tests (smaller once other emails have eaten into it).
+ * The day's Resend limit split the way it is spent: sent in the last 24 hours,
+ * this batch, still free today, the reserve for purchase emails and tests
+ * (smaller once other emails have eaten into it). The parts add up to the limit.
  */
-export const buildQuotaCells = ({
+export const buildQuotaMeter = ({
   batch,
   quota,
 }: {
@@ -82,14 +82,14 @@ export const buildQuotaCells = ({
   const inBatch = Math.max(0, Math.min(batch, quota.remainingToday));
   const free = quota.remainingToday - inBatch;
   const reserve = Math.max(0, quota.dailyLimit - sent - quota.remainingToday);
-  const cells: QuotaCell[] = [
-    ...Array<QuotaCell>(sent).fill("sent"),
-    ...Array<QuotaCell>(inBatch).fill("batch"),
-    ...Array<QuotaCell>(free).fill("free"),
-    ...Array<QuotaCell>(reserve).fill("reserve"),
+  const parts: { count: number; kind: QuotaPart }[] = [
+    { count: sent, kind: "sent" },
+    { count: inBatch, kind: "batch" },
+    { count: free, kind: "free" },
+    { count: reserve, kind: "reserve" },
   ];
 
-  return { batch: inBatch, cells, free, reserve, sent };
+  return { batch: inBatch, free, parts, reserve, sent };
 };
 
 export type CampaignTile = { hint: string; tone?: AdminTone; value: string };

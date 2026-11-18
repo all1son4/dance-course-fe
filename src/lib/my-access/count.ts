@@ -139,8 +139,8 @@ export const getMyAccessCardDetail = (card: MyAccessCard): MyAccessLine | null =
   }
 };
 
-/** Notes the term already tells: the days left, the library open now. */
-const TOLD_BY_TERM = new Set(["daysLeft", "plusHub.openBeforeStart"]);
+/** Notes the term already tells: the days left. */
+const TOLD_BY_TERM = new Set(["daysLeft"]);
 
 /** The note, minus what the term now shows. */
 export const getMyAccessCardNote = (card: MyAccessCard): MyAccessLine | null =>

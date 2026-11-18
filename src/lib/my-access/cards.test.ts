@@ -197,9 +197,10 @@ test("Plus: the library is open from payment (a gift before the start), then a w
     ["plusHub.included", "group.startsOn"],
   );
   const giftCard = before.find((card) => card.title === "hub");
+  // Open now, and the note says until when: the planned end (8 weeks after the start).
   assert.deepEqual(giftCard?.note, {
-    key: "plusHub.openBeforeStart",
-    values: { date: "2027-01-10T17:00:00.000Z" },
+    key: "plusHub.duringCohortUntil",
+    values: { date: "2027-03-07T17:00:00.000Z" },
   });
   assert.equal(giftCard?.chip, "active");
 
@@ -596,4 +597,66 @@ test("a new link by email only where the invite is issued by the bot", () => {
 
   assert.equal(cards.find((card) => card.id === "channel:bot")?.action?.key, "reissue");
   assert.equal(cards.find((card) => card.id === "channel:hand")?.action?.key, "support");
+});
+
+test("one Hub at a time: a Hub that is renewed and still open hides the one ending sooner", () => {
+  // The owner's case (2026-11-18): Plus of cycle 2.0 closed, its Hub ends on 23
+  // November; Plus of cycle 3.0 is paid, so its library is open already.
+  const now = new Date("2026-11-18T20:00:00.000Z");
+  const cohort2 = {
+    accessEndsAt: new Date("2026-11-16T23:00:00.000Z"),
+    closedAt: new Date("2026-11-16T10:00:00.000Z"),
+    durationWeeks: 8,
+    id: "c2",
+    startsAt: new Date("2026-09-14T16:00:00.000Z"),
+  };
+  const cohort3 = {
+    accessEndsAt: null,
+    closedAt: null,
+    durationWeeks: 8,
+    id: "c3",
+    startsAt: new Date("2026-11-23T17:00:00.000Z"),
+  };
+  const plusRights = (purchaseId: string) => [
+    right({ purchaseId }),
+    right({ accessKey: "inspiration-hub", purchaseId, sourceKind: "online_group" }),
+  ];
+  const plus = (id: string, cohortId: string) =>
+    purchase({ cohortId, id, offerExternalId: PLUS_OFFER, productExternalId: "x" });
+
+  const cards = buildMyAccessCards(
+    {
+      cohorts: [cohort2, cohort3],
+      purchases: [plus("p2", "c2"), plus("p3", "c3")],
+      rights: [...plusRights("p2"), ...plusRights("p3")],
+    },
+    now,
+  );
+  const hubs = cards.filter((card) => card.title === "hub");
+  assert.deepEqual(
+    hubs.map((card) => card.id),
+    ["plus-hub:p3"],
+  );
+  // The calendar no longer gets an «ends 23 November» for a Hub that does not end.
+  assert.equal(
+    cards.some((card) => card.calendar?.kind === "end"),
+    false,
+  );
+
+  // A standalone Hub starting after the Plus Hub is not open yet: both stay, in order.
+  const scheduled = buildMyAccessCards(
+    {
+      cohorts: [cohort2],
+      purchases: [plus("p2", "c2"), purchase({ id: "h" })],
+      rights: [
+        ...plusRights("p2"),
+        hubPeriod("h", "2026-11-24T00:00:00.000Z", "2027-01-19T00:00:00.000Z"),
+      ],
+    },
+    now,
+  );
+  assert.deepEqual(
+    scheduled.filter((card) => card.title === "hub").map((card) => card.status.key),
+    ["plusHub.closed", "hub.scheduled"],
+  );
 });
