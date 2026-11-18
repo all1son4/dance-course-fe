@@ -92,6 +92,12 @@ export type MyAccessSnapshot = {
    * membership itself; the page offers the price only to members of record.
    */
   hubDiscountCohortIds?: readonly string[];
+  /**
+   * Closed Online Group cycles bought under the customer's Telegram account, also
+   * those given through an admin offer link (no customer, no email on them). Only
+   * the path's count reads it; the cards stay with the customer's own purchases.
+   */
+  closedCohortIdsOfTelegram?: readonly string[];
   /** The name given at checkout, for the greeting only; never on a card. */
   customerFullName?: string | null;
   purchases: MyAccessPurchase[];

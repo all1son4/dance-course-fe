@@ -88,16 +88,18 @@ export const buildMyAccessJourney = (
     const closed = new Set(
       snapshot.cohorts.filter((cohort) => cohort.closedAt).map((cohort) => cohort.id),
     );
-    const completed = new Set(
-      snapshot.purchases.flatMap((purchase) =>
-        purchase.succeededAt &&
+    // Bought and closed, whatever the tariff and however it was paid (Stripe or an
+    // admin offer link); the entry status is no proof either way (owner, 2026-11-19).
+    const completed = new Set([
+      ...snapshot.purchases.flatMap((purchase) =>
         purchase.cohortId &&
         closed.has(purchase.cohortId) &&
         isOnlineGroupAccessOfferId(purchase.offerExternalId)
           ? [purchase.cohortId]
           : [],
       ),
-    ).size;
+      ...(snapshot.closedCohortIdsOfTelegram ?? []),
+    ]).size;
     if (completed > 0) groupStep.completedCohorts = completed;
   }
 
