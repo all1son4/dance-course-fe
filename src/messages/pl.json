@@ -1436,12 +1436,15 @@
       "title": "Nowy cykl · start {date}",
       "titleStarted": "Nowy cykl trwa od {date}",
       "renewal": "Dla osób z poprzedniego cyklu — przedłużenie w specjalnej cenie, bez przerwy między cyklami.",
-      "join": "Grupa online: 6 tygodni na Telegramie.",
+      "join": "Grupa online: {weeks, plural, one {# tydzień} few {# tygodnie} many {# tygodni} other {# tygodnia}} na Telegramie.",
       "renewButton": "Przedłuż",
       "joinButton": "O grupie",
       "cohortTitle": "Nowy cykl grupy online",
       "announcements": "Zapowiedzi nowych cykli — na Instagramie Anny",
-      "instagram": "@anna.strok_dance"
+      "instagram": "@anna.strok_dance",
+      "hubTitle": "Inspiration Hub",
+      "hubText": "Biblioteka lekcji z poprzednich cykli i dodatkowych materiałów dla inspiracji: 8 tygodni w Twoim tempie.",
+      "hubButton": "O Hub"
     },
     "journey": {
       "eyebrow": "Twoja droga",

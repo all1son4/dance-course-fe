@@ -9,7 +9,11 @@ import {
   type MyAccessSnapshot,
 } from "@/lib/my-access/cards";
 import { buildMyAccessJourney } from "@/lib/my-access/journey";
-import { buildMyAccessNextStep, ONLINE_GROUP_PAGE_HREF } from "@/lib/my-access/next-step";
+import {
+  buildMyAccessNextStep,
+  ONLINE_GROUP_PAGE_HREF,
+  shouldOfferMyAccessHub,
+} from "@/lib/my-access/next-step";
 
 const NOW = new Date("2026-11-16T10:00:00.000Z");
 const GROUP_PRODUCT = "prd_L9aK3mT7qP2x";
@@ -56,6 +60,7 @@ const closedCycle = {
 const nextCycle = (
   renewalCampaigns: { offerExternalId: string; slug: string }[] = [],
 ) => ({
+  durationWeeks: 8,
   id: "c3",
   renewalCampaigns: renewalCampaigns.map((campaign) => ({
     ...campaign,
@@ -82,6 +87,8 @@ test("«Дальше» renews her own tariff, falls back to the other, else the 
   );
   assert.equal(plus?.started, false);
   assert.equal(plus?.startsAt, "2026-11-23T17:00:00.000Z");
+  // The length shown is the cycle's own, from its row.
+  assert.equal(plus?.durationWeeks, 8);
 
   const onlyStandard = nextCycle([{ offerExternalId: RENEWAL_STANDARD, slug: "rnw_s" }]);
   assert.match(
@@ -251,4 +258,15 @@ test("the calendar file is valid iCalendar: Warsaw all-day dates, UTC times, esc
     assert.ok(new TextEncoder().encode(line).length <= 75, line);
   }
   assert.match(long.replace(/\r\n /g, ""), /SUMMARY:(Очень длинное название ){8}/);
+});
+
+test("«Дальше» offers the Hub only to someone without one, while it is on sale", () => {
+  assert.equal(shouldOfferMyAccessHub([], true), true);
+  assert.equal(shouldOfferMyAccessHub([{ chip: "active", kind: "group" }], true), true);
+  // An ended Hub is no Hub; a running, ending or upcoming one is.
+  assert.equal(shouldOfferMyAccessHub([{ chip: "ended", kind: "hub" }], true), true);
+  for (const chip of ["active", "endsSoon", "upcoming", "notJoined"] as const) {
+    assert.equal(shouldOfferMyAccessHub([{ chip, kind: "hub" }], true), false, chip);
+  }
+  assert.equal(shouldOfferMyAccessHub([], false), false);
 });

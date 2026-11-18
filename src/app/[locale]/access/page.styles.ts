@@ -596,6 +596,42 @@ export const CountText = styled.span`
   }
 `;
 
+/*
+ * A dated count as a calendar leaf: the month on a strip of the count's colour,
+ * the day in the light numerals of the other counts.
+ */
+export const CalendarLeaf = styled.span`
+  display: inline-grid;
+  flex-shrink: 0;
+  width: 54px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #fff;
+  text-align: center;
+  font-variant-numeric: lining-nums tabular-nums;
+
+  & small {
+    padding: 3px 0 2px;
+    background: var(--count-accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  & b {
+    padding: 5px 0 6px;
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--count-value);
+  }
+`;
+
 /* The weeks of the cycle as counts; the current one large. */
 export const WeekCounts = styled.span`
   display: flex;

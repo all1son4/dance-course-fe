@@ -208,7 +208,11 @@ export async function readMyAccessNextCohort(
   { cohortIds, mainChatId, now }: { cohortIds: string[]; mainChatId: string; now: Date },
 ): Promise<MyAccessNextCohort | null> {
   const [cohort] = await database
-    .select({ id: onlineGroupCohorts.id, startsAt: onlineGroupCohorts.startsAt })
+    .select({
+      durationWeeks: onlineGroupCohorts.durationWeeks,
+      id: onlineGroupCohorts.id,
+      startsAt: onlineGroupCohorts.startsAt,
+    })
     .from(onlineGroupCohorts)
     .where(eq(onlineGroupCohorts.mainChatId, mainChatId))
     .limit(1);
