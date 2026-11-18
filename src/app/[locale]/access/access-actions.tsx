@@ -1,6 +1,14 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import Button from "@/components/common/Button";
 
@@ -143,6 +151,14 @@ export function ReissueInvite({
   const [state, setState] = useState<"idle" | "sending" | "sent" | "limited" | "failed">(
     "idle",
   );
+  const fold = useContext(FoldContext);
+
+  // Done: the answer stays a moment, then the card folds (on a phone).
+  useEffect(() => {
+    if (state !== "sent" || !fold) return;
+    const timer = setTimeout(fold, FOLD_AFTER_DONE_MS);
+    return () => clearTimeout(timer);
+  }, [fold, state]);
 
   const send = async () => {
     setState("sending");
@@ -435,34 +451,50 @@ export function ShareCourse({
   );
 }
 
+/** Lets something inside an open card fold it once its job is done. */
+const FoldContext = createContext<(() => void) | null>(null);
+
+/** How long a done action's answer stays in sight before its card folds. */
+const FOLD_AFTER_DONE_MS = 2600;
+
 /**
- * A card that a phone shows folded: its head and a summary line, the rest on a
- * tap. A desktop always shows it whole, so the toggle exists only on a phone.
- * Folded or not is decided on the server, so nothing moves on load.
+ * A card that a phone shows folded: its head and count, the rest on a tap. A
+ * card with nothing more to show has no fold at all. A desktop always shows it
+ * whole, so the toggle exists only on a phone. Folded or not is decided on the
+ * server, so nothing moves on load.
  */
 export function FoldingCard({
   children,
   defaultOpen,
   detailsId,
+  foldable,
   label,
 }: {
   children: ReactNode;
   defaultOpen: boolean;
   detailsId: string;
+  foldable: boolean;
   label: string;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [open, setOpen] = useState(defaultOpen || !foldable);
+  const fold = useCallback(() => {
+    if (foldable) setOpen(false);
+  }, [foldable]);
 
   return (
     <AccessCard data-open={open ? "true" : "false"}>
-      <CardToggle
-        aria-controls={detailsId}
-        aria-expanded={open}
-        aria-label={label}
-        onClick={() => setOpen((value) => !value)}
-        type="button"
-      />
-      {children}
+      {foldable && (
+        <CardToggle
+          aria-controls={detailsId}
+          aria-expanded={open}
+          aria-label={label}
+          onClick={() => setOpen((value) => !value)}
+          type="button"
+        >
+          <span aria-hidden />
+        </CardToggle>
+      )}
+      <FoldContext.Provider value={fold}>{children}</FoldContext.Provider>
     </AccessCard>
   );
 }

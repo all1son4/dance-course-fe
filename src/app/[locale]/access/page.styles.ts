@@ -438,28 +438,74 @@ export const CardToggle = styled.button`
       height: auto;
     }
 
-    &::after {
-      content: "";
+    /*
+     * The mark: a small round button whose plus turns into a cross when the card
+     * opens (and back), with a little give on a press.
+     */
+    & > span {
       position: absolute;
-      top: 22px;
-      right: 18px;
-      width: 12px;
-      height: 12px;
-      background:
-        linear-gradient(var(--brand), var(--brand)) center / 12px 1.5px no-repeat,
-        linear-gradient(var(--brand), var(--brand)) center / 1.5px 12px no-repeat;
-      opacity: 0.55;
-      transition: transform var(--motion-base, 220ms) ease;
+      top: 14px;
+      right: 12px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(124, 0, 2, 0.07);
+      transition:
+        background-color var(--motion-base, 220ms) ease,
+        transform 320ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
     }
 
-    [data-open="true"] > &::after {
+    & > span::before,
+    & > span::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 12px;
+      height: 1.5px;
+      margin: -0.75px 0 0 -6px;
+      border-radius: 1px;
+      background: var(--brand);
+      transition: transform 320ms cubic-bezier(0.2, 0.9, 0.3, 1.25);
+    }
+
+    & > span::after {
+      transform: rotate(90deg);
+    }
+
+    [data-open="true"] > & > span {
+      background: rgba(124, 0, 2, 0.12);
+      transform: rotate(180deg);
+    }
+
+    [data-open="true"] > & > span::before {
       transform: rotate(45deg);
+    }
+
+    [data-open="true"] > & > span::after {
+      transform: rotate(135deg);
+    }
+
+    &:active > span {
+      transform: scale(0.88);
+    }
+
+    [data-open="true"] > &:active > span {
+      transform: rotate(180deg) scale(0.88);
     }
 
     &:focus-visible {
       outline: 2px solid var(--brand);
       outline-offset: -4px;
       border-radius: 20px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      & > span,
+      & > span::before,
+      & > span::after {
+        transition: none;
+      }
     }
   }
 `;
