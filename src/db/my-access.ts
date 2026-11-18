@@ -1,4 +1,15 @@
-import { and, desc, eq, exists, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+} from "drizzle-orm";
 
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
 import type { MyAccessNextCohort } from "@/lib/my-access/next-step";
@@ -117,7 +128,14 @@ export async function readMyAccessSnapshot(
   const cohortIds = [
     ...new Set(purchaseRows.flatMap((row) => (row.cohortId ? [row.cohortId] : []))),
   ];
-  const [rights, cohorts, tokens, discountCohorts] = await Promise.all([
+  // Cycles given through an admin offer link carry no customer and no email, only
+  // the Telegram account the bot saw: those of the customer's own purchases.
+  const telegramUserIds = [
+    ...new Set(
+      purchaseRows.flatMap((row) => (row.telegramUserId ? [row.telegramUserId] : [])),
+    ),
+  ];
+  const [rights, cohorts, tokens, discountCohorts, telegramCycles] = await Promise.all([
     ids.length
       ? database
           .select({
@@ -162,6 +180,22 @@ export async function readMyAccessSnapshot(
       : Promise.resolve([]),
     // The cohorts whose members get the Hub renewal price now, by the checkout's rule.
     listHubDiscountCohorts(database, new Date()),
+    telegramUserIds.length
+      ? database
+          .select({ id: onlineGroupCohorts.id })
+          .from(purchases)
+          .innerJoin(
+            onlineGroupCohorts,
+            eq(onlineGroupCohorts.id, purchases.onlineGroupCohortId),
+          )
+          .where(
+            and(
+              eq(purchases.outcome, "succeeded"),
+              inArray(purchases.telegramUserId, telegramUserIds),
+              isNotNull(onlineGroupCohorts.closedAt),
+            ),
+          )
+      : Promise.resolve([]),
   ]);
   const now = Date.now();
   // An invite still usable: issued, not expired. Older tokens may lack the right's id
@@ -178,6 +212,7 @@ export async function readMyAccessSnapshot(
     );
 
   return {
+    closedCohortIdsOfTelegram: [...new Set(telegramCycles.map((cycle) => cycle.id))],
     cohorts,
     customerFullName: customer.fullName,
     hubDiscountCohortIds: discountCohorts.map((cohort) => cohort.id),

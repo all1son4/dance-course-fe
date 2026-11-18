@@ -321,3 +321,49 @@ test("the path counts the group's cycles that are behind; the cards name each cy
     false,
   );
 });
+
+test("the path also counts closed cycles of the customer's Telegram account, once each", () => {
+  const closed = {
+    accessEndsAt: new Date("2026-11-16T23:00:00.000Z"),
+    closedAt: new Date("2026-11-16T10:00:00.000Z"),
+    durationWeeks: 8,
+    id: "2.0",
+    startsAt: new Date("2026-08-10T16:00:00.000Z"),
+    title: "Online Group 2.0",
+  };
+  const snapshot = snapshotOf({
+    // 2.0 came through an admin offer link: not among her purchases, only its id.
+    closedCohortIdsOfTelegram: ["2.0"],
+    cohorts: [closed],
+    purchases: [
+      purchase({
+        cohortId: "3.0",
+        id: "g3",
+        succeededAt: new Date("2026-11-16T10:00:00Z"),
+      }),
+      purchase({
+        id: "ft",
+        offerExternalId: FIRST_TOUCH_OFFER,
+        productExternalId: FIRST_TOUCH_PRODUCT,
+        succeededAt: new Date("2026-05-04T10:00:00.000Z"),
+      }),
+    ],
+  });
+  const path = buildMyAccessJourney(snapshot, []);
+  assert.equal(
+    path.find((step) => step.productExternalId === GROUP_PRODUCT)?.completedCohorts,
+    1,
+  );
+
+  // The same cycle among her own purchases and on the Telegram list counts once.
+  const both = snapshotOf({
+    ...snapshot,
+    purchases: [...snapshot.purchases, purchase({ cohortId: "2.0", id: "g2" })],
+  });
+  assert.equal(
+    buildMyAccessJourney(both, []).find(
+      (step) => step.productExternalId === GROUP_PRODUCT,
+    )?.completedCohorts,
+    1,
+  );
+});
