@@ -226,14 +226,30 @@ export const FeatureRow = styled.ul`
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  /*
+   * Phones: icon beside the text and a tighter card, so the four read in about
+   * three quarters of a screen. The 13px text stays: it is already the page's
+   * smallest size, and these words matter (access, renewal price).
+   */
   @media (max-width: 600px) {
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: 8px;
 
     li {
       flex-direction: row;
-      padding: 18px;
+      gap: 12px;
+      padding: 16px;
       border-radius: 24px;
+    }
+
+    svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    strong {
+      margin-bottom: 4px;
+      font-size: 17px;
     }
   }
 `;
