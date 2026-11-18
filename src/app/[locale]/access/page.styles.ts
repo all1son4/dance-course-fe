@@ -54,6 +54,12 @@ const porcelain = (radius: string) =>
   });
 
 /* A quiet text action in the brand colour: links, small buttons, the calendar. */
+/*
+ * A quiet text action in the brand colour: links, small buttons, the calendar.
+ * Its hover is its own (the site's a:hover would pull the underline up): the
+ * underline fills with colour and glides a hair lower, an icon beside it
+ * nudges, a press dims it for a moment.
+ */
 const quietAction = css`
   display: inline-flex;
   align-items: center;
@@ -68,25 +74,51 @@ const quietAction = css`
   line-height: 1.2;
   color: var(--brand);
   text-decoration: underline;
+  text-decoration-thickness: 1px;
   text-decoration-color: rgba(124, 0, 2, 0.3);
   text-underline-offset: 4px;
   cursor: pointer;
-  transition: text-decoration-color var(--motion-base, 220ms) ease;
+  transition:
+    text-decoration-color var(--motion-base, 220ms) ease,
+    text-underline-offset var(--motion-base, 220ms) cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity var(--motion-fast, 160ms) ease;
 
   & svg {
     flex: 0 0 auto;
     width: 16px;
     height: 16px;
+    transition: transform var(--motion-base, 220ms) cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
   &:hover {
+    text-decoration: underline;
     text-decoration-color: currentColor;
+    text-underline-offset: 5px;
+  }
+
+  &:hover svg {
+    transform: translateY(-1px);
+  }
+
+  &:active {
+    opacity: 0.6;
   }
 
   &:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 3px;
     border-radius: 6px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    & svg {
+      transition: none;
+    }
+
+    &:hover svg {
+      transform: none;
+    }
   }
 `;
 
@@ -170,6 +202,12 @@ export const Facts = styled.ul`
   & b {
     font-weight: 500;
     color: var(--ink);
+  }
+
+  /* «Сохранить ссылку» sits in the line as a word, not as a 40px control. */
+  & button {
+    min-height: 0;
+    font-size: inherit;
   }
 
   & li + li::before {
@@ -289,6 +327,12 @@ export const AccessCard = styled.li`
   display: grid;
   gap: 14px;
   padding: 20px 24px 22px;
+  transition: transform var(--motion-fast, 160ms) ease;
+
+  /* A tap on a phone's folding card presses it in a touch. */
+  &:has(> button:active) {
+    transform: scale(0.99);
+  }
 
   & > * {
     position: relative;
@@ -360,6 +404,11 @@ export const CardMore = styled.div`
   @media (max-width: 550px) {
     [data-open="false"] > & {
       display: none;
+    }
+
+    /* Opening, the rest of the card settles in from just above. */
+    [data-open="true"] > & {
+      animation: access-appear 260ms ease both;
     }
   }
 `;
@@ -560,6 +609,7 @@ export const CardActions = styled.div`
 
 /* The answer of «Прислать новую ссылку», in place of the button. */
 export const ActionResult = styled.p<{ $tone: "ok" | "error" }>`
+  animation: access-appear 260ms ease both;
   display: flex;
   gap: 10px;
   align-items: flex-start;
@@ -580,8 +630,10 @@ export const ActionResult = styled.p<{ $tone: "ok" | "error" }>`
     color: ${({ $tone }) => ($tone === "ok" ? "var(--success)" : "var(--danger)")};
   }
 
-  & a {
+  & a,
+  & a:hover {
     color: var(--brand);
+    text-decoration: underline;
     text-underline-offset: 3px;
   }
 `;
@@ -618,82 +670,96 @@ export const SideText = styled.p`
   color: var(--ink-muted);
 `;
 
-/* «Под рукой»: one row per tool, a ruby tile, the words and the action. */
-export const ToolList = styled.ul`
-  display: grid;
-  gap: 16px;
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
+/* The calendar buttons: a small row of pills, each with its calendar's mark. */
+export const CalendarApps = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 `;
 
-export const Tool = styled.li`
-  display: grid;
-  grid-template-columns: 36px minmax(0, 1fr);
-  gap: 2px 14px;
+export const CalendarApp = styled.a`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  padding: 0 14px 0 11px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(124, 0, 2, 0.14);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    box-shadow var(--motion-base, 220ms) ease,
+    transform var(--motion-base, 220ms) cubic-bezier(0.2, 0.7, 0.2, 1);
 
-  & > i {
-    grid-row: span 3;
-    display: grid;
-    place-items: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 12px;
-    background: linear-gradient(150deg, rgba(158, 10, 22, 1), var(--brand) 70%);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 4px 10px rgba(124, 0, 2, 0.18);
-    color: var(--ink-inverse);
+  & svg {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    transition: transform var(--motion-base, 220ms) cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
-  & > i svg {
-    width: 18px;
-    height: 18px;
+  /* The generic calendar and the tick take the brand colour; the logos keep theirs. */
+  & svg[stroke] {
+    color: var(--brand);
   }
 
-  & b {
-    font-weight: 500;
-    font-size: 15px;
-    line-height: 1.35;
-    color: var(--ink);
+  /* No underline, ever: a pill is not a text link. */
+  &,
+  &:hover,
+  &:focus-visible {
+    text-decoration: none;
   }
 
-  & p {
-    margin: 0;
-    font-size: 13.5px;
-    line-height: 1.45;
-    color: var(--ink-muted);
-  }
-
-  /* A phone keeps the tool's name and action; the explanation is for a desktop. */
-  @media (max-width: 550px) {
-    & p {
-      display: none;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      box-shadow:
+        inset 0 0 0 1px rgba(124, 0, 2, 0.32),
+        0 6px 14px rgba(72, 14, 20, 0.08);
+      transform: translateY(-1px);
     }
 
-    & > i {
-      grid-row: span 2;
+    &:hover svg {
+      transform: scale(1.08);
+    }
+  }
+
+  &:active {
+    transform: scale(0.97);
+    transition-duration: 90ms;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    & svg {
+      transition: none;
+    }
+
+    &:hover,
+    &:active,
+    &:hover svg {
+      transform: none;
     }
   }
 `;
 
-/* The calendar apps, revealed under «Подписаться». */
-export const ToolChoices = styled.ul`
-  display: grid;
-  gap: 0;
-  margin: 2px 0 0;
-  padding: 0;
-  list-style: none;
-
-  & li + li {
-    border-top: 1px solid rgba(124, 0, 2, 0.08);
-  }
-`;
-
-export const ToolNote = styled.p`
-  margin: 0;
-  padding-top: 12px;
-  border-top: 1px solid rgba(124, 0, 2, 0.08);
+/* Where the copied address goes, said once it is copied. */
+export const CalendarHint = styled.p`
+  animation: access-appear 260ms ease both;
+  margin: 8px 0 0;
   font-size: 12.5px;
   line-height: 1.45;
   color: var(--ink-muted);
@@ -723,10 +789,8 @@ export const JourneyStep = styled.li<{ $live: boolean }>`
     border-top: 1px solid rgba(124, 0, 2, 0.08);
   }
 
-  /* The count; a running one is red, with a live dot at its corner. */
-  /* The count sits on the title's line. */
+  /* The count; a running one is red. */
   & > i {
-    position: relative;
     justify-self: start;
     margin-top: 3px;
     font-style: normal;
@@ -737,16 +801,18 @@ export const JourneyStep = styled.li<{ $live: boolean }>`
     color: ${({ $live }) => ($live ? "var(--danger)" : "rgba(18, 18, 18, 0.38)")};
   }
 
-  & > i[data-live]::after {
-    content: "";
-    position: absolute;
-    top: -3px;
-    right: -7px;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--danger);
-    animation: access-live 1.6s ease-in-out infinite;
+  /* LIVE beside a running course's name: small caps that breathe. */
+  & > div > b > em {
+    display: inline-block;
+    margin-left: 8px;
+    font-style: normal;
+    font-size: 9.5px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    vertical-align: 2px;
+    color: var(--danger);
+    animation: access-live 1.8s ease-in-out infinite;
   }
 
   @keyframes access-live {
@@ -755,17 +821,18 @@ export const JourneyStep = styled.li<{ $live: boolean }>`
       opacity: 1;
     }
     50% {
-      opacity: 0.2;
+      opacity: 0.35;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    & > i[data-live]::after {
+    & > div > b > em {
       animation: none;
     }
   }
 
-  & b {
+  /* The words of the step only: the share mark and its hint keep their own look. */
+  & > div > b {
     display: block;
     font-weight: 500;
     font-size: 15px;
@@ -773,7 +840,7 @@ export const JourneyStep = styled.li<{ $live: boolean }>`
     color: var(--ink);
   }
 
-  & span {
+  & > div > span {
     display: block;
     margin-top: 2px;
     font-size: 13px;
@@ -808,7 +875,7 @@ export const ShareHint = styled.span`
   line-height: 1.2;
   white-space: nowrap;
   pointer-events: none;
-  animation: access-share-hint 3.2s ease both;
+  animation: access-share-hint 5s ease both;
 
   /* The little point towards the mark, over its centre. */
   &::after {
@@ -828,8 +895,8 @@ export const ShareHint = styled.span`
       opacity: 0;
       transform: translateY(4px);
     }
-    12%,
-    82% {
+    8%,
+    88% {
       opacity: 1;
       transform: none;
     }
@@ -856,20 +923,64 @@ export const ShareButton = styled.button`
   background: rgba(124, 0, 2, 0.06);
   color: var(--brand);
   cursor: pointer;
-  transition: background-color var(--motion-base, 220ms) ease;
+  transition:
+    background-color var(--motion-base, 220ms) ease,
+    transform var(--motion-base, 220ms) cubic-bezier(0.2, 0.7, 0.2, 1);
 
   & svg {
     width: 15px;
     height: 15px;
+    transition: transform var(--motion-base, 220ms) cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
-  &:hover {
-    background: rgba(124, 0, 2, 0.12);
+  /* The dots lean in, as if passing the link on. */
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: rgba(124, 0, 2, 0.12);
+    }
+
+    &:hover svg {
+      transform: rotate(-12deg) scale(1.06);
+    }
+  }
+
+  &:active {
+    transform: scale(0.9);
+    transition-duration: 90ms;
+  }
+
+  /* Copied: the tick pops in. */
+  &[data-copied] {
+    background: rgba(24, 112, 58, 0.1);
+    color: var(--success);
+  }
+
+  &[data-copied] svg {
+    animation: access-pop 320ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+  }
+
+  @keyframes access-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 
   &:focus-visible {
     outline: 2px solid var(--brand);
     outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    & svg {
+      transition: none;
+      animation: none;
+    }
   }
 `;
 
@@ -1028,4 +1139,72 @@ export const VisuallyHidden = styled.span`
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+`;
+
+/*
+ * The one entrance of the page: a confirmation, a hint, an opened card fade in
+ * from a few pixels above. Defined on a global name, used by several parts.
+ */
+export const ACCESS_APPEAR_CSS =
+  "@keyframes access-appear{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}" +
+  "@media (prefers-reduced-motion:reduce){[data-canvas='porcelain'] *{animation-duration:0s!important}}";
+
+/* «Сохранить личную ссылку» and the word on what the link is, shown on hover or focus. */
+export const SaveSpot = styled.span`
+  position: relative;
+  display: inline-flex;
+`;
+
+export const SaveTip = styled.span`
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  max-width: 280px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: var(--ink-inverse);
+  font-size: 12.5px;
+  font-weight: 400;
+  line-height: 1.4;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity var(--motion-base, 220ms) ease,
+    transform var(--motion-base, 220ms) ease;
+
+  /* Its point, up towards the lock. */
+  &::before {
+    content: "";
+    position: absolute;
+    top: -4px;
+    left: 14px;
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+    background: inherit;
+    transform: rotate(45deg);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ${SaveSpot}:hover > & {
+      opacity: 1;
+      transform: none;
+      transition-delay: 250ms;
+    }
+  }
+
+  /* Keyboard focus only: a click leaves focus behind and must not pin the tip. */
+  ${SaveSpot}:has(:focus-visible) > & {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;

@@ -1413,19 +1413,19 @@
       "support": "Napisz do wsparcia"
     },
     "keep": {
-      "eyebrow": "Pod ręką",
       "calendarTitle": "Kalendarz",
       "calendarText": "Starty i ostatnie dni dostępu same pojawią się w Twoim kalendarzu i będą się aktualizować",
-      "subscribe": "Subskrybuj",
-      "apple": "Kalendarz Apple",
-      "google": "Kalendarz Google",
-      "copyAddress": "Skopiuj adres do innego kalendarza",
-      "copied": "Adres skopiowany",
-      "pageTitle": "Ta strona",
-      "pageText": "Zapisz link, aby otwierać stronę bez szukania wiadomości",
-      "save": "Zapisz link",
-      "saved": "Link skopiowany",
-      "private": "Link jest osobisty: otwiera Twoje zakupy. Nie przekazuj go innym."
+      "apple": "Apple",
+      "google": "Google",
+      "copied": "Skopiowano",
+      "save": "Zapisz osobisty link",
+      "saved": "Skopiowano — ten link jest tylko dla Ciebie",
+      "private": "Link prowadzi do tej strony i otwiera tylko Twoje zakupy. Nie przekazuj go innym.",
+      "appleLabel": "Subskrybuj w Kalendarzu Apple",
+      "googleLabel": "Subskrybuj w Kalendarzu Google",
+      "other": "Inny",
+      "otherLabel": "Skopiuj adres do innego kalendarza",
+      "copiedHint": "Adres kalendarza skopiowany. W swoim kalendarzu wybierz „Dodaj kalendarz” → „Z adresu URL” (lub „Subskrybuj”) i wklej go."
     },
     "empty": {
       "text": "Nie masz teraz aktywnych dostępów. Zajrzyj do programów — znajdziesz tam wszystko, co możesz zacząć od razu.",
@@ -1447,7 +1447,7 @@
       "eyebrow": "Twoja droga",
       "share": "Udostępnij: {title}",
       "copied": "Link do kursu skopiowany",
-      "hint": "Udostępnij kurs",
+      "hint": "Kliknij, aby udostępnić",
       "live": "trwa teraz"
     },
     "calendar": {
@@ -1485,7 +1485,7 @@
         "linkOnStart": "Link do wejścia przyjdzie mailem w dniu startu",
         "afterCohort": "Opłacone 8 tygodni po zakończeniu obecnego cyklu",
         "ended": "Dostęp zakończył się {date}",
-        "notJoinedExpired": "Czas już biegnie, a link z wiadomości nie działa — wyślemy nowy na e-mail z zakupu"
+        "notJoinedExpired": "Czas już biegnie — nowy link wyślemy na e-mail z zakupu"
       },
       "plusHub": {
         "included": "W Twoim pakiecie Plus",
@@ -1511,7 +1511,7 @@
         "renewHub": "Przedłuż Hub",
         "buyHub": "Kup Hub",
         "support": "Napisz do wsparcia",
-        "reissue": "Wyślij nowy link"
+        "reissue": "Odbierz nowy link"
       },
       "chips": {
         "active": "Aktywny",
@@ -1519,9 +1519,13 @@
         "notJoined": "Czeka na wejście",
         "upcoming": "Wkrótce start",
         "ended": "Zakończony",
-        "linkExpired": "Potrzebny nowy link"
+        "linkExpired": "Link z wiadomości wygasł",
+        "notJoinedChannel": "Jeszcze nie w kanale",
+        "notJoinedGroup": "Jeszcze nie w czacie grupy",
+        "notJoinedHub": "Jeszcze nie w Hubie",
+        "endsSoonDays": "{days, plural, =1 {Ostatni dzień} one {Ostatni # dzień} few {Ostatnie # dni} many {Ostatnie # dni} other {Ostatnie # dnia}}"
       },
-      "linkExpired": "Link z wiadomości już nie działa — wyślemy nowy na e-mail z zakupu",
+      "linkExpired": "Nowy wyślemy na e-mail z zakupu",
       "count": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}",
       "cycleWeek": "Tydzień {current} z {total} · według kalendarza cyklu",
       "detail": {

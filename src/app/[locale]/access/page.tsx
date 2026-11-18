@@ -60,10 +60,10 @@ import {
   ReissueInvite,
   SavePageLink,
   ShareCourse,
-  ShareHintScope,
 } from "./access-actions";
 import AccessAnalytics from "./access-analytics";
 import {
+  ACCESS_APPEAR_CSS,
   ACCESS_CANVAS_CSS,
   AccessAside,
   AccessHeader,
@@ -95,9 +95,6 @@ import {
   SideText,
   SideTitle,
   StatusChip,
-  Tool,
-  ToolList,
-  ToolNote,
   VisuallyHidden,
   WeekCounts,
   Zone,
@@ -146,7 +143,7 @@ const AccessCanvas = ({
 }) => (
   <AccessSection data-analytics-private data-canvas="porcelain" data-daypart={daypart}>
     <style href="access-porcelain-canvas" precedence="default">
-      {ACCESS_CANVAS_CSS}
+      {ACCESS_CANVAS_CSS + ACCESS_APPEAR_CSS}
     </style>
     {children}
   </AccessSection>
@@ -162,21 +159,6 @@ const CalendarIcon = () => (
   >
     <rect x="2" y="3" width="12" height="11" rx="2.5" />
     <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" strokeLinecap="round" />
-  </svg>
-);
-
-const BookmarkIcon = () => (
-  <svg
-    aria-hidden
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.4"
-  >
-    <path
-      d="M4.5 2.2h7a1 1 0 0 1 1 1v10.6l-4.5-3-4.5 3V3.2a1 1 0 0 1 1-1Z"
-      strokeLinejoin="round"
-    />
   </svg>
 );
 
@@ -391,6 +373,22 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     }
   };
 
+  /**
+   * The chip in a card's corner, short but saying what is wrong: which link
+   * expired, where the reader is not yet, how many days are left.
+   */
+  const chipText = (card: MyAccessCard, counted: MyAccessCount | null) => {
+    if (card.chip === "notJoined") {
+      const where =
+        card.kind === "group" ? "Group" : card.kind === "hub" ? "Hub" : "Channel";
+      return t(`cards.chips.notJoined${where}`);
+    }
+    if (card.chip === "endsSoon" && counted?.kind === "left") {
+      return t("cards.chips.endsSoonDays", { days: counted.days });
+    }
+    return t(`cards.chips.${card.chip}`);
+  };
+
   const renderCard = (card: MyAccessCard, zone: MyAccessZone) => {
     const counted = buildMyAccessCount(card, now);
     const detail = getMyAccessCardDetail(card);
@@ -418,7 +416,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           </CardTitle>
           {ATTENTION_CHIPS.has(card.chip) && (
             <StatusChip $tone={card.chip as "linkExpired" | "notJoined" | "endsSoon"}>
-              {t(`cards.chips.${card.chip}`)}
+              {chipText(card, counted)}
             </StatusChip>
           )}
         </CardHead>
@@ -471,6 +469,15 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
 
   const zones = groupMyAccessCards(cards);
 
+  // Shared only while the course is on sale (its page then sells it); the first
+  // shareable step carries the «Нажми, чтобы поделиться» hint.
+  const sharePaths = journey.map((step) =>
+    sales.openProductIds.has(step.productExternalId)
+      ? getAccessProductPagePath(step.productExternalId)
+      : null,
+  );
+  const firstShare = sharePaths.findIndex(Boolean);
+
   const nextTerm =
     nextStep && !nextStep.started
       ? renderCount({
@@ -503,6 +510,16 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
               </b>
             </li>
             <li>{t("facts.purchases", { count: snapshot.purchases.length })}</li>
+            <li>
+              <SavePageLink
+                texts={{
+                  private: t("keep.private"),
+                  save: t("keep.save"),
+                  saved: t("keep.saved"),
+                }}
+                title={t("metaTitle")}
+              />
+            </li>
           </Facts>
         )}
       </AccessHeader>
@@ -590,82 +607,60 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
             </SideCard>
           )}
 
-          <SideCard aria-labelledby="access-keep">
-            <Eyebrow id="access-keep">{t("keep.eyebrow")}</Eyebrow>
-            <ToolList>
-              {subscription && (
-                <Tool>
-                  <i>
-                    <CalendarIcon />
-                  </i>
-                  <b>{t("keep.calendarTitle")}</b>
-                  <p>{t("keep.calendarText")}</p>
-                  <CalendarSubscribe
-                    links={subscription}
-                    texts={{
-                      apple: t("keep.apple"),
-                      copied: t("keep.copied"),
-                      copyAddress: t("keep.copyAddress"),
-                      google: t("keep.google"),
-                      subscribe: t("keep.subscribe"),
-                    }}
-                  />
-                </Tool>
-              )}
-              <Tool>
-                <i>
-                  <BookmarkIcon />
-                </i>
-                <b>{t("keep.pageTitle")}</b>
-                <p>{t("keep.pageText")}</p>
-                <div>
-                  <SavePageLink
-                    texts={{ save: t("keep.save"), saved: t("keep.saved") }}
-                    title={t("metaTitle")}
-                  />
-                </div>
-              </Tool>
-            </ToolList>
-            <ToolNote>{t("keep.private")}</ToolNote>
-          </SideCard>
+          {subscription && (
+            <SideCard aria-labelledby="access-calendar">
+              <Eyebrow id="access-calendar">{t("keep.calendarTitle")}</Eyebrow>
+              <SideText>{t("keep.calendarText")}</SideText>
+              <CalendarSubscribe
+                links={subscription}
+                texts={{
+                  apple: t("keep.apple"),
+                  appleLabel: t("keep.appleLabel"),
+                  copied: t("keep.copied"),
+                  copiedHint: t("keep.copiedHint"),
+                  google: t("keep.google"),
+                  googleLabel: t("keep.googleLabel"),
+                  other: t("keep.other"),
+                  otherLabel: t("keep.otherLabel"),
+                }}
+              />
+            </SideCard>
+          )}
 
           {journey.length > 0 && (
             <SideCard aria-labelledby="access-journey">
               <Eyebrow id="access-journey">{t("journey.eyebrow")}</Eyebrow>
-              <ShareHintScope text={t("journey.hint")}>
-                <JourneyList>
-                  {journey.map((step, index) => {
-                    // Shared only while the course is on sale: its page then sells it.
-                    const pagePath = sales.openProductIds.has(step.productExternalId)
-                      ? getAccessProductPagePath(step.productExternalId)
-                      : null;
-                    return (
-                      <JourneyStep $live={step.live} key={step.productExternalId}>
-                        <i aria-hidden data-live={step.live ? "" : undefined}>
-                          {index + 1}
-                        </i>
-                        <div>
-                          <b>{step.title}</b>
-                          <span>
-                            {purchaseDay(step.purchasedAt)}
-                            {step.live && (
-                              <VisuallyHidden> · {t("journey.live")}</VisuallyHidden>
-                            )}
-                          </span>
-                        </div>
-                        {pagePath && (
-                          <ShareCourse
-                            label={t("journey.share", { title: step.title })}
-                            texts={{ copied: t("journey.copied") }}
-                            title={step.title}
-                            url={`${normalizedSiteUrl}${pagePath}`}
-                          />
-                        )}
-                      </JourneyStep>
-                    );
-                  })}
-                </JourneyList>
-              </ShareHintScope>
+              <JourneyList>
+                {journey.map((step, index) => {
+                  const pagePath = sharePaths[index];
+                  return (
+                    <JourneyStep $live={step.live} key={step.productExternalId}>
+                      <i aria-hidden>{index + 1}</i>
+                      <div>
+                        <b>
+                          {step.title}
+                          {step.live && <em aria-hidden>LIVE</em>}
+                        </b>
+                        <span>
+                          {purchaseDay(step.purchasedAt)}
+                          {step.live && (
+                            <VisuallyHidden> · {t("journey.live")}</VisuallyHidden>
+                          )}
+                        </span>
+                      </div>
+                      {pagePath && (
+                        <ShareCourse
+                          hint={index === firstShare ? t("journey.hint") : undefined}
+                          label={t("journey.share", { title: step.title })}
+                          texts={{ copied: t("journey.copied") }}
+                          title={step.title}
+                          url={`${normalizedSiteUrl}${pagePath}`}
+                        />
+                      )}
+                    </JourneyStep>
+                  );
+                })}
+              </JourneyList>
             </SideCard>
           )}
 
