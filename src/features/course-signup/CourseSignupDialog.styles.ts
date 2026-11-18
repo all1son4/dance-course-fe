@@ -78,7 +78,7 @@ export const ResultIconBox = styled.div`
 export const ResultText = styled.p<{ $tone: "error" | "success" }>`
   margin: 0;
   color: ${({ $tone }) =>
-    $tone === "success" ? "rgba(18, 18, 18, 1)" : "rgba(213, 0, 4, 1)"};
+    $tone === "success" ? "rgba(18, 18, 18, 1)" : "var(--danger)"};
   font-size: 24px;
   font-weight: 400;
   line-height: 1.35;

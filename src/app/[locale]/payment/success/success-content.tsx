@@ -18,6 +18,7 @@ import {
   ResultTitle,
 } from "../result-page.styles";
 import type { ResultReceiptLine } from "../result-receipt";
+import { insertSuccessDate } from "./success-outcome";
 import TelegramAccessButton from "./telegram-access-button";
 
 type SuccessContentProps = {
@@ -142,8 +143,8 @@ export default function SuccessContent({
     : "";
   const formatScheduledText = (accessStartsAt: string) =>
     accessStartsAt
-      ? telegramScheduledText.replace(
-          "{date}",
+      ? insertSuccessDate(
+          telegramScheduledText,
           new Intl.DateTimeFormat(dateLocale, {
             dateStyle: "long",
             timeZone: "Europe/Warsaw",

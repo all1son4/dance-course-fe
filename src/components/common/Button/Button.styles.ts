@@ -30,6 +30,12 @@ const sizeStyles = {
     font-weight: 400;
     box-sizing: border-box;
   `,
+  xs: css`
+    min-height: 34px;
+    font-size: 14px;
+    font-weight: 400;
+    box-sizing: border-box;
+  `,
 } satisfies Record<ButtonSize, ReturnType<typeof css>>;
 
 const buildVariantStyles = (frost: ButtonFrost) => ({
@@ -214,6 +220,16 @@ const controlStyles = css<ControlProps>`
     padding: 14px 24px;
     line-height: 1.25;
   }
+
+  /* Compact at every width: after the phone padding on purpose. */
+  ${({ $size }) =>
+    $size === "xs" &&
+    css`
+      && {
+        min-height: 34px;
+        padding: 6px 16px;
+      }
+    `}
 `;
 
 export const ButtonLinkWrapper = styled(Link)<ControlProps>`
@@ -264,6 +280,7 @@ export const ButtonLabelText = styled.span<{ $isHidden?: boolean }>`
 const ringBySize = {
   lg: { size: "14px", stroke: "1.6px", dot: "2.8px", orbit: "6.2px" },
   sm: { size: "12px", stroke: "1.5px", dot: "2.5px", orbit: "5.25px" },
+  xs: { size: "12px", stroke: "1.5px", dot: "2.5px", orbit: "5.25px" },
 } satisfies Record<
   ButtonSize,
   { size: string; stroke: string; dot: string; orbit: string }

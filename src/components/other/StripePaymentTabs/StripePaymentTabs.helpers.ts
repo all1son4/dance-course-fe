@@ -15,6 +15,8 @@ export type StripePaymentFormProps = {
   billingPostalCode?: string | null;
   checkoutSessionId?: string | null;
   confirmPaymentFailedText: string;
+  /** What a declined payment shows: title and text per kind, plus a method hint. */
+  declineTexts: PaymentDeclineTexts;
   /**
    * The mounted intent is being replaced (form data changed, currency
    * switched): paying waits for the new one so the amount and the customer
@@ -106,6 +108,46 @@ export const createStripeBillingDetails = ({
     postal_code: postalCode || undefined,
   },
 });
+
+/** Bank answers after which another way to pay is the fastest way forward. */
+export type PaymentDeclineKind = "declined" | "insufficientFunds" | "authentication";
+
+export type PaymentDeclineTexts = Record<
+  PaymentDeclineKind,
+  { title: string; text: string }
+> & {
+  /** The quickest alternative for this buyer (EPS in Austria, BLIK in PLN); absent elsewhere. */
+  hint?: string;
+  /** The button that brings the payment methods back into view. */
+  otherMethod: string;
+};
+
+/**
+ * Which decline panel a failed confirmation gets. Fraud-related decline codes
+ * are shown like any other decline, as Stripe recommends; errors that belong
+ * to a field (wrong number, expired card, CVC) stay inline in the Payment
+ * Element and get no panel.
+ */
+export const resolvePaymentDeclineKind = (
+  error: { code?: string; decline_code?: string; type?: string } | undefined,
+): PaymentDeclineKind | null => {
+  if (!error) return null;
+  if (error.code === "payment_intent_authentication_failure") return "authentication";
+  if (error.type !== "card_error" || error.code !== "card_declined") return null;
+  return error.decline_code === "insufficient_funds" ? "insufficientFunds" : "declined";
+};
+
+/** The method hint under a decline: EPS for Austrian EUR buyers, BLIK for PLN. */
+export const resolvePaymentDeclineHintKey = (
+  currency: string | null | undefined,
+  billingCountry: string | null | undefined,
+): "decline.hintEps" | "decline.hintBlik" | null => {
+  if (currency === "pln") return "decline.hintBlik";
+  if (currency === "eur" && billingCountry?.trim().toUpperCase() === "AT") {
+    return "decline.hintEps";
+  }
+  return null;
+};
 
 export const resolveStripeErrorMessage = (
   message: string | undefined,

@@ -84,7 +84,7 @@ export const Mark = styled.div<MarkStyleProps>`
   box-sizing: border-box;
   background: transparent;
   border: 1px solid
-    ${({ $hasError }) => ($hasError ? "rgba(213, 0, 4, 1)" : "rgba(125, 125, 125, 1)")};
+    ${({ $hasError }) => ($hasError ? "var(--danger)" : "rgba(125, 125, 125, 1)")};
   border-radius: 6px;
   transition:
     border-color var(--motion-base, 220ms) var(--ease-standard, ease),

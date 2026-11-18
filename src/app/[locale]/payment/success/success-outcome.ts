@@ -20,3 +20,12 @@ export const resolveSuccessPageOutcomeAction = (
 
   return "verification_unavailable";
 };
+
+/**
+ * Puts a long date into a sentence. Russian long dates end in «г.», so a
+ * sentence that ends on the date gets no second full stop («2026 г.. В этот…»).
+ */
+export const insertSuccessDate = (template: string, date: string) =>
+  template.replace(/\{date\}(\.?)/u, (_, stop: string) =>
+    stop && date.endsWith(".") ? date : `${date}${stop}`,
+  );

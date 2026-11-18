@@ -1044,6 +1044,23 @@
       "confirmPaymentFailed": "Failed to complete the payment. Please try again.",
       "paymentFormBlocked": "We could not load the payment form — an extension or your network may be blocking it. Turn the blocker off or open the page in another browser.",
       "rateLimited": "Too many attempts. Wait a minute and try again."
+    },
+    "decline": {
+      "declined": {
+        "title": "Your bank didn’t accept the card payment",
+        "text": "Nothing was charged and your details are saved. This happens when a bank blocks online or foreign payments. Choose another payment method above or another card."
+      },
+      "insufficientFunds": {
+        "title": "Your bank declined the payment",
+        "text": "There weren’t enough funds on the card, so nothing was charged. Choose another card or another payment method above."
+      },
+      "authentication": {
+        "title": "Your bank didn’t confirm the payment",
+        "text": "The confirmation in your banking app didn’t go through or the window was closed. Nothing was charged — try again or choose another method above."
+      },
+      "hintEps": "For cards from Austrian banks, EPS is the quickest — you pay straight from your bank.",
+      "hintBlik": "The quickest is BLIK: a code from your banking app.",
+      "otherMethod": "Choose another method"
     }
   },
   "CurrencySwitch": {
@@ -1328,14 +1345,122 @@
   "MyAccessPage": {
     "metaTitle": "My access",
     "title": "My access",
-    "intro": "All your purchases are here: Inspiration Hub, groups and tutorials — with their dates.",
+    "greeting": {
+      "withName": {
+        "morning": [
+          "Good morning, {name}",
+          "Morning, {name}",
+          "Hi {name}, have a lovely morning",
+          "Rise and shine, {name}"
+        ],
+        "day": [
+          "Good afternoon, {name}",
+          "Hi, {name}",
+          "Have a lovely day, {name}",
+          "Hello, {name}"
+        ],
+        "evening": [
+          "Good evening, {name}",
+          "Evening, {name}",
+          "Have a cosy evening, {name}",
+          "Hi, {name}"
+        ],
+        "night": ["Hi, {name}", "Hello, {name}", "Have a quiet night, {name}"],
+        "always": [
+          "Good to see you, {name}",
+          "Hey, {name}",
+          "Glad you're here, {name}",
+          "Welcome, {name}"
+        ]
+      },
+      "plain": {
+        "morning": ["Good morning", "Morning", "Have a lovely morning"],
+        "day": ["Good afternoon", "Hi there", "Have a lovely day"],
+        "evening": ["Good evening", "Evening", "Have a cosy evening"],
+        "night": ["Hi there", "Hello", "Have a quiet night"],
+        "always": ["Good to see you", "Glad you're here", "Welcome"]
+      }
+    },
+    "intro": "All your access and dates, in one place.",
+    "facts": {
+      "since": "With us since {month} {year}",
+      "purchases": "{count, plural, one {# purchase} other {# purchases}}"
+    },
+    "zones": {
+      "action": "Waiting for you",
+      "active": "Your access",
+      "ended": "Finished"
+    },
+    "count": {
+      "startsIn": "{days, plural, one {day to the start} other {days to the start}}",
+      "startsToday": "starts today",
+      "left": "{days, plural, =1 {last day} one {day left} other {days left}}",
+      "until": "until {date}",
+      "week": "week of the cycle",
+      "weekOf": "Week {current} of {total}",
+      "paidDays": "{days, plural, one {day of access} other {days of access}}",
+      "fromJoin": "the time starts when you join the channel",
+      "ended": "access ended",
+      "lifetime": "no end date",
+      "openNow": "open now",
+      "openNowNote": "included in your Plus",
+      "since": "Running since {date}"
+    },
+    "invite": {
+      "sent": "Done — an email with a new link is on its way. If it isn't there, check your spam folder.",
+      "limited": "The email has already been sent; you can ask for another one a little later.",
+      "failed": "Couldn't send it.",
+      "support": "Contact support"
+    },
+    "keep": {
+      "calendarTitle": "Calendar",
+      "calendarText": "Starts and last days of access appear in your calendar and stay up to date",
+      "apple": "Apple",
+      "google": "Google",
+      "copied": "Copied",
+      "save": "Save your personal link",
+      "saved": "Copied — this link is just for you",
+      "private": "The link leads to this page and opens only your purchases. Don't pass it on.",
+      "appleLabel": "Subscribe in Apple Calendar",
+      "googleLabel": "Subscribe in Google Calendar",
+      "other": "Other",
+      "otherLabel": "Copy the address for another calendar",
+      "copiedHint": "The calendar address is copied. In your calendar choose “Add calendar” → “From URL” (or “Subscribe”) and paste it."
+    },
     "empty": {
       "text": "You have no active access right now. Have a look at the programmes — everything you can start today is there.",
       "button": "See the programmes"
     },
+    "next": {
+      "eyebrow": "Next",
+      "title": "New cycle · starts {date}",
+      "titleStarted": "A new cycle has been running since {date}",
+      "renewal": "For members of the previous cycle: a renewal at a special price, with no break between cycles.",
+      "join": "Online Group: 6 weeks in Telegram.",
+      "renewButton": "Renew",
+      "joinButton": "About the group",
+      "cohortTitle": "New Online Group cycle",
+      "announcements": "New cycles are announced on Anna's Instagram",
+      "instagram": "@anna.strok_dance"
+    },
+    "journey": {
+      "eyebrow": "Your path",
+      "share": "Share: {title}",
+      "copied": "Course link copied",
+      "hint": "Tap to share",
+      "live": "running now"
+    },
+    "calendar": {
+      "add": "Add to calendar",
+      "start": "Starts: {title}",
+      "lastDay": "Last day of access: {title}",
+      "nextStart": "New Online Group cycle starts",
+      "feedName": "Anna Strok"
+    },
     "help": {
       "text": "Something wrong with your access? Message us and we will help.",
-      "button": "Contact support"
+      "button": "Contact support",
+      "resend": "Email me this link"
     },
     "request": {
       "lead": "Open this page with the “My access” button from any of our emails. No email at hand? Enter your address and we will send you the link.",
@@ -1360,7 +1485,7 @@
         "linkOnStart": "The link to join will arrive by email on the start day",
         "afterCohort": "8 weeks paid, starting when the current cycle ends",
         "ended": "Access ended on {date}",
-        "notJoinedExpired": "Your time is running, but the emailed link no longer works — message us for a new one"
+        "notJoinedExpired": "Your time is running — we'll send a new link to the email you bought with"
       },
       "plusHub": {
         "included": "Included in your Plus",
@@ -1385,7 +1510,8 @@
       "actions": {
         "renewHub": "Renew the Hub",
         "buyHub": "Buy the Hub",
-        "support": "Contact support"
+        "support": "Contact support",
+        "reissue": "Get a new link"
       },
       "chips": {
         "active": "Active",
@@ -1393,10 +1519,21 @@
         "notJoined": "Not joined yet",
         "upcoming": "Starting soon",
         "ended": "Ended",
-        "linkExpired": "New link needed"
+        "linkExpired": "Email link expired",
+        "notJoinedChannel": "Not in the channel yet",
+        "notJoinedGroup": "Not in the group chat yet",
+        "notJoinedHub": "Not in the Hub yet",
+        "endsSoonDays": "{days, plural, =1 {Last day} other {Last # days}}"
       },
-      "linkExpired": "The link from the email no longer works — message us and we will send a new one",
-      "count": "{count, plural, one {# purchase} other {# purchases}}"
+      "linkExpired": "We'll send a new one to the email you bought with",
+      "count": "{count, plural, one {# purchase} other {# purchases}}",
+      "cycleWeek": "Week {current} of {total} · by the cycle calendar",
+      "detail": {
+        "hubUntil": "Access until {date}",
+        "plusHubAfterCohort": "The cycle has ended — the Hub from Plus is still open",
+        "cohortClosed": "The cycle has ended",
+        "startsOnJoin": "The time starts on the day you join the channel"
+      }
     }
   }
 }

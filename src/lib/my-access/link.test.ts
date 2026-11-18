@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
   buildMyAccessPath,
+  createMyAccessCalendarToken,
   createMyAccessToken,
   isMyAccessLinkConfigured,
+  verifyMyAccessCalendarToken,
   verifyMyAccessToken,
 } from "@/lib/my-access/link";
 
@@ -66,5 +68,18 @@ test("only UUID customer ids are signed", () => {
       buildMyAccessPath(CUSTOMER.toUpperCase()) ?? "",
       /^\/access\?k=0f5c8a52-/u,
     );
+  });
+});
+
+test("the calendar key opens only the calendar, and the page key only the page", () => {
+  withSecret(SECRET, () => {
+    const page = createMyAccessToken(CUSTOMER);
+    const calendar = createMyAccessCalendarToken(CUSTOMER);
+    assert.ok(page && calendar);
+    assert.notEqual(page, calendar);
+
+    assert.equal(verifyMyAccessCalendarToken(calendar), CUSTOMER);
+    assert.equal(verifyMyAccessToken(calendar), null);
+    assert.equal(verifyMyAccessCalendarToken(page), null);
   });
 });

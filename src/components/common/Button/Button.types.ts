@@ -9,7 +9,8 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "white";
  * costs a backdrop root per button.
  */
 export type ButtonFrost = "static" | "live";
-export type ButtonSize = "lg" | "sm";
+/** `xs` is the compact button of dense pages (cards with several actions). */
+export type ButtonSize = "lg" | "sm" | "xs";
 
 export type ButtonBaseProps = {
   variant?: ButtonVariant;
@@ -18,7 +19,7 @@ export type ButtonBaseProps = {
   href?: string;
   prefetch?: boolean;
   target?: string;
-  size?: "lg" | "sm";
+  size?: ButtonSize;
   frost?: ButtonFrost;
   isLoading?: boolean;
   /** Replaces the label while loading ("Processing..."); the ring shows either way. */

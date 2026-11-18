@@ -62,6 +62,12 @@ export const PaymentElementShell = styled.div`
   flex-direction: column;
   gap: 12px;
 
+  /* «Выбрать другой способ» brings it back below the header; phones and
+     tablets also keep the pinned purchase bar above it. */
+  @media (max-width: 920px) {
+    scroll-margin-top: 96px;
+  }
+
   & > div {
     width: 100%;
     max-width: 100%;
@@ -82,6 +88,82 @@ export const StatusText = styled.p`
 
 export const ErrorText = styled(StatusText)`
   color: var(--danger);
+`;
+
+/* A bank decline: cinnabar, an icon and words, never colour alone. As wide
+   as the payment fields and rounded like them (16px), so it reads as part of
+   the form, not a banner dropped on it. */
+export const DeclineNotice = styled.div`
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 16px 18px 12px;
+  border-radius: 16px;
+  /* A light sheet over the glass card: a cinnabar tint on grey turned muddy. */
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: inset 0 0 0 1px rgba(182, 62, 3, 0.34);
+
+  & > svg {
+    width: 21px;
+    height: 21px;
+    margin-top: 1px;
+    color: var(--danger);
+  }
+
+  & strong {
+    display: block;
+    margin: 0 0 4px;
+    color: var(--danger);
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 1.35;
+  }
+
+  & p {
+    margin: 0;
+    color: var(--ink);
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  & p + p {
+    margin-top: 6px;
+    color: var(--ink-muted);
+  }
+`;
+
+/* Back up to the payment methods: on a phone they are a screen above the button. */
+export const DeclineAction = styled.button`
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  text-decoration: underline;
+  text-decoration-color: rgba(18, 18, 18, 0.3);
+  text-underline-offset: 4px;
+  cursor: pointer;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      text-decoration-color: currentColor;
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 `;
 
 export const StatusLink = styled.a`

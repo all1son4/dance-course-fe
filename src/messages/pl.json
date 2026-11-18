@@ -1044,6 +1044,23 @@
       "confirmPaymentFailed": "Nie udało się dokończyć płatności. Spróbuj ponownie.",
       "paymentFormBlocked": "Nie udało się wczytać formularza płatności — może go blokować rozszerzenie lub sieć. Wyłącz blokowanie albo otwórz stronę w innej przeglądarce.",
       "rateLimited": "Zbyt wiele prób. Odczekaj minutę i spróbuj ponownie."
+    },
+    "decline": {
+      "declined": {
+        "title": "Bank nie przyjął płatności kartą",
+        "text": "Pieniądze nie zostały pobrane, dane są zapisane. Tak bywa, gdy bank blokuje płatności internetowe lub zagraniczne. Wybierz inną metodę płatności powyżej albo inną kartę."
+      },
+      "insufficientFunds": {
+        "title": "Bank odrzucił płatność",
+        "text": "Na karcie zabrakło środków, pieniądze nie zostały pobrane. Wybierz inną kartę lub inną metodę płatności powyżej."
+      },
+      "authentication": {
+        "title": "Bank nie potwierdził płatności",
+        "text": "Potwierdzenie w aplikacji banku nie powiodło się albo okno zostało zamknięte. Pieniądze nie zostały pobrane — spróbuj ponownie lub wybierz inną metodę powyżej."
+      },
+      "hintEps": "Dla kart z austriackich banków najszybciej działa EPS — płatność prosto z Twojego banku.",
+      "hintBlik": "Najszybciej — BLIK: kod z aplikacji banku.",
+      "otherMethod": "Wybierz inną metodę"
     }
   },
   "CurrencySwitch": {
@@ -1328,14 +1345,122 @@
   "MyAccessPage": {
     "metaTitle": "Mój dostęp",
     "title": "Mój dostęp",
-    "intro": "Tu są wszystkie Twoje zakupy: Inspiration Hub, grupy i tutoriale — z terminami.",
+    "greeting": {
+      "withName": {
+        "morning": [
+          "Dzień dobry, {name}",
+          "Miłego poranka, {name}",
+          "Cześć, {name}! Dobrego dnia",
+          "{name}, dzień dobry"
+        ],
+        "day": [
+          "Dzień dobry, {name}",
+          "Cześć, {name}",
+          "Miłego dnia, {name}",
+          "Hej, {name}"
+        ],
+        "evening": [
+          "Dobry wieczór, {name}",
+          "Miłego wieczoru, {name}",
+          "Hej, {name}",
+          "Udanego wieczoru, {name}"
+        ],
+        "night": ["Dobry wieczór, {name}", "Cześć, {name}", "Spokojnej nocy, {name}"],
+        "always": [
+          "Miło Cię widzieć, {name}",
+          "Cześć, {name}",
+          "Witaj, {name}",
+          "Dobrze, że jesteś, {name}"
+        ]
+      },
+      "plain": {
+        "morning": ["Dzień dobry", "Miłego poranka", "Dobrego dnia"],
+        "day": ["Dzień dobry", "Cześć", "Miłego dnia"],
+        "evening": ["Dobry wieczór", "Miłego wieczoru", "Udanego wieczoru"],
+        "night": ["Dobry wieczór", "Cześć", "Spokojnej nocy"],
+        "always": ["Miło Cię widzieć", "Witaj", "Dobrze, że jesteś"]
+      }
+    },
+    "intro": "Wszystkie Twoje dostępy i terminy w jednym miejscu.",
+    "facts": {
+      "since": "Z nami od {month} {year}",
+      "purchases": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}"
+    },
+    "zones": {
+      "action": "Czeka na Ciebie",
+      "active": "Twoje dostępy",
+      "ended": "Zakończone"
+    },
+    "count": {
+      "startsIn": "{days, plural, one {dzień do startu} few {dni do startu} many {dni do startu} other {dnia do startu}}",
+      "startsToday": "start dziś",
+      "left": "{days, plural, =1 {ostatni dzień} one {dzień został} few {dni zostały} many {dni zostało} other {dnia zostało}}",
+      "until": "do {date}",
+      "week": "tydzień cyklu",
+      "weekOf": "Tydzień {current} z {total}",
+      "paidDays": "{days, plural, one {dzień dostępu} few {dni dostępu} many {dni dostępu} other {dnia dostępu}}",
+      "fromJoin": "czas ruszy od wejścia do kanału",
+      "ended": "dostęp zakończony",
+      "lifetime": "bezterminowo",
+      "openNow": "otwarty teraz",
+      "openNowNote": "w Twoim Plus",
+      "since": "Trwa od {date}"
+    },
+    "invite": {
+      "sent": "Gotowe — wiadomość z nowym linkiem jest w drodze. Jeśli jej nie ma, zajrzyj do spamu.",
+      "limited": "Wiadomość już wysłana, kolejną możesz poprosić trochę później.",
+      "failed": "Nie udało się wysłać.",
+      "support": "Napisz do wsparcia"
+    },
+    "keep": {
+      "calendarTitle": "Kalendarz",
+      "calendarText": "Starty i ostatnie dni dostępu same pojawią się w Twoim kalendarzu i będą się aktualizować",
+      "apple": "Apple",
+      "google": "Google",
+      "copied": "Skopiowano",
+      "save": "Zapisz osobisty link",
+      "saved": "Skopiowano — ten link jest tylko dla Ciebie",
+      "private": "Link prowadzi do tej strony i otwiera tylko Twoje zakupy. Nie przekazuj go innym.",
+      "appleLabel": "Subskrybuj w Kalendarzu Apple",
+      "googleLabel": "Subskrybuj w Kalendarzu Google",
+      "other": "Inny",
+      "otherLabel": "Skopiuj adres do innego kalendarza",
+      "copiedHint": "Adres kalendarza skopiowany. W swoim kalendarzu wybierz „Dodaj kalendarz” → „Z adresu URL” (lub „Subskrybuj”) i wklej go."
+    },
     "empty": {
       "text": "Nie masz teraz aktywnych dostępów. Zajrzyj do programów — znajdziesz tam wszystko, co możesz zacząć od razu.",
       "button": "Zobacz programy"
     },
+    "next": {
+      "eyebrow": "Dalej",
+      "title": "Nowy cykl · start {date}",
+      "titleStarted": "Nowy cykl trwa od {date}",
+      "renewal": "Dla osób z poprzedniego cyklu — przedłużenie w specjalnej cenie, bez przerwy między cyklami.",
+      "join": "Grupa online: 6 tygodni na Telegramie.",
+      "renewButton": "Przedłuż",
+      "joinButton": "O grupie",
+      "cohortTitle": "Nowy cykl grupy online",
+      "announcements": "Zapowiedzi nowych cykli — na Instagramie Anny",
+      "instagram": "@anna.strok_dance"
+    },
+    "journey": {
+      "eyebrow": "Twoja droga",
+      "share": "Udostępnij: {title}",
+      "copied": "Link do kursu skopiowany",
+      "hint": "Kliknij, aby udostępnić",
+      "live": "trwa teraz"
+    },
+    "calendar": {
+      "add": "Do kalendarza",
+      "start": "Start: {title}",
+      "lastDay": "Ostatni dzień dostępu: {title}",
+      "nextStart": "Start nowego cyklu grupy online",
+      "feedName": "Anna Strok"
+    },
     "help": {
       "text": "Coś nie tak z dostępem? Napisz do nas — pomożemy.",
-      "button": "Napisz do wsparcia"
+      "button": "Napisz do wsparcia",
+      "resend": "Wyślij link na e-mail"
     },
     "request": {
       "lead": "Otwórz tę stronę przyciskiem „Mój dostęp” z dowolnej naszej wiadomości. Nie masz jej pod ręką? Wpisz email, a wyślemy link.",
@@ -1360,7 +1485,7 @@
         "linkOnStart": "Link do wejścia przyjdzie mailem w dniu startu",
         "afterCohort": "Opłacone 8 tygodni po zakończeniu obecnego cyklu",
         "ended": "Dostęp zakończył się {date}",
-        "notJoinedExpired": "Czas już biegnie, a link z wiadomości nie działa — napisz do nas, wyślemy nowy"
+        "notJoinedExpired": "Czas już biegnie — nowy link wyślemy na e-mail z zakupu"
       },
       "plusHub": {
         "included": "W Twoim pakiecie Plus",
@@ -1385,7 +1510,8 @@
       "actions": {
         "renewHub": "Przedłuż Hub",
         "buyHub": "Kup Hub",
-        "support": "Napisz do wsparcia"
+        "support": "Napisz do wsparcia",
+        "reissue": "Odbierz nowy link"
       },
       "chips": {
         "active": "Aktywny",
@@ -1393,10 +1519,21 @@
         "notJoined": "Czeka na wejście",
         "upcoming": "Wkrótce start",
         "ended": "Zakończony",
-        "linkExpired": "Potrzebny nowy link"
+        "linkExpired": "Link z wiadomości wygasł",
+        "notJoinedChannel": "Jeszcze nie w kanale",
+        "notJoinedGroup": "Jeszcze nie w czacie grupy",
+        "notJoinedHub": "Jeszcze nie w Hubie",
+        "endsSoonDays": "{days, plural, =1 {Ostatni dzień} one {Ostatni # dzień} few {Ostatnie # dni} many {Ostatnie # dni} other {Ostatnie # dnia}}"
       },
-      "linkExpired": "Link z wiadomości już nie działa — napisz do nas, wyślemy nowy",
-      "count": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}"
+      "linkExpired": "Nowy wyślemy na e-mail z zakupu",
+      "count": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}",
+      "cycleWeek": "Tydzień {current} z {total} · według kalendarza cyklu",
+      "detail": {
+        "hubUntil": "Dostęp do {date}",
+        "plusHubAfterCohort": "Cykl zakończony — Hub z Plus jest nadal otwarty",
+        "cohortClosed": "Cykl zakończony",
+        "startsOnJoin": "Czas ruszy w dniu wejścia do kanału"
+      }
     }
   }
 }
