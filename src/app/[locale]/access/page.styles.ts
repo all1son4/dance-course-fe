@@ -27,14 +27,21 @@ const canvasRule = (selector: string, [near, far, base]: readonly string[]) =>
   [
     `body:has(${selector}){background:`,
     `radial-gradient(900px 620px at 96% 0,${near},transparent 70%),`,
-    `radial-gradient(760px 640px at -10% 40%,${far},transparent 70%),${base}}`,
+    `radial-gradient(760px 640px at -10% 340px,${far},transparent 70%),${base}}`,
     // A phone is narrower than the light itself: a smaller, fainter pool.
     `@media (max-width:550px){body:has(${selector}){background:`,
     `radial-gradient(420px 380px at 100% 0,${near},transparent 70%),${base}}}`,
   ].join("");
 
+/*
+ * The site keeps html and body one screen tall (height: 100%), so a light painted
+ * on the body ended there in a hard line once the page grew longer. Here the body
+ * grows with its content, and the far pool sits at a fixed depth (340px, 40% of a
+ * usual screen) instead of 40% of a long page.
+ */
 export const ACCESS_CANVAS_CSS = [
   "html:has([data-canvas='porcelain']){background:#f4f4f6}",
+  "body:has([data-canvas='porcelain']){height:auto}",
   canvasRule("[data-canvas='porcelain']", DAYPART_LIGHT.day),
   ...Object.entries(DAYPART_LIGHT).map(([daypart, light]) =>
     canvasRule(`[data-canvas='porcelain'][data-daypart='${daypart}']`, light),
