@@ -78,7 +78,7 @@ export async function POST(request: Request) {
 
         await sendResendEmail({
           ...buildMyAccessLinkEmail({ locale, url }),
-          sender: "info",
+          sender: "hello",
           to: email,
         });
       } catch (error) {

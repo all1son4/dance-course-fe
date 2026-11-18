@@ -81,7 +81,7 @@ export const deliverChoreoAccessReminder = async (job: ClaimedOutboxJob) => {
   });
   const { emailId } = await sendResendEmail({
     ...email,
-    sender: "info",
+    sender: "hello",
     to: reminder.email,
     idempotencyKey: job.deduplicationKey,
   });

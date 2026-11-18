@@ -115,26 +115,26 @@ test("Resend fixture records normalized email and idempotency data", async (t) =
   });
 });
 
-test("reminders and broadcasts come from the info address, payments stay on billing", async (t) => {
-  const previous = {
-    RESEND_API_KEY: process.env.RESEND_API_KEY,
-    RESEND_INFO_FROM_EMAIL: process.env.RESEND_INFO_FROM_EMAIL,
-  };
+test("payments come from the billing address, everything else from hello", async (t) => {
+  const names = [
+    "RESEND_API_KEY",
+    "RESEND_BILLING_EMAIL",
+    "RESEND_FROM_EMAIL",
+    "RESEND_HELLO_EMAIL",
+  ] as const;
+  const previous = Object.fromEntries(names.map((name) => [name, process.env[name]]));
   process.env.RESEND_API_KEY = "re_fixture";
 
   t.after(() => {
-    for (const [name, value] of Object.entries(previous)) {
-      restoreEnvironmentVariable(name, value);
-    }
+    for (const name of names) restoreEnvironmentVariable(name, previous[name]);
   });
 
-  const calls = installJsonFetchFixture(t, [
-    { body: { id: "email_1" } },
-    { body: { id: "email_2" } },
-    { body: { id: "email_3" } },
-  ]);
+  const calls = installJsonFetchFixture(
+    t,
+    Array.from({ length: 4 }, (_, index) => ({ body: { id: `email_${index}` } })),
+  );
   const { sendResendEmail } = await import("@/lib/email/resend");
-  const send = (sender?: "billing" | "info") =>
+  const send = (sender?: "billing" | "hello") =>
     sendResendEmail({
       html: "<p>x</p>",
       sender,
@@ -144,18 +144,24 @@ test("reminders and broadcasts come from the info address, payments stay on bill
     });
   const fromOf = (index: number) => JSON.parse(calls[index]?.body ?? "{}").from;
 
-  // Not configured yet: the info emails keep the payments address, as before.
-  delete process.env.RESEND_INFO_FROM_EMAIL;
-  await send("info");
-  process.env.RESEND_INFO_FROM_EMAIL = "Anna Strok <hello@example.com>";
-  await send("info");
+  // Only the old single variable: it stands in for both.
+  delete process.env.RESEND_BILLING_EMAIL;
+  delete process.env.RESEND_HELLO_EMAIL;
+  process.env.RESEND_FROM_EMAIL = "Old <old@example.com>";
+  await send("hello");
   await send();
 
-  // The module reads RESEND_FROM_EMAIL once, when it loads (the test above set it).
-  const billing = fromOf(2);
-  assert.equal(fromOf(0), billing);
-  assert.equal(fromOf(1), "Anna Strok <hello@example.com>");
-  assert.notEqual(billing, "Anna Strok <hello@example.com>");
+  process.env.RESEND_BILLING_EMAIL = "Anna Strok Payments <billing@example.com>";
+  process.env.RESEND_HELLO_EMAIL = "Anna Strok <hello@example.com>";
+  await send("hello");
+  await send();
+
+  assert.deepEqual([0, 1, 2, 3].map(fromOf), [
+    "Old <old@example.com>",
+    "Old <old@example.com>",
+    "Anna Strok <hello@example.com>",
+    "Anna Strok Payments <billing@example.com>",
+  ]);
 });
 
 const restoreEnvironmentVariable = (name: string, value: string | undefined) => {

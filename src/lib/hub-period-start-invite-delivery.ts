@@ -119,7 +119,7 @@ export const deliverHubPeriodStartInvite = async (job: ClaimedOutboxJob) => {
   });
   const { emailId } = await sendResendEmail({
     ...email,
-    sender: "info",
+    sender: "hello",
     idempotencyKey: job.deduplicationKey,
     to: recipient,
   });

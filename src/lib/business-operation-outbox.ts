@@ -238,7 +238,7 @@ const deliverCampaignEmail = async (job: ClaimedOutboxJob) => {
     const result = await sendResendEmail({
       ...payload.email,
       idempotencyKey: `campaign-email/${job.deduplicationKey}`,
-      sender: "info",
+      sender: "hello",
     });
 
     await markEmailCampaignLeadSent({ leadId: payload.leadId });
