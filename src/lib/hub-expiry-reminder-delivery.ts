@@ -128,6 +128,7 @@ export const deliverHubExpiryReminder = async (job: ClaimedOutboxJob) => {
   });
   const { emailId } = await sendResendEmail({
     ...email,
+    sender: "info",
     idempotencyKey: job.deduplicationKey,
     to: recipient,
   });

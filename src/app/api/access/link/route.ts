@@ -76,7 +76,11 @@ export async function POST(request: Request) {
         const url = buildMyAccessUrl(customerId, locale);
         if (!url) return;
 
-        await sendResendEmail({ ...buildMyAccessLinkEmail({ locale, url }), to: email });
+        await sendResendEmail({
+          ...buildMyAccessLinkEmail({ locale, url }),
+          sender: "info",
+          to: email,
+        });
       } catch (error) {
         logSafeError("Failed to send the My access link", error);
       }

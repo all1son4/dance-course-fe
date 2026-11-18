@@ -115,6 +115,49 @@ test("Resend fixture records normalized email and idempotency data", async (t) =
   });
 });
 
+test("reminders and broadcasts come from the info address, payments stay on billing", async (t) => {
+  const previous = {
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
+    RESEND_INFO_FROM_EMAIL: process.env.RESEND_INFO_FROM_EMAIL,
+  };
+  process.env.RESEND_API_KEY = "re_fixture";
+
+  t.after(() => {
+    for (const [name, value] of Object.entries(previous)) {
+      restoreEnvironmentVariable(name, value);
+    }
+  });
+
+  const calls = installJsonFetchFixture(t, [
+    { body: { id: "email_1" } },
+    { body: { id: "email_2" } },
+    { body: { id: "email_3" } },
+  ]);
+  const { sendResendEmail } = await import("@/lib/email/resend");
+  const send = (sender?: "billing" | "info") =>
+    sendResendEmail({
+      html: "<p>x</p>",
+      sender,
+      subject: "x",
+      text: "x",
+      to: "a@example.com",
+    });
+  const fromOf = (index: number) => JSON.parse(calls[index]?.body ?? "{}").from;
+
+  // Not configured yet: the info emails keep the payments address, as before.
+  delete process.env.RESEND_INFO_FROM_EMAIL;
+  await send("info");
+  process.env.RESEND_INFO_FROM_EMAIL = "Anna Strok <hello@example.com>";
+  await send("info");
+  await send();
+
+  // The module reads RESEND_FROM_EMAIL once, when it loads (the test above set it).
+  const billing = fromOf(2);
+  assert.equal(fromOf(0), billing);
+  assert.equal(fromOf(1), "Anna Strok <hello@example.com>");
+  assert.notEqual(billing, "Anna Strok <hello@example.com>");
+});
+
 const restoreEnvironmentVariable = (name: string, value: string | undefined) => {
   if (value === undefined) {
     delete process.env[name];

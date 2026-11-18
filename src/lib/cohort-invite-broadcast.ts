@@ -884,6 +884,7 @@ export const sendCohortInviteTest = async ({
 
   await sendResendEmail({
     html: message.html,
+    sender: "info",
     subject: `[Тест] ${message.subject}`,
     text: message.text,
     to,
