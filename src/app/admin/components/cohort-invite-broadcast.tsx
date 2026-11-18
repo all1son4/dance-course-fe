@@ -1,4 +1,6 @@
 import {
+  ArrowUpRight,
+  BadgePercent,
   Ban,
   Check,
   CircleQuestionMark,
@@ -39,7 +41,9 @@ import {
   BatchDivider,
   CellBadges,
   FirstSteps,
+  LinksTag,
   QuotaMeter,
+  RecipientsTable,
   RULES_ANCHOR,
   RulesPopover,
 } from "../styles/broadcast.styles";
@@ -107,13 +111,16 @@ const LinksCell = ({
   hubSpecialPrice?: boolean;
   links: CohortInviteLinks["kind"];
 }) => (
-  <span>
-    <CellPrimary>{LINKS[links].title}</CellPrimary>
-    <CellSecondary>
-      {LINKS[links].note}
-      {hubSpecialPrice ? " · Hub тоже по спеццене" : ""}
-    </CellSecondary>
-  </span>
+  <LinksTag $renewal={links === "renewal"}>
+    <i aria-hidden>{links === "renewal" ? <BadgePercent /> : <ArrowUpRight />}</i>
+    <span>
+      <b>{LINKS[links].title}</b>
+      <small>
+        {LINKS[links].note}
+        {hubSpecialPrice && <Badge $tone="success">Hub тоже по спеццене</Badge>}
+      </small>
+    </span>
+  </LinksTag>
 );
 
 /** «Приглашение в поток»: one campaign of «Рассылки». */
@@ -140,7 +147,7 @@ export const CohortInviteBroadcast = ({
   // The line after this batch stays in view, whatever the batch size.
   const nextRecipients = useShownRows(
     recipients,
-    Math.max(SHOWN_ROWS, (boundary ?? 0) + 3),
+    Math.max(SHOWN_ROWS, (boundary ?? 0) + 2),
   );
   const checkedAddresses = useShownRows(invite.listChecks ?? []);
 
@@ -447,7 +454,7 @@ export const CohortInviteBroadcast = ({
 
           {!isDone && (
             <TableScroller>
-              <AudienceTable aria-label="Следующие адресаты приглашения">
+              <RecipientsTable aria-label="Следующие адресаты приглашения">
                 <thead>
                   <tr>
                     <th>Имя</th>
@@ -464,14 +471,14 @@ export const CohortInviteBroadcast = ({
                     return (
                       <Fragment key={recipient.email}>
                         {index === boundary && (
-                          <BatchDivider>
+                          <BatchDivider data-divider>
                             <td colSpan={4}>
                               <span>{`Выше — эта партия, ниже — следующие`}</span>
                             </td>
                           </BatchDivider>
                         )}
                         <tr>
-                          <td data-label="Имя">
+                          <td data-label="Имя" data-cell="name">
                             <span>
                               <CellPrimary>
                                 {recipient.fullName || "Без имени"}
@@ -484,8 +491,10 @@ export const CohortInviteBroadcast = ({
                               )}
                             </span>
                           </td>
-                          <td data-label="Язык">{recipient.locale.toUpperCase()}</td>
-                          <td data-label="Кнопки ведут">
+                          <td data-label="Язык" data-cell="locale">
+                            {recipient.locale.toUpperCase()}
+                          </td>
+                          <td data-label="Кнопки ведут" data-cell="links">
                             <LinksCell
                               hubSpecialPrice={recipient.hubSpecialPrice}
                               links={recipient.links}
@@ -552,7 +561,7 @@ export const CohortInviteBroadcast = ({
                     );
                   })}
                 </tbody>
-              </AudienceTable>
+              </RecipientsTable>
             </TableScroller>
           )}
           {!isDone && nextRecipients.toggle}

@@ -53,6 +53,52 @@ export const CellBadges = styled.span`
   margin-top: 4px;
 `;
 
+/** «Куда ведут кнопки письма»: a soft icon, the destination, why, in plain weight. */
+export const LinksTag = styled.span<{ $renewal: boolean }>`
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+
+  > i {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 999px;
+    background: ${({ $renewal }) =>
+      $renewal ? "var(--a-accent-soft)" : "var(--a-surface-sunken)"};
+    color: ${({ $renewal }) => ($renewal ? "var(--a-accent)" : "var(--a-ink-2)")};
+  }
+
+  > i svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  > span {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    padding-top: 4px;
+  }
+
+  b {
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  small {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    color: var(--a-ink-3);
+    font-size: var(--a-text-sm);
+  }
+`;
+
 /* ---------- «Следующая партия» ---------- */
 
 /** «Проверь список → Отправь партию → Продолжи завтра», until the first send. */
@@ -225,6 +271,68 @@ export const BatchBar = styled.div`
 
   label {
     white-space: nowrap;
+  }
+`;
+
+/**
+ * «Следующая партия»: one line per person where the table is a table (the two
+ * actions side by side); where rows become cards, a compact one — name and
+ * language on one line, the email under it, where the buttons lead, both actions
+ * in one row (without icons on phones, so they fit).
+ */
+export const RecipientsTable = styled(AudienceTable)`
+  @container admin-content (min-width: 901px) {
+    td[data-actions] > div {
+      flex-wrap: nowrap;
+    }
+  }
+
+  @container admin-content (max-width: 900px) {
+    tr:not([data-divider]) {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 12px;
+    }
+
+    td[data-cell="name"],
+    td[data-cell="locale"] {
+      display: block;
+    }
+
+    td[data-cell="name"] {
+      padding-top: 0;
+    }
+
+    td[data-cell="locale"] {
+      grid-column: 2;
+      grid-row: 1;
+      align-self: start;
+      padding-top: 1px;
+      color: var(--a-ink-2);
+      font-size: var(--a-text-xs);
+      font-weight: 600;
+    }
+
+    td[data-cell="name"]::before,
+    td[data-cell="locale"]::before {
+      content: none;
+    }
+
+    td[data-cell="links"],
+    td[data-actions] {
+      grid-column: 1 / -1;
+    }
+
+    td[data-actions] {
+      padding-top: 8px;
+      padding-bottom: 0;
+    }
+  }
+
+  @container admin-content (max-width: 480px) {
+    td[data-actions] svg:not([data-spinner]) {
+      display: none;
+    }
   }
 `;
 
