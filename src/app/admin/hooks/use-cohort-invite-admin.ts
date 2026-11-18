@@ -140,7 +140,7 @@ export const useCohortInviteAdmin = ({
       setIsSending(true);
       setBatchStatus({
         text: `Отправляю партию из ${size}. Не закрывай вкладку, это займёт до минуты…`,
-        tone: "info",
+        tone: "progress",
       });
 
       const result = await requestAdminJson<Response>(
@@ -228,7 +228,7 @@ export const useCohortInviteAdmin = ({
       setIsSending(true);
       setListStatus({
         text: `Отправляю ${count}. Не закрывай вкладку…`,
-        tone: "info",
+        tone: "progress",
       });
       const result = await requestAdminJson<Response>(
         ADMIN_API_ENDPOINTS.cohortInviteBroadcast,

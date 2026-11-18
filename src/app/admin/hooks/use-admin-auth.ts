@@ -31,7 +31,7 @@ export const useAdminAuth = () => {
   const [isSessionCheckUnavailable, setIsSessionCheckUnavailable] = useState(false);
   const [authStatus, setAuthStatus] = useState<StatusMessage>({
     text: "Проверяю сессию...",
-    tone: "info",
+    tone: "progress",
   });
 
   const isChecking = authState === "checking";
@@ -89,7 +89,7 @@ export const useAdminAuth = () => {
         changeAuthState("checking");
         setAuthStatus({
           text: "Проверяю сессию...",
-          tone: "info",
+          tone: "progress",
         });
       }
 
@@ -252,7 +252,7 @@ export const useAdminAuth = () => {
     changeSessionCheckUnavailable(false);
     setAuthStatus({
       text: "Проверяю пароль...",
-      tone: "info",
+      tone: "progress",
     });
 
     try {

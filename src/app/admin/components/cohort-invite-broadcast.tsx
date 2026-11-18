@@ -729,9 +729,11 @@ export const CohortInviteBroadcast = ({
             : `Отправить ${letters(batch.size)}?`
         }
         description={
-          confirming === "list"
-            ? `Получат: ${summarizeAddresses(readyFromList.map((check) => check.email))}. Перед отправкой список проверится ещё раз — кто успел получить письмо или оплатить, будет пропущен.`
-            : `Приглашение в ${snapshot.cohort.title} уйдёт первым ${batch.size} ${plural(batch.size, "адресату", "адресатам", "адресатам")} из списка ниже. Перед отправкой список пересчитается: кто успел оплатить, письма не получит. Останется на сегодня: ${Math.max(0, quota.remainingToday - batch.size)}.`
+          invite.isSending
+            ? "Отправляю. Не закрывай вкладку — это займёт до минуты."
+            : confirming === "list"
+              ? `Получат: ${summarizeAddresses(readyFromList.map((check) => check.email))}. Перед отправкой список проверится ещё раз — кто успел получить письмо или оплатить, будет пропущен.`
+              : `Приглашение в ${snapshot.cohort.title} уйдёт первым ${batch.size} ${plural(batch.size, "адресату", "адресатам", "адресатам")} из списка ниже. Перед отправкой список пересчитается: кто успел оплатить, письма не получит. Останется на сегодня: ${Math.max(0, quota.remainingToday - batch.size)}.`
         }
         confirmLabel="Отправить"
         busy={invite.isSending}

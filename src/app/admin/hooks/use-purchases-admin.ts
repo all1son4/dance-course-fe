@@ -203,7 +203,7 @@ export const usePurchasesAdmin = ({
       setResendingPaymentIntentId(paymentIntentId);
       setStatus({
         text: "Отправляю письмо о покупке ещё раз…",
-        tone: "info",
+        tone: "progress",
       });
 
       const result = await requestAdminJson<ResendPurchaseEmailResponse>(
@@ -312,7 +312,7 @@ export const usePurchasesAdmin = ({
     setIsSendingReport(true);
     setReportStatus({
       text: "Собираю и отправляю отчёт…",
-      tone: "info",
+      tone: "progress",
     });
 
     const result = await requestAdminJson<MonthlySalesReportResponse>(
