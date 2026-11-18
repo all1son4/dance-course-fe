@@ -6,6 +6,7 @@ import {
   INSPIRATION_HUB_PRODUCT_ID,
   INSPIRATION_HUB_RENEWAL_OFFER_ID,
   isOfferSaleOpen,
+  isOnlineGroupLibraryOfferId,
   SELLABLE_PRODUCTS,
   type SellableProductCode,
 } from "@/constants/sellable-products";
@@ -72,11 +73,16 @@ export const getAccessCardTitle = (
 ) => {
   if (card.title === "hub") return t("cards.hubTitle");
 
+  // A cycle goes by its own name and the tariff only, «Online Group 3.0 · Plus»:
+  // whether it was a renewal does not matter on the card (owner, 2026-11-18).
+  if (card.title.cohortName) {
+    return `${card.title.cohortName} · ${
+      isOnlineGroupLibraryOfferId(card.title.offerExternalId) ? "Plus" : "Standard"
+    }`;
+  }
+
   const product = getSellableProductById(card.title.productExternalId);
-  // A cycle goes by its own name, «Online Group 3.0», not just the product.
-  const title =
-    card.title.cohortName ??
-    getAccessProductTitle(card.title.productExternalId, productT);
+  const title = getAccessProductTitle(card.title.productExternalId, productT);
   if (!product || !title) return t("cards.fallbackTitle");
 
   const offer = getSellableProductOfferById(product, card.title.offerExternalId);

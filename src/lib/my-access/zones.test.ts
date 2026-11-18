@@ -5,6 +5,7 @@ import type { MyAccessCard } from "@/lib/my-access/cards";
 import { groupMyAccessCards, zoneOf } from "@/lib/my-access/zones";
 
 const card = (overrides: Partial<MyAccessCard> & { id: string }): MyAccessCard => ({
+  boughtAt: 0,
   chip: "active",
   count: 1,
   kind: "channel",
@@ -48,7 +49,60 @@ test("zones keep their order and skip the empty ones", () => {
     groups.map(({ cards, zone }) => [zone, cards.map((c) => c.id)]),
     [
       ["action", ["wait"]],
-      ["active", ["soon", "run"]],
+      // What runs now comes before what starts later.
+      ["active", ["run", "soon"]],
+    ],
+  );
+});
+
+test("inside a zone: what asks to act, then what runs now, then the rest; newest first", () => {
+  const day = (iso: string) => Date.parse(iso);
+  const groups = groupMyAccessCards([
+    card({
+      boughtAt: day("2026-09-03"),
+      id: "lifetime-sept",
+      status: { key: "lifetime" },
+    }),
+    card({
+      boughtAt: day("2026-11-15"),
+      chip: "upcoming",
+      id: "hub-later-nov",
+      status: { key: "hub.scheduled" },
+    }),
+    card({ boughtAt: day("2026-11-01"), id: "channel-nov" }),
+    // An access ending soon with a renewal button asks to act: first in its zone.
+    card({
+      action: { href: "/payment", key: "renewHub" },
+      boughtAt: day("2026-08-01"),
+      chip: "endsSoon",
+      id: "hub-renew-aug",
+      status: { key: "hub.activeUntil" },
+      urgency: 0,
+    }),
+    card({ boughtAt: day("2026-05-01"), id: "channel-may" }),
+    card({
+      chip: "ended",
+      id: "ended-oct",
+      sortAt: day("2026-10-01"),
+      status: { key: "hub.ended" },
+    }),
+    card({
+      chip: "ended",
+      id: "ended-nov",
+      sortAt: day("2026-11-01"),
+      status: { key: "hub.ended" },
+    }),
+  ]);
+
+  assert.deepEqual(
+    groups.map(({ cards, zone }) => [zone, cards.map((c) => c.id)]),
+    [
+      // What asks to act; running now, newest purchase first; then what starts later.
+      [
+        "active",
+        ["hub-renew-aug", "channel-nov", "lifetime-sept", "channel-may", "hub-later-nov"],
+      ],
+      ["ended", ["ended-nov", "ended-oct"]],
     ],
   );
 });

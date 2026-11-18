@@ -149,9 +149,14 @@ export type MyAccessCard = {
   urgency: 0 | 1 | 2 | 3;
   /** Secondary sort key: the date the card is about. */
   sortAt: number;
+  /**
+   * When the access was bought (ms; the latest purchase for folded Hub periods):
+   * the zones order by it, newest first.
+   */
+  boughtAt: number;
 };
 
-type BaseCard = Omit<MyAccessCard, "chip" | "count" | "kind">;
+type BaseCard = Omit<MyAccessCard, "boughtAt" | "chip" | "count" | "kind">;
 
 /** A fresh invite of this purchase, sent to its email; support when that fails. */
 const reissueAction = (purchaseId: string) => ({
@@ -618,8 +623,9 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
   return "active";
 };
 
-const withPresentation = (card: BaseCard, now: Date): MyAccessCard => ({
+const withPresentation = (card: BaseCard, now: Date, boughtAt: number): MyAccessCard => ({
   ...card,
+  boughtAt,
   chip: chipOf(card, now),
   count: 1,
   kind: kindOf(card.status.key),
@@ -675,6 +681,12 @@ export const buildMyAccessCards = (
   const hubGroups = new Map<string, MyAccessRight[]>();
   const plusHubIdentities = new Set<string>();
   const hubIdentity = new Map<BaseCard, string>();
+  const boughtOf = new Map<BaseCard, number>();
+  const hubBoughtAt = new Map<string, number>();
+  const add = (card: BaseCard, purchase: Pick<MyAccessPurchase, "succeededAt">) => {
+    cards.push(card);
+    boughtOf.set(card, purchase.succeededAt?.getTime() ?? 0);
+  };
 
   for (const purchase of snapshot.purchases) {
     const rights = rightsByPurchase.get(purchase.id) ?? [];
@@ -688,6 +700,10 @@ export const buildMyAccessCards = (
       );
       const groupId = purchase.telegramUserId ?? purchase.id;
       hubGroups.set(groupId, [...(hubGroups.get(groupId) ?? []), ...periods]);
+      hubBoughtAt.set(
+        groupId,
+        Math.max(hubBoughtAt.get(groupId) ?? 0, purchase.succeededAt?.getTime() ?? 0),
+      );
       continue;
     }
 
@@ -696,7 +712,7 @@ export const buildMyAccessCards = (
       const groupCard = primary
         ? buildOnlineGroupCard({ cohort, now, primary, purchase })
         : null;
-      if (groupCard) cards.push(groupCard);
+      if (groupCard) add(groupCard, purchase);
 
       const hubRight = rights.find(
         (right) =>
@@ -714,7 +730,7 @@ export const buildMyAccessCards = (
           })
         : null;
       if (plusHubCard) {
-        cards.push(plusHubCard);
+        add(plusHubCard, purchase);
         plusHubIdentities.add(purchase.telegramUserId ?? purchase.id);
         hubIdentity.set(plusHubCard, purchase.telegramUserId ?? purchase.id);
       }
@@ -725,21 +741,24 @@ export const buildMyAccessCards = (
 
     if (isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId)) {
       const card = buildTimedChannelCard({ now, primary, purchase });
-      if (card) cards.push(card);
+      if (card) add(card, purchase);
       continue;
     }
 
     if (isLifetimeChannelOfferId(offerId)) {
-      cards.push({
-        id: `lifetime:${purchase.id}`,
-        title: {
-          offerExternalId: offerId,
-          productExternalId: purchase.productExternalId,
+      add(
+        {
+          id: `lifetime:${purchase.id}`,
+          title: {
+            offerExternalId: offerId,
+            productExternalId: purchase.productExternalId,
+          },
+          status: { key: "lifetime" },
+          urgency: 1,
+          sortAt: Number.MAX_SAFE_INTEGER,
         },
-        status: { key: "lifetime" },
-        urgency: 1,
-        sortAt: Number.MAX_SAFE_INTEGER,
-      });
+        purchase,
+      );
     }
   }
 
@@ -755,6 +774,7 @@ export const buildMyAccessCards = (
     });
     if (card) {
       cards.push(card);
+      boughtOf.set(card, hubBoughtAt.get(groupId) ?? 0);
       hubIdentity.set(card, groupId);
     }
   }
@@ -763,7 +783,7 @@ export const buildMyAccessCards = (
   // a folded «new link» asks for the first purchase's, one working invite is enough.
   const folded = new Map<string, MyAccessCard>();
   for (const card of withoutCoveredHubs(cards, hubIdentity).map((base) =>
-    withPresentation(base, now),
+    withPresentation(base, now, boughtOf.get(base) ?? 0),
   )) {
     const key = JSON.stringify([
       card.title,
@@ -773,8 +793,10 @@ export const buildMyAccessCards = (
       card.chip,
     ]);
     const existing = folded.get(key);
-    if (existing) existing.count += 1;
-    else folded.set(key, card);
+    if (existing) {
+      existing.count += 1;
+      existing.boughtAt = Math.max(existing.boughtAt, card.boughtAt);
+    } else folded.set(key, card);
   }
 
   return [...folded.values()].sort(
