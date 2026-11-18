@@ -9,6 +9,7 @@ import type {
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { StatusMessage } from "../lib/admin.types";
 import { requestAdminJson } from "../lib/admin-request";
+import { letters } from "../lib/cohort-invite-view";
 
 type Response = {
   checks?: CohortInviteAddressCheck[];
@@ -61,6 +62,35 @@ const describeDelivery = ({ failed, sent, stoppedByQuota }: CohortInviteDelivery
   ]
     .filter(Boolean)
     .join(" ");
+
+/** What «Проверить» found, said once: the table under it keeps the details. */
+const describeCheck = (
+  checks: readonly CohortInviteAddressCheck[],
+  remainingToday: number | undefined,
+): StatusMessage => {
+  const ready = checks.filter(
+    (check) => check.status === "ready" || check.status === "ready_new",
+  ).length;
+  const skipped = checks.length - ready;
+
+  if (ready === 0)
+    return {
+      text: "Отправлять некому: все адреса из списка уже получили письмо или пропускаются.",
+      tone: "info",
+    };
+  if (remainingToday !== undefined && ready > remainingToday)
+    return {
+      text: `Сегодня можно ещё ${letters(remainingToday)}, а в списке ${ready}. Убери часть адресов или продолжи завтра.`,
+      tone: "error",
+    };
+  return {
+    text:
+      skipped > 0
+        ? `Отправим ${letters(ready)}, пропустим ${skipped} — причина у каждого адреса в таблице.`
+        : `Проверено: отправим ${letters(ready)}.`,
+    tone: "info",
+  };
+};
 
 /** «Приглашение в поток»: reloaded every time the tab opens. */
 export const useCohortInviteAdmin = ({
@@ -185,6 +215,7 @@ export const useCohortInviteAdmin = ({
         });
       } else {
         setListChecks(result.data.checks);
+        setListStatus(describeCheck(result.data.checks, result.data.remainingToday));
       }
 
       setIsChecking(false);

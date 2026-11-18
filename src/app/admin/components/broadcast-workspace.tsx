@@ -94,10 +94,20 @@ export const BroadcastWorkspace = ({
           <AudienceFacts>
             <Fact label="Всего заявок" value={stats?.total ?? 0} />
             <Fact label="Ожидают" value={stats?.pending ?? 0} />
-            <Fact label="С ошибкой" value={stats?.failed ?? 0} />
             <Fact label="Отправлено" value={stats?.sent ?? 0} />
             <Fact label="Исключено" value={stats?.excluded ?? 0} />
+            {(stats?.failed ?? 0) > 0 && (
+              <Fact label="С ошибкой, отправим снова" value={stats?.failed ?? 0} />
+            )}
           </AudienceFacts>
+        </Stack>
+      </Panel>
+
+      <Panel
+        title="Ожидают отправки"
+        description="Здесь только те, кому письмо ещё не отправлено."
+      >
+        <Stack $gap={14}>
           <FormActions>
             <AdminButton
               variant="primary"
@@ -116,121 +126,115 @@ export const BroadcastWorkspace = ({
             </AdminButton>
           </FormActions>
           <StatusLine status={status} />
+          {isLoadingStats && audience.length === 0 ? (
+            <Stack $gap={10}>
+              {Array.from({ length: 3 }, (_, index) => (
+                <Skeleton key={`broadcast-audience-skeleton-${index}`} $height={44} />
+              ))}
+            </Stack>
+          ) : audience.length === 0 ? (
+            <EmptyState
+              icon={<MailCheck aria-hidden />}
+              title="Всё готово"
+              text="Ожидающих отправки нет."
+            />
+          ) : (
+            <TableScroller>
+              <AudienceTable aria-label="Пользователи, ожидающие рассылки">
+                <thead>
+                  <tr>
+                    <th>Имя</th>
+                    <th>Контакт</th>
+                    <th>Язык</th>
+                    <th>Заявка</th>
+                    <th>Статус</th>
+                    <th aria-label="Действия" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {shownAudience.rows.map((lead) => {
+                    const isUpdating = isUpdatingLeadId === lead.leadId;
+                    const isConfirmingGlobal = confirmingGlobalLeadId === lead.leadId;
+                    const isLocked = isSending || Boolean(isUpdatingLeadId);
+
+                    return (
+                      <tr key={lead.leadId}>
+                        <td data-label="Имя">
+                          <span>
+                            <CellPrimary>{lead.fullName || "Без имени"}</CellPrimary>
+                            <CellSecondary>{lead.email}</CellSecondary>
+                          </span>
+                        </td>
+                        <td data-label="Контакт">{lead.socialContact || "—"}</td>
+                        <td data-label="Язык">{lead.locale.toUpperCase() || "—"}</td>
+                        <td data-label="Заявка">{formatDateTime(lead.createdAt)}</td>
+                        <td data-label="Статус">
+                          <Badge $tone={lead.status === "failed" ? "danger" : "info"}>
+                            {lead.status === "failed"
+                              ? "Не дошло — уйдёт при следующей отправке"
+                              : "Ожидает"}
+                          </Badge>
+                        </td>
+                        <td data-label="Действия" data-actions>
+                          <AudienceActions>
+                            {isConfirmingGlobal ? (
+                              <>
+                                <AdminButton
+                                  size="sm"
+                                  variant="danger"
+                                  icon={<Check aria-hidden />}
+                                  loading={isUpdating}
+                                  disabled={isLocked}
+                                  onClick={() => void onExclude(lead, "global")}
+                                  title="Подтвердить исключение из будущих рассылок"
+                                >
+                                  Подтвердить
+                                </AdminButton>
+                                <AdminButton
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={<X aria-hidden />}
+                                  disabled={Boolean(isUpdatingLeadId)}
+                                  onClick={onGlobalExcludeCancel}
+                                >
+                                  Отмена
+                                </AdminButton>
+                              </>
+                            ) : (
+                              <>
+                                <AdminButton
+                                  size="sm"
+                                  icon={<MailX aria-hidden />}
+                                  loading={isUpdating}
+                                  disabled={isLocked}
+                                  onClick={() => void onExclude(lead, "campaign")}
+                                  title="Не отправлять письмо в этой рассылке"
+                                >
+                                  Не отправлять
+                                </AdminButton>
+                                <AdminButton
+                                  size="sm"
+                                  variant="ghost"
+                                  icon={<Ban aria-hidden />}
+                                  disabled={isLocked}
+                                  onClick={() => onGlobalExcludeRequest(lead.leadId)}
+                                  title="Не включать этот email в будущие рассылки"
+                                >
+                                  Исключить везде
+                                </AdminButton>
+                              </>
+                            )}
+                          </AudienceActions>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </AudienceTable>
+            </TableScroller>
+          )}
+          {shownAudience.toggle}
         </Stack>
-      </Panel>
-
-      <Panel
-        title="Ожидают отправки"
-        description="Здесь только те, кому письмо ещё не отправлено."
-      >
-        {isLoadingStats && audience.length === 0 ? (
-          <Stack $gap={10}>
-            {Array.from({ length: 3 }, (_, index) => (
-              <Skeleton key={`broadcast-audience-skeleton-${index}`} $height={44} />
-            ))}
-          </Stack>
-        ) : audience.length === 0 ? (
-          <EmptyState
-            icon={<MailCheck aria-hidden />}
-            title="Всё готово"
-            text="Ожидающих отправки нет."
-          />
-        ) : (
-          <TableScroller>
-            <AudienceTable aria-label="Пользователи, ожидающие рассылки">
-              <thead>
-                <tr>
-                  <th>Имя</th>
-                  <th>Контакт</th>
-                  <th>Язык</th>
-                  <th>Заявка</th>
-                  <th>Статус</th>
-                  <th aria-label="Действия" />
-                </tr>
-              </thead>
-              <tbody>
-                {shownAudience.rows.map((lead) => {
-                  const isUpdating = isUpdatingLeadId === lead.leadId;
-                  const isConfirmingGlobal = confirmingGlobalLeadId === lead.leadId;
-                  const isLocked = isSending || Boolean(isUpdatingLeadId);
-
-                  return (
-                    <tr key={lead.leadId}>
-                      <td data-label="Имя">
-                        <span>
-                          <CellPrimary>{lead.fullName || "Без имени"}</CellPrimary>
-                          <CellSecondary>{lead.email}</CellSecondary>
-                        </span>
-                      </td>
-                      <td data-label="Контакт">{lead.socialContact || "—"}</td>
-                      <td data-label="Язык">{lead.locale.toUpperCase() || "—"}</td>
-                      <td data-label="Заявка">{formatDateTime(lead.createdAt)}</td>
-                      <td data-label="Статус">
-                        <Badge $tone={lead.status === "failed" ? "danger" : "info"}>
-                          {lead.status === "failed"
-                            ? "Не дошло — уйдёт при следующей отправке"
-                            : "Ожидает"}
-                        </Badge>
-                      </td>
-                      <td data-label="Действия" data-actions>
-                        <AudienceActions>
-                          {isConfirmingGlobal ? (
-                            <>
-                              <AdminButton
-                                size="sm"
-                                variant="danger"
-                                icon={<Check aria-hidden />}
-                                loading={isUpdating}
-                                disabled={isLocked}
-                                onClick={() => void onExclude(lead, "global")}
-                                title="Подтвердить исключение из будущих рассылок"
-                              >
-                                Подтвердить
-                              </AdminButton>
-                              <AdminButton
-                                size="sm"
-                                variant="ghost"
-                                icon={<X aria-hidden />}
-                                disabled={Boolean(isUpdatingLeadId)}
-                                onClick={onGlobalExcludeCancel}
-                              >
-                                Отмена
-                              </AdminButton>
-                            </>
-                          ) : (
-                            <>
-                              <AdminButton
-                                size="sm"
-                                icon={<MailX aria-hidden />}
-                                loading={isUpdating}
-                                disabled={isLocked}
-                                onClick={() => void onExclude(lead, "campaign")}
-                                title="Не отправлять письмо в этой рассылке"
-                              >
-                                Не отправлять
-                              </AdminButton>
-                              <AdminButton
-                                size="sm"
-                                variant="ghost"
-                                icon={<Ban aria-hidden />}
-                                disabled={isLocked}
-                                onClick={() => onGlobalExcludeRequest(lead.leadId)}
-                                title="Не включать этот email в будущие рассылки"
-                              >
-                                Исключить везде
-                              </AdminButton>
-                            </>
-                          )}
-                        </AudienceActions>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </AudienceTable>
-          </TableScroller>
-        )}
-        {shownAudience.toggle}
       </Panel>
 
       <ConfirmDialog

@@ -5,7 +5,8 @@ import styled from "styled-components";
 import type { StatusMessage } from "../lib/admin.types";
 import { adminTokens } from "../styles/tokens.styles";
 import { FieldLabel, TextField } from "../ui/feedback";
-import { AdminButton, Callout, IconButton } from "../ui/primitives";
+import { StatusLine } from "../ui/forms";
+import { AdminButton, IconButton } from "../ui/primitives";
 import { useSiteHost } from "../ui/use-site-host";
 
 const Page = styled.main`
@@ -176,19 +177,7 @@ export const LoginScreen = ({
           >
             {isChecking ? "Проверяю сессию…" : isUnlocking ? "Вхожу…" : "Войти"}
           </AdminButton>
-          {authStatus && (
-            <Callout
-              tone={
-                authStatus.tone === "error"
-                  ? "danger"
-                  : authStatus.tone === "success"
-                    ? "success"
-                    : "info"
-              }
-            >
-              {authStatus.text}
-            </Callout>
-          )}
+          <StatusLine status={authStatus} />
           {isSessionCheckUnavailable && (
             <AdminButton
               onClick={() => void onRetrySessionCheck()}

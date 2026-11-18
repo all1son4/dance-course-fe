@@ -1,9 +1,10 @@
 import { Check } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import styled, { css } from "styled-components";
 
 import type { StatusMessage } from "../lib/admin.types";
-import { Callout, focusVisible } from "./primitives";
+import { useToast } from "./feedback";
+import { focusVisible } from "./primitives";
 
 /*
  * Form controls for every section: one height (40px, 44px on phones so iOS does
@@ -324,18 +325,31 @@ export const Fact = ({ label, value }: { label: ReactNode; value: ReactNode }) =
   </div>
 );
 
-/** The old hooks report results as `StatusMessage`; this shows one compactly. */
-export const StatusLine = ({ status }: { status: StatusMessage }) =>
-  status ? (
-    <Callout
-      tone={
+/* Each message object is shown once: a section that mounts again with the same
+   status (the tab reopened, say) does not repeat an old toast. */
+const shownStatuses = new WeakSet<object>();
+
+/**
+ * The hooks report results as `StatusMessage`; every one of them — progress,
+ * success or error — becomes a toast instead of a line under the button, so
+ * nothing in the layout jumps when a result arrives.
+ */
+export const StatusLine = ({ status }: { status: StatusMessage }) => {
+  const toast = useToast();
+
+  useEffect(() => {
+    if (!status || shownStatuses.has(status)) return;
+    shownStatuses.add(status);
+    toast({
+      title: status.text,
+      tone:
         status.tone === "error"
           ? "danger"
           : status.tone === "success"
             ? "success"
-            : "info"
-      }
-    >
-      {status.text}
-    </Callout>
-  ) : null;
+            : "info",
+    });
+  }, [status, toast]);
+
+  return null;
+};

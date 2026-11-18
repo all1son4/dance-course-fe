@@ -44,7 +44,6 @@ import {
   isMyAccessLinkConfigured,
   verifyMyAccessToken,
 } from "@/lib/my-access/link";
-import { HUB_PAGE_HREF, shouldOfferMyAccessHub } from "@/lib/my-access/next-step";
 import { groupMyAccessCards, type MyAccessZone } from "@/lib/my-access/zones";
 import { normalizedSiteUrl } from "@/lib/seo";
 
@@ -228,7 +227,6 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
   const sales = await readMyAccessSales();
   const cards = buildMyAccessCards(snapshot, now, sales);
   const nextStep = await readMyAccessNextStep(snapshot, now, sales.isOpen);
-  const offerHub = shouldOfferMyAccessHub(cards, sales.hubPurchase);
   const journey = buildMyAccessJourney(snapshot, cards).flatMap((step) => {
     const title = getAccessProductTitle(step.productExternalId, productT);
     return title ? [{ ...step, title }] : [];
@@ -623,24 +621,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
               </CardActions>
             </SideCard>
           )}
-          {offerHub && (
-            <SideCard aria-labelledby="access-next-hub">
-              {!nextStep && <Eyebrow>{t("next.eyebrow")}</Eyebrow>}
-              <SideTitle id="access-next-hub">{t("next.hubTitle")}</SideTitle>
-              <SideText>{t("next.hubText")}</SideText>
-              <CardActions>
-                <Button
-                  analytics={{ id: "my_access_explore_hub", placement: "my_access_next" }}
-                  buttonText={t("next.hubButton")}
-                  href={HUB_PAGE_HREF}
-                  prefetch={false}
-                  size="xs"
-                  width="max-content"
-                />
-              </CardActions>
-            </SideCard>
-          )}
-          {!nextStep && !offerHub && (
+          {!nextStep && (
             <SideCard aria-labelledby="access-announcements">
               <Eyebrow id="access-announcements">{t("next.eyebrow")}</Eyebrow>
               <SideText>{t("next.announcements")}</SideText>

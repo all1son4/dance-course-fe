@@ -2,6 +2,7 @@ import { ArrowLeft, Mail, MailPlus } from "lucide-react";
 import { type ComponentProps, useState } from "react";
 
 import { useCohortInviteAdmin } from "../hooks/use-cohort-invite-admin";
+import { describeCohortInviteTile } from "../lib/cohort-invite-view";
 import { CampaignTiles } from "../styles/broadcast.styles";
 import { AdminButton, Stack, StatTile } from "../ui/primitives";
 import { BroadcastWorkspace } from "./broadcast-workspace";
@@ -9,21 +10,31 @@ import { CohortInviteBroadcast } from "./cohort-invite-broadcast";
 
 type Campaign = "cohort-invite" | "first-touch";
 
-const recipientsLabel = (count: number) => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  const word =
-    mod10 === 1 && mod100 !== 11
-      ? "получатель"
-      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-        ? "получателя"
-        : "получателей";
-  return `${count} ${word}`;
+/** The campaign last opened in this browser tab: «Рассылки» reopens it. */
+const OPENED_KEY = "admin:broadcasts:opened";
+
+const readOpened = (): Campaign | null => {
+  try {
+    const value = window.sessionStorage.getItem(OPENED_KEY);
+    return value === "cohort-invite" || value === "first-touch" ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+const storeOpened = (value: Campaign | null) => {
+  try {
+    if (value) window.sessionStorage.setItem(OPENED_KEY, value);
+    else window.sessionStorage.removeItem(OPENED_KEY);
+  } catch {
+    // Storage blocked: the tab simply opens on the tiles.
+  }
 };
 
 /**
  * «Рассылки»: a tile per campaign with its main number; a tile opens that
- * campaign, and «Все рассылки» leads back to the tiles.
+ * campaign, and «Все рассылки» leads back to the tiles. The campaign last opened
+ * in this browser tab opens straight away on the next visit.
  */
 export const BroadcastsTab = ({
   firstTouch,
@@ -34,7 +45,11 @@ export const BroadcastsTab = ({
   isAuthorized: boolean;
   onUnauthorized: () => void;
 }) => {
-  const [opened, setOpened] = useState<Campaign | null>(null);
+  const [opened, setOpenedState] = useState<Campaign | null>(readOpened);
+  const setOpened = (value: Campaign | null) => {
+    storeOpened(value);
+    setOpenedState(value);
+  };
   // Mounted only while the tab is open: every visit reads the audience again.
   const invite = useCohortInviteAdmin({ isActive: true, isAuthorized, onUnauthorized });
   const snapshot = invite.snapshot;
@@ -64,11 +79,7 @@ export const BroadcastsTab = ({
     );
   }
 
-  const inviteHint = !snapshot
-    ? "Загружаю…"
-    : !snapshot.cohort
-      ? "Нет потока в продаже"
-      : `${snapshot.cohort.title} · отправлено ${snapshot.counts.sent} · сегодня можно ещё ${snapshot.quota.remainingToday}`;
+  const inviteTile = describeCohortInviteTile(snapshot);
   const firstTouchStats = firstTouch.stats;
 
   return (
@@ -76,18 +87,26 @@ export const BroadcastsTab = ({
       <StatTile
         icon={<MailPlus aria-hidden />}
         label="Приглашение в поток"
-        value={snapshot?.cohort ? recipientsLabel(snapshot.counts.remaining) : "—"}
-        hint={inviteHint}
+        value={inviteTile.value}
+        hint={inviteTile.hint}
+        hintTone={inviteTile.tone}
         onClick={() => setOpened("cohort-invite")}
       />
       <StatTile
         icon={<Mail aria-hidden />}
         label="First Touch: старт продаж"
-        value={`${firstTouch.pendingCount} ожидают`}
+        value={
+          firstTouchStats && firstTouch.pendingCount === 0
+            ? "Завершена"
+            : `${firstTouch.pendingCount} ожидают`
+        }
         hint={
           firstTouchStats
             ? `Заявок ${firstTouchStats.total} · отправлено ${firstTouchStats.sent}`
             : "Загружаю…"
+        }
+        hintTone={
+          firstTouchStats && firstTouch.pendingCount === 0 ? "success" : undefined
         }
         onClick={() => setOpened("first-touch")}
       />

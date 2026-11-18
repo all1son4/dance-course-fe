@@ -16,6 +16,7 @@ import {
   countResendEmailsSentSince,
   findCohortOnSale,
   findCohortRenewalSlugs,
+  findResendEmailSentAt,
   listCampaignAddressStates,
   listCohortInviteAudience,
 } from "@/db/cohort-invite-broadcast";
@@ -312,6 +313,8 @@ export type CohortInviteAdminSnapshot =
       hubOnSale: boolean;
       quota: {
         dailyLimit: number;
+        /** Only while today's share is spent: when a default batch fits again. */
+        nextBatch: { at: string; size: number } | null;
         remainingToday: number;
         reserve: number;
         sentLast24h: number;
@@ -322,7 +325,10 @@ export type CohortInviteAdminSnapshot =
       unsubscribeConfigured: boolean;
     };
 
-const toSnapshot = (context: CohortInviteContext | null): CohortInviteAdminSnapshot => {
+const toSnapshot = (
+  context: CohortInviteContext | null,
+  nextBatch: { at: string; size: number } | null = null,
+): CohortInviteAdminSnapshot => {
   if (!context) return { cohort: null };
 
   const hubOnSale = context.hubSaleState === "open";
@@ -339,6 +345,7 @@ const toSnapshot = (context: CohortInviteContext | null): CohortInviteAdminSnaps
     hubOnSale,
     quota: {
       dailyLimit: RESEND_DAILY_LIMIT,
+      nextBatch,
       remainingToday: getRemainingToday(context.sentLast24h),
       reserve: PURCHASE_EMAIL_RESERVE,
       sentLast24h: context.sentLast24h,
@@ -368,8 +375,42 @@ const toSnapshot = (context: CohortInviteContext | null): CohortInviteAdminSnaps
   };
 };
 
-export const getCohortInviteAdminSnapshot = async (now = new Date()) =>
-  toSnapshot(await loadContext(now));
+/**
+ * How many of the oldest emails in the 24-hour window must leave it before
+ * `size` more fit under today's share; null when nothing has to wait.
+ */
+export const getEmailsToWaitFor = ({
+  sentLast24h,
+  size,
+}: {
+  sentLast24h: number;
+  size: number;
+}) => {
+  const waitFor = sentLast24h - (RESEND_DAILY_LIMIT - PURCHASE_EMAIL_RESERVE) + size;
+  return size > 0 && waitFor > 0 && waitFor <= sentLast24h ? waitFor : null;
+};
+
+/**
+ * When today's share is spent, one extra read says when the next default batch
+ * fits: the moment the email that has to leave the window last turns 24 hours old.
+ */
+const findNextBatch = async (context: CohortInviteContext, now: Date) => {
+  if (getRemainingToday(context.sentLast24h) > 0) return null;
+  const size = Math.min(DEFAULT_BATCH_SIZE, context.recipients.length);
+  const waitFor = getEmailsToWaitFor({ sentLast24h: context.sentLast24h, size });
+  if (waitFor === null) return null;
+
+  const sentAt = await findResendEmailSentAt({
+    offset: waitFor - 1,
+    since: new Date(now.getTime() - DAY_MS),
+  });
+  return sentAt ? { at: new Date(sentAt.getTime() + DAY_MS).toISOString(), size } : null;
+};
+
+export const getCohortInviteAdminSnapshot = async (now = new Date()) => {
+  const context = await loadContext(now);
+  return toSnapshot(context, context ? await findNextBatch(context, now) : null);
+};
 
 /* ---------- Sending ---------- */
 
@@ -790,14 +831,15 @@ export const sendCohortInviteList = (input: string): Promise<CohortInviteListRes
       if (!check.ok) return check;
 
       const result = await deliverInContext(context, recipients, now);
-      const after = await loadContext(new Date());
+      const later = new Date();
+      const after = await loadContext(later);
 
       return {
         checks: after ? (await checkListInContext(after, addresses)).checks : [],
         ok: true,
         remainingToday: after ? getRemainingToday(after.sentLast24h) : 0,
         result,
-        snapshot: toSnapshot(after),
+        snapshot: toSnapshot(after, after ? await findNextBatch(after, later) : null),
       };
     },
     { error: "batch_in_progress", ok: false },

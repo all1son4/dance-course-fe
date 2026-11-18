@@ -3,6 +3,7 @@ import { useState } from "react";
 
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import { requestAdminJson } from "../lib/admin-request";
+import { useToast } from "../ui/feedback";
 import { AdminButton, Badge, Muted, Row } from "../ui/primitives";
 
 type BotRights = {
@@ -27,12 +28,11 @@ export const BotRightsCheck = ({
   onUnauthorized: () => void;
 }) => {
   const [rights, setRights] = useState<BotRights | null>(null);
-  const [error, setError] = useState("");
+  const toast = useToast();
   const [checking, setChecking] = useState(false);
 
   const check = async () => {
     setChecking(true);
-    setError("");
     const result = await requestAdminJson<BotRights>(
       ADMIN_API_ENDPOINTS.telegramBotRights,
       {
@@ -44,13 +44,15 @@ export const BotRightsCheck = ({
     if (result.unauthorized) return onUnauthorized();
     if (!result.ok) {
       setRights(null);
-      setError(
-        result.errorCode === "rate_limited"
-          ? "Слишком часто. Подожди минуту."
-          : result.errorCode === "telegram_chat_not_registered"
-            ? "Бот не знает этот чат: добавь бота и отправь в чате /register_chat."
-            : "Telegram не ответил. Попробуй ещё раз.",
-      );
+      toast({
+        tone: "danger",
+        title:
+          result.errorCode === "rate_limited"
+            ? "Слишком часто. Подожди минуту."
+            : result.errorCode === "telegram_chat_not_registered"
+              ? "Бот не знает этот чат: добавь бота и отправь в чате /register_chat."
+              : "Telegram не ответил. Попробуй ещё раз.",
+      });
       return;
     }
     setRights(result.data);
@@ -92,7 +94,6 @@ export const BotRightsCheck = ({
           участников, блокировку{needsPin ? ", закрепление сообщений" : ""}.
         </Muted>
       )}
-      {error && <Muted>{error}</Muted>}
     </Row>
   );
 };

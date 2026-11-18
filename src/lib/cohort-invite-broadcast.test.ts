@@ -8,6 +8,7 @@ import {
   checkCohortInviteAddresses,
   chooseCohortInviteLinks,
   classifyCohortInviteAudience,
+  getEmailsToWaitFor,
   getRemainingToday,
   parseAddressList,
   PURCHASE_EMAIL_RESERVE,
@@ -235,4 +236,15 @@ test("a typed list flags who already got this campaign and sends only to the res
     recipients.map((recipient) => recipient.email),
     ["buyer@example.com", "stranger@example.com"],
   );
+});
+
+test("a spent day waits for as many old emails to leave the window as the next batch needs", () => {
+  // 20 of 30 are the campaign's share: 20 sent, a batch of 15 needs the 15 oldest gone.
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 20, size: 15 }), 15);
+  // Purchase emails beyond the share: those have to leave the window first.
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 24, size: 15 }), 19);
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 20, size: 3 }), 3);
+  // Room already, or nothing to send: nothing to wait for.
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 5, size: 15 }), null);
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 20, size: 0 }), null);
 });
