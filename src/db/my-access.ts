@@ -13,7 +13,6 @@ import {
   renewalCampaigns,
   renewalCampaignSourceChats,
   telegramAccessTokens,
-  telegramChats,
 } from "./schema";
 import type { DatabaseExecutor } from "./transaction";
 
@@ -140,8 +139,6 @@ export async function readMyAccessSnapshot(
       ? database
           .select({
             accessEndsAt: onlineGroupCohorts.accessEndsAt,
-            // The name the reader knows: the group chat's, else the cohort's own.
-            chatTitle: telegramChats.title,
             closedAt: onlineGroupCohorts.closedAt,
             durationWeeks: onlineGroupCohorts.durationWeeks,
             id: onlineGroupCohorts.id,
@@ -149,10 +146,6 @@ export async function readMyAccessSnapshot(
             title: onlineGroupCohorts.title,
           })
           .from(onlineGroupCohorts)
-          .leftJoin(
-            telegramChats,
-            eq(telegramChats.chatId, onlineGroupCohorts.mainChatId),
-          )
           .where(inArray(onlineGroupCohorts.id, cohortIds))
       : Promise.resolve([]),
     ids.length

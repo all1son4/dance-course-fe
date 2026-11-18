@@ -259,7 +259,6 @@ test("the calendar file is valid iCalendar: Warsaw all-day dates, UTC times, esc
 test("the path counts the group's cycles that are behind; the cards name each cycle", () => {
   const cohort = (id: string, startsAt: string, closedAt: string | null) => ({
     accessEndsAt: closedAt ? new Date(closedAt) : null,
-    chatTitle: `Online group by Anna Strok ${id}`,
     closedAt: closedAt ? new Date(closedAt) : null,
     durationWeeks: 8,
     id,
@@ -307,18 +306,18 @@ test("the path counts the group's cycles that are behind; the cards name each cy
     path.find((step) => step.productExternalId === GROUP_PRODUCT)?.completedCohorts,
     2,
   );
-  // The card of the cycle ahead is named as its chat, the tariff kept.
+  // The card of the cycle ahead goes by the cycle's name, the tariff kept.
   const upcoming = cards.find((card) => card.id === "group:g3");
   assert.deepEqual(upcoming?.title, {
-    cohortName: "Online group by Anna Strok 3.0",
+    cohortName: "Online Group 3.0",
     offerExternalId: RENEWAL_PLUS,
     productExternalId: GROUP_PRODUCT,
   });
 
-  // Without a chat record the cohort's own name stands in; with neither, the product.
-  const noChat = buildMyAccessCards(
-    { ...snapshot, cohorts: snapshot.cohorts.map((c) => ({ ...c, chatTitle: null })) },
-    NOW,
-  ).find((card) => card.id === "group:g3");
-  assert.equal(noChat?.title !== "hub" && noChat?.title.cohortName, "Online Group 3.0");
+  // Without a cohort record the product names the card, as before.
+  const noCohort = buildMyAccessCards({ ...snapshot, cohorts: [] }, NOW);
+  assert.equal(
+    noCohort.some((card) => card.title !== "hub" && Boolean(card.title.cohortName)),
+    false,
+  );
 });

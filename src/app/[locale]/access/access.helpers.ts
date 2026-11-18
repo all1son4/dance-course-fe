@@ -73,7 +73,7 @@ export const getAccessCardTitle = (
   if (card.title === "hub") return t("cards.hubTitle");
 
   const product = getSellableProductById(card.title.productExternalId);
-  // A cycle is named as its chat: «Online group by Anna Strok 3.0», not just the product.
+  // A cycle goes by its own name, «Online Group 3.0», not just the product.
   const title =
     card.title.cohortName ??
     getAccessProductTitle(card.title.productExternalId, productT);
