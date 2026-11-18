@@ -49,37 +49,45 @@ test("zones keep their order and skip the empty ones", () => {
     groups.map(({ cards, zone }) => [zone, cards.map((c) => c.id)]),
     [
       ["action", ["wait"]],
-      // What runs now comes before what starts later.
-      ["active", ["run", "soon"]],
+      ["active", ["soon", "run"]],
     ],
   );
 });
 
-test("inside a zone: what asks to act, then what runs now, then the rest; newest first", () => {
+test("inside a zone: what asks to act, then newest purchase first; group before its Hub", () => {
   const day = (iso: string) => Date.parse(iso);
+  // The owner's screen (2026-11-19): Plus of cycle 3.0 bought on 18 November — its
+  // group starts later, its Hub is open now — and the Birthday Drop from August.
   const groups = groupMyAccessCards([
     card({
-      boughtAt: day("2026-09-03"),
-      id: "lifetime-sept",
+      boughtAt: day("2026-08-24"),
+      id: "birthday-aug",
+      kind: "lifetime",
       status: { key: "lifetime" },
     }),
     card({
-      boughtAt: day("2026-11-15"),
-      chip: "upcoming",
-      id: "hub-later-nov",
-      status: { key: "hub.scheduled" },
+      boughtAt: day("2026-11-18"),
+      id: "hub-of-plus",
+      kind: "hub",
+      status: { key: "plusHub.included" },
     }),
-    card({ boughtAt: day("2026-11-01"), id: "channel-nov" }),
+    card({
+      boughtAt: day("2026-11-18"),
+      chip: "upcoming",
+      id: "group-3",
+      kind: "group",
+      status: { key: "group.startsOn" },
+    }),
     // An access ending soon with a renewal button asks to act: first in its zone.
     card({
       action: { href: "/payment", key: "renewHub" },
-      boughtAt: day("2026-08-01"),
+      boughtAt: day("2026-05-01"),
       chip: "endsSoon",
-      id: "hub-renew-aug",
+      id: "hub-renew-may",
+      kind: "hub",
       status: { key: "hub.activeUntil" },
       urgency: 0,
     }),
-    card({ boughtAt: day("2026-05-01"), id: "channel-may" }),
     card({
       chip: "ended",
       id: "ended-oct",
@@ -97,11 +105,7 @@ test("inside a zone: what asks to act, then what runs now, then the rest; newest
   assert.deepEqual(
     groups.map(({ cards, zone }) => [zone, cards.map((c) => c.id)]),
     [
-      // What asks to act; running now, newest purchase first; then what starts later.
-      [
-        "active",
-        ["hub-renew-aug", "channel-nov", "lifetime-sept", "channel-may", "hub-later-nov"],
-      ],
+      ["active", ["hub-renew-may", "group-3", "hub-of-plus", "birthday-aug"]],
       ["ended", ["ended-nov", "ended-oct"]],
     ],
   );
