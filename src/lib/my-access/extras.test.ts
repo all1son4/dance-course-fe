@@ -255,3 +255,70 @@ test("the calendar file is valid iCalendar: Warsaw all-day dates, UTC times, esc
   }
   assert.match(long.replace(/\r\n /g, ""), /SUMMARY:(Очень длинное название ){8}/);
 });
+
+test("the path counts the group's cycles that are behind; the cards name each cycle", () => {
+  const cohort = (id: string, startsAt: string, closedAt: string | null) => ({
+    accessEndsAt: closedAt ? new Date(closedAt) : null,
+    chatTitle: `Online group by Anna Strok ${id}`,
+    closedAt: closedAt ? new Date(closedAt) : null,
+    durationWeeks: 8,
+    id,
+    startsAt: new Date(startsAt),
+    title: `Online Group ${id}`,
+  });
+  const snapshot = snapshotOf({
+    cohorts: [
+      cohort("1.0", "2026-03-02T17:00:00.000Z", "2026-04-27T10:00:00.000Z"),
+      cohort("2.0", "2026-08-10T16:00:00.000Z", "2026-11-16T10:00:00.000Z"),
+      // Ahead: bought, not behind yet.
+      cohort("3.0", "2026-11-23T17:00:00.000Z", null),
+    ],
+    purchases: [
+      purchase({
+        cohortId: "1.0",
+        id: "g1",
+        succeededAt: new Date("2026-02-20T10:00:00.000Z"),
+      }),
+      purchase({ cohortId: "2.0", id: "g2", offerExternalId: PLUS_OFFER }),
+      purchase({
+        cohortId: "3.0",
+        id: "g3",
+        offerExternalId: RENEWAL_PLUS,
+        succeededAt: new Date("2026-11-15T10:00:00.000Z"),
+      }),
+      purchase({
+        id: "ft",
+        offerExternalId: FIRST_TOUCH_OFFER,
+        productExternalId: FIRST_TOUCH_PRODUCT,
+        succeededAt: new Date("2026-01-10T10:00:00.000Z"),
+      }),
+    ],
+    rights: [
+      right({ purchaseId: "g1" }),
+      right({ purchaseId: "g2" }),
+      right({ purchaseId: "g3", status: "issued" }),
+      right({ expiresAt: new Date("2026-02-10T10:00:00.000Z"), purchaseId: "ft" }),
+    ],
+  });
+  const cards = buildMyAccessCards(snapshot, NOW);
+  const path = buildMyAccessJourney(snapshot, cards);
+
+  assert.equal(
+    path.find((step) => step.productExternalId === GROUP_PRODUCT)?.completedCohorts,
+    2,
+  );
+  // The card of the cycle ahead is named as its chat, the tariff kept.
+  const upcoming = cards.find((card) => card.id === "group:g3");
+  assert.deepEqual(upcoming?.title, {
+    cohortName: "Online group by Anna Strok 3.0",
+    offerExternalId: RENEWAL_PLUS,
+    productExternalId: GROUP_PRODUCT,
+  });
+
+  // Without a chat record the cohort's own name stands in; with neither, the product.
+  const noChat = buildMyAccessCards(
+    { ...snapshot, cohorts: snapshot.cohorts.map((c) => ({ ...c, chatTitle: null })) },
+    NOW,
+  ).find((card) => card.id === "group:g3");
+  assert.equal(noChat?.title !== "hub" && noChat?.title.cohortName, "Online Group 3.0");
+});

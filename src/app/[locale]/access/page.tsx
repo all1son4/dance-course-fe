@@ -676,6 +676,9 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                               : "journey.lastBought",
                             { date: purchaseDay(step.purchasedAt) },
                           )}
+                          {step.completedCohorts
+                            ? ` · ${t("journey.completedCohorts", { count: step.completedCohorts })}`
+                            : null}
                           {step.live && (
                             <VisuallyHidden> · {t("journey.live")}</VisuallyHidden>
                           )}

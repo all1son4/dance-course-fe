@@ -77,7 +77,15 @@ export type MyAccessCohort = {
   accessEndsAt: Date | null;
   /** HUB-D50: the planned length; the real end is the closure. */
   durationWeeks: number;
+  /** The cohort's name in the admin, «Online Group 3.0». */
+  title?: string;
+  /** Its group chat's name, the one the reader sees in Telegram; null without a record. */
+  chatTitle?: string | null;
 };
+
+/** How a cycle is named on the page: its chat's name, else the cohort's own. */
+export const cohortNameOf = (cohort: MyAccessCohort | null | undefined) =>
+  cohort?.chatTitle?.trim() || cohort?.title?.trim() || undefined;
 
 export type MyAccessSnapshot = {
   /**
@@ -120,8 +128,12 @@ export type MyAccessCard = {
    * day for the Hub) or the end of a running access.
    */
   calendar?: MyAccessCalendarDate;
-  /** Which title to show: the purchase's product, or the Hub itself. */
-  title: { productExternalId: string; offerExternalId: string } | "hub";
+  /**
+   * Which title to show: the purchase's product (named after its cycle where it
+   * has one, «Online group by Anna Strok 3.0»), or the Hub itself.
+   */
+  title:
+    { productExternalId: string; offerExternalId: string; cohortName?: string } | "hub";
   status: MyAccessLine;
   note?: MyAccessLine;
   /**
@@ -454,9 +466,11 @@ const buildOnlineGroupCard = ({
   primary: MyAccessRight;
   purchase: MyAccessPurchase;
 }): BaseCard | null => {
+  const cohortName = cohortNameOf(cohort);
   const title = {
     offerExternalId: purchase.offerExternalId,
     productExternalId: purchase.productExternalId,
+    ...(cohortName ? { cohortName } : {}),
   };
   const base = { id: `group:${purchase.id}`, title };
 
