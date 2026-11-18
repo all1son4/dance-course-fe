@@ -72,17 +72,27 @@ export const TopicsLabel = styled.span`
   text-transform: uppercase;
 `;
 
+/** One line under the label: these are directions, not a list of lessons. */
+export const TopicsNote = styled.p`
+  /* Doubled to win over the lead's «LibraryText > p» size. */
+  && {
+    margin-top: -6px;
+    font-size: var(--text-caption);
+  }
+`;
+
 /**
- * A compact table of contents: numbered rows in two columns, one soft panel.
+ * The directions as rows in two columns, one soft panel, a brand dot instead of a
+ * number: numbered rows read as a list of lessons to count.
  * Every topic stays on one line: the longest («Базовая акробатика») needs 217px at
  * 19px, so the steps follow the column's own width, not the screen's: two columns
  * need 518px at 19px and 396px at the small size, below that it is one column.
  */
-export const TopicGrid = styled.ol`
+export const TopicGrid = styled.ul`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-flow: column;
-  grid-template-rows: repeat(4, auto);
+  grid-template-rows: repeat(3, auto);
   column-gap: 32px;
   margin: 0;
   padding: 6px 26px;
@@ -92,8 +102,8 @@ export const TopicGrid = styled.ol`
 
   li {
     display: flex;
-    align-items: baseline;
-    gap: 16px;
+    align-items: center;
+    gap: 14px;
     padding: 15px 0;
     border-bottom: 1px solid rgba(0, 0, 0, 0.07);
     color: var(--ink);
@@ -101,17 +111,18 @@ export const TopicGrid = styled.ol`
     line-height: 1.25;
   }
 
-  li:nth-child(4n),
-  li:last-child {
-    border-bottom: 0;
+  li::before {
+    content: "";
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--brand);
   }
 
-  li span {
-    flex-shrink: 0;
-    color: var(--brand);
-    font-size: var(--text-caption);
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.08em;
+  li:nth-child(3n),
+  li:last-child {
+    border-bottom: 0;
   }
 
   @container hub-library (max-width: 540px) {
@@ -120,7 +131,7 @@ export const TopicGrid = styled.ol`
     border-radius: 24px;
 
     li {
-      gap: 9px;
+      gap: 10px;
       padding: 12px 0;
       font-size: var(--text-small);
     }
@@ -131,7 +142,7 @@ export const TopicGrid = styled.ol`
     grid-template-rows: none;
     grid-auto-flow: row;
 
-    li:nth-child(4n) {
+    li:nth-child(3n) {
       border-bottom: 1px solid rgba(0, 0, 0, 0.07);
     }
 
