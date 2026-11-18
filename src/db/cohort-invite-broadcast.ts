@@ -1,4 +1,4 @@
-import { and, desc, eq, exists, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, exists, gt, inArray, isNull, or, sql } from "drizzle-orm";
 
 import {
   ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
@@ -261,6 +261,35 @@ export async function countResendEmailsSentSince(since: Date): Promise<number> {
     );
 
   return row?.count ?? 0;
+}
+
+/**
+ * When the email `offset` places from the oldest one in that window was
+ * accepted (0 = the oldest), or null. Read only when the day's share is spent:
+ * it tells when enough emails leave the 24-hour window for the next batch.
+ */
+export async function findResendEmailSentAt({
+  offset,
+  since,
+}: {
+  offset: number;
+  since: Date;
+}): Promise<Date | null> {
+  const [row] = await getDatabase()
+    .select({ sentAt: purchaseSideEffects.lastAttemptAt })
+    .from(purchaseSideEffects)
+    .where(
+      and(
+        eq(purchaseSideEffects.provider, "resend"),
+        eq(purchaseSideEffects.status, "sent"),
+        gt(purchaseSideEffects.lastAttemptAt, since),
+      ),
+    )
+    .orderBy(asc(purchaseSideEffects.lastAttemptAt))
+    .offset(offset)
+    .limit(1);
+
+  return row?.sentAt ?? null;
 }
 
 /**

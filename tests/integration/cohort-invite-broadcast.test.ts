@@ -445,3 +445,38 @@ test("a typed list skips an address this campaign already reached and sends to t
     await removeFixture(fixture);
   }
 });
+
+test("the n-th oldest Resend email of a window says when the next batch fits", async () => {
+  const { findResendEmailSentAt } = await getAudienceReads();
+  const run = randomUUID();
+  // A window of its own, far in the future, so other files' emails never land in it.
+  const times = ["2099-01-01T12:00:00Z", "2099-01-01T10:00:00Z", "2099-01-01T11:00:00Z"];
+
+  try {
+    for (const [index, time] of times.entries()) {
+      await client`
+        INSERT INTO purchase_side_effects (deduplication_key, kind, provider, status,
+          last_attempt_at, recipient)
+        VALUES (${`ci-window:${run}:${index}`}, 'campaign_email_delivery', 'resend', 'sent',
+          ${time}, ${`ci_window_${run}@example.test`})`;
+    }
+    await client`
+      INSERT INTO purchase_side_effects (deduplication_key, kind, provider, status,
+        last_attempt_at, recipient)
+      VALUES (${`ci-window:${run}:failed`}, 'campaign_email_delivery', 'resend', 'failed',
+        '2099-01-01T09:00:00Z', ${`ci_window_${run}@example.test`})`;
+
+    const since = new Date("2098-12-31T23:00:00Z");
+    assert.equal(
+      (await findResendEmailSentAt({ offset: 0, since }))?.toISOString(),
+      "2099-01-01T10:00:00.000Z",
+    );
+    assert.equal(
+      (await findResendEmailSentAt({ offset: 2, since }))?.toISOString(),
+      "2099-01-01T12:00:00.000Z",
+    );
+    assert.equal(await findResendEmailSentAt({ offset: 3, since }), null);
+  } finally {
+    await client`DELETE FROM purchase_side_effects WHERE deduplication_key LIKE ${`ci-window:${run}:%`}`;
+  }
+});

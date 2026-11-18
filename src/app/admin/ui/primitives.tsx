@@ -1,12 +1,15 @@
-import { LoaderCircle } from "lucide-react";
+import { ChevronDown, LoaderCircle } from "lucide-react";
 import {
   type ButtonHTMLAttributes,
   type KeyboardEvent,
   type ReactNode,
   useId,
   useRef,
+  useState,
 } from "react";
 import styled, { css, keyframes } from "styled-components";
+
+import { gridRowReveal } from "@/styles/mixins/motion";
 
 import { type AdminTone, toneColors } from "../styles/tokens.styles";
 
@@ -248,6 +251,17 @@ const PanelDescription = styled.p`
   color: var(--a-ink-2);
 `;
 
+/** A title with a small control right after it (a «?» button, say). */
+const PanelTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  > button {
+    margin: -6px 0;
+  }
+`;
+
 const PanelActions = styled.div`
   display: flex;
   flex-wrap: wrap;
@@ -262,6 +276,7 @@ export const Panel = ({
   flush = false,
   id,
   title,
+  titleAction,
 }: {
   actions?: ReactNode;
   children: ReactNode;
@@ -269,6 +284,8 @@ export const Panel = ({
   flush?: boolean;
   id?: string;
   title?: ReactNode;
+  /** Sits right after the title, outside the heading itself. */
+  titleAction?: ReactNode;
 }) => (
   <PanelRoot
     $flush={flush}
@@ -278,7 +295,14 @@ export const Panel = ({
     {(title || actions) && (
       <PanelHead $flush={flush}>
         <div>
-          {title && <PanelTitle>{title}</PanelTitle>}
+          {title && titleAction ? (
+            <PanelTitleRow>
+              <PanelTitle>{title}</PanelTitle>
+              {titleAction}
+            </PanelTitleRow>
+          ) : (
+            title && <PanelTitle>{title}</PanelTitle>
+          )}
           {description && <PanelDescription>{description}</PanelDescription>}
         </div>
         {actions && <PanelActions>{actions}</PanelActions>}
@@ -287,6 +311,133 @@ export const Panel = ({
     {children}
   </PanelRoot>
 );
+
+/* ---------- Disclosure ---------- */
+
+const DisclosureRoot = styled.div`
+  & + & {
+    border-top: 1px solid var(--a-border);
+  }
+`;
+
+const DisclosureButton = styled.button<{ $open: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: calc(100% + 20px);
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: var(--a-radius-sm);
+  background: transparent;
+  color: var(--a-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 140ms ease;
+  ${focusVisible}
+
+  &:hover {
+    background: var(--a-surface-hover);
+  }
+
+  > span {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    min-width: 0;
+  }
+
+  strong {
+    font-size: var(--a-text);
+    font-weight: 600;
+  }
+
+  small {
+    color: var(--a-ink-3);
+    font-size: var(--a-text-sm);
+  }
+
+  > svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--a-ink-2);
+    transform: rotate(${({ $open }) => ($open ? "180deg" : "0deg")});
+    transition: transform var(--motion-base, 220ms) var(--ease-emphasized, ease);
+  }
+`;
+
+/* The row's track glides between 0fr and 1fr; the content fades with it. The
+   4px side padding keeps the focus rings of full-width fields from being clipped. */
+const DisclosureRegion = styled.div<{ $open: boolean }>`
+  ${({ $open }) => gridRowReveal($open)}
+
+  & > * {
+    margin: 0 -4px;
+    padding: 0 4px;
+    opacity: ${({ $open }) => ($open ? 1 : 0)};
+    transition: opacity var(--motion-base, 220ms) var(--ease-standard, ease);
+    transition-delay: ${({ $open }) => ($open ? "var(--motion-settle, 40ms)" : "0ms")};
+  }
+`;
+
+const DisclosureBody = styled.div`
+  padding: 6px 0 18px;
+`;
+
+/**
+ * A full-width row that opens a rarely used block under it. The content stays
+ * mounted while closed (inert, so neither Tab nor a screen reader reaches it):
+ * a half-typed form or a result survives closing, and nothing ever collapses
+ * on its own.
+ */
+export const Disclosure = ({
+  children,
+  defaultOpen = false,
+  hint,
+  title,
+}: {
+  children: ReactNode;
+  defaultOpen?: boolean;
+  hint?: ReactNode;
+  title: ReactNode;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const id = useId();
+
+  return (
+    <DisclosureRoot>
+      <DisclosureButton
+        type="button"
+        id={`${id}-button`}
+        aria-controls={id}
+        aria-expanded={open}
+        $open={open}
+        onClick={() => setOpen(!open)}
+      >
+        <span>
+          <strong>{title}</strong>
+          {hint && <small>{hint}</small>}
+        </span>
+        <ChevronDown aria-hidden />
+      </DisclosureButton>
+      <DisclosureRegion
+        id={id}
+        role="region"
+        aria-labelledby={`${id}-button`}
+        $open={open}
+        inert={!open}
+      >
+        <div>
+          <DisclosureBody>{children}</DisclosureBody>
+        </div>
+      </DisclosureRegion>
+    </DisclosureRoot>
+  );
+};
 
 /* ---------- Page header ---------- */
 
