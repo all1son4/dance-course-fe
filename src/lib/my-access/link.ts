@@ -10,6 +10,12 @@ import { normalizedSiteUrl } from "@/lib/seo";
  */
 
 const TOKEN_PURPOSE = "my-access:v1";
+/*
+ * The calendar subscription carries its own key: a calendar app (and Google's
+ * servers, for a Google subscription) keeps the address for good, so that key
+ * opens only the dates, never the page.
+ */
+const CALENDAR_TOKEN_PURPOSE = "my-access-calendar:v1";
 const MIN_SECRET_LENGTH = 32;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
@@ -19,15 +25,12 @@ const getSecret = () => {
   return secret.length >= MIN_SECRET_LENGTH ? secret : "";
 };
 
-const sign = (secret: string, customerId: string) =>
-  createHmac("sha256", secret)
-    .update(`${TOKEN_PURPOSE}:${customerId}`)
-    .digest("base64url");
+const sign = (secret: string, purpose: string, customerId: string) =>
+  createHmac("sha256", secret).update(`${purpose}:${customerId}`).digest("base64url");
 
 export const isMyAccessLinkConfigured = () => getSecret() !== "";
 
-/** The token of one customer, or null when the feature is off or the id is not a UUID. */
-export const createMyAccessToken = (customerId: string): string | null => {
+const createToken = (purpose: string, customerId: string): string | null => {
   const secret = getSecret();
   const id = customerId.trim().toLowerCase();
 
@@ -35,11 +38,10 @@ export const createMyAccessToken = (customerId: string): string | null => {
     return null;
   }
 
-  return `${id}.${sign(secret, id)}`;
+  return `${id}.${sign(secret, purpose, id)}`;
 };
 
-/** The customer id a token was signed for, or null for anything else. */
-export const verifyMyAccessToken = (token: string | null | undefined): string | null => {
+const verifyToken = (purpose: string, token: string | null | undefined) => {
   const secret = getSecret();
   const [id = "", signature = "", ...rest] = (token ?? "").trim().split(".");
 
@@ -47,13 +49,29 @@ export const verifyMyAccessToken = (token: string | null | undefined): string | 
     return null;
   }
 
-  const expected = Buffer.from(sign(secret, id));
+  const expected = Buffer.from(sign(secret, purpose, id));
   const received = Buffer.from(signature);
 
   return expected.length === received.length && timingSafeEqual(expected, received)
     ? id
     : null;
 };
+
+/** The token of one customer, or null when the feature is off or the id is not a UUID. */
+export const createMyAccessToken = (customerId: string): string | null =>
+  createToken(TOKEN_PURPOSE, customerId);
+
+/** The customer id a token was signed for, or null for anything else. */
+export const verifyMyAccessToken = (token: string | null | undefined): string | null =>
+  verifyToken(TOKEN_PURPOSE, token);
+
+/** The key of one customer's calendar subscription: dates only. */
+export const createMyAccessCalendarToken = (customerId: string): string | null =>
+  createToken(CALENDAR_TOKEN_PURPOSE, customerId);
+
+export const verifyMyAccessCalendarToken = (
+  token: string | null | undefined,
+): string | null => verifyToken(CALENDAR_TOKEN_PURPOSE, token);
 
 /** The page path with the token, for links shown on the site itself. */
 export const buildMyAccessPath = (

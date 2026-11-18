@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildMyAccessCards,
+  HUB_PURCHASE_HREF,
   HUB_RENEWAL_HREF,
   type MyAccessPurchase,
   type MyAccessRight,
@@ -162,6 +163,8 @@ test("Plus: the library is open from payment (a gift before the start), then a w
     ],
   });
   const closed = cardsOf({
+    // The checkout grants the renewal price to members of a cohort ended ≤ 7 days ago.
+    hubDiscountCohortIds: ["c3"],
     cohorts: [
       {
         ...cohort,
@@ -374,7 +377,7 @@ test("the same purchase left unopened several times reads as one card", () => {
   assert.equal(cards[0]?.count, 3);
 });
 
-test("an unopened access whose emailed link expired sends the buyer to support", () => {
+test("an unopened access whose emailed link expired offers a new one by email", () => {
   const cards = cardsOf({
     purchases: [
       purchase({ id: "live", offerExternalId: CHOREO_OFFER, productExternalId: "x" }),
@@ -396,7 +399,8 @@ test("an unopened access whose emailed link expired sends the buyer to support",
   assert.equal(live?.chip, "notJoined");
   assert.deepEqual(dead?.note, { key: "linkExpired" });
   assert.equal(dead?.chip, "linkExpired");
-  assert.equal(dead?.action?.key, "support");
+  assert.equal(dead?.action?.key, "reissue");
+  assert.equal(dead?.action?.purchaseId, "dead");
 });
 
 test("§11: a closed Plus does not push a renewal on someone who already renewed", () => {
@@ -420,11 +424,13 @@ test("§11: a closed Plus does not push a renewal on someone who already renewed
 
   const alone = cardsOf({
     cohorts: [closedCohort2],
+    hubDiscountCohortIds: ["c2"],
     purchases: [plus],
     rights: plusRights,
   });
   const renewed = cardsOf({
     cohorts: [closedCohort2],
+    hubDiscountCohortIds: ["c2"],
     purchases: [plus, purchase({ id: "h" })],
     rights: [...plusRights, hubPeriod("h", null, null)],
   });
@@ -433,4 +439,161 @@ test("§11: a closed Plus does not push a renewal on someone who already renewed
   const plusHub = renewed.find((card) => card.id === "plus-hub:p");
   assert.equal(plusHub?.action, undefined);
   assert.deepEqual(plusHub?.note, { key: "hub.renewed" });
+});
+
+test("a running cycle shows its calendar week, capped at the cycle length", () => {
+  const cycleCards = (startsAt: string, closed = false) =>
+    cardsOf({
+      cohorts: [
+        {
+          accessEndsAt: closed ? new Date("2027-02-01T00:00:00.000Z") : null,
+          closedAt: closed ? new Date("2026-12-29T00:00:00.000Z") : null,
+          id: "c4",
+          startsAt: new Date(startsAt),
+          durationWeeks: 6,
+        },
+      ],
+      purchases: [
+        purchase({
+          cohortId: "c4",
+          id: "g",
+          offerExternalId: STANDARD_OFFER,
+          productExternalId: "prd_L9aK3mT7qP2x",
+        }),
+      ],
+      rights: [right({ purchaseId: "g" })],
+    }).find((card) => card.kind === "group");
+
+  // NOW is 2026-12-30: the cycle started that day, 9 days and 9 weeks earlier.
+  assert.deepEqual(cycleCards("2026-12-30T08:00:00.000Z")?.cycleWeek, {
+    current: 1,
+    total: 6,
+  });
+  assert.deepEqual(cycleCards("2026-12-21T08:00:00.000Z")?.cycleWeek, {
+    current: 2,
+    total: 6,
+  });
+  assert.deepEqual(cycleCards("2026-10-28T08:00:00.000Z")?.cycleWeek, {
+    current: 6,
+    total: 6,
+  });
+  // Not started yet, or closed: no week bar.
+  assert.equal(cycleCards("2027-01-11T08:00:00.000Z")?.cycleWeek, undefined);
+  assert.equal(cycleCards("2026-11-23T08:00:00.000Z", true)?.cycleWeek, undefined);
+});
+
+test("every button leads somewhere the checkout accepts right now", () => {
+  const closedCohort = {
+    accessEndsAt: new Date("2026-12-28T23:00:00.000Z"),
+    closedAt: new Date("2026-12-28T10:00:00.000Z"),
+    durationWeeks: 6,
+    id: "c2",
+    startsAt: new Date("2026-10-05T16:00:00.000Z"),
+  };
+  const plus = purchase({
+    cohortId: "c2",
+    id: "p",
+    offerExternalId: PLUS_OFFER,
+    productExternalId: "x",
+  });
+  const plusRights = (status = "activated") => [
+    right({ purchaseId: "p", status }),
+    right({ accessKey: "inspiration-hub", purchaseId: "p", sourceKind: "online_group" }),
+  ];
+  const plusCard = (
+    snapshot: Partial<MyAccessSnapshot>,
+    sales?: Parameters<typeof buildMyAccessCards>[2],
+  ) =>
+    buildMyAccessCards(
+      { cohorts: [closedCohort], purchases: [plus], rights: plusRights(), ...snapshot },
+      NOW,
+      sales,
+    ).find((card) => card.id === "plus-hub:p");
+
+  // A closed Plus: the renewal only with the price open to her and the Hub on sale.
+  assert.equal(plusCard({ hubDiscountCohortIds: ["c2"] })?.action?.key, "renewHub");
+  const notMember = plusCard({
+    hubDiscountCohortIds: ["c2"],
+    rights: plusRights("token_issued"),
+  });
+  assert.equal(notMember?.action, undefined);
+  assert.equal(notMember?.note, undefined);
+  assert.equal(plusCard({})?.action, undefined);
+  assert.equal(
+    plusCard({ hubDiscountCohortIds: ["c2"] }, { hubPurchase: true, hubRenewal: false })
+      ?.action,
+    undefined,
+  );
+
+  // A running Hub is renewed only while the renewal is on sale.
+  const running = (sales?: Parameters<typeof buildMyAccessCards>[2]) =>
+    buildMyAccessCards(
+      {
+        cohorts: [],
+        purchases: [purchase({ id: "h" })],
+        rights: [hubPeriod("h", "2026-12-01T00:00:00.000Z", "2027-01-26T00:00:00.000Z")],
+      },
+      NOW,
+      sales,
+    )[0];
+  assert.equal(running()?.action?.key, "renewHub");
+  assert.equal(running({ hubPurchase: true, hubRenewal: false })?.action, undefined);
+
+  // An ended Hub: the renewal price only for a member of record, else the full price.
+  const ended = (
+    snapshot: Partial<MyAccessSnapshot>,
+    sales?: Parameters<typeof buildMyAccessCards>[2],
+  ) =>
+    buildMyAccessCards(
+      {
+        cohorts: [closedCohort],
+        purchases: [purchase({ id: "h" })],
+        rights: [hubPeriod("h", "2026-10-01T00:00:00.000Z", "2026-11-26T00:00:00.000Z")],
+        ...snapshot,
+      },
+      NOW,
+      sales,
+    ).find((card) => card.status.key === "hub.ended");
+  assert.equal(ended({})?.action?.href, HUB_PURCHASE_HREF);
+  assert.equal(
+    ended({
+      hubDiscountCohortIds: ["c2"],
+      purchases: [
+        purchase({ id: "h" }),
+        purchase({
+          cohortId: "c2",
+          id: "g",
+          offerExternalId: STANDARD_OFFER,
+          productExternalId: "x",
+        }),
+      ],
+      rights: [
+        hubPeriod("h", "2026-10-01T00:00:00.000Z", "2026-11-26T00:00:00.000Z"),
+        right({ purchaseId: "g" }),
+      ],
+    })?.action?.href,
+    HUB_RENEWAL_HREF,
+  );
+  assert.equal(ended({}, { hubPurchase: false, hubRenewal: false })?.action, undefined);
+});
+
+test("a new link by email only where the invite is issued by the bot", () => {
+  const cards = cardsOf({
+    purchases: [
+      purchase({ id: "bot", offerExternalId: FIRST_TOUCH_OFFER, productExternalId: "y" }),
+      purchase({ id: "hand", offerExternalId: CHOREO_OFFER, productExternalId: "z" }),
+    ],
+    rights: [
+      right({ hasLiveInvite: false, purchaseId: "bot", status: "token_issued" }),
+      right({
+        accessWorkflow: "manual-admin",
+        hasLiveInvite: false,
+        purchaseId: "hand",
+        status: "token_issued",
+      }),
+    ],
+  });
+
+  assert.equal(cards.find((card) => card.id === "channel:bot")?.action?.key, "reissue");
+  assert.equal(cards.find((card) => card.id === "channel:hand")?.action?.key, "support");
 });

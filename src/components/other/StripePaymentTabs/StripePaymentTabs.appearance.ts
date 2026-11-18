@@ -6,6 +6,9 @@ import { loadStripe } from "@stripe/stripe-js";
 
 import { GOOGLE_FONTS_MANROPE_CSS_URL } from "@/constants/links";
 
+/* Stripe styles its iframe from literals, not CSS variables: keep in step with --danger. */
+const DANGER_COLOR = "rgba(182, 62, 3, 1)";
+
 const stripePromiseCache = new Map<string, ReturnType<typeof loadStripe>>();
 
 const STRIPE_LOCALE_PREFIXES = ["ru", "pl", "en"] as const;
@@ -16,7 +19,7 @@ const STRIPE_APPEARANCE = {
     colorPrimary: "rgba(0, 0, 0, 1)",
     colorText: "rgba(0, 0, 0, 1)",
     colorTextSecondary: "rgba(72, 72, 72, 1)",
-    colorDanger: "rgba(213, 0, 4, 1)",
+    colorDanger: DANGER_COLOR,
     colorBackground: "transparent",
     iconColor: "rgba(0, 0, 0, 1)",
     borderRadius: "18px",
@@ -105,9 +108,12 @@ const STRIPE_APPEARANCE = {
     ".Input:hover": {
       borderColor: "rgba(0, 0, 0, 0.9)",
     },
+    // Like the site's own fields: the border and the message carry the error,
+    // the typed value stays ink (Stripe's default would tint it its own red).
     ".Input--invalid": {
-      borderColor: "rgba(213, 0, 4, 1)",
+      borderColor: DANGER_COLOR,
       boxShadow: "none",
+      color: "rgba(0, 0, 0, 1)",
     },
     ".Label": {
       color: "rgba(72, 72, 72, 1)",
@@ -124,7 +130,7 @@ const STRIPE_APPEARANCE = {
       borderColor: "rgba(0, 0, 0, 0.7)",
     },
     ".Error": {
-      color: "rgba(213, 0, 4, 1)",
+      color: DANGER_COLOR,
       fontSize: "13px",
     },
   },
@@ -154,6 +160,13 @@ const trimOptionalValue = (value?: string | null): string | undefined =>
 const normalizeOptionalCountry = (value?: string | null): string | undefined =>
   value?.trim().toUpperCase() || undefined;
 
+/**
+ * Austrian buyers: wallets and EPS before the card. Most failed payments on the
+ * site are Austrian debit Mastercards declined by the issuer (prod data,
+ * 2026-11), while EPS and wallets go through.
+ */
+export const AUSTRIA_PAYMENT_METHOD_ORDER = ["apple_pay", "google_pay", "eps", "card"];
+
 export const createPaymentElementOptions = (
   billingAddressLine1?: string | null,
   billingCity?: string | null,
@@ -162,7 +175,10 @@ export const createPaymentElementOptions = (
   billingName?: string | null,
   billingPostalCode?: string | null,
 ): StripePaymentElementOptions => {
+  const country = normalizeOptionalCountry(billingCountry);
+
   return {
+    ...(country === "AT" ? { paymentMethodOrder: AUSTRIA_PAYMENT_METHOD_ORDER } : {}),
     layout: {
       type: "tabs",
       defaultCollapsed: false,
@@ -171,7 +187,7 @@ export const createPaymentElementOptions = (
       billingDetails: {
         address: {
           city: trimOptionalValue(billingCity),
-          country: normalizeOptionalCountry(billingCountry),
+          country,
           line1: trimOptionalValue(billingAddressLine1),
           postal_code: trimOptionalValue(billingPostalCode),
         },

@@ -37,8 +37,11 @@ import {
   createStripeBillingDetails,
   getLoadingStatusTranslationKey,
   isPaymentSubmissionReady,
+  type PaymentDeclineKind,
   type PaymentForm,
   resolveBillingDetails,
+  resolvePaymentDeclineHintKey,
+  resolvePaymentDeclineKind,
   resolveStripeErrorMessage,
   type StripePaymentFormProps,
 } from "./StripePaymentTabs.helpers";
@@ -46,6 +49,8 @@ import {
   ActionFeedback,
   Actions,
   Card,
+  DeclineAction,
+  DeclineNotice,
   Description,
   ErrorText,
   Header,
@@ -136,6 +141,7 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
     allPaymentIntentIds,
     checkoutSessionId,
     confirmPaymentFailedText,
+    declineTexts,
     isPayLocked,
     isRenewalCheckout,
     onPaymentElementReady,
@@ -169,6 +175,14 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
   );
   const [isPaymentElementReady, setIsPaymentElementReady] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // The method the decline happened on: switching to another one, as the
+  // panel suggests, dismisses it.
+  const [decline, setDecline] = useState<{
+    kind: PaymentDeclineKind;
+    method: string | null;
+  } | null>(null);
+  const selectedMethodRef = useRef<string | null>(null);
+  const paymentElementShellRef = useRef<HTMLDivElement>(null);
   const [verification, setVerification] = useState<VerificationState>("idle");
   const isMountedRef = useRef(true);
   const onSubmittingChangeRef = useRef(onSubmittingChange);
@@ -273,6 +287,7 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
 
     setIsSubmitting(true);
     setSubmitError(null);
+    setDecline(null);
     void trackAnalyticsEvent("payment_attempted", analyticsCommerceProperties);
 
     let confirmation: PaymentIntentResult;
@@ -315,11 +330,17 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
       // The Payment Element shows card and validation errors inline, under the
       // field they belong to; repeating them under the button read as two
       // errors. Everything else has no inline home, so it is shown here.
+      // A bank decline also gets a panel under the button: the money was not
+      // taken, the entered details stay, and another method is one tap away.
       const isShownInline =
         confirmation.error.type === "card_error" ||
         confirmation.error.type === "validation_error";
+      const declineKind = resolvePaymentDeclineKind(confirmation.error);
+      setDecline(
+        declineKind ? { kind: declineKind, method: selectedMethodRef.current } : null,
+      );
       setSubmitError(
-        isShownInline
+        isShownInline || declineKind
           ? null
           : resolveStripeErrorMessage(
               confirmation.error.message,
@@ -374,7 +395,39 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
     }
   };
 
-  const feedback = submitError ? (
+  const feedback = decline ? (
+    <DeclineNotice role="alert" aria-live="assertive" aria-atomic="true">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        aria-hidden="true"
+      >
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.5v5.5" strokeLinecap="round" />
+        <circle cx="12" cy="16.3" r="0.7" fill="currentColor" />
+      </svg>
+      <div>
+        <strong>{declineTexts[decline.kind].title}</strong>
+        <p>{declineTexts[decline.kind].text}</p>
+        {declineTexts.hint ? <p>{declineTexts.hint}</p> : null}
+        <DeclineAction
+          type="button"
+          onClick={() =>
+            paymentElementShellRef.current?.scrollIntoView({
+              behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                ? "auto"
+                : "smooth",
+              block: "start",
+            })
+          }
+        >
+          {declineTexts.otherMethod}
+        </DeclineAction>
+      </div>
+    </DeclineNotice>
+  ) : submitError ? (
     <ErrorText role="alert" aria-live="assertive" aria-atomic="true">
       {submitError}
     </ErrorText>
@@ -390,9 +443,15 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
 
   return (
     <div>
-      <PaymentElementShell>
+      <PaymentElementShell ref={paymentElementShellRef}>
         <PaymentElement
           options={paymentElementOptions}
+          onChange={(event) => {
+            selectedMethodRef.current = event.value.type;
+            setDecline((current) =>
+              current && current.method !== event.value.type ? null : current,
+            );
+          }}
           onLoaderStart={handlePaymentElementLoading}
           onReady={handlePaymentElementReady}
         />
@@ -587,6 +646,22 @@ export const StripePaymentTabs = ({
     billingPostalCode,
     checkoutSessionId,
     confirmPaymentFailedText: t("errors.confirmPaymentFailed"),
+    declineTexts: {
+      authentication: {
+        text: t("decline.authentication.text"),
+        title: t("decline.authentication.title"),
+      },
+      declined: { text: t("decline.declined.text"), title: t("decline.declined.title") },
+      insufficientFunds: {
+        text: t("decline.insufficientFunds.text"),
+        title: t("decline.insufficientFunds.title"),
+      },
+      hint: (() => {
+        const hintKey = resolvePaymentDeclineHintKey(resultCurrency, billingCountry);
+        return hintKey ? t(hintKey) : undefined;
+      })(),
+      otherMethod: t("decline.otherMethod"),
+    },
     isRenewalCheckout,
     onSubmittingChange,
     payButtonText: t("button.pay"),

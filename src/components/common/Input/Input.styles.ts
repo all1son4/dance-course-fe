@@ -30,7 +30,7 @@ const inputFieldStyles = css<InputFieldStyleProps>`
   border: 1px solid
     ${({ $hasError, $isComplete }) =>
       $hasError
-        ? "rgba(213, 0, 4, 1)"
+        ? "var(--danger)"
         : $isComplete
           ? "rgba(24, 112, 58, 0.5)"
           : "rgba(72, 72, 72, 0.6)"};
@@ -78,8 +78,8 @@ const inputFieldStyles = css<InputFieldStyleProps>`
       return "";
     }
 
-    const activeBorderColor = $hasError ? "rgba(213, 0, 4, 1)" : "rgba(0, 0, 0, 1)";
-    const hoverBorderColor = $hasError ? "rgba(213, 0, 4, 1)" : "rgba(0, 0, 0, 0.9)";
+    const activeBorderColor = $hasError ? "var(--danger)" : "rgba(0, 0, 0, 1)";
+    const hoverBorderColor = $hasError ? "var(--danger)" : "rgba(0, 0, 0, 0.9)";
 
     return `
       @media (hover: hover) and (pointer: fine) {

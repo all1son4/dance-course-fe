@@ -1,44 +1,109 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getLocale, getTranslations } from "next-intl/server";
 
 import Button from "@/components/common/Button";
-import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
-import {
-  getSellableProductById,
-  getSellableProductOfferById,
-} from "@/constants/sellable-products";
+import TrackedAnchor from "@/components/common/TrackedAnchor";
+import { INSTAGRAM_PROFILE_URL, SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
-import { shouldNameOfferAtCheckout } from "@/lib/choreo-offer-presentation";
+import { Link } from "@/i18n/navigation";
 import {
   getMyAccessActionAnalytics,
   getMyAccessAnalyticsProperties,
 } from "@/lib/my-access/analytics";
 import {
+  buildMyAccessCalendarFeedPath,
+  buildMyAccessCalendarHref,
+  buildMyAccessCalendarSubscription,
+  NEXT_CYCLE_EVENT,
+} from "@/lib/my-access/calendar";
+import {
   buildMyAccessCards,
   type MyAccessCard,
   type MyAccessLine,
 } from "@/lib/my-access/cards";
-import { isMyAccessLinkConfigured, verifyMyAccessToken } from "@/lib/my-access/link";
-import { OnlineGroup, OnlineInspiration, OnlineVideo } from "@/svg";
+import {
+  buildMyAccessCount,
+  getMyAccessCardDetail,
+  getMyAccessCardNote,
+  type MyAccessCount,
+  warsawDaysBetween,
+} from "@/lib/my-access/count";
+import {
+  getDaypart,
+  getFirstName,
+  type GreetingPools,
+  pickGreeting,
+  resolveTimeZone,
+} from "@/lib/my-access/greeting";
+import { buildMyAccessJourney } from "@/lib/my-access/journey";
+import {
+  createMyAccessCalendarToken,
+  isMyAccessLinkConfigured,
+  verifyMyAccessToken,
+} from "@/lib/my-access/link";
+import { groupMyAccessCards, type MyAccessZone } from "@/lib/my-access/zones";
+import { normalizedSiteUrl } from "@/lib/seo";
 
-import { getCompactSummaryTitle } from "../payment/payment.helpers";
+import {
+  getAccessCardTitle,
+  getAccessProductPagePath,
+  getAccessProductTitle,
+  readMyAccessNextStep,
+  readMyAccessSales,
+} from "./access.helpers";
+import {
+  CalendarSubscribe,
+  FoldingCard,
+  ReissueInvite,
+  SavePageLink,
+  ShareCourse,
+  ShareHintScope,
+} from "./access-actions";
 import AccessAnalytics from "./access-analytics";
 import {
-  AccessCard,
-  AccessHeading,
-  AccessPanel,
+  ACCESS_CANVAS_CSS,
+  AccessAside,
+  AccessHeader,
+  AccessLayout,
   AccessSection,
+  CalendarLink,
+  CardActions,
+  CardDetail,
+  CardHead,
   CardList,
+  CardMore,
   CardNote,
-  CardProgress,
-  CardStatus,
-  CardText,
-  CardTitleRow,
-  EmptyState,
-  HelpRow,
+  CardSummary,
+  CardTitle,
+  Count,
+  CountText,
+  CountValue,
+  EmptyCard,
+  Eyebrow,
+  Facts,
+  Greeting,
+  HelpCard,
+  Intro,
+  JourneyList,
+  JourneyStep,
+  QuietLink,
+  RequestCard,
+  SideCard,
+  SideText,
+  SideTitle,
   StatusChip,
+  Tool,
+  ToolList,
+  ToolNote,
+  VisuallyHidden,
+  WeekCounts,
+  Zone,
+  ZoneHeader,
+  ZoneList,
+  ZoneTray,
 } from "./page.styles";
 import RequestLinkForm from "./request-link-form";
 
@@ -65,32 +130,67 @@ type AccessPageProps = {
 };
 
 const DATE_VALUE_KEYS = new Set(["date", "start", "end"]);
+const WARSAW = "Europe/Warsaw";
+/** The chips that ask for something; the count already tells how the time goes. */
+const ATTENTION_CHIPS = new Set(["linkExpired", "notJoined", "endsSoon"]);
 
-const CARD_ICONS = {
-  channel: OnlineVideo,
-  group: OnlineGroup,
-  hub: OnlineInspiration,
-  lifetime: OnlineVideo,
-} as const;
+const weekState = (week: number, current: number) =>
+  week < current ? "done" : week === current ? "now" : "ahead";
 
-/** The share of a running window still ahead, 0..1. */
-const remainingShare = (period: { start: string; end: string }, now: Date) => {
-  const start = Date.parse(period.start);
-  const end = Date.parse(period.end);
-  if (!(end > start)) return 0;
-  return Math.min(1, Math.max(0, (end - now.getTime()) / (end - start)));
-};
+const AccessCanvas = ({
+  children,
+  daypart,
+}: {
+  children: React.ReactNode;
+  daypart?: string;
+}) => (
+  <AccessSection data-analytics-private data-canvas="porcelain" data-daypart={daypart}>
+    <style href="access-porcelain-canvas" precedence="default">
+      {ACCESS_CANVAS_CSS}
+    </style>
+    {children}
+  </AccessSection>
+);
+
+const CalendarIcon = () => (
+  <svg
+    aria-hidden
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.4"
+  >
+    <rect x="2" y="3" width="12" height="11" rx="2.5" />
+    <path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3" strokeLinecap="round" />
+  </svg>
+);
+
+const BookmarkIcon = () => (
+  <svg
+    aria-hidden
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.4"
+  >
+    <path
+      d="M4.5 2.2h7a1 1 0 0 1 1 1v10.6l-4.5-3-4.5 3V3.2a1 1 0 0 1 1-1Z"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
 
 export default async function AccessPage({ searchParams }: AccessPageProps) {
   if (!isMyAccessLinkConfigured()) {
     notFound();
   }
 
-  const [params, locale, t, productT] = await Promise.all([
+  const [params, locale, t, productT, requestHeaders] = await Promise.all([
     searchParams,
     getLocale(),
     getTranslations("MyAccessPage"),
     getTranslations("SellableProducts"),
+    headers(),
   ]);
   const rawToken = Array.isArray(params.k) ? params.k[0] : params.k;
   const customerId = verifyMyAccessToken(rawToken);
@@ -98,51 +198,19 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     ? await readMyAccessSnapshot(getDatabase(), customerId)
     : null;
 
-  const formatDate = new Intl.DateTimeFormat(locale, {
-    dateStyle: "long",
-    timeZone: "Europe/Warsaw",
-  });
-  const translateLine = ({ key, values }: MyAccessLine) =>
-    t(
-      `cards.${key}`,
-      Object.fromEntries(
-        Object.entries(values ?? {}).map(([name, value]) => [
-          name,
-          DATE_VALUE_KEYS.has(name) && typeof value === "string"
-            ? formatDate.format(new Date(value))
-            : value,
-        ]),
-      ),
-    );
-  const cardTitle = (card: MyAccessCard) => {
-    if (card.title === "hub") return t("cards.hubTitle");
-
-    const product = getSellableProductById(card.title.productExternalId);
-    if (!product) return t("cards.fallbackTitle");
-
-    const offer = getSellableProductOfferById(product, card.title.offerExternalId);
-    const title = product.checkoutTitleKey
-      ? productT(product.checkoutTitleKey)
-      : getCompactSummaryTitle(productT(product.titleKey));
-
-    return offer && shouldNameOfferAtCheckout(product, offer.id)
-      ? `${title} · ${productT(offer.labelKey)}`
-      : title;
-  };
-
-  if (!snapshot) {
+  if (!snapshot || !rawToken || !customerId) {
     return (
-      <AccessSection data-analytics-private>
+      <AccessCanvas>
         <AccessAnalytics
           properties={getMyAccessAnalyticsProperties(
             rawToken ? "invalid_link" : "link_required",
           )}
         />
-        <AccessPanel>
-          <AccessHeading>
-            <h1>{t("title")}</h1>
-            <p>{t(rawToken ? "request.invalidLink" : "request.lead")}</p>
-          </AccessHeading>
+        <AccessHeader>
+          <Greeting>{t("title")}</Greeting>
+          <Intro>{t(rawToken ? "request.invalidLink" : "request.lead")}</Intro>
+        </AccessHeader>
+        <RequestCard>
           <RequestLinkForm
             locale={locale}
             texts={{
@@ -153,104 +221,475 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
               submit: t("request.submit"),
             }}
           />
-        </AccessPanel>
-      </AccessSection>
+        </RequestCard>
+      </AccessCanvas>
     );
   }
 
   const now = new Date();
-  const cards = buildMyAccessCards(snapshot, now);
+  // The reader's hour by the time zone Vercel derives from the IP; Warsaw otherwise.
+  const daypart = getDaypart(
+    now,
+    resolveTimeZone(requestHeaders.get("x-vercel-ip-timezone")),
+  );
+  const firstName = getFirstName(snapshot.customerFullName);
+  // Raw pools: «{name}» is filled in here, after one greeting is picked.
+  const greeting = pickGreeting(
+    t.raw(firstName ? "greeting.withName" : "greeting.plain") as GreetingPools,
+    daypart,
+    firstName,
+  );
+
+  // A button appears only where the checkout would accept the payment right now.
+  const sales = await readMyAccessSales();
+  const cards = buildMyAccessCards(snapshot, now, sales);
+  const nextStep = await readMyAccessNextStep(snapshot, now, sales.isOpen);
+  const journey = buildMyAccessJourney(snapshot, cards).flatMap((step) => {
+    const title = getAccessProductTitle(step.productExternalId, productT);
+    return title ? [{ ...step, title }] : [];
+  });
+
+  const formatDate = new Intl.DateTimeFormat(locale, {
+    dateStyle: "long",
+    timeZone: WARSAW,
+  });
+  const formatDayMonth = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    month: "long",
+    timeZone: WARSAW,
+  });
+  const formatYear = new Intl.DateTimeFormat(locale, {
+    timeZone: WARSAW,
+    year: "numeric",
+  });
+  /** Dates never break between their words ("23 ноября" stays on one line). */
+  const keepTogether = (text: string) => text.replace(/ /gu, "\u00a0");
+  /** The day of a purchase, without the «г.» Russian adds after a year. */
+  const purchaseDay = (iso: string) =>
+    keepTogether(formatDate.format(new Date(iso)).replace(/\s?г\.$/u, ""));
+  const dayMonth = (iso: string) => keepTogether(formatDayMonth.format(new Date(iso)));
+  /** The month as it reads after a day ("марта", "listopada"). */
+  const monthAfterDay = (date: Date) =>
+    formatDayMonth.formatToParts(date).find((part) => part.type === "month")?.value ?? "";
+  const translateLine = ({ key, values }: MyAccessLine) =>
+    t(
+      `cards.${key}`,
+      Object.fromEntries(
+        Object.entries(values ?? {}).map(([name, value]) => [
+          name,
+          DATE_VALUE_KEYS.has(name) && typeof value === "string"
+            ? keepTogether(formatDate.format(new Date(value)))
+            : value,
+        ]),
+      ),
+    );
+  const calendarHref = (eventId: string) =>
+    buildMyAccessCalendarHref(rawToken, eventId, locale);
+
+  // Facts for the header: since the first purchase, and how many purchases.
+  const since = snapshot.purchases.find((purchase) => purchase.succeededAt)?.succeededAt;
+
+  const calendarToken = createMyAccessCalendarToken(customerId);
+  const hasDates =
+    cards.some((card) => card.calendar) || Boolean(nextStep && !nextStep.started);
+  const subscription =
+    calendarToken && hasDates
+      ? buildMyAccessCalendarSubscription(
+          normalizedSiteUrl,
+          buildMyAccessCalendarFeedPath(calendarToken, locale),
+        )
+      : null;
+
+  /** The count of a card: the number, what it counts, the date. */
+  const renderCount = (count: MyAccessCount) => {
+    switch (count.kind) {
+      case "startsIn":
+        return (
+          <Count>
+            <CountValue>
+              {count.days === 0 ? dayMonth(count.at).split(" ")[0] : count.days}
+            </CountValue>
+            <CountText>
+              <b>
+                {count.days === 0
+                  ? t("count.startsToday")
+                  : t("count.startsIn", { days: count.days })}
+              </b>
+              <span>{dayMonth(count.at)}</span>
+            </CountText>
+          </Count>
+        );
+      case "left":
+        return (
+          <Count $tone={count.urgent ? "urgent" : "plain"}>
+            <CountValue>{count.days}</CountValue>
+            <CountText>
+              <b>{t("count.left", { days: count.days })}</b>
+              <span>{t("count.until", { date: dayMonth(count.until) })}</span>
+            </CountText>
+          </Count>
+        );
+      case "week":
+        return (
+          <Count>
+            <WeekCounts
+              aria-label={t("count.weekOf", {
+                current: count.current,
+                total: count.total,
+              })}
+              role="img"
+            >
+              {Array.from({ length: count.total }, (_, index) => (
+                <i data-state={weekState(index + 1, count.current)} key={index}>
+                  {index + 1}
+                </i>
+              ))}
+            </WeekCounts>
+            <CountText>
+              <b>{t("count.week")}</b>
+            </CountText>
+          </Count>
+        );
+      case "paidDays":
+        return (
+          <Count>
+            <CountValue>{count.days}</CountValue>
+            <CountText>
+              <b>{t("count.paidDays", { days: count.days })}</b>
+              <span>{t("count.fromJoin")}</span>
+            </CountText>
+          </Count>
+        );
+      case "ended":
+        return (
+          <Count $tone="muted">
+            <CountValue>{dayMonth(count.at).split(" ")[0]}</CountValue>
+            <CountText>
+              <b>{t("count.ended")}</b>
+              <span>{dayMonth(count.at)}</span>
+            </CountText>
+          </Count>
+        );
+      case "openNow":
+        return (
+          <Count>
+            <CountText>
+              <b>{t("count.openNow")}</b>
+              <span>{t("count.openNowNote")}</span>
+            </CountText>
+          </Count>
+        );
+      case "lifetime":
+        return (
+          <Count>
+            <CountValue aria-hidden>∞</CountValue>
+            <CountText>
+              <b>{t("count.lifetime")}</b>
+            </CountText>
+          </Count>
+        );
+    }
+  };
+
+  const renderCard = (card: MyAccessCard, zone: MyAccessZone) => {
+    const counted = buildMyAccessCount(card, now);
+    const detail = getMyAccessCardDetail(card);
+    const note = getMyAccessCardNote(card);
+    const title = getAccessCardTitle(card, t, productT);
+    const detailsId = `access-card-${card.id}`;
+    const summary = !counted && (detail ?? note);
+
+    return (
+      <FoldingCard
+        // What waits on the reader stays open: its button must be in sight.
+        defaultOpen={zone === "action"}
+        detailsId={detailsId}
+        key={card.id}
+        label={title}
+      >
+        <CardHead>
+          <CardTitle>
+            {title}
+            {card.count > 1 && (
+              <span aria-label={t("cards.count", { count: card.count })}>
+                × {card.count}
+              </span>
+            )}
+          </CardTitle>
+          {ATTENTION_CHIPS.has(card.chip) && (
+            <StatusChip $tone={card.chip as "linkExpired" | "notJoined" | "endsSoon"}>
+              {t(`cards.chips.${card.chip}`)}
+            </StatusChip>
+          )}
+        </CardHead>
+        {summary && <CardSummary>{translateLine(summary)}</CardSummary>}
+        {counted && renderCount(counted)}
+        <CardMore id={detailsId}>
+          {detail && <CardDetail>{translateLine(detail)}</CardDetail>}
+          {note && <CardNote>{translateLine(note)}</CardNote>}
+          {(card.action || card.calendar) && (
+            <CardActions>
+              {card.action?.key === "reissue" ? (
+                <ReissueInvite
+                  cardId={card.id}
+                  supportHref={card.action.href}
+                  texts={{
+                    button: t("cards.actions.reissue"),
+                    failed: t("invite.failed"),
+                    limited: t("invite.limited"),
+                    sent: t("invite.sent"),
+                    support: t("invite.support"),
+                  }}
+                  token={rawToken}
+                />
+              ) : card.action ? (
+                <Button
+                  analytics={getMyAccessActionAnalytics(card)}
+                  buttonText={t(`cards.actions.${card.action.key}`)}
+                  href={card.action.href}
+                  prefetch={false}
+                  rel="nofollow"
+                  size="xs"
+                  width="max-content"
+                  {...(card.action.key === "support"
+                    ? { target: "_blank", variant: "secondary" as const }
+                    : {})}
+                />
+              ) : null}
+              {card.calendar && (
+                <CalendarLink href={calendarHref(card.id)} rel="nofollow">
+                  <CalendarIcon />
+                  {t("calendar.add")}
+                </CalendarLink>
+              )}
+            </CardActions>
+          )}
+        </CardMore>
+      </FoldingCard>
+    );
+  };
+
+  const zones = groupMyAccessCards(cards);
+
+  const nextTerm =
+    nextStep && !nextStep.started
+      ? renderCount({
+          at: nextStep.startsAt,
+          days: Math.max(0, warsawDaysBetween(now, new Date(nextStep.startsAt))),
+          kind: "startsIn",
+        })
+      : null;
 
   return (
-    <AccessSection data-analytics-private>
+    <AccessCanvas daypart={daypart}>
       <AccessAnalytics
         properties={getMyAccessAnalyticsProperties(
           cards.length ? "ready" : "empty",
           cards,
         )}
       />
-      <AccessPanel>
-        <AccessHeading>
-          <h1>{t("title")}</h1>
-          <p>{t("intro")}</p>
-        </AccessHeading>
+      <AccessHeader>
+        <Eyebrow>{t("title")}</Eyebrow>
+        <Greeting>{greeting}</Greeting>
+        <Intro>{t("intro")}</Intro>
+        {since && (
+          <Facts>
+            <li>
+              <b>
+                {t("facts.since", {
+                  month: monthAfterDay(since),
+                  year: formatYear.format(since),
+                })}
+              </b>
+            </li>
+            <li>{t("facts.purchases", { count: snapshot.purchases.length })}</li>
+          </Facts>
+        )}
+      </AccessHeader>
+
+      <AccessLayout>
         {cards.length === 0 ? (
-          <EmptyState>
+          <EmptyCard>
             <p>{t("empty.text")}</p>
             <Button
+              analytics={{ id: "my_access_browse_catalog", placement: "my_access_empty" }}
               buttonText={t("empty.button")}
               href="/online"
-              size="sm"
-              variant="secondary"
-              width="240px"
-              analytics={{ id: "my_access_browse_catalog", placement: "my_access_empty" }}
+              size="xs"
+              width="max-content"
             />
-          </EmptyState>
+          </EmptyCard>
         ) : (
-          <CardList>
-            {cards.map((card) => {
-              const Icon = CARD_ICONS[card.kind];
-              const needsAction = card.chip === "endsSoon" || card.chip === "notJoined";
-
-              return (
-                <AccessCard key={card.id} $needsAction={needsAction}>
-                  <Icon />
-                  <CardText>
-                    <CardTitleRow>
-                      <strong>
-                        {cardTitle(card)}
-                        {card.count > 1 && (
-                          <span aria-label={t("cards.count", { count: card.count })}>
-                            × {card.count}
-                          </span>
-                        )}
-                      </strong>
-                      <StatusChip $tone={card.chip}>
-                        {t(`cards.chips.${card.chip}`)}
-                      </StatusChip>
-                    </CardTitleRow>
-                    <CardStatus>{translateLine(card.status)}</CardStatus>
-                    {card.period && (
-                      <CardProgress
-                        aria-hidden
-                        $remaining={remainingShare(card.period, now)}
-                        $urgent={card.chip === "endsSoon"}
-                      />
-                    )}
-                    {card.note && <CardNote>{translateLine(card.note)}</CardNote>}
-                  </CardText>
-                  {card.action && (
-                    <Button
-                      buttonText={t(`cards.actions.${card.action.key}`)}
-                      href={card.action.href}
-                      prefetch={false}
-                      rel="nofollow"
-                      size="sm"
-                      width={card.action.key === "support" ? "240px" : "200px"}
-                      analytics={getMyAccessActionAnalytics(card)}
-                      {...(card.action.key === "support"
-                        ? { target: "_blank", variant: "secondary" as const }
-                        : {})}
-                    />
-                  )}
-                </AccessCard>
-              );
-            })}
-          </CardList>
+          <ZoneList>
+            {zones.map(({ cards: zoneCards, zone }) => (
+              <Zone
+                $tone={zone === "action" ? "action" : "calm"}
+                aria-labelledby={`access-zone-${zone}`}
+                key={zone}
+              >
+                <ZoneHeader id={`access-zone-${zone}`}>{t(`zones.${zone}`)}</ZoneHeader>
+                <ZoneTray>
+                  <CardList>{zoneCards.map((card) => renderCard(card, zone))}</CardList>
+                </ZoneTray>
+              </Zone>
+            ))}
+          </ZoneList>
         )}
-        <HelpRow>
-          <p>{t("help.text")}</p>
-          <Button
-            buttonText={t("help.button")}
-            href={SUPPORT_TELEGRAM_URL}
-            target="_blank"
-            size="sm"
-            variant="secondary"
-            width="240px"
-            analytics={{ id: "my_access_contact_support", placement: "my_access_footer" }}
-          />
-        </HelpRow>
-      </AccessPanel>
-    </AccessSection>
+
+        <AccessAside>
+          {nextStep ? (
+            <SideCard aria-labelledby="access-next">
+              <Eyebrow>{t("next.eyebrow")}</Eyebrow>
+              <SideTitle id="access-next">{t("next.cohortTitle")}</SideTitle>
+              {nextTerm ?? (
+                <SideText>
+                  {t("term.since", { date: dayMonth(nextStep.startsAt) })}
+                </SideText>
+              )}
+              <SideText>
+                {t(nextStep.kind === "renewal" ? "next.renewal" : "next.join")}
+              </SideText>
+              <CardActions>
+                <Button
+                  analytics={{
+                    id:
+                      nextStep.kind === "renewal"
+                        ? "my_access_renew_group"
+                        : "my_access_explore_group",
+                    placement: "my_access_next",
+                  }}
+                  buttonText={t(
+                    nextStep.kind === "renewal" ? "next.renewButton" : "next.joinButton",
+                  )}
+                  href={nextStep.href}
+                  prefetch={false}
+                  size="xs"
+                  width="max-content"
+                />
+                {!nextStep.started && (
+                  <CalendarLink href={calendarHref(NEXT_CYCLE_EVENT)} rel="nofollow">
+                    <CalendarIcon />
+                    {t("calendar.add")}
+                  </CalendarLink>
+                )}
+              </CardActions>
+            </SideCard>
+          ) : (
+            <SideCard aria-labelledby="access-announcements">
+              <Eyebrow id="access-announcements">{t("next.eyebrow")}</Eyebrow>
+              <SideText>{t("next.announcements")}</SideText>
+              <div>
+                <QuietLink
+                  href={INSTAGRAM_PROFILE_URL}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {t("next.instagram")}
+                </QuietLink>
+              </div>
+            </SideCard>
+          )}
+
+          <SideCard aria-labelledby="access-keep">
+            <Eyebrow id="access-keep">{t("keep.eyebrow")}</Eyebrow>
+            <ToolList>
+              {subscription && (
+                <Tool>
+                  <i>
+                    <CalendarIcon />
+                  </i>
+                  <b>{t("keep.calendarTitle")}</b>
+                  <p>{t("keep.calendarText")}</p>
+                  <CalendarSubscribe
+                    links={subscription}
+                    texts={{
+                      apple: t("keep.apple"),
+                      copied: t("keep.copied"),
+                      copyAddress: t("keep.copyAddress"),
+                      google: t("keep.google"),
+                      subscribe: t("keep.subscribe"),
+                    }}
+                  />
+                </Tool>
+              )}
+              <Tool>
+                <i>
+                  <BookmarkIcon />
+                </i>
+                <b>{t("keep.pageTitle")}</b>
+                <p>{t("keep.pageText")}</p>
+                <div>
+                  <SavePageLink
+                    texts={{ save: t("keep.save"), saved: t("keep.saved") }}
+                    title={t("metaTitle")}
+                  />
+                </div>
+              </Tool>
+            </ToolList>
+            <ToolNote>{t("keep.private")}</ToolNote>
+          </SideCard>
+
+          {journey.length > 0 && (
+            <SideCard aria-labelledby="access-journey">
+              <Eyebrow id="access-journey">{t("journey.eyebrow")}</Eyebrow>
+              <ShareHintScope text={t("journey.hint")}>
+                <JourneyList>
+                  {journey.map((step, index) => {
+                    // Shared only while the course is on sale: its page then sells it.
+                    const pagePath = sales.openProductIds.has(step.productExternalId)
+                      ? getAccessProductPagePath(step.productExternalId)
+                      : null;
+                    return (
+                      <JourneyStep $live={step.live} key={step.productExternalId}>
+                        <i aria-hidden data-live={step.live ? "" : undefined}>
+                          {index + 1}
+                        </i>
+                        <div>
+                          <b>{step.title}</b>
+                          <span>
+                            {purchaseDay(step.purchasedAt)}
+                            {step.live && (
+                              <VisuallyHidden> · {t("journey.live")}</VisuallyHidden>
+                            )}
+                          </span>
+                        </div>
+                        {pagePath && (
+                          <ShareCourse
+                            label={t("journey.share", { title: step.title })}
+                            texts={{ copied: t("journey.copied") }}
+                            title={step.title}
+                            url={`${normalizedSiteUrl}${pagePath}`}
+                          />
+                        )}
+                      </JourneyStep>
+                    );
+                  })}
+                </JourneyList>
+              </ShareHintScope>
+            </SideCard>
+          )}
+
+          <HelpCard>
+            <p>{t("help.text")}</p>
+            <div>
+              <TrackedAnchor
+                analytics={{
+                  id: "my_access_contact_support",
+                  placement: "my_access_footer",
+                }}
+                href={SUPPORT_TELEGRAM_URL}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                {t("help.button")}
+              </TrackedAnchor>
+              <Link href="/access" prefetch={false}>
+                {t("help.resend")}
+              </Link>
+            </div>
+          </HelpCard>
+        </AccessAside>
+      </AccessLayout>
+    </AccessCanvas>
   );
 }

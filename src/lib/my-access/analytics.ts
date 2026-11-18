@@ -27,6 +27,7 @@ const ACTION_IDS = {
   renewHub: "my_access_renew_hub",
   buyHub: "my_access_buy_hub",
   support: "my_access_contact_support",
+  reissue: "my_access_reissue_invite",
 } as const;
 
 export const getMyAccessActionAnalytics = (

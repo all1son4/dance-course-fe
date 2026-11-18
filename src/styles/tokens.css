@@ -9,7 +9,9 @@
   --ink-muted: rgba(72, 72, 72, 1);
   --ink-inverse: rgba(255, 255, 255, 1);
   --brand: rgba(124, 0, 2, 1);
-  --danger: rgba(213, 0, 4, 1);
+  /* Errors: cinnabar, a step towards orange and lighter than --brand, so an
+     error never reads as a brand button. Always with an icon or words. */
+  --danger: rgba(182, 62, 3, 1);
   --success: rgba(24, 112, 58, 1);
   --surface: rgba(255, 255, 255, 1);
 

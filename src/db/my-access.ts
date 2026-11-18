@@ -1,13 +1,17 @@
-import { and, eq, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, exists, gt, inArray, isNull, or, sql } from "drizzle-orm";
 
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
+import type { MyAccessNextCohort } from "@/lib/my-access/next-step";
 
+import { listHubDiscountCohorts } from "./hub-discount";
 import { normalizeEmail } from "./record-values";
 import {
   accessEntitlements,
   customers,
   onlineGroupCohorts,
   purchases,
+  renewalCampaigns,
+  renewalCampaignSourceChats,
   telegramAccessTokens,
 } from "./schema";
 import type { DatabaseExecutor } from "./transaction";
@@ -85,7 +89,7 @@ export async function readMyAccessSnapshot(
   customerId: string,
 ): Promise<MyAccessSnapshot | null> {
   const [customer] = await database
-    .select({ normalizedEmail: customers.normalizedEmail })
+    .select({ fullName: customers.fullName, normalizedEmail: customers.normalizedEmail })
     .from(customers)
     .where(eq(customers.id, customerId))
     .limit(1);
@@ -113,13 +117,14 @@ export async function readMyAccessSnapshot(
   const cohortIds = [
     ...new Set(purchaseRows.flatMap((row) => (row.cohortId ? [row.cohortId] : []))),
   ];
-  const [rights, cohorts, tokens] = await Promise.all([
+  const [rights, cohorts, tokens, discountCohorts] = await Promise.all([
     ids.length
       ? database
           .select({
             id: accessEntitlements.id,
             telegramChatId: accessEntitlements.telegramChatId,
             accessKey: accessEntitlements.accessKey,
+            accessWorkflow: accessEntitlements.accessWorkflow,
             expiresAt: accessEntitlements.expiresAt,
             purchaseId: accessEntitlements.purchaseId,
             revokedAt: accessEntitlements.revokedAt,
@@ -154,6 +159,8 @@ export async function readMyAccessSnapshot(
           .from(telegramAccessTokens)
           .where(inArray(telegramAccessTokens.purchaseId, ids))
       : Promise.resolve([]),
+    // The cohorts whose members get the Hub renewal price now, by the checkout's rule.
+    listHubDiscountCohorts(database, new Date()),
   ]);
   const now = Date.now();
   // An invite still usable: issued, not expired. Older tokens may lack the right's id
@@ -171,6 +178,8 @@ export async function readMyAccessSnapshot(
 
   return {
     cohorts,
+    customerFullName: customer.fullName,
+    hubDiscountCohortIds: discountCohorts.map((cohort) => cohort.id),
     purchases: purchaseRows.map((row) => ({
       ...row,
       offerExternalId: row.offerExternalId ?? "",
@@ -178,6 +187,7 @@ export async function readMyAccessSnapshot(
     })),
     rights: rights.map((right) => ({
       accessKey: right.accessKey,
+      accessWorkflow: right.accessWorkflow,
       expiresAt: right.expiresAt,
       hasLiveInvite: hasLiveInvite(right),
       purchaseId: right.purchaseId ?? "",
@@ -187,4 +197,55 @@ export async function readMyAccessSnapshot(
       status: right.status,
     })),
   };
+}
+
+/**
+ * «Дальше»: the cycle sold through `mainChatId` and the active renewal campaigns into
+ * it from the main chats of the customer's cycles (the links of the closure post).
+ */
+export async function readMyAccessNextCohort(
+  database: DatabaseExecutor,
+  { cohortIds, mainChatId, now }: { cohortIds: string[]; mainChatId: string; now: Date },
+): Promise<MyAccessNextCohort | null> {
+  const [cohort] = await database
+    .select({ id: onlineGroupCohorts.id, startsAt: onlineGroupCohorts.startsAt })
+    .from(onlineGroupCohorts)
+    .where(eq(onlineGroupCohorts.mainChatId, mainChatId))
+    .limit(1);
+  if (!cohort) return null;
+
+  const memberChats = database
+    .select({ chatId: onlineGroupCohorts.mainChatId })
+    .from(onlineGroupCohorts)
+    .where(inArray(onlineGroupCohorts.id, cohortIds));
+  const renewalCampaignRows = cohortIds.length
+    ? await database
+        .select({
+          offerExternalId: renewalCampaigns.offerExternalId,
+          productExternalId: renewalCampaigns.productExternalId,
+          slug: renewalCampaigns.slug,
+        })
+        .from(renewalCampaigns)
+        .where(
+          and(
+            eq(renewalCampaigns.status, "active"),
+            eq(renewalCampaigns.targetChatId, mainChatId),
+            or(isNull(renewalCampaigns.expiresAt), gt(renewalCampaigns.expiresAt, now)),
+            exists(
+              database
+                .select({ id: renewalCampaignSourceChats.id })
+                .from(renewalCampaignSourceChats)
+                .where(
+                  and(
+                    eq(renewalCampaignSourceChats.campaignId, renewalCampaigns.id),
+                    inArray(renewalCampaignSourceChats.chatId, memberChats),
+                  ),
+                ),
+            ),
+          ),
+        )
+        .orderBy(desc(renewalCampaigns.createdAt))
+    : [];
+
+  return { ...cohort, renewalCampaigns: renewalCampaignRows };
 }

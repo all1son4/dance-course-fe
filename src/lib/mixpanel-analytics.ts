@@ -75,7 +75,7 @@ type CommerceEventProperties = {
 };
 
 type CtaEventProperties = CommerceEventProperties & {
-  access_action?: "renewHub" | "buyHub" | "support";
+  access_action?: "renewHub" | "buyHub" | "support" | "reissue";
   access_kind?: "hub" | "group" | "channel" | "lifetime";
   access_state?:
     "active" | "endsSoon" | "notJoined" | "linkExpired" | "upcoming" | "ended";

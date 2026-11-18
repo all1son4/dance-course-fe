@@ -1,6 +1,9 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
+  buildCheckoutHref,
+  INSPIRATION_HUB_ACCESS_OFFER_ID,
   INSPIRATION_HUB_DISCOUNT_SLUG,
+  INSPIRATION_HUB_PRODUCT_ID,
   isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
@@ -25,6 +28,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export const HUB_RENEWAL_WINDOW_DAYS = 7;
 
 export const HUB_RENEWAL_HREF = `/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`;
+/** The Hub at its full price, for someone the renewal price no longer covers. */
+export const HUB_PURCHASE_HREF = buildCheckoutHref({
+  offerId: INSPIRATION_HUB_ACCESS_OFFER_ID,
+  productId: INSPIRATION_HUB_PRODUCT_ID,
+});
+
+/**
+ * Which purchases the checkout would accept right now; a button that leads to a
+ * refused payment is never shown. Both default to open (tests, calendar files).
+ */
+export type MyAccessSales = { hubRenewal: boolean; hubPurchase: boolean };
+const ALL_OPEN: MyAccessSales = { hubPurchase: true, hubRenewal: true };
+
+const WEEK_MS = 7 * DAY_MS;
 
 export type MyAccessPurchase = {
   id: string;
@@ -49,6 +66,8 @@ export type MyAccessRight = {
    * when unknown. A buyer who never joined and holds none is sent to support.
    */
   hasLiveInvite?: boolean;
+  /** "manual-admin" rights are issued by hand: no self-service invite. */
+  accessWorkflow?: string | null;
 };
 
 export type MyAccessCohort = {
@@ -61,10 +80,21 @@ export type MyAccessCohort = {
 };
 
 export type MyAccessSnapshot = {
+  /**
+   * The cohorts whose chat members get the Hub renewal price now (HUB-D17/D36: the
+   * latest started one and those ended at most 7 days ago). The checkout checks the
+   * membership itself; the page offers the price only to members of record.
+   */
+  hubDiscountCohortIds?: readonly string[];
+  /** The name given at checkout, for the greeting only; never on a card. */
+  customerFullName?: string | null;
   purchases: MyAccessPurchase[];
   rights: MyAccessRight[];
   cohorts: MyAccessCohort[];
 };
+
+export type MyAccessCalendarDate =
+  { kind: "start"; at: string } | { kind: "end"; at: string };
 
 /** A translated line: the key under `MyAccessPage.cards` and its values (dates as ISO). */
 export type MyAccessLine = { key: string; values?: Record<string, string | number> };
@@ -80,11 +110,29 @@ export type MyAccessCard = {
   chip: MyAccessChip;
   /** A running window with both ends known: drives the remaining-time bar. */
   period?: { start: string; end: string };
+  /**
+   * The week of a running Online Group cycle by its calendar, counted from the
+   * cycle start. A fact of the calendar, never a claim about lessons watched.
+   */
+  cycleWeek?: { current: number; total: number };
+  /**
+   * The one date worth a calendar entry: a start still ahead (timed, or the whole
+   * day for the Hub) or the end of a running access.
+   */
+  calendar?: MyAccessCalendarDate;
   /** Which title to show: the purchase's product, or the Hub itself. */
   title: { productExternalId: string; offerExternalId: string } | "hub";
   status: MyAccessLine;
   note?: MyAccessLine;
-  action?: { key: "renewHub" | "buyHub" | "support"; href: string };
+  /**
+   * The card's button. `reissue` asks for a fresh invite by email (the link itself
+   * never reaches the page); its `href` is support, the way out when that fails.
+   */
+  action?: {
+    key: "renewHub" | "buyHub" | "support" | "reissue";
+    href: string;
+    purchaseId?: string;
+  };
   /** How many identical purchases this one card stands for (folded duplicates). */
   count: number;
   /** 0 — needs action, 1 — running, 2 — later, 3 — ended. Sort key. */
@@ -95,12 +143,24 @@ export type MyAccessCard = {
 
 type BaseCard = Omit<MyAccessCard, "chip" | "count" | "kind">;
 
-const SUPPORT_ACTION = { href: SUPPORT_TELEGRAM_URL, key: "support" as const };
+/** A fresh invite of this purchase, sent to its email; support when that fails. */
+const reissueAction = (purchaseId: string) => ({
+  href: SUPPORT_TELEGRAM_URL,
+  key: "reissue" as const,
+  purchaseId,
+});
 
-/** The note of an access not joined yet: the emailed link, or support once it has expired. */
+/** A right issued by hand is re-issued by hand: support, not a self-service invite. */
+const SUPPORT_ACTION = { href: SUPPORT_TELEGRAM_URL, key: "support" as const };
+const newLinkAction = (right: MyAccessRight) =>
+  right.accessWorkflow === "manual-admin"
+    ? SUPPORT_ACTION
+    : reissueAction(right.purchaseId);
+
+/** The note of an access not joined yet: the emailed link, or a new one once it has expired. */
 const joinNote = (right: MyAccessRight) =>
   right.hasLiveInvite === false
-    ? { action: SUPPORT_ACTION, note: { key: "linkExpired" } }
+    ? { action: newLinkAction(right), note: { key: "linkExpired" } }
     : { note: { key: "linkInEmail" } };
 
 const isRevoked = (right: MyAccessRight) =>
@@ -117,13 +177,18 @@ const hubPeriodEnd = (right: MyAccessRight) => right.expiresAt;
 const buildStandaloneHubCard = ({
   groupId,
   hasPlusHub,
+  isDiscountMember,
   now,
   periods,
+  sales,
 }: {
   groupId: string;
   hasPlusHub: boolean;
+  /** A member of record of a cohort whose chat gets the renewal price now. */
+  isDiscountMember: boolean;
   now: Date;
   periods: MyAccessRight[];
+  sales: MyAccessSales;
 }): BaseCard | null => {
   const current = periods.find(
     (period) =>
@@ -144,7 +209,8 @@ const buildStandaloneHubCard = ({
   if (current && paidUntil) {
     const left = daysLeft(paidUntil, now);
     // Renewing early loses no day, so the button is there for the whole period.
-    const canRenew = later.length === 0 && !hasPlusHub;
+    // A running paid Hub is itself the basis of the renewal price (HUB-D17).
+    const canRenew = later.length === 0 && !hasPlusHub && sales.hubRenewal;
     const endsSoon = canRenew && left <= HUB_RENEWAL_WINDOW_DAYS;
     const notJoined = !isJoined(current) && !hasPlusHub;
 
@@ -152,6 +218,7 @@ const buildStandaloneHubCard = ({
       id: `hub:${groupId}`,
       title: "hub",
       period: { end: iso(paidUntil), start: iso(current.startsAt!) },
+      calendar: { kind: "end", at: iso(paidUntil) },
       status: { key: "hub.activeUntil", values: { date: iso(paidUntil) } },
       note: notJoined
         ? current.hasLiveInvite === false
@@ -163,7 +230,7 @@ const buildStandaloneHubCard = ({
       ...(endsSoon
         ? { action: { key: "renewHub" as const, href: HUB_RENEWAL_HREF } }
         : notJoined && current.hasLiveInvite === false
-          ? { action: SUPPORT_ACTION }
+          ? { action: newLinkAction(current) }
           : canRenew
             ? { action: { key: "renewHub" as const, href: HUB_RENEWAL_HREF } }
             : {}),
@@ -180,6 +247,7 @@ const buildStandaloneHubCard = ({
     return {
       id: `hub:${groupId}`,
       title: "hub",
+      calendar: { kind: "start", at: iso(next.startsAt) },
       status: {
         key: "hub.scheduled",
         values: { start: iso(next.startsAt), end: iso(paidUntil) },
@@ -210,7 +278,12 @@ const buildStandaloneHubCard = ({
       id: `hub:${groupId}`,
       title: "hub",
       status: { key: "hub.ended", values: { date: iso(lastEnd) } },
-      action: { key: "buyHub", href: HUB_RENEWAL_HREF },
+      // The renewal price only where the checkout grants it; else the full price.
+      ...(isDiscountMember && sales.hubRenewal
+        ? { action: { key: "buyHub" as const, href: HUB_RENEWAL_HREF } }
+        : sales.hubPurchase
+          ? { action: { key: "buyHub" as const, href: HUB_PURCHASE_HREF } }
+          : {}),
       urgency: 3,
       sortAt: lastEnd.getTime(),
     };
@@ -221,12 +294,15 @@ const buildStandaloneHubCard = ({
 
 /** The Hub that comes with Plus (section 8, text 3). */
 const buildPlusHubCard = ({
+  canRenewHub,
   cohort,
   hubContinues,
   now,
   purchase,
   right,
 }: {
+  /** The renewal price is open to this buyer now and the Hub is on sale. */
+  canRenewHub: boolean;
   cohort: MyAccessCohort | null;
   /** A paid Hub period or a later Plus already keeps this buyer in the Hub (§11). */
   hubContinues: boolean;
@@ -244,10 +320,22 @@ const buildPlusHubCard = ({
 
     if (lastDay <= now) return null;
 
-    // Already renewed: no urgent "renew" next to the Hub she has paid for.
+    // Already renewed: no urgent "renew" next to the Hub already paid for. Without a
+    // renewal the checkout would accept, the card only says until when it runs.
+    if (!hubContinues && !canRenewHub) {
+      return {
+        ...base,
+        calendar: { kind: "end" as const, at: iso(lastDay) },
+        status: { key: "plusHub.closed", values: { date: iso(lastDay) } },
+        urgency: 1,
+        sortAt: lastDay.getTime(),
+      };
+    }
+
     return hubContinues
       ? {
           ...base,
+          calendar: { kind: "end" as const, at: iso(lastDay) },
           status: { key: "plusHub.closed", values: { date: iso(lastDay) } },
           note: { key: "hub.renewed" },
           urgency: 1,
@@ -255,6 +343,7 @@ const buildPlusHubCard = ({
         }
       : {
           ...base,
+          calendar: { kind: "end" as const, at: iso(lastDay) },
           status: { key: "plusHub.closed", values: { date: iso(lastDay) } },
           note: { key: "plusHub.keep" },
           action: { key: "renewHub", href: HUB_RENEWAL_HREF },
@@ -269,6 +358,7 @@ const buildPlusHubCard = ({
     return recordedEnd > now
       ? {
           ...base,
+          calendar: { kind: "end", at: iso(recordedEnd) },
           status: { key: "plusHub.until", values: { date: iso(recordedEnd) } },
           urgency: 1,
           sortAt: recordedEnd.getTime(),
@@ -277,6 +367,7 @@ const buildPlusHubCard = ({
   }
 
   // HUB-D49: the library is open from payment; the library opens before the start.
+  // No calendar date: the library is already open, the start is the group's own.
   if (cohort && !isStartDayReached(cohort.startsAt, now)) {
     return {
       ...base,
@@ -326,6 +417,7 @@ const buildOnlineGroupCard = ({
     return primary.expiresAt && primary.expiresAt > now
       ? {
           ...base,
+          calendar: { kind: "end", at: iso(primary.expiresAt) },
           status: { key: "group.until", values: { date: iso(primary.expiresAt) } },
           urgency: 1,
           sortAt: primary.expiresAt.getTime(),
@@ -340,6 +432,7 @@ const buildOnlineGroupCard = ({
   if (cohort.closedAt && cohort.accessEndsAt) {
     return {
       ...base,
+      calendar: { kind: "end", at: iso(cohort.accessEndsAt) },
       status: { key: "group.closed", values: { date: iso(cohort.accessEndsAt) } },
       urgency: 1,
       sortAt: cohort.accessEndsAt.getTime(),
@@ -349,6 +442,7 @@ const buildOnlineGroupCard = ({
   if (cohort.startsAt > now) {
     return {
       ...base,
+      calendar: { kind: "start", at: iso(cohort.startsAt) },
       status: { key: "group.startsOn", values: { date: iso(cohort.startsAt) } },
       ...(isJoined(primary) ? {} : joinNote(primary)),
       urgency: isJoined(primary) ? 2 : 0,
@@ -358,6 +452,14 @@ const buildOnlineGroupCard = ({
 
   return {
     ...base,
+    // HUB-D50: each cohort has its own planned length.
+    cycleWeek: {
+      current: Math.min(
+        cohort.durationWeeks,
+        Math.floor((now.getTime() - cohort.startsAt.getTime()) / WEEK_MS) + 1,
+      ),
+      total: cohort.durationWeeks,
+    },
     status: { key: "group.running" },
     ...(isJoined(primary) ? {} : joinNote(primary)),
     urgency: isJoined(primary) ? 1 : 0,
@@ -395,6 +497,7 @@ const buildTimedChannelCard = ({
                 },
               }
             : {}),
+          calendar: { kind: "end", at: iso(primary.expiresAt) },
           status: { key: "channel.until", values: { date: iso(primary.expiresAt) } },
           note: { key: "daysLeft", values: { count: daysLeft(primary.expiresAt, now) } },
           urgency: 1,
@@ -440,7 +543,9 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
   if (key === "hub.scheduled" || key === "hub.afterCohort") {
     return "upcoming";
   }
-  if (card.action?.key === "support") return "linkExpired";
+  if (card.action?.key === "reissue" || card.action?.key === "support") {
+    return "linkExpired";
+  }
   if (card.urgency === 0) return "notJoined";
   if (key === "group.startsOn") return "upcoming";
   if (
@@ -463,6 +568,7 @@ const withPresentation = (card: BaseCard, now: Date): MyAccessCard => ({
 export const buildMyAccessCards = (
   snapshot: MyAccessSnapshot,
   now: Date,
+  sales: MyAccessSales = ALL_OPEN,
 ): MyAccessCard[] => {
   const cohorts = new Map(snapshot.cohorts.map((cohort) => [cohort.id, cohort]));
   const rightsByPurchase = new Map<string, MyAccessRight[]>();
@@ -493,6 +599,17 @@ export const buildMyAccessCards = (
     hasHubAhead ||
     (cohort !== null &&
       plusCohortStarts.some((start) => start > cohort.startsAt.getTime()));
+
+  // A member of record of a cohort the renewal price is open to now: joined its chat
+  // (the checkout still checks the membership on Telegram).
+  const discountCohorts = new Set(snapshot.hubDiscountCohortIds ?? []);
+  const isDiscountMember = snapshot.purchases.some((purchase) => {
+    if (!purchase.cohortId || !discountCohorts.has(purchase.cohortId)) return false;
+    const primary = rightsByPurchase
+      .get(purchase.id)
+      ?.find((right) => right.accessKey === "primary");
+    return primary !== undefined && primary.status === "activated";
+  });
 
   const cards: BaseCard[] = [];
   const hubGroups = new Map<string, MyAccessRight[]>();
@@ -527,6 +644,7 @@ export const buildMyAccessCards = (
       );
       const plusHubCard = hubRight
         ? buildPlusHubCard({
+            canRenewHub: sales.hubRenewal && isDiscountMember,
             cohort,
             hubContinues: hubContinuesAfter(cohort),
             now,
@@ -568,20 +686,23 @@ export const buildMyAccessCards = (
     const card = buildStandaloneHubCard({
       groupId,
       hasPlusHub: plusHubIdentities.has(groupId),
+      isDiscountMember,
       now,
       periods,
+      sales,
     });
     if (card) cards.push(card);
   }
 
-  // Identical cards (the same product bought and left unopened twice) read as one.
+  // Identical cards (the same product bought and left unopened twice) read as one;
+  // a folded «new link» asks for the first purchase's, one working invite is enough.
   const folded = new Map<string, MyAccessCard>();
   for (const card of cards.map((base) => withPresentation(base, now))) {
     const key = JSON.stringify([
       card.title,
       card.status,
       card.note,
-      card.action,
+      card.action && { href: card.action.href, key: card.action.key },
       card.chip,
     ]);
     const existing = folded.get(key);
