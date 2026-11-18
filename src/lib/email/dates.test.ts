@@ -30,3 +30,18 @@ test("a Russian date can end a sentence: no «г.» before the full stop", () =>
     "Старт 1 декабря 2026.",
   );
 });
+
+test("a date without the year reads as day and month", () => {
+  assert.equal(
+    formatEmailDate("2026-11-23T17:00:00Z", "en", { includeYear: false }),
+    "23 November",
+  );
+  assert.equal(
+    formatEmailDate("2026-11-23T17:00:00Z", "ru", { includeYear: false }),
+    "23 ноября",
+  );
+  assert.equal(
+    formatEmailDate("2026-11-23T17:00:00Z", "pl", { includeYear: false }),
+    "23 listopada",
+  );
+});

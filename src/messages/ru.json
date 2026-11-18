@@ -1450,12 +1450,15 @@
       "title": "Новый поток · старт {date}",
       "titleStarted": "Новый поток идёт с {date}",
       "renewal": "Для тех, кто был в прошлом потоке, — продление по специальной цене, без паузы между потоками.",
-      "join": "Онлайн-группа: 6 недель в Telegram.",
+      "join": "Онлайн-группа: {weeks, plural, one {# неделя} few {# недели} many {# недель} other {# недели}} в Telegram.",
       "renewButton": "Продлить",
       "joinButton": "Подробнее о группе",
       "cohortTitle": "Новый поток онлайн-группы",
       "announcements": "Анонсы новых потоков — в Instagram Анны",
-      "instagram": "@anna.strok_dance"
+      "instagram": "@anna.strok_dance",
+      "hubTitle": "Inspiration Hub",
+      "hubText": "Библиотека уроков прошлых потоков и материалов для вдохновения: 8 недель в своём темпе.",
+      "hubButton": "Подробнее о Hub"
     },
     "journey": {
       "eyebrow": "Твой путь",

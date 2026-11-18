@@ -5,6 +5,7 @@ import {
   markEmailCampaignLeadFailed,
   markEmailCampaignLeadSent,
   recordMonthlyReportRunInDatabase,
+  releaseEmailCampaignLeadClaim,
 } from "@/db/business-operation-jobs";
 import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales";
 import {
@@ -15,7 +16,11 @@ import {
   replayOutboxJob,
 } from "@/db/transactional-outbox";
 import { deliverChoreoAccessReminder } from "@/lib/choreo-access-reminder-delivery";
-import { sendResendEmail, type SendResendEmailInput } from "@/lib/email/resend";
+import {
+  isResendQuotaError,
+  sendResendEmail,
+  type SendResendEmailInput,
+} from "@/lib/email/resend";
 import { deliverHubExpiryReminder } from "@/lib/hub-expiry-reminder-delivery";
 import { deliverHubPeriodStartInvite } from "@/lib/hub-period-start-invite-delivery";
 import { formatReportMonthLabel } from "@/lib/monthly-sales-report";
@@ -123,8 +128,21 @@ const parseEmailPayload = (value: unknown): SendResendEmailInput => {
     });
   }
 
+  const headers = value.headers;
+
+  if (
+    headers !== undefined &&
+    (!isRecord(headers) ||
+      Object.values(headers).some((header) => typeof header !== "string"))
+  ) {
+    throw Object.assign(new Error("business_outbox_headers_invalid"), {
+      retryable: false,
+    });
+  }
+
   return {
     attachments: attachments as SendResendEmailInput["attachments"],
+    headers: headers as SendResendEmailInput["headers"],
     html: requireString(value.html, "email_html"),
     subject: requireString(value.subject, "email_subject"),
     text: requireString(value.text, "email_text"),
@@ -226,6 +244,13 @@ const deliverCampaignEmail = async (job: ClaimedOutboxJob) => {
 
     return { externalMessageId: result.emailId };
   } catch (error) {
+    // Over the quota the address did nothing wrong: back to `pending`, and the job
+    // waits for the next batch (which replays it) instead of the cron's retries.
+    if (isResendQuotaError(error)) {
+      await releaseEmailCampaignLeadClaim({ leadId: payload.leadId });
+      throw Object.assign(error as Error, { retryable: false });
+    }
+
     await markEmailCampaignLeadFailed({
       error,
       leadId: payload.leadId,

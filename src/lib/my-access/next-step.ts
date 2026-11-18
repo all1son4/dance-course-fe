@@ -5,7 +5,7 @@ import {
 } from "@/constants/sellable-products";
 import { isOnlineGroupAccessOfferId } from "@/lib/telegram/offer-access";
 
-import type { MyAccessSnapshot } from "./cards";
+import type { MyAccessCard, MyAccessSnapshot } from "./cards";
 
 /*
  * «Дальше»: the Online Group cycle on sale now, when the customer is not in it yet.
@@ -24,6 +24,8 @@ export type MyAccessRenewalCampaign = {
 
 /** The cycle on sale and the active renewal campaigns from her cycles into it. */
 export type MyAccessNextCohort = {
+  /** How long the cycle runs, as set in the admin (HUB-D50). */
+  durationWeeks: number;
   id: string;
   startsAt: Date;
   renewalCampaigns: MyAccessRenewalCampaign[];
@@ -31,6 +33,7 @@ export type MyAccessNextCohort = {
 
 export type MyAccessNextStep = {
   cohortId: string;
+  durationWeeks: number;
   startsAt: string;
   /** The cycle is on sale but has already begun. */
   started: boolean;
@@ -76,6 +79,7 @@ export const buildMyAccessNextStep = (
 
   return {
     cohortId: next.id,
+    durationWeeks: next.durationWeeks,
     href: campaign ? renewalHref(campaign) : ONLINE_GROUP_PAGE_HREF,
     kind: campaign ? "renewal" : "join",
     started: next.startsAt <= now,
@@ -110,3 +114,15 @@ export const getMyAccessMemberCohortIds = (snapshot: MyAccessSnapshot, now: Date
     ),
   ];
 };
+
+export const HUB_PAGE_HREF = "/online/inspiration-hub";
+
+/**
+ * «Дальше» also offers the Hub while it is on sale and the customer has none in
+ * any form: no own Hub and no Plus Hub, running or ahead. An ended Hub counts as
+ * none. With neither the cycle nor the Hub to offer, the page points to Instagram.
+ */
+export const shouldOfferMyAccessHub = (
+  cards: readonly Pick<MyAccessCard, "chip" | "kind">[],
+  hubOnSale: boolean,
+) => hubOnSale && !cards.some((card) => card.kind === "hub" && card.chip !== "ended");

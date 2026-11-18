@@ -44,6 +44,7 @@ import {
   isMyAccessLinkConfigured,
   verifyMyAccessToken,
 } from "@/lib/my-access/link";
+import { HUB_PAGE_HREF, shouldOfferMyAccessHub } from "@/lib/my-access/next-step";
 import { groupMyAccessCards, type MyAccessZone } from "@/lib/my-access/zones";
 import { normalizedSiteUrl } from "@/lib/seo";
 
@@ -69,6 +70,7 @@ import {
   AccessHeader,
   AccessLayout,
   AccessSection,
+  CalendarLeaf,
   CalendarLink,
   CardActions,
   CardDetail,
@@ -226,6 +228,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
   const sales = await readMyAccessSales();
   const cards = buildMyAccessCards(snapshot, now, sales);
   const nextStep = await readMyAccessNextStep(snapshot, now, sales.isOpen);
+  const offerHub = shouldOfferMyAccessHub(cards, sales.hubPurchase);
   const journey = buildMyAccessJourney(snapshot, cards).flatMap((step) => {
     const title = getAccessProductTitle(step.productExternalId, productT);
     return title ? [{ ...step, title }] : [];
@@ -239,6 +242,18 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     day: "numeric",
     month: "long",
     timeZone: WARSAW,
+  });
+  const formatMonthShort = new Intl.DateTimeFormat(locale, {
+    month: "short",
+    timeZone: WARSAW,
+  });
+  const formatDayNumber = new Intl.DateTimeFormat(locale, {
+    day: "numeric",
+    timeZone: WARSAW,
+  });
+  const formatWeekday = new Intl.DateTimeFormat(locale, {
+    timeZone: WARSAW,
+    weekday: "long",
   });
   const formatYear = new Intl.DateTimeFormat(locale, {
     timeZone: WARSAW,
@@ -282,22 +297,31 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
         )
       : null;
 
+  /** A date as a calendar leaf; the text next to it names the date for screen readers. */
+  const calendarLeaf = (iso: string) => (
+    <CalendarLeaf aria-hidden>
+      <small>{formatMonthShort.format(new Date(iso)).replace(/\.$/u, "")}</small>
+      <b>{formatDayNumber.format(new Date(iso))}</b>
+    </CalendarLeaf>
+  );
+
   /** The count of a card: the number, what it counts, the date. */
   const renderCount = (count: MyAccessCount) => {
     switch (count.kind) {
       case "startsIn":
         return (
           <Count>
-            <CountValue>
-              {count.days === 0 ? dayMonth(count.at).split(" ")[0] : count.days}
-            </CountValue>
+            {calendarLeaf(count.at)}
             <CountText>
               <b>
                 {count.days === 0
                   ? t("count.startsToday")
-                  : t("count.startsIn", { days: count.days })}
+                  : `${count.days} ${t("count.startsIn", { days: count.days })}`}
               </b>
-              <span>{dayMonth(count.at)}</span>
+              <span>
+                {formatWeekday.format(new Date(count.at))}
+                <VisuallyHidden>, {dayMonth(count.at)}</VisuallyHidden>
+              </span>
             </CountText>
           </Count>
         );
@@ -345,10 +369,10 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
       case "ended":
         return (
           <Count $tone="muted">
-            <CountValue>{dayMonth(count.at).split(" ")[0]}</CountValue>
+            {calendarLeaf(count.at)}
             <CountText>
               <b>{t("count.ended")}</b>
-              <span>{dayMonth(count.at)}</span>
+              <VisuallyHidden>{dayMonth(count.at)}</VisuallyHidden>
             </CountText>
           </Count>
         );
@@ -559,7 +583,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
         )}
 
         <AccessAside>
-          {nextStep ? (
+          {nextStep && (
             <SideCard aria-labelledby="access-next">
               <Eyebrow>{t("next.eyebrow")}</Eyebrow>
               <SideTitle id="access-next">{t("next.cohortTitle")}</SideTitle>
@@ -569,7 +593,9 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                 </SideText>
               )}
               <SideText>
-                {t(nextStep.kind === "renewal" ? "next.renewal" : "next.join")}
+                {nextStep.kind === "renewal"
+                  ? t("next.renewal")
+                  : t("next.join", { weeks: nextStep.durationWeeks })}
               </SideText>
               <CardActions>
                 <Button
@@ -596,7 +622,25 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                 )}
               </CardActions>
             </SideCard>
-          ) : (
+          )}
+          {offerHub && (
+            <SideCard aria-labelledby="access-next-hub">
+              {!nextStep && <Eyebrow>{t("next.eyebrow")}</Eyebrow>}
+              <SideTitle id="access-next-hub">{t("next.hubTitle")}</SideTitle>
+              <SideText>{t("next.hubText")}</SideText>
+              <CardActions>
+                <Button
+                  analytics={{ id: "my_access_explore_hub", placement: "my_access_next" }}
+                  buttonText={t("next.hubButton")}
+                  href={HUB_PAGE_HREF}
+                  prefetch={false}
+                  size="xs"
+                  width="max-content"
+                />
+              </CardActions>
+            </SideCard>
+          )}
+          {!nextStep && !offerHub && (
             <SideCard aria-labelledby="access-announcements">
               <Eyebrow id="access-announcements">{t("next.eyebrow")}</Eyebrow>
               <SideText>{t("next.announcements")}</SideText>

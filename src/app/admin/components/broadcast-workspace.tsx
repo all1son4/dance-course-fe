@@ -17,6 +17,7 @@ import { ConfirmDialog } from "../ui/feedback";
 import { Fact, FormActions, StatusLine } from "../ui/forms";
 import { AdminButton, Badge, EmptyState, Panel, Skeleton, Stack } from "../ui/primitives";
 import { CellPrimary, CellSecondary, TableScroller } from "../ui/table";
+import { useShownRows } from "./shown-rows";
 
 type BroadcastWorkspaceProps = {
   audience: BroadcastAudienceLead[];
@@ -63,6 +64,7 @@ export const BroadcastWorkspace = ({
   status,
 }: BroadcastWorkspaceProps) => {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const shownAudience = useShownRows(audience);
 
   const confirmSend = async () => {
     try {
@@ -147,7 +149,7 @@ export const BroadcastWorkspace = ({
                 </tr>
               </thead>
               <tbody>
-                {audience.map((lead) => {
+                {shownAudience.rows.map((lead) => {
                   const isUpdating = isUpdatingLeadId === lead.leadId;
                   const isConfirmingGlobal = confirmingGlobalLeadId === lead.leadId;
                   const isLocked = isSending || Boolean(isUpdatingLeadId);
@@ -228,6 +230,7 @@ export const BroadcastWorkspace = ({
             </AudienceTable>
           </TableScroller>
         )}
+        {shownAudience.toggle}
       </Panel>
 
       <ConfirmDialog

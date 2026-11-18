@@ -7,6 +7,7 @@ import type {
 
 export const ADMIN_API_ENDPOINTS = {
   auth: "/admin/auth",
+  cohortInviteBroadcast: "/admin/api/broadcasts/cohort-invite",
   firstTouchBroadcast: "/admin/api/broadcasts/first-touch-sales-start",
   inviteLinks: "/admin/api/invite-links",
   inviteLinksHistory: "/admin/api/invite-links/history",
@@ -82,7 +83,7 @@ export const ADMIN_FEATURE_COPY: Record<AdminFeatureId, { description: string }>
   },
   broadcasts: {
     description:
-      "Проверь количество получателей и запусти разовую рассылку. Повторный запуск не затронет адреса, на которые письмо уже ушло.",
+      "Выбери рассылку: внутри — получатели и отправка. Повторная отправка не затронет адреса, на которые письмо уже ушло.",
   },
   "invite-links": {
     description:

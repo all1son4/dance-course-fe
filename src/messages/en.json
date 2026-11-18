@@ -1436,12 +1436,15 @@
       "title": "New cycle · starts {date}",
       "titleStarted": "A new cycle has been running since {date}",
       "renewal": "For members of the previous cycle: a renewal at a special price, with no break between cycles.",
-      "join": "Online Group: 6 weeks in Telegram.",
+      "join": "Online Group: {weeks, plural, one {# week} other {# weeks}} in Telegram.",
       "renewButton": "Renew",
       "joinButton": "About the group",
       "cohortTitle": "New Online Group cycle",
       "announcements": "New cycles are announced on Anna's Instagram",
-      "instagram": "@anna.strok_dance"
+      "instagram": "@anna.strok_dance",
+      "hubTitle": "Inspiration Hub",
+      "hubText": "A library of lessons from previous cycles and extra materials for inspiration: 8 weeks at your own pace.",
+      "hubButton": "About the Hub"
     },
     "journey": {
       "eyebrow": "Your path",

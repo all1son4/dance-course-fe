@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
 import { AdminFrame } from "./components/app-frame";
-import { BroadcastWorkspace } from "./components/broadcast-workspace";
+import { BroadcastsTab } from "./components/broadcasts-tab";
 import { HubWorkspace } from "./components/hub-workspace";
 import {
   InviteLinkGeneratorCard,
@@ -224,21 +224,25 @@ function AdminApp() {
               </WorkspaceSecondary>
             </WorkspaceGrid>
           ) : activeFeature.id === "broadcasts" ? (
-            <BroadcastWorkspace
-              audience={broadcast.audience}
-              confirmingGlobalLeadId={broadcast.confirmingGlobalLeadId}
-              isDisabled={broadcast.isDisabled}
-              isLoadingStats={broadcast.isLoading}
-              isSending={broadcast.isSending}
-              isUpdatingLeadId={broadcast.updatingLeadId}
-              onExclude={broadcast.exclude}
-              onGlobalExcludeCancel={() => broadcast.setConfirmingGlobalLeadId("")}
-              onGlobalExcludeRequest={broadcast.setConfirmingGlobalLeadId}
-              onRefresh={broadcast.load}
-              onSend={broadcast.send}
-              pendingCount={broadcast.pendingCount}
-              stats={broadcast.stats}
-              status={broadcast.status}
+            <BroadcastsTab
+              firstTouch={{
+                audience: broadcast.audience,
+                confirmingGlobalLeadId: broadcast.confirmingGlobalLeadId,
+                isDisabled: broadcast.isDisabled,
+                isLoadingStats: broadcast.isLoading,
+                isSending: broadcast.isSending,
+                isUpdatingLeadId: broadcast.updatingLeadId,
+                onExclude: broadcast.exclude,
+                onGlobalExcludeCancel: () => broadcast.setConfirmingGlobalLeadId(""),
+                onGlobalExcludeRequest: broadcast.setConfirmingGlobalLeadId,
+                onRefresh: broadcast.load,
+                onSend: broadcast.send,
+                pendingCount: broadcast.pendingCount,
+                stats: broadcast.stats,
+                status: broadcast.status,
+              }}
+              isAuthorized={isAuthorized}
+              onUnauthorized={onUnauthorized}
             />
           ) : activeFeature.id === "purchases" ? (
             <PurchasesWorkspace

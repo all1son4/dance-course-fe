@@ -10,6 +10,8 @@ export type SendResendEmailInput = {
     content: string;
     filename: string;
   }>;
+  /** Extra email headers, e.g. List-Unsubscribe for a broadcast. */
+  headers?: Record<string, string>;
   html: string;
   idempotencyKey?: string;
   subject: string;
@@ -19,8 +21,18 @@ export type SendResendEmailInput = {
 
 export const isResendConfigured = () => Boolean(resendApiKey);
 
+/**
+ * Resend refuses with 429 for its rate limit and for the daily or monthly quota.
+ * A batch stops on it: nothing after it would be accepted either.
+ */
+export const isResendQuotaError = (error: unknown) =>
+  error instanceof Error &&
+  (error.message.startsWith("resend_request_failed:429:") ||
+    /(daily|monthly)_quota_exceeded/u.test(error.message));
+
 export const sendResendEmail = async ({
   attachments,
+  headers,
   html,
   idempotencyKey,
   subject,
@@ -41,6 +53,10 @@ export const sendResendEmail = async ({
 
   if (attachments?.length) {
     payload.attachments = attachments;
+  }
+
+  if (headers && Object.keys(headers).length > 0) {
+    payload.headers = headers;
   }
 
   if (resendReplyTo) {

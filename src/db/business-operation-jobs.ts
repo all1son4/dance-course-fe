@@ -456,3 +456,145 @@ export const markEmailCampaignLeadFailed = async ({
 
   return updated ?? null;
 };
+
+/**
+ * A provider quota refusal is not this address's failure: the claim goes back to
+ * `pending`, so the address stays in the live audience of the next batch.
+ */
+export const releaseEmailCampaignLeadClaim = async ({ leadId }: { leadId: string }) => {
+  const [updated] = await getDatabase()
+    .update(emailCampaignLeads)
+    .set({ emailSendStatus: "pending", lastEmailError: "", updatedAt: new Date() })
+    .where(
+      and(
+        eq(emailCampaignLeads.leadId, requireNonEmpty(leadId, "lead_id")),
+        eq(emailCampaignLeads.emailSendStatus, "sending"),
+      ),
+    )
+    .returning();
+
+  return updated ?? null;
+};
+
+/**
+ * Excludes an address from one campaign (`excluded`) or from every campaign
+ * (`blocked`) whether or not it has a row there yet: broadcasts with a live
+ * audience create rows only when they send. A row that is sent or being sent is
+ * left as it is. Runs under the same per-address lock as creation and claiming.
+ */
+export const holdEmailCampaignAddressInDatabase = async ({
+  campaignKey,
+  createdAt = new Date(),
+  email,
+  fullName = "",
+  leadId,
+  locale = "",
+  status,
+}: {
+  campaignKey: string;
+  createdAt?: Date;
+  email: string;
+  fullName?: string;
+  leadId: string;
+  locale?: string;
+  status: "blocked" | "excluded";
+}) => {
+  const normalizedCampaignKey = requireNonEmpty(campaignKey, "campaign_key");
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedLeadId = requireNonEmpty(leadId, "lead_id");
+
+  if (!normalizedEmail) {
+    throw new Error("business_operation_email_required");
+  }
+
+  return getDatabase().transaction(async (transaction) => {
+    await transaction.execute(
+      sql`SELECT pg_advisory_xact_lock(
+        hashtextextended(${`email-campaign-address:${normalizedEmail}`}, 0)
+      )`,
+    );
+
+    const [existing] = await transaction
+      .select()
+      .from(emailCampaignLeads)
+      .where(
+        and(
+          eq(emailCampaignLeads.campaignKey, normalizedCampaignKey),
+          eq(emailCampaignLeads.normalizedEmail, normalizedEmail),
+        ),
+      )
+      .limit(1)
+      .for("update");
+
+    if (!existing) {
+      const [created] = await transaction
+        .insert(emailCampaignLeads)
+        .values({
+          campaignKey: normalizedCampaignKey,
+          createdAt,
+          email: normalizedEmail,
+          emailSendStatus: status,
+          fullName: normalizeOptional(fullName).slice(0, 120),
+          leadId: normalizedLeadId,
+          locale: normalizeOptional(locale).slice(0, 20),
+          normalizedEmail,
+          updatedAt: createdAt,
+        })
+        .returning();
+
+      return { lead: created!, status: "held" as const };
+    }
+
+    if (existing.emailSendStatus === "sending") {
+      return { status: "delivery_in_progress" as const };
+    }
+
+    if (existing.emailSendStatus === status || existing.emailSendStatus === "blocked") {
+      return { lead: existing, status: "held" as const };
+    }
+
+    if (existing.emailSendStatus === "sent") {
+      return { status: "not_actionable" as const };
+    }
+
+    const [updated] = await transaction
+      .update(emailCampaignLeads)
+      .set({ emailSendStatus: status, lastEmailError: "", updatedAt: new Date() })
+      .where(eq(emailCampaignLeads.id, existing.id))
+      .returning();
+
+    await transaction
+      .update(purchaseSideEffects)
+      .set({
+        leaseExpiresAt: null,
+        leaseToken: null,
+        nextAttemptAt: null,
+        status: "skipped",
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(
+            purchaseSideEffects.deduplicationKey,
+            getCampaignEmailDeliveryDeduplicationKey({
+              campaignKey: normalizedCampaignKey,
+              leadId: existing.leadId,
+            }),
+          ),
+          inArray(purchaseSideEffects.status, ["pending", "failed", "dead_letter"]),
+        ),
+      );
+
+    return { lead: updated!, status: "held" as const };
+  });
+};
+
+export const findEmailCampaignLeadByLeadIdInDatabase = async (leadId: string) => {
+  const [lead] = await getDatabase()
+    .select()
+    .from(emailCampaignLeads)
+    .where(eq(emailCampaignLeads.leadId, requireNonEmpty(leadId, "lead_id")))
+    .limit(1);
+
+  return lead ?? null;
+};
