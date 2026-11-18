@@ -801,18 +801,24 @@ export const JourneyStep = styled.li<{ $live: boolean }>`
     color: ${({ $live }) => ($live ? "var(--danger)" : "rgba(18, 18, 18, 0.38)")};
   }
 
-  /* LIVE beside a running course's name: small caps that breathe. */
+  /*
+   * LIVE beside a running course's name, as a broadcast badge: white caps on a
+   * red plate. It breathes, slowly.
+   */
   & > div > b > em {
     display: inline-block;
     margin-left: 8px;
+    padding: 3px 5px 2px;
+    border-radius: 3px;
+    background: rgba(212, 34, 52, 1);
     font-style: normal;
-    font-size: 9.5px;
+    font-size: 9px;
     font-weight: 700;
     line-height: 1;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.12em;
     vertical-align: 2px;
-    color: var(--danger);
-    animation: access-live 1.8s ease-in-out infinite;
+    color: var(--ink-inverse);
+    animation: access-live 2.2s ease-in-out infinite;
   }
 
   @keyframes access-live {
@@ -821,7 +827,7 @@ export const JourneyStep = styled.li<{ $live: boolean }>`
       opacity: 1;
     }
     50% {
-      opacity: 0.35;
+      opacity: 0.55;
     }
   }
 
