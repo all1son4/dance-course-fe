@@ -25,7 +25,7 @@ import type {
   useCohortInviteAdmin,
 } from "../hooks/use-cohort-invite-admin";
 import {
-  buildQuotaCells,
+  buildQuotaMeter,
   formatDayTime,
   getBatchBoundary,
   letters,
@@ -202,7 +202,7 @@ export const CohortInviteBroadcast = ({
   const isLocked = invite.isSending || Boolean(invite.updatingEmail);
   const isDone = counts.remaining === 0;
   const dayIsOver = quota.remainingToday === 0;
-  const meter = buildQuotaCells({ batch: batch.valid ? batch.size : 0, quota });
+  const meter = buildQuotaMeter({ batch: batch.valid ? batch.size : 0, quota });
 
   const confirm = async () => {
     try {
@@ -374,8 +374,14 @@ export const CohortInviteBroadcast = ({
                   role="img"
                   aria-label={`Из ${quota.dailyLimit}: за 24 часа ушло ${meter.sent}, в эту партию ${meter.batch}, ещё свободно ${meter.free}, запас ${meter.reserve}.`}
                 >
-                  {meter.cells.map((cell, index) => (
-                    <span data-cell={cell} key={index} />
+                  {meter.parts.map((part) => (
+                    // Width follows the count: the batch part glides as the number changes.
+                    <span
+                      data-cell={part.kind}
+                      key={part.kind}
+                      style={{ flexGrow: part.count }}
+                      hidden={part.count === 0}
+                    />
                   ))}
                 </div>
                 <ul>

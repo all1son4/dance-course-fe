@@ -50,12 +50,12 @@ import { normalizedSiteUrl } from "@/lib/seo";
  */
 
 /*
- * The daily ceiling. Resend's limit as the owner knows it (30 a day; change to 100
- * once the Resend usage page confirms it) and the part kept for purchase emails,
- * «Мой доступ» links and test sends, which this counter does not see.
+ * The daily ceiling. Resend's limit (100 a day, owner 2026-11-18): 60 of them go
+ * to the broadcasts, the other 40 stay for purchase emails, «Мой доступ» links
+ * and test sends, which this counter does not see.
  */
-export const RESEND_DAILY_LIMIT = 30;
-export const PURCHASE_EMAIL_RESERVE = 10;
+export const RESEND_DAILY_LIMIT = 100;
+export const PURCHASE_EMAIL_RESERVE = 40;
 export const DEFAULT_BATCH_SIZE = 15;
 /** Between two sends: stays under Resend's per-second rate limit. */
 const SEND_PAUSE_MS = 600;

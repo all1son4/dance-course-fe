@@ -4,7 +4,7 @@ import test from "node:test";
 import type { CohortInviteAdminSnapshot } from "@/lib/cohort-invite-broadcast";
 
 import {
-  buildQuotaCells,
+  buildQuotaMeter,
   describeCohortInviteTile,
   getBatchBoundary,
   readBatch,
@@ -79,28 +79,34 @@ test("the three steps show only before the first email of the campaign", () => {
   assert.equal(showsFirstSteps({ remaining: 0, sent: 0 }), false);
 });
 
-test("the quota cells add up to the daily limit in the order they are spent", () => {
-  const meter = buildQuotaCells({
-    batch: 5,
-    quota: { dailyLimit: 30, remainingToday: 12, sentLast24h: 8 },
+test("the quota parts add up to the daily limit in the order they are spent", () => {
+  const meter = buildQuotaMeter({
+    batch: 15,
+    quota: { dailyLimit: 100, remainingToday: 52, sentLast24h: 8 },
   });
   assert.deepEqual(
-    { batch: meter.batch, free: meter.free, reserve: meter.reserve, sent: meter.sent },
-    { batch: 5, free: 7, reserve: 10, sent: 8 },
+    meter.parts.map((part) => [part.kind, part.count]),
+    [
+      ["sent", 8],
+      ["batch", 15],
+      ["free", 37],
+      ["reserve", 40],
+    ],
   );
-  assert.equal(meter.cells.length, 30);
-  assert.deepEqual([...new Set(meter.cells)], ["sent", "batch", "free", "reserve"]);
+  assert.equal(
+    meter.parts.reduce((sum, part) => sum + part.count, 0),
+    100,
+  );
 
   // Emails beyond the campaign's share eat into the reserve; nothing overflows.
-  const spent = buildQuotaCells({
+  const spent = buildQuotaMeter({
     batch: 15,
-    quota: { dailyLimit: 30, remainingToday: 0, sentLast24h: 24 },
+    quota: { dailyLimit: 100, remainingToday: 0, sentLast24h: 72 },
   });
   assert.deepEqual(
     { batch: spent.batch, free: spent.free, reserve: spent.reserve, sent: spent.sent },
-    { batch: 0, free: 0, reserve: 6, sent: 24 },
+    { batch: 0, free: 0, reserve: 28, sent: 72 },
   );
-  assert.equal(spent.cells.length, 30);
 });
 
 test("the campaign tile says its state without opening it", () => {

@@ -161,9 +161,11 @@ test("closed Hub sales drop the Hub block; a missing renewal campaign falls back
 });
 
 test("the daily ceiling keeps the purchase reserve and never goes below zero", () => {
+  // 100 a day, 40 of them kept for purchase emails and tests: 60 for the broadcasts.
   assert.equal(getRemainingToday(0), RESEND_DAILY_LIMIT - PURCHASE_EMAIL_RESERVE);
-  assert.equal(getRemainingToday(3), 17);
-  assert.equal(getRemainingToday(25), 0);
+  assert.equal(getRemainingToday(0), 60);
+  assert.equal(getRemainingToday(3), 57);
+  assert.equal(getRemainingToday(75), 0);
 });
 
 test("a batch is a whole number within what is left today and in the list", () => {
@@ -239,12 +241,12 @@ test("a typed list flags who already got this campaign and sends only to the res
 });
 
 test("a spent day waits for as many old emails to leave the window as the next batch needs", () => {
-  // 20 of 30 are the campaign's share: 20 sent, a batch of 15 needs the 15 oldest gone.
-  assert.equal(getEmailsToWaitFor({ sentLast24h: 20, size: 15 }), 15);
+  // 60 of 100 are the campaign's share: 60 sent, a batch of 15 needs the 15 oldest gone.
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 60, size: 15 }), 15);
   // Purchase emails beyond the share: those have to leave the window first.
-  assert.equal(getEmailsToWaitFor({ sentLast24h: 24, size: 15 }), 19);
-  assert.equal(getEmailsToWaitFor({ sentLast24h: 20, size: 3 }), 3);
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 64, size: 15 }), 19);
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 60, size: 3 }), 3);
   // Room already, or nothing to send: nothing to wait for.
   assert.equal(getEmailsToWaitFor({ sentLast24h: 5, size: 15 }), null);
-  assert.equal(getEmailsToWaitFor({ sentLast24h: 20, size: 0 }), null);
+  assert.equal(getEmailsToWaitFor({ sentLast24h: 60, size: 0 }), null);
 });
