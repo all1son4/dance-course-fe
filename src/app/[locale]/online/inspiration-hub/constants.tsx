@@ -1,7 +1,10 @@
 import { OnlineCalendar, OnlineCreditCard, OnlineTelegram, OnlineVideo } from "@/svg";
 
-/** What the lessons cover, from Anna's first card (`inside.topics.N`). */
-export const HUB_TOPIC_COUNT = 7;
+/**
+ * The directions the library covers (`inside.topics.N`), shown without numbers:
+ * numbered rows read as a list of lessons to count.
+ */
+export const HUB_TOPIC_COUNT = 6;
 
 /** Anna's other four cards (`inside.features.N`), one icon each. */
 export const HUB_FEATURES = [

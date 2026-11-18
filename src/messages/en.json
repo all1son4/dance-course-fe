@@ -653,16 +653,16 @@
     },
     "inside": {
       "title": "What awaits you inside Inspiration HUB",
-      "lead": "Full programmes of the completed Online Group 1.0 and 2.0 cycles: 5 full lessons.",
-      "topicsLabel": "In the lessons",
+      "lead": "Full programmes of the completed Online Group 1.0 and 2.0 cycles.",
+      "topicsLabel": "Lesson topics",
+      "topicsNote": "Not a list of lessons: these are the directions that run through the whole library.",
       "topics": {
-        "1": "Leg technique",
-        "2": "Arm technique",
-        "3": "Flow",
-        "4": "Hair work",
-        "5": "Improvisation",
-        "6": "Basic acrobatics",
-        "7": "Choreography"
+        "1": "Technique lessons",
+        "2": "Flow",
+        "3": "Hair work",
+        "4": "Improvisation",
+        "5": "Basic acrobatics",
+        "6": "Choreography"
       },
       "features": {
         "1": {

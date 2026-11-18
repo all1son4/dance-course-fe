@@ -653,16 +653,16 @@
     },
     "inside": {
       "title": "Co czeka na Ciebie w Inspiration HUB",
-      "lead": "Pełne programy zakończonych cykli Online Group 1.0 i 2.0: 5 pełnych lekcji.",
-      "topicsLabel": "W lekcjach",
+      "lead": "Pełne programy zakończonych cykli Online Group 1.0 i 2.0.",
+      "topicsLabel": "Tematy lekcji",
+      "topicsNote": "To nie lista lekcji, tylko kierunki, które przewijają się przez całą bibliotekę.",
       "topics": {
-        "1": "Technika nóg",
-        "2": "Technika rąk",
-        "3": "Flow",
-        "4": "Hair work",
-        "5": "Improwizacja",
-        "6": "Podstawy akrobatyki",
-        "7": "Choreografie"
+        "1": "Lekcje techniki",
+        "2": "Flow",
+        "3": "Hair work",
+        "4": "Improwizacja",
+        "5": "Podstawy akrobatyki",
+        "6": "Choreografie"
       },
       "features": {
         "1": {
