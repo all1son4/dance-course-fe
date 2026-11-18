@@ -50,6 +50,7 @@ import {
   StatementBand,
   TopicGrid,
   TopicsLabel,
+  TopicsNote,
   ValueList,
 } from "./hub-blocks.styles";
 import {
@@ -196,12 +197,10 @@ export default async function InspirationHubPage() {
             <h2 id="hub-inside-title">{t("inside.title")}</h2>
             <p>{t("inside.lead")}</p>
             <TopicsLabel>{t("inside.topicsLabel")}</TopicsLabel>
+            <TopicsNote>{t("inside.topicsNote")}</TopicsNote>
             <TopicGrid>
               {Array.from({ length: HUB_TOPIC_COUNT }, (_, index) => (
-                <li key={index}>
-                  <span aria-hidden>{String(index + 1).padStart(2, "0")}</span>
-                  {t(`inside.topics.${index + 1}`)}
-                </li>
+                <li key={index}>{t(`inside.topics.${index + 1}`)}</li>
               ))}
             </TopicGrid>
           </LibraryText>
