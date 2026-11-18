@@ -133,7 +133,9 @@ test("everyone else gets the product pages, even with a running Hub", () => {
   assert.equal(pathOf(links.standard), "/ru/online/group");
   assert.equal(pathOf(links.plus), "/ru/online/group");
   assert.equal(pathOf(links.hub), "/ru/online/inspiration-hub");
-  assert.equal(links.myAccess, null);
+  // No personal link: «Мой доступ» still shows, on the page that sends one by email.
+  assert.equal(new URL(links.myAccess).pathname, "/ru/access");
+  assert.equal(new URL(links.myAccess).searchParams.get("utm_content"), "my_access");
 });
 
 test("closed Hub sales drop the Hub block; a missing renewal campaign falls back to the group page", () => {

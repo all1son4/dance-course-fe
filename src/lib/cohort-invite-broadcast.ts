@@ -142,7 +142,7 @@ export type CohortInviteLinks = {
   /** What the admin table says: the renewal prices or the product pages. */
   kind: "pages" | "renewal";
   hubSpecialPrice: boolean;
-  myAccess: string | null;
+  myAccess: string;
   plus: string;
   standard: string;
 };
@@ -200,7 +200,8 @@ export const chooseCohortInviteLinks = ({
       : null,
     hubSpecialPrice,
     kind: standard !== groupPage || plus !== groupPage ? "renewal" : "pages",
-    myAccess: myAccessUrl ? withAttribution(myAccessUrl, campaignKey, "my_access") : null,
+    // Without a personal link (no customer row, or a test send) the page asks for one by email.
+    myAccess: withAttribution(myAccessUrl ?? `${base}/access`, campaignKey, "my_access"),
     plus: withAttribution(plus, campaignKey, "plus"),
     standard: withAttribution(standard, campaignKey, "standard"),
   };

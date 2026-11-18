@@ -419,6 +419,8 @@ test("a typed list skips an address this campaign already reached and sends to t
     assert.equal(calls.length, 2);
     assert.deepEqual(sentEmail(calls[1]!.body).to, [fresh]);
     assert.ok(sentEmail(calls[1]!.body).text.includes("/en/online/group?"));
+    // No customer row: «Мой доступ» points to the page that sends the link by email.
+    assert.ok(sentEmail(calls[1]!.body).text.includes("/en/access?"));
 
     // Checked again, both are flagged as reached, the one without a purchase too.
     const { listCampaignAddressStates } = await getAudienceReads();
