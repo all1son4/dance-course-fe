@@ -5,7 +5,7 @@ import {
 } from "@/constants/sellable-products";
 import { isOnlineGroupAccessOfferId } from "@/lib/telegram/offer-access";
 
-import type { MyAccessCard, MyAccessSnapshot } from "./cards";
+import type { MyAccessSnapshot } from "./cards";
 
 /*
  * «Дальше»: the Online Group cycle on sale now, when the customer is not in it yet.
@@ -114,15 +114,3 @@ export const getMyAccessMemberCohortIds = (snapshot: MyAccessSnapshot, now: Date
     ),
   ];
 };
-
-export const HUB_PAGE_HREF = "/online/inspiration-hub";
-
-/**
- * «Дальше» also offers the Hub while it is on sale and the customer has none in
- * any form: no own Hub and no Plus Hub, running or ahead. An ended Hub counts as
- * none. With neither the cycle nor the Hub to offer, the page points to Instagram.
- */
-export const shouldOfferMyAccessHub = (
-  cards: readonly Pick<MyAccessCard, "chip" | "kind">[],
-  hubOnSale: boolean,
-) => hubOnSale && !cards.some((card) => card.kind === "hub" && card.chip !== "ended");
