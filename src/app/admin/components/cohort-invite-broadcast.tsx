@@ -159,8 +159,13 @@ export const CohortInviteBroadcast = ({
   if (!snapshot) {
     return (
       <Panel title="Приглашение в поток" actions={refresh}>
+        <StatusLine status={invite.loadStatus} />
         {invite.loadStatus ? (
-          <StatusLine status={invite.loadStatus} />
+          <EmptyState
+            icon={<MailX aria-hidden />}
+            title="Список не загрузился"
+            text="Нажми «Обновить»; если снова не выйдет — напиши разработчику."
+          />
         ) : (
           <Skeleton $height={120} />
         )}
@@ -186,7 +191,6 @@ export const CohortInviteBroadcast = ({
   const readyFromList = (invite.listChecks ?? []).filter((check) =>
     isReady(check.status),
   );
-  const skippedFromList = (invite.listChecks ?? []).length - readyFromList.length;
   const listFits = readyFromList.length <= quota.remainingToday;
   const isLocked = invite.isSending || Boolean(invite.updatingEmail);
   const isDone = counts.remaining === 0;
@@ -276,7 +280,7 @@ export const CohortInviteBroadcast = ({
               <Fact label="Не дошли, отправим снова" value={counts.failed} />
             )}
           </AudienceFacts>
-          {invite.loadStatus && <StatusLine status={invite.loadStatus} />}
+          <StatusLine status={invite.loadStatus} />
           {!snapshot.salesOpen && (
             <Callout tone="warning">
               Продажи онлайн-группы закрыты — отправка недоступна.
@@ -669,22 +673,6 @@ export const CohortInviteBroadcast = ({
               </FormActions>
               {invite.listChecks && (
                 <>
-                  {readyFromList.length === 0 ? (
-                    <Callout tone="info">
-                      Отправлять некому: все адреса из списка уже получили письмо или
-                      пропускаются.
-                    </Callout>
-                  ) : !listFits ? (
-                    <Callout tone="warning">
-                      {`Сегодня можно ещё ${letters(quota.remainingToday)}, а в списке ${readyFromList.length}. Убери часть адресов или продолжи завтра.`}
-                    </Callout>
-                  ) : (
-                    skippedFromList > 0 && (
-                      <Callout tone="info">
-                        {`Отправим ${letters(readyFromList.length)}, пропустим ${skippedFromList} — причина у каждого адреса ниже.`}
-                      </Callout>
-                    )
-                  )}
                   <TableScroller>
                     <AudienceTable aria-label="Проверка адресов из списка">
                       <thead>

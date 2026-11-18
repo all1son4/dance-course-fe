@@ -33,11 +33,18 @@ const slideIn = keyframes`
   to { opacity: 1; transform: none; }
 `;
 
+/* A manual popover lives in the top layer, so a toast raised while a dialog is
+   open shows above its backdrop; the UA popover box styles are reset here. */
 const ToastViewport = styled.div`
   ${adminTokens}
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  inset: auto 20px 20px auto;
+  height: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
   z-index: 60;
   display: grid;
   gap: 8px;
@@ -99,6 +106,20 @@ const ToastIcon = ({ tone }: { tone: Toast["tone"] }) =>
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const nextId = useRef(1);
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || typeof viewport.showPopover !== "function") return;
+    const isOpen = viewport.matches(":popover-open");
+    if (toasts.length === 0) {
+      if (isOpen) viewport.hidePopover();
+      return;
+    }
+    // A dialog opened after the toasts sits above them: enter the top layer again.
+    if (isOpen && document.querySelector("dialog:modal")) viewport.hidePopover();
+    if (!viewport.matches(":popover-open")) viewport.showPopover();
+  }, [toasts]);
 
   const dismiss = useCallback((id: number) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -118,7 +139,12 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ToastContext.Provider value={push}>
       {children}
-      <ToastViewport aria-live="polite" aria-relevant="additions">
+      <ToastViewport
+        ref={viewportRef}
+        popover="manual"
+        aria-live="polite"
+        aria-relevant="additions"
+      >
         {toasts.map((toast) => (
           <ToastCard key={toast.id} $tone={toast.tone} role="status">
             <ToastIcon tone={toast.tone} />
