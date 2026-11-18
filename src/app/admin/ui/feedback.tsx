@@ -128,7 +128,13 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   const push = useCallback(
     (input: ToastInput) => {
       const id = nextId.current++;
-      setToasts((current) => [...current.slice(-3), { ...input, id }]);
+      // The same message already on screen is not stacked a second time; its
+      // timer below then dismisses an id that never existed, which is a no-op.
+      setToasts((current) =>
+        current.some((toast) => toast.title === input.title && toast.tone === input.tone)
+          ? current
+          : [...current.slice(-3), { ...input, id }],
+      );
       // A problem stays until it is closed: it usually says what to do next, and
       // it must not vanish while the admin is still reading the window behind it.
       if (input.tone !== "danger") window.setTimeout(() => dismiss(id), 4000);

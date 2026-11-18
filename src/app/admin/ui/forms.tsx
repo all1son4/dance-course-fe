@@ -4,7 +4,7 @@ import styled, { css } from "styled-components";
 
 import type { StatusMessage } from "../lib/admin.types";
 import { useToast } from "./feedback";
-import { focusVisible } from "./primitives";
+import { Callout, focusVisible } from "./primitives";
 
 /*
  * Form controls for every section: one height (40px, 44px on phones so iOS does
@@ -325,31 +325,35 @@ export const Fact = ({ label, value }: { label: ReactNode; value: ReactNode }) =
   </div>
 );
 
+const STATUS_TONES = {
+  error: "danger",
+  info: "info",
+  success: "success",
+} as const;
+
 /* Each message object is shown once: a section that mounts again with the same
    status (the tab reopened, say) does not repeat an old toast. */
 const shownStatuses = new WeakSet<object>();
 
 /**
- * The hooks report results as `StatusMessage`; every one of them — progress,
- * success or error — becomes a toast instead of a line under the button, so
- * nothing in the layout jumps when a result arrives.
+ * The result of an action — done, failed, skipped — as a toast, so nothing in the
+ * layout jumps when it arrives. «Делаю…» (`progress`) shows nowhere: the busy
+ * button already says it.
  */
 export const StatusLine = ({ status }: { status: StatusMessage }) => {
   const toast = useToast();
 
   useEffect(() => {
-    if (!status || shownStatuses.has(status)) return;
+    if (!status || status.tone === "progress" || shownStatuses.has(status)) return;
     shownStatuses.add(status);
-    toast({
-      title: status.text,
-      tone:
-        status.tone === "error"
-          ? "danger"
-          : status.tone === "success"
-            ? "success"
-            : "info",
-    });
+    toast({ title: status.text, tone: STATUS_TONES[status.tone] });
   }, [status, toast]);
 
   return null;
 };
+
+/** A status that describes the screen itself (the login form, a lost session): stays in place. */
+export const StatusCallout = ({ status }: { status: StatusMessage }) =>
+  status && status.tone !== "progress" ? (
+    <Callout tone={STATUS_TONES[status.tone]}>{status.text}</Callout>
+  ) : null;

@@ -30,7 +30,8 @@ export type AdminFeatureGroup = "home" | "sales" | "products" | "more";
 export type GeneratorKind = "choreo" | "first-touch";
 export type LessonLanguage = "en" | "ru";
 export type LinkState = "active" | "expired" | "used";
-export type StatusTone = "error" | "info" | "success";
+/** `progress` is «делаю…»: the busy button already says it, so nothing else shows it. */
+export type StatusTone = "error" | "info" | "progress" | "success";
 export type AuthState = "authorized" | "checking" | "locked";
 
 export type AdminFeature = {

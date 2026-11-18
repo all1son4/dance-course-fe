@@ -119,7 +119,7 @@ export const useInviteLinksAdmin = ({
     setIsGenerating(true);
     setStatus({
       text: "Создаю ссылку…",
-      tone: "info",
+      tone: "progress",
     });
     setGeneratedLink("");
 

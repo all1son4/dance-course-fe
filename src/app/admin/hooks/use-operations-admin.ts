@@ -98,7 +98,7 @@ export const useOperationsAdmin = ({
       setReplayingKey(key);
       setStatus({
         text: "Повторяю…",
-        tone: "info",
+        tone: "progress",
       });
 
       const result = await requestAdminJson<OperationsReplayResponse>(
@@ -147,7 +147,7 @@ export const useOperationsAdmin = ({
       setReissuingPaymentIntentId(paymentIntentId);
       setStatus({
         text: "Перевыпускаю ссылки доступа…",
-        tone: "info",
+        tone: "progress",
       });
 
       const result = await requestAdminJson<ReissueAccessResponse>(

@@ -5,7 +5,7 @@ import styled from "styled-components";
 import type { StatusMessage } from "../lib/admin.types";
 import { adminTokens } from "../styles/tokens.styles";
 import { FieldLabel, TextField } from "../ui/feedback";
-import { StatusLine } from "../ui/forms";
+import { StatusCallout } from "../ui/forms";
 import { AdminButton, IconButton } from "../ui/primitives";
 import { useSiteHost } from "../ui/use-site-host";
 
@@ -177,7 +177,7 @@ export const LoginScreen = ({
           >
             {isChecking ? "Проверяю сессию…" : isUnlocking ? "Вхожу…" : "Войти"}
           </AdminButton>
-          <StatusLine status={authStatus} />
+          <StatusCallout status={authStatus} />
           {isSessionCheckUnavailable && (
             <AdminButton
               onClick={() => void onRetrySessionCheck()}

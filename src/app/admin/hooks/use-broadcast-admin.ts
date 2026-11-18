@@ -84,7 +84,7 @@ export const useBroadcastAdmin = ({
     setIsSending(true);
     setStatus({
       text: "Отправляю рассылку First Touch...",
-      tone: "info",
+      tone: "progress",
     });
 
     const result = await requestAdminJson<FirstTouchBroadcastResponse>(
@@ -133,7 +133,7 @@ export const useBroadcastAdmin = ({
           scope === "global"
             ? `Исключаю ${lead.email} из будущих рассылок...`
             : `Убираю ${lead.email} из текущей рассылки...`,
-        tone: "info",
+        tone: "progress",
       });
 
       const result = await requestAdminJson<FirstTouchBroadcastResponse>(

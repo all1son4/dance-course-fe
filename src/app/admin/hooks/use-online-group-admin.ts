@@ -311,7 +311,7 @@ export const useOnlineGroupAdmin = ({
     setIsGeneratingAdminAccess(true);
     setAdminStatus({
       text: "Создаю ссылки…",
-      tone: "info",
+      tone: "progress",
     });
 
     const normalizedAdminLabel = adminLabel.trim();
@@ -399,7 +399,7 @@ export const useOnlineGroupAdmin = ({
         text: regenerate
           ? "Создаю новую ссылку вместо старой…"
           : "Готовлю ссылку продления…",
-        tone: "info",
+        tone: "progress",
       });
 
       const result = await requestAdminJson<RenewalCampaignsResponse>(
@@ -467,7 +467,7 @@ export const useOnlineGroupAdmin = ({
     setIsSaving(true);
     setStatus({
       text: "Сохраняю настройки потока...",
-      tone: "info",
+      tone: "progress",
     });
 
     const result = await requestAdminJson<OnlineGroupCampaignsResponse>(

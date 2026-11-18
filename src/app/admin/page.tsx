@@ -32,7 +32,8 @@ import type { AdminFeatureId } from "./lib/admin.types";
 import { readAdminDeepLink } from "./lib/admin-deep-link";
 import { WorkspaceGrid, WorkspacePrimary, WorkspaceSecondary } from "./page.styles";
 import { ToastProvider } from "./ui/feedback";
-import { Callout, PageHeader, Stack } from "./ui/primitives";
+import { StatusCallout } from "./ui/forms";
+import { PageHeader, Stack } from "./ui/primitives";
 
 export default function AdminPage() {
   return (
@@ -135,13 +136,7 @@ function AdminApp() {
       onRefreshSession={() => auth.refreshSession({ after: inviteLinks.loadJournal })}
       onSearch={openPurchase}
     >
-      {auth.authStatus && (
-        <Callout
-          tone={auth.authStatus.tone === "error" ? "danger" : auth.authStatus.tone}
-        >
-          {auth.authStatus.text}
-        </Callout>
-      )}
+      <StatusCallout status={auth.authStatus} />
 
       {activeFeature.id === "overview" ? (
         <OverviewWorkspace
