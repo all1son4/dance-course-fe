@@ -174,7 +174,8 @@ const CardBody = styled.div`
 
 const Facts = styled.div<{ $rows?: boolean }>`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Four figures in two even rows: participants, paid / invited, Plus, continuations. */
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   max-width: 420px;
 
@@ -200,7 +201,7 @@ const Facts = styled.div<{ $rows?: boolean }>`
     line-height: 1.2;
   }
 
-  /* Phones: one tidy row per figure instead of three squeezed tiles. */
+  /* Phones: one tidy row per figure instead of squeezed tiles. */
   @container admin-content (max-width: 520px) {
     grid-template-columns: minmax(0, 1fr);
     max-width: none;
@@ -648,8 +649,15 @@ export const CohortsPanel = ({
                     </dl>
                     <Facts>
                       <div>
-                        <small>Покупок</small>
+                        <small>Участников</small>
                         <b>{cohort.facts.purchases}</b>
+                      </div>
+                      <div>
+                        <small>оплат / по приглашению</small>
+                        <b>
+                          {cohort.facts.purchases - cohort.facts.invitedParticipants} /{" "}
+                          {cohort.facts.invitedParticipants}
+                        </b>
                       </div>
                       <div>
                         <small>из них Plus</small>

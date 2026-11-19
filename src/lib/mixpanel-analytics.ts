@@ -170,6 +170,22 @@ export type AnalyticsEventProperties = {
     from_locale: string;
     to_locale: string;
   };
+  invitation_viewed: {
+    status: "ready" | "verified" | "expired" | "invalid" | "revoked" | "unavailable";
+    invitation_product?: "standard" | "plus" | "hub";
+  };
+  invitation_verification_started: {
+    invitation_product: "standard" | "plus" | "hub";
+  };
+  invitation_verification_result: {
+    invitation_product: "standard" | "plus" | "hub";
+    verification_stage: "login" | "confirm";
+    result: "verified" | "other_account" | "error";
+    /** For result "error": a known failure code (e.g. "popup_closed") or "other". */
+    error_code?: string;
+    link_count?: number;
+    member_count?: number;
+  };
   my_access_viewed: {
     status: "link_required" | "invalid_link" | "ready" | "empty";
     card_count: number;

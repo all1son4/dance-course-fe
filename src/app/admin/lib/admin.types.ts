@@ -99,7 +99,6 @@ export type OnlineGroupCampaignEntry = {
   title: string;
 };
 
-export type OnlineGroupAdminAccessMode = "plus" | "standard";
 export type OnlineGroupAdminAccessState =
   "expired" | "failed" | "issued" | "left" | "pending" | "revoked" | "used";
 
@@ -111,15 +110,6 @@ export type OnlineGroupAdminAccess = {
   chatTitle: string;
   state: OnlineGroupAdminAccessState;
   tokenExpiresAt: string;
-};
-
-export type OnlineGroupAdminGrant = {
-  accessMode: OnlineGroupAdminAccessMode;
-  accesses: OnlineGroupAdminAccess[];
-  adminLabel: string;
-  createdAtIso: string;
-  offerLabel: string;
-  paymentIntentId: string;
 };
 
 export type AuthResponse = {
@@ -174,13 +164,6 @@ export type OnlineGroupCampaignsResponse = {
   errorCode?: string;
   reused?: boolean;
   status?: string;
-};
-
-export type OnlineGroupAdminLinksResponse = {
-  errorCode?: string;
-  grant?: OnlineGroupAdminGrant;
-  grants?: OnlineGroupAdminGrant[];
-  status?: "not_available" | "partial" | "ready";
 };
 
 export type MonthlySalesReportResponse = {

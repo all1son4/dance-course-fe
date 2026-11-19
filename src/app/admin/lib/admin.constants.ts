@@ -6,6 +6,7 @@ import type {
 } from "./admin.types";
 
 export const ADMIN_API_ENDPOINTS = {
+  accessInvitations: "/admin/api/access-invitations",
   auth: "/admin/auth",
   cohortInviteBroadcast: "/admin/api/broadcasts/cohort-invite",
   firstTouchBroadcast: "/admin/api/broadcasts/first-touch-sales-start",
@@ -14,7 +15,6 @@ export const ADMIN_API_ENDPOINTS = {
   hub: "/admin/api/hub",
   monthlySalesReport: "/admin/api/reports/monthly-sales",
   monthlySalesReportDownload: "/admin/api/reports/monthly-sales/download",
-  onlineGroupInviteLinks: "/admin/api/online-group-invite-links",
   onlineGroupSettings: "/admin/api/online-group-settings",
   onlineGroupCohorts: "/admin/api/online-group/cohorts",
   onlineGroupNextCohort: "/admin/api/online-group/cohorts/next",

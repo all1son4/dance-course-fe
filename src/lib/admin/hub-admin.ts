@@ -80,6 +80,7 @@ export async function getHubAdminOverview({
         amountMinor: purchases.amountMinor,
         currency: purchases.currency,
         paidAt: purchases.succeededAt,
+        source: purchases.source,
       })
       .from(accessEntitlements)
       .innerJoin(purchases, eq(purchases.id, accessEntitlements.purchaseId))
@@ -142,6 +143,8 @@ export async function getHubAdminOverview({
       amountMinor: row.amountMinor,
       currency: row.currency,
       paidAt: row.paidAt?.toISOString() ?? null,
+      // An admin invitation: amount 0, no Stripe purchase behind it.
+      byInvitation: row.source === "admin_offer_link",
       startsAt: row.startsAt?.toISOString() ?? null,
       expiresAt: row.expiresAt?.toISOString() ?? null,
       telegramUserId: owner,

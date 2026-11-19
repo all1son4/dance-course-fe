@@ -145,6 +145,8 @@ const countCohortFacts = async (executor: DatabaseExecutor, cohortId: string) =>
       .select({
         plus: sql<number>`count(*) filter (where ${inArray(purchases.offerExternalId, PLUS_OFFER_IDS)})::int`,
         total: sql<number>`count(*)::int`,
+        // Admin invitations: participants with amount 0, apart from the paid ones.
+        invited: sql<number>`count(*) filter (where ${purchases.source} = 'admin_offer_link')::int`,
       })
       .from(purchases)
       .where(
@@ -183,6 +185,7 @@ const countCohortFacts = async (executor: DatabaseExecutor, cohortId: string) =>
   return {
     continuations: continuations?.count ?? 0,
     legacyPlusHubRights: legacyPlusHub?.count ?? 0,
+    invitedParticipants: sales?.invited ?? 0,
     plusPurchases: sales?.plus ?? 0,
     purchases: sales?.total ?? 0,
   };

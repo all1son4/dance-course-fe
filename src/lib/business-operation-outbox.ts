@@ -15,6 +15,7 @@ import {
   processOutboxJobByDeduplicationKey,
   replayOutboxJob,
 } from "@/db/transactional-outbox";
+import { deliverAccessInvitationEmail } from "@/lib/access-invitations/service";
 import { deliverChoreoAccessReminder } from "@/lib/choreo-access-reminder-delivery";
 import {
   isResendQuotaError,
@@ -43,6 +44,7 @@ export const BUSINESS_OPERATION_OUTBOX_KINDS = [
   "online_group_previous_chat_removal",
   "cohort_closure_post",
   "cohort_grace_reminder",
+  "access_invitation_email",
 ] as const;
 
 type MonthlyReportDeliveryPayload = {
@@ -391,6 +393,7 @@ export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
   if (job.kind === "campaign_email_delivery") {
     return deliverCampaignEmail(job);
   }
+  if (job.kind === "access_invitation_email") return deliverAccessInvitationEmail(job);
 
   if (job.kind === "monthly_report_delivery") {
     return deliverMonthlyReport(job);

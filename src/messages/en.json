@@ -1538,5 +1538,67 @@
         "startsOnJoin": "The time starts on the day you join the channel"
       }
     }
+  },
+  "InvitationPage": {
+    "metaTitle": "Invitation",
+    "eyebrow": "Invitation",
+    "greeting": {
+      "withName": "Hi {name}!",
+      "plain": "Hi!"
+    },
+    "intro": {
+      "standard": "Your renewal is open: {cohort} · Standard.",
+      "plus": "Your renewal is open: {cohort} · Plus with Inspiration Hub.",
+      "hub": "Your renewal is open: Inspiration Hub for 8 weeks."
+    },
+    "steps": {
+      "label": "Three steps",
+      "confirm": "Confirm Telegram",
+      "confirmHint": "So we know your account",
+      "links": "Get your links",
+      "linksHint": "They appear here and arrive by email",
+      "join": "Join the chat",
+      "joinHint": "The link takes you straight to Telegram"
+    },
+    "confirm": {
+      "lead": "Press the button and a Telegram window opens. Confirm the login and we show your links right away.",
+      "button": "Confirm with Telegram",
+      "opening": "Confirm the login in the Telegram window…",
+      "checking": "Checking the account…",
+      "noWindow": "If the Telegram window didn't open or didn't bring you back here, open this page in Chrome or Safari and press the button again.",
+      "closed": "The Telegram window closed before confirming. Press the button again.",
+      "nonceRefreshed": "The page has refreshed — press the button again.",
+      "network": "Couldn't reach the site. Check your connection and press the button again.",
+      "failed": "Couldn't confirm Telegram. Try again or message us."
+    },
+    "result": {
+      "title": "Done, Telegram confirmed",
+      "lead": "Here's what is open for you:",
+      "mainTitle": "Cohort chat",
+      "hubTitle": "Inspiration Hub",
+      "mainButton": "Join the cohort chat",
+      "hubButton": "Open Inspiration Hub",
+      "linkNote": "The link is personal: it works once.",
+      "member": "You're already in this chat — nothing to do.",
+      "extended": "You're already in the Hub — access extended until {date}.",
+      "extendedPlain": "You're already in the Hub — access extended.",
+      "scheduled": "Opens on {date} — the link comes that day.",
+      "scheduledPlain": "Opens right after your current access — the link comes that day.",
+      "unavailable": "Couldn't create the link just now. Refresh the page in a minute or message us.",
+      "emailed": "We've also sent the links to your email.",
+      "myAccess": "My access"
+    },
+    "errors": {
+      "expiredTitle": "The link has expired",
+      "expired": "This link no longer works. Message us and we'll send a new one.",
+      "invalidTitle": "The link doesn't open",
+      "invalid": "It looks like the link was copied only in part. Open it from the email again or message us.",
+      "revokedTitle": "Invitation withdrawn",
+      "revoked": "This invitation no longer works. If that's a mistake, message us.",
+      "unavailableTitle": "The page is unavailable for now",
+      "unavailable": "Try again a little later or message us.",
+      "otherAccount": "This invitation is already confirmed with another Telegram account. Log in to Telegram with the account used before, or message us."
+    },
+    "support": "Message us"
   }
 }

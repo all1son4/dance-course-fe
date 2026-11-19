@@ -36,6 +36,7 @@ import {
   TileGrid,
 } from "../ui/primitives";
 import { CellPrimary, CellSecondary, DataTable, TableScroller } from "../ui/table";
+import { AccessInvitations } from "./access-invitations";
 import { BotRightsCheck } from "./bot-rights-check";
 
 const STATE_LABELS: Record<HubPeriodState, { label: string; tone: AdminTone }> = {
@@ -501,10 +502,13 @@ export const HubWorkspace = ({
                         </td>
                         <td data-label="Тариф">
                           <CellPrimary>
-                            {period.offerLabel || "Inspiration Hub"}
+                            {period.byInvitation
+                              ? "По приглашению"
+                              : period.offerLabel || "Inspiration Hub"}
                           </CellPrimary>
                           <CellSecondary>
-                            Оплата <Nowrap>{formatDate(period.paidAt)}</Nowrap>
+                            {period.byInvitation ? "Выдано" : "Оплата"}{" "}
+                            <Nowrap>{formatDate(period.paidAt)}</Nowrap>
                           </CellSecondary>
                         </td>
                         <td data-label="Период">
@@ -552,13 +556,15 @@ export const HubWorkspace = ({
                                   Ссылка заново
                                 </AdminButton>
                               )}
-                              <AdminButton
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => onOpenPurchase(period.paymentIntentId)}
-                              >
-                                Покупка
-                              </AdminButton>
+                              {!period.byInvitation && (
+                                <AdminButton
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => onOpenPurchase(period.paymentIntentId)}
+                                >
+                                  Покупка
+                                </AdminButton>
+                              )}
                             </Row>
                             {links === "none" && (
                               <Muted>
@@ -580,6 +586,8 @@ export const HubWorkspace = ({
           )}
         </div>
       </Panel>
+
+      <AccessInvitations scope="hub" onUnauthorized={onUnauthorized} />
     </Stack>
   );
 };
