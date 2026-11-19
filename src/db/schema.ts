@@ -512,6 +512,11 @@ export const purchases = pgTable(
     }),
     // Kept in the model so future migrations preserve the additive 0020 column.
     terminalRecordedAt: timestamp("terminal_recorded_at", { withTimezone: true }),
+    // An admin invitation (source `admin_offer_link`): the operator's note and how
+    // the person comes in. `join` sends the chat links at once; `renewal` sends a
+    // page that confirms the Telegram account first. Null on every other purchase.
+    adminNote: text("admin_note"),
+    invitationKind: text("invitation_kind").$type<"join" | "renewal">(),
     succeededAt: timestamp("succeeded_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -549,6 +554,12 @@ export const purchases = pgTable(
     check(
       "purchases_source_check",
       sql`${table.source} IN ('stripe', 'admin_offer_link')`,
+    ),
+    check(
+      "purchases_invitation_kind_check",
+      sql`${table.invitationKind} IS NULL
+        OR (${table.invitationKind} IN ('join', 'renewal')
+          AND ${table.source} = 'admin_offer_link')`,
     ),
     check(
       "purchases_telegram_user_id_check",
@@ -745,6 +756,7 @@ export const purchaseSideEffects = pgTable(
         | "online_group_previous_chat_removal"
         | "cohort_closure_post"
         | "cohort_grace_reminder"
+        | "access_invitation_email"
       >(),
     provider: text("provider").$type<"resend" | "telegram" | "internal">(),
     payload: jsonb("payload")
