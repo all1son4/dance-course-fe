@@ -600,7 +600,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           </ZoneList>
         )}
 
-        <AccessAside>
+        <AccessAside $belowZoneHeader={cards.length > 0}>
           {nextStep && (
             <SideCard aria-labelledby="access-next">
               <Eyebrow>{t("next.eyebrow")}</Eyebrow>

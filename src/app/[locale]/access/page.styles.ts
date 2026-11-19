@@ -243,13 +243,16 @@ export const AccessLayout = styled.div`
   }
 `;
 
-/* The rail's first card lines up with the first card: the tab (34px) and the tray's inset (10px). */
-export const AccessAside = styled.aside`
+/*
+ * The rail's first card lines up with the first card: the tab (34px) and the
+ * tray's inset (10px). The empty state has no zones, so it lines up with the top.
+ */
+export const AccessAside = styled.aside<{ $belowZoneHeader: boolean }>`
   display: grid;
   gap: 14px;
 
   @media (min-width: 1024px) {
-    padding-top: 44px;
+    padding-top: ${({ $belowZoneHeader }) => ($belowZoneHeader ? "44px" : "0")};
   }
 `;
 
