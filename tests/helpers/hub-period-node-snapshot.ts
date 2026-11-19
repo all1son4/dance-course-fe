@@ -45,6 +45,8 @@ export const createHubPeriodNodeSnapshot = (
     customerEmailSnapshot: "member@example.test",
     customerFullNameSnapshot: null,
     customerTelegramUsernameSnapshot: null,
+    adminNote: null,
+    invitationKind: null,
     inspirationChatIdSnapshot: null,
     inspirationAccessExpiresAtSnapshot: null,
     customerCountrySnapshot: null,
