@@ -98,6 +98,8 @@ export type MyAccessSnapshot = {
    * the customer's own purchases.
    */
   completedCohortIds?: readonly string[];
+  /** «Легенда группы»: every cycle from the first, the newest paid (`countLegendCycles`). */
+  legendCycles?: number | null;
   /** The name given at checkout, for the greeting only; never on a card. */
   customerFullName?: string | null;
   purchases: MyAccessPurchase[];

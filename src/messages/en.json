@@ -1387,6 +1387,12 @@
       "since": "With us since {month} {year}",
       "purchases": "{count, plural, one {# purchase} other {# purchases}}"
     },
+    "legend": {
+      "name": "Group legend",
+      "label": "Stamp “Group legend”: {count, plural, one {# cycle} other {# cycles}} in a row since the very first",
+      "unit": "{count, plural, one {cycle} other {cycles}}",
+      "text": "Cycles 1.0 to {last}.0, not one missed. The stamp stays while you’re in every new cycle."
+    },
     "zones": {
       "action": "Waiting for you",
       "active": "Your access",

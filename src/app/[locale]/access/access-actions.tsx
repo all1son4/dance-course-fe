@@ -6,6 +6,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -19,6 +20,10 @@ import {
   CalendarApps,
   CalendarHint,
   CardToggle,
+  LegendButton,
+  LegendSpot,
+  LegendStamp,
+  LegendTip,
   QuietButton,
   QuietLink,
   SaveSpot,
@@ -373,6 +378,120 @@ export function SavePageLink({
         </SaveTip>
       )}
     </SaveSpot>
+  );
+}
+
+/** The beaded ring of the stamp, open at the bottom for «FRAME UP · ANNA STROK». */
+const STAMP_DOTS = Array.from({ length: 36 }, (_, index) => index * 10)
+  .filter((angle) => angle <= 60 || angle >= 120)
+  .map((angle) => [
+    (50 + 40.6 * Math.cos((angle * Math.PI) / 180)).toFixed(2),
+    (50 + 40.6 * Math.sin((angle * Math.PI) / 180)).toFixed(2),
+  ]);
+
+/**
+ * «Легенда группы» in the header: a pilgrim's stamp in the site's wine ink — the
+ * name around the top, «FRAME UP · ANNA STROK» below, the number of cycles in the
+ * middle on a ribbon, a little uneven like a real print. The description shows on
+ * hover, on keyboard focus and on a tap.
+ */
+export function LegendMedal({
+  count,
+  texts,
+}: {
+  count: number;
+  texts: { label: string; name: string; text: string; unit: string };
+}) {
+  const [open, setOpen] = useState(false);
+  const spot = useRef<HTMLDivElement>(null);
+  const id = useId();
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: PointerEvent) => {
+      if (!spot.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  return (
+    <LegendSpot data-medal="" ref={spot}>
+      <LegendButton
+        aria-describedby={`${id}-tip`}
+        aria-label={texts.label}
+        onClick={() => setOpen((value) => !value)}
+        onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
+        type="button"
+      >
+        <LegendStamp aria-hidden viewBox="0 0 100 100">
+          <defs>
+            {/* The ink: a few unprinted specks and slightly wavering edges. */}
+            <filter height="110%" id={`${id}-ink`} width="110%" x="-5%" y="-5%">
+              <feTurbulence
+                baseFrequency="1.3"
+                numOctaves={1}
+                result="grain"
+                seed={11}
+                type="fractalNoise"
+              />
+              <feColorMatrix
+                in="grain"
+                result="specks"
+                type="matrix"
+                values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -11 7.6"
+              />
+              <feComposite in="SourceGraphic" in2="specks" operator="in" result="print" />
+              <feTurbulence
+                baseFrequency="0.07"
+                numOctaves={1}
+                result="wave"
+                seed={3}
+                type="fractalNoise"
+              />
+              <feDisplacementMap
+                in="print"
+                in2="wave"
+                scale="0.45"
+                xChannelSelector="R"
+                yChannelSelector="G"
+              />
+            </filter>
+            <path d="M17.5,50 A32.5,32.5 0 0,1 82.5,50" id={`${id}-top`} />
+            <path d="M11,50 A39,39 0 0,0 89,50" id={`${id}-bottom`} />
+          </defs>
+          <g filter={`url(#${id}-ink)`}>
+            <circle className="rim" cx="50" cy="50" r="47" />
+            <circle className="line" cx="50" cy="50" r="44" />
+            <circle className="inner" cx="50" cy="50" r="26.5" />
+            <circle className="line thin" cx="50" cy="50" r="24.6" />
+            {STAMP_DOTS.map(([x, y]) => (
+              <circle cx={x} cy={y} key={`${x}-${y}`} r="0.85" />
+            ))}
+            <text className="name">
+              <textPath href={`#${id}-top`} startOffset="50%">
+                {texts.name.toLocaleUpperCase()}
+              </textPath>
+            </text>
+            <text className="brand">
+              <textPath href={`#${id}-bottom`} startOffset="50%">
+                FRAME UP · ANNA STROK
+              </textPath>
+            </text>
+            <text className="count" x="50" y="54.5">
+              {count}
+            </text>
+            <path d="M24 60.5 H76 L72.5 64.8 L76 69.1 H24 L27.5 64.8 Z" />
+            <text className="unit" x="50" y="66.8">
+              {texts.unit.toLocaleUpperCase()}
+            </text>
+          </g>
+        </LegendStamp>
+      </LegendButton>
+      <LegendTip data-open={open ? "" : undefined} id={`${id}-tip`} role="tooltip">
+        {texts.text}
+      </LegendTip>
+    </LegendSpot>
   );
 }
 

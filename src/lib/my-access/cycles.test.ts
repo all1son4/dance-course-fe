@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { collectCompletedCohortIds, type CycleFacts } from "./cycles";
+import {
+  collectCompletedCohortIds,
+  collectMemberCohortIds,
+  countLegendCycles,
+  type CycleFacts,
+} from "./cycles";
 
 const STANDARD = "off_R6vN2cH9sW4y";
 const PLUS = "off_online_group_anna_strok_library_access";
@@ -116,4 +121,33 @@ test("membership the site verified in a cycle's chat counts that cycle", () => {
 
 test("no facts, no cycles", () => {
   assert.deepEqual(collectCompletedCohortIds(facts({})), []);
+});
+
+test("the cycles a customer is in include the running one, once bought", () => {
+  assert.deepEqual(
+    collectMemberCohortIds(
+      facts({
+        purchases: [
+          { cohortId: "c1", offerExternalId: STANDARD },
+          { cohortId: "c3", offerExternalId: RENEWAL_PLUS },
+          { cohortId: "unknown", offerExternalId: PLUS },
+        ],
+      }),
+    ),
+    // 3.0 bought; its renewal proves 2.0; an unknown cohort is no cycle.
+    ["c1", "c2", "c3"],
+  );
+});
+
+test("«Легенда группы»: every cycle from the first, the newest one paid", () => {
+  const all = ["c1", "c2", "c3"];
+  assert.equal(countLegendCycles(all, ["c1", "c2", "c3"]), 3);
+  // The newest not bought yet, even before its start: no medal.
+  assert.equal(countLegendCycles(all, ["c1", "c2"]), null);
+  // One cycle missed in between, or the first one: no medal.
+  assert.equal(countLegendCycles(all, ["c1", "c3"]), null);
+  assert.equal(countLegendCycles(all, ["c2", "c3"]), null);
+  // A single cycle is not a streak.
+  assert.equal(countLegendCycles(["c1"], ["c1"]), null);
+  assert.equal(countLegendCycles([], []), null);
 });
