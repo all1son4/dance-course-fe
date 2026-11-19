@@ -13,8 +13,10 @@ import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validat
 import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import Dialog from "@/components/common/Dialog";
+import EmailSuggestion from "@/components/common/EmailSuggestion";
 import Input from "@/components/common/Input";
 import StickyCta from "@/components/other/StickyCta";
+import { getEmailSuggestion } from "@/lib/email-suggestion";
 import { trackAnalyticsEvent, trackApiError } from "@/lib/mixpanel-analytics";
 import { prefersReducedMotion } from "@/lib/reveal";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
@@ -247,6 +249,18 @@ export default function CourseSignupDialog({
       }));
       setSubmitState("idle");
     };
+
+  const emailSuggestion = getEmailSuggestion(values.email);
+  const applyEmailSuggestion = (suggestedEmail: string) => {
+    const nextValues = { ...values, email: suggestedEmail };
+
+    setValues(nextValues);
+    setErrors((currentErrors) => ({
+      ...currentErrors,
+      email: touchedFields.email ? validateField("email", nextValues) : "",
+    }));
+    setSubmitState("idle");
+  };
 
   // Blur: the field settles into its normalized form and gets validated.
   const touchAndValidateField = (field: keyof CourseSignupFormValues) => () => {
@@ -566,6 +580,15 @@ export default function CourseSignupDialog({
           onChange={updateValue("email")}
           disabled={isSubmitting}
           errorMessage={errors.email}
+          hint={
+            emailSuggestion ? (
+              <EmailSuggestion
+                label={t("fields.email.suggestion")}
+                onApply={applyEmailSuggestion}
+                suggestion={emailSuggestion}
+              />
+            ) : undefined
+          }
         />
         <Checkbox
           name="first-touch-email-consent"

@@ -3,7 +3,9 @@
 import { type FormEvent, useState } from "react";
 
 import Button from "@/components/common/Button";
+import EmailSuggestion from "@/components/common/EmailSuggestion";
 import Input from "@/components/common/Input";
+import { getEmailSuggestion } from "@/lib/email-suggestion";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
 import { RequestForm, RequestMessage, RequestRow } from "./page.styles";
@@ -12,6 +14,7 @@ type RequestLinkFormProps = {
   locale: string;
   texts: {
     emailLabel: string;
+    emailSuggestion: string;
     error: string;
     invalid: string;
     sent: string;
@@ -29,6 +32,7 @@ export default function RequestLinkForm({ locale, texts }: RequestLinkFormProps)
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [invalid, setInvalid] = useState(false);
+  const suggestion = getEmailSuggestion(email);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -86,6 +90,18 @@ export default function RequestLinkForm({ locale, texts }: RequestLinkFormProps)
           inputMode="email"
           enterKeyHint="send"
           errorMessage={invalid ? texts.invalid : ""}
+          hint={
+            suggestion ? (
+              <EmailSuggestion
+                label={texts.emailSuggestion}
+                onApply={(suggestedEmail) => {
+                  setEmail(suggestedEmail);
+                  setInvalid(false);
+                }}
+                suggestion={suggestion}
+              />
+            ) : undefined
+          }
           onChange={(event) => {
             setEmail(event.target.value);
             if (invalid) setInvalid(false);

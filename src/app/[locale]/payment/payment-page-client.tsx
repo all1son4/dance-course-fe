@@ -14,6 +14,7 @@ import {
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
+import EmailSuggestion from "@/components/common/EmailSuggestion";
 import type { StripePaymentTabsProps } from "@/components/other/StripePaymentTabs";
 import type { CountryOption } from "@/constants/countries";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
@@ -69,7 +70,6 @@ import {
   CheckoutProgressFill,
   CheckoutProgressText,
   CheckoutProgressTrack,
-  EmailSuggestion,
   InteractiveBox,
   PaymentDescription,
   PaymentSection,
@@ -731,16 +731,11 @@ const PaymentPage = observer(function PaymentPage({
   const getInputHint = (fieldName: PaymentCustomerFieldName, hintKey?: string) => {
     if (fieldName === "email" && emailSuggestion) {
       return (
-        <>
-          {t("inputs.email.suggestion")}{" "}
-          <EmailSuggestion
-            onClick={() => applyEmailSuggestion(emailSuggestion)}
-            type="button"
-          >
-            {emailSuggestion}
-          </EmailSuggestion>
-          ?
-        </>
+        <EmailSuggestion
+          label={t("inputs.email.suggestion")}
+          onApply={applyEmailSuggestion}
+          suggestion={emailSuggestion}
+        />
       );
     }
 

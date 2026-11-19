@@ -198,6 +198,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
             locale={locale}
             texts={{
               emailLabel: t("request.emailLabel"),
+              emailSuggestion: t("request.emailSuggestion"),
               error: t("request.error"),
               invalid: t("request.invalid"),
               sent: t("request.sent"),

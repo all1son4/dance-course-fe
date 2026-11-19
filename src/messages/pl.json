@@ -504,6 +504,7 @@
         "email": {
           "label": "E-mail",
           "placeholder": "name@example.com",
+          "suggestion": "Czy chodziło o",
           "duplicateError": "Ten adres e-mail jest już na liście"
         },
         "consent": {
@@ -1469,6 +1470,7 @@
       "lead": "Otwórz tę stronę przyciskiem „Mój dostęp” z dowolnej naszej wiadomości. Nie masz jej pod ręką? Wpisz email, a wyślemy link.",
       "invalidLink": "Ten link nie działa. Wpisz email, a wyślemy nowy.",
       "emailLabel": "Email",
+      "emailSuggestion": "Czy chodziło o",
       "submit": "Wyślij link",
       "sent": "Jeśli pod tym adresem są zakupy, wysłaliśmy na niego link. Sprawdź też folder „Spam”.",
       "invalid": "Sprawdź email",
