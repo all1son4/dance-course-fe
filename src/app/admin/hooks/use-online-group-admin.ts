@@ -5,11 +5,8 @@ import {
   ONLINE_GROUP_RENEWAL_OFFER_ID,
 } from "@/constants/sellable-products";
 
-import { ADMIN_API_ENDPOINTS, RATE_LIMITED_STATUS_TEXT } from "../lib/admin.constants";
+import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type {
-  OnlineGroupAdminAccessMode,
-  OnlineGroupAdminGrant,
-  OnlineGroupAdminLinksResponse,
   OnlineGroupCampaignEntry,
   OnlineGroupCampaignsResponse,
   RenewalCampaignEntry,
@@ -26,14 +23,6 @@ type UseOnlineGroupAdminOptions = {
   isActive: boolean;
   isAuthorized: boolean;
   onUnauthorized: () => void;
-};
-
-const ADMIN_ACCESS_ERROR_MESSAGES: Record<string, string> = {
-  missing_admin_label: "Напиши, для кого этот доступ.",
-  network_error: "Нет связи с сайтом. Проверь интернет и попробуй ещё раз.",
-  online_group_settings_not_configured:
-    "Сначала настрой текущий поток в «Настройках потока».",
-  rate_limited: RATE_LIMITED_STATUS_TEXT,
 };
 
 const RENEWAL_ERROR_MESSAGES: Record<string, string> = {
@@ -82,12 +71,6 @@ export const useOnlineGroupAdmin = ({
   const [status, setStatus] = useState<StatusMessage>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [adminAccessMode, setAdminAccessMode] =
-    useState<OnlineGroupAdminAccessMode>("standard");
-  const [adminLabel, setAdminLabel] = useState("");
-  const [adminGrants, setAdminGrants] = useState<OnlineGroupAdminGrant[]>([]);
-  const [adminStatus, setAdminStatus] = useState<StatusMessage>(null);
-  const [isGeneratingAdminAccess, setIsGeneratingAdminAccess] = useState(false);
   const [renewalCampaigns, setRenewalCampaigns] = useState<RenewalCampaignEntry[]>([]);
   const [renewalSourceChatIds, setRenewalSourceChatIds] = useState<string[]>([]);
   const [renewalOfferId, setRenewalOfferId] = useState(ONLINE_GROUP_RENEWAL_OFFER_ID);
@@ -120,8 +103,6 @@ export const useOnlineGroupAdmin = ({
     telegramChats.some((chat) => chat.chatId === activeCampaign.mainChatId) &&
     telegramChats.some((chat) => chat.chatId === activeCampaign.inspirationChatId),
   );
-  const isAdminGenerateDisabled =
-    isGeneratingAdminAccess || isLoading || !hasConfiguredCampaign || !adminLabel.trim();
   const isRenewalGenerateDisabled =
     isGeneratingRenewal || renewalSourceChatIds.length === 0 || !activeCampaign;
   // The title is typed again to confirm the closure, so it is never left to a fallback.
@@ -146,25 +127,18 @@ export const useOnlineGroupAdmin = ({
   const load = useCallback(async () => {
     setIsLoading(true);
 
-    const [chatsResult, campaignsResult, onlineGroupResult, adminLinksResult] =
-      await Promise.all([
-        requestAdminJson<TelegramChatsResponse>(ADMIN_API_ENDPOINTS.telegramChats),
-        requestAdminJson<RenewalCampaignsResponse>(ADMIN_API_ENDPOINTS.renewalCampaigns),
-        requestAdminJson<OnlineGroupCampaignsResponse>(
-          ADMIN_API_ENDPOINTS.onlineGroupSettings,
-        ),
-        requestAdminJson<OnlineGroupAdminLinksResponse>(
-          ADMIN_API_ENDPOINTS.onlineGroupInviteLinks,
-        ),
-      ]);
-    // The workspace is one screen fed by four endpoints, so a single unreachable
-    // endpoint reports network failure for the whole screen rather than half of it.
-    const hasNetworkError = [
-      chatsResult,
-      campaignsResult,
-      onlineGroupResult,
-      adminLinksResult,
-    ].some((result) => result.errorCode === ADMIN_NETWORK_ERROR_CODE);
+    const [chatsResult, campaignsResult, onlineGroupResult] = await Promise.all([
+      requestAdminJson<TelegramChatsResponse>(ADMIN_API_ENDPOINTS.telegramChats),
+      requestAdminJson<RenewalCampaignsResponse>(ADMIN_API_ENDPOINTS.renewalCampaigns),
+      requestAdminJson<OnlineGroupCampaignsResponse>(
+        ADMIN_API_ENDPOINTS.onlineGroupSettings,
+      ),
+    ]);
+    // The workspace is one screen fed by three endpoints, so a single unreachable
+    // endpoint reports network failure for the whole screen rather than part of it.
+    const hasNetworkError = [chatsResult, campaignsResult, onlineGroupResult].some(
+      (result) => result.errorCode === ADMIN_NETWORK_ERROR_CODE,
+    );
 
     if (hasNetworkError) {
       setStatus({
@@ -175,16 +149,11 @@ export const useOnlineGroupAdmin = ({
         text: "Ошибка сети при загрузке продлений.",
         tone: "error",
       });
-      setAdminStatus({
-        text: "Ошибка сети при загрузке ручных доступов.",
-        tone: "error",
-      });
     } else if (
-      adminLinksResult.unauthorized ||
-      ((!chatsResult.ok || !campaignsResult.ok || !onlineGroupResult.ok) &&
-        (chatsResult.unauthorized ||
-          campaignsResult.unauthorized ||
-          onlineGroupResult.unauthorized))
+      (!chatsResult.ok || !campaignsResult.ok || !onlineGroupResult.ok) &&
+      (chatsResult.unauthorized ||
+        campaignsResult.unauthorized ||
+        onlineGroupResult.unauthorized)
     ) {
       onUnauthorized();
     } else if (!chatsResult.ok || !campaignsResult.ok || !onlineGroupResult.ok) {
@@ -206,17 +175,6 @@ export const useOnlineGroupAdmin = ({
       setTelegramChats(chats);
       setRenewalCampaigns(renewalCampaignEntries);
       setCampaigns(Array.isArray(onlineGroupCampaigns) ? onlineGroupCampaigns : []);
-
-      if (adminLinksResult.ok) {
-        setAdminGrants(
-          Array.isArray(adminLinksResult.data.grants) ? adminLinksResult.data.grants : [],
-        );
-      } else {
-        setAdminStatus({
-          text: "Не удалось загрузить журнал ручных доступов.",
-          tone: "error",
-        });
-      }
 
       const loadedActiveCampaign = onlineGroupCampaigns?.find(
         (campaign) => campaign.status === "active",
@@ -277,16 +235,6 @@ export const useOnlineGroupAdmin = ({
     setStatus(null);
   }, []);
 
-  const changeAdminAccessMode = useCallback((value: OnlineGroupAdminAccessMode) => {
-    setAdminAccessMode(value);
-    setAdminStatus(null);
-  }, []);
-
-  const changeAdminLabel = useCallback((value: string) => {
-    setAdminLabel(value);
-    setAdminStatus(null);
-  }, []);
-
   const changeRenewalOffer = useCallback((value: string) => {
     setRenewalOfferId(value);
     setGeneratedRenewalLink("");
@@ -302,90 +250,6 @@ export const useOnlineGroupAdmin = ({
     setGeneratedRenewalLink("");
     setRenewalStatus(null);
   }, []);
-
-  const generateAdminAccess = useCallback(async () => {
-    if (isAdminGenerateDisabled) {
-      return;
-    }
-
-    setIsGeneratingAdminAccess(true);
-    setAdminStatus({
-      text: "Создаю ссылки…",
-      tone: "progress",
-    });
-
-    const normalizedAdminLabel = adminLabel.trim();
-
-    const result = await requestAdminJson<OnlineGroupAdminLinksResponse>(
-      ADMIN_API_ENDPOINTS.onlineGroupInviteLinks,
-      {
-        body: {
-          accessMode: adminAccessMode,
-          adminLabel: normalizedAdminLabel,
-        },
-        method: "POST",
-      },
-    );
-    const { grant: issuedGrant, status: grantStatus } = result.data;
-
-    if (result.unauthorized) {
-      onUnauthorized();
-      setAdminStatus(null);
-    } else if (!result.ok || !issuedGrant) {
-      setAdminStatus({
-        text:
-          ADMIN_ACCESS_ERROR_MESSAGES[result.errorCode] ??
-          "Не удалось создать ссылки доступа.",
-        tone: "error",
-      });
-    } else {
-      const grant = {
-        ...issuedGrant,
-        accesses: issuedGrant.accesses.map((access) => ({
-          ...access,
-          chatTitle:
-            access.chatTitle ||
-            telegramChats.find((chat) => chat.chatId === access.chatId)?.title ||
-            access.chatId,
-        })),
-      } satisfies OnlineGroupAdminGrant;
-
-      setAdminGrants((grants) => [
-        grant,
-        ...grants.filter(
-          (existingGrant) => existingGrant.paymentIntentId !== grant.paymentIntentId,
-        ),
-      ]);
-      setAdminLabel("");
-      setAdminStatus(
-        grantStatus === "ready"
-          ? {
-              text:
-                grant.accessMode === "plus"
-                  ? "Ссылки в чат потока и библиотеку готовы."
-                  : "Ссылка в чат потока готова.",
-              tone: "success",
-            }
-          : grantStatus === "partial"
-            ? {
-                text: "Создана только часть ссылок. Проверь статусы ниже.",
-                tone: "info",
-              }
-            : {
-                text: "Telegram не смог создать ссылки. Проверь статусы ниже.",
-                tone: "error",
-              },
-      );
-    }
-
-    setIsGeneratingAdminAccess(false);
-  }, [
-    adminAccessMode,
-    adminLabel,
-    isAdminGenerateDisabled,
-    onUnauthorized,
-    telegramChats,
-  ]);
 
   const generateRenewal = useCallback(
     async (regenerate = false) => {
@@ -616,8 +480,6 @@ export const useOnlineGroupAdmin = ({
       setHasLoaded(false);
       setTelegramChats([]);
       setCampaigns([]);
-      setAdminGrants([]);
-      setAdminStatus(null);
       setRenewalCampaigns([]);
       return;
     }
@@ -632,24 +494,15 @@ export const useOnlineGroupAdmin = ({
   return {
     activeCampaign,
     activeMainChatTitle,
-    adminAccessMode,
-    adminGrants,
-    adminLabel,
-    adminStatus,
-    changeAdminAccessMode,
-    changeAdminLabel,
     changeLibraryChat,
     changeMainChat,
     changeRenewalOffer,
     changeStartsAt,
-    generateAdminAccess,
     generatedRenewalLink,
     generateRenewal,
     hasConfiguredCampaign,
     inspirationChatTitle,
-    isAdminGenerateDisabled,
     isFormOpen,
-    isGeneratingAdminAccess,
     isGeneratingRenewal,
     isLoading,
     isRenewalGenerateDisabled,

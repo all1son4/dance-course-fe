@@ -5,19 +5,13 @@ import styled from "styled-components";
 import { ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID } from "@/constants/sellable-products";
 
 import type {
-  OnlineGroupAdminAccessMode,
-  OnlineGroupAdminGrant,
   OnlineGroupCampaignEntry,
   RenewalCampaignEntry,
   SelectOption,
   StatusMessage,
   TelegramChatOption,
 } from "../lib/admin.types";
-import {
-  formatDateTime,
-  resolveOnlineGroupAccessStateLabel,
-  resolveOnlineGroupAccessTitle,
-} from "../lib/admin.utils";
+import { formatDateTime } from "../lib/admin.utils";
 import { CopyField } from "../ui/copy";
 import { ConfirmDialog } from "../ui/feedback";
 import {
@@ -93,14 +87,6 @@ const Meta = styled.p`
   color: var(--a-ink-2);
   font-size: var(--a-text-sm);
   overflow-wrap: anywhere;
-`;
-
-const AccessRow = styled.div`
-  display: grid;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: var(--a-radius-sm);
-  background: var(--a-surface-sunken);
 `;
 
 const ChatChoices = styled.div`
@@ -288,146 +274,6 @@ export const ActiveOnlineGroupCard = ({
       <StatusLine status={status} />
     </Stack>
   </Panel>
-);
-
-/* ---------- Manual access ---------- */
-
-type OnlineGroupInviteLinksCardProps = {
-  accessMode: OnlineGroupAdminAccessMode;
-  adminLabel: string;
-  grants: OnlineGroupAdminGrant[];
-  isDisabled: boolean;
-  isGenerating: boolean;
-  isLoading: boolean;
-  onAccessModeChange: (value: OnlineGroupAdminAccessMode) => void;
-  onAdminLabelChange: (value: string) => void;
-  onRefresh: () => void | Promise<void>;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
-  status: StatusMessage;
-  /** «Online Group 3.0» (чат «…»): where the access leads. */
-  target: string;
-};
-
-export const OnlineGroupInviteLinksCard = ({
-  accessMode,
-  adminLabel,
-  grants,
-  isDisabled,
-  isGenerating,
-  isLoading,
-  onAccessModeChange,
-  onAdminLabelChange,
-  onSubmit,
-  status,
-  target,
-}: OnlineGroupInviteLinksCardProps) => (
-  <Stack $gap={16}>
-    <Panel
-      title="Выдать доступ вручную"
-      description={`Доступ без оплаты в текущий поток${target ? ` ${target}` : ""}. Standard — чат потока, Plus — ещё и библиотека Inspiration Hub.`}
-    >
-      <Form onSubmit={onSubmit}>
-        <FormGrid>
-          <Field label="Тариф" htmlFor="og-grant-mode">
-            <Select
-              id="og-grant-mode"
-              value={accessMode}
-              disabled={isLoading}
-              onChange={(event) =>
-                onAccessModeChange(event.target.value as OnlineGroupAdminAccessMode)
-              }
-            >
-              <option value="standard">Standard — чат потока</option>
-              <option value="plus">Plus — чат потока и библиотека</option>
-            </Select>
-          </Field>
-          <Field
-            label="Для кого"
-            htmlFor="og-grant-label"
-            hint="Обязательно. Видно только в админке, чтобы потом найти выдачу."
-          >
-            <Input
-              id="og-grant-label"
-              value={adminLabel}
-              placeholder="Например: Аня, подарок"
-              disabled={isLoading}
-              onChange={(event) => onAdminLabelChange(event.target.value)}
-            />
-          </Field>
-        </FormGrid>
-        <FormActions>
-          <AdminButton
-            type="submit"
-            variant="primary"
-            disabled={isDisabled}
-            loading={isGenerating}
-          >
-            Создать ссылки доступа
-          </AdminButton>
-        </FormActions>
-        <StatusLine status={status} />
-      </Form>
-    </Panel>
-
-    <Panel title="Журнал выдач" description="Последние ручные доступы и их ссылки.">
-      {isLoading && grants.length === 0 ? (
-        <Stack $gap={10}>
-          <Skeleton $height={72} />
-          <Skeleton $height={72} />
-        </Stack>
-      ) : grants.length === 0 ? (
-        <EmptyState title="Ручных выдач пока нет" />
-      ) : (
-        <List>
-          {grants.map((grant) => (
-            <li key={grant.paymentIntentId}>
-              <ItemHead>
-                <strong>{grant.adminLabel}</strong>
-                <Badge $tone={grant.accessMode === "plus" ? "accent" : "neutral"}>
-                  {grant.accessMode === "plus" ? "Plus" : "Standard"}
-                </Badge>
-                <Muted>{formatDateTime(grant.createdAtIso)}</Muted>
-              </ItemHead>
-              {grant.accesses.length === 0 ? (
-                <Meta>Ссылки для этой выдачи не созданы.</Meta>
-              ) : (
-                grant.accesses.map((access) => (
-                  <AccessRow key={`${access.accessKey}-${access.chatId}`}>
-                    <ItemHead>
-                      <strong>{resolveOnlineGroupAccessTitle(access.accessKey)}</strong>
-                      <Badge
-                        $tone={
-                          access.state === "issued"
-                            ? "success"
-                            : access.state === "failed"
-                              ? "danger"
-                              : "neutral"
-                        }
-                      >
-                        {resolveOnlineGroupAccessStateLabel(access.state)}
-                      </Badge>
-                    </ItemHead>
-                    <Meta>
-                      {access.chatTitle || access.chatId || "Чат не определён"}
-                      {access.tokenExpiresAt
-                        ? ` · ссылка до ${formatDateTime(access.tokenExpiresAt)}`
-                        : ""}
-                      {access.accessExpiresAt
-                        ? ` · доступ до ${formatDateTime(access.accessExpiresAt)}`
-                        : ""}
-                    </Meta>
-                    {access.accessUrl && (
-                      <CopyField label="Ссылка доступа" value={access.accessUrl} />
-                    )}
-                  </AccessRow>
-                ))
-              )}
-            </li>
-          ))}
-        </List>
-      )}
-    </Panel>
-  </Stack>
 );
 
 /* ---------- Renewal links ---------- */

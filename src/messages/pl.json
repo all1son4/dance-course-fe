@@ -1538,5 +1538,67 @@
         "startsOnJoin": "Czas ruszy w dniu wejścia do kanału"
       }
     }
+  },
+  "InvitationPage": {
+    "metaTitle": "Zaproszenie",
+    "eyebrow": "Zaproszenie",
+    "greeting": {
+      "withName": "Cześć, {name}!",
+      "plain": "Cześć!"
+    },
+    "intro": {
+      "standard": "Masz otwarte przedłużenie: {cohort} · Standard.",
+      "plus": "Masz otwarte przedłużenie: {cohort} · Plus z Inspiration Hub.",
+      "hub": "Masz otwarte przedłużenie: Inspiration Hub na 8 tygodni."
+    },
+    "steps": {
+      "label": "Trzy kroki",
+      "confirm": "Potwierdź Telegram",
+      "confirmHint": "Tak rozpoznamy Twoje konto",
+      "links": "Odbierz linki",
+      "linksHint": "Pojawią się tutaj i przyjdą mailem",
+      "join": "Wejdź na czat",
+      "joinHint": "Link prowadzi prosto do Telegramu"
+    },
+    "confirm": {
+      "lead": "Naciśnij przycisk — otworzy się okno Telegramu. Potwierdź logowanie, a od razu pokażemy Twoje linki.",
+      "button": "Potwierdź przez Telegram",
+      "opening": "Potwierdź logowanie w oknie Telegramu…",
+      "checking": "Sprawdzamy konto…",
+      "noWindow": "Jeśli okno Telegramu się nie otworzyło albo nie wróciło tutaj, otwórz tę stronę w Chrome lub Safari i naciśnij przycisk jeszcze raz.",
+      "closed": "Okno Telegramu zamknęło się przed potwierdzeniem. Naciśnij przycisk jeszcze raz.",
+      "nonceRefreshed": "Strona się odświeżyła — naciśnij przycisk jeszcze raz.",
+      "network": "Nie udało się połączyć ze stroną. Sprawdź internet i naciśnij przycisk jeszcze raz.",
+      "failed": "Nie udało się potwierdzić Telegramu. Spróbuj jeszcze raz albo napisz do nas."
+    },
+    "result": {
+      "title": "Gotowe, Telegram potwierdzony",
+      "lead": "Oto, co masz otwarte:",
+      "mainTitle": "Czat edycji",
+      "hubTitle": "Inspiration Hub",
+      "mainButton": "Wejdź na czat edycji",
+      "hubButton": "Otwórz Inspiration Hub",
+      "linkNote": "Link jest osobisty: działa jeden raz.",
+      "member": "Już jesteś na tym czacie — nic nie trzeba robić.",
+      "extended": "Już jesteś w Hub — dostęp przedłużony do {date}.",
+      "extendedPlain": "Już jesteś w Hub — dostęp przedłużony.",
+      "scheduled": "Otworzy się {date} — link przyjdzie tego dnia.",
+      "scheduledPlain": "Otworzy się zaraz po obecnym dostępie — link przyjdzie tego dnia.",
+      "unavailable": "Nie udało się teraz utworzyć linku. Odśwież stronę za minutę albo napisz do nas.",
+      "emailed": "Linki wysłaliśmy też mailem.",
+      "myAccess": "Mój dostęp"
+    },
+    "errors": {
+      "expiredTitle": "Link wygasł",
+      "expired": "Ten link już nie działa. Napisz do nas — wyślemy nowy.",
+      "invalidTitle": "Link się nie otwiera",
+      "invalid": "Wygląda na to, że link nie skopiował się w całości. Otwórz go jeszcze raz z maila albo napisz do nas.",
+      "revokedTitle": "Zaproszenie wycofane",
+      "revoked": "To zaproszenie już nie działa. Jeśli to pomyłka — napisz do nas.",
+      "unavailableTitle": "Strona chwilowo niedostępna",
+      "unavailable": "Spróbuj otworzyć ją nieco później albo napisz do nas.",
+      "otherAccount": "To zaproszenie jest już potwierdzone innym kontem Telegram. Zaloguj się w Telegramie na konto, którym potwierdzano wcześniej, albo napisz do nas."
+    },
+    "support": "Napisz do nas"
   }
 }

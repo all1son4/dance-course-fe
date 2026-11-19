@@ -289,6 +289,111 @@ export const Checkbox = ({
   </CheckRoot>
 );
 
+/* ---------- Segmented choice ---------- */
+
+const ChoiceRoot = styled.div`
+  display: inline-flex;
+  justify-self: start;
+  max-width: 100%;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--a-surface-hover);
+
+  @container admin-content (max-width: 520px) {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    justify-self: stretch;
+    border-radius: 14px;
+  }
+`;
+
+const ChoiceOption = styled.label<{ $checked: boolean; $disabled: boolean }>`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-size: var(--a-text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+  background: ${({ $checked }) => ($checked ? "var(--a-surface)" : "transparent")};
+  color: ${({ $checked }) => ($checked ? "var(--a-ink)" : "var(--a-ink-2)")};
+  box-shadow: ${({ $checked }) => ($checked ? "var(--a-shadow)" : "none")};
+  opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+
+  input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: inherit;
+  }
+
+  &:has(input:focus-visible) {
+    box-shadow: var(--a-focus);
+  }
+
+  @container admin-content (max-width: 520px) {
+    border-radius: 11px;
+  }
+
+  @media (max-width: 640px) {
+    min-height: 38px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+`;
+
+/**
+ * A short either/or (a language, a tariff) as one pill of radio buttons, the look
+ * of SegmentedTabs: arrows move the choice, the form reads a real radio group.
+ */
+export const SegmentedChoice = <T extends string>({
+  disabled = false,
+  label,
+  name,
+  onChange,
+  options,
+  value,
+}: {
+  disabled?: boolean;
+  label: string;
+  name: string;
+  onChange: (value: T) => void;
+  options: { label: ReactNode; value: T }[];
+  value: T;
+}) => (
+  <ChoiceRoot role="radiogroup" aria-label={label}>
+    {options.map((option) => (
+      <ChoiceOption
+        key={option.value}
+        $checked={option.value === value}
+        $disabled={disabled}
+      >
+        <input
+          type="radio"
+          name={name}
+          value={option.value}
+          checked={option.value === value}
+          disabled={disabled}
+          onChange={() => onChange(option.value)}
+        />
+        {option.label}
+      </ChoiceOption>
+    ))}
+  </ChoiceRoot>
+);
+
 /* ---------- Facts ---------- */
 
 /** Label-over-value facts in even tiles ("Поток", "Старт", "Чат"). */

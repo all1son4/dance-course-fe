@@ -23,12 +23,12 @@ import {
   Stack,
   TextButton,
 } from "../ui/primitives";
+import { AccessInvitations } from "./access-invitations";
 import { AttentionList } from "./attention-list";
 import type { NextCohortInput, RenewalLinkKind } from "./cohort-transition-guide";
 import { CohortsPanel } from "./cohorts-panel";
 import {
   ActiveOnlineGroupCard,
-  OnlineGroupInviteLinksCard,
   RenewalCampaignsCard,
   RenewalGeneratorCard,
 } from "./online-group-workspace";
@@ -179,7 +179,7 @@ export const OnlineGroupTab = ({
           { id: "cohorts", label: "Потоки" },
           { id: "stream", label: "Настройки потока" },
           { id: "renewals", label: "Продления" },
-          { id: "manual", label: "Ручной доступ" },
+          { id: "manual", label: "Приглашения" },
         ]}
       />
 
@@ -293,31 +293,9 @@ export const OnlineGroupTab = ({
           </Callout>
         ))}
 
-      {section === "manual" &&
-        (settings.hasConfiguredCampaign ? (
-          <OnlineGroupInviteLinksCard
-            target={
-              settings.activeCampaign
-                ? `«${settings.activeCampaign.title}» (чат «${settings.activeMainChatTitle}»)`
-                : ""
-            }
-            accessMode={settings.adminAccessMode}
-            adminLabel={settings.adminLabel}
-            grants={settings.adminGrants}
-            isDisabled={settings.isAdminGenerateDisabled}
-            isGenerating={settings.isGeneratingAdminAccess}
-            isLoading={settings.isLoading}
-            onAccessModeChange={settings.changeAdminAccessMode}
-            onAdminLabelChange={settings.changeAdminLabel}
-            onRefresh={settings.load}
-            onSubmit={submit(settings.generateAdminAccess)}
-            status={settings.adminStatus}
-          />
-        ) : (
-          <Callout tone="info" icon={<Info aria-hidden />}>
-            Ручной доступ можно выдать, когда настроен поток.
-          </Callout>
-        ))}
+      {section === "manual" && (
+        <AccessInvitations scope="group" onUnauthorized={onUnauthorized} />
+      )}
     </Stack>
   );
 };
