@@ -135,68 +135,73 @@ export async function readMyAccessSnapshot(
       purchaseRows.flatMap((row) => (row.telegramUserId ? [row.telegramUserId] : [])),
     ),
   ];
-  const [rights, cohorts, tokens, discountCohorts, telegramCycles] = await Promise.all([
-    ids.length
-      ? database
-          .select({
-            id: accessEntitlements.id,
-            telegramChatId: accessEntitlements.telegramChatId,
-            accessKey: accessEntitlements.accessKey,
-            accessWorkflow: accessEntitlements.accessWorkflow,
-            expiresAt: accessEntitlements.expiresAt,
-            purchaseId: accessEntitlements.purchaseId,
-            revokedAt: accessEntitlements.revokedAt,
-            sourceKind: accessEntitlements.sourceKind,
-            startsAt: accessEntitlements.startsAt,
-            status: accessEntitlements.status,
-          })
-          .from(accessEntitlements)
-          .where(inArray(accessEntitlements.purchaseId, ids))
-      : Promise.resolve([]),
-    cohortIds.length
-      ? database
-          .select({
-            accessEndsAt: onlineGroupCohorts.accessEndsAt,
-            closedAt: onlineGroupCohorts.closedAt,
-            durationWeeks: onlineGroupCohorts.durationWeeks,
-            id: onlineGroupCohorts.id,
-            startsAt: onlineGroupCohorts.startsAt,
-            title: onlineGroupCohorts.title,
-          })
-          .from(onlineGroupCohorts)
-          .where(inArray(onlineGroupCohorts.id, cohortIds))
-      : Promise.resolve([]),
-    ids.length
-      ? database
-          .select({
-            chatId: telegramAccessTokens.chatId,
-            entitlementId: telegramAccessTokens.entitlementId,
-            expiresAt: telegramAccessTokens.expiresAt,
-            purchaseId: telegramAccessTokens.purchaseId,
-            status: telegramAccessTokens.status,
-          })
-          .from(telegramAccessTokens)
-          .where(inArray(telegramAccessTokens.purchaseId, ids))
-      : Promise.resolve([]),
-    // The cohorts whose members get the Hub renewal price now, by the checkout's rule.
-    listHubDiscountCohorts(database, new Date()),
-    telegramUserIds.length
-      ? database
-          .select({ id: onlineGroupCohorts.id })
-          .from(purchases)
-          .innerJoin(
-            onlineGroupCohorts,
-            eq(onlineGroupCohorts.id, purchases.onlineGroupCohortId),
-          )
-          .where(
-            and(
-              eq(purchases.outcome, "succeeded"),
-              inArray(purchases.telegramUserId, telegramUserIds),
-              isNotNull(onlineGroupCohorts.closedAt),
-            ),
-          )
-      : Promise.resolve([]),
-  ]);
+  const [rights, cohorts, tokens, discountCohorts, telegramCycles, [firstCohort]] =
+    await Promise.all([
+      ids.length
+        ? database
+            .select({
+              id: accessEntitlements.id,
+              telegramChatId: accessEntitlements.telegramChatId,
+              accessKey: accessEntitlements.accessKey,
+              accessWorkflow: accessEntitlements.accessWorkflow,
+              expiresAt: accessEntitlements.expiresAt,
+              purchaseId: accessEntitlements.purchaseId,
+              revokedAt: accessEntitlements.revokedAt,
+              sourceKind: accessEntitlements.sourceKind,
+              startsAt: accessEntitlements.startsAt,
+              status: accessEntitlements.status,
+            })
+            .from(accessEntitlements)
+            .where(inArray(accessEntitlements.purchaseId, ids))
+        : Promise.resolve([]),
+      cohortIds.length
+        ? database
+            .select({
+              accessEndsAt: onlineGroupCohorts.accessEndsAt,
+              closedAt: onlineGroupCohorts.closedAt,
+              durationWeeks: onlineGroupCohorts.durationWeeks,
+              id: onlineGroupCohorts.id,
+              startsAt: onlineGroupCohorts.startsAt,
+              title: onlineGroupCohorts.title,
+            })
+            .from(onlineGroupCohorts)
+            .where(inArray(onlineGroupCohorts.id, cohortIds))
+        : Promise.resolve([]),
+      ids.length
+        ? database
+            .select({
+              chatId: telegramAccessTokens.chatId,
+              entitlementId: telegramAccessTokens.entitlementId,
+              expiresAt: telegramAccessTokens.expiresAt,
+              purchaseId: telegramAccessTokens.purchaseId,
+              status: telegramAccessTokens.status,
+            })
+            .from(telegramAccessTokens)
+            .where(inArray(telegramAccessTokens.purchaseId, ids))
+        : Promise.resolve([]),
+      // The cohorts whose members get the Hub renewal price now, by the checkout's rule.
+      listHubDiscountCohorts(database, new Date()),
+      telegramUserIds.length
+        ? database
+            .select({ id: onlineGroupCohorts.id })
+            .from(purchases)
+            .innerJoin(
+              onlineGroupCohorts,
+              eq(onlineGroupCohorts.id, purchases.onlineGroupCohortId),
+            )
+            .where(
+              and(
+                eq(purchases.outcome, "succeeded"),
+                inArray(purchases.telegramUserId, telegramUserIds),
+                isNotNull(onlineGroupCohorts.closedAt),
+              ),
+            )
+        : Promise.resolve([]),
+      // The first cycle (May–June 2026) has no cohort record: its purchases predate it.
+      database
+        .select({ startsAt: sql<Date | null>`min(${onlineGroupCohorts.startsAt})` })
+        .from(onlineGroupCohorts),
+    ]);
   const now = Date.now();
   // An invite still usable: issued, not expired. Older tokens may lack the right's id
   // and are matched by purchase and chat instead.
@@ -213,6 +218,7 @@ export async function readMyAccessSnapshot(
 
   return {
     closedCohortIdsOfTelegram: [...new Set(telegramCycles.map((cycle) => cycle.id))],
+    firstCohortStartsAt: firstCohort?.startsAt ? new Date(firstCohort.startsAt) : null,
     cohorts,
     customerFullName: customer.fullName,
     hubDiscountCohortIds: discountCohorts.map((cohort) => cohort.id),
