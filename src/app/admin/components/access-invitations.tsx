@@ -14,14 +14,7 @@ import { requestAdminJson } from "../lib/admin-request";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { ConfirmDialog } from "../ui/feedback";
-import {
-  Field,
-  FormActions,
-  FormGrid,
-  Input,
-  SegmentedChoice,
-  StatusLine,
-} from "../ui/forms";
+import { Field, FormActions, Input, SegmentedChoice, StatusLine } from "../ui/forms";
 import {
   AdminButton,
   Badge,
@@ -63,6 +56,11 @@ const PRODUCT_LABELS: Record<Product, string> = {
   hub: "Hub",
 };
 
+const PRODUCT_HINTS: Record<Exclude<Product, "hub">, string> = {
+  standard: "Чат потока.",
+  plus: "Чат потока и Inspiration Hub на всё время потока.",
+};
+
 const KIND_HINTS: Record<Scope, Record<Kind, string>> = {
   group: {
     join: "Письмо сразу придёт с личными ссылками в Telegram.",
@@ -84,7 +82,7 @@ const ISSUE_ERRORS: Record<string, string> = {
 
 const Form = styled.form`
   display: grid;
-  gap: 22px;
+  gap: 20px;
 `;
 
 const Group = styled.fieldset`
@@ -96,7 +94,7 @@ const Group = styled.fieldset`
   border: 0;
 
   > legend {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     padding: 0;
     color: var(--a-ink-3);
     font-size: var(--a-text-xs);
@@ -104,6 +102,33 @@ const Group = styled.fieldset`
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
+`;
+
+/* Имя · Фамилия · Почта in one row where there is room; the email gets the widest cell. */
+const PeopleGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 14px 16px;
+
+  @container admin-content (max-width: 760px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > :last-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container admin-content (max-width: 520px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+/* The switches side by side while they fit, then one under another. */
+const ChoiceRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 28px;
 `;
 
 const ChoiceField = styled.div`
@@ -115,6 +140,10 @@ const ChoiceField = styled.div`
     color: var(--a-ink);
     font-size: var(--a-text-sm);
     font-weight: 600;
+  }
+
+  @container admin-content (max-width: 520px) {
+    flex: 1 1 100%;
   }
 `;
 
@@ -590,7 +619,7 @@ export const AccessInvitations = ({
           <Form onSubmit={submit} noValidate>
             <Group>
               <legend>Кому</legend>
-              <FormGrid>
+              <PeopleGrid>
                 <Field label="Имя *" htmlFor={`${scope}-invite-first`}>
                   <Input
                     id={`${scope}-invite-first`}
@@ -630,6 +659,12 @@ export const AccessInvitations = ({
                     onChange={(event) => update("email", event.target.value)}
                   />
                 </Field>
+              </PeopleGrid>
+            </Group>
+
+            <Group>
+              <legend>Доступ</legend>
+              <ChoiceRow>
                 <ChoiceField>
                   <span>Язык письма и страницы</span>
                   <SegmentedChoice<Locale>
@@ -647,47 +682,40 @@ export const AccessInvitations = ({
                     }}
                   />
                 </ChoiceField>
-              </FormGrid>
-            </Group>
-
-            {scope === "group" && (
-              <Group>
-                <legend>Что</legend>
+                {scope === "group" && (
+                  <ChoiceField>
+                    <span>Тариф</span>
+                    <SegmentedChoice<Product>
+                      label="Тариф"
+                      name="group-invite-product"
+                      value={form.product}
+                      options={[
+                        { label: "Standard", value: "standard" },
+                        { label: "Plus", value: "plus" },
+                      ]}
+                      onChange={(value) => update("product", value)}
+                    />
+                  </ChoiceField>
+                )}
                 <ChoiceField>
-                  <SegmentedChoice<Product>
-                    label="Тариф"
-                    name="group-invite-product"
-                    value={form.product}
+                  <span>Как человек войдёт</span>
+                  <SegmentedChoice<Kind>
+                    label="Как человек войдёт"
+                    name={`${scope}-invite-kind`}
+                    value={form.kind}
                     options={[
-                      { label: "Standard", value: "standard" },
-                      { label: "Plus", value: "plus" },
+                      { label: "Вступление", value: "join" },
+                      { label: "Продление", value: "renewal" },
                     ]}
-                    onChange={(value) => update("product", value)}
+                    onChange={(value) => update("kind", value)}
                   />
-                  <FieldNote>
-                    {form.product === "plus"
-                      ? "Чат потока и Inspiration Hub на всё время потока."
-                      : "Чат потока."}
-                  </FieldNote>
                 </ChoiceField>
-              </Group>
-            )}
-
-            <Group>
-              <legend>Как</legend>
-              <ChoiceField>
-                <SegmentedChoice<Kind>
-                  label="Как человек войдёт"
-                  name={`${scope}-invite-kind`}
-                  value={form.kind}
-                  options={[
-                    { label: "Вступление", value: "join" },
-                    { label: "Продление", value: "renewal" },
-                  ]}
-                  onChange={(value) => update("kind", value)}
-                />
-                <FieldNote>{KIND_HINTS[scope][form.kind]}</FieldNote>
-              </ChoiceField>
+              </ChoiceRow>
+              <FieldNote>
+                {form.product === "hub"
+                  ? KIND_HINTS[scope][form.kind]
+                  : `${PRODUCT_HINTS[form.product]} ${KIND_HINTS[scope][form.kind]}`}
+              </FieldNote>
             </Group>
 
             <Field

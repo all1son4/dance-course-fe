@@ -63,8 +63,10 @@ export const Textarea = styled.textarea`
   resize: vertical;
 `;
 
+/* align-content: a neighbour's hint makes the row taller, never this field's control. */
 const FieldRoot = styled.div`
   display: grid;
+  align-content: start;
   gap: 6px;
   min-width: 0;
 
@@ -291,8 +293,10 @@ export const Checkbox = ({
 
 /* ---------- Segmented choice ---------- */
 
+/* 40px tall like an input (44px on phones), and never stretched by a taller grid row. */
 const ChoiceRoot = styled.div`
   display: inline-flex;
+  align-self: start;
   justify-self: start;
   max-width: 100%;
   gap: 2px;
@@ -314,7 +318,7 @@ const ChoiceOption = styled.label<{ $checked: boolean; $disabled: boolean }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 32px;
+  min-height: 34px;
   padding: 0 14px;
   border-radius: 999px;
   font-size: var(--a-text-sm);
@@ -323,7 +327,8 @@ const ChoiceOption = styled.label<{ $checked: boolean; $disabled: boolean }>`
   cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
   background: ${({ $checked }) => ($checked ? "var(--a-surface)" : "transparent")};
   color: ${({ $checked }) => ($checked ? "var(--a-ink)" : "var(--a-ink-2)")};
-  box-shadow: ${({ $checked }) => ($checked ? "var(--a-shadow)" : "none")};
+  --choice-shadow: ${({ $checked }) => ($checked ? "var(--a-shadow)" : "0 0 #0000")};
+  box-shadow: var(--choice-shadow);
   opacity: ${({ $disabled }) => ($disabled ? 0.6 : 1)};
   transition:
     background-color 120ms ease,
@@ -337,8 +342,11 @@ const ChoiceOption = styled.label<{ $checked: boolean; $disabled: boolean }>`
     cursor: inherit;
   }
 
+  /* A thin ring inside the pill, so a focused option does not swell past the track. */
   &:has(input:focus-visible) {
-    box-shadow: var(--a-focus);
+    box-shadow:
+      var(--choice-shadow),
+      inset 0 0 0 2px var(--a-accent-ring);
   }
 
   @container admin-content (max-width: 520px) {
