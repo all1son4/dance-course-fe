@@ -24,6 +24,7 @@ import {
   shouldRecordMixpanelLocation,
   shouldRecordMixpanelPath,
   shouldTrackMixpanelPath,
+  syncMixpanelAttribution,
 } from "./mixpanel-analytics";
 
 test("keeps only bounded, non-identifying UTM attribution", () => {
@@ -48,6 +49,46 @@ test("keeps only bounded, non-identifying UTM attribution", () => {
   assert.deepEqual(
     getMixpanelAttributionProperties(
       `?utm_source=${encodeURIComponent("person@example.com")}&utm_campaign=${"x".repeat(121)}&utm_content=https%3A%2F%2Fexample.com%2Fprivate`,
+    ),
+    {},
+  );
+});
+
+test("persists invite campaign attribution and replaces only the latest campaign as a set", () => {
+  const campaign = "cohort_invite:4c6dda2a-e5cd-4089-b281-8b2ef6a73b64";
+  const stored: Record<string, unknown> = {};
+  const mixpanel = {
+    get_property: (name: string) => stored[name],
+    register: (values: Record<string, unknown>) => {
+      Object.assign(stored, values);
+    },
+    register_once: (values: Record<string, unknown>) => {
+      for (const [name, value] of Object.entries(values)) stored[name] ??= value;
+    },
+    unregister: (name: string) => {
+      delete stored[name];
+    },
+  } satisfies Parameters<typeof syncMixpanelAttribution>[0];
+
+  syncMixpanelAttribution(
+    mixpanel,
+    `?utm_source=broadcast&utm_medium=email&utm_campaign=${encodeURIComponent(campaign)}`,
+  );
+  syncMixpanelAttribution(mixpanel, "?product=online");
+  assert.equal(stored.utm_campaign, campaign);
+  assert.equal(stored.initial_utm_campaign, campaign);
+
+  syncMixpanelAttribution(mixpanel, "?utm_source=ig&utm_content=reel_01");
+  assert.deepEqual(stored, {
+    initial_utm_campaign: campaign,
+    initial_utm_medium: "email",
+    initial_utm_source: "broadcast",
+    utm_content: "reel_01",
+    utm_source: "ig",
+  });
+  assert.deepEqual(
+    getMixpanelAttributionProperties(
+      `?utm_content=${encodeURIComponent(campaign)}&utm_campaign=cohort_invite:invalid`,
     ),
     {},
   );
@@ -101,6 +142,8 @@ test("classifies app errors without retaining messages", () => {
 test("uses the EU endpoint and removes full URL/referrer properties", () => {
   assert.equal(MIXPANEL_BROWSER_CONFIG.api_host, MIXPANEL_EU_API_HOST);
   assert.equal(MIXPANEL_BROWSER_CONFIG.ip, true);
+  assert.equal(MIXPANEL_BROWSER_CONFIG.track_marketing, false);
+  assert.equal(MIXPANEL_BROWSER_CONFIG.skip_first_touch_marketing, true);
   assert.deepEqual(MIXPANEL_BROWSER_CONFIG.property_blacklist, [
     "$current_url",
     "$initial_referrer",
@@ -284,6 +327,8 @@ test("Hub full and member prices are distinct without claiming a previous Hub pu
       {
         checkout_kind: kind,
         hub_access: "standalone",
+        offer_code: kind === "member_price" ? "hub-renewal" : "hub-access",
+        product_code: "inspiration-hub",
       },
     );
   }
@@ -297,6 +342,8 @@ test("all Online tariffs consistently distinguish Plus Hub and renewal prices", 
       {
         checkout_kind: offer.code.startsWith("renewal-") ? "renewal" : "full_price",
         hub_access: offer.code.endsWith("library-access") ? "plus" : "none",
+        offer_code: offer.code,
+        product_code: product.code,
       },
     );
   }
@@ -309,6 +356,8 @@ test("all Online tariffs consistently distinguish Plus Hub and renewal prices", 
     {
       checkout_kind: "full_price",
       hub_access: "none",
+      offer_code: firstTouch.offers[0].code,
+      product_code: firstTouch.code,
     },
   );
 });
