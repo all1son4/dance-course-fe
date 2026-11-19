@@ -2,7 +2,6 @@ import {
   INSPIRATION_HUB_PRODUCT_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
-import { isOnlineGroupAccessOfferId } from "@/lib/telegram/offer-access";
 
 import type { MyAccessCard, MyAccessSnapshot } from "./cards";
 
@@ -12,7 +11,7 @@ const ONLINE_GROUP_PRODUCT_ID = SELLABLE_PRODUCTS["online-group-anna-strok"].id;
  * «Твой путь»: the products a customer has bought, in the order she first bought
  * them, each with the day of its purchase — the latest one for the group and the
  * Hub, which are bought again cycle after cycle — and, for the group, how many of
- * its cycles are behind. Only facts from purchases and closed cohorts.
+ * its cycles are behind (read from purchase data, see `cycles`).
  */
 
 /** Bought again and again: the path shows the latest purchase. */
@@ -53,22 +52,6 @@ export const phaseOf = (card: MyAccessCard): "done" | "now" | "next" =>
       ? "next"
       : "now";
 
-const FIRST_UNRECORDED_CYCLE = "first-unrecorded-cycle";
-
-const isBeforeRecordedCycles = (snapshot: MyAccessSnapshot) => {
-  const firstStart = snapshot.firstCohortStartsAt?.getTime();
-  return (
-    firstStart !== undefined &&
-    snapshot.purchases.some(
-      (purchase) =>
-        purchase.cohortId === null &&
-        purchase.succeededAt !== null &&
-        purchase.succeededAt.getTime() < firstStart &&
-        isOnlineGroupAccessOfferId(purchase.offerExternalId),
-    )
-  );
-};
-
 export const buildMyAccessJourney = (
   snapshot: MyAccessSnapshot,
   cards: readonly MyAccessCard[],
@@ -98,29 +81,10 @@ export const buildMyAccessJourney = (
     }
   }
 
-  // The group's step counts the cycles behind: bought, and closed since.
+  // The group's step counts the cycles behind it (`lib/my-access/cycles`).
   const groupStep = steps.get(ONLINE_GROUP_PRODUCT_ID);
-  if (groupStep) {
-    const closed = new Set(
-      snapshot.cohorts.filter((cohort) => cohort.closedAt).map((cohort) => cohort.id),
-    );
-    // Bought and closed, whatever the tariff and however it was paid (Stripe or an
-    // admin offer link); the entry status is no proof either way (owner, 2026-11-19).
-    const completed = new Set([
-      ...snapshot.purchases.flatMap((purchase) =>
-        purchase.cohortId &&
-        closed.has(purchase.cohortId) &&
-        isOnlineGroupAccessOfferId(purchase.offerExternalId)
-          ? [purchase.cohortId]
-          : [],
-      ),
-      ...(snapshot.closedCohortIdsOfTelegram ?? []),
-      // The first cycle has no cohort record: a group purchase without one, paid
-      // before the first recorded cycle started, is it (owner, 2026-11-19).
-      ...(isBeforeRecordedCycles(snapshot) ? [FIRST_UNRECORDED_CYCLE] : []),
-    ]).size;
-    if (completed > 0) groupStep.completedCohorts = completed;
-  }
+  const completed = snapshot.completedCohortIds?.length ?? 0;
+  if (groupStep && completed > 0) groupStep.completedCohorts = completed;
 
   // One product is not a path yet.
   return steps.size >= 2
