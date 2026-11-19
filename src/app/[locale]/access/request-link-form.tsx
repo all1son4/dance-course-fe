@@ -32,7 +32,8 @@ export default function RequestLinkForm({ locale, texts }: RequestLinkFormProps)
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [invalid, setInvalid] = useState(false);
-  const suggestion = getEmailSuggestion(email);
+  const [isTyping, setIsTyping] = useState(false);
+  const suggestion = getEmailSuggestion(email, { isTyping });
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -102,6 +103,8 @@ export default function RequestLinkForm({ locale, texts }: RequestLinkFormProps)
               />
             ) : undefined
           }
+          onFocus={() => setIsTyping(true)}
+          onBlur={() => setIsTyping(false)}
           onChange={(event) => {
             setEmail(event.target.value);
             if (invalid) setInvalid(false);

@@ -250,7 +250,8 @@ export default function CourseSignupDialog({
       setSubmitState("idle");
     };
 
-  const emailSuggestion = getEmailSuggestion(values.email);
+  const [isTypingEmail, setIsTypingEmail] = useState(false);
+  const emailSuggestion = getEmailSuggestion(values.email, { isTyping: isTypingEmail });
   const applyEmailSuggestion = (suggestedEmail: string) => {
     const nextValues = { ...values, email: suggestedEmail };
 
@@ -576,7 +577,11 @@ export default function CourseSignupDialog({
           label={t("fields.email.label")}
           placeholder={t("fields.email.placeholder")}
           value={values.email}
-          onBlur={touchAndValidateField("email")}
+          onFocus={() => setIsTypingEmail(true)}
+          onBlur={() => {
+            setIsTypingEmail(false);
+            touchAndValidateField("email")();
+          }}
           onChange={updateValue("email")}
           disabled={isSubmitting}
           errorMessage={errors.email}
