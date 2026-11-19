@@ -27,7 +27,10 @@ const UTM_PROPERTY_NAMES = [
 ] as const;
 const MAX_ATTRIBUTION_VALUE_LENGTH = 120;
 const MAX_DIAGNOSTIC_TOKEN_LENGTH = 80;
+const TRACK_ACCEPTANCE_TIMEOUT_MS = 10_000;
 const SAFE_ATTRIBUTION_VALUE_PATTERN = /^[\p{L}\p{N} ._+~-]+$/u;
+const COHORT_INVITE_CAMPAIGN_PATTERN =
+  /^cohort_invite:[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/iu;
 const SAFE_DIAGNOSTIC_TOKEN_PATTERN = /^[A-Za-z0-9._:-]+$/u;
 
 const PRIVATE_URL_PROPERTIES = [
@@ -302,14 +305,19 @@ export const shouldRecordMixpanelPath = (pathname: string) =>
 export const shouldRecordMixpanelLocation = (pathname: string, search: string) =>
   shouldRecordMixpanelPath(pathname) && search.length === 0;
 
-const sanitizeAttributionValue = (value: string | null) => {
+const sanitizeAttributionValue = (
+  propertyName: UtmPropertyName,
+  value: string | null,
+) => {
   const normalizedValue = value?.trim() ?? "";
+  const isCohortInvite =
+    propertyName === "utm_campaign" &&
+    COHORT_INVITE_CAMPAIGN_PATTERN.test(normalizedValue);
 
   if (
     !normalizedValue ||
     normalizedValue.length > MAX_ATTRIBUTION_VALUE_LENGTH ||
-    normalizedValue.includes("@") ||
-    !SAFE_ATTRIBUTION_VALUE_PATTERN.test(normalizedValue)
+    (!isCohortInvite && !SAFE_ATTRIBUTION_VALUE_PATTERN.test(normalizedValue))
   ) {
     return null;
   }
@@ -325,7 +333,10 @@ export const getMixpanelAttributionProperties = (
 
   return UTM_PROPERTY_NAMES.reduce<MixpanelAttributionProperties>(
     (properties, propertyName) => {
-      const value = sanitizeAttributionValue(searchParams.get(propertyName));
+      const value = sanitizeAttributionValue(
+        propertyName,
+        searchParams.get(propertyName),
+      );
 
       if (value) {
         properties[propertyName] = value;
@@ -347,6 +358,35 @@ export const getInitialMixpanelAttributionProperties = (
     ]),
   );
 
+export const syncMixpanelAttribution = (
+  mixpanel: Pick<Mixpanel, "get_property" | "register" | "register_once" | "unregister">,
+  search: string,
+) => {
+  const attribution = getMixpanelAttributionProperties(search);
+  if (Object.keys(attribution).length === 0) return;
+
+  if (
+    !UTM_PROPERTY_NAMES.some(
+      (name) => mixpanel.get_property(`initial_${name}`) !== undefined,
+    )
+  ) {
+    mixpanel.register_once(getInitialMixpanelAttributionProperties(attribution));
+  }
+
+  if (
+    !UTM_PROPERTY_NAMES.some((name) => attribution[name] !== mixpanel.get_property(name))
+  )
+    return;
+
+  // Keep each campaign's fields together when a new tagged link has fewer parameters.
+  for (const name of UTM_PROPERTY_NAMES) {
+    if (attribution[name] === undefined && mixpanel.get_property(name) !== undefined) {
+      mixpanel.unregister(name);
+    }
+  }
+  mixpanel.register(attribution);
+};
+
 export const getMixpanelPageProperties = (pathname: string, localeHint?: string) => {
   const localeSegment = pathname.split("/").filter(Boolean)[0];
   const localeFromPath = routing.locales.find((candidate) => candidate === localeSegment);
@@ -363,7 +403,10 @@ export const getMixpanelPageProperties = (pathname: string, localeHint?: string)
 /** Public catalogue identifiers give every commerce event the same segmentation. */
 export const getCommerceAnalyticsContext = (
   properties: object,
-): Pick<CommerceEventProperties, "checkout_kind" | "hub_access"> => {
+): Pick<
+  CommerceEventProperties,
+  "checkout_kind" | "hub_access" | "offer_code" | "product_code"
+> => {
   if (
     !("product_id" in properties) ||
     typeof properties.product_id !== "string" ||
@@ -377,8 +420,10 @@ export const getCommerceAnalyticsContext = (
   const offer = product && getSellableProductOfferById(product, properties.offer_id);
   if (!product || !offer) return {};
 
+  const codes = { product_code: product.code, offer_code: offer.code };
   if (product.id === INSPIRATION_HUB_PRODUCT_ID) {
     return {
+      ...codes,
       checkout_kind:
         offer.id === INSPIRATION_HUB_RENEWAL_OFFER_ID ? "member_price" : "full_price",
       hub_access: "standalone",
@@ -386,6 +431,7 @@ export const getCommerceAnalyticsContext = (
   }
 
   return {
+    ...codes,
     checkout_kind: isOnlineGroupRenewalOfferId(offer.id) ? "renewal" : "full_price",
     hub_access: isOnlineGroupLibraryOfferId(offer.id) ? "plus" : "none",
   };
@@ -577,7 +623,10 @@ export const getWebVitalAnalyticsProperties = (
   };
 };
 
-export const MIXPANEL_BROWSER_CONFIG: Partial<Config> = {
+export const MIXPANEL_BROWSER_CONFIG: Partial<Config> & {
+  skip_first_touch_marketing: boolean;
+  track_marketing: boolean;
+} = {
   api_host: MIXPANEL_EU_API_HOST,
   app_host: MIXPANEL_EU_APP_HOST,
   autocapture: {
@@ -619,7 +668,9 @@ export const MIXPANEL_BROWSER_CONFIG: Partial<Config> = {
   record_sessions_percent: 0,
   remote_settings_mode: "disabled",
   secure_cookie: true,
+  skip_first_touch_marketing: true,
   store_google: false,
+  track_marketing: false,
   track_pageview: false,
 };
 
@@ -651,17 +702,24 @@ const loadMixpanel = (): Promise<Mixpanel | null> => {
   return mixpanelPromise;
 };
 
+const hasAnalyticsConsent = () =>
+  hasCookieConsentFor(getStoredCookieConsent(), "analytics");
+
 export const enableMixpanel = async () => {
+  if (!hasAnalyticsConsent()) return null;
+
   const mixpanel = await loadMixpanel();
 
-  if (!mixpanel) {
+  if (!mixpanel || !hasAnalyticsConsent()) {
     return null;
   }
 
   try {
     // Consent is recorded by our own versioned consent store; avoid an extra
     // Mixpanel `$opt_in` event while enabling SDK persistence and collection.
-    mixpanel.opt_in_tracking({ track: () => undefined });
+    if (!mixpanel.has_opted_in_tracking()) {
+      mixpanel.opt_in_tracking({ track: () => undefined });
+    }
   } catch (error) {
     logSafeError("Failed to enable Mixpanel analytics", error);
     return null;
@@ -677,7 +735,7 @@ export const disableMixpanel = async () => {
 
   const mixpanel = await mixpanelPromise;
 
-  if (!mixpanel) {
+  if (!mixpanel || hasAnalyticsConsent()) {
     return;
   }
 
@@ -714,40 +772,70 @@ const canTrackAnalyticsEvent = () => {
     return false;
   }
 
-  return hasCookieConsentFor(getStoredCookieConsent(), "analytics");
+  return hasAnalyticsConsent();
 };
 
-export const trackAnalyticsEvent = async <EventName extends AnalyticsEventName>(
+const captureEventPage = () =>
+  getMixpanelPageProperties(window.location.pathname, document.documentElement.lang);
+
+const enqueueAnalyticsEvent = (
+  mixpanel: Mixpanel,
+  eventName: AnalyticsEventName,
+  properties: Record<string, unknown>,
+) =>
+  new Promise<boolean>((resolve, reject) => {
+    const timer = window.setTimeout(() => resolve(false), TRACK_ACCEPTANCE_TIMEOUT_MS);
+    const finish = (accepted: boolean) => {
+      window.clearTimeout(timer);
+      resolve(accepted);
+    };
+
+    try {
+      // The synchronous return is a payload; the callback confirms enqueue or send.
+      const payload: unknown = mixpanel.track(eventName, properties, (response) =>
+        finish(
+          response === 1 || (typeof response === "object" && response?.status === 1),
+        ),
+      );
+      if (!payload) finish(false);
+    } catch (error) {
+      window.clearTimeout(timer);
+      reject(error);
+    }
+  });
+
+const submitAnalyticsEvent = async <EventName extends AnalyticsEventName>(
   eventName: EventName,
   properties: AnalyticsEventProperties[EventName],
+  page: ReturnType<typeof captureEventPage>,
 ) => {
-  if (!canTrackAnalyticsEvent()) {
-    return;
-  }
-
   const mixpanel = await enableMixpanel();
 
-  if (!mixpanel || !canTrackAnalyticsEvent()) {
-    if (mixpanel) {
-      await disableMixpanel();
-    }
-    return;
-  }
+  if (!mixpanel || !hasAnalyticsConsent()) return false;
 
   try {
-    mixpanel.track(eventName, {
-      ...getMixpanelPageProperties(
-        window.location.pathname,
-        document.documentElement.lang,
-      ),
-      ...getMixpanelAttributionProperties(window.location.search),
+    // A queued click still belongs to its original page after navigation.
+    if (page.page_path === window.location.pathname) {
+      syncMixpanelAttribution(mixpanel, window.location.search);
+    }
+    return await enqueueAnalyticsEvent(mixpanel, eventName, {
+      ...page,
       ...properties,
       ...getCommerceAnalyticsContext(properties),
     });
   } catch (error) {
     logSafeError(`Failed to track Mixpanel event: ${eventName}`, error);
+    return false;
   }
 };
+
+export const trackAnalyticsEvent = async <EventName extends AnalyticsEventName>(
+  eventName: EventName,
+  properties: AnalyticsEventProperties[EventName],
+) =>
+  canTrackAnalyticsEvent()
+    ? submitAnalyticsEvent(eventName, properties, captureEventPage())
+    : false;
 
 export const getSafeDestinationProperties = (
   href: string,
@@ -817,7 +905,7 @@ const getSessionDedupeKey = async (eventName: string, rawKey: string) => {
   return `analytics-event:${eventName}:${hash}`;
 };
 
-const pendingSessionDedupeKeys = new Set<string>();
+const sessionDedupeStates = new Map<string, "pending" | "accepted">();
 
 /** Prevents result-page reloads from counting one payment more than once. */
 export const trackAnalyticsEventOncePerSession = async <
@@ -833,29 +921,46 @@ export const trackAnalyticsEventOncePerSession = async <
 
   const inMemoryDedupeKey = `${eventName}:${rawDedupeKey}`;
 
-  if (pendingSessionDedupeKeys.has(inMemoryDedupeKey)) {
+  if (sessionDedupeStates.has(inMemoryDedupeKey)) {
     return;
   }
 
-  pendingSessionDedupeKeys.add(inMemoryDedupeKey);
-
-  let storageKey: string | null = null;
+  const page = captureEventPage();
+  sessionDedupeStates.set(inMemoryDedupeKey, "pending");
 
   try {
-    storageKey = await getSessionDedupeKey(eventName, rawDedupeKey);
+    let storageKey: string | null = null;
+    try {
+      storageKey = await getSessionDedupeKey(eventName, rawDedupeKey);
 
-    if (storageKey && window.sessionStorage.getItem(storageKey)) {
+      if (storageKey && window.sessionStorage.getItem(storageKey)) {
+        sessionDedupeStates.set(inMemoryDedupeKey, "accepted");
+        return;
+      }
+    } catch {
+      // Storage and Web Crypto are best-effort; tracking may still proceed.
+    }
+
+    if (
+      !(await submitAnalyticsEvent(eventName, properties, page)) ||
+      !hasAnalyticsConsent()
+    ) {
       return;
     }
+    sessionDedupeStates.set(inMemoryDedupeKey, "accepted");
 
     if (storageKey) {
-      window.sessionStorage.setItem(storageKey, "1");
+      try {
+        window.sessionStorage.setItem(storageKey, "1");
+      } catch {
+        // The in-memory key still deduplicates within this document.
+      }
     }
-  } catch {
-    // Storage and Web Crypto are best-effort; tracking may still proceed.
+  } finally {
+    if (sessionDedupeStates.get(inMemoryDedupeKey) === "pending") {
+      sessionDedupeStates.delete(inMemoryDedupeKey);
+    }
   }
-
-  await trackAnalyticsEvent(eventName, properties);
 };
 
 export const trackApiError = async (input: ApiErrorInput) => {

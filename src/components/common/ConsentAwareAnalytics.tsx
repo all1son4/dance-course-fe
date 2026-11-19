@@ -7,14 +7,13 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   disableMixpanel,
   enableMixpanel,
-  getInitialMixpanelAttributionProperties,
-  getMixpanelAttributionProperties,
   getMixpanelPageProperties,
   getWebVitalAnalyticsProperties,
   isMixpanelConfigured,
   shouldRecordMixpanelLocation,
   shouldTrackMixpanelPath,
   stopLoadedMixpanelRecording,
+  syncMixpanelAttribution,
   trackAnalyticsEvent,
 } from "@/lib/mixpanel-analytics";
 
@@ -124,19 +123,16 @@ export default function ConsentAwareAnalytics() {
         const localeHint =
           document.querySelector<HTMLElement>("main[lang]")?.lang ||
           document.documentElement.lang;
-        const attributionProperties = getMixpanelAttributionProperties(
-          window.location.search,
-        );
-
-        if (Object.keys(attributionProperties).length > 0) {
-          mixpanel.register(attributionProperties);
-          mixpanel.register_once(
-            getInitialMixpanelAttributionProperties(attributionProperties),
-          );
-        }
-
-        mixpanel.track_pageview(getMixpanelPageProperties(pathname, localeHint));
-        lastTrackedPathRef.current = pathname;
+        syncMixpanelAttribution(mixpanel, window.location.search);
+        // track_pageview reads unfiltered campaign parameters even with track_marketing disabled.
+        const pageView: unknown = mixpanel.track("$mp_web_page_view", {
+          ...getMixpanelPageProperties(pathname, localeHint),
+          ...(document.title ? { current_page_title: document.title } : {}),
+          current_domain: window.location.hostname,
+          current_url_path: window.location.pathname,
+          current_url_protocol: window.location.protocol,
+        });
+        if (pageView) lastTrackedPathRef.current = pathname;
       } catch (error) {
         console.error("Failed to run Mixpanel page analytics", error);
       }
