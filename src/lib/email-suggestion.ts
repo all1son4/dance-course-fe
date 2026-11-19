@@ -69,11 +69,66 @@ const getEditDistance = (left: string, right: string) => {
 };
 
 /**
- * The address with its domain corrected when the domain is one or two edits
- * away from a known provider ("gmial.com", "gmail.con"), otherwise null.
- * Short domains only tolerate one edit, so "o2.pl" never turns into "op.pl".
+ * Providers that are real on their own although one letter away from a known
+ * one: "mail.com" and "ymail.com" are not misspelt "gmail.com".
  */
-export const getEmailSuggestion = (email: string): string | null => {
+const REAL_LOOKALIKE_NAMES = new Set(["mail", "ymail", "email"]);
+
+const GENERIC_TLDS = new Set(["com", "net", "org", "info", "biz", "edu", "gov"]);
+const COUNTRY_TLDS_OUTSIDE_REGIONS = new Set(["uk", "eu", "su"]);
+const regionNames = new Intl.DisplayNames(["en"], { fallback: "none", type: "region" });
+
+/**
+ * Whether the ending exists, so "yandex.by", "mail.ua" or "inbox.lv" are someone's
+ * real address and not a typo of ".ru"; ".con", ".cmo" or ".ry" exist nowhere.
+ */
+const isRealTld = (tld: string) => {
+  if (GENERIC_TLDS.has(tld) || COUNTRY_TLDS_OUTSIDE_REGIONS.has(tld)) return true;
+  if (!/^[a-z]{2}$/u.test(tld) || tld === "zz") return false;
+
+  return regionNames.of(tld.toUpperCase()) !== undefined;
+};
+
+/** Edits a provider name tolerates: none for two letters ("wp", "o2", "ya"). */
+const getNameTolerance = (name: string) =>
+  name.length <= 2 ? 0 : name.length <= 5 ? 1 : 2;
+
+const splitDomain = (domain: string) => {
+  const dotIndex = domain.lastIndexOf(".");
+
+  return { name: domain.slice(0, dotIndex), tld: domain.slice(dotIndex + 1) };
+};
+
+const getNameDistance = (typed: string, known: string) => {
+  if (typed === known) return 0;
+  if (REAL_LOOKALIKE_NAMES.has(typed)) return null;
+
+  const distance = getEditDistance(typed, known);
+  return distance <= getNameTolerance(known) ? distance : null;
+};
+
+const getTldDistance = (typed: string, known: string, isTyping: boolean) => {
+  if (typed === known) return 0;
+  // ".co" on the way to ".com": a typo only once the person stopped typing.
+  if (known.startsWith(typed)) return isTyping ? null : known.length - typed.length;
+  if (isRealTld(typed)) return null;
+
+  const distance = getEditDistance(typed, known);
+  return distance <= (known.length <= 2 ? 1 : 2) ? distance : null;
+};
+
+/**
+ * The address with its domain corrected when it is a misspelt known provider
+ * ("gmial.com", "gmail.con", "yandex.ry"), otherwise null. The provider name and
+ * the ending are checked apart, so another real address is never "corrected":
+ * a different existing ending ("yandex.by") or a real provider of its own
+ * ("mail.com") stays as typed. `isTyping` holds back endings the person may
+ * still be finishing ("gmail.co").
+ */
+export const getEmailSuggestion = (
+  email: string,
+  { isTyping = false }: { isTyping?: boolean } = {},
+): string | null => {
   const trimmedEmail = email.trim();
   const atIndex = trimmedEmail.lastIndexOf("@");
 
@@ -83,9 +138,12 @@ export const getEmailSuggestion = (email: string): string | null => {
 
   const localPart = trimmedEmail.slice(0, atIndex);
   const domain = trimmedEmail.slice(atIndex + 1).toLowerCase();
+  const typed = splitDomain(domain);
 
   if (
     !domain.includes(".") ||
+    !typed.name ||
+    !typed.tld ||
     (KNOWN_EMAIL_DOMAINS as readonly string[]).includes(domain)
   ) {
     return null;
@@ -95,10 +153,14 @@ export const getEmailSuggestion = (email: string): string | null => {
   let bestDistance = Number.POSITIVE_INFINITY;
 
   for (const knownDomain of KNOWN_EMAIL_DOMAINS) {
-    const allowedDistance = knownDomain.length <= 6 ? 1 : 2;
-    const distance = getEditDistance(domain, knownDomain);
+    const known = splitDomain(knownDomain);
+    const nameDistance = getNameDistance(typed.name, known.name);
+    const tldDistance = getTldDistance(typed.tld, known.tld, isTyping);
 
-    if (distance <= allowedDistance && distance < bestDistance) {
+    if (nameDistance === null || tldDistance === null) continue;
+
+    const distance = nameDistance + tldDistance;
+    if (distance < bestDistance) {
       bestDomain = knownDomain;
       bestDistance = distance;
     }

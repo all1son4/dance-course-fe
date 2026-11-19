@@ -14,6 +14,7 @@ import {
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
+import EmailSuggestion from "@/components/common/EmailSuggestion";
 import type { StripePaymentTabsProps } from "@/components/other/StripePaymentTabs";
 import type { CountryOption } from "@/constants/countries";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
@@ -69,7 +70,6 @@ import {
   CheckoutProgressFill,
   CheckoutProgressText,
   CheckoutProgressTrack,
-  EmailSuggestion,
   InteractiveBox,
   PaymentDescription,
   PaymentSection,
@@ -134,6 +134,8 @@ const PaymentPage = observer(function PaymentPage({
   const [isPaymentSubmitting, setIsPaymentSubmitting] = useState(false);
   // The step the buyer opened; null until they first touch the form.
   const [openedStep, setOpenedStep] = useState<PaymentStep | null>(null);
+  // The email hint holds back an ending still being typed ("gmail.co").
+  const [isTypingEmail, setIsTypingEmail] = useState(false);
   const hasHydratedCheckoutDraftRef = useRef(false);
   const lastTrackedCheckoutRef = useRef<string | null>(null);
   const lastTrackedBlockedStateRef = useRef<string | null>(null);
@@ -602,6 +604,7 @@ const PaymentPage = observer(function PaymentPage({
 
   const handleInputFocus = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const fieldName = event.currentTarget.name as PaymentCustomerFieldName;
+    if (fieldName === "email") setIsTypingEmail(true);
     const fieldStep = PAYMENT_INPUTS.find((input) => input.name === fieldName)?.step;
 
     // The first touch pins the open step; from here on only the buyer moves it.
@@ -628,6 +631,7 @@ const PaymentPage = observer(function PaymentPage({
 
   const handleInputBlur = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const fieldName = event.currentTarget.name as PaymentCustomerFieldName;
+    if (fieldName === "email") setIsTypingEmail(false);
     // Settles the value into its normalized form and validates it.
     paymentStore.touchCustomerField(fieldName);
 
@@ -727,20 +731,17 @@ const PaymentPage = observer(function PaymentPage({
     return undefined;
   };
 
-  const emailSuggestion = getEmailSuggestion(paymentStore.customerData.email ?? "");
+  const emailSuggestion = getEmailSuggestion(paymentStore.customerData.email ?? "", {
+    isTyping: isTypingEmail,
+  });
   const getInputHint = (fieldName: PaymentCustomerFieldName, hintKey?: string) => {
     if (fieldName === "email" && emailSuggestion) {
       return (
-        <>
-          {t("inputs.email.suggestion")}{" "}
-          <EmailSuggestion
-            onClick={() => applyEmailSuggestion(emailSuggestion)}
-            type="button"
-          >
-            {emailSuggestion}
-          </EmailSuggestion>
-          ?
-        </>
+        <EmailSuggestion
+          label={t("inputs.email.suggestion")}
+          onApply={applyEmailSuggestion}
+          suggestion={emailSuggestion}
+        />
       );
     }
 

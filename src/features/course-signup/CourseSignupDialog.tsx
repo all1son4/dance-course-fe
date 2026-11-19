@@ -13,8 +13,10 @@ import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validat
 import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import Dialog from "@/components/common/Dialog";
+import EmailSuggestion from "@/components/common/EmailSuggestion";
 import Input from "@/components/common/Input";
 import StickyCta from "@/components/other/StickyCta";
+import { getEmailSuggestion } from "@/lib/email-suggestion";
 import { trackAnalyticsEvent, trackApiError } from "@/lib/mixpanel-analytics";
 import { prefersReducedMotion } from "@/lib/reveal";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
@@ -247,6 +249,19 @@ export default function CourseSignupDialog({
       }));
       setSubmitState("idle");
     };
+
+  const [isTypingEmail, setIsTypingEmail] = useState(false);
+  const emailSuggestion = getEmailSuggestion(values.email, { isTyping: isTypingEmail });
+  const applyEmailSuggestion = (suggestedEmail: string) => {
+    const nextValues = { ...values, email: suggestedEmail };
+
+    setValues(nextValues);
+    setErrors((currentErrors) => ({
+      ...currentErrors,
+      email: touchedFields.email ? validateField("email", nextValues) : "",
+    }));
+    setSubmitState("idle");
+  };
 
   // Blur: the field settles into its normalized form and gets validated.
   const touchAndValidateField = (field: keyof CourseSignupFormValues) => () => {
@@ -562,10 +577,23 @@ export default function CourseSignupDialog({
           label={t("fields.email.label")}
           placeholder={t("fields.email.placeholder")}
           value={values.email}
-          onBlur={touchAndValidateField("email")}
+          onFocus={() => setIsTypingEmail(true)}
+          onBlur={() => {
+            setIsTypingEmail(false);
+            touchAndValidateField("email")();
+          }}
           onChange={updateValue("email")}
           disabled={isSubmitting}
           errorMessage={errors.email}
+          hint={
+            emailSuggestion ? (
+              <EmailSuggestion
+                label={t("fields.email.suggestion")}
+                onApply={applyEmailSuggestion}
+                suggestion={emailSuggestion}
+              />
+            ) : undefined
+          }
         />
         <Checkbox
           name="first-touch-email-consent"
