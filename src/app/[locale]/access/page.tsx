@@ -57,6 +57,7 @@ import {
 import {
   CalendarSubscribe,
   FoldingCard,
+  LegendMedal,
   ReissueInvite,
   SavePageLink,
   ShareCourse,
@@ -569,6 +570,17 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
             </li>
           </Facts>
         )}
+        {snapshot.legendCycles ? (
+          <LegendMedal
+            count={snapshot.legendCycles}
+            texts={{
+              label: t("legend.label", { count: snapshot.legendCycles }),
+              name: t("legend.name"),
+              text: t("legend.text", { last: snapshot.legendCycles }),
+              unit: t("legend.unit", { count: snapshot.legendCycles }),
+            }}
+          />
+        ) : null}
       </AccessHeader>
 
       <AccessLayout>

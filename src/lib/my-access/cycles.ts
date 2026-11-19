@@ -25,7 +25,8 @@ export type CycleFacts = {
   cohorts: readonly { closed: boolean; id: string; mainChatId: string }[];
 };
 
-export const collectCompletedCohortIds = ({
+/** Every cycle the facts place the customer in, running or closed. */
+export const collectMemberCohortIds = ({
   cohorts,
   purchases,
   renewalCampaigns,
@@ -64,5 +65,27 @@ export const collectCompletedCohortIds = ({
     if (cohort) cycles.add(cohort.id);
   }
 
-  return [...cycles].filter((id) => byId.get(id)?.closed).sort();
+  return [...cycles].filter((id) => byId.has(id)).sort();
+};
+
+/** The cycles behind the customer: those of `collectMemberCohortIds` already closed. */
+export const collectCompletedCohortIds = (facts: CycleFacts): string[] => {
+  const closed = new Set(facts.cohorts.filter((c) => c.closed).map((c) => c.id));
+  return collectMemberCohortIds(facts).filter((id) => closed.has(id));
+};
+
+/**
+ * «Легенда группы» (owner, 2026-11-19): in every cycle there is, from the very
+ * first to the newest — the newest one paid, whether it has started or not. The
+ * medal shows how many; one cycle missed, or the newest not bought, and it is
+ * gone. Null below two cycles: one is not a streak.
+ */
+export const countLegendCycles = (
+  cohortIds: readonly string[],
+  memberCohortIds: readonly string[],
+): number | null => {
+  const member = new Set(memberCohortIds);
+  return cohortIds.length >= 2 && cohortIds.every((id) => member.has(id))
+    ? cohortIds.length
+    : null;
 };
