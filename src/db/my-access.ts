@@ -12,6 +12,7 @@ import {
 } from "drizzle-orm";
 
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
+import { collectCompletedCohortIds } from "@/lib/my-access/cycles";
 import type { MyAccessNextCohort } from "@/lib/my-access/next-step";
 
 import { listHubDiscountCohorts } from "./hub-discount";
@@ -24,6 +25,7 @@ import {
   renewalCampaigns,
   renewalCampaignSourceChats,
   telegramAccessTokens,
+  telegramRenewalVerifications,
 } from "./schema";
 import type { DatabaseExecutor } from "./transaction";
 
@@ -94,6 +96,98 @@ export async function findMyAccessCustomerIdForPaymentIntent(
   return customer?.id ?? null;
 }
 
+/**
+ * The closed Online Group cycles behind a customer, from purchase data only: see
+ * `collectCompletedCohortIds`. Four small reads; cohorts and renewal campaigns are
+ * a handful of rows each.
+ */
+async function readCompletedCohortIds(
+  database: DatabaseExecutor,
+  {
+    customerId,
+    normalizedEmail,
+    telegramUserIds,
+  }: { customerId: string; normalizedEmail: string; telegramUserIds: string[] },
+) {
+  const [cyclePurchases, verifications, campaigns, sourceChats, cohortRows] =
+    await Promise.all([
+      database
+        .select({
+          cohortId: purchases.onlineGroupCohortId,
+          offerExternalId: purchases.offerExternalId,
+        })
+        .from(purchases)
+        .where(
+          and(
+            eq(purchases.outcome, "succeeded"),
+            isNotNull(purchases.onlineGroupCohortId),
+            or(
+              purchaseOfCustomer(customerId, normalizedEmail),
+              telegramUserIds.length
+                ? inArray(purchases.telegramUserId, telegramUserIds)
+                : undefined,
+            ),
+          ),
+        ),
+      telegramUserIds.length
+        ? database
+            .select({ chatId: telegramRenewalVerifications.sourceChatId })
+            .from(telegramRenewalVerifications)
+            .where(
+              and(
+                eq(telegramRenewalVerifications.status, "verified"),
+                inArray(telegramRenewalVerifications.telegramUserId, telegramUserIds),
+              ),
+            )
+        : Promise.resolve([]),
+      database
+        .select({
+          id: renewalCampaigns.id,
+          offerExternalId: renewalCampaigns.offerExternalId,
+          sourceChatId: renewalCampaigns.sourceChatId,
+          targetChatId: renewalCampaigns.targetChatId,
+        })
+        .from(renewalCampaigns),
+      database
+        .select({
+          campaignId: renewalCampaignSourceChats.campaignId,
+          chatId: renewalCampaignSourceChats.chatId,
+        })
+        .from(renewalCampaignSourceChats),
+      database
+        .select({
+          closedAt: onlineGroupCohorts.closedAt,
+          id: onlineGroupCohorts.id,
+          mainChatId: onlineGroupCohorts.mainChatId,
+        })
+        .from(onlineGroupCohorts),
+    ]);
+
+  return collectCompletedCohortIds({
+    cohorts: cohortRows.map((cohort) => ({
+      closed: cohort.closedAt !== null,
+      id: cohort.id,
+      mainChatId: cohort.mainChatId,
+    })),
+    purchases: cyclePurchases.flatMap((purchase) =>
+      purchase.cohortId
+        ? [{ cohortId: purchase.cohortId, offerExternalId: purchase.offerExternalId }]
+        : [],
+    ),
+    renewalCampaigns: campaigns.map((campaign) => ({
+      offerExternalId: campaign.offerExternalId,
+      sourceChatIds: [
+        ...(campaign.sourceChatId ? [campaign.sourceChatId] : []),
+        ...sourceChats
+          .filter((source) => source.campaignId === campaign.id)
+          .map((source) => source.chatId),
+      ],
+      targetChatId: campaign.targetChatId,
+    })),
+    verifiedChatIds: verifications.flatMap((row) => (row.chatId ? [row.chatId] : [])),
+  });
+}
+
 /** Everything the cards need, or null when the customer no longer exists. */
 export async function readMyAccessSnapshot(
   database: DatabaseExecutor,
@@ -128,14 +222,14 @@ export async function readMyAccessSnapshot(
   const cohortIds = [
     ...new Set(purchaseRows.flatMap((row) => (row.cohortId ? [row.cohortId] : []))),
   ];
-  // Cycles given through an admin offer link carry no customer and no email, only
-  // the Telegram account the bot saw: those of the customer's own purchases.
+  // The Telegram accounts of the customer's own purchases: a cycle given through an
+  // admin offer link carries nothing else (no customer, no email).
   const telegramUserIds = [
     ...new Set(
       purchaseRows.flatMap((row) => (row.telegramUserId ? [row.telegramUserId] : [])),
     ),
   ];
-  const [rights, cohorts, tokens, discountCohorts, telegramCycles, [firstCohort]] =
+  const [rights, cohorts, tokens, discountCohorts, completedCohortIds] =
     await Promise.all([
       ids.length
         ? database
@@ -181,26 +275,11 @@ export async function readMyAccessSnapshot(
         : Promise.resolve([]),
       // The cohorts whose members get the Hub renewal price now, by the checkout's rule.
       listHubDiscountCohorts(database, new Date()),
-      telegramUserIds.length
-        ? database
-            .select({ id: onlineGroupCohorts.id })
-            .from(purchases)
-            .innerJoin(
-              onlineGroupCohorts,
-              eq(onlineGroupCohorts.id, purchases.onlineGroupCohortId),
-            )
-            .where(
-              and(
-                eq(purchases.outcome, "succeeded"),
-                inArray(purchases.telegramUserId, telegramUserIds),
-                isNotNull(onlineGroupCohorts.closedAt),
-              ),
-            )
-        : Promise.resolve([]),
-      // The first cycle (May–June 2026) has no cohort record: its purchases predate it.
-      database
-        .select({ startsAt: sql<Date | null>`min(${onlineGroupCohorts.startsAt})` })
-        .from(onlineGroupCohorts),
+      readCompletedCohortIds(database, {
+        customerId,
+        normalizedEmail: normalizeEmail(customer.normalizedEmail),
+        telegramUserIds,
+      }),
     ]);
   const now = Date.now();
   // An invite still usable: issued, not expired. Older tokens may lack the right's id
@@ -217,9 +296,8 @@ export async function readMyAccessSnapshot(
     );
 
   return {
-    closedCohortIdsOfTelegram: [...new Set(telegramCycles.map((cycle) => cycle.id))],
-    firstCohortStartsAt: firstCohort?.startsAt ? new Date(firstCohort.startsAt) : null,
     cohorts,
+    completedCohortIds,
     customerFullName: customer.fullName,
     hubDiscountCohortIds: discountCohorts.map((cohort) => cohort.id),
     purchases: purchaseRows.map((row) => ({

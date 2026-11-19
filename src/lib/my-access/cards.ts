@@ -93,17 +93,11 @@ export type MyAccessSnapshot = {
    */
   hubDiscountCohortIds?: readonly string[];
   /**
-   * Closed Online Group cycles bought under the customer's Telegram account, also
-   * those given through an admin offer link (no customer, no email on them). Only
-   * the path's count reads it; the cards stay with the customer's own purchases.
+   * The closed Online Group cycles behind the customer, from purchase data only
+   * (`lib/my-access/cycles`). Only the path's count reads it; the cards stay with
+   * the customer's own purchases.
    */
-  closedCohortIdsOfTelegram?: readonly string[];
-  /**
-   * When the first recorded cycle started. The cycle before it (May–June 2026)
-   * has no cohort record: an Online Group purchase without a cohort, paid before
-   * this date, is that cycle.
-   */
-  firstCohortStartsAt?: Date | null;
+  completedCohortIds?: readonly string[];
   /** The name given at checkout, for the greeting only; never on a card. */
   customerFullName?: string | null;
   purchases: MyAccessPurchase[];
