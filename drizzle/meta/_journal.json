@@ -211,6 +211,13 @@
       "when": 1794838075009,
       "tag": "0029_cohort_duration_weeks",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795113737874,
+      "tag": "0030_purchase_invitations",
+      "breakpoints": true
     }
   ]
 }
