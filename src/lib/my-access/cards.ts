@@ -98,6 +98,12 @@ export type MyAccessSnapshot = {
    * the path's count reads it; the cards stay with the customer's own purchases.
    */
   closedCohortIdsOfTelegram?: readonly string[];
+  /**
+   * When the first recorded cycle started. The cycle before it (May–June 2026)
+   * has no cohort record: an Online Group purchase without a cohort, paid before
+   * this date, is that cycle.
+   */
+  firstCohortStartsAt?: Date | null;
   /** The name given at checkout, for the greeting only; never on a card. */
   customerFullName?: string | null;
   purchases: MyAccessPurchase[];

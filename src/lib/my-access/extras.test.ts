@@ -367,3 +367,63 @@ test("the path also counts closed cycles of the customer's Telegram account, onc
     1,
   );
 });
+
+test("the first cycle, which has no cohort record, counts from its purchase date", () => {
+  const firstCohortStartsAt = new Date("2026-08-10T16:00:00.000Z");
+  const closed2 = {
+    accessEndsAt: new Date("2026-11-16T23:00:00.000Z"),
+    closedAt: new Date("2026-11-16T10:00:00.000Z"),
+    durationWeeks: 8,
+    id: "2.0",
+    startsAt: firstCohortStartsAt,
+    title: "Online Group 2.0",
+  };
+  const firstTouch = purchase({
+    id: "ft",
+    offerExternalId: FIRST_TOUCH_OFFER,
+    productExternalId: FIRST_TOUCH_PRODUCT,
+    succeededAt: new Date("2026-04-04T10:00:00.000Z"),
+  });
+  // Bought in May 2026 (the first cycle, no cohort) and again for 2.0.
+  const both = snapshotOf({
+    cohorts: [closed2],
+    firstCohortStartsAt,
+    purchases: [
+      firstTouch,
+      purchase({ id: "g1", succeededAt: new Date("2026-05-20T10:00:00.000Z") }),
+      purchase({
+        cohortId: "2.0",
+        id: "g2",
+        succeededAt: new Date("2026-08-04T10:00:00Z"),
+      }),
+    ],
+  });
+  const countOf = (snapshot: MyAccessSnapshot) =>
+    buildMyAccessJourney(snapshot, []).find(
+      (step) => step.productExternalId === GROUP_PRODUCT,
+    )?.completedCohorts;
+  assert.equal(countOf(both), 2);
+
+  // Only the first cycle; and two purchases of it still count once.
+  const onlyFirst = snapshotOf({
+    firstCohortStartsAt,
+    purchases: [
+      firstTouch,
+      purchase({ id: "g1", succeededAt: new Date("2026-05-20T10:00:00.000Z") }),
+      purchase({ id: "g1b", succeededAt: new Date("2026-06-09T10:00:00.000Z") }),
+    ],
+  });
+  assert.equal(countOf(onlyFirst), 1);
+
+  // A purchase without a cohort after the first recorded cycle began is no first cycle.
+  const late = snapshotOf({
+    firstCohortStartsAt,
+    purchases: [
+      firstTouch,
+      purchase({ id: "g9", succeededAt: new Date("2026-09-01T10:00Z") }),
+    ],
+  });
+  assert.equal(countOf(late), undefined);
+  // Without the date (no cohort recorded at all) nothing is guessed.
+  assert.equal(countOf({ ...onlyFirst, firstCohortStartsAt: null }), undefined);
+});

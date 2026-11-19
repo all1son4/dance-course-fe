@@ -53,6 +53,22 @@ export const phaseOf = (card: MyAccessCard): "done" | "now" | "next" =>
       ? "next"
       : "now";
 
+const FIRST_UNRECORDED_CYCLE = "first-unrecorded-cycle";
+
+const isBeforeRecordedCycles = (snapshot: MyAccessSnapshot) => {
+  const firstStart = snapshot.firstCohortStartsAt?.getTime();
+  return (
+    firstStart !== undefined &&
+    snapshot.purchases.some(
+      (purchase) =>
+        purchase.cohortId === null &&
+        purchase.succeededAt !== null &&
+        purchase.succeededAt.getTime() < firstStart &&
+        isOnlineGroupAccessOfferId(purchase.offerExternalId),
+    )
+  );
+};
+
 export const buildMyAccessJourney = (
   snapshot: MyAccessSnapshot,
   cards: readonly MyAccessCard[],
@@ -99,6 +115,9 @@ export const buildMyAccessJourney = (
           : [],
       ),
       ...(snapshot.closedCohortIdsOfTelegram ?? []),
+      // The first cycle has no cohort record: a group purchase without one, paid
+      // before the first recorded cycle started, is it (owner, 2026-11-19).
+      ...(isBeforeRecordedCycles(snapshot) ? [FIRST_UNRECORDED_CYCLE] : []),
     ]).size;
     if (completed > 0) groupStep.completedCohorts = completed;
   }

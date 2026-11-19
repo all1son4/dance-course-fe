@@ -99,6 +99,11 @@ test("cycles bought under the customer's Telegram account count; another account
     const snapshot = await readMyAccessSnapshot(getDatabase(), customer!.id);
 
     assert.deepEqual(snapshot?.closedCohortIdsOfTelegram, [closed!.id]);
+    // The first recorded cycle's start, read across all cohorts (others may exist).
+    assert.ok(snapshot?.firstCohortStartsAt instanceof Date);
+    assert.ok(
+      snapshot!.firstCohortStartsAt!.getTime() <= Date.parse("2026-08-10T16:00:00Z"),
+    );
     // The cards keep to her own purchases: the admin link adds no card.
     assert.equal(
       snapshot?.purchases.some((row) => row.id === adminCycle),
