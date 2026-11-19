@@ -60,3 +60,12 @@
     font-size: 20px;
   }
 }
+
+/*
+ * A page's own notFound() renders this inside the locale layout; the 404 stands
+ * alone there too, as it does for unmatched URLs: no header, no footer.
+ */
+:global(body):has(.container) > :global(header),
+:global(body):has(.container) > :global(footer) {
+  display: none;
+}
