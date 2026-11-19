@@ -42,6 +42,8 @@ const canvasRule = (selector: string, [near, far, base]: readonly string[]) =>
 export const ACCESS_CANVAS_CSS = [
   "html:has([data-canvas='porcelain']){background:#f4f4f6}",
   "body:has([data-canvas='porcelain']){height:auto}",
+  // The site's footer grey is this page's canvas; white keeps it apart, like the cards.
+  "body:has([data-canvas='porcelain'])>footer{background:#fff}",
   canvasRule("[data-canvas='porcelain']", DAYPART_LIGHT.day),
   ...Object.entries(DAYPART_LIGHT).map(([daypart, light]) =>
     canvasRule(`[data-canvas='porcelain'][data-daypart='${daypart}']`, light),
