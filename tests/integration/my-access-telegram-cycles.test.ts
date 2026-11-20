@@ -140,3 +140,64 @@ test("the cycles behind a customer come from their purchases, renewals and verif
     await client`DELETE FROM telegram_chats WHERE chat_id IN ${client(chats)}`;
   }
 });
+
+test("a purchase without a payment moment dates «Мой доступ» by the day it was recorded", async () => {
+  const run = randomUUID().replaceAll("-", "").slice(0, 12);
+  const email = `mad_${run}@example.test`;
+  const [customer] = await client<{ id: string }[]>`
+    INSERT INTO customers (email, normalized_email, full_name)
+    VALUES (${email}, ${email}, 'Dates Tester')
+    RETURNING id`;
+  const intents = [`pi_mad_${run}_card`, `adm_offer_pi_mad_${run}`];
+
+  try {
+    await client`
+      INSERT INTO purchases ${client([
+        {
+          amount_minor: 5000,
+          currency: "pln",
+          customer_email_snapshot: email,
+          customer_id: customer!.id,
+          first_seen_at: new Date("2026-11-19T12:00:00Z"),
+          offer_external_id: PLUS,
+          outcome: "succeeded",
+          payment_intent_id: intents[0]!,
+          product_external_id: GROUP,
+          source: "stripe",
+          stripe_status: "succeeded",
+          succeeded_at: new Date("2026-11-19T12:00:00Z"),
+        },
+        // Anna's personal link of an earlier cycle: no payment moment on record.
+        {
+          amount_minor: 0,
+          currency: "pln",
+          customer_email_snapshot: email,
+          customer_id: customer!.id,
+          first_seen_at: new Date("2026-08-04T09:00:00Z"),
+          offer_external_id: PLUS,
+          outcome: "succeeded",
+          payment_intent_id: intents[1]!,
+          product_external_id: GROUP,
+          source: "admin_offer_link",
+          stripe_status: "succeeded",
+          succeeded_at: null,
+        },
+      ])}`;
+
+    const { readMyAccessSnapshot } = await import("@/db/my-access");
+    const { buildMyAccessJourney } = await import("@/lib/my-access/journey");
+    const snapshot = await readMyAccessSnapshot(getDatabase(), customer!.id);
+
+    // The header reads the first one: «с нами с» August, not the day of the card.
+    assert.deepEqual(
+      snapshot?.purchases.map((purchase) => purchase.boughtAt.toISOString()),
+      ["2026-08-04T09:00:00.000Z", "2026-11-19T12:00:00.000Z"],
+    );
+    const [step] = buildMyAccessJourney({ ...snapshot!, completedCohortIds: ["x"] }, []);
+    assert.equal(step?.since, "2026-08-04T09:00:00.000Z");
+    assert.equal(step?.purchasedAt, "2026-11-19T12:00:00.000Z");
+  } finally {
+    await client`DELETE FROM purchases WHERE payment_intent_id IN ${client(intents)}`;
+    await client`DELETE FROM customers WHERE id = ${customer!.id}`;
+  }
+});

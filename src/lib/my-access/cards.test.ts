@@ -24,7 +24,7 @@ const purchase = (
   cohortId: null,
   offerExternalId: HUB_OFFER,
   productExternalId: "prd_inspiration_hub",
-  succeededAt: new Date("2026-11-20T10:00:00.000Z"),
+  boughtAt: new Date("2026-11-20T10:00:00.000Z"),
   telegramUserId: "777",
   ...overrides,
 });
@@ -704,7 +704,6 @@ test("a Hub renewal invitation waiting for its check still has its card", () => 
       purchase({
         id: "hub-renewal",
         invitationKind: "renewal",
-        succeededAt: null,
         telegramUserId: null,
       }),
     ],

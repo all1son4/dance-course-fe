@@ -31,7 +31,7 @@ const purchase = (overrides: Partial<MyAccessPurchase> & { id: string }) => ({
   cohortId: null,
   offerExternalId: STANDARD_OFFER,
   productExternalId: GROUP_PRODUCT,
-  succeededAt: new Date("2026-09-20T10:00:00.000Z"),
+  boughtAt: new Date("2026-09-20T10:00:00.000Z"),
   telegramUserId: "777",
   ...overrides,
 });
@@ -177,16 +177,16 @@ test("the path shows the day of purchase, the latest one for a repeated product"
         id: "f",
         offerExternalId: FIRST_TOUCH_OFFER,
         productExternalId: FIRST_TOUCH_PRODUCT,
-        succeededAt: new Date("2026-03-01T10:00:00.000Z"),
+        boughtAt: new Date("2026-03-01T10:00:00.000Z"),
       }),
       purchase({
         id: "f2",
         offerExternalId: FIRST_TOUCH_OFFER,
         productExternalId: FIRST_TOUCH_PRODUCT,
-        succeededAt: new Date("2026-06-01T10:00:00.000Z"),
+        boughtAt: new Date("2026-06-01T10:00:00.000Z"),
       }),
-      purchase({ id: "g", succeededAt: new Date("2026-04-01T10:00:00.000Z") }),
-      purchase({ id: "g2", succeededAt: new Date("2026-10-01T10:00:00.000Z") }),
+      purchase({ id: "g", boughtAt: new Date("2026-04-01T10:00:00.000Z") }),
+      purchase({ id: "g2", boughtAt: new Date("2026-10-01T10:00:00.000Z") }),
     ],
   });
 
