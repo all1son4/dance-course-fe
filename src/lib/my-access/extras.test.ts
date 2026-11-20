@@ -171,6 +171,13 @@ test("«Твой путь» lists bought products in order, by what runs now", (
 
   const single = snapshotOf({ purchases: [purchase({ id: "only" })] });
   assert.deepEqual(buildMyAccessJourney(single, []), []);
+
+  // The group alone is a path once cycles are behind it: the count shows only here.
+  const veteran = { ...single, completedCohortIds: ["c2"] };
+  assert.deepEqual(
+    buildMyAccessJourney(veteran, []).map((step) => step.completedCohorts),
+    [1],
+  );
 });
 
 test("cards carry the date worth a calendar entry", () => {

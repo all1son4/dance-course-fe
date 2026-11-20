@@ -86,8 +86,9 @@ export const buildMyAccessJourney = (
   const completed = snapshot.completedCohortIds?.length ?? 0;
   if (groupStep && completed > 0) groupStep.completedCohorts = completed;
 
-  // One product is not a path yet.
-  return steps.size >= 2
+  // One product is not a path yet, unless it is the group with cycles behind:
+  // the count is the only place they are shown.
+  return steps.size >= 2 || groupStep?.completedCohorts
     ? [...steps.values()].sort((a, b) => Date.parse(a.since) - Date.parse(b.since))
     : [];
 };
