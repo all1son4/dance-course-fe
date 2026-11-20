@@ -1,7 +1,7 @@
 import { after } from "next/server";
 
 import { processNextOutboxJob } from "@/db/transactional-outbox";
-import { getSafeErrorCategory } from "@/lib/safe-error-log";
+import { logSafeError } from "@/lib/safe-error-log";
 
 import { getStripeServer } from "../../payment-intent/lib";
 import { processNextStripeWebhookInboxJob } from "./inbox-worker";
@@ -77,8 +77,6 @@ export const runStripeBackgroundJobs = async ({
   return { inbox, outbox };
 };
 
-const getSafeErrorName = (error: unknown) => getSafeErrorCategory(error);
-
 export const scheduleStripeBackgroundJobs = ({
   run = runStripeBackgroundJobs,
   schedule = after,
@@ -98,12 +96,8 @@ export const scheduleStripeBackgroundJobs = ({
           await wait(5_500);
           passes.push(await run());
         }
-
-        console.warn("Stripe background jobs completed", { passes });
       } catch (error) {
-        console.error("Stripe background jobs failed", {
-          errorName: getSafeErrorName(error),
-        });
+        logSafeError("Stripe background jobs failed", error);
       }
     });
 
@@ -111,9 +105,7 @@ export const scheduleStripeBackgroundJobs = ({
   } catch (error) {
     // The inbox row is already durable. A later webhook, status poll, manual run, or
     // daily recovery can safely claim it if the hosting runtime rejects scheduling.
-    console.error("Failed to schedule Stripe background jobs", {
-      errorName: getSafeErrorName(error),
-    });
+    logSafeError("Failed to schedule Stripe background jobs", error);
 
     return false;
   }

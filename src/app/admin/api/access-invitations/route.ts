@@ -5,6 +5,7 @@ import {
   findInvitationDuplicates,
   type InvitationJournalEntry,
   listAccessInvitations,
+  setAdminJournalArchived,
 } from "@/db/access-invitations";
 import { getDatabase } from "@/db/client";
 import { telegramChats } from "@/db/schema";
@@ -249,6 +250,13 @@ export async function POST(request: Request) {
     if (body.action === "resend_links") {
       const result = await sendInvitationLinks(purchaseId, { checkLimit: false });
       return jsonNoStore({ status: result.status });
+    }
+    if (body.action === "archive" || body.action === "unarchive") {
+      const changed = await setAdminJournalArchived({
+        archived: body.action === "archive",
+        purchaseId,
+      });
+      return jsonNoStore({ status: changed ? "done" : "not_found" });
     }
     if (body.action === "recheck") {
       return jsonNoStore(await recheckInvitationMembership(purchaseId));

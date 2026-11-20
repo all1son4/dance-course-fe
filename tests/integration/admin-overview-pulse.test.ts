@@ -27,6 +27,7 @@ after(async () => {
 
 const insertPurchase = async ({
   createdAt,
+  feeMinor,
   outcome,
   paymentIntentId,
   settlementMinor,
@@ -36,34 +37,49 @@ const insertPurchase = async ({
   outcome: string;
   paymentIntentId: string;
   settlementMinor?: number;
+  /** Stripe's fee of a settled sale; its net is the settlement minus the fee. */
+  feeMinor?: number;
   sql?: postgres.ISql;
 }) => {
   await sql`
     INSERT INTO purchases (
       payment_intent_id, amount_minor, currency, stripe_status, outcome, source,
       settlement_amount_minor, settlement_currency,
+      stripe_fee_amount_minor, stripe_net_amount_minor, stripe_balance_transaction_id,
       succeeded_at, first_seen_at, created_at, updated_at
     ) VALUES (
       ${paymentIntentId}, ${settlementMinor ?? 1000}, 'pln', ${outcome}, ${outcome}, 'stripe',
       ${settlementMinor ?? null}, ${settlementMinor ? "pln" : null},
+      ${settlementMinor && feeMinor !== undefined ? feeMinor : null},
+      ${settlementMinor && feeMinor !== undefined ? settlementMinor - feeMinor : null},
+      ${settlementMinor && feeMinor !== undefined ? `txn_${paymentIntentId}` : null},
       ${outcome === "succeeded" ? createdAt : null}, ${createdAt}, ${createdAt}, ${createdAt}
     )
   `;
 };
 
-test("overview revenue counts only sales confirmed by a processed Stripe event", async () => {
+test("overview earnings: net after Stripe fees, confirmed sales only, unsettled apart", async () => {
   // A month of its own, so no other test's purchases fall into it.
   const now = new Date("2031-02-15T12:00:00.000Z");
   const suffix = randomUUID().replaceAll("-", "");
   const confirmed = `pi_overview_confirmed_${suffix}`;
   const unconfirmed = `pi_overview_unconfirmed_${suffix}`;
+  const unsettled = `pi_overview_unsettled_${suffix}`;
 
   try {
     await insertPurchase({
       createdAt: "2031-02-10T10:00:00.000Z",
+      feeMinor: 200,
       outcome: "succeeded",
       paymentIntentId: confirmed,
       settlementMinor: 5000,
+    });
+    // Confirmed, but Stripe has not sent its balance transaction yet.
+    await insertPurchase({
+      createdAt: "2031-02-12T10:00:00.000Z",
+      outcome: "succeeded",
+      paymentIntentId: unsettled,
+      settlementMinor: 3000,
     });
     await insertPurchase({
       createdAt: "2031-02-11T10:00:00.000Z",
@@ -79,16 +95,21 @@ test("overview revenue counts only sales confirmed by a processed Stripe event",
         ${`evt_${confirmed}`}, 'payment_intent.succeeded', ${confirmed},
         '2031-02-10T10:00:00.000Z', 'processed', '2031-02-10T10:00:00.000Z',
         'succeeded', '{}'::jsonb
+      ), (
+        ${`evt_${unsettled}`}, 'payment_intent.succeeded', ${unsettled},
+        '2031-02-12T10:00:00.000Z', 'processed', '2031-02-12T10:00:00.000Z',
+        'succeeded', '{}'::jsonb
       )
     `;
 
     const sales = await readSalesMetrics(now);
 
-    assert.equal(sales.monthGross, "50 PLN");
-    assert.equal(sales.monthCount, 1);
+    assert.equal(sales.monthNet, "48 PLN");
+    assert.equal(sales.monthCount, 2);
+    assert.equal(sales.monthUnsettled, 1);
   } finally {
-    await client`DELETE FROM stripe_events WHERE payment_intent_id IN (${confirmed}, ${unconfirmed})`;
-    await client`DELETE FROM purchases WHERE payment_intent_id IN (${confirmed}, ${unconfirmed})`;
+    await client`DELETE FROM stripe_events WHERE payment_intent_id IN (${confirmed}, ${unconfirmed}, ${unsettled})`;
+    await client`DELETE FROM purchases WHERE payment_intent_id IN (${confirmed}, ${unconfirmed}, ${unsettled})`;
   }
 });
 

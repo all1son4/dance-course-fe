@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, isNull, notInArray } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 
 import { INSPIRATION_HUB_PRODUCT_ID } from "@/constants/sellable-products";
 import { getDatabase } from "@/db/client";
@@ -15,6 +15,8 @@ import {
   telegramChats,
   telegramUserBindings,
 } from "@/db/schema";
+import { logSafeError } from "@/lib/safe-error-log";
+import { getTelegramChatMemberCount } from "@/lib/telegram/bot-api";
 import { previewHubExpiry } from "@/lib/telegram/hub-expiry-preview";
 
 const DAY_MS = 24 * 3600_000;
@@ -225,3 +227,35 @@ export async function countRunningHubPeriods(now = new Date()) {
     ).length,
   };
 }
+
+/**
+ * «Сейчас в группе»: Telegram's own member count of the Hub chat (Anna, admins and
+ * the bot included) and how many accounts are in it by our records (active bindings).
+ * Telegram's answer is null when it does not answer; the tab says so.
+ */
+export async function readHubChatMembers(hubChatId: string) {
+  const [telegram, [records]] = await Promise.all([
+    getTelegramChatMemberCount({ chatId: hubChatId }).catch((error: unknown) => {
+      logSafeError("Failed to count the Inspiration Hub chat members", error, {
+        severity: "warning",
+      });
+      return null;
+    }),
+    getDatabase()
+      .select({
+        count: sql<number>`count(DISTINCT ${telegramUserBindings.telegramUserId})::int`,
+      })
+      .from(telegramUserBindings)
+      .where(
+        and(
+          eq(telegramUserBindings.chatId, hubChatId),
+          eq(telegramUserBindings.status, "active"),
+          isNull(telegramUserBindings.revokedAt),
+        ),
+      ),
+  ]);
+
+  return { telegram, withAccess: records?.count ?? 0 };
+}
+
+export type HubChatMembers = Awaited<ReturnType<typeof readHubChatMembers>>;

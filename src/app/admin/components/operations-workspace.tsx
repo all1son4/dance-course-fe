@@ -1,14 +1,8 @@
-import {
-  ChevronRight,
-  CircleAlert,
-  CircleCheck,
-  RefreshCw,
-  RotateCcw,
-  TriangleAlert,
-} from "lucide-react";
-import type { ReactNode } from "react";
+import { Check, ChevronRight, EyeOff, RefreshCw, RotateCcw } from "lucide-react";
+import styled from "styled-components";
 
 import type {
+  OperationsEventGroup,
   OperationsQueueStatus,
   OperationsSnapshot,
   ProblemAccessEntitlement,
@@ -45,11 +39,41 @@ import {
 } from "../ui/primitives";
 import { CellPrimary, CellSecondary, DataTable, TableScroller } from "../ui/table";
 
+const JournalAreaTitle = styled.h3`
+  margin: 0;
+  color: var(--a-ink-3);
+  font-size: var(--a-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+`;
+
+/* The code and record on the left, the action on the right; they wrap on a phone. */
+const JournalFoot = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  min-width: 0;
+
+  > :first-child {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+`;
+
 type OperationsWorkspaceProps = {
   isLoading: boolean;
   onRefresh: () => void | Promise<void>;
   onReissueAccess: (paymentIntentId: string) => void | Promise<void>;
   onReplay: (queue: "inbox" | "outbox", key: string) => void | Promise<void>;
+  onTidy: (
+    body:
+      | { action: "archive_event"; area: string; code: string; event: string }
+      | { action: "dismiss_dead_letter"; key: string; queue: "inbox" | "outbox" },
+    done: string,
+  ) => void | Promise<void>;
   reissuedLinks: Record<string, ReissuedAccessLink[]>;
   reissuingPaymentIntentId: string;
   replayingKey: string;
@@ -87,6 +111,7 @@ const SYSTEM_BADGES: Record<SystemState, { label: string; tone: AdminTone }> = {
 };
 
 const OUTBOX_KIND_LABELS: Record<string, string> = {
+  access_invitation_email: "Письмо приглашения",
   admin_telegram_alert: "Уведомление о покупке в Telegram",
   campaign_email_delivery: "Письмо рассылки",
   monthly_report_delivery: "Месячный отчёт",
@@ -274,24 +299,6 @@ const buildSystems = (snapshot: OperationsSnapshot): SystemHealth[] => {
   ];
 };
 
-const BANNER: Record<SystemState, { icon: ReactNode; title: string; tone: AdminTone }> = {
-  alert: {
-    icon: <CircleAlert aria-hidden />,
-    title: "Есть сбои — нужно вмешаться",
-    tone: "danger",
-  },
-  ok: {
-    icon: <CircleCheck aria-hidden />,
-    title: "Все системы работают штатно",
-    tone: "success",
-  },
-  warn: {
-    icon: <TriangleAlert aria-hidden />,
-    title: "Работает, но есть ожидающие задачи",
-    tone: "warning",
-  },
-};
-
 const ReissuedLinks = ({ links }: { links: ReissuedAccessLink[] }) => (
   <Stack $gap={8}>
     {links.map((link) => (
@@ -310,10 +317,12 @@ const ReissuedLinks = ({ links }: { links: ReissuedAccessLink[] }) => (
 const DeadLetterTable = ({
   entries,
   onReplay,
+  onTidy,
   replayingKey,
 }: {
   entries: DeadLetterEntry[];
   onReplay: OperationsWorkspaceProps["onReplay"];
+  onTidy: OperationsWorkspaceProps["onTidy"];
   replayingKey: string;
 }) => (
   <TableScroller>
@@ -358,6 +367,24 @@ const DeadLetterTable = ({
                 >
                   {isReplaying ? "Повторяю…" : "Повторить"}
                 </AdminButton>
+                <AdminButton
+                  size="sm"
+                  variant="ghost"
+                  icon={<Check aria-hidden />}
+                  disabled={Boolean(replayingKey)}
+                  onClick={() =>
+                    void onTidy(
+                      {
+                        action: "dismiss_dead_letter",
+                        key: entry.itemKey,
+                        queue: entry.queue,
+                      },
+                      "Отмечено как решённое — задача ушла из тревог.",
+                    )
+                  }
+                >
+                  Решено
+                </AdminButton>
               </td>
             </tr>
           );
@@ -372,6 +399,7 @@ export const OperationsWorkspace = ({
   onRefresh,
   onReissueAccess,
   onReplay,
+  onTidy,
   reissuedLinks,
   reissuingPaymentIntentId,
   replayingKey,
@@ -421,29 +449,13 @@ export const OperationsWorkspace = ({
         (entitlement) => entitlement.paymentIntentId === paymentIntentId,
       ),
   );
-  const alertSystems = systems.filter((system) => system.state === "alert");
-  const warnSystems = systems.filter((system) => system.state === "warn");
-  const bannerState: SystemState =
-    alertSystems.length > 0 ? "alert" : warnSystems.length > 0 ? "warn" : "ok";
-  const banner = BANNER[bannerState];
-  const bannerText =
-    bannerState === "ok"
-      ? "Оплаты обрабатываются, письма доставлены, доступы выданы."
-      : `${[...alertSystems, ...warnSystems]
-          .map((system) => system.name)
-          .join(", ")} — подробности и починка в строке ниже.`;
-
   return (
     <Stack $gap={16}>
-      <Callout tone={banner.tone} icon={banner.icon} title={banner.title}>
-        {bannerText} Проверено в {formatDateTime(snapshot.capturedAt)}.
-      </Callout>
-
       <StatusLine status={status} />
 
       <Panel
-        title="Системы"
-        description="Строки со сбоем раскрыты сразу; «Внимание» раскрывается по нажатию. Внутри — что случилось и кнопка починки, если она возможна."
+        title="Что нужно починить"
+        description={`Строки со сбоем раскрыты сразу; внутри — что случилось и кнопка починки. Проверено в ${formatDateTime(snapshot.capturedAt)}.`}
         actions={refreshButton}
       >
         <SystemList>
@@ -492,6 +504,7 @@ export const OperationsWorkspace = ({
                       <DeadLetterTable
                         entries={system.deadLetters}
                         onReplay={onReplay}
+                        onTidy={onTidy}
                         replayingKey={replayingKey}
                       />
                     )}
@@ -539,7 +552,7 @@ export const OperationsWorkspace = ({
                             </div>
                           ) : (
                             <ItemMeta>
-                              Выдай доступ в Online Group → «Ручной доступ».
+                              Выдай доступ в Online Group → «Приглашения».
                             </ItemMeta>
                           )}
                           {links.length > 0 && <ReissuedLinks links={links} />}
@@ -576,12 +589,6 @@ export const OperationsWorkspace = ({
           </summary>
           <dl>
             <div>
-              <dt>Задач в работе прямо сейчас</dt>
-              <dd>
-                события: {snapshot.inbox.working} · письма: {snapshot.outbox.working}
-              </dd>
-            </div>
-            <div>
               <dt>Доставлено не с первой попытки</dt>
               <dd>
                 события: {snapshot.inbox.retries} · письма: {snapshot.outbox.retries}
@@ -598,6 +605,97 @@ export const OperationsWorkspace = ({
           </dl>
         </TechDetails>
       </Panel>
+
+      <EventJournal events={snapshot.events ?? []} onTidy={onTidy} />
     </Stack>
   );
 };
+
+const AREA_TITLES: Record<OperationsEventGroup["area"], string> = {
+  telegram: "Telegram",
+  stripe: "Stripe",
+  email: "Письма",
+  database: "База данных",
+  app: "Сайт",
+};
+const AREA_ORDER: OperationsEventGroup["area"][] = [
+  "telegram",
+  "stripe",
+  "email",
+  "database",
+  "app",
+];
+
+/**
+ * «Журнал событий»: what broke in the last 30 days, by where it broke. Same event
+ * and code of one day are one line with a count; «Убрать» hides it until it recurs.
+ */
+const EventJournal = ({
+  events,
+  onTidy,
+}: {
+  events: OperationsEventGroup[];
+  onTidy: OperationsWorkspaceProps["onTidy"];
+}) => (
+  <Panel
+    title="Журнал событий"
+    description="Сбои за 30 дней по местам, где они случились. Одинаковые собраны в одну строку со счётчиком; «Убрать» скрывает строку до следующего раза. Хранится 90 дней."
+  >
+    {events.length === 0 ? (
+      <EmptyState title="За 30 дней сбоев не было" />
+    ) : (
+      <Stack $gap={18}>
+        {AREA_ORDER.flatMap((area) => {
+          const group = events.filter((event) => event.area === area);
+          if (group.length === 0) return [];
+          return [
+            <Stack $gap={8} key={area}>
+              <JournalAreaTitle>
+                {AREA_TITLES[area]} · {group.length}
+              </JournalAreaTitle>
+              {group.map((event) => (
+                <ItemCard key={`${event.event}|${event.code}`}>
+                  <ItemHead>
+                    <strong>{event.title}</strong>
+                    <Badge $tone={event.severity === "error" ? "danger" : "warning"}>
+                      {event.occurrences > 1 ? `×${event.occurrences}` : "1 раз"}
+                    </Badge>
+                  </ItemHead>
+                  <ItemMeta>{event.explanation}</ItemMeta>
+                  <ItemMeta>
+                    {event.days > 1
+                      ? `${event.days} дн. · с ${formatDateTime(event.firstSeenAt)} · последний раз ${formatDateTime(event.lastSeenAt)}`
+                      : `Последний раз ${formatDateTime(event.lastSeenAt)}`}
+                  </ItemMeta>
+                  <JournalFoot>
+                    <Mono>
+                      {[event.code, event.lastReference].filter(Boolean).join(" · ")}
+                    </Mono>
+                    <AdminButton
+                      size="sm"
+                      variant="ghost"
+                      icon={<EyeOff aria-hidden />}
+                      onClick={() =>
+                        void onTidy(
+                          {
+                            action: "archive_event",
+                            area: event.area,
+                            code: event.code,
+                            event: event.event,
+                          },
+                          "Строка убрана — вернётся, если случится снова.",
+                        )
+                      }
+                    >
+                      Убрать
+                    </AdminButton>
+                  </JournalFoot>
+                </ItemCard>
+              ))}
+            </Stack>,
+          ];
+        })}
+      </Stack>
+    )}
+  </Panel>
+);

@@ -517,6 +517,8 @@ export const purchases = pgTable(
     // page that confirms the Telegram account first. Null on every other purchase.
     adminNote: text("admin_note"),
     invitationKind: text("invitation_kind").$type<"join" | "renewal">(),
+    /** «Убрать из журнала»: hidden from the admin journals; the purchase itself stays. */
+    adminArchivedAt: timestamp("admin_archived_at", { withTimezone: true }),
     succeededAt: timestamp("succeeded_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -669,6 +671,8 @@ export const stripeEvents = pgTable(
     leaseToken: text("lease_token"),
     leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
     deadLetteredAt: timestamp("dead_lettered_at", { withTimezone: true }),
+    /** A dead letter the admin marked «решено»: out of the alerts, kept for history. */
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
     paymentStatusSnapshot: text("payment_status_snapshot"),
     outcomeSnapshot: text("outcome_snapshot"),
     livemode: boolean("livemode").notNull().default(false),
@@ -776,6 +780,8 @@ export const purchaseSideEffects = pgTable(
     attemptCount: integer("attempt_count").notNull().default(0),
     lastErrorCode: text("last_error_code"),
     lastErrorMessage: text("last_error_message"),
+    /** A dead letter the admin marked «решено»: out of the alerts, kept for history. */
+    dismissedAt: timestamp("dismissed_at", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     failedAt: timestamp("failed_at", { withTimezone: true }),
     deadLetteredAt: timestamp("dead_lettered_at", { withTimezone: true }),
@@ -1234,5 +1240,55 @@ export const emailCampaignLeads = pgTable(
     index("email_campaign_leads_campaign_key_idx").on(table.campaignKey),
     index("email_campaign_leads_email_send_status_idx").on(table.emailSendStatus),
     index("email_campaign_leads_created_at_idx").on(table.createdAt),
+  ],
+);
+
+/**
+ * The application's own event log (Vercel keeps an hour): operational failures only,
+ * one row per event, code and Warsaw day with a count, no personal data. Kept 90 days.
+ */
+export const operationalEvents = pgTable(
+  "operational_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The Warsaw calendar day the occurrences are grouped by. */
+    day: text("day").notNull(),
+    /** Where it broke: the provider or layer the code comes from. */
+    area: text("area")
+      .notNull()
+      .$type<"telegram" | "stripe" | "email" | "database" | "app">(),
+    /** What the code was doing, the stable context of the log call. */
+    event: text("event").notNull(),
+    /** A safe error code: Telegram's description, SQLSTATE, HTTP status, our own code. */
+    code: text("code").notNull().default(""),
+    severity: text("severity").notNull().default("error").$type<"error" | "warning">(),
+    occurrences: integer("occurrences").notNull().default(1),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    /** The record it was about (a purchase or payment id), never a person. */
+    lastReference: text("last_reference"),
+    /** «Убрать»: hidden until it happens again. */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (table) => [
+    check(
+      "operational_events_area_check",
+      sql`${table.area} IN ('telegram', 'stripe', 'email', 'database', 'app')`,
+    ),
+    check(
+      "operational_events_severity_check",
+      sql`${table.severity} IN ('error', 'warning')`,
+    ),
+    check("operational_events_occurrences_check", sql`${table.occurrences} > 0`),
+    uniqueIndex("operational_events_group_idx").on(
+      table.day,
+      table.area,
+      table.event,
+      table.code,
+    ),
+    index("operational_events_last_seen_idx").on(table.lastSeenAt),
   ],
 );

@@ -321,12 +321,9 @@ const sendPurchasedLessons = async ({
         targetChatId: chatId,
       });
     } catch (error) {
-      console.error("Failed to copy Telegram lesson message", {
-        error,
-        offerId: payment.offer_id,
-        sourceChatId: lessonSource.sourceChatId,
-        sourceMessageId: lessonSource.sourceMessageId,
-        telegramUserId,
+      // No Telegram user id in the log: the payment intent names the purchase.
+      logSafeError("Failed to copy Telegram lesson message", error, {
+        reference: payment.payment_intent_id,
       });
       await sendTelegramMessage({
         chatId,

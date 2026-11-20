@@ -416,10 +416,7 @@ export const RenewalCampaignsCard = ({
     description="Выключенная ссылка перестаёт открывать оплату, включить её можно в любой момент."
   >
     {campaigns.length === 0 ? (
-      <EmptyState
-        title="Ссылок продления пока нет"
-        text="Создай их в «Потоки» → «Настроить переход»."
-      />
+      <EmptyState title="Ссылок продления пока нет" />
     ) : (
       <List>
         {campaigns.map((campaign) => {

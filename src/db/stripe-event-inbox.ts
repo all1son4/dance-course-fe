@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 
 import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 
+import { describeErrorCode } from "@/lib/error-log/error-code";
+import { logSafeError } from "@/lib/safe-error-log";
+
 import { getDatabase } from "./client";
 import { stripeEvents } from "./schema";
 
@@ -295,12 +298,26 @@ const markStripeInboxEventFailed = async ({
   now: Date;
 }) => {
   const deadLettered = event.attemptCount >= maxAttempts;
-  const errorCode =
-    error && typeof error === "object" && "code" in error
-      ? String(error.code).slice(0, 120)
-      : "projection_failed";
-  const errorMessage =
-    error instanceof Error ? error.message.slice(0, 1_000) : "Projection failed";
+  // Never the raw message: a Drizzle one carries query parameters, a provider one its
+  // response body. The safe code says what failed; the event log says when.
+  const safe = describeErrorCode(error);
+  const ownCode =
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "string"
+      ? /^[a-z][a-z0-9_:]*$/u.exec(error.code)?.[0]
+      : undefined;
+  const errorCode = (
+    ownCode ?? (safe.code === "Error" ? "projection_failed" : safe.code)
+  ).slice(0, 120);
+  if (deadLettered) {
+    logSafeError(`Stripe event failed after all retries: ${event.eventType}`, error, {
+      reference: event.stripeEventId,
+    });
+  }
+  // The safe code again: «Система» explains it in Russian at display time.
+  const errorMessage = errorCode;
   const [updated] = await getDatabase()
     .update(stripeEvents)
     .set({

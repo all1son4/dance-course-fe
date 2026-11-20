@@ -1,6 +1,7 @@
 import { and, eq, exists, inArray, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { describeErrorCode } from "@/lib/error-log/error-code";
 import { getStartOfNextWarsawDay } from "@/lib/inspiration-hub/calendar";
 
 import { getDatabase } from "./client";
@@ -197,7 +198,8 @@ export async function resolveCohortContinuations(
     } catch (error) {
       result.failures.push({
         entitlementId: root.entitlementId,
-        reason: error instanceof Error ? error.message : "unknown_error",
+        // A safe code: a Drizzle message would carry the query's parameters.
+        reason: describeErrorCode(error).code,
       });
     }
   }

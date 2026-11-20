@@ -77,15 +77,7 @@ const persistVerifiedStripeEventBeforeProcessing = async (
   const databaseEnv = getDatabaseEnvSelection("pooled");
 
   try {
-    const receipt = await persistVerifiedStripeWebhookEvent({ event });
-
-    console.warn("Verified Stripe event persisted to inbox", {
-      databaseEnv,
-      duplicate: receipt.duplicate,
-      eventId: event.id,
-      eventType: event.type,
-      processingStatus: receipt.processingStatus,
-    });
+    await persistVerifiedStripeWebhookEvent({ event });
 
     return null;
   } catch (error) {
@@ -94,6 +86,10 @@ const persistVerifiedStripeEventBeforeProcessing = async (
       errorName: getSafeErrorName(error),
       eventId: event.id,
       eventType: event.type,
+    });
+    // Also into the event log, for when the database comes back to a later write.
+    logSafeError("Failed to persist verified Stripe event to inbox", error, {
+      reference: event.id,
     });
 
     return createWebhookErrorResponse("stripe_webhook_inbox_failed", 500);

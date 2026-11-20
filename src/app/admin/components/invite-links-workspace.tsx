@@ -1,5 +1,5 @@
-import { Link2, RefreshCw } from "lucide-react";
-import type { FormEvent } from "react";
+import { Archive, ArchiveRestore, Link2, RefreshCw } from "lucide-react";
+import { type FormEvent, useState } from "react";
 import styled from "styled-components";
 
 import { JOURNAL_SKELETON_COUNT } from "../lib/admin.constants";
@@ -15,41 +15,19 @@ import { Field, FormActions, Input, Select, StatusLine } from "../ui/forms";
 import {
   AdminButton,
   Badge,
+  Disclosure,
   EmptyState,
+  FieldNote,
   Muted,
   Panel,
-  Row,
   Skeleton,
   Stack,
+  TextButton,
 } from "../ui/primitives";
 
 const GeneratorForm = styled.form`
   display: grid;
   gap: 14px;
-`;
-
-const JournalList = styled.ul`
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-`;
-
-const JournalEntry = styled.li`
-  display: grid;
-  gap: 8px;
-  min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--a-border);
-  border-radius: var(--a-radius);
-  background: var(--a-surface);
-
-  strong {
-    min-width: 0;
-    font-weight: 600;
-    overflow-wrap: anywhere;
-  }
 `;
 
 const EntryMeta = styled(Muted)`
@@ -90,7 +68,7 @@ export const InviteLinkGeneratorCard = ({
 }: InviteLinkGeneratorCardProps) => (
   <Panel
     title="Бесплатный доступ"
-    description="Доступ в Online Group и библиотеку для Plus — в разделе Online Group → «Ручной доступ»."
+    description="Доступ в Online Group и библиотеку для Plus — в разделе Online Group → «Приглашения»."
   >
     <GeneratorForm onSubmit={onSubmit}>
       <Field label="К чему доступ" htmlFor="generator-kind">
@@ -165,69 +143,141 @@ type InviteLinkJournalCardProps = {
   isInitialLoading: boolean;
   isLoading: boolean;
   links: GeneratedLinkEntry[];
+  onArchive: (purchaseId: string, archived: boolean) => void | Promise<void>;
   onRefresh: () => void | Promise<void>;
 };
 
+const LINK_STATE_TONE = {
+  active: "success",
+  expired: "warning",
+  used: "neutral",
+} as const;
+
+const LinkEntry = ({
+  entry,
+  onArchive,
+}: {
+  entry: GeneratedLinkEntry;
+  onArchive: InviteLinkJournalCardProps["onArchive"];
+}) => {
+  const until = entry.tokenExpiresAt ? formatDateTime(entry.tokenExpiresAt) : "";
+
+  return (
+    <Disclosure
+      title={entry.adminLabel || "Без имени"}
+      hint={`${entry.selectionLabel} · создана ${formatDateTime(entry.createdAtIso)}`}
+      aside={
+        <>
+          <Badge $tone={LINK_STATE_TONE[entry.linkState]}>
+            {resolveLinkStateLabel(entry.linkState)}
+          </Badge>
+          {until && entry.linkState !== "used" && (
+            <EntryMeta>
+              {entry.linkState === "expired" ? `была до ${until}` : `до ${until}`}
+            </EntryMeta>
+          )}
+        </>
+      }
+    >
+      <Stack $gap={8}>
+        {entry.accessUrl ? (
+          <CopyField label="Ссылка" value={entry.accessUrl} />
+        ) : (
+          <EntryMeta>
+            {entry.linkState === "used"
+              ? "По ссылке уже вошли — сама ссылка стёрта, она больше не нужна."
+              : "Ссылка истекла и стёрта: если нужно, создай новую выше."}
+          </EntryMeta>
+        )}
+        {entry.purchaseId && entry.archived !== "auto" && (
+          <ArchiveRow>
+            <AdminButton
+              size="sm"
+              variant="ghost"
+              icon={
+                entry.archived ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />
+              }
+              onClick={() => void onArchive(entry.purchaseId!, !entry.archived)}
+            >
+              {entry.archived ? "Вернуть в журнал" : "Убрать из журнала"}
+            </AdminButton>
+          </ArchiveRow>
+        )}
+      </Stack>
+    </Disclosure>
+  );
+};
+
+const ArchiveRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+`;
+
+/**
+ * «Журнал последних ссылок»: the links still in play; used a week ago, expired a
+ * month ago or removed by hand wait in «Архив», folded.
+ */
 export const InviteLinkJournalCard = ({
   isInitialLoading,
   isLoading,
   links,
+  onArchive,
   onRefresh,
-}: InviteLinkJournalCardProps) => (
-  <Panel
-    title="Журнал последних ссылок"
-    actions={
-      <AdminButton
-        size="sm"
-        icon={<RefreshCw aria-hidden />}
-        loading={isLoading}
-        onClick={() => void onRefresh()}
-      >
-        Обновить
-      </AdminButton>
-    }
-  >
-    {isInitialLoading ? (
-      <Stack $gap={10}>
-        {Array.from({ length: JOURNAL_SKELETON_COUNT }, (_, index) => (
-          <Skeleton key={`journal-skeleton-${index}`} $height={96} />
-        ))}
-      </Stack>
-    ) : links.length === 0 ? (
-      <EmptyState
-        icon={<Link2 aria-hidden />}
-        title="Ссылок пока нет"
-        text="Здесь появятся ссылки, созданные в этом разделе."
-      />
-    ) : (
-      <JournalList>
-        {links.map((entry, index) => (
-          <JournalEntry key={`${entry.createdAtIso}-${index}`}>
-            <Row $justify="space-between" $gap={10} $wrap={false}>
-              <strong>{entry.selectionLabel}</strong>
-              <Badge
-                $tone={
-                  entry.linkState === "active"
-                    ? "success"
-                    : entry.linkState === "expired"
-                      ? "warning"
-                      : "neutral"
-                }
-              >
-                {resolveLinkStateLabel(entry.linkState)}
-              </Badge>
-            </Row>
-            <EntryMeta>
-              {entry.adminLabel || "Без имени"} · создано{" "}
-              {formatDateTime(entry.createdAtIso)} · войти по ссылке можно до{" "}
-              {entry.tokenExpiresAt
-                ? formatDateTime(entry.tokenExpiresAt)
-                : "не определено"}
-            </EntryMeta>
-            {entry.accessUrl && <CopyField label="Ссылка" value={entry.accessUrl} />}
-          </JournalEntry>
-        ))}
-      </JournalList>
-    )}
-  </Panel>
-);
+}: InviteLinkJournalCardProps) => {
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const current = links.filter((entry) => !entry.archived);
+  const archived = links.filter((entry) => entry.archived);
+  const render = (entry: GeneratedLinkEntry, index: number) => (
+    <LinkEntry
+      entry={entry}
+      key={entry.purchaseId ?? `${entry.createdAtIso}-${index}`}
+      onArchive={onArchive}
+    />
+  );
+
+  return (
+    <Panel
+      title="Журнал последних ссылок"
+      actions={
+        <AdminButton
+          size="sm"
+          icon={<RefreshCw aria-hidden />}
+          loading={isLoading}
+          onClick={() => void onRefresh()}
+        >
+          Обновить
+        </AdminButton>
+      }
+    >
+      {isInitialLoading ? (
+        <Stack $gap={10}>
+          {Array.from({ length: JOURNAL_SKELETON_COUNT }, (_, index) => (
+            <Skeleton key={`journal-skeleton-${index}`} $height={56} />
+          ))}
+        </Stack>
+      ) : links.length === 0 ? (
+        <EmptyState
+          icon={<Link2 aria-hidden />}
+          title="Ссылок пока нет"
+          text="Здесь появятся ссылки, созданные в этом разделе."
+        />
+      ) : (
+        <div>
+          {current.map(render)}
+          {current.length === 0 && (
+            <EmptyState title="В журнале пусто — всё завершённое в архиве" />
+          )}
+          {archived.length > 0 && (
+            <FieldNote>
+              <TextButton type="button" onClick={() => setArchiveOpen(!archiveOpen)}>
+                {archiveOpen ? "Свернуть архив" : `Архив · ${archived.length}`}
+              </TextButton>
+              {archiveOpen ? "" : " · использованные, истёкшие и убранные вручную"}
+            </FieldNote>
+          )}
+          {archiveOpen && archived.map(render)}
+        </div>
+      )}
+    </Panel>
+  );
+};
