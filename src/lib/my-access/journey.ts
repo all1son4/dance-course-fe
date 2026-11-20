@@ -62,8 +62,8 @@ export const buildMyAccessJourney = (
   );
 
   for (const purchase of snapshot.purchases) {
-    if (!purchase.productExternalId || !purchase.succeededAt) continue;
-    const at = purchase.succeededAt.toISOString();
+    if (!purchase.productExternalId) continue;
+    const at = purchase.boughtAt.toISOString();
     const step = steps.get(purchase.productExternalId);
 
     if (!step) {

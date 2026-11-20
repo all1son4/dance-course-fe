@@ -47,7 +47,8 @@ export type MyAccessPurchase = {
   id: string;
   productExternalId: string;
   offerExternalId: string;
-  succeededAt: Date | null;
+  /** When it was bought: `succeeded_at`, else `first_seen_at` (see `db/my-access`). */
+  boughtAt: Date;
   cohortId: string | null;
   /** The Telegram identity the purchase belongs to, when known. */
   telegramUserId: string | null;
@@ -614,7 +615,7 @@ const buildTimedChannelCard = ({
       : { key: "channel.paid" },
     ...joinNote(primary, false),
     urgency: 0,
-    sortAt: purchase.succeededAt?.getTime() ?? 0,
+    sortAt: purchase.boughtAt.getTime(),
   };
 };
 
@@ -719,9 +720,9 @@ export const buildMyAccessCards = (
   const hubIdentity = new Map<BaseCard, string>();
   const boughtOf = new Map<BaseCard, number>();
   const hubBoughtAt = new Map<string, number>();
-  const add = (card: BaseCard, purchase: Pick<MyAccessPurchase, "succeededAt">) => {
+  const add = (card: BaseCard, purchase: Pick<MyAccessPurchase, "boughtAt">) => {
     cards.push(card);
-    boughtOf.set(card, purchase.succeededAt?.getTime() ?? 0);
+    boughtOf.set(card, purchase.boughtAt.getTime());
   };
 
   const invitedPurchaseIds = new Set(
@@ -771,7 +772,7 @@ export const buildMyAccessCards = (
       hubGroups.set(groupId, [...(hubGroups.get(groupId) ?? []), ...periods]);
       hubBoughtAt.set(
         groupId,
-        Math.max(hubBoughtAt.get(groupId) ?? 0, purchase.succeededAt?.getTime() ?? 0),
+        Math.max(hubBoughtAt.get(groupId) ?? 0, purchase.boughtAt.getTime()),
       );
       continue;
     }

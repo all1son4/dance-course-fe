@@ -311,7 +311,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     buildMyAccessCalendarHref(rawToken, eventId, locale);
 
   // Facts for the header: since the first purchase, and how many purchases.
-  const since = snapshot.purchases.find((purchase) => purchase.succeededAt)?.succeededAt;
+  const since = snapshot.purchases[0]?.boughtAt;
 
   const calendarToken = createMyAccessCalendarToken(customerId);
   const hasDates =

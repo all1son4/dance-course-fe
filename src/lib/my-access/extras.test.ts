@@ -24,7 +24,7 @@ const purchase = (overrides: Partial<MyAccessPurchase> & { id: string }) => ({
   cohortId: null,
   offerExternalId: STANDARD_OFFER,
   productExternalId: GROUP_PRODUCT,
-  succeededAt: new Date("2026-09-20T10:00:00.000Z"),
+  boughtAt: new Date("2026-09-20T10:00:00.000Z"),
   telegramUserId: "777",
   ...overrides,
 });
@@ -135,17 +135,17 @@ test("«Твой путь» lists bought products in order, by what runs now", (
         id: "ft",
         offerExternalId: FIRST_TOUCH_OFFER,
         productExternalId: FIRST_TOUCH_PRODUCT,
-        succeededAt: new Date("2026-03-10T10:00:00.000Z"),
+        boughtAt: new Date("2026-03-10T10:00:00.000Z"),
       }),
       purchase({ cohortId: "c2", id: "g" }),
       purchase({
         id: "h",
         offerExternalId: "off_inspiration_hub_access",
         productExternalId: "prd_inspiration_hub",
-        succeededAt: new Date("2026-11-10T10:00:00.000Z"),
+        boughtAt: new Date("2026-11-10T10:00:00.000Z"),
       }),
       // A second purchase of the same product adds no step.
-      purchase({ id: "g2", succeededAt: new Date("2026-11-12T10:00:00.000Z") }),
+      purchase({ id: "g2", boughtAt: new Date("2026-11-12T10:00:00.000Z") }),
     ],
     rights: [
       right({ expiresAt: new Date("2026-07-10T10:00:00.000Z"), purchaseId: "ft" }),
@@ -283,20 +283,20 @@ test("the path counts the group's cycles that are behind; the cards name each cy
       purchase({
         cohortId: "1.0",
         id: "g1",
-        succeededAt: new Date("2026-02-20T10:00:00.000Z"),
+        boughtAt: new Date("2026-02-20T10:00:00.000Z"),
       }),
       purchase({ cohortId: "2.0", id: "g2", offerExternalId: PLUS_OFFER }),
       purchase({
         cohortId: "3.0",
         id: "g3",
         offerExternalId: RENEWAL_PLUS,
-        succeededAt: new Date("2026-11-15T10:00:00.000Z"),
+        boughtAt: new Date("2026-11-15T10:00:00.000Z"),
       }),
       purchase({
         id: "ft",
         offerExternalId: FIRST_TOUCH_OFFER,
         productExternalId: FIRST_TOUCH_PRODUCT,
-        succeededAt: new Date("2026-01-10T10:00:00.000Z"),
+        boughtAt: new Date("2026-01-10T10:00:00.000Z"),
       }),
     ],
     rights: [

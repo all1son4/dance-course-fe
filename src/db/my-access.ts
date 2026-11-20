@@ -210,14 +210,18 @@ export async function readMyAccessSnapshot(
     .limit(1);
   if (!customer) return null;
 
+  // The day of a purchase: its payment, else when it was recorded — admin offer links,
+  // invitations waiting for their check and roster entries have no payment moment
+  // (`first_seen_at` is the link's day or the registration day for them).
+  const boughtAt = sql<Date>`coalesce(${purchases.succeededAt}, ${purchases.firstSeenAt})`;
   const purchaseRows = await database
     .select({
+      boughtAt: boughtAt.mapWith(purchases.firstSeenAt),
       cohortId: purchases.onlineGroupCohortId,
       id: purchases.id,
       invitationKind: purchases.invitationKind,
       offerExternalId: purchases.offerExternalId,
       productExternalId: purchases.productExternalId,
-      succeededAt: purchases.succeededAt,
       telegramUserId: purchases.telegramUserId,
     })
     .from(purchases)
@@ -227,7 +231,7 @@ export async function readMyAccessSnapshot(
         purchaseOfCustomer(customerId, normalizeEmail(customer.normalizedEmail)),
       ),
     )
-    .orderBy(purchases.succeededAt);
+    .orderBy(boughtAt);
 
   const ids = purchaseRows.map((row) => row.id);
   const cohortIds = [
