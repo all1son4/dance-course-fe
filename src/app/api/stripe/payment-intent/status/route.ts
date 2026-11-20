@@ -5,7 +5,7 @@ import {
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
-import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
+import { logSafeError } from "@/lib/safe-error-log";
 
 import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
 import {
@@ -88,9 +88,7 @@ export async function POST(request: Request) {
       try {
         scheduleStripeBackgroundJobs();
       } catch (error) {
-        console.error("Failed to schedule payment background recovery", {
-          errorName: getSafeErrorCategory(error),
-        });
+        logSafeError("Failed to schedule payment background recovery", error);
       }
     }
 

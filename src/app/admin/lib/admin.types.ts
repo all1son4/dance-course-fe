@@ -60,6 +60,9 @@ export type SelectOption = {
 
 export type GeneratedLinkEntry = {
   accessUrl: string;
+  /** In «Архив»: removed by hand, or over (used a week ago, expired a month ago). */
+  archived?: "manual" | "auto" | null;
+  purchaseId?: string;
   adminLabel: string;
   createdAtIso: string;
   linkState: LinkState;
@@ -270,6 +273,22 @@ export type OperationsSnapshot = {
     unverifiedEvents: number;
   };
   reports: Record<string, number>;
+  /** The event journal of the last 30 days, one row per event and code. */
+  events: OperationsEventGroup[];
+};
+
+export type OperationsEventGroup = {
+  area: "telegram" | "stripe" | "email" | "database" | "app";
+  event: string;
+  code: string;
+  severity: "error" | "warning";
+  occurrences: number;
+  days: number;
+  firstSeenAt: string;
+  lastSeenAt: string;
+  lastReference: string | null;
+  title: string;
+  explanation: string;
 };
 
 export type OperationsSnapshotResponse = Partial<OperationsSnapshot> & {

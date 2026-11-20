@@ -3,7 +3,7 @@ import test from "node:test";
 
 import type { AdminInviteLinkHistoryRecord } from "./admin-invite-link-history-record";
 
-test("history contract preserves all ten fields and missing timestamps", () => {
+test("history contract preserves all twelve fields and missing timestamps", () => {
   const record: AdminInviteLinkHistoryRecord = {
     accessUrl: "https://t.me/+private_invite",
     adminLabel: "",
@@ -15,6 +15,8 @@ test("history contract preserves all ten fields and missing timestamps", () => {
     purchaseItem: "Course — Standard",
     tokenExpiresAt: "2026-08-14T10:00:00.000Z",
     tokenUsedAt: "",
+    archivedAt: "",
+    purchaseId: "purchase-1",
   };
   const restored: AdminInviteLinkHistoryRecord = { ...record };
 
@@ -29,6 +31,8 @@ test("history contract preserves all ten fields and missing timestamps", () => {
     "purchaseItem",
     "tokenExpiresAt",
     "tokenUsedAt",
+    "archivedAt",
+    "purchaseId",
   ]);
   assert.deepEqual(restored, record);
   // An unused link keeps an empty tokenUsedAt, which is how the route reads "active".

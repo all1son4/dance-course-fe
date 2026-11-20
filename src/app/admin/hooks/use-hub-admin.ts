@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { HubAdminOverview } from "@/lib/admin/hub-admin";
+import type { HubAdminOverview, HubChatMembers } from "@/lib/admin/hub-admin";
+
+type HubTab = HubAdminOverview & { members?: HubChatMembers | null };
 
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import { requestAdminJson } from "../lib/admin-request";
@@ -19,7 +21,7 @@ export const useHubAdmin = ({
   isAuthorized: boolean;
   onUnauthorized: () => void;
 }) => {
-  const [hub, setHub] = useState<HubAdminOverview | null>(null);
+  const [hub, setHub] = useState<HubTab | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [failed, setFailed] = useState(false);
   const [previewAt, setPreviewAt] = useState<string>("");
@@ -35,9 +37,7 @@ export const useHubAdmin = ({
       const query = nextPreviewAt
         ? `?previewAt=${encodeURIComponent(nextPreviewAt)}`
         : "";
-      const result = await requestAdminJson<HubAdminOverview>(
-        `${ADMIN_API_ENDPOINTS.hub}${query}`,
-      );
+      const result = await requestAdminJson<HubTab>(`${ADMIN_API_ENDPOINTS.hub}${query}`);
       if (current !== sequence.current) return;
       setIsLoading(false);
       if (result.unauthorized) {

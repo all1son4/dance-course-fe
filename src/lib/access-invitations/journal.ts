@@ -37,12 +37,24 @@ export type JournalView = {
   canResendInvite: boolean;
   /** «Проверить в Telegram»: the account is known. */
   canRecheck: boolean;
+  /**
+   * In «Архив»: removed by hand, or nothing left to happen — all received a week
+   * ago, revoked, the access over, or a link expired unused a month ago.
+   */
+  archived: "manual" | "auto" | null;
 };
 
 type Entry = Pick<
   InvitationJournalEntry,
   "kind" | "revoked" | "telegramConfirmed" | "accesses"
-> & { inviteEmailStatus: string | null };
+> &
+  Partial<Pick<InvitationJournalEntry, "archivedAt" | "createdAt">> & {
+    inviteEmailStatus: string | null;
+  };
+
+const DAY_MS = 86_400_000;
+const ALL_RECEIVED_ARCHIVE_DAYS = 7;
+const EXPIRED_LINK_ARCHIVE_DAYS = 30;
 
 const iso = (date: Date | null) => date?.toISOString() ?? null;
 
@@ -122,6 +134,7 @@ export const describeInvitationJournalEntry = (
   if (entry.revoked) {
     return {
       ...base,
+      archived: entry.archivedAt ? "manual" : "auto",
       canResendLinks: false,
       inChats: [],
       needsAnna: false,
@@ -199,5 +212,25 @@ export const describeInvitationJournalEntry = (
     return null;
   })();
 
-  return { ...base, canResendLinks, inChats, needsAnna, next };
+  // Nothing is left to happen: every access is in, over, or a link long expired.
+  const isOver = (access: InvitationJournalAccess) =>
+    access.state === "revoked" ||
+    (access.expiresAt !== null && access.expiresAt <= now) ||
+    (access.state === "expired" &&
+      access.tokenExpiresAt !== null &&
+      now.getTime() - access.tokenExpiresAt.getTime() >
+        EXPIRED_LINK_ARCHIVE_DAYS * DAY_MS);
+  const allReceived =
+    entry.accesses.length > 0 &&
+    entry.accesses.every((access) => access.state === "member" || isOver(access)) &&
+    entry.createdAt !== undefined &&
+    now.getTime() - entry.createdAt.getTime() > ALL_RECEIVED_ARCHIVE_DAYS * DAY_MS;
+  const allOver = entry.accesses.length > 0 && entry.accesses.every(isOver);
+  const archived = entry.archivedAt
+    ? "manual"
+    : !needsAnna && (allReceived || allOver)
+      ? "auto"
+      : null;
+
+  return { ...base, archived, canResendLinks, inChats, needsAnna, next };
 };

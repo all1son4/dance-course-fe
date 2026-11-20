@@ -7,6 +7,7 @@ import {
   type SellableProduct,
 } from "@/constants/sellable-products";
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
+import { logSafeError } from "@/lib/safe-error-log";
 
 import { getCheckoutSelectionFromSearch } from "./payment.helpers";
 import PaymentRouteClient from "./payment-page-client";
@@ -51,7 +52,7 @@ const loadAuthoritativeCheckoutCatalog = async (): Promise<SellableProduct[] | n
 
     console.error("Authoritative sellable product catalog is empty in checkout");
   } catch (error) {
-    console.error("Failed to load authoritative checkout catalog", { error });
+    logSafeError("Failed to load authoritative checkout catalog", error);
   }
 
   return null;

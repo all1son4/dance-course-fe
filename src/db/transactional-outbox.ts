@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 
 import { and, asc, eq, inArray, isNull, lte, or, sql } from "drizzle-orm";
 
+import { describeErrorCode } from "@/lib/error-log/error-code";
+import { logSafeError } from "@/lib/safe-error-log";
+
 import { getDatabase } from "./client";
 import { purchaseSideEffects } from "./schema";
 
@@ -301,12 +304,26 @@ const markOutboxJobFailed = async ({
       ? true
       : error.retryable !== false;
   const deadLettered = !retryable || job.attemptCount >= maxAttempts;
-  const errorCode =
-    error && typeof error === "object" && "code" in error
-      ? String(error.code).slice(0, 120)
-      : "delivery_failed";
-  const errorMessage =
-    error instanceof Error ? error.message.slice(0, 1_000) : "Outbox delivery failed";
+  // Never the raw message: a Drizzle one carries query parameters, a provider one its
+  // response body. The safe code says what failed; the event log says when.
+  const safe = describeErrorCode(error);
+  const ownCode =
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "string"
+      ? /^[a-z][a-z0-9_:]*$/u.exec(error.code)?.[0]
+      : undefined;
+  const errorCode = (
+    ownCode ?? (safe.code === "Error" ? "delivery_failed" : safe.code)
+  ).slice(0, 120);
+  if (deadLettered) {
+    logSafeError(`Outbox job failed after all retries: ${job.kind}`, error, {
+      reference: job.purchaseId,
+    });
+  }
+  // The safe code again: «Система» explains it in Russian at display time.
+  const errorMessage = errorCode;
   const [updated] = await getDatabase()
     .update(purchaseSideEffects)
     .set({

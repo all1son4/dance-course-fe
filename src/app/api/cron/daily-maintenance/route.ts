@@ -1,4 +1,5 @@
 import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
+import { deleteOldOperationalEvents } from "@/db/operational-events";
 import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales";
 import { eraseSpentTelegramAccessTokenValues } from "@/db/telegram-access-token-records";
 import {
@@ -16,7 +17,7 @@ import {
 } from "@/lib/monthly-sales-report";
 import { enqueueDueCohortGraceReminders } from "@/lib/online-group/cohort-admin";
 import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
-import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
+import { logSafeError } from "@/lib/safe-error-log";
 import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-hub-expiry";
 
@@ -135,9 +136,10 @@ export async function GET(request: Request) {
         };
       }
     } catch (error) {
-      console.error("Daily maintenance: failed to schedule Polish terminal reminder", {
-        errorName: getSafeErrorCategory(error),
-      });
+      logSafeError(
+        "Daily maintenance: failed to schedule Polish terminal reminder",
+        error,
+      );
       polishTerminalReminderError = "polish_terminal_reminder_failed";
     }
   }
@@ -183,9 +185,7 @@ export async function GET(request: Request) {
       timeBudgetMs: 90_000,
     });
   } catch (error) {
-    console.error("Daily maintenance: business outbox recovery failed", {
-      errorName: getSafeErrorCategory(error),
-    });
+    logSafeError("Daily maintenance: business outbox recovery failed", error);
     businessJobsError = "business_outbox_recovery_failed";
   }
 
@@ -197,9 +197,7 @@ export async function GET(request: Request) {
       outboxLimit: 16,
     });
   } catch (error) {
-    console.error("Daily maintenance: Stripe background recovery failed", {
-      errorName: getSafeErrorCategory(error),
-    });
+    logSafeError("Daily maintenance: Stripe background recovery failed", error);
     paymentJobsError = "stripe_background_recovery_failed";
   }
 
@@ -212,6 +210,16 @@ export async function GET(request: Request) {
     spentInviteLinksError = "erase_spent_invite_links_failed";
   }
 
+  // The event log keeps 90 days; older groups go.
+  let oldEventsError: string | null = null;
+  let oldEventsDeleted: number | null = null;
+  try {
+    oldEventsDeleted = await deleteOldOperationalEvents(now);
+  } catch (error) {
+    logSafeError("Daily maintenance: failed to delete old operational events", error);
+    oldEventsError = "delete_old_operational_events_failed";
+  }
+
   const hasFailure = Boolean(
     accessRevocationError ||
     choreoRemindersError ||
@@ -222,7 +230,8 @@ export async function GET(request: Request) {
     monthlySalesReportError ||
     polishTerminalReminderError ||
     paymentJobsError ||
-    spentInviteLinksError,
+    spentInviteLinksError ||
+    oldEventsError,
   );
 
   return jsonNoStore(
@@ -245,6 +254,8 @@ export async function GET(request: Request) {
       paymentJobsResult,
       spentInviteLinksError,
       spentInviteLinksResult,
+      oldEventsError,
+      oldEventsDeleted,
       polishTerminalReminderError,
       polishTerminalReminderResult,
       ok: !hasFailure,

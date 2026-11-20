@@ -95,6 +95,32 @@ export const useInviteLinksAdmin = ({
     });
   }, [isJournalLoading, loadJournal]);
 
+  /** «Убрать из журнала» / «Вернуть в журнал»; the link and its access stay. */
+  const archiveLink = useCallback(
+    async (purchaseId: string, archived: boolean) => {
+      const result = await requestAdminJson<{ status?: string }>(
+        ADMIN_API_ENDPOINTS.inviteLinksHistory,
+        { body: { archived, purchaseId }, method: "POST" },
+      );
+      if (result.unauthorized) {
+        onUnauthorized();
+        return;
+      }
+      setStatus(
+        result.ok
+          ? {
+              text: archived
+                ? "Ссылка убрана в архив журнала."
+                : "Ссылка снова в журнале.",
+              tone: "success",
+            }
+          : { text: "Не получилось. Попробуй ещё раз.", tone: "error" },
+      );
+      await loadJournal({ forceRefresh: true });
+    },
+    [loadJournal, onUnauthorized],
+  );
+
   const changeKind = useCallback((nextKind: GeneratorKind) => {
     setKind(nextKind);
     setGeneratedLink("");
@@ -205,6 +231,7 @@ export const useInviteLinksAdmin = ({
 
   return {
     adminLabel,
+    archiveLink,
     changeKind,
     choreoSelectOptions,
     generate,

@@ -1,4 +1,13 @@
-import { Link2, Mail, RefreshCw, ScanSearch, Undo2 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Copy,
+  Link2,
+  Mail,
+  RefreshCw,
+  ScanSearch,
+  Undo2,
+} from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
@@ -7,8 +16,7 @@ import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { StatusMessage } from "../lib/admin.types";
 import { formatDateTime } from "../lib/admin.utils";
 import { requestAdminJson } from "../lib/admin-request";
-import type { AdminTone } from "../styles/tokens.styles";
-import { CopyField } from "../ui/copy";
+import { CopyField, useCopy } from "../ui/copy";
 import { ConfirmDialog } from "../ui/feedback";
 import { Field, FormActions, Input, SegmentedChoice, StatusLine } from "../ui/forms";
 import {
@@ -21,6 +29,7 @@ import {
   Panel,
   Skeleton,
   Stack,
+  TextButton,
 } from "../ui/primitives";
 import { useShownRows } from "./shown-rows";
 
@@ -41,6 +50,11 @@ type Duplicate = "cohort" | "hub";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
+const LOCALE_NAMES_PREPOSITIONAL: Record<Locale, string> = {
+  ru: "русском",
+  pl: "польском",
+  en: "английском",
+};
 const LOCALE_NAMES: Record<Locale, string> = {
   ru: "русский",
   pl: "польский",
@@ -143,23 +157,6 @@ const ChoiceField = styled.div`
   }
 `;
 
-const Head = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-
-  strong {
-    min-width: 0;
-    font-weight: 650;
-    overflow-wrap: anywhere;
-  }
-
-  > :last-child:not(strong) {
-    margin-left: auto;
-  }
-`;
-
 const Meta = styled.p`
   margin: 0;
   color: var(--a-ink-2);
@@ -167,55 +164,88 @@ const Meta = styled.p`
   overflow-wrap: anywhere;
 `;
 
-/* «Письмо отправлено → Telegram подтверждён»: done steps are green. */
+/* «КОМУ», «ДОСТУПЫ»: the same small caption over each block of an open entry. */
+const BlockLabel = styled.p`
+  margin: 4px 0 0;
+  color: var(--a-ink-3);
+  font-size: var(--a-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+`;
+
+/* «Письмо отправлено → Telegram подтверждён»: plain text; a failed step is red. */
 const Chain = styled.ol`
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 6px;
+  gap: 2px 6px;
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: var(--a-text-xs);
-
-  > li {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
+  color: var(--a-ink-2);
+  font-size: var(--a-text-sm);
 
   > li + li::before {
-    content: "→";
+    content: "→ ";
     color: var(--a-ink-3);
+  }
+
+  > li[data-failed] {
+    color: var(--a-danger);
   }
 `;
 
+/* One access: the chat, its state, its date and the link to copy — on one line. */
 const AccessRow = styled.div`
-  display: grid;
-  gap: 6px;
-  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 8px 12px;
   border-radius: var(--a-radius-sm);
   background: var(--a-surface-sunken);
+  font-size: var(--a-text-sm);
+
+  > strong {
+    flex: 1 1 200px;
+    min-width: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  > [data-end] {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    margin-left: auto;
+    color: var(--a-ink-2);
+  }
 `;
 
+/* What to do on the left, the tidy-up on the right; they wrap on a phone. */
 const Actions = styled.div`
   display: flex;
   flex-wrap: wrap;
+  justify-content: space-between;
   gap: 8px;
-`;
+  margin-top: 4px;
 
-const stepTone = (state: "done" | "wait" | "failed"): AdminTone =>
-  state === "done" ? "success" : state === "failed" ? "danger" : "neutral";
+  > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+`;
 
 const emailStep = (email: AdminInvitationEntry["inviteEmail"]) => {
   const status = email?.status;
-  if (status === "sent") return { label: "Письмо отправлено", state: "done" as const };
+  if (status === "sent") return { label: "Письмо отправлено", failed: false };
   if (status === "failed" || status === "dead_letter") {
-    return { label: "Письмо не ушло", state: "failed" as const };
+    return { label: "Письмо не ушло", failed: true };
   }
-  if (status === "skipped")
-    return { label: "Письмо не отправлялось", state: "wait" as const };
-  return { label: "Письмо отправляется", state: "wait" as const };
+  if (status === "skipped") return { label: "Письмо не отправлялось", failed: false };
+  return { label: "Письмо отправляется", failed: false };
 };
 
 /** The way to the chat: the email, the Telegram check of a renewal, the links email. */
@@ -227,20 +257,16 @@ const StatusChain = ({ entry }: { entry: AdminInvitationEntry }) => {
           {
             label: entry.telegramConfirmed
               ? "Telegram подтверждён"
-              : "Telegram не подтверждён",
-            state: entry.telegramConfirmed ? ("done" as const) : ("wait" as const),
+              : "Telegram ещё не подтверждён",
+            failed: false,
           },
         ]
       : []),
     ...(entry.linksEmail
       ? [
-          {
-            ...emailStep(entry.linksEmail),
-            label:
-              entry.linksEmail.status === "sent"
-                ? "Письмо со ссылками отправлено"
-                : emailStep(entry.linksEmail).label,
-          },
+          entry.linksEmail.status === "sent"
+            ? { label: "Ссылки отправлены письмом", failed: false }
+            : { ...emailStep(entry.linksEmail), label: "Письмо со ссылками не ушло" },
         ]
       : []),
   ];
@@ -248,8 +274,8 @@ const StatusChain = ({ entry }: { entry: AdminInvitationEntry }) => {
   return (
     <Chain aria-label="Ход приглашения">
       {steps.map((step) => (
-        <li key={step.label}>
-          <Badge $tone={stepTone(step.state)}>{step.label}</Badge>
+        <li key={step.label} data-failed={step.failed ? "" : undefined}>
+          {step.label}
         </li>
       ))}
     </Chain>
@@ -258,25 +284,42 @@ const StatusChain = ({ entry }: { entry: AdminInvitationEntry }) => {
 
 const ACCESS_DATE_PREFIX = {
   accessUntil: "доступ до",
-  linkUntil: "ссылка действует до",
+  linkUntil: "до",
   opens: "откроется",
 } as const;
 
-const accessMeta = (access: AdminInvitationEntry["accesses"][number]) =>
-  access.date
-    ? `${ACCESS_DATE_PREFIX[access.date.kind]} ${formatDateTime(access.date.at)}`
-    : "";
+const AccessLine = ({ access }: { access: AdminInvitationEntry["accesses"][number] }) => {
+  const copy = useCopy();
 
-const SummaryLine = styled.span`
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-`;
+  return (
+    <AccessRow>
+      <strong>{access.chatTitle}</strong>
+      <Badge $tone={access.tone}>{access.label}</Badge>
+      <span data-end>
+        {access.date && (
+          <span>
+            {ACCESS_DATE_PREFIX[access.date.kind]} {formatDateTime(access.date.at)}
+          </span>
+        )}
+        {access.accessUrl && (
+          <AdminButton
+            size="sm"
+            variant="ghost"
+            icon={<Copy aria-hidden />}
+            onClick={() => void copy(access.accessUrl, "Ссылка Telegram")}
+          >
+            Копировать ссылку
+          </AdminButton>
+        )}
+      </span>
+    </AccessRow>
+  );
+};
 
 const Entry = ({
   busy,
   entry,
+  onArchive,
   onRecheck,
   onResend,
   onResendLinks,
@@ -284,112 +327,131 @@ const Entry = ({
 }: {
   busy: boolean;
   entry: AdminInvitationEntry;
+  onArchive: (archived: boolean) => void;
   onRecheck: () => void;
   onResend: () => void;
   onResendLinks: () => void;
   onRevoke: () => void;
 }) => {
   const isLegacy = entry.kind === null;
+  const states = [
+    ...(entry.next ? [{ label: entry.next.label, tone: entry.next.tone }] : []),
+    ...entry.inChats.map((chat) => ({
+      label: `В чате «${chat}»`,
+      tone: "success" as const,
+    })),
+  ];
 
   return (
     <Disclosure
       title={entry.fullName}
-      hint={
-        <SummaryLine>
-          {PRODUCT_LABELS[entry.product]} ·{" "}
-          {isLegacy
-            ? "ручной доступ"
-            : entry.kind === "join"
-              ? "вступление"
-              : "продление"}{" "}
-          · {formatDateTime(entry.createdAt)}
-          {entry.next && <Badge $tone={entry.next.tone}>{entry.next.label}</Badge>}
-          {entry.inChats.map((chat) => (
-            <Badge $tone="success" key={chat}>
-              В чате «{chat}»
-            </Badge>
-          ))}
-        </SummaryLine>
+      hint={`${PRODUCT_LABELS[entry.product]} · ${
+        isLegacy ? "ручной доступ" : entry.kind === "join" ? "вступление" : "продление"
+      } · ${formatDateTime(entry.createdAt)}`}
+      aside={
+        states.length > 0
+          ? states.map((state) => (
+              <Badge $tone={state.tone} key={state.label}>
+                {state.label}
+              </Badge>
+            ))
+          : undefined
       }
     >
-      <Stack $gap={10}>
+      <Stack $gap={8}>
         {!isLegacy && (
-          <Meta>
-            {[
-              entry.email,
-              entry.locale
-                ? `письмо: ${LOCALE_NAMES[entry.locale as Locale] ?? entry.locale}`
-                : "",
-              entry.cohortTitle ?? "",
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          </Meta>
+          <>
+            <BlockLabel>Кому</BlockLabel>
+            <Meta>
+              {[
+                entry.email,
+                entry.locale
+                  ? `письмо на ${LOCALE_NAMES_PREPOSITIONAL[entry.locale as Locale] ?? entry.locale}`
+                  : "",
+                entry.cohortTitle ?? "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </Meta>
+            {!entry.revoked && <StatusChain entry={entry} />}
+            {entry.note && <Meta>Заметка: {entry.note}</Meta>}
+          </>
         )}
-        {entry.note && <Meta>Заметка: {entry.note}</Meta>}
-        {!isLegacy && !entry.revoked && <StatusChain entry={entry} />}
+        {isLegacy && entry.note && <Meta>Заметка: {entry.note}</Meta>}
 
+        {entry.accesses.length > 0 && <BlockLabel>Доступы</BlockLabel>}
         {entry.accesses.map((access) => (
-          <AccessRow key={access.accessKey}>
-            <Head>
-              <strong>{access.chatTitle}</strong>
-              <Badge $tone={access.tone}>{access.label}</Badge>
-            </Head>
-            {accessMeta(access) && <Meta>{accessMeta(access)}</Meta>}
-            {access.accessUrl && (
-              <CopyField label="Ссылка Telegram" value={access.accessUrl} />
-            )}
-          </AccessRow>
+          <AccessLine access={access} key={access.accessKey} />
         ))}
 
         {entry.pageUrl && entry.canResendInvite && (
           <CopyField label="Ссылка на страницу проверки" value={entry.pageUrl} />
         )}
 
-        {!isLegacy && !entry.revoked && (
+        {!isLegacy && (
           <Actions>
-            {entry.canResendLinks && (
-              <AdminButton
-                size="sm"
-                icon={<Link2 aria-hidden />}
-                disabled={busy}
-                onClick={onResendLinks}
-              >
-                Отправить ссылки ещё раз
-              </AdminButton>
-            )}
-            {entry.canResendInvite && (
-              <AdminButton
-                size="sm"
-                icon={<Mail aria-hidden />}
-                disabled={busy}
-                onClick={onResend}
-              >
-                Отправить письмо ещё раз
-              </AdminButton>
-            )}
-            {entry.canRecheck && (
-              <AdminButton
-                size="sm"
-                variant="ghost"
-                icon={<ScanSearch aria-hidden />}
-                disabled={busy}
-                onClick={onRecheck}
-              >
-                Проверить в Telegram
-              </AdminButton>
-            )}
-            {entry.revocable && (
-              <AdminButton
-                size="sm"
-                variant="ghost"
-                icon={<Undo2 aria-hidden />}
-                disabled={busy}
-                onClick={onRevoke}
-              >
-                Отозвать
-              </AdminButton>
-            )}
+            <div>
+              {!entry.revoked && entry.canResendLinks && (
+                <AdminButton
+                  size="sm"
+                  icon={<Link2 aria-hidden />}
+                  disabled={busy}
+                  onClick={onResendLinks}
+                >
+                  Отправить ссылки ещё раз
+                </AdminButton>
+              )}
+              {!entry.revoked && entry.canResendInvite && (
+                <AdminButton
+                  size="sm"
+                  icon={<Mail aria-hidden />}
+                  disabled={busy}
+                  onClick={onResend}
+                >
+                  Отправить письмо ещё раз
+                </AdminButton>
+              )}
+              {!entry.revoked && entry.canRecheck && (
+                <AdminButton
+                  size="sm"
+                  icon={<ScanSearch aria-hidden />}
+                  disabled={busy}
+                  onClick={onRecheck}
+                >
+                  Проверить в Telegram
+                </AdminButton>
+              )}
+            </div>
+            <div>
+              {entry.revocable && (
+                <AdminButton
+                  size="sm"
+                  variant="ghost"
+                  icon={<Undo2 aria-hidden />}
+                  disabled={busy}
+                  onClick={onRevoke}
+                >
+                  Отозвать
+                </AdminButton>
+              )}
+              {entry.archived !== "auto" && (
+                <AdminButton
+                  size="sm"
+                  variant="ghost"
+                  icon={
+                    entry.archived ? (
+                      <ArchiveRestore aria-hidden />
+                    ) : (
+                      <Archive aria-hidden />
+                    )
+                  }
+                  disabled={busy}
+                  onClick={() => onArchive(!entry.archived)}
+                >
+                  {entry.archived ? "Вернуть в журнал" : "Убрать из журнала"}
+                </AdminButton>
+              )}
+            </div>
           </Actions>
         )}
       </Stack>
@@ -432,12 +494,16 @@ export const AccessInvitations = ({
   const [revoking, setRevoking] = useState<AdminInvitationEntry | null>(null);
   const [revokeError, setRevokeError] = useState("");
   const localeTouched = useRef(false);
-  // What needs Anna comes first, so it is seen without opening every entry.
-  const ordered = [...entries].sort(
+  // What needs Anna comes first, so it is seen without opening every entry; what has
+  // nothing left to happen waits in «Архив», folded.
+  const current = entries.filter((entry) => !entry.archived);
+  const archivedEntries = entries.filter((entry) => entry.archived);
+  const ordered = [...current].sort(
     (left, right) => Number(right.needsAnna) - Number(left.needsAnna),
   );
-  const needsHelp = entries.filter((entry) => entry.needsAnna).length;
+  const needsHelp = current.filter((entry) => entry.needsAnna).length;
   const shown = useShownRows(ordered);
+  const [archiveOpen, setArchiveOpen] = useState(false);
 
   const endpoint = `${ADMIN_API_ENDPOINTS.accessInvitations}?scope=${scope}`;
 
@@ -603,6 +669,33 @@ export const AccessInvitations = ({
     void load();
   };
 
+  const archive = async (entry: AdminInvitationEntry, archived: boolean) => {
+    setBusyId(entry.purchaseId);
+    const result = await requestAdminJson<{ status?: string }>(
+      ADMIN_API_ENDPOINTS.accessInvitations,
+      {
+        body: {
+          action: archived ? "archive" : "unarchive",
+          purchaseId: entry.purchaseId,
+        },
+        method: "POST",
+      },
+    );
+    setBusyId("");
+    if (result.unauthorized) return onUnauthorized();
+    setStatus(
+      result.ok && result.data.status === "done"
+        ? {
+            tone: "success",
+            text: archived
+              ? `${entry.fullName} — в архиве журнала. Доступы не изменились.`
+              : `${entry.fullName} — снова в журнале.`,
+          }
+        : { tone: "error", text: "Не получилось. Попробуй ещё раз." },
+    );
+    void load();
+  };
+
   const recheck = async (entry: AdminInvitationEntry) => {
     setBusyId(entry.purchaseId);
     const result = await requestAdminJson<{
@@ -671,6 +764,22 @@ export const AccessInvitations = ({
           : "Не получилось отозвать. Попробуй ещё раз.",
     );
   };
+
+  const renderEntry = (entry: AdminInvitationEntry) => (
+    <Entry
+      key={entry.purchaseId}
+      busy={busyId === entry.purchaseId}
+      entry={entry}
+      onArchive={(archived) => void archive(entry, archived)}
+      onRecheck={() => void recheck(entry)}
+      onResend={() => void resend(entry)}
+      onResendLinks={() => void resendLinks(entry)}
+      onRevoke={() => {
+        setRevokeError("");
+        setRevoking(entry);
+      }}
+    />
+  );
 
   const isReady = target?.ready === true;
   const canSend =
@@ -860,21 +969,22 @@ export const AccessInvitations = ({
                   : `Записей, которым нужна твоя помощь: ${needsHelp}. Они стоят первыми.`}
               </Callout>
             )}
-            {shown.rows.map((entry) => (
-              <Entry
-                key={entry.purchaseId}
-                busy={busyId === entry.purchaseId}
-                entry={entry}
-                onRecheck={() => void recheck(entry)}
-                onResend={() => void resend(entry)}
-                onResendLinks={() => void resendLinks(entry)}
-                onRevoke={() => {
-                  setRevokeError("");
-                  setRevoking(entry);
-                }}
-              />
-            ))}
+            {shown.rows.map(renderEntry)}
             {shown.toggle}
+            {ordered.length === 0 && (
+              <EmptyState title="В журнале пусто — всё завершённое в архиве" />
+            )}
+            {archivedEntries.length > 0 && (
+              <FieldNote>
+                <TextButton type="button" onClick={() => setArchiveOpen(!archiveOpen)}>
+                  {archiveOpen ? "Свернуть архив" : `Архив · ${archivedEntries.length}`}
+                </TextButton>
+                {archiveOpen
+                  ? ""
+                  : " · завершённые и убранные вручную; доступы у людей не меняются"}
+              </FieldNote>
+            )}
+            {archiveOpen && archivedEntries.map(renderEntry)}
           </div>
         )}
       </Panel>

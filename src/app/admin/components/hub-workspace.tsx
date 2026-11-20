@@ -5,17 +5,20 @@ import {
   Link2,
   RefreshCw,
   Search,
-  Store,
   TriangleAlert,
   UserMinus,
+  UsersRound,
 } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 import styled from "styled-components";
 
-import type { HubAdminOverview, HubPeriodState } from "@/lib/admin/hub-admin";
+import type {
+  HubAdminOverview,
+  HubChatMembers,
+  HubPeriodState,
+} from "@/lib/admin/hub-admin";
 
 import type { ReissuedLink, ReissueOutcome } from "../hooks/use-hub-admin";
-import type { AdminFeatureId } from "../lib/admin.types";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { TextField, useToast } from "../ui/feedback";
@@ -137,9 +140,8 @@ const Nowrap = styled.span`
 
 type HubWorkspaceProps = {
   failed: boolean;
-  hub: HubAdminOverview | null;
+  hub: (HubAdminOverview & { members?: HubChatMembers | null }) | null;
   isLoading: boolean;
-  onNavigate: (view: AdminFeatureId) => void;
   onOpenPurchase: (paymentIntentId: string) => void;
   onPreviewAtChange: (value: string) => void;
   onRefresh: () => void;
@@ -154,7 +156,6 @@ export const HubWorkspace = ({
   failed,
   hub,
   isLoading,
-  onNavigate,
   onOpenPurchase,
   onPreviewAtChange,
   onRefresh,
@@ -283,20 +284,8 @@ export const HubWorkspace = ({
         </Callout>
       )}
 
-      {(problems.settingsMissing ||
-        problems.stalledPaymentIntentIds.length > 0 ||
-        ownerless.length > 0) && (
+      {(problems.stalledPaymentIntentIds.length > 0 || ownerless.length > 0) && (
         <Stack $gap={10}>
-          {problems.settingsMissing && (
-            <Callout
-              tone="danger"
-              icon={<CircleAlert aria-hidden />}
-              title="Не выбрана Telegram-группа библиотеки"
-            >
-              Ссылки в библиотеку не выдаются, окончания доступа не отслеживаются. Напиши
-              разработчику.
-            </Callout>
-          )}
           {problems.stalledPaymentIntentIds.length > 0 && (
             <Callout
               tone="danger"
@@ -329,6 +318,18 @@ export const HubWorkspace = ({
       )}
 
       <TileGrid>
+        {hub.members && (
+          <StatTile
+            icon={<UsersRound aria-hidden />}
+            label="Сейчас в группе"
+            value={hub.members.telegram ?? "—"}
+            hint={
+              hub.members.telegram === null
+                ? `Telegram не ответил · по записям с доступом: ${hub.members.withAccess}`
+                : `По записям с доступом: ${hub.members.withAccess} · в числе Telegram и админы с ботом`
+            }
+          />
+        )}
         <StatTile
           icon={<LibraryBig aria-hidden />}
           label="Периодов идёт"
@@ -354,14 +355,6 @@ export const HubWorkspace = ({
           }
           onClick={() => setFilter("endingSoon")}
         />
-        <StatTile
-          icon={<Store aria-hidden />}
-          label="Продажи библиотеки"
-          value={hub.salesEnabled ? "Открыты" : "Закрыты"}
-          hint="Переключаются в «Каталоге»"
-          hintTone={hub.salesEnabled ? "success" : undefined}
-          onClick={() => onNavigate("sales")}
-        />
       </TileGrid>
 
       <Columns>
@@ -370,7 +363,7 @@ export const HubWorkspace = ({
           description={
             hub.chat
               ? "Сюда бот добавляет купивших библиотеку и отсюда убирает по окончании."
-              : "Не выбрана"
+              : "Группа не выбрана"
           }
         >
           {hub.chat ? (
@@ -379,7 +372,10 @@ export const HubWorkspace = ({
               <BotRightsCheck chatId={hub.chat.chatId} onUnauthorized={onUnauthorized} />
             </Stack>
           ) : (
-            <Muted>Группа не выбрана. Напиши разработчику.</Muted>
+            <Callout tone="danger" icon={<CircleAlert aria-hidden />}>
+              Ссылки в библиотеку не выдаются, окончания доступа не отслеживаются. Напиши
+              разработчику.
+            </Callout>
           )}
         </Panel>
 

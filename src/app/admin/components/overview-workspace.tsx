@@ -167,15 +167,17 @@ export const OverviewWorkspace = ({
           <>
             <StatTile
               icon={<TrendingUp aria-hidden />}
-              label={`Выручка за ${metrics.sales.monthLabel}`}
-              value={metrics.sales.monthGross}
+              label={`Заработано за ${metrics.sales.monthLabel}`}
+              value={metrics.sales.monthNet}
               hint={
-                metrics.sales.deltaPercent === null
-                  ? `${metrics.sales.monthCount} продаж`
-                  : `${metrics.sales.deltaPercent > 0 ? "+" : ""}${metrics.sales.deltaPercent}% к тем же дням прошлого месяца`
+                metrics.sales.monthUnsettled > 0
+                  ? `После комиссий Stripe · ещё ${metrics.sales.monthUnsettled} ждут расчёта`
+                  : metrics.sales.deltaPercent === null
+                    ? "После комиссий Stripe"
+                    : `${metrics.sales.deltaPercent > 0 ? "+" : ""}${metrics.sales.deltaPercent}% к тем же дням прошлого месяца`
               }
               hintTone={
-                metrics.sales.deltaPercent === null
+                metrics.sales.monthUnsettled > 0 || metrics.sales.deltaPercent === null
                   ? undefined
                   : metrics.sales.deltaPercent >= 0
                     ? "success"

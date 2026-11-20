@@ -1,4 +1,4 @@
-import { getHubAdminOverview } from "@/lib/admin/hub-admin";
+import { getHubAdminOverview, readHubChatMembers } from "@/lib/admin/hub-admin";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -29,7 +29,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    return jsonNoStore(await getHubAdminOverview({ now, previewAt }));
+    const overview = await getHubAdminOverview({ now, previewAt });
+    // Live from Telegram only for the tab itself, never for the overview tiles.
+    const members = overview.chat ? await readHubChatMembers(overview.chat.chatId) : null;
+    return jsonNoStore({ ...overview, members });
   } catch (error) {
     logSafeError("Failed to load the Inspiration Hub tab", error);
     return jsonErrorNoStore("hub_unavailable", { status: 500 });

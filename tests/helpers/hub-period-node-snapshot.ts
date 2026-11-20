@@ -47,6 +47,7 @@ export const createHubPeriodNodeSnapshot = (
     customerTelegramUsernameSnapshot: null,
     adminNote: null,
     invitationKind: null,
+    adminArchivedAt: null,
     inspirationChatIdSnapshot: null,
     inspirationAccessExpiresAtSnapshot: null,
     customerCountrySnapshot: null,

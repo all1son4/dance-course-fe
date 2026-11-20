@@ -204,6 +204,32 @@ export const useOperationsAdmin = ({
     [load, onUnauthorized, reissuingPaymentIntentId],
   );
 
+  /** «Убрать» an event group or mark a dead letter «Решено»; then the fresh state. */
+  const tidy = useCallback(
+    async (
+      body:
+        | { action: "archive_event"; area: string; code: string; event: string }
+        | { action: "dismiss_dead_letter"; key: string; queue: "inbox" | "outbox" },
+      done: string,
+    ) => {
+      const result = await requestAdminJson<{ status?: string }>(
+        ADMIN_API_ENDPOINTS.operationsTidy,
+        { body, method: "POST" },
+      );
+      if (result.unauthorized) {
+        onUnauthorized();
+        return;
+      }
+      setStatus(
+        result.ok
+          ? { text: done, tone: "success" }
+          : { text: "Не получилось. Обнови раздел и попробуй ещё раз.", tone: "error" },
+      );
+      await load();
+    },
+    [load, onUnauthorized],
+  );
+
   useEffect(() => {
     if (!isAuthorized) {
       setSnapshot(null);
@@ -233,5 +259,6 @@ export const useOperationsAdmin = ({
     replayingKey,
     snapshot,
     status,
+    tidy,
   };
 };

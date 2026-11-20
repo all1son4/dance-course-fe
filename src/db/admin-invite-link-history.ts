@@ -57,6 +57,8 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
     .select({
       accessUrl: telegramAccessTokens.tokenValue,
       adminLabel: purchases.customerTelegramUsernameSnapshot,
+      archivedAt: purchases.adminArchivedAt,
+      purchaseId: purchases.id,
       createdAt,
       lessonLanguage: purchases.lessonLanguage,
       offerId: purchases.offerExternalId,
@@ -98,6 +100,8 @@ export const listAdminInviteLinkHistoryRecordsFromDatabase = async ({
   return rows.map((row) => ({
     accessUrl: row.accessUrl?.trim() ?? "",
     adminLabel: row.adminLabel?.trim() ?? "",
+    archivedAt: toIso(row.archivedAt),
+    purchaseId: row.purchaseId,
     createdAt: toIso(row.createdAt),
     lessonLanguage: row.lessonLanguage?.trim() ?? "",
     offerId: row.offerId?.trim() ?? "",

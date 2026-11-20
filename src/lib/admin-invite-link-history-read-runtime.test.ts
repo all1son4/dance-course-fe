@@ -11,6 +11,8 @@ import {
 const createHistoryRecord = (
   overrides: Partial<AdminInviteLinkHistoryRecord> = {},
 ): AdminInviteLinkHistoryRecord => ({
+  archivedAt: "",
+  purchaseId: "purchase-1",
   accessUrl: "https://t.me/+private_invite",
   adminLabel: "Admin label",
   createdAt: "2026-08-13T10:00:00.000Z",
