@@ -9,6 +9,7 @@ import { INSTAGRAM_PROFILE_URL, SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
 import { Link } from "@/i18n/navigation";
+import { buildInvitationUrl } from "@/lib/access-invitations/link";
 import {
   getMyAccessActionAnalytics,
   getMyAccessAnalyticsProperties,
@@ -131,7 +132,12 @@ type AccessPageProps = {
 const DATE_VALUE_KEYS = new Set(["date", "start", "end"]);
 const WARSAW = "Europe/Warsaw";
 /** The chips that ask for something; the count already tells how the time goes. */
-const ATTENTION_CHIPS = new Set(["linkExpired", "notJoined", "endsSoon"]);
+const ATTENTION_CHIPS = new Set([
+  "linkExpired",
+  "notJoined",
+  "confirmTelegram",
+  "endsSoon",
+]);
 
 const weekState = (week: number, current: number) =>
   week < current ? "done" : week === current ? "now" : "ahead";
@@ -463,7 +469,11 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
             )}
           </CardTitle>
           {ATTENTION_CHIPS.has(card.chip) && (
-            <StatusChip $tone={card.chip as "linkExpired" | "notJoined" | "endsSoon"}>
+            <StatusChip
+              $tone={
+                card.chip as "linkExpired" | "notJoined" | "confirmTelegram" | "endsSoon"
+              }
+            >
               {chipText(card)}
             </StatusChip>
           )}
@@ -492,7 +502,12 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                 <Button
                   analytics={getMyAccessActionAnalytics(card)}
                   buttonText={t(`cards.actions.${card.action.key}`)}
-                  href={card.action.href}
+                  href={
+                    card.action.key === "confirmTelegram"
+                      ? (buildInvitationUrl(card.action.purchaseId ?? "", locale) ??
+                        SUPPORT_TELEGRAM_URL)
+                      : card.action.href
+                  }
                   prefetch={false}
                   rel="nofollow"
                   size="xs"

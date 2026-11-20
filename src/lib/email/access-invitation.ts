@@ -311,14 +311,17 @@ export const buildInvitationJoinEmail = ({
   };
 };
 
-/** «Приглашение — продление»: one button to the page that confirms Telegram. */
+/**
+ * «Приглашение — продление»: one button to the page that confirms Telegram, and
+ * nothing beside it. «Мой доступ» comes after the check (on the page and in the links
+ * email): before it, that page has no link to give (2026-11-20).
+ */
 export const buildInvitationRenewalEmail = ({
   pageUrl,
   ...base
 }: InvitationEmailBase & { pageUrl: string }) => {
   const copy = COPY[base.locale];
   const what = describeInvitationProduct(base.locale, base.product, base.cohortTitle);
-  const myAccess = myAccessBlock(base);
   const steps = copy.renewal.steps;
 
   return {
@@ -329,7 +332,6 @@ export const buildInvitationRenewalEmail = ({
       steps.map((step, index) => `${index + 1}. ${step}`).join("\n"),
       `${copy.renewal.button}: ${pageUrl}`,
       copy.renewal.note,
-      myAccess.text,
       `${copy.support}: ${SUPPORT_TELEGRAM_URL}`,
     ]),
     html: layout({
@@ -349,7 +351,6 @@ export const buildInvitationRenewalEmail = ({
           copy.renewal.note,
           "margin:16px 0 0;font-size:13px;line-height:1.6;color:#555;",
         ),
-        myAccess.html,
       ]
         .filter(Boolean)
         .join("\n    "),

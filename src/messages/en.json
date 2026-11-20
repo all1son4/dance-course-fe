@@ -1496,7 +1496,10 @@
         "linkOnStart": "The link to join will arrive by email on the start day",
         "afterCohort": "8 weeks paid, starting when the current cycle ends",
         "ended": "Access ended on {date}",
-        "notJoinedExpired": "Your time is running — we'll send a new link to the email you bought with"
+        "notJoinedExpired": "Your time is running — we'll send a new link to the email you bought with",
+        "notJoinedInvited": "Your time is already running. The link to join is in your invitation email",
+        "notJoinedExpiredInvited": "Your time is running — we'll send a new link to the email your invitation came to",
+        "renewalWaiting": "Your renewal is ready"
       },
       "plusHub": {
         "included": "Included in your Plus",
@@ -1521,7 +1524,8 @@
         "renewHub": "Renew the Hub",
         "buyHub": "Buy the Hub",
         "support": "Contact support",
-        "reissue": "Get a new link"
+        "reissue": "Get a new link",
+        "confirmTelegram": "Confirm Telegram"
       },
       "chips": {
         "active": "Active",
@@ -1532,7 +1536,8 @@
         "linkExpired": "Email link expired",
         "notJoinedChannel": "Not in the channel yet",
         "notJoinedGroup": "Not in the group chat yet",
-        "notJoinedHub": "Not in the Hub yet"
+        "notJoinedHub": "Not in the Hub yet",
+        "confirmTelegram": "Confirm Telegram"
       },
       "linkExpired": "We'll send a new one to the email you bought with",
       "count": "{count, plural, one {# purchase} other {# purchases}}",
@@ -1542,7 +1547,10 @@
         "plusHubAfterCohort": "The cycle has ended — the Hub from Plus is still open",
         "cohortClosed": "The cycle has ended",
         "startsOnJoin": "The time starts on the day you join the channel"
-      }
+      },
+      "linkInInvitation": "The link to join is in your invitation email",
+      "linkExpiredInvited": "We'll send a new one to the email your invitation came to",
+      "confirmTelegram": "To get your link, confirm Telegram on the invitation page"
     }
   },
   "InvitationPage": {
@@ -1590,9 +1598,14 @@
       "extendedPlain": "You're already in the Hub — access extended.",
       "scheduled": "Opens on {date} — the link comes that day.",
       "scheduledPlain": "Opens right after your current access — the link comes that day.",
-      "unavailable": "Couldn't create the link just now. Refresh the page in a minute or message us.",
+      "unavailable": "Couldn't create the link just now. Press “Try again” — if it still doesn't work, message us.",
       "emailed": "We've also sent the links to your email.",
-      "myAccess": "My access"
+      "myAccess": "My access",
+      "expired": "The link has expired. We'll give you a new one — here and by email.",
+      "retry": "Try again",
+      "newLink": "Get a new link",
+      "limited": "New links have already been sent — check your email. You can ask again a little later.",
+      "retryFailed": "It didn't work again. Message us and we'll help you get in."
     },
     "errors": {
       "expiredTitle": "The link has expired",

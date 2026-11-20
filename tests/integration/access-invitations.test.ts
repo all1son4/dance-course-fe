@@ -34,6 +34,7 @@ const applicationClient = getDatabaseClient();
 const GROUP_PRODUCT = "prd_L9aK3mT7qP2x";
 const STANDARD_OFFER = "off_R6vN2cH9sW4y";
 const RENEWAL_OFFER = "off_online_group_anna_strok_renewal_discount";
+const PLUS_RENEWAL_OFFER = "off_online_group_anna_strok_renewal_library_access";
 const run = randomUUID().replaceAll("-", "").slice(0, 12);
 const HUB_PRODUCT = `prd_inv_hub_${run}`;
 const HUB_OFFER = `off_inv_hub_${run}`;
@@ -58,6 +59,8 @@ before(async () => {
     VALUES (${STANDARD_OFFER}, ${group!.id}, 'standard', 'Standard', 'telegram',
         'telegram-online-group'),
       (${RENEWAL_OFFER}, ${group!.id}, 'renewal-discount', 'Продление Standard', 'telegram',
+        'telegram-renewal'),
+      (${PLUS_RENEWAL_OFFER}, ${group!.id}, 'renewal-library-access', 'Продление Plus', 'telegram',
         'telegram-renewal')
     ON CONFLICT DO NOTHING`;
   const [hub] = await client<{ id: string }[]>`
@@ -76,6 +79,8 @@ before(async () => {
 after(async () => {
   const like = `inv_${run}_%`;
   await client`DELETE FROM purchase_side_effects WHERE recipient LIKE ${like}`;
+  await client`DELETE FROM purchase_side_effects WHERE purchase_id IN (
+    SELECT id FROM purchases WHERE customer_email_snapshot LIKE ${like})`;
   await client`DELETE FROM telegram_access_tokens WHERE purchase_id IN (
     SELECT id FROM purchases WHERE customer_email_snapshot LIKE ${like})`;
   await client`DELETE FROM telegram_user_bindings WHERE purchase_id IN (
@@ -92,7 +97,7 @@ after(async () => {
   await client`DELETE FROM products WHERE external_product_id = ${HUB_PRODUCT}`;
   if (seededGroupCatalog) {
     await client`DELETE FROM product_offers WHERE external_offer_id IN
-      (${STANDARD_OFFER}, ${RENEWAL_OFFER})`;
+      (${STANDARD_OFFER}, ${RENEWAL_OFFER}, ${PLUS_RENEWAL_OFFER})`;
     await client`DELETE FROM products WHERE external_product_id = ${GROUP_PRODUCT}`;
   }
   await Promise.all([client.end(), applicationClient.end()]);
@@ -144,11 +149,22 @@ const invite = async (
 /** Telegram, Resend and the Telegram login keys, answered by URL. */
 const installProviders = (
   t: TestContext,
-  { memberOf = new Set<string>() }: { memberOf?: Set<string> } = {},
+  {
+    failInvites = false,
+    memberOf = new Set<string>(),
+    unknownAccount = false,
+  }: {
+    /** createChatInviteLink refuses (until `control.failInvites` is turned off). */
+    failInvites?: boolean;
+    memberOf?: Set<string>;
+    /** Telegram does not find the account in the chat: PARTICIPANT_ID_INVALID (prod, 2026-11-20). */
+    unknownAccount?: boolean;
+  } = {},
 ) => {
   const original = globalThis.fetch;
   const emails: { to: string; subject: string; html: string }[] = [];
   const telegram: { method: string; body: Record<string, unknown> }[] = [];
+  const control = { failInvites };
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input instanceof Request ? input.url : input);
@@ -166,6 +182,20 @@ const installProviders = (
     if (url.includes("api.telegram.org")) {
       const method = url.split("/").at(-1)!;
       telegram.push({ method, body });
+      const refuse = (description: string) =>
+        new Response(JSON.stringify({ ok: false, error_code: 400, description }), {
+          headers: { "Content-Type": "application/json" },
+          status: 400,
+        });
+      if (
+        unknownAccount &&
+        (method === "getChatMember" || method === "unbanChatMember")
+      ) {
+        return refuse("Bad Request: PARTICIPANT_ID_INVALID");
+      }
+      if (method === "createChatInviteLink" && control.failInvites) {
+        return refuse("Bad Request: not enough rights to manage chat invite link");
+      }
       if (method === "createChatInviteLink") {
         return json({
           ok: true,
@@ -189,7 +219,7 @@ const installProviders = (
   t.after(() => {
     globalThis.fetch = original;
   });
-  return { emails, telegram };
+  return { control, emails, telegram };
 };
 
 const base64url = (value: Buffer | string) => Buffer.from(value).toString("base64url");
@@ -578,4 +608,334 @@ test("revoking an unused joining invitation stops its links and its count", asyn
   );
   assert.equal(entry?.revoked, true);
   assert.equal(entry?.note, "оплата наличными");
+});
+
+/* ---------- 2026-11-20: the renewal whose link never came ---------- */
+
+const renewalOf = async (
+  name: string,
+  overrides: Parameters<typeof invite>[0] | object = {},
+) => {
+  const cohort = await createCohort(name);
+  const created = await invite({
+    kind: "renewal",
+    cohortId: cohort.cohortId,
+    email: email(name),
+    mainChatId: cohort.mainChatId,
+    offerExternalId: RENEWAL_OFFER,
+    offerLabel: "Продление Standard",
+    accessWorkflow: "telegram-renewal",
+    ...overrides,
+  });
+  return { cohort, ...created };
+};
+
+const confirmWith = async (purchaseId: string, telegramUserId: string) => {
+  const { createInvitationToken } = await import("@/lib/access-invitations/link");
+  const { confirmAccessInvitation, readInvitationPage } =
+    await import("@/lib/access-invitations/service");
+  const token = createInvitationToken(purchaseId)!;
+  const page = await readInvitationPage(token);
+  assert.ok(page.status === "ready");
+  const result = await confirmAccessInvitation({
+    idToken: signIdToken(telegramUserId, page.nonce),
+    nonce: page.nonce,
+    token,
+  });
+  assert.ok(result.status === "verified");
+  return { result, token };
+};
+
+const journalEntry = async (purchaseId: string) => {
+  const { listAccessInvitations } = await import("@/db/access-invitations");
+  const { describeInvitationJournalEntry } =
+    await import("@/lib/access-invitations/journal");
+  const entry = (await listAccessInvitations({ scope: "group", limit: 50 })).find(
+    (item) => item.purchaseId === purchaseId,
+  );
+  assert.ok(entry);
+  return {
+    entry,
+    view: describeInvitationJournalEntry({ ...entry, inviteEmailStatus: "sent" }),
+  };
+};
+
+const rightOf = async (purchaseId: string, accessKey = "primary") => {
+  const [row] = await client<{ status: string; telegram_user_id: string | null }[]>`
+    SELECT status, telegram_user_id FROM access_entitlements
+    WHERE purchase_id = ${purchaseId} AND access_key = ${accessKey}`;
+  return row;
+};
+
+const tokenCount = async (purchaseId: string) => {
+  const [row] = await client<{ count: number }[]>`
+    SELECT count(*)::int AS count FROM telegram_access_tokens WHERE purchase_id = ${purchaseId}`;
+  return row?.count ?? 0;
+};
+
+test("an account Telegram does not find in the chat still gets its link (prod 2026-11-20)", async (t) => {
+  const providers = installProviders(t, { unknownAccount: true });
+  const [owner] = createTestTelegramUserIdPair();
+  const { purchaseId } = await renewalOf("unknown");
+
+  const { result } = await confirmWith(purchaseId, owner);
+  assert.equal(result.status === "verified" && result.lines[0]?.state, "link");
+  assert.equal(result.status === "verified" && result.emailed, true);
+  assert.equal(await tokenCount(purchaseId), 1);
+  assert.equal((await rightOf(purchaseId))?.status, "token_issued");
+  assert.match(providers.emails[0]!.subject, /Twoje linki/u);
+});
+
+test("a renewal gives no chat link before its Telegram check, by any path", async (t) => {
+  installProviders(t);
+  const { purchaseId, paymentIntentId } = await renewalOf("nocheck");
+
+  const { findPaymentRecordByIntentIdFromDatabase } =
+    await import("@/db/payment-records");
+  const { ensureOnlineGroupAccessForPayment } =
+    await import("@/lib/telegram/online-group-access");
+  const record = await findPaymentRecordByIntentIdFromDatabase(paymentIntentId);
+  assert.deepEqual(
+    await ensureOnlineGroupAccessForPayment(record!, { reissue: true }),
+    [],
+  );
+  assert.deepEqual(await ensureOnlineGroupAccessForPayment(record!), []);
+
+  const { sendInvitationLinks } = await import("@/lib/access-invitations/service");
+  assert.deepEqual(await sendInvitationLinks(purchaseId), { status: "needs_telegram" });
+  assert.equal(await tokenCount(purchaseId), 0);
+
+  // «Мой доступ» shows the page of the check, not «the link has expired».
+  const [customer] = await client<{ id: string }[]>`
+    SELECT customer_id AS id FROM purchases WHERE id = ${purchaseId}`;
+  const { readMyAccessSnapshot } = await import("@/db/my-access");
+  const { buildMyAccessCards } = await import("@/lib/my-access/cards");
+  const snapshot = await readMyAccessSnapshot(getDatabase(), customer!.id);
+  const [card] = buildMyAccessCards(snapshot!, new Date());
+  assert.equal(card?.action?.key, "confirmTelegram");
+  assert.equal(card?.chip, "confirmTelegram");
+});
+
+test("a failed link is visible in the journal and the page retry delivers it", async (t) => {
+  const providers = installProviders(t, { failInvites: true });
+  const [owner] = createTestTelegramUserIdPair();
+  const { purchaseId } = await renewalOf("failed");
+
+  const { result, token } = await confirmWith(purchaseId, owner);
+  assert.equal(result.status === "verified" && result.lines[0]?.state, "unavailable");
+  assert.equal(result.status === "verified" && result.emailed, false);
+
+  const failed = await journalEntry(purchaseId);
+  assert.equal(failed.entry.accesses[0]?.state, "failed");
+  assert.equal(failed.view.needsAnna, true);
+  assert.equal(failed.view.accesses[0]?.label, "Не удалось создать ссылку");
+  assert.equal(failed.view.canResendLinks, true);
+
+  // Telegram answers again: «Попробовать ещё раз» on the page.
+  providers.control.failInvites = false;
+  const { retryInvitationLinks } = await import("@/lib/access-invitations/service");
+  const retry = await retryInvitationLinks(token);
+  assert.ok(retry.status === "verified");
+  assert.equal(retry.lines[0]?.state, "link");
+  assert.equal(retry.emailed, true);
+  assert.equal(providers.emails.length, 1);
+
+  const fixed = await journalEntry(purchaseId);
+  assert.equal(fixed.entry.accesses[0]?.state, "issued");
+  assert.equal(fixed.view.needsAnna, false);
+  assert.deepEqual(fixed.view.next, {
+    label: "Ждёт входа в чат потока",
+    tone: "neutral",
+  });
+
+  // A second retry within ten minutes sends nothing more and shows the same link.
+  const again = await retryInvitationLinks(token);
+  assert.ok(again.status === "verified");
+  assert.equal(again.limited, true);
+  assert.equal(again.lines[0]?.state, "link");
+  assert.equal(providers.emails.length, 1);
+});
+
+test("«already in the chat» is recorded like a join: journal and «Мой доступ» agree", async (t) => {
+  const cohort = await createCohort("present");
+  installProviders(t, { memberOf: new Set([cohort.mainChatId]) });
+  const [owner] = createTestTelegramUserIdPair();
+  const { purchaseId } = await invite({
+    kind: "renewal",
+    cohortId: cohort.cohortId,
+    email: email("present"),
+    mainChatId: cohort.mainChatId,
+    offerExternalId: RENEWAL_OFFER,
+    offerLabel: "Продление Standard",
+    accessWorkflow: "telegram-renewal",
+  });
+
+  const { result } = await confirmWith(purchaseId, owner);
+  assert.deepEqual(result.status === "verified" && result.lines, [
+    { accessKey: "main-group", state: "member" },
+  ]);
+  assert.deepEqual(await rightOf(purchaseId), {
+    status: "activated",
+    telegram_user_id: owner,
+  });
+  const [binding] = await client<{ status: string }[]>`
+    SELECT status FROM telegram_user_bindings
+    WHERE purchase_id = ${purchaseId} AND chat_id = ${cohort.mainChatId}`;
+  assert.equal(binding?.status, "active");
+
+  const { view } = await journalEntry(purchaseId);
+  assert.deepEqual(view.inChats, [`Invite present`]);
+  assert.equal(view.next, null);
+
+  const [customer] = await client<{ id: string }[]>`
+    SELECT customer_id AS id FROM purchases WHERE id = ${purchaseId}`;
+  const { readMyAccessSnapshot } = await import("@/db/my-access");
+  const { buildMyAccessCards } = await import("@/lib/my-access/cards");
+  const [card] = buildMyAccessCards(
+    (await readMyAccessSnapshot(getDatabase(), customer!.id))!,
+    new Date(),
+  );
+  assert.equal(card?.action, undefined);
+  assert.equal(card?.urgency, 2);
+});
+
+test("a Plus whose Hub already runs is not «in the chat» before the cohort chat", async (t) => {
+  const cohort = await createCohort("plus");
+  const libraryChatId = `inv_${run}_plus_library`;
+  await client`INSERT INTO telegram_chats (chat_id, title, type)
+    VALUES (${libraryChatId}, 'Invite library', 'supergroup')`;
+  installProviders(t, { memberOf: new Set([libraryChatId]) });
+  const [owner] = createTestTelegramUserIdPair();
+  const { purchaseId } = await invite({
+    kind: "renewal",
+    cohortId: cohort.cohortId,
+    email: email("plus"),
+    mainChatId: cohort.mainChatId,
+    inspirationChatId: libraryChatId,
+    offerExternalId: PLUS_RENEWAL_OFFER,
+    offerLabel: "Продление Plus",
+    accessWorkflow: "telegram-renewal",
+  });
+
+  const { result } = await confirmWith(purchaseId, owner);
+  assert.ok(result.status === "verified");
+  assert.deepEqual(
+    result.lines.map((line) => line.state),
+    ["link", "extended"],
+  );
+
+  const { entry, view } = await journalEntry(purchaseId);
+  const main = entry.accesses.find((access) => access.accessKey === "main-group");
+  const hub = entry.accesses.find((access) => access.accessKey === "inspiration-hub");
+  assert.equal(main?.state, "issued");
+  assert.equal(hub?.state, "member");
+  assert.equal(hub?.joinedByLink, false);
+  assert.deepEqual(view.next, { label: "Ждёт входа в чат потока", tone: "neutral" });
+  assert.deepEqual(view.inChats, ["Invite library"]);
+  assert.equal(
+    view.accesses.find((access) => access.accessKey === "inspiration-hub")?.label,
+    "Уже в Hub, доступ продлён",
+  );
+});
+
+test("leaving the chat is not «in the chat»; «Проверить в Telegram» records both ways", async (t) => {
+  const cohort = await createCohort("leave");
+  const memberOf = new Set<string>();
+  installProviders(t, { memberOf });
+  const [owner] = createTestTelegramUserIdPair();
+  const { purchaseId } = await invite({
+    kind: "renewal",
+    cohortId: cohort.cohortId,
+    email: email("leave"),
+    mainChatId: cohort.mainChatId,
+    offerExternalId: RENEWAL_OFFER,
+    offerLabel: "Продление Standard",
+    accessWorkflow: "telegram-renewal",
+  });
+  const { result } = await confirmWith(purchaseId, owner);
+  assert.ok(result.status === "verified" && result.lines[0]?.state === "link");
+
+  // The join by the link, then the leave, as the bot reports them.
+  const { syncOnlineGroupMembership } =
+    await import("@/lib/telegram/online-group-access");
+  await syncOnlineGroupMembership({
+    chatId: cohort.mainChatId,
+    inviteLink: result.lines[0].url,
+    membershipStatus: "joined",
+    telegramUserId: owner,
+  });
+  assert.deepEqual((await journalEntry(purchaseId)).view.inChats, ["Invite leave"]);
+
+  await syncOnlineGroupMembership({
+    chatId: cohort.mainChatId,
+    membershipStatus: "left",
+    telegramUserId: owner,
+  });
+  const left = await journalEntry(purchaseId);
+  assert.equal(left.entry.accesses[0]?.state, "left");
+  assert.deepEqual(left.view.inChats, []);
+  assert.equal(left.view.next, null);
+  assert.equal(left.view.canResendLinks, true);
+
+  // Anna added the person back by hand: the live check records it.
+  memberOf.add(cohort.mainChatId);
+  const { recheckInvitationMembership, sendInvitationLinks } =
+    await import("@/lib/access-invitations/service");
+  assert.deepEqual(await recheckInvitationMembership(purchaseId), {
+    status: "checked",
+    chats: [{ accessKey: "main-group", membership: "member" }],
+  });
+  assert.deepEqual((await journalEntry(purchaseId)).view.inChats, ["Invite leave"]);
+
+  // Out again: the check marks the leave.
+  memberOf.delete(cohort.mainChatId);
+  await recheckInvitationMembership(purchaseId);
+  assert.equal((await journalEntry(purchaseId)).entry.accesses[0]?.state, "left");
+
+  // «Отправить ссылки ещё раз» makes a new link for the one who left.
+  const resent = await sendInvitationLinks(purchaseId, { checkLimit: false });
+  assert.equal(resent.status, "sent");
+  assert.equal(await tokenCount(purchaseId), 2);
+});
+
+test("«Прислать новую ссылку» for a joining invitation sends the invitation links", async (t) => {
+  const providers = installProviders(t);
+  const cohort = await createCohort("again");
+  const { purchaseId, paymentIntentId } = await invite({
+    cohortId: cohort.cohortId,
+    email: email("again"),
+    mainChatId: cohort.mainChatId,
+  });
+  const { findPaymentRecordByIntentIdFromDatabase } =
+    await import("@/db/payment-records");
+  const { ensureOnlineGroupAccessForPayment } =
+    await import("@/lib/telegram/online-group-access");
+  await ensureOnlineGroupAccessForPayment(
+    (await findPaymentRecordByIntentIdFromDatabase(paymentIntentId))!,
+  );
+  // The emailed link has expired unused.
+  await client`UPDATE telegram_access_tokens SET expires_at = now() - interval '1 day'
+    WHERE purchase_id = ${purchaseId}`;
+
+  const [customer] = await client<{ id: string }[]>`
+    SELECT customer_id AS id FROM purchases WHERE id = ${purchaseId}`;
+  const { readMyAccessSnapshot } = await import("@/db/my-access");
+  const { buildMyAccessCards } = await import("@/lib/my-access/cards");
+  const [card] = buildMyAccessCards(
+    (await readMyAccessSnapshot(getDatabase(), customer!.id))!,
+    new Date(),
+  );
+  assert.equal(card?.action?.key, "reissue");
+  assert.deepEqual(card?.note, { key: "linkExpiredInvited" });
+
+  // Telegram down: no link, and the try is not spent.
+  providers.control.failInvites = true;
+  const { sendInvitationLinks } = await import("@/lib/access-invitations/service");
+  assert.equal((await sendInvitationLinks(purchaseId)).status, "no_links");
+  providers.control.failInvites = false;
+  const sent = await sendInvitationLinks(purchaseId);
+  assert.equal(sent.status, "sent");
+  assert.equal(providers.emails.length, 1);
+  assert.match(providers.emails[0]!.subject, /Twoje linki/u);
+  assert.equal((await sendInvitationLinks(purchaseId)).status, "limited");
 });

@@ -17,12 +17,14 @@ import {
   type AccessInvitationRecord,
   checkInvitationRevocation,
   confirmInvitationTelegramInDatabase,
+  countRecentInvitationLinkEmails,
   createAccessInvitationInDatabase,
   findInvitationDuplicates,
   type InvitationDuplicate,
   invitationEmailKeyPrefix,
   type InvitationKind,
   type InvitationLocale,
+  markInvitationAccessFailed,
   markInvitationRevokedInDatabase,
   readAccessInvitation,
 } from "@/db/access-invitations";
@@ -61,7 +63,11 @@ import {
   verifyTelegramLoginIdToken,
   verifyTelegramLoginNonce,
 } from "@/lib/telegram/login";
-import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
+import {
+  ensureOnlineGroupAccessForPayment,
+  recordOnlineGroupMemberPresent,
+  syncOnlineGroupMembership,
+} from "@/lib/telegram/online-group-access";
 
 import { buildInvitationUrl, invitationNonceScope, verifyInvitationToken } from "./link";
 
@@ -218,8 +224,15 @@ const isKind = (value: string): value is InvitationKind =>
 /** The invitation email of one send: the first, or a later «send again». */
 const inviteEmailKey = (purchaseId: string, sendId: string) =>
   `${invitationEmailKeyPrefix(purchaseId)}invite:${sendId}`;
-const linksEmailKey = (purchaseId: string) =>
-  `${invitationEmailKeyPrefix(purchaseId)}links`;
+/** The links email after the Telegram check (one), or of a later «send the links again». */
+const linksEmailKey = (purchaseId: string, sendId?: string) =>
+  `${invitationEmailKeyPrefix(purchaseId)}links${sendId ? `:${sendId}` : ""}`;
+
+/** «Send the links again» at most once in 10 minutes and 3 times a day per invitation. */
+const LINKS_RESEND_WINDOWS = [
+  { limit: 1, ms: 10 * 60 * 1000 },
+  { limit: 3, ms: 24 * 60 * 60 * 1000 },
+] as const;
 
 const enqueueInvitationEmail = async ({
   deduplicationKey,
@@ -342,6 +355,110 @@ export async function resendAccessInvitation(
   });
 }
 
+export type InvitationLinksResult =
+  | { status: "sent" | "queued"; lines: InvitationAccessLine[] }
+  | { status: "no_links"; lines: InvitationAccessLine[] }
+  | { status: "limited" | "needs_telegram" | "not_found" | "revoked" };
+
+/**
+ * «Отправить ссылки ещё раз» (admin) and «Прислать новую ссылку» («Мой доступ», the
+ * invitation page): fresh personal links in place of used or expired ones, by the
+ * links email. A renewal gives none before its Telegram check. Limited by the emails
+ * actually sent, so a failure never locks the person out.
+ */
+export async function sendInvitationLinks(
+  purchaseId: string,
+  { checkLimit = true, now = new Date() }: { checkLimit?: boolean; now?: Date } = {},
+): Promise<InvitationLinksResult> {
+  const invitation = await readAccessInvitation(purchaseId);
+  if (!invitation || !invitation.customerEmailSnapshot) return { status: "not_found" };
+  if (invitation.outcome !== "succeeded") return { status: "revoked" };
+  if (invitation.invitationKind === "renewal" && !invitation.telegramUserId) {
+    return { status: "needs_telegram" };
+  }
+
+  if (checkLimit) {
+    for (const window of LINKS_RESEND_WINDOWS) {
+      const sent = await countRecentInvitationLinkEmails({
+        purchaseId,
+        since: new Date(now.getTime() - window.ms),
+      });
+      if (sent >= window.limit) return { status: "limited" };
+    }
+  }
+
+  const lines = await collectInvitationAccessLines(
+    invitation,
+    invitation.telegramUserId,
+    {
+      reissue: true,
+    },
+  );
+  const linkKeys = lines.flatMap((line) =>
+    line.state === "link" ? [line.accessKey] : [],
+  );
+  if (linkKeys.length === 0) return { status: "no_links", lines };
+
+  const status = await enqueueInvitationEmail({
+    deduplicationKey: linksEmailKey(purchaseId, now.getTime().toString(36)),
+    payload: { purchaseId, template: "links", accessKeys: linkKeys },
+    recipient: invitation.customerEmailSnapshot,
+  });
+  return { status, lines };
+}
+
+export type InvitationMembershipCheck =
+  | {
+      status: "checked";
+      chats: { accessKey: AccessKey; membership: Membership }[];
+    }
+  | { status: "needs_telegram" | "not_found" | "revoked" };
+
+/**
+ * «Проверить в Telegram»: asks Telegram whether the invitation's account sits in each
+ * of its chats now and records the answer the way the bot records a join or a leave.
+ */
+export async function recheckInvitationMembership(
+  purchaseId: string,
+): Promise<InvitationMembershipCheck> {
+  const invitation = await readAccessInvitation(purchaseId);
+  if (!invitation) return { status: "not_found" };
+  if (invitation.outcome !== "succeeded") return { status: "revoked" };
+  const telegramUserId = invitation.telegramUserId?.trim();
+  if (!telegramUserId) return { status: "needs_telegram" };
+
+  const record = await findPaymentRecordByIntentIdFromDatabase(
+    invitation.paymentIntentId,
+  );
+  if (!record) return { status: "not_found" };
+
+  const chats = await chatsOfInvitation(
+    invitation,
+    record.telegram_channel_chat_id.trim(),
+  );
+  const results = [];
+  for (const chat of chats) {
+    const membership = await checkMembership(chat.chatId, telegramUserId);
+    if (membership === "member") {
+      await recordOnlineGroupMemberPresent({
+        accessKey: chat.accessKey,
+        paymentRecord: record,
+        telegramUserId,
+      });
+    } else if (membership === "absent") {
+      // Marks this account's bindings in the chat as left, as the bot does on a leave.
+      await syncOnlineGroupMembership({
+        chatId: chat.chatId,
+        membershipStatus: "left",
+        telegramUserId,
+      });
+    }
+    results.push({ accessKey: chat.accessKey, membership });
+  }
+
+  return { status: "checked", chats: results };
+}
+
 /**
  * «Отозвать»: the Telegram links stop first, then the invitation is marked; nobody
  * may have used it. A Telegram failure leaves everything as it was.
@@ -368,12 +485,19 @@ export async function revokeAccessInvitation(
 
 /* ---------- What a person has: email, page ---------- */
 
+type AccessKey = "inspiration-hub" | "main-group";
+
+/**
+ * One access as the person sees it: a link, already in, a Hub already running or
+ * opening later, a link that has expired, or none because creating it failed.
+ */
 export type InvitationAccessLine =
-  | { accessKey: "inspiration-hub" | "main-group"; state: "link"; url: string }
-  | { accessKey: "inspiration-hub" | "main-group"; state: "member" }
+  | { accessKey: AccessKey; state: "link"; url: string }
+  | { accessKey: AccessKey; state: "member" }
   | { accessKey: "inspiration-hub"; state: "extended"; until: string | null }
   | { accessKey: "inspiration-hub"; state: "scheduled"; startsAt: string | null }
-  | { accessKey: "inspiration-hub" | "main-group"; state: "unavailable" };
+  | { accessKey: AccessKey; state: "expired" }
+  | { accessKey: AccessKey; state: "unavailable" };
 
 const chatsOfInvitation = async (
   invitation: AccessInvitationRecord,
@@ -398,26 +522,42 @@ const chatsOfInvitation = async (
   ];
 };
 
-const isMemberOf = async (chatId: string, telegramUserId: string) => {
+type Membership = "member" | "absent" | "unknown";
+
+/** Whether the account sits in the chat now, by Telegram itself. */
+const checkMembership = async (
+  chatId: string,
+  telegramUserId: string,
+): Promise<Membership> => {
   try {
     return isActiveTelegramMember(
       await getTelegramChatMember({ chatId, userId: telegramUserId }),
-    );
+    )
+      ? "member"
+      : "absent";
   } catch (error) {
+    // Telegram's answer for an account it does not find in this chat (2026-11-20).
+    if (error instanceof Error && error.message.includes("PARTICIPANT_ID_INVALID")) {
+      return "absent";
+    }
     // A failed check is not an answer: the link is shown.
     logSafeError("Failed to check invitation chat membership", error);
-    return false;
+    return "unknown";
   }
 };
 
 /**
  * One line per access of the invitation, from the access service itself: a link, a
  * Hub already running («extended»), a Hub that opens later, or nothing to give. With
- * a confirmed account, a chat it already sits in shows that instead of a link.
+ * a confirmed account, a chat it already sits in shows that instead of a link and is
+ * recorded the way a join is. A failure of the service leaves its trace on the
+ * rights (`link_failed`), which the admin journal shows. `reissue` replaces a used or
+ * expired link (the «send the links again» actions).
  */
 export async function collectInvitationAccessLines(
   invitation: AccessInvitationRecord,
   telegramUserId: string | null = invitation.telegramUserId,
+  { reissue = false }: { reissue?: boolean } = {},
 ): Promise<InvitationAccessLine[]> {
   const record = await findPaymentRecordByIntentIdFromDatabase(
     invitation.paymentIntentId,
@@ -428,31 +568,54 @@ export async function collectInvitationAccessLines(
     invitation,
     record.telegram_channel_chat_id.trim(),
   );
-  const membership = new Map(
+  const membership = new Map<AccessKey, Membership>(
     telegramUserId
       ? await Promise.all(
           chats.map(
             async (chat) =>
-              [chat.accessKey, await isMemberOf(chat.chatId, telegramUserId)] as const,
+              [
+                chat.accessKey,
+                await checkMembership(chat.chatId, telegramUserId),
+              ] as const,
           ),
         )
       : [],
   );
+  const isMember = (accessKey: AccessKey) => membership.get(accessKey) === "member";
+
+  for (const chat of chats) {
+    if (!telegramUserId || !isMember(chat.accessKey)) continue;
+    try {
+      await recordOnlineGroupMemberPresent({
+        accessKey: chat.accessKey,
+        paymentRecord: record,
+        telegramUserId,
+      });
+    } catch (error) {
+      logSafeError("Failed to record an invitation member already in the chat", error);
+    }
+  }
+
   // Only a member of every group chat needs no access service at all; the Hub always
   // asks it, for the dates of the period.
   const onlyMembers =
     chats.length > 0 &&
-    chats.every(
-      (chat) => chat.accessKey === "main-group" && membership.get(chat.accessKey),
-    );
+    chats.every((chat) => chat.accessKey === "main-group" && isMember(chat.accessKey));
   let items: NonNullable<Awaited<ReturnType<typeof ensureOnlineGroupAccessForPayment>>> =
     [];
   if (!onlyMembers) {
     try {
-      items = (await ensureOnlineGroupAccessForPayment(record)) ?? [];
+      items = (await ensureOnlineGroupAccessForPayment(record, { reissue })) ?? [];
     } catch (error) {
-      // Telegram down: the page and the email say «no link yet» instead of failing.
       logSafeError("Failed to ensure invitation accesses", error);
+      await markInvitationAccessFailed({
+        purchaseId: invitation.id,
+        accessKeys: chats
+          .filter((chat) => !isMember(chat.accessKey))
+          .map((chat) => chat.accessKey),
+      }).catch((markError) =>
+        logSafeError("Failed to mark an invitation access as failed", markError),
+      );
     }
   }
 
@@ -468,7 +631,7 @@ export async function collectInvitationAccessLines(
     }
     if (
       chat.accessKey === "inspiration-hub" &&
-      (item?.status === "active" || membership.get(chat.accessKey))
+      (item?.status === "active" || isMember(chat.accessKey))
     ) {
       return {
         accessKey: "inspiration-hub",
@@ -476,12 +639,14 @@ export async function collectInvitationAccessLines(
         until: item?.accessExpiresAt || null,
       };
     }
-    if (membership.get(chat.accessKey) || item?.status === "active") {
+    if (isMember(chat.accessKey) || item?.status === "active") {
       return { accessKey: chat.accessKey, state: "member" };
     }
     if (item?.status === "ready" && item.accessUrl) {
       return { accessKey: chat.accessKey, state: "link", url: item.accessUrl };
     }
+    if (item?.status === "expired")
+      return { accessKey: chat.accessKey, state: "expired" };
     return { accessKey: chat.accessKey, state: "unavailable" };
   });
 }
@@ -731,5 +896,44 @@ export async function confirmAccessInvitation({
     lines,
     myAccessPath: myAccessPathOf(confirmed),
     emailed: linkKeys.length > 0 && Boolean(confirmed.customerEmailSnapshot),
+  };
+}
+
+export type InvitationRetryResult =
+  | {
+      status: "verified";
+      lines: InvitationAccessLine[];
+      myAccessPath: string | null;
+      emailed: boolean;
+      limited: boolean;
+    }
+  | { status: "error"; errorCode: "invalid" | "expired" | "revoked" | "needs_telegram" };
+
+/**
+ * «Попробовать ещё раз» on the invitation page after a failed or expired link: the
+ * page link is the proof (it already shows the links); the new links come by email
+ * too. Over the limit the page shows the current state again.
+ */
+export async function retryInvitationLinks(
+  token: string | null | undefined,
+): Promise<InvitationRetryResult> {
+  const loaded = await loadRenewalInvitation(token);
+  if (!("invitation" in loaded)) return { status: "error", errorCode: loaded.status };
+
+  const { invitation } = loaded;
+  const result = await sendInvitationLinks(invitation.id);
+  if (result.status === "needs_telegram") {
+    return { status: "error", errorCode: "needs_telegram" };
+  }
+  if (result.status === "not_found") return { status: "error", errorCode: "invalid" };
+  if (result.status === "revoked") return { status: "error", errorCode: "revoked" };
+
+  return {
+    status: "verified",
+    lines:
+      "lines" in result ? result.lines : await collectInvitationAccessLines(invitation),
+    myAccessPath: myAccessPathOf(invitation),
+    emailed: result.status === "sent" || result.status === "queued",
+    limited: result.status === "limited",
   };
 }

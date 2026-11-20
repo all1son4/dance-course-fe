@@ -8,13 +8,16 @@ import {
 } from "@/db/access-invitations";
 import { getDatabase } from "@/db/client";
 import { telegramChats } from "@/db/schema";
+import { describeInvitationJournalEntry } from "@/lib/access-invitations/journal";
 import { buildInvitationUrl } from "@/lib/access-invitations/link";
 import {
   getInvitationProduct,
   issueAccessInvitation,
+  recheckInvitationMembership,
   resendAccessInvitation,
   resolveInvitationTarget,
   revokeAccessInvitation,
+  sendInvitationLinks,
 } from "@/lib/access-invitations/service";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
@@ -58,9 +61,14 @@ const iso = (value: Date | null) => value?.toISOString() ?? null;
 const serializeEntry = (entry: InvitationJournalEntry) => {
   const inviteEmails = entry.emails.filter((email) => email.key.includes(":invite:"));
   const latestInvite = inviteEmails.at(-1) ?? null;
-  const linksEmail = entry.emails.find((email) => email.key.endsWith(":links")) ?? null;
-  const usedAccess = entry.accesses.some(
-    (access) => access.state === "used" || access.state === "left",
+  const linksEmails = entry.emails.filter((email) => email.key.includes(":links"));
+  const latestLinks = linksEmails.at(-1) ?? null;
+  const view = describeInvitationJournalEntry({
+    ...entry,
+    inviteEmailStatus: latestInvite?.status ?? null,
+  });
+  const used = entry.accesses.some(
+    (access) => access.state === "member" || access.state === "left",
   );
 
   return {
@@ -76,9 +84,7 @@ const serializeEntry = (entry: InvitationJournalEntry) => {
     cohortTitle: entry.cohortTitle,
     revoked: entry.revoked,
     telegramConfirmed: entry.telegramConfirmed,
-    inChat: usedAccess,
-    revocable:
-      entry.kind !== null && !entry.revoked && !entry.telegramConfirmed && !usedAccess,
+    revocable: entry.kind !== null && !entry.revoked && !entry.telegramConfirmed && !used,
     inviteEmail: latestInvite
       ? {
           status: latestInvite.status,
@@ -86,22 +92,18 @@ const serializeEntry = (entry: InvitationJournalEntry) => {
           sends: inviteEmails.filter((email) => email.status === "sent").length,
         }
       : null,
-    linksEmail: linksEmail
-      ? { status: linksEmail.status, sentAt: iso(linksEmail.sentAt) }
+    linksEmail: latestLinks
+      ? {
+          status: latestLinks.status,
+          sentAt: iso(latestLinks.sentAt),
+          sends: linksEmails.filter((email) => email.status === "sent").length,
+        }
       : null,
     pageUrl:
       entry.kind === "renewal" && !entry.revoked
         ? buildInvitationUrl(entry.purchaseId, entry.locale)
         : null,
-    accesses: entry.accesses.map((access) => ({
-      accessKey: access.accessKey,
-      accessUrl: entry.revoked ? "" : access.accessUrl,
-      chatTitle: access.chatTitle,
-      state: access.state,
-      startsAt: iso(access.startsAt),
-      expiresAt: iso(access.expiresAt),
-      tokenExpiresAt: iso(access.tokenExpiresAt),
-    })),
+    ...view,
   };
 };
 
@@ -243,6 +245,13 @@ export async function POST(request: Request) {
 
     if (body.action === "resend") {
       return jsonNoStore({ status: await resendAccessInvitation(purchaseId) });
+    }
+    if (body.action === "resend_links") {
+      const result = await sendInvitationLinks(purchaseId, { checkLimit: false });
+      return jsonNoStore({ status: result.status });
+    }
+    if (body.action === "recheck") {
+      return jsonNoStore(await recheckInvitationMembership(purchaseId));
     }
     if (body.action === "revoke") {
       return jsonNoStore({ status: await revokeAccessInvitation(purchaseId) });

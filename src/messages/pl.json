@@ -1496,7 +1496,10 @@
         "linkOnStart": "Link do wejścia przyjdzie mailem w dniu startu",
         "afterCohort": "Opłacone 8 tygodni po zakończeniu obecnego cyklu",
         "ended": "Dostęp zakończył się {date}",
-        "notJoinedExpired": "Czas już biegnie — nowy link wyślemy na e-mail z zakupu"
+        "notJoinedExpired": "Czas już biegnie — nowy link wyślemy na e-mail z zakupu",
+        "notJoinedInvited": "Czas już biegnie. Link do wejścia jest w wiadomości z zaproszeniem",
+        "notJoinedExpiredInvited": "Czas już biegnie — nowy link wyślemy na e-mail, na który przyszło zaproszenie",
+        "renewalWaiting": "Przedłużenie gotowe"
       },
       "plusHub": {
         "included": "W Twoim pakiecie Plus",
@@ -1521,7 +1524,8 @@
         "renewHub": "Przedłuż Hub",
         "buyHub": "Kup Hub",
         "support": "Napisz do wsparcia",
-        "reissue": "Odbierz nowy link"
+        "reissue": "Odbierz nowy link",
+        "confirmTelegram": "Potwierdź Telegram"
       },
       "chips": {
         "active": "Aktywny",
@@ -1532,7 +1536,8 @@
         "linkExpired": "Link z wiadomości wygasł",
         "notJoinedChannel": "Jeszcze nie w kanale",
         "notJoinedGroup": "Jeszcze nie w czacie grupy",
-        "notJoinedHub": "Jeszcze nie w Hubie"
+        "notJoinedHub": "Jeszcze nie w Hubie",
+        "confirmTelegram": "Potwierdź Telegram"
       },
       "linkExpired": "Nowy wyślemy na e-mail z zakupu",
       "count": "{count, plural, one {# zakup} few {# zakupy} many {# zakupów} other {# zakupu}}",
@@ -1542,7 +1547,10 @@
         "plusHubAfterCohort": "Cykl zakończony — Hub z Plus jest nadal otwarty",
         "cohortClosed": "Cykl zakończony",
         "startsOnJoin": "Czas ruszy w dniu wejścia do kanału"
-      }
+      },
+      "linkInInvitation": "Link do wejścia jest w wiadomości z zaproszeniem",
+      "linkExpiredInvited": "Nowy wyślemy na e-mail, na który przyszło zaproszenie",
+      "confirmTelegram": "Aby dostać link, potwierdź Telegram na stronie zaproszenia"
     }
   },
   "InvitationPage": {
@@ -1590,9 +1598,14 @@
       "extendedPlain": "Już jesteś w Hub — dostęp przedłużony.",
       "scheduled": "Otworzy się {date} — link przyjdzie tego dnia.",
       "scheduledPlain": "Otworzy się zaraz po obecnym dostępie — link przyjdzie tego dnia.",
-      "unavailable": "Nie udało się teraz utworzyć linku. Odśwież stronę za minutę albo napisz do nas.",
+      "unavailable": "Nie udało się teraz utworzyć linku. Kliknij „Spróbuj ponownie” — jeśli nie zadziała, napisz do nas.",
       "emailed": "Linki wysłaliśmy też mailem.",
-      "myAccess": "Mój dostęp"
+      "myAccess": "Mój dostęp",
+      "expired": "Link wygasł. Damy Ci nowy — tutaj i mailem.",
+      "retry": "Spróbuj ponownie",
+      "newLink": "Odbierz nowy link",
+      "limited": "Nowe linki już wysłaliśmy — sprawdź skrzynkę. Kolejne możesz poprosić trochę później.",
+      "retryFailed": "Znowu się nie udało. Napisz do nas — pomożemy wejść."
     },
     "errors": {
       "expiredTitle": "Link wygasł",

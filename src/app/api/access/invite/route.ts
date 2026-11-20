@@ -7,6 +7,7 @@ import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import { purchases } from "@/db/schema";
+import { sendInvitationLinks } from "@/lib/access-invitations/service";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -35,7 +36,8 @@ type InviteBody = { card?: unknown; k?: unknown };
 /**
  * «Прислать новую ссылку» on «Мой доступ»: the buyer's own version of the admin
  * repair (HUB-D38) — a fresh invite of an access never joined whose emailed link
- * has expired, delivered by resending the payment email to the purchase's address.
+ * has expired, delivered by resending the payment email to the purchase's address
+ * (an admin invitation: its links email, see `sendInvitationLinks`).
  * The link never reaches the page. Only for a card that offers it right now, and
  * limited per address, per customer and per card.
  */
@@ -82,6 +84,30 @@ export async function POST(request: Request) {
       card?.action?.key === "reissue" ? card.action.purchaseId : undefined;
     if (!purchaseId) return jsonErrorNoStore("not_needed", { status: 409 });
 
+    const [owned] = await database
+      .select({
+        invitationKind: purchases.invitationKind,
+        paymentIntentId: purchases.paymentIntentId,
+      })
+      .from(purchases)
+      .where(eq(purchases.id, purchaseId))
+      .limit(1);
+
+    // An invitation has no payment email: its own links email, limited by the emails
+    // it actually sent, so a failed attempt never uses up the person's tries.
+    if (owned?.invitationKind) {
+      const result = await sendInvitationLinks(purchaseId);
+      if (result.status === "sent" || result.status === "queued") {
+        return jsonNoStore({ status: "sent" });
+      }
+      if (result.status === "limited") {
+        return jsonErrorNoStore("rate_limited", { status: 429 });
+      }
+      return result.status === "no_links"
+        ? jsonErrorNoStore("no_link", { status: 409 })
+        : jsonErrorNoStore("not_needed", { status: 409 });
+    }
+
     // One new letter per card in ten minutes, three a day per customer.
     const [cardLimit, customerLimit] = await Promise.all([
       consumeRateLimit({
@@ -107,13 +133,8 @@ export async function POST(request: Request) {
       });
     }
 
-    const [purchase] = await database
-      .select({ paymentIntentId: purchases.paymentIntentId })
-      .from(purchases)
-      .where(eq(purchases.id, purchaseId))
-      .limit(1);
-    const paymentRecord = purchase
-      ? await findPaymentRecordByIntentIdFromDatabase(purchase.paymentIntentId)
+    const paymentRecord = owned
+      ? await findPaymentRecordByIntentIdFromDatabase(owned.paymentIntentId)
       : null;
     if (!paymentRecord || paymentRecord.outcome !== "succeeded") {
       return jsonErrorNoStore("not_needed", { status: 409 });

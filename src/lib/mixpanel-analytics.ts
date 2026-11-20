@@ -78,10 +78,16 @@ type CommerceEventProperties = {
 };
 
 type CtaEventProperties = CommerceEventProperties & {
-  access_action?: "renewHub" | "buyHub" | "support" | "reissue";
+  access_action?: "renewHub" | "buyHub" | "support" | "reissue" | "confirmTelegram";
   access_kind?: "hub" | "group" | "channel" | "lifetime";
   access_state?:
-    "active" | "endsSoon" | "notJoined" | "linkExpired" | "upcoming" | "ended";
+    | "active"
+    | "endsSoon"
+    | "notJoined"
+    | "linkExpired"
+    | "confirmTelegram"
+    | "upcoming"
+    | "ended";
   cta_id: string;
   destination_domain?: string;
   destination_hash?: string;

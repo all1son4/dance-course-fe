@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 
-import { and, desc, eq, inArray, isNull, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, like, lte, or, sql } from "drizzle-orm";
 
 import {
   INSPIRATION_HUB_PRODUCT_ID,
@@ -464,10 +464,73 @@ export async function confirmInvitationTelegramInDatabase({
   });
 }
 
+/* ---------- Traces of delivery ---------- */
+
+/**
+ * The access service failed for these accesses of an invitation: their rights that
+ * still wait for a link say `link_failed`, as a failed Telegram invite does, so the
+ * journal shows «не удалось создать ссылку». The next successful link replaces it.
+ */
+export async function markInvitationAccessFailed({
+  accessKeys,
+  now = new Date(),
+  purchaseId,
+}: {
+  accessKeys: ("inspiration-hub" | "main-group")[];
+  now?: Date;
+  purchaseId: string;
+}): Promise<void> {
+  const keys = accessKeys.map((key) => (key === "main-group" ? "primary" : key));
+  if (keys.length === 0) return;
+
+  await getDatabase()
+    .update(accessEntitlements)
+    .set({ status: "link_failed", updatedAt: now })
+    .where(
+      and(
+        eq(accessEntitlements.purchaseId, purchaseId),
+        inArray(accessEntitlements.accessKey, keys),
+        inArray(accessEntitlements.status, ["pending", "link_failed"]),
+        isNull(accessEntitlements.revokedAt),
+        // A Hub period not begun stays `pending`: the start-day job gives its link.
+        or(isNull(accessEntitlements.startsAt), lte(accessEntitlements.startsAt, now)),
+      ),
+    );
+}
+
+/** How many links emails of an invitation were queued since a moment (sent or not). */
+export async function countRecentInvitationLinkEmails({
+  purchaseId,
+  since,
+}: {
+  purchaseId: string;
+  since: Date;
+}): Promise<number> {
+  const [row] = await getDatabase()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(purchaseSideEffects)
+    .where(
+      and(
+        eq(purchaseSideEffects.kind, "access_invitation_email"),
+        like(
+          purchaseSideEffects.deduplicationKey,
+          `${invitationEmailKeyPrefix(purchaseId)}links%`,
+        ),
+        sql`${purchaseSideEffects.createdAt} >= ${since.toISOString()}::timestamptz`,
+      ),
+    );
+
+  return row?.count ?? 0;
+}
+
 /* ---------- The journal ---------- */
 
+/**
+ * One access as the journal says it: no link yet, a link not used (until its date),
+ * in the chat now, left it, the link expired, revoked, or creating it failed.
+ */
 export type InvitationAccessState =
-  "expired" | "failed" | "issued" | "left" | "pending" | "revoked" | "used";
+  "expired" | "failed" | "issued" | "left" | "member" | "pending" | "revoked";
 
 export type InvitationJournalAccess = {
   accessKey: "inspiration-hub" | "main-group";
@@ -476,6 +539,8 @@ export type InvitationJournalAccess = {
   startsAt: Date | null;
   expiresAt: Date | null;
   state: InvitationAccessState;
+  /** In the chat by this invitation's own link; false: was there already (a Hub extended). */
+  joinedByLink: boolean;
   tokenExpiresAt: Date | null;
 };
 
@@ -499,6 +564,7 @@ export type InvitationJournalEntry = {
   note: string;
   createdAt: Date;
   revoked: boolean;
+  /** The account is known: confirmed on the renewal page, or met at the first join. */
   telegramConfirmed: boolean;
   cohortTitle: string | null;
   accesses: InvitationJournalAccess[];
@@ -507,17 +573,19 @@ export type InvitationJournalEntry = {
 
 const resolveAccessState = (
   entitlementStatus: string,
-  tokenStatus: string | null,
+  token: { status: string; expiresAt: Date } | null,
+  now: Date,
 ): InvitationAccessState => {
   if (entitlementStatus === "left_channel") return "left";
   if (entitlementStatus === "link_failed") return "failed";
   if (entitlementStatus === "expired") return "expired";
   if (entitlementStatus === "revoked") return "revoked";
-  if (tokenStatus === "issued") return "issued";
-  if (tokenStatus === "used") return "used";
-  if (tokenStatus === "expired") return "expired";
-  if (tokenStatus === "revoked") return "revoked";
-  if (entitlementStatus === "activated") return "used";
+  // In the chat by our record (a join, or found there by a live check).
+  if (entitlementStatus === "activated") return "member";
+  if (token?.status === "issued") return token.expiresAt > now ? "issued" : "expired";
+  if (token?.status === "used") return "member";
+  if (token?.status === "expired") return "expired";
+  if (token?.status === "revoked") return "revoked";
   return "pending";
 };
 
@@ -623,6 +691,7 @@ export async function listAccessInvitations({
     : [];
   const chatTitleById = new Map(chatRows.map((chat) => [chat.chatId, chat.title]));
 
+  const now = new Date();
   return rows.map(({ purchase, cohortTitle }) => {
     const isHub = scope === "hub";
     const accesses = accessRows
@@ -638,7 +707,14 @@ export async function listAccessInvitations({
           chatTitle: chatTitleById.get(chatId) ?? "",
           startsAt: row.startsAt,
           expiresAt: row.expiresAt,
-          state: resolveAccessState(row.entitlementStatus, row.tokenStatus),
+          state: resolveAccessState(
+            row.entitlementStatus,
+            row.tokenStatus && row.tokenExpiresAt
+              ? { status: row.tokenStatus, expiresAt: row.tokenExpiresAt }
+              : null,
+            now,
+          ),
+          joinedByLink: row.tokenStatus === "used",
           tokenExpiresAt: row.tokenExpiresAt,
         };
       })

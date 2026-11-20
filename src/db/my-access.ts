@@ -214,6 +214,7 @@ export async function readMyAccessSnapshot(
     .select({
       cohortId: purchases.onlineGroupCohortId,
       id: purchases.id,
+      invitationKind: purchases.invitationKind,
       offerExternalId: purchases.offerExternalId,
       productExternalId: purchases.productExternalId,
       succeededAt: purchases.succeededAt,

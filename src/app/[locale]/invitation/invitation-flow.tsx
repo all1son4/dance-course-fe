@@ -71,6 +71,11 @@ export type InvitationTexts = {
     scheduled: string;
     scheduledPlain: string;
     unavailable: string;
+    expired: string;
+    retry: string;
+    newLink: string;
+    limited: string;
+    retryFailed: string;
     emailed: string;
     myAccess: string;
   };
@@ -79,6 +84,7 @@ export type InvitationTexts = {
 type ConfirmResponse = {
   errorCode?: string;
   emailed?: boolean;
+  limited?: boolean;
   lines?: InvitationAccessLine[];
   myAccessPath?: string | null;
   status?: string;
@@ -93,13 +99,18 @@ const formatDay = (iso: string, locale: string) =>
 const ResultLine = ({
   line,
   locale,
+  onRetry,
+  retrying,
   texts,
 }: {
   line: InvitationAccessLine;
   locale: string;
+  onRetry: () => void;
+  retrying: boolean;
   texts: InvitationTexts["result"];
 }) => {
   const isHub = line.accessKey === "inspiration-hub";
+  const needsRetry = line.state === "unavailable" || line.state === "expired";
   const note =
     line.state === "member"
       ? texts.member
@@ -113,7 +124,9 @@ const ResultLine = ({
             : texts.scheduledPlain
           : line.state === "unavailable"
             ? texts.unavailable
-            : texts.linkNote;
+            : line.state === "expired"
+              ? texts.expired
+              : texts.linkNote;
 
   return (
     <AccessCard>
@@ -132,6 +145,19 @@ const ResultLine = ({
           rel="noopener noreferrer"
           size="xs"
           target="_blank"
+          width="max-content"
+        />
+      )}
+      {needsRetry && (
+        <Button
+          analytics={{ id: "invitation_retry_links", placement: "invitation_result" }}
+          buttonText={line.state === "expired" ? texts.newLink : texts.retry}
+          isLoading={retrying}
+          onClick={() => {
+            if (!retrying) onRetry();
+          }}
+          size="xs"
+          variant="secondary"
           width="max-content"
         />
       )}
@@ -168,7 +194,43 @@ export default function InvitationFlow({
   );
   const [result, setResult] = useState(initial);
   const [emailed, setEmailed] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retryMessage, setRetryMessage] = useState("");
   const attemptRef = useRef(0);
+
+  /** A failed or expired link: new links, shown here and sent by email. */
+  const retry = async () => {
+    setRetrying(true);
+    setRetryMessage("");
+    try {
+      const response = await fetch("/api/invitation", {
+        body: JSON.stringify({ action: "links", token }),
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const data = (await response.json().catch(() => ({}))) as ConfirmResponse;
+      if (response.ok && data.status === "verified" && data.lines) {
+        setResult({ lines: data.lines, myAccessPath: data.myAccessPath ?? null });
+        setEmailed(Boolean(data.emailed));
+        setRetryMessage(
+          data.limited
+            ? texts.result.limited
+            : data.lines.some(
+                  (line) => line.state === "unavailable" || line.state === "expired",
+                )
+              ? texts.result.retryFailed
+              : "",
+        );
+      } else {
+        setRetryMessage(texts.result.retryFailed);
+      }
+    } catch {
+      setRetryMessage(texts.result.retryFailed);
+    } finally {
+      setRetrying(false);
+    }
+  };
 
   useEffect(() => {
     if (!initial) void loadTelegramLoginScript().catch(() => undefined);
@@ -332,15 +394,31 @@ export default function InvitationFlow({
           <ResultTitle>{texts.result.title}</ResultTitle>
           <Lead>{texts.result.lead}</Lead>
           <CardList>
-            {result.lines.map((line) => (
+            {(result.lines.length > 0
+              ? result.lines
+              : // No access to show at all is a failure too: the retry and support.
+                [
+                  {
+                    accessKey: product === "hub" ? "inspiration-hub" : "main-group",
+                    state: "unavailable",
+                  } as const,
+                ]
+            ).map((line) => (
               <ResultLine
                 key={line.accessKey}
                 line={line}
                 locale={locale}
+                onRetry={() => void retry()}
+                retrying={retrying}
                 texts={texts.result}
               />
             ))}
           </CardList>
+          {retryMessage && (
+            <StatusText $tone="error" aria-live="polite" role="status">
+              {retryMessage}
+            </StatusText>
+          )}
           {emailed && <StatusText $tone="info">{texts.result.emailed}</StatusText>}
           {result.myAccessPath && (
             <QuietLink href={result.myAccessPath} rel="nofollow">
