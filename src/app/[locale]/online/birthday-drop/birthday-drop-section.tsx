@@ -34,8 +34,8 @@ import {
 /** The offer itself, then what it includes, then contacts. */
 export default async function BirthdayDropSection() {
   // The buy button sits in the first viewport, so the sales switch is read
-  // before anything renders. Streamed in behind the shell (see SaleStateGate)
-  // it landed 150-300ms after the hero on Vercel and shoved "Learn more"
+  // before anything renders. Streamed in behind the shell in a Suspense
+  // boundary it landed 150-300ms after the hero on Vercel and shoved "Learn more"
   // aside when it arrived - a missing button, as far as a visitor can tell.
   const [t, commonT, saleState] = await Promise.all([
     getTranslations("BirthdayDropPage"),
