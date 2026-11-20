@@ -187,6 +187,12 @@ export const listOnlineGroupAccessStatesForPayment = async (
 
 type OnlineGroupPurchase = NonNullable<Awaited<ReturnType<typeof getPurchase>>>;
 
+/** A renewal invitation gives no invite before its page has confirmed the Telegram account. */
+const isUnconfirmedRenewalInvitation = (purchase: OnlineGroupPurchase) =>
+  purchase.source === "admin_offer_link" &&
+  purchase.invitationKind === "renewal" &&
+  !purchase.telegramUserId?.trim();
+
 const toPersistedAccessKey = (accessKey: OnlineGroupAccessKey) =>
   accessKey === "main-group" ? "primary" : accessKey;
 
@@ -485,11 +491,18 @@ const unbanKnownTelegramMember = async ({
     return;
   }
 
-  await unbanTelegramChatMember({
-    chatId,
-    onlyIfBanned: true,
-    userId: telegramUserId,
-  });
+  // Only lifts an old short ban so the new invite works. Telegram refuses it for an
+  // account it does not find in this chat (PARTICIPANT_ID_INVALID, 2026-11-20), and
+  // such an account has no ban to lift: the invite must not depend on it.
+  try {
+    await unbanTelegramChatMember({
+      chatId,
+      onlyIfBanned: true,
+      userId: telegramUserId,
+    });
+  } catch (error) {
+    logSafeError("Failed to unban a member before an Online Group invite", error);
+  }
 };
 
 const resolveCurrentTargetToken = async ({
@@ -969,7 +982,7 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
 
   const purchase = await getPurchase(paymentRecord.payment_intent_id);
 
-  if (!purchase) {
+  if (!purchase || isUnconfirmedRenewalInvitation(purchase)) {
     return [];
   }
 
@@ -1296,20 +1309,7 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
     };
   }
 
-  // А5: the purchase learns its owner at the first join, under the owner lock the
-  // Hub period writers take, and only into an empty field.
-  await lockHubPeriodOwner(transaction, identity.telegramUserId);
-  const ownerWrite = await recordPurchaseTelegramOwnerInTransaction(
-    transaction,
-    purchase.id,
-    identity.telegramUserId,
-  );
-
-  if (ownerWrite === "mismatch") {
-    console.error("Purchase already names another Telegram account; owner kept", {
-      purchaseId: purchase.id,
-    });
-  }
+  await recordMemberOwnerInTransaction(transaction, purchase, identity);
 
   if (isFirstUse) {
     await bindFirstUseTokens({
@@ -1326,8 +1326,71 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
     transaction,
   });
 
-  await upsertEntitlement({
+  const removalKey = await recordMemberInChatInTransaction({
     accessExpiresAt: token.accessExpiresAt?.toISOString() ?? "",
+    accessKey,
+    identity,
+    inviteLink,
+    purchase,
+    tokenId: token.tokenId,
+    transaction,
+  });
+
+  return {
+    handled: true,
+    previousChatRemovalKey: removalKey,
+    shouldKick: false,
+    shouldRevokeInvite: isFirstUse,
+  };
+};
+
+/**
+ * А5: the purchase learns its owner at the first join, under the owner lock the Hub
+ * period writers take, and only into an empty field.
+ */
+const recordMemberOwnerInTransaction = async (
+  transaction: DatabaseTransaction,
+  purchase: OnlineGroupPurchase,
+  identity: OnlineGroupMembershipIdentity,
+) => {
+  await lockHubPeriodOwner(transaction, identity.telegramUserId);
+  const ownerWrite = await recordPurchaseTelegramOwnerInTransaction(
+    transaction,
+    purchase.id,
+    identity.telegramUserId,
+  );
+
+  if (ownerWrite === "mismatch") {
+    console.error("Purchase already names another Telegram account; owner kept", {
+      purchaseId: purchase.id,
+    });
+  }
+};
+
+/**
+ * What a join writes after its owner, by an invite or found by a live check: the
+ * right activated, the binding, and HUB-D44's removal from the previous cohort's chat
+ * after a join into the new cohort's main chat.
+ */
+const recordMemberInChatInTransaction = async ({
+  accessExpiresAt,
+  accessKey,
+  identity,
+  inviteLink,
+  purchase,
+  tokenId,
+  transaction,
+}: {
+  accessExpiresAt: string;
+  accessKey: OnlineGroupAccessKey;
+  identity: OnlineGroupMembershipIdentity;
+  inviteLink: string;
+  purchase: OnlineGroupPurchase;
+  tokenId: string | null;
+  transaction: DatabaseTransaction;
+}): Promise<string | undefined> => {
+  await upsertEntitlement({
+    accessExpiresAt,
     accessKey,
     chatId: identity.chatId,
     database: transaction,
@@ -1335,10 +1398,10 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
     status: "activated",
     telegramUserId: identity.telegramUserId,
     telegramUsername: identity.telegramUsername,
-    tokenId: token.tokenId,
+    tokenId,
   });
   await upsertBinding({
-    accessExpiresAt: token.accessExpiresAt?.toISOString() ?? "",
+    accessExpiresAt,
     chatId: identity.chatId,
     database: transaction,
     inviteLink,
@@ -1347,8 +1410,9 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
     telegramUsername: identity.telegramUsername,
   });
 
-  // HUB-D44 (section 6.5): a confirmed join into the new cohort's main chat, by this
-  // purchase's own invite, sends the member out of the previous cohort's chat.
+  // HUB-D44 (section 6.5): a confirmed join into the new cohort's main chat sends the
+  // member out of the previous cohort's chat — by this purchase's own invite, or
+  // found there by the invitation page's live check (the same renewal rule).
   const removal =
     accessKey === "main-group" && purchase.onlineGroupCohortId
       ? await findPreviousChatRemoval(transaction, {
@@ -1375,12 +1439,96 @@ const syncOnlineGroupMemberJoinedInTransaction = async ({
     });
   }
 
-  return {
-    handled: true,
-    previousChatRemovalKey: removalKey,
-    shouldKick: false,
-    shouldRevokeInvite: isFirstUse,
+  return removalKey;
+};
+
+const runPreviousChatRemoval = async (removalKey: string | undefined) => {
+  if (!removalKey) return;
+  try {
+    // Imported here: the business outbox imports this module.
+    const { processBusinessOperationOutboxJob } =
+      await import("@/lib/business-operation-outbox");
+    await processBusinessOperationOutboxJob(removalKey);
+  } catch (error) {
+    // The job stays queued; the daily run retries it.
+    logSafeError("Failed to remove a member from the previous cohort chat", error);
+  }
+};
+
+/** The chat and the access end of one access of a purchase, as the ensure computes them. */
+const findAccessTarget = async (
+  paymentRecord: PaymentRecordSnapshot,
+  purchase: OnlineGroupPurchase,
+  accessKey: OnlineGroupAccessKey,
+): Promise<{ accessExpiresAt: string; chatId: string } | null> => {
+  if (isInspirationHubOfferId(paymentRecord.offer_id)) {
+    if (accessKey !== "inspiration-hub") return null;
+    const [right] = await getDatabase()
+      .select({ expiresAt: accessEntitlements.expiresAt })
+      .from(accessEntitlements)
+      .where(
+        and(
+          eq(accessEntitlements.purchaseId, purchase.id),
+          eq(accessEntitlements.accessKey, "inspiration-hub"),
+          eq(accessEntitlements.sourceKind, "standalone_hub"),
+        ),
+      )
+      .limit(1);
+    const hubChatId = right ? await findInspirationHubChatId(getDatabase()) : null;
+    return hubChatId
+      ? { accessExpiresAt: right?.expiresAt?.toISOString() ?? "", chatId: hubChatId }
+      : null;
+  }
+
+  const target = getAccessTargets(paymentRecord, {
+    inspirationAccessExpiresAt: await findPlusHubEnd(purchase),
+    inspirationChatId: purchase.inspirationChatIdSnapshot,
+  }).find((candidate) => candidate.accessKey === accessKey);
+  return target
+    ? { accessExpiresAt: target.accessExpiresAt, chatId: target.chatId }
+    : null;
+};
+
+/**
+ * A live Telegram check found the purchase's own account already in one of its chats
+ * (added by hand, or in by another way): recorded the way a join is, without an
+ * invite, so the admin journal and «Мой доступ» say what Telegram says.
+ */
+export const recordOnlineGroupMemberPresent = async ({
+  accessKey,
+  paymentRecord,
+  telegramUserId,
+}: {
+  accessKey: OnlineGroupAccessKey;
+  paymentRecord: PaymentRecordSnapshot;
+  telegramUserId: string;
+}): Promise<boolean> => {
+  const userId = telegramUserId.trim();
+  const purchase = await getPurchase(paymentRecord.payment_intent_id);
+  if (!userId || !purchase || purchase.outcome !== "succeeded") return false;
+
+  const target = await findAccessTarget(paymentRecord, purchase, accessKey);
+  if (!target) return false;
+
+  const identity = {
+    chatId: target.chatId,
+    telegramUserId: userId,
+    telegramUsername: "",
   };
+  const removalKey = await getDatabase().transaction(async (transaction) => {
+    await recordMemberOwnerInTransaction(transaction, purchase, identity);
+    return recordMemberInChatInTransaction({
+      accessExpiresAt: target.accessExpiresAt,
+      accessKey,
+      identity,
+      inviteLink: "",
+      purchase,
+      tokenId: null,
+      transaction,
+    });
+  });
+  await runPreviousChatRemoval(removalKey);
+  return true;
 };
 
 export const syncOnlineGroupMembership = async ({
@@ -1453,17 +1601,7 @@ export const syncOnlineGroupMembership = async ({
     }
   }
 
-  if (membershipResult.previousChatRemovalKey) {
-    try {
-      // Imported here: the business outbox imports this module.
-      const { processBusinessOperationOutboxJob } =
-        await import("@/lib/business-operation-outbox");
-      await processBusinessOperationOutboxJob(membershipResult.previousChatRemovalKey);
-    } catch (error) {
-      // The job stays queued; the daily run retries it.
-      logSafeError("Failed to remove a member from the previous cohort chat", error);
-    }
-  }
+  await runPreviousChatRemoval(membershipResult.previousChatRemovalKey);
 
   return true;
 };

@@ -74,6 +74,9 @@ test("the renewal email has one button to the page and the three steps", () => {
     email.text,
     /1\. Potwierdź Telegram\n2\. Odbierz linki\n3\. Wejdź na czat/u,
   );
+  // Nothing beside the page: «Mój dostęp» has no link to give before the check.
+  assert.doesNotMatch(email.html, /\/access\?k=/u);
+  assert.doesNotMatch(email.text, /\/access\?k=/u);
 });
 
 test("the links email holds only the links, and is skipped without any", () => {

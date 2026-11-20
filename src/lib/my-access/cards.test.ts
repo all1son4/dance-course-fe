@@ -660,3 +660,112 @@ test("one Hub at a time: a Hub that is renewed and still open hides the one endi
     ["plusHub.closed", "hub.scheduled"],
   );
 });
+
+const RENEWAL_OFFER = "off_online_group_anna_strok_renewal_discount";
+const COHORT_AHEAD = {
+  accessEndsAt: null,
+  closedAt: null,
+  durationWeeks: 8,
+  id: "c-ahead",
+  startsAt: new Date("2027-01-04T18:00:00.000Z"),
+  title: "Online Group 3.0",
+};
+
+test("a renewal invitation before its Telegram check leads to its page, never «expired»", () => {
+  const cards = cardsOf({
+    cohorts: [COHORT_AHEAD],
+    purchases: [
+      purchase({
+        cohortId: COHORT_AHEAD.id,
+        id: "renewal",
+        invitationKind: "renewal",
+        offerExternalId: RENEWAL_OFFER,
+        productExternalId: "prd_L9aK3mT7qP2x",
+        telegramUserId: null,
+      }),
+    ],
+    rights: [right({ hasLiveInvite: false, purchaseId: "renewal", status: "pending" })],
+  });
+
+  assert.equal(cards.length, 1);
+  assert.equal(cards[0]?.chip, "confirmTelegram");
+  assert.deepEqual(cards[0]?.note, { key: "confirmTelegram" });
+  assert.deepEqual(cards[0]?.action, {
+    href: "",
+    key: "confirmTelegram",
+    purchaseId: "renewal",
+  });
+  assert.equal(cards[0]?.status.key, "group.startsOn");
+});
+
+test("a Hub renewal invitation waiting for its check still has its card", () => {
+  const cards = cardsOf({
+    purchases: [
+      purchase({
+        id: "hub-renewal",
+        invitationKind: "renewal",
+        succeededAt: null,
+        telegramUserId: null,
+      }),
+    ],
+  });
+
+  assert.equal(cards.length, 1);
+  assert.equal(cards[0]?.title, "hub");
+  assert.equal(cards[0]?.status.key, "hub.renewalWaiting");
+  assert.equal(cards[0]?.action?.key, "confirmTelegram");
+});
+
+test("an invitation's link note names the invitation, not a payment", () => {
+  const snapshot = (hasLiveInvite: boolean) => ({
+    cohorts: [COHORT_AHEAD],
+    purchases: [
+      purchase({
+        cohortId: COHORT_AHEAD.id,
+        id: "join",
+        invitationKind: "join" as const,
+        offerExternalId: STANDARD_OFFER,
+        productExternalId: "prd_L9aK3mT7qP2x",
+        telegramUserId: null,
+      }),
+    ],
+    rights: [right({ hasLiveInvite, purchaseId: "join", status: "token_issued" })],
+  });
+
+  assert.deepEqual(cardsOf(snapshot(true))[0]?.note, { key: "linkInInvitation" });
+  const expired = cardsOf(snapshot(false))[0];
+  assert.deepEqual(expired?.note, { key: "linkExpiredInvited" });
+  assert.equal(expired?.action?.key, "reissue");
+
+  // A confirmed renewal is an ordinary access waiting for its join.
+  const confirmed = cardsOf({
+    ...snapshot(false),
+    purchases: [
+      purchase({
+        cohortId: COHORT_AHEAD.id,
+        id: "join",
+        invitationKind: "renewal",
+        offerExternalId: RENEWAL_OFFER,
+        productExternalId: "prd_L9aK3mT7qP2x",
+        telegramUserId: "777",
+      }),
+    ],
+  })[0];
+  assert.equal(confirmed?.action?.key, "reissue");
+  assert.equal(confirmed?.chip, "linkExpired");
+});
+
+test("an invited standalone Hub not joined says so without a payment email", () => {
+  const cards = cardsOf({
+    purchases: [purchase({ id: "hub-join", invitationKind: "join" })],
+    rights: [
+      {
+        ...hubPeriod("hub-join", "2026-12-20T11:00:00.000Z", "2027-02-14T11:00:00.000Z"),
+        hasLiveInvite: true,
+        status: "token_issued",
+      },
+    ],
+  });
+
+  assert.deepEqual(cards[0]?.note, { key: "hub.notJoinedInvited" });
+});

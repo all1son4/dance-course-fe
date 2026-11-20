@@ -1,4 +1,7 @@
-import { confirmAccessInvitation } from "@/lib/access-invitations/service";
+import {
+  confirmAccessInvitation,
+  retryInvitationLinks,
+} from "@/lib/access-invitations/service";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -14,6 +17,8 @@ export const runtime = "nodejs";
 const MAX_BODY_BYTES = 16 * 1024;
 
 type InvitationConfirmBody = {
+  /** "links": the retry of a failed or expired link after the check. */
+  action?: string;
   idToken?: string;
   nonce?: string;
   token?: string;
@@ -23,6 +28,7 @@ const ERROR_STATUS = {
   expired: 410,
   invalid: 404,
   invalid_telegram_login_nonce: 403,
+  needs_telegram: 409,
   other_account: 409,
   revoked: 410,
   telegram_login_failed: 403,
@@ -72,6 +78,13 @@ export async function POST(request: Request) {
 
     const token = body?.token?.trim().slice(0, 300) ?? "";
     const idToken = body?.idToken?.trim() ?? "";
+
+    if (body?.action === "links") {
+      const retry = await retryInvitationLinks(token);
+      return retry.status === "error"
+        ? jsonErrorNoStore(retry.errorCode, { status: ERROR_STATUS[retry.errorCode] })
+        : jsonNoStore(retry);
+    }
     const nonce = body?.nonce?.trim().slice(0, 160) ?? "";
 
     if (!token || !idToken) {

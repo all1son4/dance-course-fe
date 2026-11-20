@@ -28,6 +28,7 @@ const ACTION_IDS = {
   buyHub: "my_access_buy_hub",
   support: "my_access_contact_support",
   reissue: "my_access_reissue_invite",
+  confirmTelegram: "my_access_confirm_telegram",
 } as const;
 
 export const getMyAccessActionAnalytics = (

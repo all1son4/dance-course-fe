@@ -1,15 +1,11 @@
-import { Mail, RefreshCw, Undo2 } from "lucide-react";
+import { Link2, Mail, RefreshCw, ScanSearch, Undo2 } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
 import type { AdminInvitationEntry } from "../api/access-invitations/route";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { StatusMessage } from "../lib/admin.types";
-import {
-  formatDateTime,
-  resolveOnlineGroupAccessStateLabel,
-  resolveOnlineGroupAccessTitle,
-} from "../lib/admin.utils";
+import { formatDateTime } from "../lib/admin.utils";
 import { requestAdminJson } from "../lib/admin-request";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
@@ -171,7 +167,7 @@ const Meta = styled.p`
   overflow-wrap: anywhere;
 `;
 
-/* «Письмо отправлено → Telegram подтверждён → В чате»: done steps are green. */
+/* «Письмо отправлено → Telegram подтверждён»: done steps are green. */
 const Chain = styled.ol`
   display: flex;
   flex-wrap: wrap;
@@ -211,8 +207,8 @@ const Actions = styled.div`
 const stepTone = (state: "done" | "wait" | "failed"): AdminTone =>
   state === "done" ? "success" : state === "failed" ? "danger" : "neutral";
 
-const emailStep = (entry: AdminInvitationEntry) => {
-  const status = entry.inviteEmail?.status;
+const emailStep = (email: AdminInvitationEntry["inviteEmail"]) => {
+  const status = email?.status;
   if (status === "sent") return { label: "Письмо отправлено", state: "done" as const };
   if (status === "failed" || status === "dead_letter") {
     return { label: "Письмо не ушло", state: "failed" as const };
@@ -222,10 +218,10 @@ const emailStep = (entry: AdminInvitationEntry) => {
   return { label: "Письмо отправляется", state: "wait" as const };
 };
 
+/** The way to the chat: the email, the Telegram check of a renewal, the links email. */
 const StatusChain = ({ entry }: { entry: AdminInvitationEntry }) => {
-  const email = emailStep(entry);
   const steps = [
-    email,
+    emailStep(entry.inviteEmail),
     ...(entry.kind === "renewal"
       ? [
           {
@@ -236,10 +232,17 @@ const StatusChain = ({ entry }: { entry: AdminInvitationEntry }) => {
           },
         ]
       : []),
-    {
-      label: entry.inChat ? "В чате" : "Ещё не в чате",
-      state: entry.inChat ? ("done" as const) : ("wait" as const),
-    },
+    ...(entry.linksEmail
+      ? [
+          {
+            ...emailStep(entry.linksEmail),
+            label:
+              entry.linksEmail.status === "sent"
+                ? "Письмо со ссылками отправлено"
+                : emailStep(entry.linksEmail).label,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -253,31 +256,16 @@ const StatusChain = ({ entry }: { entry: AdminInvitationEntry }) => {
   );
 };
 
-const accessMeta = (access: AdminInvitationEntry["accesses"][number]) =>
-  [
-    access.chatTitle,
-    access.state === "issued" && access.tokenExpiresAt
-      ? `ссылка до ${formatDateTime(access.tokenExpiresAt)}`
-      : "",
-    access.startsAt && Date.parse(access.startsAt) > Date.now()
-      ? `откроется ${formatDateTime(access.startsAt)}`
-      : "",
-    access.expiresAt ? `доступ до ${formatDateTime(access.expiresAt)}` : "",
-  ]
-    .filter(Boolean)
-    .join(" · ");
+const ACCESS_DATE_PREFIX = {
+  accessUntil: "доступ до",
+  linkUntil: "ссылка действует до",
+  opens: "откроется",
+} as const;
 
-/** The step an invitation has reached, for its one-line summary. */
-const currentStep = (entry: AdminInvitationEntry): { label: string; tone: AdminTone } => {
-  if (entry.revoked) return { label: "Отозвано", tone: "danger" };
-  if (entry.inChat) return { label: "В чате", tone: "success" };
-  if (entry.kind === "renewal" && entry.telegramConfirmed) {
-    return { label: "Telegram подтверждён", tone: "info" };
-  }
-  if (entry.kind === null) return { label: "Ссылки выданы", tone: "neutral" };
-  const email = emailStep(entry);
-  return { label: email.label, tone: email.state === "failed" ? "danger" : "neutral" };
-};
+const accessMeta = (access: AdminInvitationEntry["accesses"][number]) =>
+  access.date
+    ? `${ACCESS_DATE_PREFIX[access.date.kind]} ${formatDateTime(access.date.at)}`
+    : "";
 
 const SummaryLine = styled.span`
   display: inline-flex;
@@ -289,17 +277,19 @@ const SummaryLine = styled.span`
 const Entry = ({
   busy,
   entry,
+  onRecheck,
   onResend,
+  onResendLinks,
   onRevoke,
 }: {
   busy: boolean;
   entry: AdminInvitationEntry;
+  onRecheck: () => void;
   onResend: () => void;
+  onResendLinks: () => void;
   onRevoke: () => void;
 }) => {
   const isLegacy = entry.kind === null;
-
-  const step = currentStep(entry);
 
   return (
     <Disclosure
@@ -313,7 +303,12 @@ const Entry = ({
               ? "вступление"
               : "продление"}{" "}
           · {formatDateTime(entry.createdAt)}
-          <Badge $tone={step.tone}>{step.label}</Badge>
+          {entry.next && <Badge $tone={entry.next.tone}>{entry.next.label}</Badge>}
+          {entry.inChats.map((chat) => (
+            <Badge $tone="success" key={chat}>
+              В чате «{chat}»
+            </Badge>
+          ))}
         </SummaryLine>
       }
     >
@@ -337,44 +332,53 @@ const Entry = ({
         {entry.accesses.map((access) => (
           <AccessRow key={access.accessKey}>
             <Head>
-              <strong>{resolveOnlineGroupAccessTitle(access.accessKey)}</strong>
-              <Badge
-                $tone={
-                  access.state === "used"
-                    ? "success"
-                    : access.state === "failed"
-                      ? "danger"
-                      : "neutral"
-                }
-              >
-                {entry.kind === "renewal" &&
-                !entry.telegramConfirmed &&
-                access.state === "pending"
-                  ? "После проверки Telegram"
-                  : resolveOnlineGroupAccessStateLabel(access.state)}
-              </Badge>
+              <strong>{access.chatTitle}</strong>
+              <Badge $tone={access.tone}>{access.label}</Badge>
             </Head>
             {accessMeta(access) && <Meta>{accessMeta(access)}</Meta>}
-            {access.accessUrl && access.state === "issued" && (
+            {access.accessUrl && (
               <CopyField label="Ссылка Telegram" value={access.accessUrl} />
             )}
           </AccessRow>
         ))}
 
-        {entry.pageUrl && (
+        {entry.pageUrl && entry.canResendInvite && (
           <CopyField label="Ссылка на страницу проверки" value={entry.pageUrl} />
         )}
 
         {!isLegacy && !entry.revoked && (
           <Actions>
-            <AdminButton
-              size="sm"
-              icon={<Mail aria-hidden />}
-              disabled={busy}
-              onClick={onResend}
-            >
-              Отправить письмо ещё раз
-            </AdminButton>
+            {entry.canResendLinks && (
+              <AdminButton
+                size="sm"
+                icon={<Link2 aria-hidden />}
+                disabled={busy}
+                onClick={onResendLinks}
+              >
+                Отправить ссылки ещё раз
+              </AdminButton>
+            )}
+            {entry.canResendInvite && (
+              <AdminButton
+                size="sm"
+                icon={<Mail aria-hidden />}
+                disabled={busy}
+                onClick={onResend}
+              >
+                Отправить письмо ещё раз
+              </AdminButton>
+            )}
+            {entry.canRecheck && (
+              <AdminButton
+                size="sm"
+                variant="ghost"
+                icon={<ScanSearch aria-hidden />}
+                disabled={busy}
+                onClick={onRecheck}
+              >
+                Проверить в Telegram
+              </AdminButton>
+            )}
             {entry.revocable && (
               <AdminButton
                 size="sm"
@@ -428,7 +432,12 @@ export const AccessInvitations = ({
   const [revoking, setRevoking] = useState<AdminInvitationEntry | null>(null);
   const [revokeError, setRevokeError] = useState("");
   const localeTouched = useRef(false);
-  const shown = useShownRows(entries);
+  // What needs Anna comes first, so it is seen without opening every entry.
+  const ordered = [...entries].sort(
+    (left, right) => Number(right.needsAnna) - Number(left.needsAnna),
+  );
+  const needsHelp = entries.filter((entry) => entry.needsAnna).length;
+  const shown = useShownRows(ordered);
 
   const endpoint = `${ADMIN_API_ENDPOINTS.accessInvitations}?scope=${scope}`;
 
@@ -553,6 +562,79 @@ export const AccessInvitations = ({
             }
           : { tone: "error", text: "Не получилось отправить письмо. Попробуй ещё раз." },
     );
+    void load();
+  };
+
+  const resendLinks = async (entry: AdminInvitationEntry) => {
+    setBusyId(entry.purchaseId);
+    const result = await requestAdminJson<{ status?: string }>(
+      ADMIN_API_ENDPOINTS.accessInvitations,
+      {
+        body: { action: "resend_links", purchaseId: entry.purchaseId },
+        method: "POST",
+      },
+    );
+    setBusyId("");
+    if (result.unauthorized) return onUnauthorized();
+    const outcome = result.ok ? result.data.status : "failed";
+    setStatus(
+      outcome === "sent"
+        ? { tone: "success", text: `Ссылки для ${entry.fullName} отправлены письмом.` }
+        : outcome === "queued"
+          ? {
+              tone: "info",
+              text: `Ссылки для ${entry.fullName} созданы, письмо пока не ушло — повтор будет автоматически.`,
+            }
+          : outcome === "no_links"
+            ? {
+                tone: "error",
+                text: `Telegram не выдал ссылку для ${entry.fullName}. Попробуй через минуту или проверь в Telegram.`,
+              }
+            : outcome === "needs_telegram"
+              ? {
+                  tone: "info",
+                  text: `${entry.fullName} ещё не подтвердили Telegram — сначала страница проверки.`,
+                }
+              : {
+                  tone: "error",
+                  text: "Не получилось отправить ссылки. Попробуй ещё раз.",
+                },
+    );
+    void load();
+  };
+
+  const recheck = async (entry: AdminInvitationEntry) => {
+    setBusyId(entry.purchaseId);
+    const result = await requestAdminJson<{
+      status?: string;
+      chats?: { accessKey: string; membership: "member" | "absent" | "unknown" }[];
+    }>(ADMIN_API_ENDPOINTS.accessInvitations, {
+      body: { action: "recheck", purchaseId: entry.purchaseId },
+      method: "POST",
+    });
+    setBusyId("");
+    if (result.unauthorized) return onUnauthorized();
+    if (!result.ok || result.data.status !== "checked") {
+      setStatus({
+        tone: "error",
+        text: "Не получилось проверить в Telegram. Попробуй ещё раз.",
+      });
+      return;
+    }
+    const titleOf = (accessKey: string) =>
+      entry.accesses.find((access) => access.accessKey === accessKey)?.chatTitle ??
+      accessKey;
+    const parts = (result.data.chats ?? []).map((chat) =>
+      chat.membership === "member"
+        ? `в чате «${titleOf(chat.accessKey)}»`
+        : chat.membership === "absent"
+          ? `нет в чате «${titleOf(chat.accessKey)}»`
+          : `«${titleOf(chat.accessKey)}» — Telegram не ответил`,
+    );
+    setStatus({
+      tone: "info",
+      text: `${entry.fullName}: ${parts.join(", ") || "чатов для проверки нет"}.`,
+    });
     void load();
   };
 
@@ -771,12 +853,21 @@ export const AccessInvitations = ({
           <EmptyState title="Приглашений пока нет" />
         ) : (
           <div>
+            {needsHelp > 0 && (
+              <Callout tone="danger">
+                {needsHelp === 1
+                  ? "Одной записи нужна твоя помощь — она стоит первой."
+                  : `Записей, которым нужна твоя помощь: ${needsHelp}. Они стоят первыми.`}
+              </Callout>
+            )}
             {shown.rows.map((entry) => (
               <Entry
                 key={entry.purchaseId}
                 busy={busyId === entry.purchaseId}
                 entry={entry}
+                onRecheck={() => void recheck(entry)}
                 onResend={() => void resend(entry)}
+                onResendLinks={() => void resendLinks(entry)}
                 onRevoke={() => {
                   setRevokeError("");
                   setRevoking(entry);

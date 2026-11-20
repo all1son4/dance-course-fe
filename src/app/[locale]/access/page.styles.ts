@@ -554,6 +554,7 @@ export const CardToggle = styled.button`
 const CHIP_TONES = {
   endsSoon: { background: "rgba(182, 62, 3, 0.1)", color: "var(--danger)" },
   notJoined: { background: "rgba(124, 0, 2, 0.08)", color: "var(--brand)" },
+  confirmTelegram: { background: "rgba(124, 0, 2, 0.08)", color: "var(--brand)" },
   linkExpired: { background: "rgba(182, 62, 3, 0.1)", color: "var(--danger)" },
 } as const;
 

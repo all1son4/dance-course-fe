@@ -16,7 +16,7 @@ export type MyAccessZone = "action" | "active" | "ended";
 const ZONE_ORDER: readonly MyAccessZone[] = ["action", "active", "ended"];
 
 /** Entering the channel or getting a new link waits on the reader. */
-const WAITS_ON_READER = new Set(["linkExpired", "notJoined"]);
+const WAITS_ON_READER = new Set(["linkExpired", "notJoined", "confirmTelegram"]);
 
 export const zoneOf = (card: MyAccessCard): MyAccessZone => {
   if (WAITS_ON_READER.has(card.chip)) return "action";

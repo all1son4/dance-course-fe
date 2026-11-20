@@ -51,6 +51,8 @@ export type MyAccessPurchase = {
   cohortId: string | null;
   /** The Telegram identity the purchase belongs to, when known. */
   telegramUserId: string | null;
+  /** An admin invitation, not a purchase: its own wording, a renewal's Telegram check. */
+  invitationKind?: "join" | "renewal" | null;
 };
 
 export type MyAccessRight = {
@@ -114,7 +116,13 @@ export type MyAccessCalendarDate =
 export type MyAccessLine = { key: string; values?: Record<string, string | number> };
 
 export type MyAccessChip =
-  "active" | "endsSoon" | "notJoined" | "linkExpired" | "upcoming" | "ended";
+  | "active"
+  | "endsSoon"
+  | "notJoined"
+  | "linkExpired"
+  | "confirmTelegram"
+  | "upcoming"
+  | "ended";
 
 export type MyAccessCard = {
   id: string;
@@ -145,9 +153,10 @@ export type MyAccessCard = {
   /**
    * The card's button. `reissue` asks for a fresh invite by email (the link itself
    * never reaches the page); its `href` is support, the way out when that fails.
+   * `confirmTelegram` leads to the invitation page, whose signed link the page makes.
    */
   action?: {
-    key: "renewHub" | "buyHub" | "support" | "reissue";
+    key: "renewHub" | "buyHub" | "support" | "reissue" | "confirmTelegram";
     href: string;
     purchaseId?: string;
   };
@@ -180,11 +189,24 @@ const newLinkAction = (right: MyAccessRight) =>
     ? SUPPORT_ACTION
     : reissueAction(right.purchaseId);
 
-/** The note of an access not joined yet: the emailed link, or a new one once it has expired. */
-const joinNote = (right: MyAccessRight) =>
+/**
+ * The note of an access not joined yet: the emailed link, or a new one once it has
+ * expired. An invitation is no purchase: its email is the invitation, not a payment.
+ */
+const joinNote = (right: MyAccessRight, invited: boolean) =>
   right.hasLiveInvite === false
-    ? { action: newLinkAction(right), note: { key: "linkExpired" } }
-    : { note: { key: "linkInEmail" } };
+    ? {
+        action: newLinkAction(right),
+        note: { key: invited ? "linkExpiredInvited" : "linkExpired" },
+      }
+    : { note: { key: invited ? "linkInInvitation" : "linkInEmail" } };
+
+/** A renewal invitation before its Telegram check: the page that makes the links. */
+const confirmTelegramAction = (purchaseId: string) => ({
+  href: "",
+  key: "confirmTelegram" as const,
+  purchaseId,
+});
 
 const isRevoked = (right: MyAccessRight) =>
   right.revokedAt !== null || right.status === "revoked";
@@ -200,6 +222,7 @@ const hubPeriodEnd = (right: MyAccessRight) => right.expiresAt;
 const buildStandaloneHubCard = ({
   groupId,
   hasPlusHub,
+  invitedPurchaseIds,
   isDiscountMember,
   now,
   periods,
@@ -207,6 +230,8 @@ const buildStandaloneHubCard = ({
 }: {
   groupId: string;
   hasPlusHub: boolean;
+  /** The purchases that are admin invitations, for the wording of the link. */
+  invitedPurchaseIds: ReadonlySet<string>;
   /** A member of record of a cohort whose chat gets the renewal price now. */
   isDiscountMember: boolean;
   now: Date;
@@ -244,9 +269,11 @@ const buildStandaloneHubCard = ({
       calendar: { kind: "end", at: iso(paidUntil) },
       status: { key: "hub.activeUntil", values: { date: iso(paidUntil) } },
       note: notJoined
-        ? current.hasLiveInvite === false
-          ? { key: "hub.notJoinedExpired" }
-          : { key: "hub.notJoined" }
+        ? {
+            key: `${current.hasLiveInvite === false ? "hub.notJoinedExpired" : "hub.notJoined"}${
+              invitedPurchaseIds.has(current.purchaseId) ? "Invited" : ""
+            }`,
+          }
         : later.length > 0
           ? { key: "hub.renewed" }
           : { key: "daysLeft", values: { count: left } },
@@ -517,7 +544,7 @@ const buildOnlineGroupCard = ({
       ...base,
       calendar: { kind: "start", at: iso(cohort.startsAt) },
       status: { key: "group.startsOn", values: { date: iso(cohort.startsAt) } },
-      ...(isJoined(primary) ? {} : joinNote(primary)),
+      ...(isJoined(primary) ? {} : joinNote(primary, Boolean(purchase.invitationKind))),
       urgency: isJoined(primary) ? 2 : 0,
       sortAt: cohort.startsAt.getTime(),
     };
@@ -534,7 +561,7 @@ const buildOnlineGroupCard = ({
       total: cohort.durationWeeks,
     },
     status: { key: "group.running" },
-    ...(isJoined(primary) ? {} : joinNote(primary)),
+    ...(isJoined(primary) ? {} : joinNote(primary, Boolean(purchase.invitationKind))),
     urgency: isJoined(primary) ? 1 : 0,
     sortAt: cohort.startsAt.getTime(),
   };
@@ -585,7 +612,7 @@ const buildTimedChannelCard = ({
     status: days
       ? { key: "channel.startsOnJoin", values: { count: days } }
       : { key: "channel.paid" },
-    ...joinNote(primary),
+    ...joinNote(primary, false),
     urgency: 0,
     sortAt: purchase.succeededAt?.getTime() ?? 0,
   };
@@ -616,6 +643,7 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
   if (key === "hub.scheduled" || key === "hub.afterCohort") {
     return "upcoming";
   }
+  if (card.action?.key === "confirmTelegram") return "confirmTelegram";
   if (card.action?.key === "reissue" || card.action?.key === "support") {
     return "linkExpired";
   }
@@ -696,10 +724,43 @@ export const buildMyAccessCards = (
     boughtOf.set(card, purchase.succeededAt?.getTime() ?? 0);
   };
 
+  const invitedPurchaseIds = new Set(
+    snapshot.purchases.flatMap((purchase) =>
+      purchase.invitationKind ? [purchase.id] : [],
+    ),
+  );
+
   for (const purchase of snapshot.purchases) {
     const rights = rightsByPurchase.get(purchase.id) ?? [];
     const primary = rights.find((right) => right.accessKey === "primary");
     const offerId = purchase.offerExternalId;
+
+    // A renewal invitation gives its links only after the Telegram check on its page:
+    // until then that page is the one next step, never «the link has expired».
+    if (purchase.invitationKind === "renewal" && !purchase.telegramUserId) {
+      const waiting = { action: confirmTelegramAction(purchase.id), urgency: 0 as const };
+      if (isInspirationHubOfferId(offerId)) {
+        add(
+          {
+            id: `invitation:${purchase.id}`,
+            title: "hub",
+            status: { key: "hub.renewalWaiting" },
+            note: { key: "confirmTelegram" },
+            ...waiting,
+            sortAt: 0,
+          },
+          purchase,
+        );
+        continue;
+      }
+      const cohort = purchase.cohortId ? (cohorts.get(purchase.cohortId) ?? null) : null;
+      const groupCard = primary
+        ? buildOnlineGroupCard({ cohort, now, primary, purchase })
+        : null;
+      if (groupCard)
+        add({ ...groupCard, note: { key: "confirmTelegram" }, ...waiting }, purchase);
+      continue;
+    }
 
     if (isInspirationHubOfferId(offerId)) {
       const periods = rights.filter(
@@ -775,6 +836,7 @@ export const buildMyAccessCards = (
     const card = buildStandaloneHubCard({
       groupId,
       hasPlusHub: plusHubIdentities.has(groupId),
+      invitedPurchaseIds,
       isDiscountMember,
       now,
       periods,
