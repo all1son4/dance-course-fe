@@ -70,7 +70,7 @@ export default async function OnlineGroupPage() {
   const configuredProduct = SELLABLE_PRODUCTS["online-group-anna-strok"];
   // The tariff section carries the #tariffs anchor the hero button and deep
   // links point at, so the sales switch is read before anything renders.
-  // Streamed in behind the shell (see SaleStateGate) the whole section landed
+  // Streamed in behind the shell in a Suspense boundary the whole section landed
   // 150-300ms after the page on Vercel: everything below it jumped down,
   // "Choose a plan" was a dead click until then and /online/group#tariffs
   // missed its target.

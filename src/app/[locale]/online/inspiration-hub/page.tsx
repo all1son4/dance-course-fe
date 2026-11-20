@@ -79,7 +79,7 @@ export const dynamic = "force-dynamic";
 export default async function InspirationHubPage() {
   const configuredProduct = SELLABLE_PRODUCTS["inspiration-hub"];
   // The buy button sits in the first viewport, so the sales state is read before
-  // rendering instead of streaming in behind the shell (see SaleStateGate).
+  // rendering instead of streaming in behind the shell in a Suspense boundary.
   const [t, metadataT, onlineT, commonT, saleState, catalogProducts] = await Promise.all([
     getTranslations("InspirationHubPage"),
     getTranslations("Metadata"),
