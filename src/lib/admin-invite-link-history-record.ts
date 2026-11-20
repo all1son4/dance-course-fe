@@ -6,6 +6,9 @@
  */
 export type AdminInviteLinkHistoryRecord = {
   accessUrl: string;
+  /** «Убрать из журнала» by hand: the moment, or "" while it is in the journal. */
+  archivedAt: string;
+  purchaseId: string;
   adminLabel: string;
   createdAt: string;
   lessonLanguage: string;

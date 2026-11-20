@@ -22,6 +22,7 @@ export const ADMIN_API_ENDPOINTS = {
   operations: "/admin/api/operations",
   operationsReissueAccess: "/admin/api/operations/reissue-access",
   operationsReplay: "/admin/api/operations/replay",
+  operationsTidy: "/admin/api/operations/tidy",
   purchases: "/admin/api/purchases",
   purchasesResendEmail: "/admin/api/purchases/resend-email",
   renewalCampaigns: "/admin/api/renewal-campaigns",

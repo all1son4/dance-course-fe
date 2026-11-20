@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import { getDatabase } from "./client";
@@ -30,6 +30,7 @@ export const listStripeInboxDeadLetters = async () => {
       and(
         eq(stripeEvents.processingStatus, "dead_letter"),
         eq(stripeEvents.providerPayloadVerified, true),
+        isNull(stripeEvents.dismissedAt),
       ),
     )
     .orderBy(desc(stripeEvents.deadLetteredAt))
@@ -60,6 +61,7 @@ export const listOutboxDeadLetters = async () => {
     .from(purchaseSideEffects)
     .where(
       sql`${purchaseSideEffects.status} = 'dead_letter'
+        AND ${purchaseSideEffects.dismissedAt} IS NULL
         AND ${purchaseSideEffects.payload} @> '{"_outboxVersion":1}'::jsonb`,
     )
     .orderBy(desc(purchaseSideEffects.deadLetteredAt))
@@ -172,3 +174,45 @@ export const listProblemAccessEntitlements = async () => {
     updatedAt: row.updatedAt.toISOString(),
   }));
 };
+
+/**
+ * «Решено»: a dead letter the admin has handled another way (or that no longer
+ * matters) leaves the alerts and the list; the row stays for its history, and a
+ * replay brings it back to the queue as before.
+ */
+export async function dismissDeadLetter({
+  key,
+  now = new Date(),
+  queue,
+}: {
+  key: string;
+  now?: Date;
+  queue: "inbox" | "outbox";
+}): Promise<boolean> {
+  const rows =
+    queue === "inbox"
+      ? await getDatabase()
+          .update(stripeEvents)
+          .set({ dismissedAt: now })
+          .where(
+            and(
+              eq(stripeEvents.stripeEventId, key),
+              eq(stripeEvents.processingStatus, "dead_letter"),
+              isNull(stripeEvents.dismissedAt),
+            ),
+          )
+          .returning({ id: stripeEvents.id })
+      : await getDatabase()
+          .update(purchaseSideEffects)
+          .set({ dismissedAt: now })
+          .where(
+            and(
+              eq(purchaseSideEffects.deduplicationKey, key),
+              eq(purchaseSideEffects.status, "dead_letter"),
+              isNull(purchaseSideEffects.dismissedAt),
+            ),
+          )
+          .returning({ id: purchaseSideEffects.id });
+
+  return rows.length > 0;
+}

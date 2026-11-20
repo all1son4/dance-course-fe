@@ -5,26 +5,15 @@ import {
   ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
   ONLINE_GROUP_RENEWAL_OFFER_ID,
 } from "@/constants/sellable-products";
-import type { AttentionItem } from "@/lib/admin/overview";
 import type { CohortOverview } from "@/lib/online-group/cohort-admin";
 
 import type { useCohortsAdmin } from "../hooks/use-cohorts-admin";
 import type { useOnlineGroupAdmin } from "../hooks/use-online-group-admin";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
-import type { AdminFeatureId } from "../lib/admin.types";
 import { parseWarsawDateTimeInput } from "../lib/admin.utils";
 import { requestAdminJson } from "../lib/admin-request";
-import {
-  AdminButton,
-  Callout,
-  PageHeader,
-  Panel,
-  SegmentedTabs,
-  Stack,
-  TextButton,
-} from "../ui/primitives";
+import { AdminButton, Callout, PageHeader, SegmentedTabs, Stack } from "../ui/primitives";
 import { AccessInvitations } from "./access-invitations";
-import { AttentionList } from "./attention-list";
 import type { NextCohortInput, RenewalLinkKind } from "./cohort-transition-guide";
 import { CohortsPanel } from "./cohorts-panel";
 import {
@@ -49,9 +38,7 @@ const NEXT_COHORT_ERRORS: Record<string, string> = {
 };
 
 type OnlineGroupTabProps = {
-  attention: AttentionItem[];
   cohorts: ReturnType<typeof useCohortsAdmin>;
-  onNavigate: (view: AdminFeatureId) => void;
   onProblemsChanged: () => void;
   onUnauthorized: () => void;
   settings: ReturnType<typeof useOnlineGroupAdmin>;
@@ -63,13 +50,12 @@ const submit = (action: () => unknown) => (event: FormEvent<HTMLFormElement>) =>
 };
 
 /**
- * Everything about the teaching cohorts in one place: what needs fixing first,
- * then the cohorts themselves, then the tools the operator reaches for less often.
+ * Everything about the teaching cohorts in one place: the cohorts themselves, then
+ * the tools the operator reaches for less often. What needs fixing lives in the
+ * overview's one list and on the cohort cards, never a third time here.
  */
 export const OnlineGroupTab = ({
-  attention,
   cohorts,
-  onNavigate,
   onProblemsChanged,
   onUnauthorized,
   settings,
@@ -148,7 +134,7 @@ export const OnlineGroupTab = ({
     <Stack $gap={20}>
       <PageHeader
         title="Online Group"
-        description="Потоки, продажи Standard и Plus, ссылки продления и ручные доступы."
+        description="Потоки, продажи Standard и Plus, ссылки продления и приглашения."
         actions={
           <AdminButton
             icon={<RefreshCw aria-hidden />}
@@ -159,17 +145,6 @@ export const OnlineGroupTab = ({
           </AdminButton>
         }
       />
-
-      {attention.length > 0 && (
-        <Panel title={`Требует внимания · ${attention.length}`}>
-          <AttentionList
-            currentView="online-group"
-            items={attention}
-            onFixed={refresh}
-            onNavigate={onNavigate}
-          />
-        </Panel>
-      )}
 
       <SegmentedTabs<Section>
         label="Разделы Online Group"
@@ -214,16 +189,6 @@ export const OnlineGroupTab = ({
             ссылки продления, пост, закрытие. Закрытие само сделает следующий поток
             текущим, здесь для этого ничего менять не нужно.
           </Callout>
-          {settings.activeCampaign && (
-            <Callout tone="info" icon={<Info aria-hidden />}>
-              Plus даёт доступ в библиотеку Inspiration Hub (группа «
-              {settings.inspirationChatTitle}»). Всё о ней — в разделе{" "}
-              <TextButton type="button" onClick={() => onNavigate("inspiration-hub")}>
-                Inspiration Hub
-              </TextButton>
-              .
-            </Callout>
-          )}
           <ActiveOnlineGroupCard
             activeCampaign={settings.activeCampaign}
             activeMainChatTitle={settings.activeMainChatTitle}

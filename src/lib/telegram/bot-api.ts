@@ -389,6 +389,15 @@ export const getTelegramChatMember = async ({
     },
   );
 
+/** Read-only: how many members a chat has now, by Telegram (admins and bots included). */
+export const getTelegramChatMemberCount = async ({
+  botToken,
+  chatId,
+}: {
+  botToken?: string;
+  chatId: number | string;
+}) => callTelegramApi<number>("getChatMemberCount", { chat_id: chatId }, { botToken });
+
 export type TelegramWebhookInfo = {
   last_error_date?: number;
   last_error_message?: string;

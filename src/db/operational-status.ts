@@ -44,8 +44,9 @@ export const readOperationalDatabaseStatus = async (
             WHERE processing_status = 'processing'
               AND lease_expires_at <= now()
           )::int AS "staleLeases",
-          count(*) FILTER (WHERE processing_status = 'dead_letter')::int
-            AS "deadLetters",
+          count(*) FILTER (
+            WHERE processing_status = 'dead_letter' AND dismissed_at IS NULL
+          )::int AS "deadLetters",
           count(*) FILTER (WHERE attempt_count > 1)::int AS "retries",
           extract(epoch FROM (
             now() - min(received_at) FILTER (
@@ -67,7 +68,9 @@ export const readOperationalDatabaseStatus = async (
             WHERE status = 'sending'
               AND lease_expires_at <= now()
           )::int AS "staleLeases",
-          count(*) FILTER (WHERE status = 'dead_letter')::int AS "deadLetters",
+          count(*) FILTER (
+            WHERE status = 'dead_letter' AND dismissed_at IS NULL
+          )::int AS "deadLetters",
           count(*) FILTER (WHERE attempt_count > 1)::int AS "retries",
           extract(epoch FROM (
             now() - min(created_at) FILTER (

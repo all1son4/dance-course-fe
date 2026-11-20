@@ -1,8 +1,14 @@
+import { setAdminJournalArchived } from "@/db/access-invitations";
 import { listAdminInviteLinkHistoryRecords } from "@/lib/admin-invite-link-history-read-runtime";
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
-import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import {
+  getBrowserJsonRequestErrorResponse,
+  jsonErrorNoStore,
+  jsonNoStore,
+  parseJsonBody,
+} from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
-import { getSafeErrorCategory } from "@/lib/safe-error-log";
+import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 import {
   formatPurchaseLine,
   getAdminPurchaseLine,
@@ -11,12 +17,16 @@ import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer
 
 export const runtime = "nodejs";
 const HISTORY_CACHE_TTL_MS = 30_000;
+const DAY_MS = 86_400_000;
 const STALE_HISTORY_CACHE_TTL_MS = 5 * 60_000;
 
 type LinkState = "active" | "expired" | "used";
 
 type HistoryEntry = {
   accessUrl: string;
+  /** In «Архив»: removed by hand, or over — used a week ago, expired a month ago. */
+  archived: "manual" | "auto" | null;
+  purchaseId: string;
   adminLabel: string;
   createdAtIso: string;
   linkState: LinkState;
@@ -80,16 +90,26 @@ const fetchHistoryItems = async () => {
   const items = historySourceRows.map((row) => {
     const adminLabel = row.adminLabel.trim() || row.purchaseItem.trim();
 
+    const linkState: LinkState = row.tokenUsedAt.trim()
+      ? "used"
+      : row.tokenExpiresAt && Date.parse(row.tokenExpiresAt) <= Date.now()
+        ? "expired"
+        : "active";
+    const since = (iso: string) => (iso ? Date.now() - Date.parse(iso) : 0);
+
     return {
       accessUrl: row.accessUrl,
+      archived: row.archivedAt
+        ? "manual"
+        : (linkState === "used" && since(row.tokenUsedAt) > 7 * DAY_MS) ||
+            (linkState === "expired" && since(row.tokenExpiresAt) > 30 * DAY_MS)
+          ? "auto"
+          : null,
+      purchaseId: row.purchaseId,
       adminLabel,
       createdAtIso: row.createdAt,
       // An unused link past its expiry no longer opens: never offer it as active.
-      linkState: row.tokenUsedAt.trim()
-        ? "used"
-        : row.tokenExpiresAt && Date.parse(row.tokenExpiresAt) <= Date.now()
-          ? "expired"
-          : "active",
+      linkState,
       selectionLabel: buildSelectionLabel({
         language: row.lessonLanguage,
         offerId: row.offerId,
@@ -182,5 +202,43 @@ export async function GET(request: Request) {
     });
 
     return jsonErrorNoStore("admin_invite_link_history_failed", { status: 500 });
+  }
+}
+
+/** «Убрать из журнала» / «Вернуть в журнал» for one link; the access is untouched. */
+export async function POST(request: Request) {
+  if (!isAdminInviteLinksRequestAuthenticated(request)) {
+    return jsonErrorNoStore("unauthorized", { status: 401 });
+  }
+  const requestError = getBrowserJsonRequestErrorResponse(request, 1024);
+  if (requestError) return requestError;
+
+  const rateLimit = await consumeRateLimit({
+    key: `admin:invite-links:archive:${getRequestIp(request)}`,
+    limit: 30,
+    windowMs: 60_000,
+  });
+  if (rateLimit.limited) return jsonErrorNoStore("rate_limited", { status: 429 });
+
+  try {
+    const { body, errorResponse } = await parseJsonBody<{
+      archived?: unknown;
+      purchaseId?: unknown;
+    }>(request, 1024);
+    if (errorResponse) return errorResponse;
+    const purchaseId = typeof body?.purchaseId === "string" ? body.purchaseId.trim() : "";
+    if (!/^[0-9a-f-]{36}$/u.test(purchaseId) || typeof body?.archived !== "boolean") {
+      return jsonErrorNoStore("invalid_request_body", { status: 400 });
+    }
+
+    const changed = await setAdminJournalArchived({
+      archived: body.archived,
+      purchaseId,
+    });
+    historyCacheEntry = null;
+    return jsonNoStore({ status: changed ? "done" : "not_found" });
+  } catch (error) {
+    logSafeError("Failed to archive an admin invite link", error);
+    return jsonErrorNoStore("admin_invite_link_archive_failed", { status: 500 });
   }
 }

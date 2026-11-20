@@ -218,6 +218,13 @@
       "when": 1795113737874,
       "tag": "0030_purchase_invitations",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795184082417,
+      "tag": "0031_operational_events",
+      "breakpoints": true
     }
   ]
 }

@@ -360,6 +360,45 @@ const DisclosureButton = styled.button<{ $open: boolean }>`
     font-size: var(--a-text-sm);
   }
 
+  /* A journal row: who and what on the left, one column of states on the right. */
+  &[data-aside] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 18px;
+    align-items: center;
+
+    > span:first-child {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    > [data-row-aside] {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      max-width: 280px;
+      text-align: right;
+    }
+
+    @container admin-content (max-width: 560px) {
+      grid-template-columns: minmax(0, 1fr) 18px;
+
+      > [data-row-aside] {
+        grid-row: 2;
+        grid-column: 1;
+        flex-flow: row wrap;
+        align-items: center;
+        max-width: none;
+        text-align: left;
+      }
+
+      > svg {
+        grid-row: 1 / span 2;
+        grid-column: 2;
+      }
+    }
+  }
+
   > svg {
     width: 18px;
     height: 18px;
@@ -395,11 +434,14 @@ const DisclosureBody = styled.div`
  * on its own.
  */
 export const Disclosure = ({
+  aside,
   children,
   defaultOpen = false,
   hint,
   title,
 }: {
+  /** The row's states, in one right-hand column (journals). */
+  aside?: ReactNode;
   children: ReactNode;
   defaultOpen?: boolean;
   hint?: ReactNode;
@@ -416,12 +458,14 @@ export const Disclosure = ({
         aria-controls={id}
         aria-expanded={open}
         $open={open}
+        data-aside={aside ? "" : undefined}
         onClick={() => setOpen(!open)}
       >
         <span>
           <strong>{title}</strong>
           {hint && <small>{hint}</small>}
         </span>
+        {aside && <span data-row-aside>{aside}</span>}
         <ChevronDown aria-hidden />
       </DisclosureButton>
       <DisclosureRegion

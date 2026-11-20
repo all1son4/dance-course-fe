@@ -564,6 +564,8 @@ export type InvitationJournalEntry = {
   note: string;
   createdAt: Date;
   revoked: boolean;
+  /** «Убрать из журнала» by hand; null while it stays in the journal. */
+  archivedAt: Date | null;
   /** The account is known: confirmed on the renewal page, or met at the first join. */
   telegramConfirmed: boolean;
   cohortTitle: string | null;
@@ -594,7 +596,7 @@ const resolveAccessState = (
  * from before invitations, which show their label) or the Hub.
  */
 export async function listAccessInvitations({
-  limit = 30,
+  limit = 60,
   scope,
   productExternalId = scope === "hub"
     ? INSPIRATION_HUB_PRODUCT_ID
@@ -623,7 +625,7 @@ export async function listAccessInvitations({
       ),
     )
     .orderBy(desc(purchases.firstSeenAt))
-    .limit(Math.max(1, Math.min(limit, 50)));
+    .limit(Math.max(1, Math.min(limit, 100)));
 
   if (rows.length === 0) return [];
 
@@ -741,6 +743,7 @@ export async function listAccessInvitations({
       note: purchase.adminNote ?? "",
       createdAt: purchase.firstSeenAt,
       revoked: purchase.outcome === "canceled",
+      archivedAt: purchase.adminArchivedAt,
       telegramConfirmed: purchase.telegramUserId !== null,
       cohortTitle,
       accesses,
@@ -883,4 +886,26 @@ export async function hasActiveChatBinding(
     .limit(1);
 
   return Boolean(binding);
+}
+
+/**
+ * «Убрать из журнала» / «Вернуть в журнал»: only the admin journals read the mark;
+ * the purchase, its rights and every count stay as they are.
+ */
+export async function setAdminJournalArchived({
+  archived,
+  now = new Date(),
+  purchaseId,
+}: {
+  archived: boolean;
+  now?: Date;
+  purchaseId: string;
+}): Promise<boolean> {
+  const rows = await getDatabase()
+    .update(purchases)
+    .set({ adminArchivedAt: archived ? now : null })
+    .where(and(eq(purchases.id, purchaseId), eq(purchases.source, "admin_offer_link")))
+    .returning({ id: purchases.id });
+
+  return rows.length > 0;
 }

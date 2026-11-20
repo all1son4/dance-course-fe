@@ -1,6 +1,10 @@
-import { getDatabaseClient } from "@/db/client";
+import { sql } from "drizzle-orm";
+
+import { getDatabase } from "@/db/client";
 import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales";
+import { purchases } from "@/db/schema";
+import { stripeFinancialDataComplete } from "@/db/stripe-sales";
 import {
   getAccountingMonthValue,
   getPreviousAccountingMonthValue,
@@ -59,25 +63,34 @@ const plural = (count: number, one: string, few: string, many: string) => {
 const formatPln = (minor: number) =>
   `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(Math.round(minor / 100))} PLN`;
 
+/** Production counts live Stripe sales only; elsewhere test-mode sales are the data. */
+const isProductionDatabase = () => process.env.VERCEL_ENV === "production";
+
+/**
+ * «Заработано за месяц»: what Stripe left after its fee (the conversion of EUR sales
+ * included), by the rule of «Покупки» and the monthly report — a sale counts from its
+ * first processed payment_intent.succeeded event, and only once its balance
+ * transaction is complete. A sale Stripe has not settled yet is counted apart.
+ */
 export const readSalesMetrics = async (now: Date) => {
-  const [row] = await getDatabaseClient()<
-    {
-      monthGross: string;
-      monthCount: number;
-      previousGross: string;
-      weekCount: number;
-    }[]
-  >`
-    -- Same rule as "Покупки" and the monthly report: a sale counts from its first
-    -- processed Stripe payment_intent.succeeded event, so the two never disagree.
+  const at = now.toISOString();
+  const rows = await getDatabase().execute<{
+    monthNet: string;
+    monthCount: number;
+    monthUnsettled: number;
+    previousNet: string;
+    weekCount: number;
+  }>(sql`
     WITH bounds AS (
       SELECT
-        date_trunc('month', ${now.toISOString()}::timestamptz AT TIME ZONE 'Europe/Warsaw') AS month_start,
-        date_trunc('month', ${now.toISOString()}::timestamptz AT TIME ZONE 'Europe/Warsaw') - interval '1 month' AS previous_start
+        date_trunc('month', ${at}::timestamptz AT TIME ZONE 'Europe/Warsaw') AS month_start,
+        date_trunc('month', ${at}::timestamptz AT TIME ZONE 'Europe/Warsaw') - interval '1 month' AS previous_start
     ),
     sales AS (
-      SELECT purchases.settlement_amount_minor AS amount, events.sale_at
-      FROM purchases
+      SELECT
+        CASE WHEN ${stripeFinancialDataComplete} THEN ${purchases.stripeNetAmountMinor} END AS net,
+        events.sale_at
+      FROM ${purchases}
       JOIN (
         SELECT payment_intent_id, MIN(stripe_created_at) AS sale_at
         FROM stripe_events
@@ -87,40 +100,47 @@ export const readSalesMetrics = async (now: Date) => {
           AND payment_intent_id IS NOT NULL
           AND stripe_created_at IS NOT NULL
         GROUP BY payment_intent_id
-      ) AS events ON events.payment_intent_id = purchases.payment_intent_id
-      WHERE purchases.outcome = 'succeeded'
+      ) AS events ON events.payment_intent_id = ${purchases.paymentIntentId}
+      WHERE ${purchases.outcome} = 'succeeded'
+        AND ${purchases.source} = 'stripe'
+        AND (${!isProductionDatabase()} OR ${purchases.livemode} = true)
+    ),
+    marked AS (
+      SELECT net, sale_at,
+        sale_at AT TIME ZONE 'Europe/Warsaw' >= bounds.month_start
+          AND sale_at <= ${at}::timestamptz AS this_month,
+        sale_at AT TIME ZONE 'Europe/Warsaw' >= bounds.previous_start
+          AND sale_at AT TIME ZONE 'Europe/Warsaw' < bounds.month_start
+          AND sale_at <= ${at}::timestamptz - interval '1 month' AS previous_to_date
+      FROM sales, bounds
     )
     SELECT
-      COALESCE(SUM(amount) FILTER (
-        WHERE sale_at AT TIME ZONE 'Europe/Warsaw' >= bounds.month_start
-          AND sale_at <= ${now.toISOString()}::timestamptz), 0)::text AS "monthGross",
+      COALESCE(SUM(net) FILTER (WHERE this_month), 0)::text AS "monthNet",
+      count(*) FILTER (WHERE this_month)::int AS "monthCount",
+      count(*) FILTER (WHERE this_month AND net IS NULL)::int AS "monthUnsettled",
+      COALESCE(SUM(net) FILTER (WHERE previous_to_date), 0)::text AS "previousNet",
       count(*) FILTER (
-        WHERE sale_at AT TIME ZONE 'Europe/Warsaw' >= bounds.month_start
-          AND sale_at <= ${now.toISOString()}::timestamptz)::int AS "monthCount",
-      COALESCE(SUM(amount) FILTER (
-        WHERE sale_at AT TIME ZONE 'Europe/Warsaw' >= bounds.previous_start
-          AND sale_at AT TIME ZONE 'Europe/Warsaw' < bounds.month_start
-          AND sale_at <= ${now.toISOString()}::timestamptz - interval '1 month'), 0)::text AS "previousGross",
-      count(*) FILTER (
-        WHERE sale_at > ${now.toISOString()}::timestamptz - interval '7 days'
-          AND sale_at <= ${now.toISOString()}::timestamptz)::int AS "weekCount"
-    FROM sales, bounds
-    GROUP BY bounds.month_start, bounds.previous_start
-  `;
-  const monthGross = Number(row?.monthGross ?? 0);
+        WHERE sale_at > ${at}::timestamptz - interval '7 days'
+          AND sale_at <= ${at}::timestamptz)::int AS "weekCount"
+    FROM marked
+  `);
+  const [row] = rows;
+  const monthNet = Number(row?.monthNet ?? 0);
   // Same days of the previous month, so the comparison is fair mid-month.
-  const previousToDate = Number(row?.previousGross ?? 0);
+  const previousToDate = Number(row?.previousNet ?? 0);
 
   return {
     monthLabel: new Intl.DateTimeFormat("ru-RU", {
       month: "long",
       timeZone: "Europe/Warsaw",
     }).format(now),
-    monthGross: formatPln(monthGross),
+    monthNet: formatPln(monthNet),
     monthCount: row?.monthCount ?? 0,
+    /** Sales of the month Stripe has not settled yet: not in the sum. */
+    monthUnsettled: row?.monthUnsettled ?? 0,
     deltaPercent:
       previousToDate > 0
-        ? Math.round(((monthGross - previousToDate) / previousToDate) * 100)
+        ? Math.round(((monthNet - previousToDate) / previousToDate) * 100)
         : null,
     weekCount: row?.weekCount ?? 0,
   };
@@ -332,14 +352,7 @@ export async function getAdminOverview(now = new Date()) {
       title: `Ночью бот уберёт из библиотеки ${count} ${plural(count, "человека", "человека", "человек")}`,
     });
   }
-  if (hubCounts.endingSoon > 0) {
-    events.push({
-      id: "hub-ending",
-      at: new Date(now.getTime() + 7 * DAY_MS).toISOString(),
-      view: "inspiration-hub",
-      title: `До этой даты ${plural(hubCounts.endingSoon, "закончится", "закончатся", "закончатся")} ${hubCounts.endingSoon} ${plural(hubCounts.endingSoon, "оплаченный доступ", "оплаченных доступа", "оплаченных доступов")} к библиотеке`,
-    });
-  }
+  // «Закончатся за 7 дней» is the library tile's hint; no second line for it here.
   events.sort((left, right) => Date.parse(left.at) - Date.parse(right.at));
 
   const current =

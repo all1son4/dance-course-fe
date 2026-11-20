@@ -250,9 +250,12 @@ test("[BEH-ADMIN-01] creates and reads one atomic admin grant without export eve
       source: "admin_offer_link",
       succeededAt: null,
     });
+    assert.ok(historyRecord?.purchaseId);
     assert.deepEqual(historyRecord, {
       accessUrl,
       adminLabel: "WRITE-05 admin",
+      archivedAt: "",
+      purchaseId: historyRecord.purchaseId,
       createdAt: "2026-08-13T10:00:00.000Z",
       lessonLanguage: "en",
       offerId: offerExternalId,

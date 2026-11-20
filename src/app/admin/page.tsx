@@ -118,9 +118,6 @@ function AdminApp() {
     void inviteLinks.generate();
   };
 
-  const attentionFor = (view: AdminFeatureId) =>
-    overview.overview?.attention.filter((item) => item.view === view) ?? [];
-
   const sectionDescription = ADMIN_FEATURE_COPY[activeFeature.id].description;
 
   return (
@@ -148,9 +145,7 @@ function AdminApp() {
         />
       ) : activeFeature.id === "online-group" ? (
         <OnlineGroupTab
-          attention={attentionFor("online-group")}
           cohorts={cohorts}
-          onNavigate={setActiveId}
           onProblemsChanged={refreshOverview}
           onUnauthorized={onUnauthorized}
           settings={onlineGroup}
@@ -160,7 +155,6 @@ function AdminApp() {
           failed={hub.failed}
           hub={hub.hub}
           isLoading={hub.isLoading}
-          onNavigate={setActiveId}
           onOpenPurchase={openPurchase}
           onPreviewAtChange={hub.changePreviewAt}
           onRefresh={() => {
@@ -214,6 +208,7 @@ function AdminApp() {
                   isInitialLoading={inviteLinks.isJournalInitialLoading}
                   isLoading={inviteLinks.isJournalLoading}
                   links={inviteLinks.recentLinks}
+                  onArchive={inviteLinks.archiveLink}
                   onRefresh={inviteLinks.refreshJournal}
                 />
               </WorkspaceSecondary>
@@ -278,6 +273,7 @@ function AdminApp() {
                 isLoading={operations.isLoading}
                 onRefresh={operations.refresh}
                 onReissueAccess={operations.reissueAccess}
+                onTidy={operations.tidy}
                 onReplay={async (...args: Parameters<typeof operations.replay>) => {
                   await operations.replay(...args);
                   refreshOverview();
