@@ -25,12 +25,20 @@
         "title": "First Touch: kurs Frame Up Strip online od zera",
         "description": "Dla osób, które nigdy nie tańczyły: podstawy, praca stóp i pierwsza choreografia. 5 lekcji online w półtora miesiąca, zadania z feedbackiem, 120 dni dostępu.",
         "ogImageAlt": "First Touch: kurs Frame Up Strip dla początkujących",
-        "heroImageAlt": "Anna Strok na stołku w butach strip, z szeroko rozstawionymi nogami"
+        "heroImageAlt": "Anna Strok na stołku w butach strip, z szeroko rozstawionymi nogami",
+        "video": {
+          "name": "First Touch: wprowadzenie do kursu Anny Strok",
+          "description": "Anna Strok opowiada o First Touch — kursie Frame Up Strip online dla osób, które nigdy nie tańczyły."
+        }
       },
       "onlineGroup": {
         "title": "Grupa online: treningi Frame Up Strip",
         "description": "Sześciotygodniowy cykl na Telegramie dla średniozaawansowanych i zaawansowanych: 5 nowych lekcji, zadania z feedbackiem do nagrań i zamknięty czat grupy.",
-        "ogImageAlt": "Grupa online: treningi z Anną Strok"
+        "ogImageAlt": "Grupa online: treningi z Anną Strok",
+        "video": {
+          "name": "Grupa online by Anna Strok: przykładowe wideo",
+          "description": "Krótki przykład z grupy online — sześciotygodniowych treningów Frame Up Strip z Anną Strok na Telegramie dla średniozaawansowanych i zaawansowanych."
+        }
       },
       "choreo": {
         "title": "Tutoriale choreografii Frame Up Strip",
@@ -148,8 +156,18 @@
       "title": "Masz pytanie? Jesteśmy tu dla Ciebie",
       "button": "Napisz do nas"
     },
+    "links": {
+      "ariaLabel": "Sekcje strony",
+      "online": "Online",
+      "onlineGroup": "Grupa online",
+      "firstTouch": "Kurs „First Touch”",
+      "choreo": "Tutoriale choreografii",
+      "inspirationHub": "Inspiration HUB",
+      "offline": "Offline"
+    },
     "copyright": "© 2026 Anna Strok. Wszelkie prawa zastrzeżone",
     "privacyPolicy": "Polityka prywatności",
+    "cookiePolicy": "Polityka cookies",
     "cookieSettings": "Ustawienia cookies"
   },
   "Contacts": {

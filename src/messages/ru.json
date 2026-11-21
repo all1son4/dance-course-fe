@@ -25,12 +25,20 @@
         "title": "First Touch: онлайн-курс Frame Up Strip с нуля",
         "description": "Онлайн-курс для тех, кто никогда не танцевал: база, стопы и первая хореография. 5 уроков за 1,5 месяца, задания с обратной связью, доступ 120 дней.",
         "ogImageAlt": "Курс First Touch: Frame Up Strip для начинающих",
-        "heroImageAlt": "Анна Строк на стуле в стрипах, ноги широко расставлены"
+        "heroImageAlt": "Анна Строк на стуле в стрипах, ноги широко расставлены",
+        "video": {
+          "name": "First Touch: знакомство с курсом Анны Строк",
+          "description": "Анна Строк рассказывает о First Touch — онлайн-курсе Frame Up Strip для начинающих с нуля."
+        }
       },
       "onlineGroup": {
         "title": "Онлайн-группа: тренировки Frame Up Strip",
         "description": "Шестинедельный поток в Telegram для среднего и продолжающего уровня: 5 новых уроков, домашние задания с обратной связью по видео и закрытый чат группы.",
-        "ogImageAlt": "Онлайн-группа: тренировки Анны Строк"
+        "ogImageAlt": "Онлайн-группа: тренировки Анны Строк",
+        "video": {
+          "name": "Онлайн-группа by Anna Strok: пример видео",
+          "description": "Короткий пример из онлайн-группы — шестинедельных тренировок Frame Up Strip с Анной Строк в Telegram для среднего и продолжающего уровня."
+        }
       },
       "choreo": {
         "title": "Онлайн-разборы хореографий Frame Up Strip",
@@ -148,8 +156,18 @@
       "title": "Есть вопрос? Мы рядом",
       "button": "Написать в поддержку"
     },
+    "links": {
+      "ariaLabel": "Разделы сайта",
+      "online": "Online",
+      "onlineGroup": "Онлайн-группа",
+      "firstTouch": "Курс «First Touch»",
+      "choreo": "Разборы хореографий",
+      "inspirationHub": "Inspiration HUB",
+      "offline": "Offline"
+    },
     "copyright": "© 2026 Anna Strok. Все права защищены",
     "privacyPolicy": "Политика конфиденциальности",
+    "cookiePolicy": "Политика cookies",
     "cookieSettings": "Настройки cookies"
   },
   "Contacts": {

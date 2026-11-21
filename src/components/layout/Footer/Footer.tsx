@@ -21,13 +21,26 @@ import {
   Divider,
   FooterBox,
   InfoBlock,
-  PrivacyPolicy,
+  LegalLink,
+  SiteLink,
+  SiteLinks,
   SupportBlock,
   SupportText,
   TopRow,
 } from "./Footer.styles";
 
 const PRIVACY_POLICY_HREF = "/privacy-policy";
+const COOKIE_POLICY_HREF = "/cookie-policy";
+// Every public section, so each page links to every other one and none is
+// an orphan for a crawler.
+const SITE_LINKS = [
+  { key: "online", href: "/online" },
+  { key: "onlineGroup", href: "/online/group" },
+  { key: "firstTouch", href: "/online/first-touch" },
+  { key: "choreo", href: "/online/choreo" },
+  { key: "inspirationHub", href: "/online/inspiration-hub" },
+  { key: "offline", href: "/offline" },
+] as const;
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
 const isPaymentResultPathname = (pathname: string) => {
   const normalizedPathname = trimTrailingSlash(pathname);
@@ -85,11 +98,20 @@ export default function Footer() {
           />
         </SupportBlock>
       </TopRow>
+      <SiteLinks aria-label={t("links.ariaLabel")}>
+        <ul>
+          {SITE_LINKS.map(({ key, href }) => (
+            <li key={key}>
+              <SiteLink href={href}>{t(`links.${key}`)}</SiteLink>
+            </li>
+          ))}
+        </ul>
+      </SiteLinks>
       <Divider />
       <BottomRow>
         <CopyRight>{t("copyright")}</CopyRight>
         <BottomLinks>
-          <PrivacyPolicy
+          <LegalLink
             href={PRIVACY_POLICY_HREF}
             onClick={() => {
               void trackCtaClick(
@@ -99,7 +121,8 @@ export default function Footer() {
             }}
           >
             {t("privacyPolicy")}
-          </PrivacyPolicy>
+          </LegalLink>
+          <LegalLink href={COOKIE_POLICY_HREF}>{t("cookiePolicy")}</LegalLink>
           <CookieSettingsButton type="button" onClick={openCookieSettings}>
             {t("cookieSettings")}
           </CookieSettingsButton>
