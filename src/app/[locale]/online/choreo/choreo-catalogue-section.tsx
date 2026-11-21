@@ -17,10 +17,9 @@ export default async function ChoreoCatalogueSection() {
   // Every string the cards need - product titles, offer labels, the bundle's
   // heading - is catalogue copy, so the translator is bound to SellableProducts
   // rather than to this page's own namespace.
-  const [t, pageT, metadataT, catalogProducts] = await Promise.all([
+  const [t, pageT, catalogProducts] = await Promise.all([
     getTranslations("SellableProducts"),
     getTranslations("ChoreoPage"),
-    getTranslations("Metadata.pages.choreo"),
     getStorefrontSellableProducts(),
   ]);
   const translate = (key: string) => t(key);
@@ -30,7 +29,8 @@ export default async function ChoreoCatalogueSection() {
     ({ name, offers }) =>
       buildCourseStructuredData({
         name,
-        description: metadataT("description"),
+        // What the page itself says about every tutorial, not the search snippet.
+        description: pageT("hero.description.1"),
         path: "/online/choreo",
         offers: offers.flatMap((offer) =>
           buildCourseOffersStructuredData({

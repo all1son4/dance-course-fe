@@ -1,15 +1,12 @@
 import type { MetadataRoute } from "next";
 
-const siteUrl =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  (process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000");
-const normalizedSiteUrl = siteUrl.replace(/\/+$/u, "");
+import { isIndexableDeployment } from "@/lib/search-indexing";
+import { normalizedSiteUrl } from "@/lib/seo";
 
 export default function robots(): MetadataRoute.Robots {
   return {
+    // Crawling stays allowed everywhere: a non-production deployment says
+    // `noindex` in a header, and Google only sees that on pages it may fetch.
     rules: [
       {
         userAgent: "*",
@@ -17,6 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/admin"],
       },
     ],
-    sitemap: `${normalizedSiteUrl}/sitemap.xml`,
+    // Only production advertises its pages.
+    ...(isIndexableDeployment() ? { sitemap: `${normalizedSiteUrl}/sitemap.xml` } : {}),
   };
 }

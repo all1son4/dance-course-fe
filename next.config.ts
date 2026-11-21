@@ -2,6 +2,10 @@ const createNextIntlPlugin = require("next-intl/plugin");
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const path = require("path");
+const {
+  isIndexableDeployment,
+  NON_PRODUCTION_ROBOTS_HEADER,
+} = require("./src/lib/search-indexing.ts");
 const isProduction = process.env.NODE_ENV === "production";
 const vercelLiveSource = "https://vercel.live";
 const mixpanelRecorderSource = "https://cdn.mxpnl.com";
@@ -99,6 +103,8 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: contentSecurityPolicy,
           },
+          // dev.annastrok.com and previews stay out of search; see lib/search-indexing.
+          ...(isIndexableDeployment() ? [] : [NON_PRODUCTION_ROBOTS_HEADER]),
           ...(isProduction
             ? [
                 {

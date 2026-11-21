@@ -6,6 +6,7 @@ import {
   annaStrokStructuredDataId,
   buildBreadcrumbStructuredData,
   buildPageMetadata,
+  buildVideoStructuredData,
   buildWebsiteStructuredData,
   normalizedSiteUrl,
   seoImagePath,
@@ -118,5 +119,38 @@ describe("page metadata helper", () => {
     assert.equal(metadata.title, "First Touch");
     assert.equal((metadata.openGraph as { locale?: string }).locale, "pl_PL");
     assert.deepEqual(metadata.alternates, { canonical: "/online/first-touch" });
+  });
+});
+
+describe("buildVideoStructuredData", () => {
+  it("describes a known file with Google's required fields and absolute URLs", () => {
+    assert.deepEqual(
+      buildVideoStructuredData({
+        src: "/videos/online_example.mp4",
+        name: "Name",
+        description: "Description",
+      }),
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        name: "Name",
+        description: "Description",
+        thumbnailUrl: [`${normalizedSiteUrl}/images/online_example_poster.webp`],
+        contentUrl: `${normalizedSiteUrl}/videos/online_example.mp4`,
+        uploadDate: "2026-07-24T20:34:33+03:00",
+        duration: "PT43S",
+      },
+    );
+  });
+
+  it("emits nothing for a file it has no facts about", () => {
+    assert.equal(
+      buildVideoStructuredData({
+        src: "/videos/unknown.mp4",
+        name: "N",
+        description: "D",
+      }),
+      null,
+    );
   });
 });

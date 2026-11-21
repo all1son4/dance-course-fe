@@ -10,48 +10,56 @@
     "ogImageAlt": "Anna Strok, Frame Up Strip dancer and teacher",
     "pages": {
       "home": {
-        "title": "Anna Strok: Frame Up Strip online and in Warsaw",
-        "description": "Frame Up Strip with Anna Strok: online courses with feedback, a beginner group and Impro Room in Warsaw. Start dancing from scratch online or in the studio.",
+        "title": "Anna Strok: Frame Up Strip Classes Online and in Warsaw",
+        "description": "Frame Up Strip, a floorwork dance style in strip shoes, with Anna Strok: online courses in Telegram with feedback, a beginner group and Impro Room in Warsaw.",
         "ogImageAlt": "Anna Strok, Frame Up Strip dancer and teacher",
         "heroImageAlt": "Anna Strok in strip shoes on a tall stool, head tilted back"
       },
       "online": {
-        "title": "Online Frame Up Strip Courses in Telegram",
-        "description": "Choreography tutorials, Online Group for intermediate and advanced dancers, and First Touch for people who have never danced. Train from any country.",
+        "title": "Frame Up Strip Online: Floorwork Dance Courses",
+        "description": "Learn Frame Up Strip online from any country: First Touch for complete beginners, the Online Group, choreography tutorials and the Inspiration HUB library.",
         "ogImageAlt": "Anna Strok: online Frame Up Strip courses",
         "heroImageAlt": "Anna Strok in strip shoes, knees bent, hands together in front of her"
       },
       "firstTouch": {
-        "title": "First Touch: Online Frame Up Strip From Zero",
-        "description": "For people who have never danced: basics, footwork and your first choreography. 5 online lessons in 1.5 months, homework with feedback, 120 days of access.",
+        "title": "First Touch: Frame Up Strip for Beginners",
+        "description": "An online Frame Up Strip course for people who have never danced: basics, footwork and a first choreography. 5 lessons, feedback on homework, 120 days' access.",
         "ogImageAlt": "First Touch: Frame Up Strip course for beginners",
-        "heroImageAlt": "Anna Strok on a stool in strip shoes, legs wide apart"
+        "heroImageAlt": "Anna Strok on a stool in strip shoes, legs wide apart",
+        "video": {
+          "name": "First Touch: course introduction by Anna Strok",
+          "description": "Anna Strok introduces First Touch, her online Frame Up Strip course for people who have never danced."
+        }
       },
       "onlineGroup": {
-        "title": "Online Group: Frame Up Strip Online Training",
-        "description": "A six-week cycle in Telegram for intermediate and advanced dancers: 5 new lessons, homework with feedback on your videos and a private group chat.",
-        "ogImageAlt": "Online Group: online training with Anna Strok"
+        "title": "Online Group: Frame Up Strip Floorwork Training",
+        "description": "Online Frame Up Strip training in Telegram for intermediate and advanced dancers: 5 new lessons per cycle, feedback on your videos and a private chat.",
+        "ogImageAlt": "Online Group: online training with Anna Strok",
+        "video": {
+          "name": "Online Group by Anna Strok: example video",
+          "description": "A short example from the Online Group, Anna Strok's Frame Up Strip training in Telegram for intermediate and advanced dancers."
+        }
       },
       "choreo": {
-        "title": "Frame Up Strip Choreography Tutorials",
-        "description": "Anna Strok's choreographies step by step, explained in Russian and English: movement, technique and performance. For intermediate and advanced dancers.",
+        "title": "Frame Up Strip Choreography Tutorials Online",
+        "description": "Anna Strok's Frame Up Strip choreographies step by step, explained in Russian and English: movement, technique and performance. Start online any time.",
         "ogImageAlt": "Choreography tutorials by Anna Strok",
         "heroImageAlt": "Anna Strok in a deep squat in strip shoes, hands between her knees"
       },
       "offline": {
-        "title": "Frame Up Strip in Warsaw: Beginners & Impro Room",
-        "description": "Beginner Frame Up Strip group in Wola, Warsaw: starts December 4, Fridays 18:00–19:00, 250 PLN for 4 lessons. Impro Room and private lessons are also available.",
+        "title": "Frame Up Strip Dance Classes in Warsaw",
+        "description": "Frame Up Strip with Anna Strok in Wola, Warsaw: a beginner group for people with no dance experience and Impro Room sessions to practise improvisation.",
         "ogImageAlt": "Anna Strok: beginner group and Impro Room in Warsaw",
         "heroImageAlt": "Anna Strok on a stool in strip shoes, one arm raised"
       },
       "privacyPolicy": {
         "title": "Privacy Policy",
-        "description": "Privacy policy for Anna Strok website: personal data processing rules, legal basis, and contact details.",
+        "description": "How the Anna Strok website processes personal data: purposes and legal basis, what is collected, who receives it, how long it is kept and your GDPR rights.",
         "ogImageAlt": "Anna Strok privacy policy page"
       },
       "cookiePolicy": {
         "title": "Cookie Policy",
-        "description": "Cookie policy for Anna Strok website: what storage technologies are used, for what purposes, and how to manage consent.",
+        "description": "Which cookies and similar storage technologies the Anna Strok website uses, what each category is for, how long they are kept and how to change your consent.",
         "ogImageAlt": "Anna Strok cookie policy page"
       },
       "birthdayDrop": {
@@ -63,8 +71,8 @@
         "title": "Secure checkout"
       },
       "inspirationHub": {
-        "title": "Inspiration HUB: Frame Up Strip lesson library",
-        "description": "Lessons from completed Online Group cycles, bonus materials and training music — in a private library on Telegram. 8 weeks of access right after payment.",
+        "title": "Inspiration HUB: Frame Up Strip Lesson Library",
+        "description": "Video lessons from past Online Group cycles on technique, choreography and improvisation, and bonus materials in a private Telegram library. 8 weeks of access.",
         "ogImageAlt": "Inspiration HUB by Anna Strok",
         "heroImageAlt": "Anna Strok, Inspiration HUB"
       }
@@ -148,8 +156,18 @@
       "title": "Have a question? We're here to help",
       "button": "Contact support"
     },
+    "links": {
+      "ariaLabel": "Site sections",
+      "online": "Online",
+      "onlineGroup": "Online Group",
+      "firstTouch": "“First Touch” course",
+      "choreo": "Choreography tutorials",
+      "inspirationHub": "Inspiration HUB",
+      "offline": "Offline"
+    },
     "copyright": "© 2026 Anna Strok. All rights reserved",
     "privacyPolicy": "Privacy policy",
+    "cookiePolicy": "Cookie policy",
     "cookieSettings": "Cookie settings"
   },
   "Contacts": {
@@ -255,7 +273,7 @@
   "HomePage": {
     "hero": {
       "title": "Frame Up",
-      "subtitle": "Discover yourself in Frame Up style",
+      "titleDetail": "Strip with Anna Strok — online and in Warsaw",
       "description": "Learn to dance beautifully, boldly and sensually in an atmosphere of freedom and inner strength.",
       "hint": "Choose your learning format",
       "buttons": {

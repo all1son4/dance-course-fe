@@ -52,7 +52,6 @@ import {
   CourseTitle,
   DescriptionBox,
   DescriptionText,
-  DescriptionTitle,
   FAQSection,
   IconPositionWrap,
   ImageDescriptionBox,
@@ -60,8 +59,10 @@ import {
   InteractiveBox,
   InteractiveHint,
   IntroduceSection,
+  MainHeading,
   MainTextBox,
   MainTitle,
+  MainTitleDetail,
   ReviewsSection,
   StyledImage,
 } from "./page.styles";
@@ -129,9 +130,11 @@ export default function Home() {
         />
       </AbsolutePageImage>
       <MainTextBox>
-        <MainTitle>{t("hero.title")}</MainTitle>
+        <MainHeading>
+          <MainTitle>{t("hero.title")}</MainTitle>{" "}
+          <MainTitleDetail>{t("hero.titleDetail")}</MainTitleDetail>
+        </MainHeading>
         <DescriptionBox>
-          <DescriptionTitle>{t("hero.subtitle")}</DescriptionTitle>
           <DescriptionText>{t("hero.description")}</DescriptionText>
         </DescriptionBox>
         <InteractiveBox>
