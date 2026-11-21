@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { INSTAGRAM_PROFILE_URL, PERSONAL_TELEGRAM_URL } from "@/constants/links";
+import { PAGE_VIDEOS } from "@/constants/page-videos";
 
 type StructuredDataJsonValue =
   | boolean
@@ -143,3 +144,34 @@ export const buildWebsiteStructuredData = (
     },
   ],
 });
+
+/**
+ * A self-hosted video the page plays. Facts come from PAGE_VIDEOS; an
+ * unknown file gets no markup rather than invented values.
+ */
+export const buildVideoStructuredData = ({
+  description,
+  name,
+  src,
+}: {
+  description: string;
+  name: string;
+  src: string;
+}): { [key: string]: StructuredDataJsonValue } | null => {
+  const video = PAGE_VIDEOS[src];
+
+  if (!video) {
+    return null;
+  }
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    name,
+    description,
+    thumbnailUrl: [`${normalizedSiteUrl}${video.poster}`],
+    contentUrl: `${normalizedSiteUrl}${src}`,
+    uploadDate: video.uploadDate,
+    duration: video.duration,
+  };
+};

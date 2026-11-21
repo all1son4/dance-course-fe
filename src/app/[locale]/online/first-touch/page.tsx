@@ -7,6 +7,7 @@ import Contacts from "@/components/other/Contacts";
 import RoadmapContainer from "@/components/other/ProgramRoadmap";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import { HERO_MEDIA } from "@/constants/hero-media";
+import { PAGE_VIDEOS } from "@/constants/page-videos";
 import {
   DEFAULT_CHECKOUT_PRODUCT,
   formatOfferPrice,
@@ -16,7 +17,7 @@ import CourseSignupDialog from "@/features/course-signup";
 import PageClientMessages from "@/i18n/PageClientMessages";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { imageFadeProps } from "@/lib/reveal";
-import { buildBreadcrumbStructuredData } from "@/lib/seo";
+import { buildBreadcrumbStructuredData, buildVideoStructuredData } from "@/lib/seo";
 
 import ProductFact from "../_shared/product-fact";
 import ProductHero from "../_shared/product-hero";
@@ -62,6 +63,13 @@ export default function FirstTouch() {
   const onlineSuggestions = getFirstTouchSuggestions((key) => t(key));
   const defaultOffer = getDefaultProductOffer(DEFAULT_CHECKOUT_PRODUCT);
   const coursePrice = formatOfferPrice(defaultOffer.prices);
+  // Russian visitors get the Russian recording, everyone else the English one.
+  const introductionVideoSrc = t("hero.introductionVideoSrc");
+  const videoStructuredData = buildVideoStructuredData({
+    src: introductionVideoSrc,
+    name: metadataT("pages.firstTouch.video.name"),
+    description: metadataT("pages.firstTouch.video.description"),
+  });
   const courseStructuredData = buildCourseStructuredData({
     name: t("hero.title"),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
@@ -171,6 +179,7 @@ export default function FirstTouch() {
             { name: t("hero.title"), path: "/online/first-touch" },
           ]),
           courseStructuredData,
+          ...(videoStructuredData ? [videoStructuredData] : []),
         ]}
       />
       {renderIntroductionSection()}
@@ -179,8 +188,8 @@ export default function FirstTouch() {
         <VideoSection>
           <VideoPlayer
             analyticsId="first-touch-introduction"
-            src={t("hero.introductionVideoSrc")}
-            poster="/images/first_touch_poster.webp"
+            src={introductionVideoSrc}
+            poster={PAGE_VIDEOS[introductionVideoSrc]?.poster}
             posterColor="#4f444c"
             radius="0px"
           />

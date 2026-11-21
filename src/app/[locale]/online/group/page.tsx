@@ -9,6 +9,7 @@ import StickyCta from "@/components/other/StickyCta";
 import VideoPlayer from "@/components/other/VideoPlayer";
 import { HERO_MEDIA } from "@/constants/hero-media";
 import { ONLINE_GROUP_REGISTRATION_FORM_VIEW_URL } from "@/constants/links";
+import { PAGE_VIDEOS } from "@/constants/page-videos";
 import {
   buildCheckoutHref,
   formatOfferPrice,
@@ -22,7 +23,7 @@ import {
   getProductSaleState,
   getStorefrontSellableProducts,
 } from "@/lib/sales-availability";
-import { buildBreadcrumbStructuredData } from "@/lib/seo";
+import { buildBreadcrumbStructuredData, buildVideoStructuredData } from "@/lib/seo";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
 import ProductFact from "../_shared/product-fact";
@@ -65,6 +66,8 @@ export const generateMetadata = () =>
 // The buy buttons follow the admin sales switch, so this page is rendered per
 // request instead of being prerendered with a stale answer baked in.
 export const dynamic = "force-dynamic";
+
+const ONLINE_GROUP_VIDEO_SRC = "/videos/online_example.mp4";
 
 export default async function OnlineGroupPage() {
   const configuredProduct = SELLABLE_PRODUCTS["online-group-anna-strok"];
@@ -125,6 +128,11 @@ export default async function OnlineGroupPage() {
           buttonRel: "noopener noreferrer",
           buttonTarget: "_blank",
         };
+  const videoStructuredData = buildVideoStructuredData({
+    src: ONLINE_GROUP_VIDEO_SRC,
+    name: metadataT("pages.onlineGroup.video.name"),
+    description: metadataT("pages.onlineGroup.video.description"),
+  });
   const courseStructuredData = buildCourseStructuredData({
     name: t("hero.titlePlain"),
     description: `${t("hero.description.1")} ${t("hero.description.2")}`,
@@ -300,6 +308,7 @@ export default async function OnlineGroupPage() {
             },
           ]),
           courseStructuredData,
+          ...(videoStructuredData ? [videoStructuredData] : []),
         ]}
       />
       {renderIntroductionSection()}
@@ -308,8 +317,8 @@ export default async function OnlineGroupPage() {
         <VideoSection>
           <VideoPlayer
             analyticsId="online-group-example"
-            src="/videos/online_example.mp4"
-            poster="/images/online_example_poster.webp"
+            src={ONLINE_GROUP_VIDEO_SRC}
+            poster={PAGE_VIDEOS[ONLINE_GROUP_VIDEO_SRC]?.poster}
             posterColor="#6d6266"
             radius="0px"
           />

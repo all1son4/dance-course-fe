@@ -137,7 +137,16 @@ export const MainTextBox = styled.div`
   }
 `;
 
-export const MainTitle = styled.h1`
+/* The H1 says what the page is about: the big "Frame Up" stays the visual,
+   the bold line under it finishes the sentence ("Frame Up Strip with Anna
+   Strok - online and in Warsaw"). Both parts keep their own look. */
+export const MainHeading = styled.h1`
+  margin: 0 0 5px;
+  font: inherit;
+`;
+
+export const MainTitle = styled.span`
+  display: block;
   font-weight: 400;
   font-style: normal;
   font-size: 90px;
@@ -168,7 +177,10 @@ export const DescriptionBox = styled.div`
   }
 `;
 
-export const DescriptionTitle = styled.p`
+export const MainTitleDetail = styled.span`
+  display: block;
+  /* Wraps on phones; even lines instead of a lone last word. */
+  text-wrap: balance;
   font-weight: 600;
   font-size: var(--text-body);
   line-height: 1.1;
