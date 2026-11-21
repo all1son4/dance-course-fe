@@ -10,19 +10,19 @@
     "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
     "pages": {
       "home": {
-        "title": "Anna Strok: Frame Up Strip na obcasach online i w Warszawie",
-        "description": "Frame Up Strip z Anną Strok, odważny i zmysłowy taniec na obcasach: kursy online na Telegramie z feedbackiem, grupa dla początkujących i Impro Room w Warszawie.",
+        "title": "Anna Strok: zajęcia Frame Up Strip online i w Warszawie",
+        "description": "Frame Up Strip, taniec w butach strip, głównie w parterze, z Anną Strok: kursy online z feedbackiem, grupa dla początkujących i Impro Room w Warszawie.",
         "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
         "heroImageAlt": "Anna Strok w butach strip na wysokim stołku, z głową odchyloną do tyłu"
       },
       "online": {
-        "title": "Frame Up Strip online: kursy tańca na obcasach",
+        "title": "Frame Up Strip online: kursy tańca w parterze",
         "description": "Frame Up Strip online z dowolnego kraju: First Touch dla osób zaczynających od zera, grupa online, tutoriale choreografii i biblioteka lekcji Inspiration HUB.",
         "ogImageAlt": "Anna Strok: kursy Frame Up Strip online",
         "heroImageAlt": "Anna Strok w butach strip, z ugiętymi kolanami i dłońmi złączonymi przed sobą"
       },
       "firstTouch": {
-        "title": "First Touch: taniec na obcasach od zera online",
+        "title": "First Touch: Frame Up Strip od zera online",
         "description": "Kurs Frame Up Strip online dla osób, które nigdy nie tańczyły: podstawy, praca stóp i pierwsza choreografia. 5 lekcji, zadania z feedbackiem, 120 dni dostępu.",
         "ogImageAlt": "First Touch: kurs Frame Up Strip dla początkujących",
         "heroImageAlt": "Anna Strok na stołku w butach strip, z szeroko rozstawionymi nogami",
@@ -32,7 +32,7 @@
         }
       },
       "onlineGroup": {
-        "title": "Grupa online: Frame Up Strip na obcasach",
+        "title": "Grupa online: treningi Frame Up Strip",
         "description": "Treningi Frame Up Strip online na Telegramie dla średniozaawansowanych i zaawansowanych: 5 nowych lekcji w cyklu, zadania z feedbackiem do nagrań i czat grupy.",
         "ogImageAlt": "Grupa online: treningi z Anną Strok",
         "video": {
@@ -41,13 +41,13 @@
         }
       },
       "choreo": {
-        "title": "Choreografie na obcasach: Frame Up Strip",
+        "title": "Tutoriale choreografii Frame Up Strip online",
         "description": "Choreografie Anny Strok w stylu Frame Up Strip krok po kroku, z wyjaśnieniami po rosyjsku i angielsku: ruchy, technika i ekspresja. Zacznij w dowolnej chwili.",
         "ogImageAlt": "Tutoriale choreografii Anny Strok",
         "heroImageAlt": "Anna Strok w głębokim przysiadzie w butach strip, z dłońmi między kolanami"
       },
       "offline": {
-        "title": "Taniec na obcasach w Warszawie: Frame Up Strip",
+        "title": "Zajęcia Frame Up Strip w Warszawie",
         "description": "Frame Up Strip z Anną Strok na warszawskiej Woli: grupa dla początkujących bez doświadczenia tanecznego i spotkania Impro Room do ćwiczenia improwizacji.",
         "ogImageAlt": "Anna Strok: grupa dla początkujących i Impro Room w Warszawie",
         "heroImageAlt": "Anna Strok na stołku w butach strip, z jedną ręką uniesioną"
