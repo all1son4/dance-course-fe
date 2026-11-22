@@ -99,6 +99,29 @@ export const jsonErrorNoStore = (
     init,
   );
 
+/** «rate_limited» with the seconds the caller should wait. */
+export const jsonRateLimited = (retryAfterSeconds: number) =>
+  jsonErrorNoStore("rate_limited", {
+    headers: { "Retry-After": String(retryAfterSeconds) },
+    status: 429,
+  });
+
+/**
+ * The answer to a spent rate limit, or to a limit store that is down for a route that
+ * denies then; null when the request may go on.
+ */
+export const rateLimitErrorResponse = (rateLimit: {
+  backendUnavailable: boolean;
+  limited: boolean;
+  retryAfterSeconds: number;
+}) => {
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
+
+  return rateLimit.limited ? jsonRateLimited(rateLimit.retryAfterSeconds) : null;
+};
+
 export const getBrowserJsonRequestErrorResponse = (
   request: Request,
   maxBodyBytes: number,
