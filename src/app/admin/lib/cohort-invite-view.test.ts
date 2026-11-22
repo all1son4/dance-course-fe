@@ -6,7 +6,9 @@ import type { CohortInviteAdminSnapshot } from "@/lib/cohort-invite-broadcast";
 import {
   buildQuotaMeter,
   describeCohortInviteTile,
+  formatDayTime,
   getBatchBoundary,
+  plural,
   readBatch,
   showsFirstSteps,
 } from "./cohort-invite-view";
@@ -148,4 +150,31 @@ test("the campaign tile says its state without opening it", () => {
     describeCohortInviteTile(snapshot({ counts: { sent: 0 } })).hint,
     "Поток 3.0 · ещё не начата · сегодня можно 12",
   );
+});
+
+test("Russian plural forms follow the last one and two digits", () => {
+  const forms = [0, 1, 2, 5, 11, 12, 14, 21, 22, 25, 101, 111, 112].map((count) =>
+    plural(count, "one", "few", "many"),
+  );
+  assert.deepEqual(forms, [
+    "many",
+    "one",
+    "few",
+    "many",
+    "many",
+    "many",
+    "many",
+    "one",
+    "few",
+    "many",
+    "one",
+    "many",
+    "many",
+  ]);
+});
+
+test("a day and time read in Warsaw", () => {
+  assert.equal(formatDayTime("2026-01-05T23:30:00.000Z"), "6 января в 00:30");
+  assert.equal(formatDayTime("2026-07-01T16:05:00.000Z"), "1 июля в 18:05");
+  assert.throws(() => formatDayTime("not a date"), RangeError);
 });
