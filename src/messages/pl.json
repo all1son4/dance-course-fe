@@ -11,46 +11,46 @@
     "pages": {
       "home": {
         "title": "Anna Strok: zajęcia Frame Up Strip online i w Warszawie",
-        "description": "Frame Up Strip, taniec w butach strip, głównie w parterze, z Anną Strok: kursy online z feedbackiem, grupa dla początkujących i Impro Room w Warszawie.",
+        "description": "Frame Up Strip to parter w butach na platformie, muzykalność i taniec bez ram. Trenuj z Anną Strok online na Telegramie albo w studiu w Warszawie.",
         "ogImageAlt": "Anna Strok, tancerka i nauczycielka Frame Up Strip",
-        "heroImageAlt": "Anna Strok w butach strip na wysokim stołku, z głową odchyloną do tyłu"
+        "heroImageAlt": "Anna Strok w butach na platformie na wysokim stołku, z głową odchyloną do tyłu"
       },
       "online": {
-        "title": "Frame Up Strip online: kursy tańca w parterze",
-        "description": "Frame Up Strip online z dowolnego kraju: First Touch dla osób zaczynających od zera, grupa online, tutoriale choreografii i biblioteka lekcji Inspiration HUB.",
+        "title": "Kursy Frame Up Strip online na Telegramie",
+        "description": "Frame Up Strip online z każdego miejsca: First Touch na start od zera, grupa online do dalszego rozwoju, tutoriale choreografii i biblioteka Inspiration HUB.",
         "ogImageAlt": "Anna Strok: kursy Frame Up Strip online",
-        "heroImageAlt": "Anna Strok w butach strip, z ugiętymi kolanami i dłońmi złączonymi przed sobą"
+        "heroImageAlt": "Anna Strok w butach na platformie, z ugiętymi kolanami i dłońmi złączonymi przed sobą"
       },
       "firstTouch": {
         "title": "First Touch: Frame Up Strip od zera online",
-        "description": "Kurs Frame Up Strip online dla osób, które nigdy nie tańczyły: podstawy, praca stóp i pierwsza choreografia. 5 lekcji, zadania z feedbackiem, 120 dni dostępu.",
+        "description": "Zaczynasz od zera? Frame Up Strip od pierwszego kroku: podstawy, praca stóp i pierwsza choreografia. 5 lekcji online, feedback do zadań i 120 dni dostępu.",
         "ogImageAlt": "First Touch: kurs Frame Up Strip dla początkujących",
-        "heroImageAlt": "Anna Strok na stołku w butach strip, z szeroko rozstawionymi nogami",
+        "heroImageAlt": "Anna Strok na stołku w butach na platformie, z szeroko rozstawionymi nogami",
         "video": {
-          "name": "First Touch: wprowadzenie do kursu Anny Strok",
-          "description": "Anna Strok opowiada o First Touch — kursie Frame Up Strip online dla osób, które nigdy nie tańczyły."
+          "name": "First Touch: Anna Strok o kursie",
+          "description": "Anna Strok pokazuje, jak wygląda First Touch — kurs Frame Up Strip online na start od zera."
         }
       },
       "onlineGroup": {
         "title": "Grupa online: treningi Frame Up Strip",
-        "description": "Treningi Frame Up Strip online na Telegramie dla średniozaawansowanych i zaawansowanych: 5 nowych lekcji w cyklu, zadania z feedbackiem do nagrań i czat grupy.",
+        "description": "Treningi Frame Up Strip tam, gdzie jesteś: 5 nowych lekcji w cyklu na Telegramie, feedback do Twoich nagrań i zamknięty czat. Poziom średni i zaawansowany.",
         "ogImageAlt": "Grupa online: treningi z Anną Strok",
         "video": {
-          "name": "Grupa online by Anna Strok: przykładowe wideo",
-          "description": "Krótki przykład z grupy online — treningów Frame Up Strip z Anną Strok na Telegramie dla średniozaawansowanych i zaawansowanych."
+          "name": "Grupa online by Anna Strok: krótki przykład",
+          "description": "Krótki fragment z grupy online — treningów Frame Up Strip na Telegramie dla średniozaawansowanych i zaawansowanych."
         }
       },
       "choreo": {
         "title": "Tutoriale choreografii Frame Up Strip online",
-        "description": "Choreografie Anny Strok w stylu Frame Up Strip krok po kroku, z wyjaśnieniami po rosyjsku i angielsku: ruchy, technika i ekspresja. Zacznij w dowolnej chwili.",
+        "description": "Choreografie Anny Strok w stylu Frame Up Strip krok po kroku: ruch, technika i ekspresja, z wyjaśnieniami po rosyjsku i angielsku. Zacznij, kiedy chcesz.",
         "ogImageAlt": "Tutoriale choreografii Anny Strok",
-        "heroImageAlt": "Anna Strok w głębokim przysiadzie w butach strip, z dłońmi między kolanami"
+        "heroImageAlt": "Anna Strok w głębokim przysiadzie w butach na platformie, z dłońmi między kolanami"
       },
       "offline": {
         "title": "Zajęcia Frame Up Strip w Warszawie",
-        "description": "Frame Up Strip z Anną Strok na warszawskiej Woli: grupa dla początkujących bez doświadczenia tanecznego i spotkania Impro Room do ćwiczenia improwizacji.",
+        "description": "Frame Up Strip w Warszawie z Anną Strok: grupa dla początkujących na Woli, bez doświadczenia tanecznego, i spotkania Impro Room dla swobodnej improwizacji.",
         "ogImageAlt": "Anna Strok: grupa dla początkujących i Impro Room w Warszawie",
-        "heroImageAlt": "Anna Strok na stołku w butach strip, z jedną ręką uniesioną"
+        "heroImageAlt": "Anna Strok na stołku w butach na platformie, z jedną ręką uniesioną"
       },
       "privacyPolicy": {
         "title": "Polityka prywatności",
@@ -72,7 +72,7 @@
       },
       "inspirationHub": {
         "title": "Inspiration HUB: biblioteka Frame Up Strip",
-        "description": "Lekcje wideo z poprzednich cykli grupy online (technika, choreografia, improwizacja) i bonusy w zamkniętej bibliotece na Telegramie. 8 tygodni dostępu.",
+        "description": "Lekcje z poprzednich cykli grupy online — technika, choreografia, improwizacja — i materiały bonusowe w zamkniętej bibliotece na Telegramie. 8 tygodni dostępu.",
         "ogImageAlt": "Inspiration HUB by Anna Strok",
         "heroImageAlt": "Anna Strok, Inspiration HUB"
       }
@@ -286,7 +286,7 @@
       "instagram": "Instagram",
       "bio": {
         "1": "Jestem Anna Strok, profesjonalna tancerka i instruktorka z wieloletnim doświadczeniem oraz wyraźnym stylem artystycznym.",
-        "2": "Jestem twórczynią i organizatorką Total Strip Weekend w Mińsku — największych na Białorusi mistrzostw frame up strip i high heels, które gromadziły setki tancerzy i stały się ważnym wydarzeniem dla społeczności tanecznej."
+        "2": "Jestem twórczynią i organizatorką Total Strip Weekend w Mińsku — największych na Białorusi mistrzostw Frame Up Strip i High Heels, które gromadziły setki tancerzy i stały się ważnym wydarzeniem dla społeczności tanecznej."
       },
       "achievements": {
         "stage18Solo": {
