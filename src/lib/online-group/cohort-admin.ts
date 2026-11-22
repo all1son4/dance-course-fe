@@ -569,6 +569,17 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
 
 export const COHORT_DURATION_WEEKS = { max: 26, min: 1 } as const;
 
+/** A cohort lasts a whole number of weeks within COHORT_DURATION_WEEKS. */
+const assertCohortDurationWeeks = (durationWeeks: number) => {
+  if (
+    !Number.isInteger(durationWeeks) ||
+    durationWeeks < COHORT_DURATION_WEEKS.min ||
+    durationWeeks > COHORT_DURATION_WEEKS.max
+  ) {
+    throw new Error("cohort_duration_invalid");
+  }
+};
+
 /**
  * «Завести следующий поток»: the record of the cohort that follows a running one.
  * Sales stay closed until the running cohort is closed; the chat must be registered
@@ -593,13 +604,7 @@ export async function createNextCohortFromAdmin({
   if (!normalizedTitle || !chatId || !Number.isFinite(startsAt.getTime())) {
     throw new Error("next_cohort_incomplete");
   }
-  if (
-    !Number.isInteger(durationWeeks) ||
-    durationWeeks < COHORT_DURATION_WEEKS.min ||
-    durationWeeks > COHORT_DURATION_WEEKS.max
-  ) {
-    throw new Error("cohort_duration_invalid");
-  }
+  assertCohortDurationWeeks(durationWeeks);
 
   const db = getDatabase();
 
@@ -664,13 +669,7 @@ export async function setCohortDurationWeeks({
   cohortId: string;
   durationWeeks: number;
 }) {
-  if (
-    !Number.isInteger(durationWeeks) ||
-    durationWeeks < COHORT_DURATION_WEEKS.min ||
-    durationWeeks > COHORT_DURATION_WEEKS.max
-  ) {
-    throw new Error("cohort_duration_invalid");
-  }
+  assertCohortDurationWeeks(durationWeeks);
 
   const updated = await getDatabase()
     .update(onlineGroupCohorts)
