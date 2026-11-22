@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import { isInspirationHubOfferId } from "@/constants/sellable-products";
-import { getDatabase } from "@/db/client";
 import { type PaymentProjectionCommand } from "@/db/payment-projection";
 import {
   normalizeEmail,
@@ -13,6 +12,7 @@ import {
   trim,
 } from "@/db/record-values";
 import { purchases } from "@/db/schema";
+import type { DatabaseTransaction } from "@/db/transaction";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
 
@@ -24,10 +24,6 @@ export type StripeSettlementSnapshot = {
   stripeFeeAmountMinor: number | null;
   stripeNetAmountMinor: number | null;
 };
-
-type DatabaseTransaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
 
 const normalizeOutcome = (
   value: string,

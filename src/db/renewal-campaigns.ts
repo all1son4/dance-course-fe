@@ -20,6 +20,7 @@ import {
   telegramRenewalVerifications,
   telegramUserBindings,
 } from "./schema";
+import type { DatabaseTransaction } from "./transaction";
 
 type RenewalCampaignDetails = {
   id: string;
@@ -155,7 +156,6 @@ const getOnlineGroupRenewalCheckoutSelection = async (
 };
 
 type DatabaseClient = ReturnType<typeof getDatabase>;
-type DatabaseTransaction = Parameters<Parameters<DatabaseClient["transaction"]>[0]>[0];
 type RegisteredTelegramChat = typeof telegramChats.$inferSelect;
 type RenewalCampaign = typeof renewalCampaigns.$inferSelect;
 type RenewalCheckoutSelection = NonNullable<

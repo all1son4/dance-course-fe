@@ -7,6 +7,7 @@ import { logSafeError } from "@/lib/safe-error-log";
 
 import { getDatabase } from "./client";
 import { purchaseSideEffects } from "./schema";
+import type { DatabaseTransaction } from "./transaction";
 
 export type OutboxJobKind = typeof purchaseSideEffects.$inferSelect.kind;
 export type OutboxProvider = NonNullable<
@@ -34,10 +35,6 @@ export type EnqueueOutboxJobInput = {
   purchaseId?: string | null;
   recipient?: string | null;
 };
-
-type DatabaseTransaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
 
 type OutboxExecutor = Pick<DatabaseTransaction, "insert" | "select">;
 

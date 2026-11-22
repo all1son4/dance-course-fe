@@ -7,6 +7,7 @@ import { logSafeError } from "@/lib/safe-error-log";
 
 import { getDatabase } from "./client";
 import { stripeEvents } from "./schema";
+import type { DatabaseTransaction } from "./transaction";
 
 export type VerifiedStripeInboxEvent = {
   apiVersion: string | null;
@@ -46,10 +47,6 @@ export type ClaimedStripeInboxEvent = {
   stripeCreatedAt: Date;
   stripeEventId: string;
 };
-
-type DatabaseTransaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
 
 export type StripeInboxProjectionResult = {
   outcomeSnapshot?: string | null;
