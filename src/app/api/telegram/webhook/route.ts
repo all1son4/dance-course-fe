@@ -11,17 +11,17 @@ import {
   getBuyerPurchaseLine,
   shouldShowOfferToBuyerByOfferId,
 } from "@/lib/sellable-products-localization";
-import {
-  activateTelegramStartToken,
-  getActivatedPaymentsByTelegramUserId,
-  syncTelegramChannelMembership,
-} from "@/lib/telegram/access";
+import { syncTelegramChannelMembership } from "@/lib/telegram/access";
 import {
   copyTelegramMessage,
   getTelegramChatMember,
   sendTelegramMessage,
   type TelegramChatMember,
 } from "@/lib/telegram/bot-api";
+import {
+  activateTelegramStartToken,
+  getActivatedPaymentsByTelegramUserId,
+} from "@/lib/telegram/bot-start-access";
 import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
 import {
   getTelegramLessonSourceByOfferId,
