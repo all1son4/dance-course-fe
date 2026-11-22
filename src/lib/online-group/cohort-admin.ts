@@ -30,6 +30,7 @@ import {
   processOutboxJobByDeduplicationKey,
   replayOutboxJob,
 } from "@/db/transactional-outbox";
+import { areNotificationsEnabled } from "@/lib/deployment";
 import {
   addWarsawCalendarDays,
   getStartOfNextWarsawDay,
@@ -58,10 +59,6 @@ type Cohort = typeof onlineGroupCohorts.$inferSelect;
 
 const cohortClosurePostKey = (cohortId: string) => `cohort_closure_post:${cohortId}`;
 const cohortGraceReminderKey = (cohortId: string) => `cohort_grace_reminder:${cohortId}`;
-
-const isProduction = () =>
-  process.env.VERCEL_ENV === "production" ||
-  (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
 
 const PLUS_OFFER_IDS = SELLABLE_PRODUCTS["online-group-anna-strok"].offers
   .map((offer) => offer.id)
@@ -468,7 +465,7 @@ export async function retryCohortClosurePost(cohortId: string) {
  */
 export async function enqueueDueCohortGraceReminders(now = new Date()) {
   const result = { due: 0, enqueued: 0, duplicates: 0, disabled: false };
-  if (!isProduction() && process.env.ALLOW_TEST_MODE_NOTIFICATIONS !== "1") {
+  if (!areNotificationsEnabled()) {
     return { ...result, disabled: true };
   }
 

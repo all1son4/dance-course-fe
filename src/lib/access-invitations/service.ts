@@ -39,6 +39,7 @@ import {
   enqueueOutboxJob,
   processOutboxJobByDeduplicationKey,
 } from "@/db/transactional-outbox";
+import { isProductionDeployment } from "@/lib/deployment";
 import {
   buildInvitationJoinEmail,
   buildInvitationLinksEmail,
@@ -92,10 +93,6 @@ const OFFER_IDS: Record<InvitationProduct, Record<InvitationKind, string>> = {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const NAME_MAX = 80;
 const NOTE_MAX = 500;
-
-const isProduction = () =>
-  process.env.VERCEL_ENV === "production" ||
-  (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
 
 const nonRetryable = (message: string) =>
   Object.assign(new Error(message), { retryable: false });
@@ -315,7 +312,7 @@ export async function issueAccessInvitation(
     email,
     locale: input.locale,
     note,
-    livemode: isProduction(),
+    livemode: isProductionDeployment(),
     now,
   });
 

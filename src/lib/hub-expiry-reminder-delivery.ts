@@ -6,6 +6,7 @@ import {
 } from "@/db/hub-expiry-reminders";
 import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
+import { areNotificationsEnabled, isProductionDeployment } from "@/lib/deployment";
 import { buildHubExpiryReminderEmail } from "@/lib/email/hub-expiry-reminder";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
@@ -19,19 +20,13 @@ import { getProductSaleState } from "@/lib/sales-availability";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
-const isProduction = () =>
-  process.env.VERCEL_ENV === "production" ||
-  (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
-const isEnabled = () =>
-  isProduction() || process.env.ALLOW_TEST_MODE_NOTIFICATIONS === "1";
-
 const nonRetryable = (message: string) =>
   Object.assign(new Error(message), { retryable: false });
 
 const planReminders = async (now: Date, telegramUserId?: string) => {
   const database = getDatabase();
   const periods = await listHubReminderPeriods(database, {
-    livemode: isProduction(),
+    livemode: isProductionDeployment(),
     telegramUserId,
   });
   const owners = [
@@ -46,7 +41,12 @@ const planReminders = async (now: Date, telegramUserId?: string) => {
 
 /** HUB-06, run daily: one job per chain that is 7 or 3 days from its end. */
 export const enqueueDueHubExpiryReminders = async (now = new Date()) => {
-  const result = { due: 0, enqueued: 0, duplicates: 0, disabled: !isEnabled() };
+  const result = {
+    due: 0,
+    enqueued: 0,
+    duplicates: 0,
+    disabled: !areNotificationsEnabled(),
+  };
   if (result.disabled) return result;
 
   const reminders = await planReminders(now);
@@ -93,7 +93,7 @@ const findOnlineCohortStart = async (now: Date): Promise<Date | null> => {
  * the cron ran makes the planned reminder disappear, and the job ends quietly.
  */
 export const deliverHubExpiryReminder = async (job: ClaimedOutboxJob) => {
-  if (!isEnabled()) return { skipped: true };
+  if (!areNotificationsEnabled()) return { skipped: true };
 
   const paymentIntentId =
     typeof job.payload.paymentIntentId === "string" ? job.payload.paymentIntentId : "";
@@ -101,7 +101,7 @@ export const deliverHubExpiryReminder = async (job: ClaimedOutboxJob) => {
 
   const now = new Date();
   const periods = await listHubReminderPeriods(getDatabase(), {
-    livemode: isProduction(),
+    livemode: isProductionDeployment(),
   });
   const owner = periods.find((period) => period.paymentIntentId === paymentIntentId);
   const reminder: HubExpiryReminder | undefined = (
