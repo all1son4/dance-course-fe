@@ -8,6 +8,7 @@ import { logSafeError } from "@/lib/safe-error-log";
 import { getDatabase } from "./client";
 import { stripeEvents } from "./schema";
 import type { DatabaseTransaction } from "./transaction";
+import { getRetryDelayMs } from "./transactional-outbox";
 
 export type VerifiedStripeInboxEvent = {
   apiVersion: string | null;
@@ -279,9 +280,6 @@ export const claimNextStripeInboxEvent = async ({
     return claimed ? toClaimedStripeInboxEvent(claimed) : null;
   });
 };
-
-const getRetryDelayMs = (attemptCount: number) =>
-  Math.min(60 * 60 * 1000, 5_000 * 2 ** Math.max(0, attemptCount - 1));
 
 const markStripeInboxEventFailed = async ({
   error,

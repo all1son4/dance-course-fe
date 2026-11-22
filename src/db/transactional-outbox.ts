@@ -282,7 +282,8 @@ const markOutboxJobDelivered = async ({
   }
 };
 
-const getRetryDelayMs = (attemptCount: number) =>
+/** The wait before a failed queue item runs again: 5 s, doubling, at most an hour. */
+export const getRetryDelayMs = (attemptCount: number) =>
   Math.min(60 * 60 * 1000, 5_000 * 2 ** Math.max(0, attemptCount - 1));
 
 /** An error the outbox dead-letters at once instead of retrying it. */
