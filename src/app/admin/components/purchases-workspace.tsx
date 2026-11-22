@@ -236,6 +236,225 @@ const deltaText = (delta: number, formatted: string, isRunningMonth: boolean) =>
       : "как в прошлом месяце"
     : `${formatted} ${isRunningMonth ? "к тем же дням прошлого месяца" : "к прошлому месяцу"}`;
 
+/** «Сводка за месяц»: the month's totals against the previous month, and its report. */
+const MonthSummaryPanel = ({
+  isDownloadingReport,
+  isLoading,
+  isSendingReport,
+  monthValue,
+  months,
+  onDownloadReport,
+  onMonthChange,
+  onRefresh,
+  onSendReport,
+  previousSummary,
+  products,
+  reportStatus,
+  status,
+  summary,
+}: Pick<
+  PurchasesWorkspaceProps,
+  | "isDownloadingReport"
+  | "isLoading"
+  | "isSendingReport"
+  | "monthValue"
+  | "months"
+  | "onDownloadReport"
+  | "onMonthChange"
+  | "onRefresh"
+  | "onSendReport"
+  | "previousSummary"
+  | "products"
+  | "reportStatus"
+  | "status"
+  | "summary"
+>) => {
+  const isReportDisabled =
+    !monthValue || isLoading || isSendingReport || isDownloadingReport;
+  const isRunningMonth = monthValue === getAccountingMonthValue(new Date());
+  const maxProductSalesCount = products.reduce(
+    (maxCount, product) => Math.max(maxCount, product.salesCount),
+    0,
+  );
+  const originalAmountLabel = summary
+    ? [
+        ...(summary.plnTotalMinor > 0 ? [summary.plnTotalLabel] : []),
+        ...(summary.eurTotalMinor > 0 ? [summary.eurTotalLabel] : []),
+      ].join(" · ") || "0 PLN"
+    : "";
+  const financialDataIncomplete = Boolean(
+    summary && !summary.stripeFinancialDataComplete,
+  );
+  const { countDelta, grossDelta, netDelta } = buildMonthComparison({
+    previousSummary,
+    summary,
+  });
+
+  return (
+    <Panel
+      title="Сводка за месяц"
+      description="Только оплаты, подтверждённые Stripe. Суммы в злотых — как в отчёте; «Исходная стоимость» — сколько заплатил покупатель в своей валюте. Бесплатные доступы из админки не входят."
+      actions={
+        <>
+          {months.length > 0 && (
+            <MonthSelect
+              aria-label="Месяц"
+              value={monthValue}
+              disabled={isLoading}
+              onChange={(event) => void onMonthChange(event.target.value)}
+            >
+              {months.map((month) => (
+                <option key={month.value} value={month.value}>
+                  {month.label}
+                </option>
+              ))}
+            </MonthSelect>
+          )}
+          <AdminButton
+            size="sm"
+            icon={<RefreshCw aria-hidden />}
+            loading={isLoading}
+            onClick={() => void onRefresh()}
+          >
+            Обновить
+          </AdminButton>
+        </>
+      }
+    >
+      <Stack $gap={18}>
+        {summary ? (
+          <Metrics>
+            <Metric>
+              <span>Оплачено покупателями</span>
+              <b>{financialDataIncomplete ? "—" : summary.grossTotalLabel}</b>
+              <small>
+                {grossDelta !== null
+                  ? deltaText(
+                      grossDelta,
+                      formatMinorDelta(grossDelta, "pln"),
+                      isRunningMonth,
+                    )
+                  : "до комиссии Stripe"}
+              </small>
+            </Metric>
+            <Metric>
+              <span>Комиссия Stripe</span>
+              <b>{financialDataIncomplete ? "—" : summary.feeTotalLabel}</b>
+              <small>удержано Stripe</small>
+            </Metric>
+            <Metric>
+              <span>После комиссии</span>
+              <b>{financialDataIncomplete ? "—" : summary.netTotalLabel}</b>
+              <small>
+                {netDelta !== null
+                  ? deltaText(netDelta, formatMinorDelta(netDelta, "pln"), isRunningMonth)
+                  : "на счёт"}
+              </small>
+            </Metric>
+            <Metric>
+              <span>Исходная стоимость</span>
+              <b>{originalAmountLabel}</b>
+              <small>в валюте покупателя</small>
+            </Metric>
+            <Metric>
+              <span>Продаж в отчёте</span>
+              <b>{summary.salesCount}</b>
+              <small>
+                {summary.unconfirmedSalesCount > 0
+                  ? `ещё ${summary.unconfirmedSalesCount} без подтверждения Stripe`
+                  : countDelta !== null
+                    ? deltaText(
+                        countDelta,
+                        `${countDelta > 0 ? "+" : "−"}${Math.abs(countDelta)}`,
+                        isRunningMonth,
+                      )
+                    : "подтверждены Stripe"}
+              </small>
+            </Metric>
+            <Metric>
+              <span>Не прошло оплат</span>
+              <b>{summary.failedAttempts}</b>
+              <small>отказ банка или оплату бросили</small>
+            </Metric>
+          </Metrics>
+        ) : (
+          <Metrics>
+            {Array.from({ length: 6 }, (_, index) => (
+              <Skeleton key={index} $height={84} />
+            ))}
+          </Metrics>
+        )}
+
+        {summary && financialDataIncomplete && (
+          <Callout tone="danger" icon={<CircleAlert aria-hidden />}>
+            Итоги пока скрыты: Stripe ещё не прислал комиссию по части продаж (готово{" "}
+            {summary.settledCount} из {summary.salesCount}). Отчёт можно будет скачать
+            позже.
+          </Callout>
+        )}
+
+        {products.length > 0 && (
+          <Stack $gap={12}>
+            <SubHeading>По продуктам · исходная стоимость</SubHeading>
+            <Breakdown>
+              {products.map((product) => (
+                <li key={product.itemTitle}>
+                  <div data-head>
+                    <span>{product.itemTitle}</span>
+                    <span>
+                      {product.salesCount} шт
+                      {product.amountLabels.length > 0
+                        ? ` · ${product.amountLabels.join(" · ")}`
+                        : ""}
+                    </span>
+                  </div>
+                  <div data-track>
+                    <div
+                      data-fill
+                      style={{
+                        width: `${
+                          maxProductSalesCount > 0
+                            ? (product.salesCount / maxProductSalesCount) * 100
+                            : 0
+                        }%`,
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </Breakdown>
+          </Stack>
+        )}
+
+        <ReportBar>
+          <Muted>Отчёт за месяц — таблица подтверждённых продаж.</Muted>
+          <Row $gap={8}>
+            <AdminButton
+              icon={<Download aria-hidden />}
+              disabled={isReportDisabled}
+              loading={isDownloadingReport}
+              onClick={() => void onDownloadReport()}
+            >
+              Скачать CSV
+            </AdminButton>
+            <AdminButton
+              variant="primary"
+              icon={<Mail aria-hidden />}
+              disabled={isReportDisabled}
+              loading={isSendingReport}
+              onClick={() => void onSendReport()}
+            >
+              Отправить на почту
+            </AdminButton>
+          </Row>
+        </ReportBar>
+        <StatusLine status={reportStatus} />
+        <StatusLine status={status} />
+      </Stack>
+    </Panel>
+  );
+};
+
 export const PurchasesWorkspace = ({
   appliedSearch,
   isDownloadingReport,
@@ -263,194 +482,24 @@ export const PurchasesWorkspace = ({
   updatingTerminalPaymentIntentId,
 }: PurchasesWorkspaceProps) => {
   const [resendCandidate, setResendCandidate] = useState<AdminPurchaseEntry | null>(null);
-  const isReportDisabled =
-    !monthValue || isLoading || isSendingReport || isDownloadingReport;
-  const isRunningMonth = monthValue === getAccountingMonthValue(new Date());
-  const maxProductSalesCount = products.reduce(
-    (maxCount, product) => Math.max(maxCount, product.salesCount),
-    0,
-  );
-  const originalAmountLabel = summary
-    ? [
-        ...(summary.plnTotalMinor > 0 ? [summary.plnTotalLabel] : []),
-        ...(summary.eurTotalMinor > 0 ? [summary.eurTotalLabel] : []),
-      ].join(" · ") || "0 PLN"
-    : "";
-  const financialDataIncomplete = Boolean(
-    summary && !summary.stripeFinancialDataComplete,
-  );
-  const { countDelta, grossDelta, netDelta } = buildMonthComparison({
-    previousSummary,
-    summary,
-  });
-
   return (
     <Stack $gap={16}>
-      <Panel
-        title="Сводка за месяц"
-        description="Только оплаты, подтверждённые Stripe. Суммы в злотых — как в отчёте; «Исходная стоимость» — сколько заплатил покупатель в своей валюте. Бесплатные доступы из админки не входят."
-        actions={
-          <>
-            {months.length > 0 && (
-              <MonthSelect
-                aria-label="Месяц"
-                value={monthValue}
-                disabled={isLoading}
-                onChange={(event) => void onMonthChange(event.target.value)}
-              >
-                {months.map((month) => (
-                  <option key={month.value} value={month.value}>
-                    {month.label}
-                  </option>
-                ))}
-              </MonthSelect>
-            )}
-            <AdminButton
-              size="sm"
-              icon={<RefreshCw aria-hidden />}
-              loading={isLoading}
-              onClick={() => void onRefresh()}
-            >
-              Обновить
-            </AdminButton>
-          </>
-        }
-      >
-        <Stack $gap={18}>
-          {summary ? (
-            <Metrics>
-              <Metric>
-                <span>Оплачено покупателями</span>
-                <b>{financialDataIncomplete ? "—" : summary.grossTotalLabel}</b>
-                <small>
-                  {grossDelta !== null
-                    ? deltaText(
-                        grossDelta,
-                        formatMinorDelta(grossDelta, "pln"),
-                        isRunningMonth,
-                      )
-                    : "до комиссии Stripe"}
-                </small>
-              </Metric>
-              <Metric>
-                <span>Комиссия Stripe</span>
-                <b>{financialDataIncomplete ? "—" : summary.feeTotalLabel}</b>
-                <small>удержано Stripe</small>
-              </Metric>
-              <Metric>
-                <span>После комиссии</span>
-                <b>{financialDataIncomplete ? "—" : summary.netTotalLabel}</b>
-                <small>
-                  {netDelta !== null
-                    ? deltaText(
-                        netDelta,
-                        formatMinorDelta(netDelta, "pln"),
-                        isRunningMonth,
-                      )
-                    : "на счёт"}
-                </small>
-              </Metric>
-              <Metric>
-                <span>Исходная стоимость</span>
-                <b>{originalAmountLabel}</b>
-                <small>в валюте покупателя</small>
-              </Metric>
-              <Metric>
-                <span>Продаж в отчёте</span>
-                <b>{summary.salesCount}</b>
-                <small>
-                  {summary.unconfirmedSalesCount > 0
-                    ? `ещё ${summary.unconfirmedSalesCount} без подтверждения Stripe`
-                    : countDelta !== null
-                      ? deltaText(
-                          countDelta,
-                          `${countDelta > 0 ? "+" : "−"}${Math.abs(countDelta)}`,
-                          isRunningMonth,
-                        )
-                      : "подтверждены Stripe"}
-                </small>
-              </Metric>
-              <Metric>
-                <span>Не прошло оплат</span>
-                <b>{summary.failedAttempts}</b>
-                <small>отказ банка или оплату бросили</small>
-              </Metric>
-            </Metrics>
-          ) : (
-            <Metrics>
-              {Array.from({ length: 6 }, (_, index) => (
-                <Skeleton key={index} $height={84} />
-              ))}
-            </Metrics>
-          )}
-
-          {summary && financialDataIncomplete && (
-            <Callout tone="danger" icon={<CircleAlert aria-hidden />}>
-              Итоги пока скрыты: Stripe ещё не прислал комиссию по части продаж (готово{" "}
-              {summary.settledCount} из {summary.salesCount}). Отчёт можно будет скачать
-              позже.
-            </Callout>
-          )}
-
-          {products.length > 0 && (
-            <Stack $gap={12}>
-              <SubHeading>По продуктам · исходная стоимость</SubHeading>
-              <Breakdown>
-                {products.map((product) => (
-                  <li key={product.itemTitle}>
-                    <div data-head>
-                      <span>{product.itemTitle}</span>
-                      <span>
-                        {product.salesCount} шт
-                        {product.amountLabels.length > 0
-                          ? ` · ${product.amountLabels.join(" · ")}`
-                          : ""}
-                      </span>
-                    </div>
-                    <div data-track>
-                      <div
-                        data-fill
-                        style={{
-                          width: `${
-                            maxProductSalesCount > 0
-                              ? (product.salesCount / maxProductSalesCount) * 100
-                              : 0
-                          }%`,
-                        }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </Breakdown>
-            </Stack>
-          )}
-
-          <ReportBar>
-            <Muted>Отчёт за месяц — таблица подтверждённых продаж.</Muted>
-            <Row $gap={8}>
-              <AdminButton
-                icon={<Download aria-hidden />}
-                disabled={isReportDisabled}
-                loading={isDownloadingReport}
-                onClick={() => void onDownloadReport()}
-              >
-                Скачать CSV
-              </AdminButton>
-              <AdminButton
-                variant="primary"
-                icon={<Mail aria-hidden />}
-                disabled={isReportDisabled}
-                loading={isSendingReport}
-                onClick={() => void onSendReport()}
-              >
-                Отправить на почту
-              </AdminButton>
-            </Row>
-          </ReportBar>
-          <StatusLine status={reportStatus} />
-          <StatusLine status={status} />
-        </Stack>
-      </Panel>
+      <MonthSummaryPanel
+        isDownloadingReport={isDownloadingReport}
+        isLoading={isLoading}
+        isSendingReport={isSendingReport}
+        monthValue={monthValue}
+        months={months}
+        onDownloadReport={onDownloadReport}
+        onMonthChange={onMonthChange}
+        onRefresh={onRefresh}
+        onSendReport={onSendReport}
+        previousSummary={previousSummary}
+        products={products}
+        reportStatus={reportStatus}
+        status={status}
+        summary={summary}
+      />
 
       <Panel
         title={appliedSearch ? `Поиск: «${appliedSearch}»` : "Покупки"}
