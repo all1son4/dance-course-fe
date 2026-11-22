@@ -140,8 +140,6 @@ const mapEmailCampaignLeadFromDatabase = (
   social_contact: lead.socialContact,
 });
 
-const listEmailCampaignRecords = () => listEmailCampaignLeadReadRecords();
-
 const getGloballyBlockedEmails = (rows: EmailCampaignLeadRecord[]) =>
   new Set(
     rows
@@ -431,7 +429,7 @@ export const createEmailCampaignLead = async (
 export const getEmailCampaignAdminSnapshot = async (
   campaignKey: string,
 ): Promise<EmailCampaignAdminSnapshot> => {
-  const rows = await listEmailCampaignRecords();
+  const rows = await listEmailCampaignLeadReadRecords();
 
   return buildEmailCampaignAdminSnapshot({ campaignKey, rows });
 };
@@ -471,7 +469,7 @@ export const excludeEmailCampaignLead = async ({
 
 const deliverFirstTouchSalesStartCampaignInternal =
   async (): Promise<EmailCampaignDeliveryResult> => {
-    const rows = await listEmailCampaignRecords();
+    const rows = await listEmailCampaignLeadReadRecords();
     const globallyBlockedEmails = getGloballyBlockedEmails(rows);
     const deliverableRows = rows.filter(
       (row) =>
