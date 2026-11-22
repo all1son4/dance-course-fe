@@ -4,6 +4,8 @@
  * is sent only while it is still true (not renewed, not covered by Plus).
  */
 
+import { warsawDaysBetween } from "./calendar";
+
 export type HubReminderPeriod = {
   entitlementId: string;
   purchaseId: string;
@@ -33,24 +35,6 @@ export type HubExpiryReminder = {
   email: string;
   locale: string | null;
 };
-
-const warsawDayNumber = (date: Date) => {
-  const [year, month, day] = new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Europe/Warsaw",
-    year: "numeric",
-  })
-    .format(date)
-    .split("-")
-    .map(Number);
-
-  return Date.UTC(year!, month! - 1, day!) / 86_400_000;
-};
-
-/** Whole Warsaw calendar days from `now` to `end`: 5 January seen on 29 December is 7. */
-export const warsawDaysUntil = (end: Date, now: Date) =>
-  warsawDayNumber(end) - warsawDayNumber(now);
 
 const hubReminderDeduplicationKey = (entitlementId: string, kind: 7 | 3) =>
   `hub_expiry_reminder:${entitlementId}:${kind}`;
@@ -93,7 +77,7 @@ export const planHubExpiryReminders = ({
 
     if (endsAt <= now || !email) continue;
 
-    const daysLeft = warsawDaysUntil(endsAt, now);
+    const daysLeft = warsawDaysBetween(now, endsAt);
     const kind = daysLeft <= 3 ? 3 : daysLeft <= 7 ? 7 : null;
 
     if (!kind) continue;

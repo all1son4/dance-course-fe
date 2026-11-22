@@ -4,14 +4,8 @@
  * access) is an all-day event in Warsaw, where every date on the page is shown.
  */
 
+import { toWarsawDay } from "@/lib/inspiration-hub/calendar";
 import { HOUR_MS } from "@/lib/time";
-
-const WARSAW_DAY = new Intl.DateTimeFormat("en-CA", {
-  day: "2-digit",
-  month: "2-digit",
-  timeZone: "Europe/Warsaw",
-  year: "numeric",
-});
 
 /** The calendar event id of «Дальше»; any other id is a card's. */
 export const NEXT_CYCLE_EVENT = "next";
@@ -51,7 +45,7 @@ export type MyAccessCalendarEvent = {
 
 /** An all-day event on the Warsaw day of `date`; its DTEND is exclusive, the next day. */
 const allDayLines = (date: Date) => {
-  const day = WARSAW_DAY.format(date);
+  const day = toWarsawDay(date);
   const [year, month, dayOfMonth] = day.split("-").map(Number);
   const next = new Date(Date.UTC(year, month - 1, dayOfMonth + 1)).toISOString();
   return [

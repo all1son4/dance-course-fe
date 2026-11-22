@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import {
   getOfferAccessDurationDaysByOfferId,
   isChoreoChannelOfferId,
@@ -38,14 +39,6 @@ export type ChoreoAccessReminder = {
   productTitle: string | null;
   deduplicationKey: string;
 };
-
-const calendarDay = (date: Date) =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Warsaw",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
 
 const getEffectiveExpiry = (binding: ChoreoReminderBinding) => {
   if (binding.expiresAt) return binding.expiresAt;
@@ -87,8 +80,7 @@ export const planChoreoAccessReminders = ({
     if (expiries.some((expiry) => !expiry || !Number.isFinite(expiry.getTime())))
       continue;
     const expiresAt = new Date(Math.max(...expiries.map((expiry) => expiry!.getTime())));
-    const daysLeft =
-      (Date.parse(calendarDay(expiresAt)) - Date.parse(calendarDay(now))) / DAY_MS;
+    const daysLeft = warsawDaysBetween(now, expiresAt);
     if (expiresAt <= now || daysLeft > CHOREO_REMINDER_DAYS) continue;
 
     const recipients = new Set<string>();
