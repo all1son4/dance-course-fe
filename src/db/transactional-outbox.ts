@@ -285,6 +285,10 @@ const markOutboxJobDelivered = async ({
 const getRetryDelayMs = (attemptCount: number) =>
   Math.min(60 * 60 * 1000, 5_000 * 2 ** Math.max(0, attemptCount - 1));
 
+/** An error the outbox dead-letters at once instead of retrying it. */
+export const nonRetryable = (message: string) =>
+  Object.assign(new Error(message), { retryable: false });
+
 const markOutboxJobFailed = async ({
   error,
   job,

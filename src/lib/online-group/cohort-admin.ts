@@ -27,6 +27,7 @@ import type { DatabaseExecutor } from "@/db/transaction";
 import {
   type ClaimedOutboxJob,
   enqueueOutboxJob,
+  nonRetryable,
   processOutboxJobByDeduplicationKey,
   replayOutboxJob,
 } from "@/db/transactional-outbox";
@@ -526,7 +527,7 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
   const chatId = typeof job.payload.chatId === "string" ? job.payload.chatId : "";
   const text = typeof job.payload.text === "string" ? job.payload.text : "";
   if (!chatId || !text) {
-    throw Object.assign(new Error("cohort_chat_message_invalid"), { retryable: false });
+    throw nonRetryable("cohort_chat_message_invalid");
   }
 
   let message: Awaited<ReturnType<typeof sendTelegramMessage>>;
@@ -547,9 +548,7 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
       error instanceof TypeError ||
       (error instanceof Error && error.name === "AbortError");
     if (uncertain) {
-      throw Object.assign(new Error("cohort_chat_message_delivery_uncertain"), {
-        retryable: false,
-      });
+      throw nonRetryable("cohort_chat_message_delivery_uncertain");
     }
     throw error;
   }

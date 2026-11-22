@@ -37,6 +37,7 @@ import { onlineGroupCohorts } from "@/db/schema";
 import {
   type ClaimedOutboxJob,
   enqueueOutboxJob,
+  nonRetryable,
   processOutboxJobByDeduplicationKey,
 } from "@/db/transactional-outbox";
 import { isProductionDeployment } from "@/lib/deployment";
@@ -93,9 +94,6 @@ const OFFER_IDS: Record<InvitationProduct, Record<InvitationKind, string>> = {
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const NAME_MAX = 80;
 const NOTE_MAX = 500;
-
-const nonRetryable = (message: string) =>
-  Object.assign(new Error(message), { retryable: false });
 
 export const getInvitationProduct = (offerId: string): InvitationProduct =>
   isInspirationHubOfferId(offerId)

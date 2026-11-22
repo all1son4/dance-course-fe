@@ -6,15 +6,16 @@ import {
 } from "@/db/hub-period-start";
 import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
-import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
+import {
+  type ClaimedOutboxJob,
+  enqueueOutboxJob,
+  nonRetryable,
+} from "@/db/transactional-outbox";
 import { areNotificationsEnabled, isProductionDeployment } from "@/lib/deployment";
 import { buildHubPeriodStartInviteEmail } from "@/lib/email/hub-period-start-invite";
 import { sendResendEmail } from "@/lib/email/resend";
 import { buildMyAccessUrl } from "@/lib/my-access/link";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
-
-const nonRetryable = (message: string) =>
-  Object.assign(new Error(message), { retryable: false });
 
 /**
  * HUB-D37, run daily: one job per paid Hub period that began without an invite. The

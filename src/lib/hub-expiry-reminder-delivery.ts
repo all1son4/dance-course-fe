@@ -5,7 +5,11 @@ import {
   listHubReminderPlusRights,
 } from "@/db/hub-expiry-reminders";
 import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
-import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
+import {
+  type ClaimedOutboxJob,
+  enqueueOutboxJob,
+  nonRetryable,
+} from "@/db/transactional-outbox";
 import { areNotificationsEnabled, isProductionDeployment } from "@/lib/deployment";
 import { buildHubExpiryReminderEmail } from "@/lib/email/hub-expiry-reminder";
 import { sendResendEmail } from "@/lib/email/resend";
@@ -19,9 +23,6 @@ import { logSafeError } from "@/lib/safe-error-log";
 import { getProductSaleState } from "@/lib/sales-availability";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-
-const nonRetryable = (message: string) =>
-  Object.assign(new Error(message), { retryable: false });
 
 const planReminders = async (now: Date, telegramUserId?: string) => {
   const database = getDatabase();

@@ -2,7 +2,11 @@ import {
   findCurrentChoreoAccessReminder,
   listDueChoreoAccessReminders,
 } from "@/db/choreo-access-reminders";
-import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
+import {
+  type ClaimedOutboxJob,
+  enqueueOutboxJob,
+  nonRetryable,
+} from "@/db/transactional-outbox";
 import { areNotificationsEnabled, isProductionDeployment } from "@/lib/deployment";
 import { buildChoreoAccessReminderEmail } from "@/lib/email/choreo-access-reminder";
 import { sendResendEmail } from "@/lib/email/resend";
@@ -45,9 +49,7 @@ export const deliverChoreoAccessReminder = async (job: ClaimedOutboxJob) => {
       job.payload.bindingId,
     )
   ) {
-    throw Object.assign(new Error("choreo_reminder_binding_invalid"), {
-      retryable: false,
-    });
+    throw nonRetryable("choreo_reminder_binding_invalid");
   }
   const reminder = await findCurrentChoreoAccessReminder({
     bindingId: job.payload.bindingId,
@@ -57,9 +59,7 @@ export const deliverChoreoAccessReminder = async (job: ClaimedOutboxJob) => {
   });
   if (!reminder) return { skipped: true };
   if (job.recipient?.trim().toLowerCase() !== reminder.email) {
-    throw Object.assign(new Error("choreo_reminder_recipient_mismatch"), {
-      retryable: false,
-    });
+    throw nonRetryable("choreo_reminder_recipient_mismatch");
   }
   const purchaseLine =
     getBuyerPurchaseLine({
