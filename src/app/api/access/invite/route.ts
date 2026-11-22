@@ -1,12 +1,9 @@
-import { eq } from "drizzle-orm";
-
 import { getStripeServer } from "@/app/api/stripe/payment-intent/lib";
 import { deliverPurchaseSuccessEmailFromOutbox } from "@/app/api/stripe/webhook/_lib/side-effects/purchase-email";
 import { findVerifiedSucceededStripeEvent } from "@/db/admin-operations";
 import { getDatabase } from "@/db/client";
-import { readMyAccessSnapshot } from "@/db/my-access";
+import { findMyAccessPurchase, readMyAccessSnapshot } from "@/db/my-access";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
-import { purchases } from "@/db/schema";
 import { sendInvitationLinks } from "@/lib/access-invitations/service";
 import {
   getBrowserJsonRequestErrorResponse,
@@ -82,14 +79,7 @@ export async function POST(request: Request) {
       card?.action?.key === "reissue" ? card.action.purchaseId : undefined;
     if (!purchaseId) return jsonErrorNoStore("not_needed", { status: 409 });
 
-    const [owned] = await database
-      .select({
-        invitationKind: purchases.invitationKind,
-        paymentIntentId: purchases.paymentIntentId,
-      })
-      .from(purchases)
-      .where(eq(purchases.id, purchaseId))
-      .limit(1);
+    const owned = await findMyAccessPurchase(database, purchaseId);
 
     // An invitation has no payment email: its own links email, limited by the emails
     // it actually sent, so a failed attempt never uses up the person's tries.
