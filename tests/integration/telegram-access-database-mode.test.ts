@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import test, { after, before, type TestContext } from "node:test";
 
 import postgres from "postgres";
@@ -10,6 +10,7 @@ import {
   findTelegramUserBindingByPaymentIntentIdFromDatabase,
   upsertTelegramUserBindingRecordToDatabase,
 } from "@/db/telegram-user-binding-records";
+import { upsertTelegramAccessTokenRecord } from "@/lib/telegram/access-persistence";
 import {
   findActiveTelegramUserBindings,
   findLatestTelegramAccessTokenRecordByPaymentIntentId,
@@ -34,15 +35,11 @@ const client = postgres(databaseUrl, {
 });
 const applicationClient = getDatabaseClient();
 let activateTelegramStartToken: typeof import("@/lib/telegram/access").activateTelegramStartToken;
-let ensureLegacyTelegramBotStartLinkForPayment: typeof import("@/lib/telegram/access").ensureLegacyTelegramBotStartLinkForPayment;
 let syncTelegramChannelMembership: typeof import("@/lib/telegram/access").syncTelegramChannelMembership;
 
 before(async () => {
-  ({
-    activateTelegramStartToken,
-    ensureLegacyTelegramBotStartLinkForPayment,
-    syncTelegramChannelMembership,
-  } = await import("@/lib/telegram/access"));
+  ({ activateTelegramStartToken, syncTelegramChannelMembership } =
+    await import("@/lib/telegram/access"));
 });
 
 after(async () => {
@@ -131,12 +128,29 @@ test("activates legacy Telegram access through PostgreSQL without Sheets", async
 
     assert.ok(paymentRecord);
 
-    const accessUrl = await ensureLegacyTelegramBotStartLinkForPayment(paymentRecord);
+    // A start token as the retired bot flow issued it: /start still activates those.
+    const tokenValue = randomBytes(24).toString("base64url");
+    const issuedAt = new Date();
 
-    assert.ok(accessUrl);
-    const tokenValue = new URL(accessUrl).searchParams.get("start");
-
-    assert.ok(tokenValue);
+    await upsertTelegramAccessTokenRecord({
+      access_expires_at: "",
+      chat_id: "",
+      created_at: issuedAt.toISOString(),
+      customer_email: paymentRecord.customer_email,
+      expires_at: new Date(issuedAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      last_error: "",
+      link_kind: "start_token",
+      offer_id: paymentRecord.offer_id,
+      payment_intent_id: paymentRecord.payment_intent_id,
+      product_id: paymentRecord.product_id,
+      status: "issued",
+      telegram_user_id: "",
+      telegram_username: "",
+      token_hash: createHash("sha256").update(tokenValue).digest("hex"),
+      token_id: `tga_${randomBytes(8).toString("hex")}`,
+      token_value: tokenValue,
+      used_at: "",
+    });
 
     const activation = await activateTelegramStartToken({
       telegramUserId: "write04-user",
