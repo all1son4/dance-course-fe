@@ -57,8 +57,8 @@ import {
 } from "./access.helpers";
 import {
   CalendarSubscribe,
+  CycleStamp,
   FoldingCard,
-  LegendMedal,
   ReissueInvite,
   SavePageLink,
   ShareCourse,
@@ -586,13 +586,25 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           </Facts>
         )}
         {snapshot.legendCycles ? (
-          <LegendMedal
+          <CycleStamp
             count={snapshot.legendCycles}
+            ink="wine"
             texts={{
               label: t("legend.label", { count: snapshot.legendCycles }),
               name: t("legend.name"),
               text: t("legend.text", { last: snapshot.legendCycles }),
               unit: t("legend.unit", { count: snapshot.legendCycles }),
+            }}
+          />
+        ) : snapshot.cycleStreak ? (
+          <CycleStamp
+            count={snapshot.cycleStreak.count}
+            ink="black"
+            texts={{
+              label: t("inARow.label", snapshot.cycleStreak),
+              name: t("inARow.name"),
+              text: t("inARow.text", snapshot.cycleStreak),
+              unit: t("inARow.unit", { count: snapshot.cycleStreak.count }),
             }}
           />
         ) : null}

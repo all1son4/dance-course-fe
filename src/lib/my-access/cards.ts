@@ -101,8 +101,10 @@ export type MyAccessSnapshot = {
    * the customer's own purchases.
    */
   completedCohortIds?: readonly string[];
-  /** «Легенда группы»: every cycle from the first, the newest paid (`countLegendCycles`). */
+  /** «Легенда группы»: every cycle from the first one up to now (`countLegendCycles`). */
   legendCycles?: number | null;
+  /** «Подряд»: two or more cycles in a row up to now, after the first (`findCycleStreak`). */
+  cycleStreak?: { count: number; first: number; last: number } | null;
   /** The name given at checkout, for the greeting only; never on a card. */
   customerFullName?: string | null;
   purchases: MyAccessPurchase[];
