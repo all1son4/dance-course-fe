@@ -2,6 +2,7 @@ import { and, desc, eq, exists, inArray, isNotNull, isNull, sql } from "drizzle-
 import { alias } from "drizzle-orm/pg-core";
 
 import {
+  INSPIRATION_HUB_DISCOUNT_SLUG,
   isOnlineGroupLibraryOfferId,
   ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
   ONLINE_GROUP_RENEWAL_OFFER_ID,
@@ -66,7 +67,7 @@ const cohortGraceReminderKey = (cohortId: string) => `cohort_grace_reminder:${co
 const PLUS_OFFER_IDS = SELLABLE_PRODUCTS["online-group-anna-strok"].offers
   .map((offer) => offer.id)
   .filter(isOnlineGroupLibraryOfferId);
-const HUB_SPECIAL_PRICE_URL = `${normalizedSiteUrl}/payment?renewal=inspiration-hub`;
+const HUB_SPECIAL_PRICE_URL = `${normalizedSiteUrl}/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`;
 
 const buildRenewalUrl = (campaign: {
   offerExternalId: string;
