@@ -208,6 +208,23 @@ async function readCustomerCycles(
   };
 }
 
+/** The purchase a «Мой доступ» card asks to re-send: its invitation kind and payment. */
+export async function findMyAccessPurchase(
+  database: DatabaseExecutor,
+  purchaseId: string,
+) {
+  const [owned] = await database
+    .select({
+      invitationKind: purchases.invitationKind,
+      paymentIntentId: purchases.paymentIntentId,
+    })
+    .from(purchases)
+    .where(eq(purchases.id, purchaseId))
+    .limit(1);
+
+  return owned;
+}
+
 /** Everything the cards need, or null when the customer no longer exists. */
 export async function readMyAccessSnapshot(
   database: DatabaseExecutor,

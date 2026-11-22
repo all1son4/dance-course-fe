@@ -2,12 +2,10 @@ import { createHash } from "node:crypto";
 
 import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import {
-  getOfferAccessDurationDaysByOfferId,
+  getTelegramChannelAccessDurationMs,
   isChoreoChannelOfferId,
-  isFirstTouchOfferId,
   isLifetimeChannelOfferId,
 } from "@/lib/telegram/offer-access";
-import { DAY_MS } from "@/lib/time";
 
 export const CHOREO_REMINDER_DAYS = 14;
 
@@ -40,18 +38,11 @@ export type ChoreoAccessReminder = {
   deduplicationKey: string;
 };
 
+// The rule that removes the member from the channel, so the email names that day.
 const getEffectiveExpiry = (binding: ChoreoReminderBinding) => {
   if (binding.expiresAt) return binding.expiresAt;
-  const offerId = binding.offerId ?? "";
-  if (!isChoreoChannelOfferId(offerId) && !isFirstTouchOfferId(offerId)) return null;
-  const override = isChoreoChannelOfferId(offerId)
-    ? Number(process.env.TELEGRAM_CHOREO_ACCESS_DAYS)
-    : 0;
-  const days =
-    override > 0 && Number.isFinite(override)
-      ? override
-      : getOfferAccessDurationDaysByOfferId(offerId);
-  return days ? new Date(binding.boundAt.getTime() + days * DAY_MS) : null;
+  const durationMs = getTelegramChannelAccessDurationMs(binding.offerId ?? "");
+  return durationMs ? new Date(binding.boundAt.getTime() + durationMs) : null;
 };
 
 /** Match channel revocation: the longest active binding controls actual access. */

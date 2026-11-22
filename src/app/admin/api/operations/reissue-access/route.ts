@@ -11,7 +11,7 @@ import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import {
   ensureTelegramAccessLinkForPayment,
-  isOfferEligibleForTelegramAccessLink,
+  isStandardTelegramLinkPayment,
 } from "@/lib/telegram/access";
 import {
   ensureOnlineGroupAccessForPayment,
@@ -108,10 +108,7 @@ export async function POST(request: Request) {
       return jsonNoStore({ links, status });
     }
 
-    if (
-      paymentRecord.access_workflow.trim() === "manual-admin" ||
-      !isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)
-    ) {
+    if (!isStandardTelegramLinkPayment(paymentRecord)) {
       return jsonNoStore({ links: [], status: "not_applicable" });
     }
 

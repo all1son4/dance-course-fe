@@ -1,7 +1,4 @@
-import {
-  normalizeCheckoutSessionId,
-  normalizePaymentIntentId,
-} from "@/app/api/stripe/payment-intent/lib";
+import { normalizePaymentIntentId } from "@/app/api/stripe/payment-intent/lib";
 import { getDatabase } from "@/db/client";
 import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import {
@@ -9,6 +6,7 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { buildMyAccessPath } from "@/lib/my-access/link";

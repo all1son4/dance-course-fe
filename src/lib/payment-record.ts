@@ -101,3 +101,69 @@ export const createEmptyPaymentRecord = (): PaymentRecordSnapshot => ({
   telegram_inspiration_chat_id: "",
   telegram_inspiration_access_expires_at: "",
 });
+
+export type AccessStatus =
+  | "activated"
+  | "expired"
+  | "left_channel"
+  | "link_failed"
+  | "manual_done"
+  | "manual_pending"
+  | "not_required"
+  | "pending"
+  | "revoked"
+  | "token_issued";
+
+/** The stored access status of a record, or what its delivery implies when it has none. */
+export const normalizeAccessStatus = (
+  value: string,
+  paymentRecord: PaymentRecordSnapshot,
+): AccessStatus => {
+  const normalizedValue = value.trim();
+  const statuses = new Set<AccessStatus>([
+    "activated",
+    "expired",
+    "left_channel",
+    "link_failed",
+    "manual_done",
+    "manual_pending",
+    "not_required",
+    "pending",
+    "revoked",
+    "token_issued",
+  ]);
+
+  if (statuses.has(normalizedValue as AccessStatus)) {
+    return normalizedValue as AccessStatus;
+  }
+
+  if (paymentRecord.delivery_channel.trim() === "manual") {
+    return "manual_pending";
+  }
+
+  if (!paymentRecord.delivery_channel.trim() && !paymentRecord.access_workflow.trim()) {
+    return "not_required";
+  }
+
+  return "pending";
+};
+
+/** Where a purchase's access is delivered: by hand, through the bot, or into a chat. */
+export const getExternalTargetType = (paymentRecord: PaymentRecordSnapshot) => {
+  const workflow = paymentRecord.access_workflow.trim();
+  const deliveryChannel = paymentRecord.delivery_channel.trim();
+
+  if (deliveryChannel === "manual" || workflow === "manual-admin") {
+    return "manual" as const;
+  }
+
+  if (workflow === "telegram-bot") {
+    return "telegram_bot" as const;
+  }
+
+  if (deliveryChannel === "telegram" || workflow.startsWith("telegram")) {
+    return "telegram_chat" as const;
+  }
+
+  return null;
+};

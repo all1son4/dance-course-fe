@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -18,19 +18,21 @@ import {
   upsertTelegramAccessTokenRecord,
   upsertTelegramUserBindingRecord,
 } from "./access-persistence";
+import { hashAccessToken } from "./access-records";
 import {
-  banTelegramChatMember,
   createTelegramChatInviteLink,
+  kickUnexpectedMember,
   shouldIgnoreKickFailure,
 } from "./bot-api";
 import { getTelegramChannelTargetByOfferId } from "./config";
 import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
 import {
-  getOfferAccessDurationDaysByOfferId,
+  getTelegramChannelAccessDurationMs,
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
   isLifetimeChannelOfferId,
   isWithoutMentorOfferId,
+  parsePositiveEnvNumber,
 } from "./offer-access";
 
 type TelegramAccessUnavailableReason =
@@ -119,10 +121,6 @@ type TelegramJoinAccessContext = {
 };
 
 const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
-const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
-// К15, as in online-group-access: a ban shorter than 30 seconds is permanent in
-// Telegram, and the call may retry for ~31 seconds; 90 keeps the kick temporary.
-const TELEGRAM_TEMP_KICK_SECONDS = 90;
 const pendingTelegramAccessLinkEnsures = new Map<
   string,
   Promise<TelegramAccessLinkResult>
@@ -151,12 +149,6 @@ const getUnavailableTelegramAccessLinkResult = (
   tokenId: null,
 });
 
-const parsePositiveEnvNumber = (name: string) => {
-  const parsedValue = Number.parseFloat(process.env[name]?.trim() ?? "");
-
-  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
-};
-
 const getTelegramAccessLinkTtlDays = () =>
   parsePositiveEnvNumber("TELEGRAM_ACCESS_LINK_TTL_DAYS") ??
   DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS;
@@ -164,42 +156,11 @@ const getTelegramAccessLinkTtlDays = () =>
 const getTelegramAccessLinkTtlMs = () =>
   getTelegramAccessLinkTtlDays() * 24 * 60 * 60 * 1000;
 
-const getTimedTelegramAccessDurationDays = (offerId: string) => {
-  if (isChoreoChannelOfferId(offerId)) {
-    return (
-      parsePositiveEnvNumber("TELEGRAM_CHOREO_ACCESS_DAYS") ??
-      getOfferAccessDurationDaysByOfferId(offerId) ??
-      DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS
-    );
-  }
-
-  if (isFirstTouchOfferId(offerId)) {
-    return getOfferAccessDurationDaysByOfferId(offerId);
-  }
-
-  return null;
-};
-
-const getTelegramChannelAccessDurationMs = (offerId: string) => {
-  const durationDays = getTimedTelegramAccessDurationDays(offerId);
-
-  if (!durationDays) {
-    return 0;
-  }
-
-  // Duration controls how long timed Telegram access stays active after joining.
-  // Example: 60 -> 60 days, 0.01 -> ~14.4 minutes (testing).
-  return durationDays * 24 * 60 * 60 * 1000;
-};
-
 const parseTimestamp = (value: string) => {
   const timestamp = Date.parse(value);
 
   return Number.isFinite(timestamp) ? timestamp : 0;
 };
-
-const hashToken = (tokenValue: string) =>
-  createHash("sha256").update(tokenValue).digest("hex");
 
 const createTelegramTokenId = () => `tgi_${randomBytes(8).toString("hex")}`;
 
@@ -360,22 +321,6 @@ const updatePaymentAccessWindow = async (paymentRecord: PaymentRecordSnapshot) =
   };
 };
 
-const tryKickTelegramMember = async ({
-  chatId,
-  telegramUserId,
-}: {
-  chatId: string;
-  telegramUserId: string;
-}) => {
-  const untilDateUnix = Math.floor(Date.now() / 1000) + TELEGRAM_TEMP_KICK_SECONDS;
-
-  await banTelegramChatMember({
-    chatId,
-    untilDateUnix,
-    userId: telegramUserId,
-  });
-};
-
 const trySyncPaymentByExistingActiveBinding = async ({
   accessExpiresAt,
   chatId,
@@ -468,13 +413,20 @@ export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
   isFirstTouchOfferId(offerId) ||
   isLifetimeChannelOfferId(offerId);
 
+/** A purchase that gets the ordinary Telegram link: an eligible offer not handed out by hand. */
+export const isStandardTelegramLinkPayment = (paymentRecord: PaymentRecordSnapshot) =>
+  paymentRecord.access_workflow.trim() !== "manual-admin" &&
+  isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id);
+
 /**
  * Who gets an access window that can run out. Lifetime offers must stay out of
  * this list - it is what the revocation sweep keys off.
  */
+const isTimedAccessOfferId = (offerId: string) =>
+  isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
+
 const isPaymentTimedTelegramAccess = (paymentRecord: PaymentRecordSnapshot) =>
-  isChoreoChannelOfferId(paymentRecord.offer_id) ||
-  isFirstTouchOfferId(paymentRecord.offer_id);
+  isTimedAccessOfferId(paymentRecord.offer_id);
 
 const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentRecordSnapshot) => {
   if (!isPaymentTimedTelegramAccess(paymentRecord)) {
@@ -821,7 +773,7 @@ const createTelegramAccessLink = async ({
       status: "issued",
       telegram_user_id: "",
       telegram_username: "",
-      token_hash: hashToken(inviteLink.invite_link),
+      token_hash: hashAccessToken(inviteLink.invite_link),
       token_id: tokenId,
       token_value: inviteLink.invite_link,
       used_at: "",
@@ -1004,7 +956,7 @@ const resolveTelegramJoinRecords = async ({
 > => {
   // By hash: the clear link is erased once the token is used or expires (HARD-03).
   const tokenRecord = await findTelegramAccessTokenRecordByTokenHash(
-    hashToken(normalizedInviteLink),
+    hashAccessToken(normalizedInviteLink),
   );
 
   if (!tokenRecord || tokenRecord.link_kind !== "channel_invite") {
@@ -1081,10 +1033,7 @@ const tryRemoveRejectedTelegramMember = async ({
   ignoreMissingMember?: boolean;
 }): Promise<void> => {
   try {
-    await tryKickTelegramMember({
-      chatId: normalizedChatId,
-      telegramUserId: normalizedUserId,
-    });
+    await kickUnexpectedMember(normalizedChatId, normalizedUserId);
   } catch (error) {
     if (ignoreMissingMember && shouldIgnoreKickFailure(error)) {
       return;
@@ -1420,11 +1369,7 @@ export const syncTelegramChannelMembership = async ({
 export const revokeExpiredTelegramChannelAccess =
   async (): Promise<RevokeExpiredTelegramAccessResult> => {
     const activeBindings = (await findActiveTelegramUserBindings())
-      .filter(
-        (binding) =>
-          isChoreoChannelOfferId(binding.offer_id) ||
-          isFirstTouchOfferId(binding.offer_id),
-      )
+      .filter((binding) => isTimedAccessOfferId(binding.offer_id))
       .map((binding) => ({
         ...binding,
         access_expires_at: getEffectiveBindingAccessExpiresAt({
@@ -1482,10 +1427,7 @@ export const revokeExpiredTelegramChannelAccess =
       let canProceedWithRevocation = false;
 
       try {
-        await tryKickTelegramMember({
-          chatId: group.chatId,
-          telegramUserId: group.telegramUserId,
-        });
+        await kickUnexpectedMember(group.chatId, group.telegramUserId);
         canProceedWithRevocation = true;
       } catch (error) {
         if (shouldIgnoreKickFailure(error)) {
@@ -1550,7 +1492,7 @@ const activateTelegramStartTokenInternal = async ({
   telegramUsername: string;
   tokenValue: string;
 }): Promise<ActivateTelegramStartTokenResult> => {
-  const tokenHash = hashToken(tokenValue);
+  const tokenHash = hashAccessToken(tokenValue);
   const tokenRecord = await findTelegramAccessTokenRecordByTokenHash(tokenHash);
 
   if (!tokenRecord) {
@@ -1687,7 +1629,7 @@ export const activateTelegramStartToken = async ({
   telegramUsername: string;
   tokenValue: string;
 }): Promise<ActivateTelegramStartTokenResult> => {
-  const tokenHash = hashToken(tokenValue);
+  const tokenHash = hashAccessToken(tokenValue);
   const previousActivation =
     pendingTelegramStartTokenActivations.get(tokenHash) ?? Promise.resolve();
   let releaseActivation!: () => void;

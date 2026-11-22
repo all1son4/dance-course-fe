@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createEmptyPaymentRecord, type PaymentRecordSnapshot } from "./payment-record";
+import {
+  createEmptyPaymentRecord,
+  getExternalTargetType,
+  normalizeAccessStatus,
+  type PaymentRecordSnapshot,
+} from "./payment-record";
 
 const PAYMENT_RECORD_FIELDS = [
   "payment_intent_id",
@@ -88,4 +93,67 @@ test("payment projection preserves string values without coercion", () => {
   assert.deepEqual(restored, payment);
   assert.equal(payment.amount, "0005000");
   assert.equal(payment.telegram_user_id, "9007199254740993");
+});
+
+const recordWith = (fields: Partial<PaymentRecordSnapshot>): PaymentRecordSnapshot => ({
+  ...createEmptyPaymentRecord(),
+  ...fields,
+});
+
+test("a stored access status stays; without one the delivery decides", () => {
+  const telegram = recordWith({
+    access_workflow: "telegram-bot",
+    delivery_channel: "telegram",
+  });
+
+  for (const status of [
+    "activated",
+    "expired",
+    "left_channel",
+    "link_failed",
+    "manual_done",
+    "manual_pending",
+    "not_required",
+    "pending",
+    "revoked",
+    "token_issued",
+  ]) {
+    assert.equal(normalizeAccessStatus(` ${status} `, telegram), status);
+  }
+  assert.equal(normalizeAccessStatus("unknown", telegram), "pending");
+  assert.equal(
+    normalizeAccessStatus("", recordWith({ delivery_channel: " manual " })),
+    "manual_pending",
+  );
+  assert.equal(normalizeAccessStatus("", recordWith({})), "not_required");
+  assert.equal(
+    normalizeAccessStatus("", recordWith({ access_workflow: "telegram-online-group" })),
+    "pending",
+  );
+});
+
+test("the access target follows the delivery channel and workflow", () => {
+  assert.equal(
+    getExternalTargetType(recordWith({ delivery_channel: "manual" })),
+    "manual",
+  );
+  assert.equal(
+    getExternalTargetType(
+      recordWith({ access_workflow: "manual-admin", delivery_channel: "telegram" }),
+    ),
+    "manual",
+  );
+  assert.equal(
+    getExternalTargetType(recordWith({ access_workflow: "telegram-bot" })),
+    "telegram_bot",
+  );
+  assert.equal(
+    getExternalTargetType(recordWith({ access_workflow: "telegram-online-group" })),
+    "telegram_chat",
+  );
+  assert.equal(
+    getExternalTargetType(recordWith({ delivery_channel: "telegram" })),
+    "telegram_chat",
+  );
+  assert.equal(getExternalTargetType(recordWith({ delivery_channel: "email" })), null);
 });

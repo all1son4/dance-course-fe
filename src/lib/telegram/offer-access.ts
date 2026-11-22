@@ -111,3 +111,41 @@ export const getOfferMetadataById = (offerId: string) =>
 
 export const getOfferAccessDurationDaysByOfferId = (offerId: string) =>
   OFFER_ACCESS_DURATION_DAYS_BY_ID.get(offerId) ?? null;
+
+const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
+
+/** A positive number from the environment, or null when it is unset or not positive. */
+export const parsePositiveEnvNumber = (name: string) => {
+  const parsedValue = Number.parseFloat(process.env[name]?.trim() ?? "");
+
+  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
+};
+
+const getTimedTelegramAccessDurationDays = (offerId: string) => {
+  if (isChoreoChannelOfferId(offerId)) {
+    return (
+      parsePositiveEnvNumber("TELEGRAM_CHOREO_ACCESS_DAYS") ??
+      getOfferAccessDurationDaysByOfferId(offerId) ??
+      DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS
+    );
+  }
+
+  if (isFirstTouchOfferId(offerId)) {
+    return getOfferAccessDurationDaysByOfferId(offerId);
+  }
+
+  return null;
+};
+
+/** How long timed channel access runs after joining, in ms; 0 for offers without it. */
+export const getTelegramChannelAccessDurationMs = (offerId: string) => {
+  const durationDays = getTimedTelegramAccessDurationDays(offerId);
+
+  if (!durationDays) {
+    return 0;
+  }
+
+  // Duration controls how long timed Telegram access stays active after joining.
+  // Example: 60 -> 60 days, 0.01 -> ~14.4 minutes (testing).
+  return durationDays * 24 * 60 * 60 * 1000;
+};

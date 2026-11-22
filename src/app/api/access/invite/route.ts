@@ -1,12 +1,9 @@
-import { eq } from "drizzle-orm";
-
 import { getStripeServer } from "@/app/api/stripe/payment-intent/lib";
 import { deliverPurchaseSuccessEmailFromOutbox } from "@/app/api/stripe/webhook/_lib/side-effects/purchase-email";
 import { findVerifiedSucceededStripeEvent } from "@/db/admin-operations";
 import { getDatabase } from "@/db/client";
-import { readMyAccessSnapshot } from "@/db/my-access";
+import { findMyAccessPurchase, readMyAccessSnapshot } from "@/db/my-access";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
-import { purchases } from "@/db/schema";
 import { sendInvitationLinks } from "@/lib/access-invitations/service";
 import {
   getBrowserJsonRequestErrorResponse,
@@ -21,7 +18,7 @@ import { consumeRateLimit, consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import {
   ensureTelegramAccessLinkForPayment,
-  isOfferEligibleForTelegramAccessLink,
+  isStandardTelegramLinkPayment,
 } from "@/lib/telegram/access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 import { DAY_MS } from "@/lib/time";
@@ -82,14 +79,7 @@ export async function POST(request: Request) {
       card?.action?.key === "reissue" ? card.action.purchaseId : undefined;
     if (!purchaseId) return jsonErrorNoStore("not_needed", { status: 409 });
 
-    const [owned] = await database
-      .select({
-        invitationKind: purchases.invitationKind,
-        paymentIntentId: purchases.paymentIntentId,
-      })
-      .from(purchases)
-      .where(eq(purchases.id, purchaseId))
-      .limit(1);
+    const owned = await findMyAccessPurchase(database, purchaseId);
 
     // An invitation has no payment email: its own links email, limited by the emails
     // it actually sent, so a failed attempt never uses up the person's tries.
@@ -140,8 +130,7 @@ export async function POST(request: Request) {
     });
     const hasLink = onlineGroupAccess
       ? onlineGroupAccess.some((access) => access.accessUrl)
-      : paymentRecord.access_workflow.trim() !== "manual-admin" &&
-        isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id) &&
+      : isStandardTelegramLinkPayment(paymentRecord) &&
         (await ensureTelegramAccessLinkForPayment(paymentRecord)).status === "ready";
     if (!hasLink) return jsonErrorNoStore("no_link", { status: 409 });
 

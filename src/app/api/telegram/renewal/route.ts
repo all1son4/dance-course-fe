@@ -9,13 +9,13 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { getOnlineGroupSale } from "@/lib/online-group-sale";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-import { getTelegramChatMember } from "@/lib/telegram/bot-api";
-import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
+import { checkChatMembership } from "@/lib/telegram/chat-membership";
 import {
   createTelegramLoginNonce,
   getTelegramLoginClientId,
@@ -62,9 +62,6 @@ type RenewalMembership = {
   checkFailed: boolean;
   isMember: boolean;
 };
-
-const normalizeCheckoutSessionId = (value: string | null | undefined) =>
-  (value ?? "").trim().slice(0, 160);
 
 const normalizeSlug = (value: string | null | undefined) =>
   (value ?? "").trim().slice(0, 80);
@@ -209,28 +206,14 @@ const checkRenewalSourceChatMembership = async ({
 }: {
   chatId: string;
   telegramUserId: string;
-}): Promise<RenewalMembership> => {
-  try {
-    const member = await getTelegramChatMember({
-      chatId,
-      userId: telegramUserId,
-    });
-
-    return {
-      chatId,
-      checkFailed: false,
-      isMember: isActiveTelegramMember(member),
-    };
-  } catch (error) {
-    logSafeError("Failed to check renewal source chat membership", error);
-
-    return {
-      chatId,
-      checkFailed: true,
-      isMember: false,
-    };
-  }
-};
+}): Promise<RenewalMembership> => ({
+  chatId,
+  ...(await checkChatMembership({
+    chatId,
+    failureEvent: "Failed to check renewal source chat membership",
+    userId: telegramUserId,
+  })),
+});
 
 const checkRenewalSourceChatMemberships = (
   campaign: RenewalCampaign,

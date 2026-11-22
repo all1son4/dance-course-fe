@@ -15,12 +15,12 @@ import type { DatabaseExecutor } from "@/db/transaction";
 import { logSafeError } from "@/lib/safe-error-log";
 
 import { sendTelegramMessage, shouldIgnoreKickFailure } from "./bot-api";
+import { kickUnexpectedMember } from "./bot-api";
 import {
   getTelegramAlertsBotToken,
   getTelegramAlertsChatId,
   isTelegramAlertsConfigured,
 } from "./config";
-import { kickUnexpectedMember } from "./online-group-access";
 
 type ExpiredLegacyHubRow = {
   binding: typeof telegramUserBindings.$inferSelect;

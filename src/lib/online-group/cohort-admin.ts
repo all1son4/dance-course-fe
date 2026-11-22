@@ -2,6 +2,7 @@ import { and, desc, eq, exists, inArray, isNotNull, isNull, sql } from "drizzle-
 import { alias } from "drizzle-orm/pg-core";
 
 import {
+  INSPIRATION_HUB_DISCOUNT_SLUG,
   isOnlineGroupLibraryOfferId,
   ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
   ONLINE_GROUP_RENEWAL_OFFER_ID,
@@ -58,13 +59,15 @@ import {
 
 type Cohort = typeof onlineGroupCohorts.$inferSelect;
 
-const cohortClosurePostKey = (cohortId: string) => `cohort_closure_post:${cohortId}`;
+const COHORT_CLOSURE_POST_KEY_PREFIX = "cohort_closure_post:";
+const cohortClosurePostKey = (cohortId: string) =>
+  `${COHORT_CLOSURE_POST_KEY_PREFIX}${cohortId}`;
 const cohortGraceReminderKey = (cohortId: string) => `cohort_grace_reminder:${cohortId}`;
 
 const PLUS_OFFER_IDS = SELLABLE_PRODUCTS["online-group-anna-strok"].offers
   .map((offer) => offer.id)
   .filter(isOnlineGroupLibraryOfferId);
-const HUB_SPECIAL_PRICE_URL = `${normalizedSiteUrl}/payment?renewal=inspiration-hub`;
+const HUB_SPECIAL_PRICE_URL = `${normalizedSiteUrl}/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`;
 
 const buildRenewalUrl = (campaign: {
   offerExternalId: string;
@@ -481,7 +484,7 @@ export async function enqueueDueCohortGraceReminders(now = new Date()) {
       and(
         eq(
           purchaseSideEffects.deduplicationKey,
-          sql`'cohort_closure_post:' || ${onlineGroupCohorts.id}`,
+          sql`${COHORT_CLOSURE_POST_KEY_PREFIX} || ${onlineGroupCohorts.id}`,
         ),
         eq(purchaseSideEffects.status, "sent"),
       ),
@@ -566,6 +569,17 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
 
 export const COHORT_DURATION_WEEKS = { max: 26, min: 1 } as const;
 
+/** A cohort lasts a whole number of weeks within COHORT_DURATION_WEEKS. */
+const assertCohortDurationWeeks = (durationWeeks: number) => {
+  if (
+    !Number.isInteger(durationWeeks) ||
+    durationWeeks < COHORT_DURATION_WEEKS.min ||
+    durationWeeks > COHORT_DURATION_WEEKS.max
+  ) {
+    throw new Error("cohort_duration_invalid");
+  }
+};
+
 /**
  * «Завести следующий поток»: the record of the cohort that follows a running one.
  * Sales stay closed until the running cohort is closed; the chat must be registered
@@ -590,13 +604,7 @@ export async function createNextCohortFromAdmin({
   if (!normalizedTitle || !chatId || !Number.isFinite(startsAt.getTime())) {
     throw new Error("next_cohort_incomplete");
   }
-  if (
-    !Number.isInteger(durationWeeks) ||
-    durationWeeks < COHORT_DURATION_WEEKS.min ||
-    durationWeeks > COHORT_DURATION_WEEKS.max
-  ) {
-    throw new Error("cohort_duration_invalid");
-  }
+  assertCohortDurationWeeks(durationWeeks);
 
   const db = getDatabase();
 
@@ -661,13 +669,7 @@ export async function setCohortDurationWeeks({
   cohortId: string;
   durationWeeks: number;
 }) {
-  if (
-    !Number.isInteger(durationWeeks) ||
-    durationWeeks < COHORT_DURATION_WEEKS.min ||
-    durationWeeks > COHORT_DURATION_WEEKS.max
-  ) {
-    throw new Error("cohort_duration_invalid");
-  }
+  assertCohortDurationWeeks(durationWeeks);
 
   const updated = await getDatabase()
     .update(onlineGroupCohorts)

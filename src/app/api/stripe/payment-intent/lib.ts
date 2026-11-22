@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 
 import Stripe from "stripe";
 
+import { normalizeCheckoutSessionId } from "@/lib/http-security";
+
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY ?? "";
 let stripeServer: Stripe | null = null;
 
@@ -44,9 +46,6 @@ export const normalizePaymentIntentId = (value: string | null | undefined) => {
 
   return /^pi_[A-Za-z0-9]+$/u.test(normalizedValue) ? normalizedValue : "";
 };
-
-export const normalizeCheckoutSessionId = (value: string | null | undefined) =>
-  (value?.trim() ?? "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 96);
 
 export const getResolvedCheckoutLocale = (
   locale: string | null | undefined,

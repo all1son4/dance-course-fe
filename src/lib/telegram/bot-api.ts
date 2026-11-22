@@ -346,6 +346,23 @@ export const banTelegramChatMember = async ({
     },
   );
 
+// К15: Telegram treats a ban shorter than 30 seconds as permanent. The ban end is
+// computed once, and the API call may retry for about 31 seconds (three 10-second
+// timeouts plus backoff), so the end must leave 30+ seconds after the last attempt.
+export const TEMP_KICK_SECONDS = 90;
+
+/** Removes a member with a short ban so the same person can rejoin later. */
+export const kickUnexpectedMember = async (
+  chatId: string,
+  telegramUserId: string,
+): Promise<void> => {
+  await banTelegramChatMember({
+    chatId,
+    untilDateUnix: Math.floor(Date.now() / 1000) + TEMP_KICK_SECONDS,
+    userId: telegramUserId,
+  });
+};
+
 export const unbanTelegramChatMember = async ({
   botToken,
   chatId,
