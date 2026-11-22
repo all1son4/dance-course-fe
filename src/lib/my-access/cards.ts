@@ -28,6 +28,8 @@ import { daysLeft } from "./count";
 
 /** A standalone Hub this close to its end offers the renewal (section 11). */
 export const HUB_RENEWAL_WINDOW_DAYS = 7;
+/** A choreography channel is "ending soon" in its last week, like the Hub. */
+const CHANNEL_ENDS_SOON_DAYS = 7;
 
 export const HUB_RENEWAL_HREF = `/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`;
 /** The Hub at its full price, for someone the renewal price no longer covers. */
@@ -655,7 +657,7 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
   if (
     key === "channel.until" &&
     card.period &&
-    daysLeft(new Date(card.period.end), now) <= HUB_RENEWAL_WINDOW_DAYS
+    daysLeft(new Date(card.period.end), now) <= CHANNEL_ENDS_SOON_DAYS
   ) {
     return "endsSoon";
   }
