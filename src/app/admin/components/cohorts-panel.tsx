@@ -267,6 +267,14 @@ const SectionCaption = styled.p`
 `;
 
 /** Current cohort first, then what comes next, then history. */
+/** A cohort that has started and is not closed yet. */
+const isRunning = (cohort: CohortOverview, now: number) =>
+  !cohort.closedAt && Date.parse(cohort.startsAt) <= now;
+
+/** The cohort this one follows, when the list has it. */
+const findPreviousCohort = (cohorts: CohortOverview[] | null, cohort: CohortOverview) =>
+  cohorts?.find((candidate) => candidate.id === cohort.previousCohortId);
+
 const orderCohorts = (cohorts: CohortOverview[], now: number) => {
   const rank = (cohort: CohortOverview) =>
     cohort.closedAt ? 2 : Date.parse(cohort.startsAt) <= now ? 0 : 1;
@@ -425,9 +433,7 @@ export const CohortsPanel = ({
 
   const ordered = orderCohorts(cohorts ?? [], loadedAt);
   // The running cohort: the transition guide walks it into the next one.
-  const running = ordered.find(
-    (cohort) => !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt,
-  );
+  const running = ordered.find((cohort) => isRunning(cohort, loadedAt));
   const [creatingKind, setCreatingKind] = useState<RenewalLinkKind | "">("");
   const [transitionOpen, setTransitionOpen] = useState(false);
   // The newest cohort record: the one a «следующий поток» would follow.
@@ -582,7 +588,8 @@ export const CohortsPanel = ({
           />
           {ordered.map((cohort) => {
             const status = cohortStatus(cohort, ordered, loadedAt);
-            const isCurrent = !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt;
+            const isCurrent = isRunning(cohort, loadedAt);
+            const previous = findPreviousCohort(cohorts, cohort);
             // A queued post is on its way; only a failed one can be retried.
             const postFailed =
               cohort.post && ["failed", "dead_letter"].includes(cohort.post.status);
@@ -711,8 +718,8 @@ export const CohortsPanel = ({
                           <small>
                             Кто вошёл в чат этого потока по своей покупке, удаляется из
                             чата
-                            {cohorts?.find((c) => c.id === cohort.previousCohortId)
-                              ? ` «${cohorts.find((c) => c.id === cohort.previousCohortId)!.mainChatTitle}»`
+                            {previous
+                              ? ` «${previous.mainChatTitle}»`
                               : " прошлого потока"}
                             . Админов и создателя бот не трогает.
                           </small>
@@ -802,8 +809,8 @@ export const CohortsPanel = ({
         description={
           removalConfirm
             ? `Каждый, кто войдёт в «${removalConfirm.mainChatTitle}» по своей покупке, будет удалён из «${
-                cohorts?.find((c) => c.id === removalConfirm.previousCohortId)
-                  ?.mainChatTitle ?? "чата прошлого потока"
+                findPreviousCohort(cohorts, removalConfirm)?.mainChatTitle ??
+                "чата прошлого потока"
               }». Админов и создателя чата бот не трогает.`
             : ""
         }
