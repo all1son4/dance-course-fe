@@ -3,6 +3,7 @@ import { desc } from "drizzle-orm";
 import { logSafeError } from "@/lib/safe-error-log";
 
 import { getDatabase } from "./client";
+import { retryTransientDatabaseRead } from "./database-read-retry";
 import { onlineGroupCohorts } from "./schema";
 
 /** What the page says when no cohort is recorded yet (the cohorts before HUB-D50). */
@@ -14,11 +15,13 @@ export const DEFAULT_COHORT_DURATION_WEEKS = 6;
  */
 export async function readNewestCohortDurationWeeks(): Promise<number> {
   try {
-    const [cohort] = await getDatabase()
-      .select({ durationWeeks: onlineGroupCohorts.durationWeeks })
-      .from(onlineGroupCohorts)
-      .orderBy(desc(onlineGroupCohorts.startsAt))
-      .limit(1);
+    const [cohort] = await retryTransientDatabaseRead(() =>
+      getDatabase()
+        .select({ durationWeeks: onlineGroupCohorts.durationWeeks })
+        .from(onlineGroupCohorts)
+        .orderBy(desc(onlineGroupCohorts.startsAt))
+        .limit(1),
+    );
 
     return cohort?.durationWeeks ?? DEFAULT_COHORT_DURATION_WEEKS;
   } catch (error) {

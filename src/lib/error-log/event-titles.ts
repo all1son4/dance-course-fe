@@ -53,6 +53,8 @@ const TITLES: Record<string, string> = {
     "Не удалось записать, что человек уже в чате",
   "Failed to remove a member from the previous cohort chat":
     "Не удалось убрать человека из чата прошлого потока",
+  "Failed to read the cohort length":
+    "Страница группы не прочитала длительность потока и показала её по умолчанию",
   "Failed to resend purchase email from admin":
     "Не удалось отправить письмо об оплате ещё раз",
   "Failed to retrieve Stripe balance transaction for charge":
