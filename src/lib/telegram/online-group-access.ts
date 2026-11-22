@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import { and, desc, eq, gt, isNotNull, isNull, notInArray, or, sql } from "drizzle-orm";
 
@@ -25,6 +25,7 @@ import { previousChatRemovalKey } from "@/lib/online-group/previous-chat-removal
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
 
+import { hashAccessToken } from "./access-records";
 import {
   createTelegramChatInviteLink,
   kickUnexpectedMember,
@@ -67,8 +68,6 @@ const pendingOnlineGroupAccessEnsures = new Map<
   string,
   Promise<OnlineGroupAccessItem[] | null>
 >();
-
-const hashInvite = (value: string) => createHash("sha256").update(value).digest("hex");
 
 /** Offers whose access goes through personal invites to a Telegram group: Online Group and the Hub. */
 const isGroupInviteOfferId = (offerId: string) =>
@@ -660,7 +659,7 @@ const persistTargetInvite = async ({
     status: "issued",
     telegramUserId: context.telegramUserId || null,
     telegramUsername: context.telegramUsername || null,
-    tokenHash: hashInvite(invite.invite_link),
+    tokenHash: hashAccessToken(invite.invite_link),
     tokenId,
     tokenValue: invite.invite_link,
   });
@@ -1553,7 +1552,7 @@ export const syncOnlineGroupMembership = async ({
     return false;
   }
 
-  const inviteHash = hashInvite(normalizedInviteLink);
+  const inviteHash = hashAccessToken(normalizedInviteLink);
   const membershipResult = await db.transaction((transaction) =>
     syncOnlineGroupMemberJoinedInTransaction({
       identity,

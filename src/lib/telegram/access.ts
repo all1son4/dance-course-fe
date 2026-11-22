@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -18,6 +18,7 @@ import {
   upsertTelegramAccessTokenRecord,
   upsertTelegramUserBindingRecord,
 } from "./access-persistence";
+import { hashAccessToken } from "./access-records";
 import {
   createTelegramChatInviteLink,
   kickUnexpectedMember,
@@ -194,9 +195,6 @@ const parseTimestamp = (value: string) => {
 
   return Number.isFinite(timestamp) ? timestamp : 0;
 };
-
-const hashToken = (tokenValue: string) =>
-  createHash("sha256").update(tokenValue).digest("hex");
 
 const createTelegramTokenId = () => `tgi_${randomBytes(8).toString("hex")}`;
 
@@ -804,7 +802,7 @@ const createTelegramAccessLink = async ({
       status: "issued",
       telegram_user_id: "",
       telegram_username: "",
-      token_hash: hashToken(inviteLink.invite_link),
+      token_hash: hashAccessToken(inviteLink.invite_link),
       token_id: tokenId,
       token_value: inviteLink.invite_link,
       used_at: "",
@@ -987,7 +985,7 @@ const resolveTelegramJoinRecords = async ({
 > => {
   // By hash: the clear link is erased once the token is used or expires (HARD-03).
   const tokenRecord = await findTelegramAccessTokenRecordByTokenHash(
-    hashToken(normalizedInviteLink),
+    hashAccessToken(normalizedInviteLink),
   );
 
   if (!tokenRecord || tokenRecord.link_kind !== "channel_invite") {
@@ -1523,7 +1521,7 @@ const activateTelegramStartTokenInternal = async ({
   telegramUsername: string;
   tokenValue: string;
 }): Promise<ActivateTelegramStartTokenResult> => {
-  const tokenHash = hashToken(tokenValue);
+  const tokenHash = hashAccessToken(tokenValue);
   const tokenRecord = await findTelegramAccessTokenRecordByTokenHash(tokenHash);
 
   if (!tokenRecord) {
@@ -1660,7 +1658,7 @@ export const activateTelegramStartToken = async ({
   telegramUsername: string;
   tokenValue: string;
 }): Promise<ActivateTelegramStartTokenResult> => {
-  const tokenHash = hashToken(tokenValue);
+  const tokenHash = hashAccessToken(tokenValue);
   const previousActivation =
     pendingTelegramStartTokenActivations.get(tokenHash) ?? Promise.resolve();
   let releaseActivation!: () => void;

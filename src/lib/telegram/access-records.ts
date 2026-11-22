@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /**
  * Internal flat PostgreSQL projections used by Telegram access readers and commands.
  * Strings and empty values preserve the existing access contract; these types do not
@@ -40,3 +42,7 @@ export type TelegramUserBindingRecord = {
   revoked_reason: string;
   status: string;
 };
+
+/** The stored fingerprint of a bearer token or invite link: SHA-256, hex. */
+export const hashAccessToken = (value: string) =>
+  createHash("sha256").update(value).digest("hex");
