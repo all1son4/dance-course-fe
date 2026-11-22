@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import test, { after } from "node:test";
 
 import postgres from "postgres";
@@ -249,6 +250,118 @@ test("the daily sweep erases only links that can no longer be used, idempotently
 
     assert.deepEqual(await Promise.all(spent.map(readTokenValue)), statusesBefore);
     assert.equal((await readTokenValue(live))?.tokenValue, "https://t.me/+hard03-live");
+  } finally {
+    await deletePurchase(purchase.purchaseId);
+  }
+});
+
+// A row from before `telegram_access_tokens_used_claim_check` (0009, added NOT VALID):
+// marked used, nobody recorded as its owner. Postgres checks every row an UPDATE
+// writes, so no statement can touch it while the check stands. Production has one.
+const insertLegacyUsedTokenWithoutOwner = async (
+  purchase: Awaited<ReturnType<typeof createPurchase>>,
+) => {
+  const tokenId = `tga_hard03_legacy_${purchase.suffix}`;
+  const [constraint] = await client<{ definition: string }[]>`
+    SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
+    WHERE conname = 'telegram_access_tokens_used_claim_check'
+  `;
+
+  assert.ok(constraint);
+  await client.begin(async (transaction) => {
+    await transaction`ALTER TABLE telegram_access_tokens
+      DROP CONSTRAINT telegram_access_tokens_used_claim_check`;
+    await transaction`
+      INSERT INTO telegram_access_tokens (purchase_id, entitlement_id, token_id, token_hash,
+        token_value, link_kind, status, expires_at, created_at)
+      VALUES (${purchase.purchaseId}, ${purchase.entitlementId}, ${tokenId}, ${tokenId},
+        'https://t.me/+hard03-legacy', 'channel_invite', 'used', '2026-07-02T00:00:00Z',
+        '2026-07-01T00:00:00Z')
+    `;
+    await transaction.unsafe(`ALTER TABLE telegram_access_tokens
+      ADD CONSTRAINT telegram_access_tokens_used_claim_check ${constraint.definition}`);
+  });
+
+  return tokenId;
+};
+
+test("a legacy row the database rejects no longer stops the sweep for the others", async () => {
+  const { setOperationalEventSink } = await import("@/lib/safe-error-log");
+  const purchase = await createPurchase();
+  const events: { code: string; event: string; reference: string | null }[] = [];
+
+  setOperationalEventSink(({ code, event, reference }) =>
+    events.push({ code, event, reference }),
+  );
+
+  try {
+    const legacy = await insertLegacyUsedTokenWithoutOwner(purchase);
+    const spent = await insertToken(purchase, {
+      expiresAt: "2030-01-01T00:00:00Z",
+      name: "next-to-legacy",
+      status: "used",
+      value: "https://t.me/+hard03-next-to-legacy",
+    });
+
+    const result = await eraseSpentTelegramAccessTokenValues(new Date());
+
+    assert.equal((await readTokenValue(spent))?.tokenValue, null);
+    assert.equal(
+      (await readTokenValue(legacy))?.tokenValue,
+      "https://t.me/+hard03-legacy",
+    );
+    assert.ok(result.erasedCount >= 1);
+    assert.ok(result.notErasedCount >= 1);
+    // Counted in the event log by purchase, never by person.
+    assert.deepEqual(
+      events.filter(({ reference }) => reference === purchase.purchaseId),
+      [
+        {
+          code: "postgres: 23514",
+          event: "Daily maintenance: an invite link could not be erased",
+          reference: purchase.purchaseId,
+        },
+      ],
+    );
+  } finally {
+    setOperationalEventSink(null);
+    await deletePurchase(purchase.purchaseId);
+  }
+});
+
+test("the 0032 repair erases the legacy link and restores the check as it was", async () => {
+  const purchase = await createPurchase();
+  const readCheck = async () => {
+    const [row] = await client<{ definition: string; validated: boolean }[]>`
+      SELECT pg_get_constraintdef(oid) AS definition, convalidated AS validated
+      FROM pg_constraint WHERE conname = 'telegram_access_tokens_used_claim_check'
+    `;
+
+    return row;
+  };
+
+  try {
+    const legacy = await insertLegacyUsedTokenWithoutOwner(purchase);
+    const checkBefore = await readCheck();
+    const repair = await readFile(
+      "drizzle/0032_erase_legacy_used_token_links.sql",
+      "utf8",
+    );
+
+    await client.begin(async (transaction) => {
+      for (const statement of repair.split("--> statement-breakpoint")) {
+        await transaction.unsafe(statement);
+      }
+    });
+
+    assert.deepEqual(await readTokenValue(legacy), { status: "used", tokenValue: null });
+    assert.deepEqual(await readCheck(), checkBefore);
+    assert.equal(checkBefore?.validated, false);
+    // Still enforced on every write.
+    await assert.rejects(
+      client`UPDATE telegram_access_tokens SET last_error = 'x' WHERE token_id = ${legacy}`,
+      { code: "23514" },
+    );
   } finally {
     await deletePurchase(purchase.purchaseId);
   }
