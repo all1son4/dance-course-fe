@@ -1,13 +1,9 @@
 import { listAdminInviteLinkHistoryRecordsFromDatabase } from "./admin-invite-link-history";
-import {
-  findEmailCampaignLeadByCampaignAndEmailFromDatabase,
-  listEmailCampaignLeadRecordsFromDatabase,
-} from "./email-campaign-lead-records";
+import { listEmailCampaignLeadRecordsFromDatabase } from "./email-campaign-lead-records";
 import { findMonthlySalesReportRunByKeyFromDatabase } from "./monthly-report-run-records";
 import {
   findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
   findPaymentRecordByIntentIdFromDatabase,
-  listPaymentRecordsFromDatabase,
 } from "./payment-records";
 import {
   claimNextStripeInboxEvent,
@@ -36,10 +32,8 @@ export const domainRepositories = Object.freeze({
     list: listAdminInviteLinkHistoryRecordsFromDatabase,
   }),
   businessOperationReads: Object.freeze({
-    findCampaignLead: findEmailCampaignLeadByCampaignAndEmailFromDatabase,
     findMonthlyReportRun: findMonthlySalesReportRunByKeyFromDatabase,
     listCampaignLeads: listEmailCampaignLeadRecordsFromDatabase,
-    listInvoicePayments: listPaymentRecordsFromDatabase,
   }),
   paymentReads: Object.freeze({
     findByCheckoutSessionId: findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
