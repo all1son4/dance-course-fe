@@ -285,11 +285,7 @@ const getExistingRenewalCampaignUpdateState = async ({
     .from(renewalCampaignSourceChats)
     .where(eq(renewalCampaignSourceChats.campaignId, existingCampaign.id));
 
-  // Campaigns created before the source-chat relation existed still keep the
-  // canonical source on the campaign row, so that value remains the fallback.
-  const existingSourceChatIds = existingSourceRows.length
-    ? existingSourceRows.map((row) => row.chatId)
-    : [existingCampaign.sourceChatId];
+  const existingSourceChatIds = existingSourceRows.map((row) => row.chatId);
   const sourceChatsChanged =
     existingSourceChatIds.length !== normalizedSourceChatIds.length ||
     normalizedSourceChatIds.some((chatId) => !existingSourceChatIds.includes(chatId));
@@ -655,12 +651,8 @@ export const listRecentRenewalCampaigns = async (limit = 12) => {
 
     return {
       ...campaign,
-      sourceChatIds: sources.length
-        ? sources.map((source) => source.chatId)
-        : [campaign.sourceChatId],
-      sourceChatTitles: sources.length
-        ? sources.map((source) => source.title)
-        : [campaign.sourceChatId],
+      sourceChatIds: sources.map((source) => source.chatId),
+      sourceChatTitles: sources.map((source) => source.title),
     };
   });
 };
@@ -787,12 +779,8 @@ export const getActiveRenewalCampaignBySlug = async (
       )
       .where(eq(renewalCampaignSourceChats.campaignId, row.id)),
   ]);
-  const sourceChatIds = sourceRows.length
-    ? sourceRows.map((source) => source.chatId)
-    : [row.sourceChatId];
-  const sourceChatTitles = sourceRows.length
-    ? sourceRows.map((source) => source.title)
-    : [row.sourceChatId];
+  const sourceChatIds = sourceRows.map((source) => source.chatId);
+  const sourceChatTitles = sourceRows.map((source) => source.title);
   const targetChat = targetChatRows[0];
 
   return {
