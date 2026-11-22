@@ -747,13 +747,11 @@ export const getActiveRenewalCampaignBySlug = async (
 
   const [row] = await db
     .select({
-      expiresAt: renewalCampaigns.expiresAt,
       id: renewalCampaigns.id,
       offerExternalId: renewalCampaigns.offerExternalId,
       productExternalId: renewalCampaigns.productExternalId,
       slug: renewalCampaigns.slug,
       sourceChatId: renewalCampaigns.sourceChatId,
-      status: renewalCampaigns.status,
       targetChatId: renewalCampaigns.targetChatId,
       title: renewalCampaigns.title,
     })
