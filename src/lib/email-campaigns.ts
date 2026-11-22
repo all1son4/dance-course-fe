@@ -17,6 +17,7 @@ import {
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
 import { listEmailCampaignLeadReadRecords } from "@/lib/business-operation-read-runtime";
+import { escapeEmailHtml } from "@/lib/email/my-access";
 import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
 
 export const FIRST_TOUCH_SALES_START_CAMPAIGN_KEY = "first_touch_sales_start";
@@ -212,14 +213,6 @@ const buildEmailCampaignAdminSnapshot = ({
   return { audience, stats };
 };
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
 const normalizeSiteOrigin = (value: string) => {
   try {
     return new URL(value).origin;
@@ -320,16 +313,16 @@ const getFirstTouchEmailCopy = (locale: string) => {
 const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadRecord) => {
   const copy = getFirstTouchEmailCopy(lead.locale);
   const checkoutUrl = getFirstTouchCheckoutUrl(lead.locale);
-  const safeCheckoutUrl = escapeHtml(checkoutUrl);
-  const safeTitle = escapeHtml(copy.title);
-  const safeIntro = escapeHtml(copy.intro);
-  const safeButton = escapeHtml(copy.button);
-  const safeContactIntro = escapeHtml(copy.contactIntro);
-  const safeContactTelegramButton = escapeHtml(copy.contactTelegramButton);
-  const safeDescription = copy.description.map((item) => escapeHtml(item));
-  const safeStepsTitle = escapeHtml(copy.stepsTitle);
-  const safeSteps = copy.steps.map((item) => escapeHtml(item));
-  const safeTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
+  const safeCheckoutUrl = escapeEmailHtml(checkoutUrl);
+  const safeTitle = escapeEmailHtml(copy.title);
+  const safeIntro = escapeEmailHtml(copy.intro);
+  const safeButton = escapeEmailHtml(copy.button);
+  const safeContactIntro = escapeEmailHtml(copy.contactIntro);
+  const safeContactTelegramButton = escapeEmailHtml(copy.contactTelegramButton);
+  const safeDescription = copy.description.map((item) => escapeEmailHtml(item));
+  const safeStepsTitle = escapeEmailHtml(copy.stepsTitle);
+  const safeSteps = copy.steps.map((item) => escapeEmailHtml(item));
+  const safeTelegramUrl = escapeEmailHtml(SUPPORT_TELEGRAM_URL);
 
   return {
     html: `

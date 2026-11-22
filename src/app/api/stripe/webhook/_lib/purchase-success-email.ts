@@ -7,7 +7,7 @@ import {
 } from "@/constants/links";
 import { formatPrice } from "@/constants/sellable-products";
 import { formatEmailDate } from "@/lib/email/dates";
-import { buildMyAccessEmailBlock } from "@/lib/email/my-access";
+import { buildMyAccessEmailBlock, escapeEmailHtml } from "@/lib/email/my-access";
 
 const SITE_HOME_URL =
   process.env.SITE_URL?.trim() ||
@@ -403,14 +403,6 @@ export type PurchaseSuccessEmailAccessKind =
   | "telegram-online-group"
   | "telegram-renewal";
 
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-
 const formatCheckoutAmount = ({
   amountMinor,
   currency,
@@ -744,7 +736,7 @@ const renderOnlineGroupAccessButtons = ({
 
       if (access.status === "ready" && access.accessUrl) {
         return `
-          <a href="${escapeHtml(access.accessUrl)}" style="display:inline-block;margin:0 8px 8px 0;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">
+          <a href="${escapeEmailHtml(access.accessUrl)}" style="display:inline-block;margin:0 8px 8px 0;padding:13px 22px;border-radius:999px;background:#7c0002;color:#ffffff;text-decoration:none;font-weight:700;font-size:14px;line-height:20px;border:1px solid #7c0002;">
             ${label}
           </a>
         `;
@@ -796,7 +788,7 @@ const renderInspirationAccessParagraph = (inspirationAccessText: string): string
   inspirationAccessText
     ? `
       <p style="margin:0 0 12px;color:#5f5f5f;font-size:14px;line-height:22px;">
-        ${escapeHtml(inspirationAccessText)}
+        ${escapeEmailHtml(inspirationAccessText)}
       </p>
     `
     : "";
@@ -1132,13 +1124,13 @@ export const buildPurchaseSuccessEmail = ({
     currency: checkoutCurrency,
     locale,
   });
-  const safeProductTitle = escapeHtml(productTitle);
-  const safeOfferLabel = escapeHtml(offerLabel);
-  const safeAmountLabel = escapeHtml(amountLabel);
-  const safeReceiptLink = receiptLink ? escapeHtml(receiptLink) : "";
-  const safeSupportTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
-  const safeTelegramLink = telegramLink ? escapeHtml(telegramLink) : "";
-  const safeSiteHomeUrl = escapeHtml(SITE_HOME_URL);
+  const safeProductTitle = escapeEmailHtml(productTitle);
+  const safeOfferLabel = escapeEmailHtml(offerLabel);
+  const safeAmountLabel = escapeEmailHtml(amountLabel);
+  const safeReceiptLink = receiptLink ? escapeEmailHtml(receiptLink) : "";
+  const safeSupportTelegramUrl = escapeEmailHtml(SUPPORT_TELEGRAM_URL);
+  const safeTelegramLink = telegramLink ? escapeEmailHtml(telegramLink) : "";
+  const safeSiteHomeUrl = escapeEmailHtml(SITE_HOME_URL);
   const formattedInspirationExpiry = inspirationAccessExpiresAt
     ? formatAccessExpiry(inspirationAccessExpiresAt, locale)
     : "";
@@ -1241,12 +1233,12 @@ export const buildPurchaseSuccessEmail = ({
     mentorFollowupParagraph,
     myAccessBlock: `${
       plusHubScheduledLine
-        ? `<p style="margin:12px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">${escapeHtml(plusHubScheduledLine)}</p>`
+        ? `<p style="margin:12px 0 0 0;color:#5f5f5f;font-size:14px;line-height:22px;">${escapeEmailHtml(plusHubScheduledLine)}</p>`
         : ""
     }${myAccessBlock.html}`,
     onlineGroupAccessButtons,
     receiptButton,
-    safeAccessSummary: escapeHtml(accessSummary),
+    safeAccessSummary: escapeEmailHtml(accessSummary),
     safeAmountLabel,
     safeOfferLabel,
     showOfferLabel,
