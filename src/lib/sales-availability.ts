@@ -108,9 +108,6 @@ const loadCatalogSalesState = async (): Promise<CatalogSalesReadResult> =>
  * read the checkout route would refuse the payment anyway, so offering the
  * button would only lead to an error.
  */
-export const getOpenSaleProductIds = async () =>
-  (await loadStorefrontCatalogSalesState()).state.open;
-
 export const getProductsSaleState = async (
   productIds: readonly string[],
 ): Promise<ProductSaleState> => {
