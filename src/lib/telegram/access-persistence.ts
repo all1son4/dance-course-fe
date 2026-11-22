@@ -4,23 +4,15 @@ import {
   upsertTelegramAccessTokenRecordToDatabase,
 } from "@/db/telegram-access-token-records";
 import { upsertTelegramUserBindingRecordToDatabase } from "@/db/telegram-user-binding-records";
-import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import {
+  getExternalTargetType,
+  normalizeAccessStatus,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 import type {
   TelegramAccessTokenRecord,
   TelegramUserBindingRecord,
 } from "@/lib/telegram/access-records";
-
-type AccessStatus =
-  | "activated"
-  | "expired"
-  | "left_channel"
-  | "link_failed"
-  | "manual_done"
-  | "manual_pending"
-  | "not_required"
-  | "pending"
-  | "revoked"
-  | "token_issued";
 
 export type TelegramPaymentAccessPatch = Partial<
   Pick<
@@ -72,58 +64,6 @@ const parseOptionalDate = (value: string | undefined) => {
   }
 
   return new Date(timestamp);
-};
-
-const normalizeAccessStatus = (
-  value: string,
-  paymentRecord: PaymentRecordSnapshot,
-): AccessStatus => {
-  const normalizedValue = value.trim();
-  const statuses = new Set<AccessStatus>([
-    "activated",
-    "expired",
-    "left_channel",
-    "link_failed",
-    "manual_done",
-    "manual_pending",
-    "not_required",
-    "pending",
-    "revoked",
-    "token_issued",
-  ]);
-
-  if (statuses.has(normalizedValue as AccessStatus)) {
-    return normalizedValue as AccessStatus;
-  }
-
-  if (paymentRecord.delivery_channel.trim() === "manual") {
-    return "manual_pending";
-  }
-
-  if (!paymentRecord.delivery_channel.trim() && !paymentRecord.access_workflow.trim()) {
-    return "not_required";
-  }
-
-  return "pending";
-};
-
-const getExternalTargetType = (paymentRecord: PaymentRecordSnapshot) => {
-  const workflow = paymentRecord.access_workflow.trim();
-  const deliveryChannel = paymentRecord.delivery_channel.trim();
-
-  if (deliveryChannel === "manual" || workflow === "manual-admin") {
-    return "manual" as const;
-  }
-
-  if (workflow === "telegram-bot") {
-    return "telegram_bot" as const;
-  }
-
-  if (deliveryChannel === "telegram" || workflow.startsWith("telegram")) {
-    return "telegram_chat" as const;
-  }
-
-  return null;
 };
 
 export const upsertTelegramAccessTokenRecord = (
