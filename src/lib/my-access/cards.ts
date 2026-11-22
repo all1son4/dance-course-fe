@@ -18,6 +18,8 @@ import {
 } from "@/lib/telegram/offer-access";
 import { DAY_MS } from "@/lib/time";
 
+import { daysLeft } from "./count";
+
 /*
  * «Мой доступ» (HUB-D28): one card per current access, each product family by its
  * own rule. Pure: the page reads the snapshot and translates the keys. No sums,
@@ -215,8 +217,6 @@ const isRevoked = (right: MyAccessRight) =>
   right.revokedAt !== null || right.status === "revoked";
 const isJoined = (right: MyAccessRight) =>
   right.status === "activated" || right.status === "left_channel";
-const daysLeft = (end: Date, now: Date) =>
-  Math.max(0, Math.ceil((end.getTime() - now.getTime()) / DAY_MS));
 const iso = (date: Date) => date.toISOString();
 
 const hubPeriodEnd = (right: MyAccessRight) => right.expiresAt;

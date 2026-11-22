@@ -35,7 +35,7 @@ export type MyAccessCount =
   | { kind: "lifetime" };
 
 /** Whole days still ahead of an end, as «Осталось N дней» counts them. */
-const daysLeft = (end: Date, now: Date) =>
+export const daysLeft = (end: Date, now: Date) =>
   Math.max(0, Math.ceil((end.getTime() - now.getTime()) / DAY_MS));
 
 const START_KEYS = new Set(["group.startsOn", "hub.scheduled"]);
