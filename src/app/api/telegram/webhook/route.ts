@@ -20,7 +20,9 @@ import {
   copyTelegramMessage,
   getTelegramChatMember,
   sendTelegramMessage,
+  type TelegramChatMember,
 } from "@/lib/telegram/bot-api";
+import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
 import {
   getTelegramLessonSourceByOfferId,
   getTelegramWebhookSecret,
@@ -46,15 +48,6 @@ type TelegramIncomingMessage = {
     username?: string;
   };
   text?: string;
-};
-
-type TelegramChatMember = {
-  is_member?: boolean;
-  status?: string;
-  user?: {
-    id?: number;
-    username?: string;
-  };
 };
 
 type TelegramChatMemberUpdate = {
@@ -244,20 +237,6 @@ const buildHelpText = (locale: BotLocale) => {
   const copy = getBotCopy(locale);
 
   return [copy.helpTitle, copy.startCommand, copy.myLessonsCommand].join("\n");
-};
-
-const isActiveTelegramMember = (member: TelegramChatMember | undefined) => {
-  const status = member?.status?.trim() ?? "";
-
-  if (status === "member" || status === "administrator" || status === "creator") {
-    return true;
-  }
-
-  if (status === "restricted") {
-    return member?.is_member === true;
-  }
-
-  return false;
 };
 
 const sendPurchasedLessons = async ({
