@@ -3,7 +3,7 @@ import { isPreviousChatRemovalEnabled } from "@/db/previous-chat-removal";
 import type { ClaimedOutboxJob } from "@/db/transactional-outbox";
 import { nonRetryable } from "@/db/transactional-outbox";
 import { getTelegramChatMember } from "@/lib/telegram/bot-api";
-import { kickUnexpectedMember } from "@/lib/telegram/online-group-access";
+import { kickUnexpectedMember } from "@/lib/telegram/bot-api";
 
 /**
  * HUB-D44, plan section 6.5: removes the buyer from the previous cohort's chat with
