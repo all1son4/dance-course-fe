@@ -58,7 +58,9 @@ import {
 
 type Cohort = typeof onlineGroupCohorts.$inferSelect;
 
-const cohortClosurePostKey = (cohortId: string) => `cohort_closure_post:${cohortId}`;
+const COHORT_CLOSURE_POST_KEY_PREFIX = "cohort_closure_post:";
+const cohortClosurePostKey = (cohortId: string) =>
+  `${COHORT_CLOSURE_POST_KEY_PREFIX}${cohortId}`;
 const cohortGraceReminderKey = (cohortId: string) => `cohort_grace_reminder:${cohortId}`;
 
 const PLUS_OFFER_IDS = SELLABLE_PRODUCTS["online-group-anna-strok"].offers
@@ -481,7 +483,7 @@ export async function enqueueDueCohortGraceReminders(now = new Date()) {
       and(
         eq(
           purchaseSideEffects.deduplicationKey,
-          sql`'cohort_closure_post:' || ${onlineGroupCohorts.id}`,
+          sql`${COHORT_CLOSURE_POST_KEY_PREFIX} || ${onlineGroupCohorts.id}`,
         ),
         eq(purchaseSideEffects.status, "sent"),
       ),
