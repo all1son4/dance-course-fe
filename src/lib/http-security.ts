@@ -228,3 +228,7 @@ export const jsonNoStore = (
       ...(init?.headers ?? {}),
     },
   });
+
+/** The checkout session id a browser sent: letters, digits, _ and -, at most 96. */
+export const normalizeCheckoutSessionId = (value: string | null | undefined) =>
+  (value?.trim() ?? "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 96);

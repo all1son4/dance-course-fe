@@ -17,6 +17,7 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
@@ -43,9 +44,6 @@ type HubDiscountVerifyBody = {
 };
 
 type MembershipCheck = { cohortId: string; checkFailed: boolean; isMember: boolean };
-
-const normalizeCheckoutSessionId = (value: string | null | undefined) =>
-  (value ?? "").trim().slice(0, 160);
 
 const checkCohortMembership = async (
   cohort: { id: string; mainChatId: string },

@@ -6,6 +6,7 @@ import {
   getManagedPaymentIntentOutcome,
   normalizePaymentIntentCustomerData,
 } from "@/app/api/stripe/payment-intent/lib";
+import { normalizeCheckoutSessionId } from "@/lib/http-security";
 
 import { createStripeFake, createStripePaymentIntent } from "../fixtures/providers";
 
@@ -89,4 +90,15 @@ test("normalizes customer data without adding new checkout fields", () => {
       postalCode: "00-001",
     },
   );
+});
+
+test("every checkout session id the site creates passes the normalizer unchanged", () => {
+  const uuid = "3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b";
+  const fallback = "checkout_1763840000000_k3j9x2m1qa";
+
+  assert.equal(normalizeCheckoutSessionId(` ${uuid} `), uuid);
+  assert.equal(normalizeCheckoutSessionId(fallback), fallback);
+  assert.equal(normalizeCheckoutSessionId("a b<c>/d"), "abcd");
+  assert.equal(normalizeCheckoutSessionId("x".repeat(200)).length, 96);
+  assert.equal(normalizeCheckoutSessionId(null), "");
 });

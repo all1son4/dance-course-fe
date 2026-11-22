@@ -45,6 +45,7 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
@@ -61,7 +62,6 @@ import {
   createPaymentIntentIdempotencyKey,
   getResolvedCheckoutLocale,
   getStripeServer,
-  normalizeCheckoutSessionId,
   normalizePaymentIntentCustomerData,
   type PaymentIntentCustomerData,
 } from "./lib";

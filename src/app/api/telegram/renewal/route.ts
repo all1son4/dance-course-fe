@@ -9,6 +9,7 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { getOnlineGroupSale } from "@/lib/online-group-sale";
@@ -61,9 +62,6 @@ type RenewalMembership = {
   checkFailed: boolean;
   isMember: boolean;
 };
-
-const normalizeCheckoutSessionId = (value: string | null | undefined) =>
-  (value ?? "").trim().slice(0, 160);
 
 const normalizeSlug = (value: string | null | undefined) =>
   (value ?? "").trim().slice(0, 80);
