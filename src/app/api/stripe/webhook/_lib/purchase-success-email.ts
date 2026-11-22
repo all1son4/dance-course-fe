@@ -1,18 +1,14 @@
 import { getResolvedCheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
 import {
-  DEFAULT_SITE_HOME_URL,
   INSTAGRAM_PROFILE_HANDLE,
   PERSONAL_TELEGRAM_HANDLE,
+  SITE_HOME_URL,
   SUPPORT_TELEGRAM_URL,
 } from "@/constants/links";
 import { formatPrice } from "@/constants/sellable-products";
 import { formatEmailDate } from "@/lib/email/dates";
 import { buildMyAccessEmailBlock, escapeEmailHtml } from "@/lib/email/my-access";
 
-const SITE_HOME_URL =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  DEFAULT_SITE_HOME_URL;
 /** HUB-D43: the Plus Hub of a cohort that has not started opens on its start day. */
 const PLUS_HUB_SCHEDULED_COPY = {
   en: "Inspiration Hub opens when your cycle starts, on {date}. That day your personal Hub invite will arrive at this address.",

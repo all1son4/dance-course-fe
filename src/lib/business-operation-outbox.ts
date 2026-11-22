@@ -1,4 +1,4 @@
-import { DEFAULT_SITE_HOME_URL } from "@/constants/links";
+import { SITE_HOME_URL } from "@/constants/links";
 import {
   claimEmailCampaignLeadForDelivery,
   findMonthlyReportRunInDatabase,
@@ -73,11 +73,6 @@ type CampaignEmailDeliveryPayload = {
 type PolishTerminalReminderPayload = {
   monthValue: string;
 };
-
-const SITE_HOME_URL =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  DEFAULT_SITE_HOME_URL;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);

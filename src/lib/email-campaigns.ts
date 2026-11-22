@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 
-import { DEFAULT_SITE_HOME_URL, SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import {
+  DEFAULT_SITE_HOME_URL,
+  SITE_HOME_URL,
+  SUPPORT_TELEGRAM_URL,
+} from "@/constants/links";
 import {
   buildCheckoutHref,
   getDefaultProductOffer,
@@ -85,11 +89,6 @@ export type ExcludeEmailCampaignLeadResult =
 export type EmailCampaignDeliveryResult = EmailCampaignStats & {
   attempted: number;
 };
-
-const SITE_HOME_URL =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  DEFAULT_SITE_HOME_URL;
 
 const pendingEmailCampaignLeadCreates = new Map<
   string,
