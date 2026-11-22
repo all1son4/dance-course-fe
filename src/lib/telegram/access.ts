@@ -453,9 +453,11 @@ export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
  * Who gets an access window that can run out. Lifetime offers must stay out of
  * this list - it is what the revocation sweep keys off.
  */
+const isTimedAccessOfferId = (offerId: string) =>
+  isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
+
 const isPaymentTimedTelegramAccess = (paymentRecord: PaymentRecordSnapshot) =>
-  isChoreoChannelOfferId(paymentRecord.offer_id) ||
-  isFirstTouchOfferId(paymentRecord.offer_id);
+  isTimedAccessOfferId(paymentRecord.offer_id);
 
 const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentRecordSnapshot) => {
   if (!isPaymentTimedTelegramAccess(paymentRecord)) {
@@ -1398,11 +1400,7 @@ export const syncTelegramChannelMembership = async ({
 export const revokeExpiredTelegramChannelAccess =
   async (): Promise<RevokeExpiredTelegramAccessResult> => {
     const activeBindings = (await findActiveTelegramUserBindings())
-      .filter(
-        (binding) =>
-          isChoreoChannelOfferId(binding.offer_id) ||
-          isFirstTouchOfferId(binding.offer_id),
-      )
+      .filter((binding) => isTimedAccessOfferId(binding.offer_id))
       .map((binding) => ({
         ...binding,
         access_expires_at: getEffectiveBindingAccessExpiresAt({
