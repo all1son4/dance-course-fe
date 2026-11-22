@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { PanelText } from "@/components/cards/IconTextCard/IconTextCard.styles";
+import { REDUCED_MOTION_QUERY } from "@/lib/reveal";
 
 import {
   DetailCaret,
@@ -66,7 +67,6 @@ const hasSeenHint = () => hintSeenThisVisit;
 const rememberHint = () => {
   hintSeenThisVisit = true;
 };
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 /* Matches OPEN_MS / EASE in the styles. */
 const RESIZE_MS = 420;
 const RESIZE_EASING = "cubic-bezier(0.2, 0.8, 0.2, 1)";
