@@ -114,6 +114,58 @@ const ReissuedLinks = ({ links }: { links: ReissuedAccessLink[] }) => (
   </Stack>
 );
 
+/** A purchase whose Telegram access needs a hand: the reissue button, or where to go. */
+const EntitlementCard = ({
+  entitlement,
+  links,
+  onReissueAccess,
+  reissuingPaymentIntentId,
+}: {
+  entitlement: ProblemAccessEntitlement;
+  links: ReissuedAccessLink[];
+  onReissueAccess: OperationsWorkspaceProps["onReissueAccess"];
+  reissuingPaymentIntentId: string;
+}) => {
+  const statusMeta = ENTITLEMENT_STATUS_META[entitlement.status];
+  const isReissuing = reissuingPaymentIntentId === entitlement.paymentIntentId;
+
+  return (
+    <ItemCard>
+      <ItemHead>
+        <strong>
+          {entitlement.customerName || entitlement.customerEmail || "Без имени"}
+        </strong>
+        <Badge $tone={statusMeta.tone}>{statusMeta.label}</Badge>
+      </ItemHead>
+      {entitlement.customerName && entitlement.customerEmail && (
+        <Meta>{entitlement.customerEmail}</Meta>
+      )}
+      <Meta>
+        {entitlement.productTitle || "Покупка"} · обновлено{" "}
+        {formatDateTime(entitlement.updatedAt)}
+      </Meta>
+      <Mono>{entitlement.paymentIntentId}</Mono>
+      {entitlement.status === "link_failed" ? (
+        <div>
+          <AdminButton
+            size="sm"
+            variant="primary"
+            icon={<RotateCcw aria-hidden />}
+            loading={isReissuing}
+            disabled={Boolean(reissuingPaymentIntentId) && !isReissuing}
+            onClick={() => void onReissueAccess(entitlement.paymentIntentId)}
+          >
+            {isReissuing ? "Перевыпускаю…" : "Перевыпустить ссылку"}
+          </AdminButton>
+        </div>
+      ) : (
+        <Meta>Выдай доступ в Online Group → «Приглашения».</Meta>
+      )}
+      {links.length > 0 && <ReissuedLinks links={links} />}
+    </ItemCard>
+  );
+};
+
 const DeadLetterTable = ({
   entries,
   onReplay,
@@ -309,54 +361,15 @@ export const OperationsWorkspace = ({
                       />
                     )}
 
-                    {system.entitlements.map((entitlement) => {
-                      const statusMeta = ENTITLEMENT_STATUS_META[entitlement.status];
-                      const isReissuing =
-                        reissuingPaymentIntentId === entitlement.paymentIntentId;
-                      const links = reissuedLinks[entitlement.paymentIntentId] ?? [];
-
-                      return (
-                        <ItemCard key={entitlement.entitlementId}>
-                          <ItemHead>
-                            <strong>
-                              {entitlement.customerName ||
-                                entitlement.customerEmail ||
-                                "Без имени"}
-                            </strong>
-                            <Badge $tone={statusMeta.tone}>{statusMeta.label}</Badge>
-                          </ItemHead>
-                          {entitlement.customerName && entitlement.customerEmail && (
-                            <Meta>{entitlement.customerEmail}</Meta>
-                          )}
-                          <Meta>
-                            {entitlement.productTitle || "Покупка"} · обновлено{" "}
-                            {formatDateTime(entitlement.updatedAt)}
-                          </Meta>
-                          <Mono>{entitlement.paymentIntentId}</Mono>
-                          {entitlement.status === "link_failed" ? (
-                            <div>
-                              <AdminButton
-                                size="sm"
-                                variant="primary"
-                                icon={<RotateCcw aria-hidden />}
-                                loading={isReissuing}
-                                disabled={
-                                  Boolean(reissuingPaymentIntentId) && !isReissuing
-                                }
-                                onClick={() =>
-                                  void onReissueAccess(entitlement.paymentIntentId)
-                                }
-                              >
-                                {isReissuing ? "Перевыпускаю…" : "Перевыпустить ссылку"}
-                              </AdminButton>
-                            </div>
-                          ) : (
-                            <Meta>Выдай доступ в Online Group → «Приглашения».</Meta>
-                          )}
-                          {links.length > 0 && <ReissuedLinks links={links} />}
-                        </ItemCard>
-                      );
-                    })}
+                    {system.entitlements.map((entitlement) => (
+                      <EntitlementCard
+                        entitlement={entitlement}
+                        key={entitlement.entitlementId}
+                        links={reissuedLinks[entitlement.paymentIntentId] ?? []}
+                        onReissueAccess={onReissueAccess}
+                        reissuingPaymentIntentId={reissuingPaymentIntentId}
+                      />
+                    ))}
 
                     {showsHealedLinks &&
                       healedReissuedLinks.map(([paymentIntentId, links]) => (
