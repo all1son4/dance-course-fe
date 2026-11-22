@@ -27,11 +27,12 @@ import {
 import { getTelegramChannelTargetByOfferId } from "./config";
 import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
 import {
-  getOfferAccessDurationDaysByOfferId,
+  getTelegramChannelAccessDurationMs,
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
   isLifetimeChannelOfferId,
   isWithoutMentorOfferId,
+  parsePositiveEnvNumber,
 } from "./offer-access";
 
 type TelegramAccessUnavailableReason =
@@ -120,7 +121,6 @@ type TelegramJoinAccessContext = {
 };
 
 const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
-const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
 const pendingTelegramAccessLinkEnsures = new Map<
   string,
   Promise<TelegramAccessLinkResult>
@@ -149,46 +149,12 @@ const getUnavailableTelegramAccessLinkResult = (
   tokenId: null,
 });
 
-const parsePositiveEnvNumber = (name: string) => {
-  const parsedValue = Number.parseFloat(process.env[name]?.trim() ?? "");
-
-  return Number.isFinite(parsedValue) && parsedValue > 0 ? parsedValue : null;
-};
-
 const getTelegramAccessLinkTtlDays = () =>
   parsePositiveEnvNumber("TELEGRAM_ACCESS_LINK_TTL_DAYS") ??
   DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS;
 
 const getTelegramAccessLinkTtlMs = () =>
   getTelegramAccessLinkTtlDays() * 24 * 60 * 60 * 1000;
-
-const getTimedTelegramAccessDurationDays = (offerId: string) => {
-  if (isChoreoChannelOfferId(offerId)) {
-    return (
-      parsePositiveEnvNumber("TELEGRAM_CHOREO_ACCESS_DAYS") ??
-      getOfferAccessDurationDaysByOfferId(offerId) ??
-      DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS
-    );
-  }
-
-  if (isFirstTouchOfferId(offerId)) {
-    return getOfferAccessDurationDaysByOfferId(offerId);
-  }
-
-  return null;
-};
-
-const getTelegramChannelAccessDurationMs = (offerId: string) => {
-  const durationDays = getTimedTelegramAccessDurationDays(offerId);
-
-  if (!durationDays) {
-    return 0;
-  }
-
-  // Duration controls how long timed Telegram access stays active after joining.
-  // Example: 60 -> 60 days, 0.01 -> ~14.4 minutes (testing).
-  return durationDays * 24 * 60 * 60 * 1000;
-};
 
 const parseTimestamp = (value: string) => {
   const timestamp = Date.parse(value);
