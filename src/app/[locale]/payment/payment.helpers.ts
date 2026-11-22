@@ -364,7 +364,7 @@ export const prefillRenewalCustomerProfile = (
 export type CheckoutIntent = "keyboard" | "pointer" | "auto";
 
 /** A phone or tablet: focusing a text field there opens the keyboard and shifts the page. */
-export const isTouchPrimary = () =>
+const isTouchPrimary = () =>
   typeof window !== "undefined" &&
   window.matchMedia?.("(pointer: coarse)").matches === true;
 

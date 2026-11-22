@@ -436,7 +436,7 @@ export const getEmailCampaignAdminSnapshot = async (
   return buildEmailCampaignAdminSnapshot({ campaignKey, rows });
 };
 
-export const getEmailCampaignStats = async (campaignKey: string) =>
+const getEmailCampaignStats = async (campaignKey: string) =>
   (await getEmailCampaignAdminSnapshot(campaignKey)).stats;
 
 export const excludeEmailCampaignLead = async ({

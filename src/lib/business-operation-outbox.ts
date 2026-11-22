@@ -379,7 +379,7 @@ const deliverPolishTerminalReminder = async (job: ClaimedOutboxJob) => {
   }
 };
 
-export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
+const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
   if (job.kind === "choreo_access_expiry_reminder")
     return deliverChoreoAccessReminder(job);
   if (job.kind === "hub_period_start_invite") return deliverHubPeriodStartInvite(job);

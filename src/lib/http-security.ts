@@ -80,7 +80,7 @@ export const isPayloadTooLarge = (request: Request, maxBytes: number) => {
   return Number.isFinite(contentLength) && contentLength > maxBytes;
 };
 
-export const hasJsonContentType = (request: Request) => {
+const hasJsonContentType = (request: Request) => {
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
   return contentType.includes("application/json");
 };

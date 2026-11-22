@@ -85,7 +85,7 @@ export type MyAccessCohort = {
 };
 
 /** How a cycle is named on its cards: the cohort's own name. */
-export const cohortNameOf = (cohort: MyAccessCohort | null | undefined) =>
+const cohortNameOf = (cohort: MyAccessCohort | null | undefined) =>
   cohort?.title?.trim() || undefined;
 
 export type MyAccessSnapshot = {

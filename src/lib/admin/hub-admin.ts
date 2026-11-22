@@ -27,7 +27,7 @@ const FINISHED_STATUSES: ("expired" | "revoked")[] = ["expired", "revoked"];
 export type HubPeriodState = "active" | "scheduled" | "waiting" | "ended";
 
 /** The daily cron runs at 03:00 UTC (vercel.json); the next run after `now`. */
-export const getNextHubCronRun = (now: Date) => {
+const getNextHubCronRun = (now: Date) => {
   const next = new Date(now);
   next.setUTCHours(3, 0, 0, 0);
   if (next.getTime() <= now.getTime()) next.setTime(next.getTime() + DAY_MS);

@@ -56,8 +56,7 @@ import {
 
 type Cohort = typeof onlineGroupCohorts.$inferSelect;
 
-export const cohortClosurePostKey = (cohortId: string) =>
-  `cohort_closure_post:${cohortId}`;
+const cohortClosurePostKey = (cohortId: string) => `cohort_closure_post:${cohortId}`;
 const cohortGraceReminderKey = (cohortId: string) => `cohort_grace_reminder:${cohortId}`;
 
 const isProduction = () =>
@@ -86,7 +85,7 @@ const buildRenewalUrl = (campaign: {
  * lead members of this cohort's chat into the next cohort, one per tariff, and the
  * Hub at the special price.
  */
-export async function findCohortRenewalLinks(
+async function findCohortRenewalLinks(
   executor: DatabaseExecutor,
   {
     cohortMainChatId,

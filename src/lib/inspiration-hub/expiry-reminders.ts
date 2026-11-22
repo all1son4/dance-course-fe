@@ -52,7 +52,7 @@ const warsawDayNumber = (date: Date) => {
 export const warsawDaysUntil = (end: Date, now: Date) =>
   warsawDayNumber(end) - warsawDayNumber(now);
 
-export const hubReminderDeduplicationKey = (entitlementId: string, kind: 7 | 3) =>
+const hubReminderDeduplicationKey = (entitlementId: string, kind: 7 | 3) =>
   `hub_expiry_reminder:${entitlementId}:${kind}`;
 
 /**

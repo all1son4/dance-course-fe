@@ -45,7 +45,7 @@ export type AdminEvent = {
   title: string;
 };
 
-export const getAdminEnvironment = () =>
+const getAdminEnvironment = () =>
   process.env.VERCEL_ENV === "production"
     ? ("production" as const)
     : process.env.VERCEL_ENV === "preview"

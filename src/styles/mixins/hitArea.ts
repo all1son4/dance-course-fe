@@ -1,7 +1,7 @@
 import { css } from "styled-components";
 
 /** WCAG 2.5.5 / Apple HIG minimum comfortable touch target. */
-export const MIN_TAP_TARGET_PX = 44;
+const MIN_TAP_TARGET_PX = 44;
 
 type HitAreaOptions = {
   /** Which pseudo-element carries the hit area (pick the free one). */
