@@ -30,6 +30,7 @@ import {
   AdminButton,
   Badge,
   EmptyState,
+  Meta,
   Muted,
   Panel,
   Row,
@@ -80,13 +81,6 @@ const ItemHead = styled.div`
   > :last-child:not(strong) {
     margin-left: auto;
   }
-`;
-
-const Meta = styled.p`
-  margin: 0;
-  color: var(--a-ink-2);
-  font-size: var(--a-text-sm);
-  overflow-wrap: anywhere;
 `;
 
 const ChatChoices = styled.div`

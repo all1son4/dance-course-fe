@@ -13,7 +13,6 @@ import { formatDateTime } from "../lib/admin.utils";
 import {
   ItemCard,
   ItemHead,
-  ItemMeta,
   LinkCaption,
   SystemAccordion,
   SystemBody,
@@ -32,6 +31,7 @@ import {
   Badge,
   Callout,
   EmptyState,
+  Meta,
   Mono,
   Panel,
   Skeleton,
@@ -526,12 +526,12 @@ export const OperationsWorkspace = ({
                             <Badge $tone={statusMeta.tone}>{statusMeta.label}</Badge>
                           </ItemHead>
                           {entitlement.customerName && entitlement.customerEmail && (
-                            <ItemMeta>{entitlement.customerEmail}</ItemMeta>
+                            <Meta>{entitlement.customerEmail}</Meta>
                           )}
-                          <ItemMeta>
+                          <Meta>
                             {entitlement.productTitle || "Покупка"} · обновлено{" "}
                             {formatDateTime(entitlement.updatedAt)}
-                          </ItemMeta>
+                          </Meta>
                           <Mono>{entitlement.paymentIntentId}</Mono>
                           {entitlement.status === "link_failed" ? (
                             <div>
@@ -551,9 +551,7 @@ export const OperationsWorkspace = ({
                               </AdminButton>
                             </div>
                           ) : (
-                            <ItemMeta>
-                              Выдай доступ в Online Group → «Приглашения».
-                            </ItemMeta>
+                            <Meta>Выдай доступ в Online Group → «Приглашения».</Meta>
                           )}
                           {links.length > 0 && <ReissuedLinks links={links} />}
                         </ItemCard>
@@ -567,10 +565,10 @@ export const OperationsWorkspace = ({
                             <strong>Ссылки перевыпущены</strong>
                             <Badge $tone="success">Готово</Badge>
                           </ItemHead>
-                          <ItemMeta>
+                          <Meta>
                             Доступ восстановлен — скопируй ссылки и отправь покупателю
                             (или переотправь письмо в разделе «Покупки»).
-                          </ItemMeta>
+                          </Meta>
                           <Mono>{paymentIntentId}</Mono>
                           <ReissuedLinks links={links} />
                         </ItemCard>
@@ -661,12 +659,12 @@ const EventJournal = ({
                       {event.occurrences > 1 ? `×${event.occurrences}` : "1 раз"}
                     </Badge>
                   </ItemHead>
-                  <ItemMeta>{event.explanation}</ItemMeta>
-                  <ItemMeta>
+                  <Meta>{event.explanation}</Meta>
+                  <Meta>
                     {event.days > 1
                       ? `${event.days} дн. · с ${formatDateTime(event.firstSeenAt)} · последний раз ${formatDateTime(event.lastSeenAt)}`
                       : `Последний раз ${formatDateTime(event.lastSeenAt)}`}
-                  </ItemMeta>
+                  </Meta>
                   <JournalFoot>
                     <Mono>
                       {[event.code, event.lastReference].filter(Boolean).join(" · ")}

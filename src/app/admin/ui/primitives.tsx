@@ -879,6 +879,14 @@ export const Muted = styled.span`
   color: var(--a-ink-2);
 `;
 
+/** A secondary line under a heading: who, when, what for. */
+export const Meta = styled.p`
+  margin: 0;
+  color: var(--a-ink-2);
+  font-size: var(--a-text-sm);
+  overflow-wrap: anywhere;
+`;
+
 /** A link-looking button that sits inside a sentence, on its baseline. */
 export const TextButton = styled.button`
   display: inline;

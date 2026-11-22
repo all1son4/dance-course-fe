@@ -28,6 +28,7 @@ import {
   Disclosure,
   EmptyState,
   FieldNote,
+  Meta,
   Panel,
   Skeleton,
   Stack,
@@ -155,13 +156,6 @@ const ChoiceField = styled.div`
   @container admin-content (max-width: 520px) {
     flex: 1 1 100%;
   }
-`;
-
-const Meta = styled.p`
-  margin: 0;
-  color: var(--a-ink-2);
-  font-size: var(--a-text-sm);
-  overflow-wrap: anywhere;
 `;
 
 /* «КОМУ», «ДОСТУПЫ»: the same small caption over each block of an open entry. */
