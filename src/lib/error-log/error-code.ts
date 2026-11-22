@@ -75,8 +75,9 @@ export const describeErrorCode = (error: unknown): ErrorCode => {
   if (databaseCode && /^[0-9A-Z]{5}$/u.test(databaseCode)) {
     return { area: "database", code: `postgres: ${databaseCode}` };
   }
-  if (databaseCode && /^E[A-Z]+$/u.test(databaseCode)) {
-    // A network failure of the driver or of fetch (ECONNRESET, ETIMEDOUT).
+  if (databaseCode && /^(E[A-Z]+|CONNECT(ION)?_[A-Z]+)$/u.test(databaseCode)) {
+    // A network failure of the driver or of fetch (ECONNRESET, ETIMEDOUT), or the
+    // driver's own (CONNECT_TIMEOUT, CONNECTION_CLOSED).
     return { area: "app", code: databaseCode };
   }
 
