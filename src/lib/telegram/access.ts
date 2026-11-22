@@ -23,7 +23,7 @@ import {
   createTelegramChatInviteLink,
   shouldIgnoreKickFailure,
 } from "./bot-api";
-import { buildTelegramBotStartLink, getTelegramChannelTargetByOfferId } from "./config";
+import { getTelegramChannelTargetByOfferId } from "./config";
 import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
 import {
   getOfferAccessDurationDaysByOfferId,
@@ -120,7 +120,6 @@ type TelegramJoinAccessContext = {
 
 const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
 const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
-const TELEGRAM_START_TOKEN_BYTES = 24;
 // К15, as in online-group-access: a ban shorter than 30 seconds is permanent in
 // Telegram, and the call may retry for ~31 seconds; 90 keeps the kick temporary.
 const TELEGRAM_TEMP_KICK_SECONDS = 90;
@@ -202,25 +201,13 @@ const parseTimestamp = (value: string) => {
 const hashToken = (tokenValue: string) =>
   createHash("sha256").update(tokenValue).digest("hex");
 
-const createTelegramStartToken = () =>
-  randomBytes(TELEGRAM_START_TOKEN_BYTES).toString("base64url");
-
-const createTelegramTokenId = (prefix: "tga" | "tgi" = "tgi") =>
-  `${prefix}_${randomBytes(8).toString("hex")}`;
+const createTelegramTokenId = () => `tgi_${randomBytes(8).toString("hex")}`;
 
 const getTelegramAccessLinkExpiryIso = (issuedAtIso: string) => {
   const issuedAtTs = parseTimestamp(issuedAtIso) || Date.now();
   const expiresAt = issuedAtTs + getTelegramAccessLinkTtlMs();
 
   return toUtcIso(new Date(expiresAt));
-};
-
-const getStartTokenExpiryIso = (issuedAtIso: string) => {
-  const configuredHours = parsePositiveEnvNumber("TELEGRAM_START_TOKEN_TTL_HOURS");
-  const ttlMs = (configuredHours ?? getTelegramAccessLinkTtlDays() * 24) * 60 * 60 * 1000;
-  const issuedAtTs = parseTimestamp(issuedAtIso) || Date.now();
-
-  return toUtcIso(new Date(issuedAtTs + ttlMs));
 };
 
 const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentRecordSnapshot) => {
@@ -801,7 +788,7 @@ const createTelegramAccessLink = async ({
   currentTokenRecord: TelegramAccessTokenRecord | null;
   paymentRecord: PaymentRecordSnapshot;
 }): Promise<TelegramAccessLinkResult> => {
-  const tokenId = createTelegramTokenId("tgi");
+  const tokenId = createTelegramTokenId();
   const createdAt = toUtcIso();
   const linkExpiresAt = getTelegramAccessLinkExpiryIso(createdAt);
 
@@ -1743,46 +1730,4 @@ export const getActivatedPaymentsByTelegramUserId = async (telegramUserId: strin
       payment.outcome === "succeeded" &&
       isOfferEligibleForTelegramBotAccess(payment.offer_id),
   );
-};
-
-export const ensureLegacyTelegramBotStartLinkForPayment = async (
-  paymentRecord: PaymentRecordSnapshot,
-) => {
-  if (!isOfferEligibleForTelegramBotAccess(paymentRecord.offer_id)) {
-    return null;
-  }
-
-  const tokenValue = createTelegramStartToken();
-  const accessUrl = buildTelegramBotStartLink(tokenValue);
-
-  if (!accessUrl) {
-    return null;
-  }
-
-  const tokenId = createTelegramTokenId("tga");
-  const tokenHash = hashToken(tokenValue);
-  const createdAt = toUtcIso();
-  const expiresAt = getStartTokenExpiryIso(createdAt);
-
-  await upsertTelegramAccessTokenRecord({
-    access_expires_at: "",
-    chat_id: "",
-    created_at: createdAt,
-    customer_email: paymentRecord.customer_email,
-    expires_at: expiresAt,
-    last_error: "",
-    link_kind: "start_token",
-    offer_id: paymentRecord.offer_id,
-    payment_intent_id: paymentRecord.payment_intent_id,
-    product_id: paymentRecord.product_id,
-    status: "issued",
-    telegram_user_id: "",
-    telegram_username: "",
-    token_hash: tokenHash,
-    token_id: tokenId,
-    token_value: tokenValue,
-    used_at: "",
-  });
-
-  return accessUrl;
 };

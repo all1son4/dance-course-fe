@@ -39,7 +39,6 @@ type ParsedTelegramChannelTarget = {
 
 const getEnvValue = (name: string) => process.env[name]?.trim() ?? "";
 
-const normalizeTelegramUsername = (value: string) => value.replace(/^@/u, "").trim();
 let lessonSourcesCache: Map<string, ParsedTelegramLessonSource> | null = null;
 let channelTargetsCache: Map<string, ParsedTelegramChannelTarget> | null = null;
 const getLessonSourceKey = (
@@ -380,9 +379,6 @@ export const getTelegramAlertsBotToken = () => {
   return alertsBotToken || getTelegramBotToken();
 };
 
-export const getTelegramBotUsername = () =>
-  normalizeTelegramUsername(getEnvValue("TELEGRAM_BOT_USERNAME"));
-
 export const getTelegramWebhookSecret = () => getEnvValue("TELEGRAM_WEBHOOK_SECRET");
 
 export const getTelegramAlertsChatId = () => getEnvValue("TELEGRAM_ALERT_CHAT_ID");
@@ -391,16 +387,6 @@ export const isTelegramAlertsConfigured = () =>
   Boolean(getTelegramAlertsBotToken() && getTelegramAlertsChatId());
 
 export const isTelegramBotConfigured = () => Boolean(getTelegramBotToken());
-
-export const buildTelegramBotStartLink = (startToken: string) => {
-  const username = getTelegramBotUsername();
-
-  if (!username || !startToken) {
-    return null;
-  }
-
-  return `https://t.me/${username}?start=${encodeURIComponent(startToken)}`;
-};
 
 export const getTelegramLessonSourceByOfferId = ({
   lessonLanguage,
