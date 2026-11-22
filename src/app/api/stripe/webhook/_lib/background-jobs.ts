@@ -87,14 +87,12 @@ export const scheduleStripeBackgroundJobs = ({
   try {
     schedule(async () => {
       try {
-        const passes = [await run()];
-
-        if (hasRetry(passes[0])) {
+        if (hasRetry(await run())) {
           // The first repository backoff is five seconds. One bounded second pass
           // handles ordinary transient failures while staying inside the route's
           // 60-second after() budget; later webhooks and daily recovery handle more.
           await wait(5_500);
-          passes.push(await run());
+          await run();
         }
       } catch (error) {
         logSafeError("Stripe background jobs failed", error);
