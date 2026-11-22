@@ -876,6 +876,26 @@ const ensureTargetAccess = async ({
   }
 };
 
+/** The paid period of a Hub purchase (А4), if the access job has written it. */
+const findStandaloneHubRight = async (purchaseId: string) => {
+  const [right] = await getDatabase()
+    .select({
+      expiresAt: accessEntitlements.expiresAt,
+      startsAt: accessEntitlements.startsAt,
+    })
+    .from(accessEntitlements)
+    .where(
+      and(
+        eq(accessEntitlements.purchaseId, purchaseId),
+        eq(accessEntitlements.accessKey, "inspiration-hub"),
+        eq(accessEntitlements.sourceKind, "standalone_hub"),
+      ),
+    )
+    .limit(1);
+
+  return right;
+};
+
 /**
  * А9: a Hub purchase gets one personal invite into the shared Hub chat for the paid
  * period the access job (А4) wrote; without that period there is nothing to deliver
@@ -887,20 +907,7 @@ const ensureHubPurchaseAccess = async (
   purchase: OnlineGroupPurchase,
   reissue: boolean,
 ): Promise<OnlineGroupAccessItem[]> => {
-  const [right] = await getDatabase()
-    .select({
-      expiresAt: accessEntitlements.expiresAt,
-      startsAt: accessEntitlements.startsAt,
-    })
-    .from(accessEntitlements)
-    .where(
-      and(
-        eq(accessEntitlements.purchaseId, purchase.id),
-        eq(accessEntitlements.accessKey, "inspiration-hub"),
-        eq(accessEntitlements.sourceKind, "standalone_hub"),
-      ),
-    )
-    .limit(1);
+  const right = await findStandaloneHubRight(purchase.id);
 
   if (!right) {
     return [];
@@ -960,6 +967,16 @@ const findPlusHubEnd = async (purchase: OnlineGroupPurchase): Promise<Date | nul
     : purchase.inspirationAccessExpiresAtSnapshot;
 };
 
+/** The chats and access ends of a group purchase (and of its Plus Hub). */
+const getPlusAccessTargets = async (
+  paymentRecord: PaymentRecordSnapshot,
+  purchase: OnlineGroupPurchase,
+) =>
+  getAccessTargets(paymentRecord, {
+    inspirationAccessExpiresAt: await findPlusHubEnd(purchase),
+    inspirationChatId: purchase.inspirationChatIdSnapshot,
+  });
+
 const ensureOnlineGroupAccessForPaymentInternal = async (
   paymentRecord: PaymentRecordSnapshot,
   reissue: boolean,
@@ -985,10 +1002,7 @@ const ensureOnlineGroupAccessForPaymentInternal = async (
     return ensureHubPurchaseAccess(paymentRecord, purchase, reissue);
   }
 
-  const targets = getAccessTargets(paymentRecord, {
-    inspirationAccessExpiresAt: await findPlusHubEnd(purchase),
-    inspirationChatId: purchase.inspirationChatIdSnapshot,
-  });
+  const targets = await getPlusAccessTargets(paymentRecord, purchase);
 
   // HUB-D49 (replaces HUB-D43): Plus opens the library right at payment; the days
   // before the cohort starts are a gift, so both invites go out at once.
@@ -1446,27 +1460,16 @@ const findAccessTarget = async (
 ): Promise<{ accessExpiresAt: string; chatId: string } | null> => {
   if (isInspirationHubOfferId(paymentRecord.offer_id)) {
     if (accessKey !== "inspiration-hub") return null;
-    const [right] = await getDatabase()
-      .select({ expiresAt: accessEntitlements.expiresAt })
-      .from(accessEntitlements)
-      .where(
-        and(
-          eq(accessEntitlements.purchaseId, purchase.id),
-          eq(accessEntitlements.accessKey, "inspiration-hub"),
-          eq(accessEntitlements.sourceKind, "standalone_hub"),
-        ),
-      )
-      .limit(1);
+    const right = await findStandaloneHubRight(purchase.id);
     const hubChatId = right ? await findInspirationHubChatId(getDatabase()) : null;
     return hubChatId
       ? { accessExpiresAt: right?.expiresAt?.toISOString() ?? "", chatId: hubChatId }
       : null;
   }
 
-  const target = getAccessTargets(paymentRecord, {
-    inspirationAccessExpiresAt: await findPlusHubEnd(purchase),
-    inspirationChatId: purchase.inspirationChatIdSnapshot,
-  }).find((candidate) => candidate.accessKey === accessKey);
+  const target = (await getPlusAccessTargets(paymentRecord, purchase)).find(
+    (candidate) => candidate.accessKey === accessKey,
+  );
   return target
     ? { accessExpiresAt: target.accessExpiresAt, chatId: target.chatId }
     : null;
