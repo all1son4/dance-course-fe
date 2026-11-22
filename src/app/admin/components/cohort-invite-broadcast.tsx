@@ -116,6 +116,66 @@ const LinksCell = ({
 );
 
 /** «Приглашение в поток»: one campaign of «Рассылки». */
+/** «Как идёт рассылка»: the question mark next to the title and its rules popover. */
+const RulesButton = ({
+  dailyLimit,
+  reserve,
+}: {
+  dailyLimit: number;
+  reserve: number;
+}) => (
+  <>
+    <IconButton
+      type="button"
+      aria-label="Как идёт рассылка"
+      title="Как идёт рассылка"
+      popoverTarget="cohort-invite-rules"
+      style={{ anchorName: RULES_ANCHOR }}
+    >
+      <CircleQuestionMark aria-hidden />
+    </IconButton>
+    <RulesPopover
+      id="cohort-invite-rules"
+      popover="auto"
+      role="dialog"
+      aria-labelledby="cohort-invite-rules-title"
+    >
+      <header>
+        <h3 id="cohort-invite-rules-title">Как идёт рассылка</h3>
+        <IconButton
+          type="button"
+          aria-label="Закрыть"
+          popoverTarget="cohort-invite-rules"
+          popoverTargetAction="hide"
+        >
+          <X aria-hidden />
+        </IconButton>
+      </header>
+      <ol>
+        <li>
+          Партия берёт первых по списку. Сначала идут участники прошлого потока: их
+          спеццены кончаются раньше.
+        </li>
+        <li>
+          Перед каждой партией список собирается заново: кто успел оплатить поток или Hub,
+          отписался или исключён, письма не получит.
+        </li>
+        <li>
+          {`Resend пропускает ${dailyLimit} писем в сутки, ${reserve} из них оставлены для писем о покупках и тестов. Письмо выходит из счёта через 24 часа после отправки.`}
+        </li>
+        <li>
+          Дважды письмо не уйдёт: кому оно уже ушло, тот пропускается — и в партии, и при
+          отправке по списку адресов.
+        </li>
+        <li>
+          Если письмо не дошло, адрес остаётся в списке и уйдёт в одной из следующих
+          партий.
+        </li>
+      </ol>
+    </RulesPopover>
+  </>
+);
+
 export const CohortInviteBroadcast = ({
   invite,
 }: {
@@ -209,59 +269,6 @@ export const CohortInviteBroadcast = ({
     }
   };
 
-  const rules = (
-    <>
-      <IconButton
-        type="button"
-        aria-label="Как идёт рассылка"
-        title="Как идёт рассылка"
-        popoverTarget="cohort-invite-rules"
-        style={{ anchorName: RULES_ANCHOR }}
-      >
-        <CircleQuestionMark aria-hidden />
-      </IconButton>
-      <RulesPopover
-        id="cohort-invite-rules"
-        popover="auto"
-        role="dialog"
-        aria-labelledby="cohort-invite-rules-title"
-      >
-        <header>
-          <h3 id="cohort-invite-rules-title">Как идёт рассылка</h3>
-          <IconButton
-            type="button"
-            aria-label="Закрыть"
-            popoverTarget="cohort-invite-rules"
-            popoverTargetAction="hide"
-          >
-            <X aria-hidden />
-          </IconButton>
-        </header>
-        <ol>
-          <li>
-            Партия берёт первых по списку. Сначала идут участники прошлого потока: их
-            спеццены кончаются раньше.
-          </li>
-          <li>
-            Перед каждой партией список собирается заново: кто успел оплатить поток или
-            Hub, отписался или исключён, письма не получит.
-          </li>
-          <li>
-            {`Resend пропускает ${quota.dailyLimit} писем в сутки, ${quota.reserve} из них оставлены для писем о покупках и тестов. Письмо выходит из счёта через 24 часа после отправки.`}
-          </li>
-          <li>
-            Дважды письмо не уйдёт: кому оно уже ушло, тот пропускается — и в партии, и
-            при отправке по списку адресов.
-          </li>
-          <li>
-            Если письмо не дошло, адрес остаётся в списке и уйдёт в одной из следующих
-            партий.
-          </li>
-        </ol>
-      </RulesPopover>
-    </>
-  );
-
   return (
     <Stack $gap={16}>
       <Panel
@@ -312,7 +319,9 @@ export const CohortInviteBroadcast = ({
 
       <Panel
         title="Следующая партия"
-        titleAction={rules}
+        titleAction={
+          <RulesButton dailyLimit={quota.dailyLimit} reserve={quota.reserve} />
+        }
         description={
           isDone
             ? undefined
