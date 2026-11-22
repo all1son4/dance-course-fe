@@ -85,11 +85,8 @@ export async function POST(request: Request) {
     const snapshot = getManagedPaymentIntentSnapshot(paymentIntentResult.paymentIntent);
 
     if (snapshot.outcome === "succeeded") {
-      try {
-        scheduleStripeBackgroundJobs();
-      } catch (error) {
-        logSafeError("Failed to schedule payment background recovery", error);
-      }
+      // Never throws: a scheduling failure is logged inside and the inbox row stays durable.
+      scheduleStripeBackgroundJobs();
     }
 
     return jsonNoStore(snapshot);
