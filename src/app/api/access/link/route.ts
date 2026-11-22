@@ -7,22 +7,23 @@ import { findMyAccessCustomerIdByEmail } from "@/db/my-access";
 import { normalizeEmail } from "@/db/record-values";
 import { buildMyAccessLinkEmail } from "@/lib/email/my-access";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { buildMyAccessUrl, isMyAccessLinkConfigured } from "@/lib/my-access/link";
 import { consumeRateLimit, consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { HOUR_MS } from "@/lib/time";
 
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 2 * 1024;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const TEN_MINUTES_MS = 10 * 60 * 1000;
-const HOUR_MS = 60 * 60 * 1000;
 
 type RequestLinkBody = { email?: unknown; locale?: unknown };
 
@@ -43,10 +44,7 @@ export async function POST(request: Request) {
     windowMs: TEN_MINUTES_MS,
   });
   if (ipLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
-      status: 429,
-    });
+    return jsonRateLimited(ipLimit.retryAfterSeconds);
   }
 
   const { body, errorResponse } = await parseJsonBody<RequestLinkBody>(

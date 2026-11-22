@@ -6,7 +6,6 @@ import postgres from "postgres";
 
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { getDatabaseClient } from "@/db/client";
-import { upsertPaymentRecordToDatabase } from "@/db/payment-records";
 import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,
@@ -16,6 +15,7 @@ import {
   syncOnlineGroupMembership,
 } from "@/lib/telegram/online-group-access";
 
+import { upsertPaymentRecordToDatabase } from "../helpers/legacy-payment-writer";
 import { createTestTelegramUserIdPair } from "../helpers/telegram-user-id";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 

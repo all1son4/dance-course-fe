@@ -5,13 +5,7 @@ import {
   OFFER_TYPE_LABELS,
   RATE_LIMITED_STATUS_TEXT,
 } from "./admin.constants";
-import type {
-  ChoreoSelection,
-  LessonLanguage,
-  LinkState,
-  OnlineGroupAdminAccess,
-  OnlineGroupAdminAccessState,
-} from "./admin.types";
+import type { ChoreoSelection, LessonLanguage, LinkState } from "./admin.types";
 
 // Anna works from Warsaw: every time in the admin is Warsaw time.
 export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
@@ -30,6 +24,33 @@ export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
     timeZone,
     year: "numeric",
   }).format(date);
+};
+
+/** «19 ноября» in Warsaw time. */
+export const formatDayMonth = (value: string) =>
+  new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Warsaw",
+  }).format(new Date(value));
+
+/** «19 ноября, 14:35» in Warsaw time, like every admin time. */
+export const formatDayMonthTime = (value: string) =>
+  new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "long",
+    timeZone: "Europe/Warsaw",
+  }).format(new Date(value));
+
+/** Russian plural by the last one and two digits: 1 письмо, 2 письма, 5 писем. */
+export const plural = (count: number, one: string, few: string, many: string) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
 };
 
 /** The Warsaw wall-clock parts of a moment, whatever the device's time zone. */
@@ -95,22 +116,6 @@ export const resolveLinkStateLabel = (state: LinkState) =>
     : state === "expired"
       ? "Истекла"
       : "Ещё не использована";
-
-export const resolveOnlineGroupAccessStateLabel = (
-  state: OnlineGroupAdminAccessState,
-) => {
-  if (state === "issued") return "Ещё не использована";
-  if (state === "used") return "Использована";
-  if (state === "expired") return "Истекла";
-  if (state === "revoked") return "Отозвана";
-  if (state === "left") return "Вышли из чата";
-  if (state === "failed") return "Ссылка не создалась";
-  return "Подготавливается";
-};
-
-export const resolveOnlineGroupAccessTitle = (
-  accessKey: OnlineGroupAdminAccess["accessKey"],
-) => (accessKey === "inspiration-hub" ? "Библиотека Inspiration Hub" : "Чат потока");
 
 export const getChoreoSelections = () =>
   SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo")

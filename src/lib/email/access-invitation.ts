@@ -164,7 +164,7 @@ const COPY = {
   },
 } as const;
 
-export const describeInvitationProduct = (
+const describeInvitationProduct = (
   locale: InvitationEmailLocale,
   product: InvitationEmailProduct,
   cohortTitle: string | null,

@@ -4,6 +4,7 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
 import {
   closeCohortFromAdmin,
@@ -69,15 +70,8 @@ export async function POST(request: Request) {
     request,
     windowMs: 60_000,
   });
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-  if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      status: 429,
-    });
-  }
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse } = await parseJsonBody<CloseCohortBody>(
@@ -112,7 +106,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const errorCode = error instanceof Error ? error.message : "";
     if (CLIENT_ERRORS.has(errorCode)) {
-      return jsonNoStore({ errorCode }, { status: 409 });
+      return jsonErrorNoStore(errorCode, { status: 409 });
     }
     logSafeError("Failed to close an Online Group cohort", error);
     return jsonErrorNoStore("cohort_close_failed", { status: 500 });
@@ -135,15 +129,8 @@ export async function PATCH(request: Request) {
     request,
     windowMs: 60_000,
   });
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-  if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      status: 429,
-    });
-  }
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse } = await parseJsonBody<{
@@ -179,7 +166,7 @@ export async function PATCH(request: Request) {
       errorCode === "cohort_has_no_previous" ||
       errorCode === "cohort_duration_invalid"
     ) {
-      return jsonNoStore({ errorCode }, { status: 409 });
+      return jsonErrorNoStore(errorCode, { status: 409 });
     }
     logSafeError("Failed to switch the previous chat removal", error);
     return jsonErrorNoStore("cohort_update_failed", { status: 500 });

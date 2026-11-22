@@ -708,16 +708,6 @@ export const TelegramInputStatus = styled.p<{
   line-height: 1.35;
 `;
 
-export const PersonalDataTitle = styled.h2`
-  font-weight: 400;
-  font-style: normal;
-  font-size: var(--text-card);
-  line-height: 1.1;
-  letter-spacing: 0;
-  margin: 0;
-  color: var(--ink);
-`;
-
 export const Inputs = styled.div`
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

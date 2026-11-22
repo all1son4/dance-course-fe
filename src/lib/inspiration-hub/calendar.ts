@@ -117,3 +117,23 @@ export const getStartOfNextWarsawDay = (date: Date): Date => {
  */
 export const isStartDayReached = (startsAt: Date, now: Date): boolean =>
   startsAt.getTime() < getStartOfNextWarsawDay(now).getTime();
+
+const WARSAW_DAY = new Intl.DateTimeFormat("en-CA", {
+  day: "2-digit",
+  month: "2-digit",
+  timeZone: "Europe/Warsaw",
+  year: "numeric",
+});
+
+/** The Warsaw calendar day of a moment, as YYYY-MM-DD. */
+export const toWarsawDay = (date: Date) => WARSAW_DAY.format(date);
+
+/** Calendar days between two instants by the Warsaw calendar (the page's dates). */
+export const warsawDaysBetween = (from: Date, to: Date) => {
+  const dayNumber = (date: Date) => {
+    const [year, month, day] = WARSAW_DAY.format(date).split("-").map(Number);
+    return Date.UTC(year, month - 1, day) / CALENDAR_DAY_MS;
+  };
+
+  return dayNumber(to) - dayNumber(from);
+};

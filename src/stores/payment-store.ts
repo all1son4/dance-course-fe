@@ -39,7 +39,7 @@ type StripeIntentCustomerKeys = Partial<Record<SupportedCheckoutCurrency, string
 type StripeIntentErrors = Partial<
   Record<SupportedCheckoutCurrency, StripeIntentErrorCode | null>
 >;
-export type SellableCatalogStatus = "closed" | "loading" | "ready" | "unavailable";
+type SellableCatalogStatus = "closed" | "loading" | "ready" | "unavailable";
 type StripeIntentErrorCode =
   | "catalog_unavailable"
   | "consent_evidence_failed"

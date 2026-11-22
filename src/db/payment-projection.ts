@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 
 import { keepClassifiedAccessPeriod } from "./classified-access";
-import { getDatabase } from "./client";
 import {
   getPaymentOutcomeTransitionCondition,
   type PaymentOutcome,
@@ -14,14 +13,11 @@ import {
   products,
   purchases,
 } from "./schema";
+import type { DatabaseTransaction } from "./transaction";
 import {
   type EnqueueOutboxJobInput,
   enqueueOutboxJobInTransaction,
 } from "./transactional-outbox";
-
-type DatabaseTransaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
 
 export type PaymentProjectionCommand = {
   access: {

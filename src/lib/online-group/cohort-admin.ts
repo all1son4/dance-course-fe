@@ -27,12 +27,15 @@ import type { DatabaseExecutor } from "@/db/transaction";
 import {
   type ClaimedOutboxJob,
   enqueueOutboxJob,
+  nonRetryable,
   processOutboxJobByDeduplicationKey,
   replayOutboxJob,
 } from "@/db/transactional-outbox";
+import { areNotificationsEnabled } from "@/lib/deployment";
 import {
   addWarsawCalendarDays,
   getStartOfNextWarsawDay,
+  toWarsawDay,
 } from "@/lib/inspiration-hub/calendar";
 import { logSafeError } from "@/lib/safe-error-log";
 import { normalizedSiteUrl } from "@/lib/seo";
@@ -51,18 +54,12 @@ import {
   type CohortRenewalLinks,
   getGraceReminderDay,
   getPlusHubLastDay,
-  toWarsawDay,
 } from "./cohort-messages";
 
 type Cohort = typeof onlineGroupCohorts.$inferSelect;
 
-export const cohortClosurePostKey = (cohortId: string) =>
-  `cohort_closure_post:${cohortId}`;
+const cohortClosurePostKey = (cohortId: string) => `cohort_closure_post:${cohortId}`;
 const cohortGraceReminderKey = (cohortId: string) => `cohort_grace_reminder:${cohortId}`;
-
-const isProduction = () =>
-  process.env.VERCEL_ENV === "production" ||
-  (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
 
 const PLUS_OFFER_IDS = SELLABLE_PRODUCTS["online-group-anna-strok"].offers
   .map((offer) => offer.id)
@@ -86,7 +83,7 @@ const buildRenewalUrl = (campaign: {
  * lead members of this cohort's chat into the next cohort, one per tariff, and the
  * Hub at the special price.
  */
-export async function findCohortRenewalLinks(
+async function findCohortRenewalLinks(
   executor: DatabaseExecutor,
   {
     cohortMainChatId,
@@ -139,7 +136,7 @@ export async function findCohortRenewalLinks(
 const countCohortFacts = async (executor: DatabaseExecutor, cohortId: string) => {
   const predecessor = alias(accessEntitlements, "predecessor");
   const predecessorPurchase = alias(purchases, "predecessor_purchase");
-  // Three independent counts: one round trip to the database instead of three.
+  // Three independent counts, run in parallel.
   const [[sales], [legacyPlusHub], [continuations]] = await Promise.all([
     executor
       .select({
@@ -338,11 +335,6 @@ const sendClosurePost = async ({
 };
 
 /**
- * The closure window (section 6.2): closes the cohort with the cron-safe two-step
- * service, then publishes the post in the cohort chat if asked. A failed post never
- * undoes the closure: it stays in the queue for "Повторить".
- */
-/**
  * Where a renewal link created now leads: the next cohort when the current one runs
  * and its successor is recorded, so the links exist before the closure post that
  * lists them; otherwise the current cohort, as before.
@@ -407,6 +399,11 @@ async function switchCampaignToNextCohort(closed: { id: string; mainChatId: stri
   }
 }
 
+/**
+ * The closure window (section 6.2): closes the cohort with the cron-safe two-step
+ * service, then publishes the post in the cohort chat if asked. A failed post never
+ * undoes the closure: it stays in the queue for "Повторить".
+ */
 export async function closeCohortFromAdmin({
   cohortId,
   confirmationTitle,
@@ -469,7 +466,7 @@ export async function retryCohortClosurePost(cohortId: string) {
  */
 export async function enqueueDueCohortGraceReminders(now = new Date()) {
   const result = { due: 0, enqueued: 0, duplicates: 0, disabled: false };
-  if (!isProduction() && process.env.ALLOW_TEST_MODE_NOTIFICATIONS !== "1") {
+  if (!areNotificationsEnabled()) {
     return { ...result, disabled: true };
   }
 
@@ -530,7 +527,7 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
   const chatId = typeof job.payload.chatId === "string" ? job.payload.chatId : "";
   const text = typeof job.payload.text === "string" ? job.payload.text : "";
   if (!chatId || !text) {
-    throw Object.assign(new Error("cohort_chat_message_invalid"), { retryable: false });
+    throw nonRetryable("cohort_chat_message_invalid");
   }
 
   let message: Awaited<ReturnType<typeof sendTelegramMessage>>;
@@ -551,9 +548,7 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
       error instanceof TypeError ||
       (error instanceof Error && error.name === "AbortError");
     if (uncertain) {
-      throw Object.assign(new Error("cohort_chat_message_delivery_uncertain"), {
-        retryable: false,
-      });
+      throw nonRetryable("cohort_chat_message_delivery_uncertain");
     }
     throw error;
   }
@@ -569,7 +564,6 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
   return { externalMessageId: String(message.message_id) };
 }
 
-/** HUB-D44: the switch «Удалять из чата прошлого потока» of one cohort. */
 export const COHORT_DURATION_WEEKS = { max: 26, min: 1 } as const;
 
 /**
@@ -686,6 +680,7 @@ export async function setCohortDurationWeeks({
   return { durationWeeks };
 }
 
+/** HUB-D44: the switch «Удалять из чата прошлого потока» of one cohort. */
 export async function setCohortPreviousChatRemoval({
   cohortId,
   enabled,

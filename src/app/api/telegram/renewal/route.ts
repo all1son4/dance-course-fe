@@ -8,6 +8,7 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { getOnlineGroupSale } from "@/lib/online-group-sale";
@@ -245,17 +246,15 @@ const checkRenewalSourceChatMemberships = (
   );
 
 const findRenewalCustomerProfileSafely = async ({
-  campaign,
   matchedMembership,
   telegramUserId,
 }: {
-  campaign: RenewalCampaign;
   matchedMembership: RenewalMembership;
   telegramUserId: string;
 }) => {
   try {
     return await findRenewalCustomerProfile({
-      sourceChatId: matchedMembership.chatId ?? campaign.sourceChatId,
+      sourceChatId: matchedMembership.chatId,
       telegramUserId,
     });
   } catch (error) {
@@ -332,7 +331,6 @@ const verifyRenewalAccess = async (body: RenewalVerifyBody): Promise<RenewalResp
   }
 
   const customerProfile = await findRenewalCustomerProfileSafely({
-    campaign,
     matchedMembership,
     telegramUserId,
   });
@@ -357,12 +355,7 @@ export async function GET(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   if (!isTelegramLoginConfigured()) {
@@ -407,12 +400,7 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   if (!isTelegramLoginConfigured()) {

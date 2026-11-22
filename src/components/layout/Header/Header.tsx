@@ -9,6 +9,7 @@ import { routing } from "@/i18n/routing";
 import { getLocaleCookieName } from "@/lib/cookie-consent";
 import { trackAnalyticsEvent, trackCtaClick } from "@/lib/mixpanel-analytics";
 import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation-events";
+import { trimTrailingSlash } from "@/lib/payment-draft";
 import {
   getHashTargetFromLocation,
   scrollToHashTarget,
@@ -76,7 +77,6 @@ const subscribeToMobileViewport = (onStoreChange: () => void): (() => void) => {
 const getMobileViewportSnapshot = (): boolean =>
   window.matchMedia(MOBILE_MEDIA_QUERY).matches;
 const getMobileViewportServerSnapshot = (): boolean => false;
-const trimTrailingSlash = (value: string): string => value.replace(/\/+$/u, "");
 const isPaymentResultPathname = (pathname: string): boolean => {
   const normalizedPathname = trimTrailingSlash(pathname);
 

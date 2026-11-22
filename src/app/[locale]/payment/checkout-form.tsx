@@ -56,7 +56,7 @@ import {
 
 /** Anchors the step buttons move the buyer to. */
 export const CHECKOUT_CONSENT_ID = "checkout-accept-all";
-export const CHECKOUT_PAYMENT_ID = "checkout-payment";
+const CHECKOUT_PAYMENT_ID = "checkout-payment";
 export const getCheckoutStepId = (stepId: PaymentStep) => `checkout-step-${stepId}`;
 
 const TelegramPlaneIcon = () => (

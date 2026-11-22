@@ -6,13 +6,13 @@ import postgres from "postgres";
 
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { getDatabaseClient } from "@/db/client";
-import { upsertPaymentRecordToDatabase } from "@/db/payment-records";
 import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,
 } from "@/lib/payment-record";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
+import { upsertPaymentRecordToDatabase } from "../helpers/legacy-payment-writer";
 import { createTestTelegramUserId } from "../helpers/telegram-user-id";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 

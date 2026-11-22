@@ -15,6 +15,7 @@ import {
   PAGE_TRANSITIONS_ENABLED,
   shouldSkipTraversalTransition,
 } from "@/lib/page-transitions";
+import { REDUCED_MOTION_QUERY } from "@/lib/reveal";
 
 /*
  * A 1px, fully transparent, click-through box. It only exists so that a route
@@ -43,8 +44,6 @@ const markerStyle: CSSProperties = {
   opacity: 0,
   pointerEvents: "none",
 };
-
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 const subscribeToReducedMotion = (onChange: () => void): (() => void) => {
   const query = window.matchMedia(REDUCED_MOTION_QUERY);

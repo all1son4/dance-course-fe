@@ -34,8 +34,6 @@ type VerifiedStripeEvent =
       response: Response;
     };
 
-const getSafeErrorName = (error: unknown): string => getSafeErrorCategory(error);
-
 const createWebhookErrorResponse = (
   errorCode: WebhookErrorCode,
   status: 400 | 413 | 500,
@@ -62,7 +60,7 @@ const verifyStripeWebhookEvent = ({
     };
   } catch (error) {
     console.error("Failed to verify Stripe webhook signature", {
-      errorName: getSafeErrorName(error),
+      errorName: getSafeErrorCategory(error),
     });
 
     return {
@@ -83,7 +81,7 @@ const persistVerifiedStripeEventBeforeProcessing = async (
   } catch (error) {
     console.error("Failed to persist verified Stripe event to inbox", {
       databaseEnv,
-      errorName: getSafeErrorName(error),
+      errorName: getSafeErrorCategory(error),
       eventId: event.id,
       eventType: event.type,
     });

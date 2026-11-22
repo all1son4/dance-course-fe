@@ -9,12 +9,12 @@ import {
   PREVIEW_CLIP_IN_VIEW_THRESHOLDS,
   PREVIEW_CLIP_MAX_PLAY_RETRIES,
   PREVIEW_CLIP_NEAR_ROOT_MARGIN,
-  PREVIEW_CLIP_REDUCED_MOTION_QUERY,
   PREVIEW_CLIP_ROOT_ATTRIBUTE,
   PREVIEW_CLIP_START_DELAY_MS,
   type PreviewClipMode,
   resolvePreviewClipMode,
 } from "@/lib/preview-clip";
+import { REDUCED_MOTION_QUERY } from "@/lib/reveal";
 
 import { PreviewVideo } from "./PreviewClip.styles";
 
@@ -38,8 +38,8 @@ const getConnection = (): NetworkInformationLike | undefined =>
   (navigator as Navigator & { connection?: NetworkInformationLike }).connection;
 
 const subscribeToEnvironment = (onStoreChange: () => void): (() => void) => {
-  const queries = [PREVIEW_CLIP_HOVER_QUERY, PREVIEW_CLIP_REDUCED_MOTION_QUERY].map(
-    (query) => window.matchMedia(query),
+  const queries = [PREVIEW_CLIP_HOVER_QUERY, REDUCED_MOTION_QUERY].map((query) =>
+    window.matchMedia(query),
   );
   const connection = getConnection();
 
@@ -55,7 +55,7 @@ const subscribeToEnvironment = (onStoreChange: () => void): (() => void) => {
 const getModeSnapshot = (): PreviewClipMode =>
   resolvePreviewClipMode({
     canHover: window.matchMedia(PREVIEW_CLIP_HOVER_QUERY).matches,
-    prefersReducedMotion: window.matchMedia(PREVIEW_CLIP_REDUCED_MOTION_QUERY).matches,
+    prefersReducedMotion: window.matchMedia(REDUCED_MOTION_QUERY).matches,
     saveData: getConnection()?.saveData === true,
   });
 

@@ -2,9 +2,17 @@ import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 
 import { isInspirationHubOfferId } from "@/constants/sellable-products";
-import { getDatabase } from "@/db/client";
 import { type PaymentProjectionCommand } from "@/db/payment-projection";
+import {
+  normalizeEmail,
+  nullIfEmpty,
+  parseDate,
+  parseInteger,
+  parseRequiredDate,
+  trim,
+} from "@/db/record-values";
 import { purchases } from "@/db/schema";
+import type { DatabaseTransaction } from "@/db/transaction";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
 
@@ -17,30 +25,15 @@ export type StripeSettlementSnapshot = {
   stripeNetAmountMinor: number | null;
 };
 
-type DatabaseTransaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
-
-const trim = (value: string | null | undefined) => value?.trim() ?? "";
-const nullIfEmpty = (value: string | null | undefined) => trim(value) || null;
-const normalizeEmail = (value: string | null | undefined) => trim(value).toLowerCase();
-
-const parseInteger = (value: string | null | undefined, fallback = 0) => {
-  const parsedValue = Number.parseInt(trim(value), 10);
-
-  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+/** No settlement known yet; spread it, so every caller gets its own object. */
+const EMPTY_SETTLEMENT: StripeSettlementSnapshot = {
+  settlementAmountMinor: null,
+  settlementCurrency: null,
+  stripeBalanceTransactionId: null,
+  stripeExchangeRate: null,
+  stripeFeeAmountMinor: null,
+  stripeNetAmountMinor: null,
 };
-
-const parseDate = (value: string | null | undefined) => {
-  const timestamp = Date.parse(trim(value));
-
-  return Number.isFinite(timestamp) ? new Date(timestamp) : null;
-};
-
-const parseRequiredDate = (
-  value: string | null | undefined,
-  fallback: Date = new Date(),
-) => parseDate(value) ?? fallback;
 
 const normalizeOutcome = (
   value: string,
@@ -204,13 +197,9 @@ const getBalanceTransactionSnapshot = (
 ): StripeSettlementSnapshot => {
   if (!balanceTransaction || typeof balanceTransaction === "string") {
     return {
-      settlementAmountMinor: null,
-      settlementCurrency: null,
+      ...EMPTY_SETTLEMENT,
       stripeBalanceTransactionId:
         typeof balanceTransaction === "string" ? balanceTransaction : null,
-      stripeExchangeRate: null,
-      stripeFeeAmountMinor: null,
-      stripeNetAmountMinor: null,
     };
   }
 
@@ -260,14 +249,7 @@ const getStripeSettlementSnapshotFromCharge = async ({
   const balanceTransaction = charge.balance_transaction;
 
   if (!balanceTransaction) {
-    return {
-      settlementAmountMinor: null,
-      settlementCurrency: null,
-      stripeBalanceTransactionId: null,
-      stripeExchangeRate: null,
-      stripeFeeAmountMinor: null,
-      stripeNetAmountMinor: null,
-    };
+    return { ...EMPTY_SETTLEMENT };
   }
 
   if (typeof balanceTransaction !== "string") {
@@ -281,14 +263,7 @@ const getStripeSettlementSnapshotFromCharge = async ({
   } catch (error) {
     logSafeError("Failed to retrieve Stripe balance transaction for charge", error);
 
-    return {
-      settlementAmountMinor: null,
-      settlementCurrency: null,
-      stripeBalanceTransactionId: balanceTransaction,
-      stripeExchangeRate: null,
-      stripeFeeAmountMinor: null,
-      stripeNetAmountMinor: null,
-    };
+    return { ...EMPTY_SETTLEMENT, stripeBalanceTransactionId: balanceTransaction };
   }
 };
 
@@ -299,14 +274,7 @@ const getStripeSettlementSnapshot = async ({
   paymentIntentId: string;
   stripe: Stripe;
 }): Promise<StripeSettlementSnapshot> => {
-  const emptySnapshot: StripeSettlementSnapshot = {
-    settlementAmountMinor: null,
-    settlementCurrency: null,
-    stripeBalanceTransactionId: null,
-    stripeExchangeRate: null,
-    stripeFeeAmountMinor: null,
-    stripeNetAmountMinor: null,
-  };
+  const emptySnapshot: StripeSettlementSnapshot = { ...EMPTY_SETTLEMENT };
 
   try {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
@@ -342,14 +310,7 @@ export const getPurchaseSettlementSnapshot = async ({
     });
   }
 
-  return {
-    settlementAmountMinor: null,
-    settlementCurrency: null,
-    stripeBalanceTransactionId: null,
-    stripeExchangeRate: null,
-    stripeFeeAmountMinor: null,
-    stripeNetAmountMinor: null,
-  };
+  return { ...EMPTY_SETTLEMENT };
 };
 
 export const createStripePaymentProjectionCommand = ({
@@ -499,12 +460,8 @@ export const prepareStripeChargeSettlement = async ({
     return {
       paymentIntentId: "",
       settlementSnapshot: {
-        settlementAmountMinor: null,
-        settlementCurrency: null,
+        ...EMPTY_SETTLEMENT,
         stripeBalanceTransactionId: getBalanceTransactionId(charge.balance_transaction),
-        stripeExchangeRate: null,
-        stripeFeeAmountMinor: null,
-        stripeNetAmountMinor: null,
       },
       status: "skipped",
       stripeBalanceTransactionId: getBalanceTransactionId(charge.balance_transaction),

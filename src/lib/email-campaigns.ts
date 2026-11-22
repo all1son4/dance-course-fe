@@ -1,6 +1,10 @@
 import { createHash } from "node:crypto";
 
-import { DEFAULT_SITE_HOME_URL, SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import {
+  DEFAULT_SITE_HOME_URL,
+  SITE_HOME_URL,
+  SUPPORT_TELEGRAM_URL,
+} from "@/constants/links";
 import {
   buildCheckoutHref,
   getDefaultProductOffer,
@@ -17,7 +21,9 @@ import {
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
 import { listEmailCampaignLeadReadRecords } from "@/lib/business-operation-read-runtime";
+import { escapeEmailHtml } from "@/lib/email/my-access";
 import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 
 export const FIRST_TOUCH_SALES_START_CAMPAIGN_KEY = "first_touch_sales_start";
 
@@ -84,12 +90,6 @@ export type EmailCampaignDeliveryResult = EmailCampaignStats & {
   attempted: number;
 };
 
-const SITE_HOME_URL =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  DEFAULT_SITE_HOME_URL;
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const pendingEmailCampaignLeadCreates = new Map<
   string,
   Promise<CreateEmailCampaignLeadResult>
@@ -101,7 +101,7 @@ export const normalizeEmailCampaignEmail = (value: string) =>
   value.trim().toLowerCase().slice(0, 254);
 
 export const isValidEmailCampaignEmail = (value: string) =>
-  EMAIL_RE.test(normalizeEmailCampaignEmail(value));
+  EMAIL_PATTERN.test(normalizeEmailCampaignEmail(value));
 
 const getEmailCampaignLeadDedupeKey = ({
   campaignKey,
@@ -139,8 +139,6 @@ const mapEmailCampaignLeadFromDatabase = (
   locale: lead.locale,
   social_contact: lead.socialContact,
 });
-
-const listEmailCampaignRecords = () => listEmailCampaignLeadReadRecords();
 
 const getGloballyBlockedEmails = (rows: EmailCampaignLeadRecord[]) =>
   new Set(
@@ -213,14 +211,6 @@ const buildEmailCampaignAdminSnapshot = ({
 
   return { audience, stats };
 };
-
-const escapeHtml = (value: string) =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
 
 const normalizeSiteOrigin = (value: string) => {
   try {
@@ -322,16 +312,16 @@ const getFirstTouchEmailCopy = (locale: string) => {
 const buildFirstTouchSalesStartEmail = (lead: EmailCampaignLeadRecord) => {
   const copy = getFirstTouchEmailCopy(lead.locale);
   const checkoutUrl = getFirstTouchCheckoutUrl(lead.locale);
-  const safeCheckoutUrl = escapeHtml(checkoutUrl);
-  const safeTitle = escapeHtml(copy.title);
-  const safeIntro = escapeHtml(copy.intro);
-  const safeButton = escapeHtml(copy.button);
-  const safeContactIntro = escapeHtml(copy.contactIntro);
-  const safeContactTelegramButton = escapeHtml(copy.contactTelegramButton);
-  const safeDescription = copy.description.map((item) => escapeHtml(item));
-  const safeStepsTitle = escapeHtml(copy.stepsTitle);
-  const safeSteps = copy.steps.map((item) => escapeHtml(item));
-  const safeTelegramUrl = escapeHtml(SUPPORT_TELEGRAM_URL);
+  const safeCheckoutUrl = escapeEmailHtml(checkoutUrl);
+  const safeTitle = escapeEmailHtml(copy.title);
+  const safeIntro = escapeEmailHtml(copy.intro);
+  const safeButton = escapeEmailHtml(copy.button);
+  const safeContactIntro = escapeEmailHtml(copy.contactIntro);
+  const safeContactTelegramButton = escapeEmailHtml(copy.contactTelegramButton);
+  const safeDescription = copy.description.map((item) => escapeEmailHtml(item));
+  const safeStepsTitle = escapeEmailHtml(copy.stepsTitle);
+  const safeSteps = copy.steps.map((item) => escapeEmailHtml(item));
+  const safeTelegramUrl = escapeEmailHtml(SUPPORT_TELEGRAM_URL);
 
   return {
     html: `
@@ -431,12 +421,12 @@ export const createEmailCampaignLead = async (
 export const getEmailCampaignAdminSnapshot = async (
   campaignKey: string,
 ): Promise<EmailCampaignAdminSnapshot> => {
-  const rows = await listEmailCampaignRecords();
+  const rows = await listEmailCampaignLeadReadRecords();
 
   return buildEmailCampaignAdminSnapshot({ campaignKey, rows });
 };
 
-export const getEmailCampaignStats = async (campaignKey: string) =>
+const getEmailCampaignStats = async (campaignKey: string) =>
   (await getEmailCampaignAdminSnapshot(campaignKey)).stats;
 
 export const excludeEmailCampaignLead = async ({
@@ -471,7 +461,7 @@ export const excludeEmailCampaignLead = async ({
 
 const deliverFirstTouchSalesStartCampaignInternal =
   async (): Promise<EmailCampaignDeliveryResult> => {
-    const rows = await listEmailCampaignRecords();
+    const rows = await listEmailCampaignLeadReadRecords();
     const globallyBlockedEmails = getGloballyBlockedEmails(rows);
     const deliverableRows = rows.filter(
       (row) =>

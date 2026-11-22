@@ -11,6 +11,8 @@ import {
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
+
 import type { AdminInvitationEntry } from "../api/access-invitations/route";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { StatusMessage } from "../lib/admin.types";
@@ -26,6 +28,7 @@ import {
   Disclosure,
   EmptyState,
   FieldNote,
+  Meta,
   Panel,
   Skeleton,
   Stack,
@@ -47,8 +50,6 @@ type Target =
   | { ready: true; cohortTitle: string | null; chatTitle: string }
   | { ready: false; problem: string };
 type Duplicate = "cohort" | "hub";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 const LOCALE_NAMES_PREPOSITIONAL: Record<Locale, string> = {
   ru: "русском",
@@ -155,13 +156,6 @@ const ChoiceField = styled.div`
   @container admin-content (max-width: 520px) {
     flex: 1 1 100%;
   }
-`;
-
-const Meta = styled.p`
-  margin: 0;
-  color: var(--a-ink-2);
-  font-size: var(--a-text-sm);
-  overflow-wrap: anywhere;
 `;
 
 /* «КОМУ», «ДОСТУПЫ»: the same small caption over each block of an open entry. */

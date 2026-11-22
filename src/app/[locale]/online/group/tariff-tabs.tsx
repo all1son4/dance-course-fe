@@ -11,6 +11,7 @@ import {
 import { css, keyframes, styled } from "styled-components";
 
 import { trackCtaClick } from "@/lib/mixpanel-analytics";
+import { REDUCED_MOTION_QUERY } from "@/lib/reveal";
 
 import { TariffOptionsBox } from "./page.styles";
 
@@ -31,8 +32,6 @@ type TariffTabsProps = {
   tabs: TariffTab[];
   ariaLabel: string;
 };
-
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 const TabsBar = styled.div`
   display: none;

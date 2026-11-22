@@ -29,10 +29,10 @@ import {
   buildPurchaseSuccessEmail,
   type PurchaseSuccessEmailAccessKind,
 } from "../purchase-success-email";
+import type { StripePaymentWebhookResult } from "../sync";
 import { getPurchaseSideEffectPaymentIntent } from "./eligibility";
 import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
 import { getReceiptData } from "./stripe-receipt";
-import type { StripeWebhookSyncResult } from "./types";
 
 const DEFAULT_PRODUCT_TITLE_BY_LOCALE = {
   en: "Course purchase",
@@ -104,7 +104,7 @@ const isExpectedResendRestrictionError = (error: unknown) => {
   );
 };
 
-type PurchasePaymentRecord = StripeWebhookSyncResult["paymentRecord"];
+type PurchasePaymentRecord = StripePaymentWebhookResult["paymentRecord"];
 type PurchaseEmailAccess = {
   onlineGroupAccess: Awaited<ReturnType<typeof ensureOnlineGroupAccessForPayment>>;
   telegramAccessLink: Awaited<

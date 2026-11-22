@@ -4,27 +4,13 @@ import styled from "styled-components";
 
 import type { CohortOverview } from "@/lib/online-group/cohort-admin";
 
+import { formatDayMonth, plural } from "../lib/admin.utils";
 import { CopyField } from "../ui/copy";
 import { Field, FormGrid, Input, Select } from "../ui/forms";
 import { AdminButton, Muted, Stack } from "../ui/primitives";
 import { TelegramPostPreview } from "./telegram-post-preview";
 
 export type RenewalLinkKind = "plus" | "standard";
-
-const formatDay = (iso: string) =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    timeZone: "Europe/Warsaw",
-  }).format(new Date(iso));
-
-const weeksWord = (weeks: number) => {
-  const lastTwo = weeks % 100;
-  const last = weeks % 10;
-  if (lastTwo >= 11 && lastTwo <= 14) return "недель";
-  if (last === 1) return "неделя";
-  return last >= 2 && last <= 4 ? "недели" : "недель";
-};
 
 const Steps = styled.ol`
   display: grid;
@@ -159,8 +145,8 @@ export const CohortTransitionGuide = ({
       <Steps>
         <Step done index={1} title="Следующий поток заведён">
           <p>
-            «{next.title}»: старт {formatDay(next.startsAt)}. Длительность меняется в его
-            карточке в «Потоках».
+            «{next.title}»: старт {formatDayMonth(next.startsAt)}. Длительность меняется в
+            его карточке в «Потоках».
           </p>
         </Step>
 
@@ -261,8 +247,9 @@ export const CohortTransitionGuide = ({
             </AdminButton>
           </Actions>
           <Muted>
-            «{cohort.title}»: {cohort.durationWeeks} {weeksWord(cohort.durationWeeks)} по
-            плану, до {formatDay(cohort.plannedEndsAt)}.
+            «{cohort.title}»: {cohort.durationWeeks}{" "}
+            {plural(cohort.durationWeeks, "неделя", "недели", "недель")} по плану, до{" "}
+            {formatDayMonth(cohort.plannedEndsAt)}.
           </Muted>
         </Step>
       </Steps>
@@ -298,7 +285,7 @@ export const CohortTransitionBanner = ({
             Переход «{running.title}» → «{running.next.title}»
           </b>
           <Muted>
-            Старт {formatDay(running.next.startsAt)} · готово {done} из 5 шагов
+            Старт {formatDayMonth(running.next.startsAt)} · готово {done} из 5 шагов
           </Muted>
         </div>
         <AdminButton

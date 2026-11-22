@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import {
   buildCalendarFeed,
   buildMyAccessCalendarSubscription,
@@ -15,7 +16,6 @@ import {
   buildMyAccessCount,
   getMyAccessCardDetail,
   getMyAccessCardNote,
-  warsawDaysBetween,
 } from "@/lib/my-access/count";
 import { getDaypart, getFirstName, resolveTimeZone } from "@/lib/my-access/greeting";
 import { buildMyAccessJourney } from "@/lib/my-access/journey";

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  getMonthlySalesReportPeriodForNow,
+  getMonthlySalesReportPeriod,
   getScheduledMonthlySalesReportPeriod,
 } from "@/lib/monthly-sales-report";
 
@@ -79,9 +79,9 @@ test("excludes every sale from September by Warsaw calendar time", () => {
 });
 
 test("a premature partial report cannot block the completed-month report", () => {
-  const prematurePeriod = getMonthlySalesReportPeriodForNow(
-    new Date("2026-08-31T03:00:00.000Z"),
-  );
+  const prematurePeriod = getMonthlySalesReportPeriod({
+    referenceDate: new Date("2026-08-31T03:00:00.000Z"),
+  });
   const completedPeriod = getScheduledMonthlySalesReportPeriod(
     new Date("2026-09-01T03:00:00.000Z"),
   );

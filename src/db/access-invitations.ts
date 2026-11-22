@@ -31,7 +31,6 @@ import {
   purchaseSideEffects,
   telegramAccessTokens,
   telegramChats,
-  telegramUserBindings,
 } from "./schema";
 import type { DatabaseExecutor, DatabaseTransaction } from "./transaction";
 
@@ -865,27 +864,6 @@ export async function markInvitationRevokedInDatabase({
 
     return "revoked";
   });
-}
-
-/** Whether an account already sits in a chat by our own records (an active binding). */
-export async function hasActiveChatBinding(
-  { chatId, telegramUserId }: { chatId: string; telegramUserId: string },
-  database: DatabaseExecutor = getDatabase(),
-): Promise<boolean> {
-  const [binding] = await database
-    .select({ id: telegramUserBindings.id })
-    .from(telegramUserBindings)
-    .where(
-      and(
-        eq(telegramUserBindings.chatId, chatId),
-        eq(telegramUserBindings.telegramUserId, telegramUserId),
-        eq(telegramUserBindings.status, "active"),
-        isNull(telegramUserBindings.revokedAt),
-      ),
-    )
-    .limit(1);
-
-  return Boolean(binding);
 }
 
 /**

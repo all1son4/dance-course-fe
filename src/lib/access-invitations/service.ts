@@ -37,8 +37,10 @@ import { onlineGroupCohorts } from "@/db/schema";
 import {
   type ClaimedOutboxJob,
   enqueueOutboxJob,
+  nonRetryable,
   processOutboxJobByDeduplicationKey,
 } from "@/db/transactional-outbox";
+import { isProductionDeployment } from "@/lib/deployment";
 import {
   buildInvitationJoinEmail,
   buildInvitationLinksEmail,
@@ -47,6 +49,7 @@ import {
   type InvitationEmailProduct,
 } from "@/lib/email/access-invitation";
 import { sendResendEmail } from "@/lib/email/resend";
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 import { getFirstName } from "@/lib/my-access/greeting";
 import { buildMyAccessPath, buildMyAccessUrl } from "@/lib/my-access/link";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -89,16 +92,8 @@ const OFFER_IDS: Record<InvitationProduct, Record<InvitationKind, string>> = {
   },
 };
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const NAME_MAX = 80;
 const NOTE_MAX = 500;
-
-const isProduction = () =>
-  process.env.VERCEL_ENV === "production" ||
-  (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
-
-const nonRetryable = (message: string) =>
-  Object.assign(new Error(message), { retryable: false });
 
 export const getInvitationProduct = (offerId: string): InvitationProduct =>
   isInspirationHubOfferId(offerId)
@@ -315,7 +310,7 @@ export async function issueAccessInvitation(
     email,
     locale: input.locale,
     note,
-    livemode: isProduction(),
+    livemode: isProductionDeployment(),
     now,
   });
 

@@ -7,6 +7,7 @@ import { logSafeError } from "@/lib/safe-error-log";
 
 import { getDatabase } from "./client";
 import { purchaseSideEffects } from "./schema";
+import type { DatabaseTransaction } from "./transaction";
 
 export type OutboxJobKind = typeof purchaseSideEffects.$inferSelect.kind;
 export type OutboxProvider = NonNullable<
@@ -34,10 +35,6 @@ export type EnqueueOutboxJobInput = {
   purchaseId?: string | null;
   recipient?: string | null;
 };
-
-type DatabaseTransaction = Parameters<
-  Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
->[0];
 
 type OutboxExecutor = Pick<DatabaseTransaction, "insert" | "select">;
 
@@ -285,8 +282,13 @@ const markOutboxJobDelivered = async ({
   }
 };
 
-const getRetryDelayMs = (attemptCount: number) =>
+/** The wait before a failed queue item runs again: 5 s, doubling, at most an hour. */
+export const getRetryDelayMs = (attemptCount: number) =>
   Math.min(60 * 60 * 1000, 5_000 * 2 ** Math.max(0, attemptCount - 1));
+
+/** An error the outbox dead-letters at once instead of retrying it. */
+export const nonRetryable = (message: string) =>
+  Object.assign(new Error(message), { retryable: false });
 
 const markOutboxJobFailed = async ({
   error,

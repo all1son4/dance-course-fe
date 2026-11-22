@@ -96,13 +96,6 @@ export const useOnlineGroupAdmin = ({
     ? (telegramChats.find((chat) => chat.chatId === activeCampaign.inspirationChatId)
         ?.title ?? activeCampaign.inspirationChatId)
     : "";
-  const hasConfiguredCampaign = Boolean(
-    activeCampaign?.mainChatId &&
-    activeCampaign.inspirationChatId &&
-    activeCampaign.startsAt &&
-    telegramChats.some((chat) => chat.chatId === activeCampaign.mainChatId) &&
-    telegramChats.some((chat) => chat.chatId === activeCampaign.inspirationChatId),
-  );
   const isRenewalGenerateDisabled =
     isGeneratingRenewal || renewalSourceChatIds.length === 0 || !activeCampaign;
   // The title is typed again to confirm the closure, so it is never left to a fallback.
@@ -500,7 +493,6 @@ export const useOnlineGroupAdmin = ({
     changeStartsAt,
     generatedRenewalLink,
     generateRenewal,
-    hasConfiguredCampaign,
     inspirationChatTitle,
     isFormOpen,
     isGeneratingRenewal,

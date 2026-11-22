@@ -22,9 +22,9 @@ import {
   buildPurchaseAlertText,
   isEmailDeliveryInFlight,
 } from "../purchase-alert";
+import type { StripePaymentWebhookResult } from "../sync";
 import { shouldRunPurchaseSuccessSideEffects } from "./eligibility";
 import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
-import type { StripeWebhookSyncResult } from "./types";
 
 export class TelegramAlertDeliveryUncertainError extends Error {
   readonly retryable = false;
@@ -78,9 +78,9 @@ const buildAlertTextForPayment = async ({
   purchaseId,
 }: {
   event: Stripe.Event;
-  handledEvent: StripeWebhookSyncResult;
+  handledEvent: StripePaymentWebhookResult;
   paymentIntentId: string;
-  paymentRecord: StripeWebhookSyncResult["paymentRecord"];
+  paymentRecord: StripePaymentWebhookResult["paymentRecord"];
   purchaseId: string | null;
 }) => {
   // Every read swallows its own failures, so none can reject the group.
@@ -112,7 +112,7 @@ export const deliverPurchaseAlertFromOutbox = async ({
   purchaseId = null,
 }: {
   event: Stripe.Event;
-  handledEvent: StripeWebhookSyncResult;
+  handledEvent: StripePaymentWebhookResult;
   purchaseId?: string | null;
 }): Promise<{ externalMessageId?: string; skipped?: boolean }> => {
   if (

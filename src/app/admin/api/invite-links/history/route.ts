@@ -5,6 +5,7 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
@@ -14,10 +15,10 @@ import {
   getAdminPurchaseLine,
 } from "@/lib/sellable-products-localization";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
+import { DAY_MS } from "@/lib/time";
 
 export const runtime = "nodejs";
 const HISTORY_CACHE_TTL_MS = 30_000;
-const DAY_MS = 86_400_000;
 const STALE_HISTORY_CACHE_TTL_MS = 5 * 60_000;
 
 type LinkState = "active" | "expired" | "used";
@@ -173,12 +174,7 @@ export async function GET(request: Request) {
       });
     }
 
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   try {

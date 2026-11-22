@@ -5,6 +5,7 @@ import styled, { css } from "styled-components";
 import type { CohortOverview } from "@/lib/online-group/cohort-admin";
 
 import type { CloseCohortInput, CloseCohortResult } from "../hooks/use-cohorts-admin";
+import { formatDayMonth, formatDayMonthTime, plural } from "../lib/admin.utils";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { ConfirmDialog, SheetDialog, useToast } from "../ui/feedback";
@@ -33,28 +34,12 @@ import {
 } from "./cohort-transition-guide";
 import { TelegramPostPreview } from "./telegram-post-preview";
 
-const formatDate = (iso: string, withTime = false) =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
-    timeZone: "Europe/Warsaw",
-  }).format(new Date(iso));
-
 const formatWarsawDay = (day: string) =>
   new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
     month: "long",
     timeZone: "UTC",
   }).format(new Date(`${day}T12:00:00Z`));
-
-const weeksWord = (weeks: number) => {
-  const lastTwo = weeks % 100;
-  const last = weeks % 10;
-  if (lastTwo >= 11 && lastTwo <= 14) return "недель";
-  if (last === 1) return "неделя";
-  return last >= 2 && last <= 4 ? "недели" : "недель";
-};
 
 const DurationEditor = styled.div`
   display: flex;
@@ -82,7 +67,7 @@ const cohortStatus = (
   if (cohort.closedAt) {
     // A closure can be set ahead (the launch transfer does): say when, not "closed".
     return Date.parse(cohort.closedAt) > now
-      ? { label: `Закроется ${formatDate(cohort.closedAt)}`, tone: "warning" }
+      ? { label: `Закроется ${formatDayMonth(cohort.closedAt)}`, tone: "warning" }
       : { label: "Закрыт", tone: "neutral" };
   }
   const started = Date.parse(cohort.startsAt) <= now;
@@ -404,7 +389,10 @@ export const CohortsPanel = ({
         delete rest[cohort.id];
         return rest;
       });
-      toast({ tone: "success", title: `Длительность: ${weeks} ${weeksWord(weeks)}.` });
+      toast({
+        tone: "success",
+        title: `Длительность: ${weeks} ${plural(weeks, "неделя", "недели", "недель")}.`,
+      });
     } else {
       toast({ tone: "danger", title: "Не получилось сохранить. Попробуй ещё раз." });
     }
@@ -622,11 +610,12 @@ export const CohortsPanel = ({
                   <Stack $gap={12}>
                     <dl>
                       <dt>Старт</dt>
-                      <dd>{formatDate(cohort.startsAt, true)}</dd>
+                      <dd>{formatDayMonthTime(cohort.startsAt)}</dd>
                       <dt>Длительность</dt>
                       <dd>
-                        {cohort.durationWeeks} {weeksWord(cohort.durationWeeks)} · по
-                        плану до {formatDate(cohort.plannedEndsAt)}
+                        {cohort.durationWeeks}{" "}
+                        {plural(cohort.durationWeeks, "неделя", "недели", "недель")} · по
+                        плану до {formatDayMonth(cohort.plannedEndsAt)}
                       </dd>
                       {cohort.closedAt && (
                         <>
@@ -635,7 +624,7 @@ export const CohortsPanel = ({
                               ? "Закроется"
                               : "Закрыт"}
                           </dt>
-                          <dd>{formatDate(cohort.closedAt, true)}</dd>
+                          <dd>{formatDayMonthTime(cohort.closedAt)}</dd>
                         </>
                       )}
                       {cohort.accessEndsAt && (
@@ -856,7 +845,7 @@ export const CohortsPanel = ({
             {closing.facts.legacyPlusHubRights > 0 && (
               <Callout tone="info" icon={<CircleAlert aria-hidden />}>
                 {closing.next
-                  ? `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта «${closing.next.title}» (${formatDate(closing.next.startsAt)}). Дата поставится сама при закрытии.`
+                  ? `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта «${closing.next.title}» (${formatDayMonth(closing.next.startsAt)}). Дата поставится сама при закрытии.`
                   : `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта следующего потока, а его пока нет. Сначала заведи следующий поток.`}
               </Callout>
             )}
@@ -867,9 +856,11 @@ export const CohortsPanel = ({
             )}
             {loadedAt < Date.parse(closing.plannedEndsAt) && (
               <Callout tone="warning" icon={<CircleAlert aria-hidden />}>
-                По плану поток идёт до {formatDate(closing.plannedEndsAt)} (
-                {closing.durationWeeks} {weeksWord(closing.durationWeeks)}). Если закрыть
-                сейчас, библиотека у Plus закончится раньше — через 7 дней после закрытия.
+                По плану поток идёт до {formatDayMonth(closing.plannedEndsAt)} (
+                {closing.durationWeeks}{" "}
+                {plural(closing.durationWeeks, "неделя", "недели", "недель")}). Если
+                закрыть сейчас, библиотека у Plus закончится раньше — через 7 дней после
+                закрытия.
               </Callout>
             )}
             <Check>
@@ -897,7 +888,7 @@ export const CohortsPanel = ({
                 />
                 <span>
                   Открыть продажи «{closing.next.title}»
-                  <small>Старт {formatDate(closing.next.startsAt)}.</small>
+                  <small>Старт {formatDayMonth(closing.next.startsAt)}.</small>
                 </span>
               </Check>
             )}

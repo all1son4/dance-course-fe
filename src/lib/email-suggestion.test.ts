@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getEmailSuggestion } from "./email-suggestion";
+import { EMAIL_PATTERN, getEmailSuggestion } from "./email-suggestion";
 
 test("a misspelt provider domain is offered back corrected", () => {
   assert.equal(getEmailSuggestion("anna@gmial.com"), "anna@gmail.com");
@@ -88,4 +88,20 @@ test("an ending still being typed waits until the person leaves the field", () =
     "anna@gmail.com",
   );
   assert.equal(getEmailSuggestion("anna@mail."), null);
+});
+
+test("an email field accepts name@domain.tld and nothing with spaces or a bare host", () => {
+  for (const valid of ["anna@gmail.com", "a.b+c@sub.example.pl", "имя@почта.рф"]) {
+    assert.equal(EMAIL_PATTERN.test(valid), true, valid);
+  }
+  for (const invalid of [
+    "anna@gmailcom",
+    "anna gmail@x.com",
+    "@x.com",
+    "anna@",
+    "a@b@c.com",
+    "",
+  ]) {
+    assert.equal(EMAIL_PATTERN.test(invalid), false, invalid);
+  }
 });

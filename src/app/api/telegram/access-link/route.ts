@@ -8,6 +8,7 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { buildMyAccessPath } from "@/lib/my-access/link";
@@ -152,12 +153,7 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   try {

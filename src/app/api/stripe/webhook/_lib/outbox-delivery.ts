@@ -13,7 +13,7 @@ import {
 import { deliverPurchaseAccessFromOutbox } from "./side-effects/purchase-access";
 import { deliverPurchaseSuccessEmailFromOutbox } from "./side-effects/purchase-email";
 import { deliverPurchaseAlertFromOutbox } from "./side-effects/purchase-telegram-alert";
-import type { StripeWebhookSyncResult } from "./side-effects/types";
+import type { StripePaymentWebhookResult } from "./sync";
 
 // The registry order is also the delivery order: access, then email, then alert.
 export const STRIPE_OUTBOX_KINDS = [
@@ -96,12 +96,10 @@ const loadDeliveryContext = async (job: ClaimedOutboxJob) => {
     throw new NonRetryableOutboxDeliveryError("outbox_event_evidence_mismatch");
   }
 
-  const handledEvent: StripeWebhookSyncResult = {
-    duplicate: false,
+  const handledEvent: StripePaymentWebhookResult = {
     eventId: event.id,
     eventType: event.type,
     paymentRecord,
-    received: true,
     skipped: false,
   };
 

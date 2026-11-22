@@ -6,10 +6,8 @@ import postgres from "postgres";
 
 import { claimEmailCampaignLeadForDelivery } from "@/db/business-operation-jobs";
 import { getDatabaseClient } from "@/db/client";
-import {
-  findEmailCampaignLeadRecord,
-  listEmailCampaignLeadReadRecords,
-} from "@/lib/business-operation-read-runtime";
+import { findEmailCampaignLeadByCampaignAndEmailFromDatabase } from "@/db/email-campaign-lead-records";
+import { listEmailCampaignLeadReadRecords } from "@/lib/business-operation-read-runtime";
 import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
 import {
   createEmailCampaignLead,
@@ -75,7 +73,10 @@ test("campaign signup returns the same eleven-field record for concurrent and la
     };
     assert.equal(new Date(expected.created_at).toISOString(), expected.created_at);
     for (const result of results) assert.deepEqual(result.lead, expected);
-    assert.deepEqual(await findEmailCampaignLeadRecord(input), expected);
+    assert.deepEqual(
+      await findEmailCampaignLeadByCampaignAndEmailFromDatabase(input),
+      expected,
+    );
     assert.deepEqual(
       await createEmailCampaignLead({ ...input, fullName: "Changed", locale: "pl" }),
       {
@@ -84,10 +85,19 @@ test("campaign signup returns the same eleven-field record for concurrent and la
       },
     );
     assert.equal(
-      await findEmailCampaignLeadRecord({ campaignKey, email: "missing@example.test" }),
+      await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+        campaignKey,
+        email: "missing@example.test",
+      }),
       null,
     );
-    assert.equal(await findEmailCampaignLeadRecord({ campaignKey: " ", email }), null);
+    assert.equal(
+      await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+        campaignKey: " ",
+        email,
+      }),
+      null,
+    );
     assert.deepEqual(
       (await listEmailCampaignLeadReadRecords()).filter(
         (lead) => lead.campaign_key === campaignKey,
@@ -127,7 +137,7 @@ test("campaign database projections preserve every status and the existing audie
         WHERE lead_id = ${lead.lead_id}
       `;
       assert.deepEqual(
-        await findEmailCampaignLeadRecord({ campaignKey, email }),
+        await findEmailCampaignLeadByCampaignAndEmailFromDatabase({ campaignKey, email }),
         expected,
       );
       assert.deepEqual(
@@ -188,7 +198,10 @@ test("campaign-only exclusions stay local while global blocks cover existing and
     if (localExclusion.status === "excluded")
       assert.equal(localExclusion.scope, "campaign");
     assert.deepEqual(
-      await findEmailCampaignLeadRecord({ campaignKey: campaignB, email: localEmail }),
+      await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+        campaignKey: campaignB,
+        email: localEmail,
+      }),
       localB.lead,
     );
 
@@ -206,16 +219,25 @@ test("campaign-only exclusions stay local while global blocks cover existing and
       });
     }
     assert.deepEqual(
-      await findEmailCampaignLeadRecord({ campaignKey: campaignA, email: localEmail }),
+      await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+        campaignKey: campaignA,
+        email: localEmail,
+      }),
       { ...localA.lead, email_send_status: "excluded" },
     );
     assert.deepEqual(
-      await findEmailCampaignLeadRecord({ campaignKey: campaignA, email: globalEmail }),
+      await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+        campaignKey: campaignA,
+        email: globalEmail,
+      }),
       { ...globalA.lead, email_send_status: "blocked" },
     );
     // Global exclusion suppresses delivery without rewriting other campaign records.
     assert.deepEqual(
-      await findEmailCampaignLeadRecord({ campaignKey: campaignB, email: globalEmail }),
+      await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+        campaignKey: campaignB,
+        email: globalEmail,
+      }),
       globalB.lead,
     );
     assert.equal(

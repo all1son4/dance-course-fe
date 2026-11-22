@@ -1,5 +1,5 @@
 import { normalizeCountryCode } from "@/constants/countries";
-import { DEFAULT_SITE_HOME_URL } from "@/constants/links";
+import { SITE_HOME_URL } from "@/constants/links";
 import {
   formatPrice,
   isInspirationHubOfferId,
@@ -24,10 +24,6 @@ import {
   getResolvedCheckoutLocale,
 } from "../../payment-intent/lib";
 
-const SITE_HOME_URL =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  DEFAULT_SITE_HOME_URL;
 const STRIPE_DASHBOARD_URL = "https://dashboard.stripe.com";
 // A leased side effect is stored as "<status>:<lease token>", so the bare and
 // the leased spelling of the same status mean the same thing.

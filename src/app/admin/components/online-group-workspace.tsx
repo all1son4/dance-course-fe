@@ -30,6 +30,7 @@ import {
   AdminButton,
   Badge,
   EmptyState,
+  Meta,
   Muted,
   Panel,
   Row,
@@ -82,13 +83,6 @@ const ItemHead = styled.div`
   }
 `;
 
-const Meta = styled.p`
-  margin: 0;
-  color: var(--a-ink-2);
-  font-size: var(--a-text-sm);
-  overflow-wrap: anywhere;
-`;
-
 const ChatChoices = styled.div`
   display: grid;
   gap: 2px;
@@ -121,7 +115,6 @@ type ActiveOnlineGroupCardProps = {
   onFormToggle: () => void;
   onLibraryChatChange: (value: string) => void;
   onMainChatChange: (value: string) => void;
-  onRefresh: () => void | Promise<void>;
   onStartsAtChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onTitleChange: (value: string) => void;

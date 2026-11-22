@@ -10,14 +10,16 @@ import {
   getCampaignEmailDeliveryDeduplicationKey,
 } from "@/db/business-operation-jobs";
 import { getDatabaseClient } from "@/db/client";
+import { findEmailCampaignLeadByCampaignAndEmailFromDatabase } from "@/db/email-campaign-lead-records";
 import { allocateInvoiceForPaymentIntent } from "@/db/invoice-repository";
+import {
+  findPaymentRecordByIntentIdFromDatabase,
+  listPaymentRecordsFromDatabase,
+} from "@/db/payment-records";
 import { claimOutboxJobByDeduplicationKey } from "@/db/transactional-outbox";
 import {
-  findEmailCampaignLeadRecord,
-  findInvoicePaymentRecordByIntentId,
   findMonthlyReportRunRecord,
   listEmailCampaignLeadReadRecords,
-  listInvoicePaymentRecords,
 } from "@/lib/business-operation-read-runtime";
 
 import { installJsonFetchFixture } from "../fixtures/providers";
@@ -104,8 +106,8 @@ test("allocates and hydrates one invoice for a payment intent concurrently", asy
         allocateInvoiceForPaymentIntent({ issuedAt, paymentIntentId }),
       ),
     );
-    const readRecord = await findInvoicePaymentRecordByIntentId(paymentIntentId);
-    const readRecords = await listInvoicePaymentRecords();
+    const readRecord = await findPaymentRecordByIntentIdFromDatabase(paymentIntentId);
+    const readRecords = await listPaymentRecordsFromDatabase();
     const [stored] = await client<
       {
         amountMinor: number;
@@ -177,7 +179,10 @@ test("campaign jobs retry with one Resend idempotency key and persist final stat
       await businessOutbox.processBusinessOperationOutboxJob(deduplicationKey);
 
     assert.equal(first.status, "retry");
-    const failedLead = await findEmailCampaignLeadRecord({ campaignKey, email });
+    const failedLead = await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+      campaignKey,
+      email,
+    });
     assert.equal(failedLead?.email_send_status, "failed");
     assert.equal(failedLead?.email_send_attempts, "1");
     assert.equal(failedLead?.email_sent_at, "");
@@ -203,7 +208,10 @@ test("campaign jobs retry with one Resend idempotency key and persist final stat
         ON effect.deduplication_key = ${deduplicationKey}
       WHERE lead.lead_id = ${leadId}
     `;
-    const readLead = await findEmailCampaignLeadRecord({ campaignKey, email });
+    const readLead = await findEmailCampaignLeadByCampaignAndEmailFromDatabase({
+      campaignKey,
+      email,
+    });
     const readLeads = await listEmailCampaignLeadReadRecords();
 
     assert.equal(second.status, "sent");

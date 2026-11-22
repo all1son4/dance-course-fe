@@ -5,7 +5,7 @@ import {
   INSPIRATION_HUB_RENEWAL_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
-import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
+import { addWarsawCalendarDays, toWarsawDay } from "@/lib/inspiration-hub/calendar";
 import type { PostButton } from "@/lib/telegram/post-markup";
 
 /** HUB-D24: the Hub of a Plus stays open this many Warsaw days after the cohort ends. */
@@ -23,15 +23,6 @@ const formatDay = (date: Date) =>
     day: "numeric",
     month: "long",
     timeZone: "Europe/Warsaw",
-  }).format(date);
-
-/** The Warsaw calendar day of a moment, as YYYY-MM-DD. */
-export const toWarsawDay = (date: Date) =>
-  new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "Europe/Warsaw",
-    year: "numeric",
   }).format(date);
 
 /** The last day the Plus Hub is open: the day before the grace boundary. */

@@ -134,7 +134,7 @@ export const formatReportMonthLabel = (monthValue: string) => {
   return capitalizeFirstLetter(label);
 };
 
-const getMonthlySalesReportPeriod = ({
+export const getMonthlySalesReportPeriod = ({
   referenceDate,
   reportMonth,
 }: {
@@ -654,11 +654,6 @@ export const getScheduledMonthlySalesReportPeriod = (
   });
 };
 
-export const getMonthlySalesReportPeriodForNow = (date: Date = new Date()) =>
-  getMonthlySalesReportPeriod({
-    referenceDate: date,
-  });
-
 const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
   endUtcIsoExclusive,
   startUtcIso,
@@ -741,19 +736,6 @@ const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
     .sort(compareSaleRecords);
 };
 
-const listSucceededSaleRecordsInUtcRange = async ({
-  endUtcIsoExclusive,
-  startUtcIso,
-}: {
-  endUtcIsoExclusive: string;
-  startUtcIso: string;
-}) => {
-  return listSucceededSaleRecordsFromDatabaseInUtcRange({
-    endUtcIsoExclusive,
-    startUtcIso,
-  });
-};
-
 export const generateMonthlySalesReportCsvForMonth = async ({
   referenceDate = new Date(),
   reportMonth,
@@ -762,7 +744,7 @@ export const generateMonthlySalesReportCsvForMonth = async ({
   reportMonth: string;
 }) => {
   const period = getMonthlySalesReportPeriod({ referenceDate, reportMonth });
-  const saleRecords = await listSucceededSaleRecordsInUtcRange({
+  const saleRecords = await listSucceededSaleRecordsFromDatabaseInUtcRange({
     endUtcIsoExclusive: period.endUtcIso,
     startUtcIso: period.startUtcIso,
   });
@@ -816,7 +798,7 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
     });
   }
 
-  const saleRecords = await listSucceededSaleRecordsInUtcRange({
+  const saleRecords = await listSucceededSaleRecordsFromDatabaseInUtcRange({
     endUtcIsoExclusive: period.endUtcIso,
     startUtcIso: period.startUtcIso,
   });

@@ -6,8 +6,8 @@ import { css, keyframes } from "styled-components";
  * layout - a chevron sitting on a card's bottom edge nudges up, one sitting
  * inline after text nudges down towards the content it reveals.
  */
-export const CHEVRON_HINT_DISTANCE_PX = 3;
-export const CHEVRON_HINT_DURATION = "1.25s";
+const CHEVRON_HINT_DISTANCE_PX = 3;
+const CHEVRON_HINT_DURATION = "1.25s";
 
 const buildChevronHintKeyframes = (offsetPx: number) => keyframes`
   0%,
