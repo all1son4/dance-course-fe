@@ -1,6 +1,7 @@
 import type { CohortInviteAdminSnapshot } from "@/lib/cohort-invite-broadcast";
 
 import type { AdminTone } from "../styles/tokens.styles";
+import { formatDayMonthTime, plural } from "./admin.utils";
 
 /*
  * What «Приглашение в поток» shows, computed from the snapshot: the batch the
@@ -10,26 +11,8 @@ import type { AdminTone } from "../styles/tokens.styles";
 
 type Snapshot = Extract<CohortInviteAdminSnapshot, { campaignKey: string }>;
 
-export const plural = (count: number, one: string, few: string, many: string) => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
-};
-
 export const letters = (count: number) =>
   `${count} ${plural(count, "письмо", "письма", "писем")}`;
-
-/** «19 ноября, 14:35» in Warsaw time, like every admin time. */
-export const formatDayTime = (value: string) =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "long",
-    timeZone: "Europe/Warsaw",
-  }).format(new Date(value));
 
 /** The batch the number field describes; an empty field means the default. */
 export const readBatch = ({
@@ -124,7 +107,7 @@ export const describeCohortInviteTile = (
   if (quota.remainingToday === 0) {
     return {
       hint: quota.nextBatch
-        ? `На сегодня всё · продолжить после ${formatDayTime(quota.nextBatch.at)}`
+        ? `На сегодня всё · продолжить после ${formatDayMonthTime(quota.nextBatch.at)}`
         : "На сегодня всё · продолжи завтра",
       tone: "info",
       value: recipients(counts.remaining),

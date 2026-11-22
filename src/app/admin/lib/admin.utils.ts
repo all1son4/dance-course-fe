@@ -26,6 +26,33 @@ export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
   }).format(date);
 };
 
+/** «19 ноября» in Warsaw time. */
+export const formatDayMonth = (value: string) =>
+  new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Warsaw",
+  }).format(new Date(value));
+
+/** «19 ноября, 14:35» in Warsaw time, like every admin time. */
+export const formatDayMonthTime = (value: string) =>
+  new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "long",
+    timeZone: "Europe/Warsaw",
+  }).format(new Date(value));
+
+/** Russian plural by the last one and two digits: 1 письмо, 2 письма, 5 писем. */
+export const plural = (count: number, one: string, few: string, many: string) => {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+};
+
 /** The Warsaw wall-clock parts of a moment, whatever the device's time zone. */
 const warsawParts = (date: Date) =>
   Object.fromEntries(

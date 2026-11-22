@@ -24,12 +24,11 @@ import type {
   CohortInviteTestInput,
   useCohortInviteAdmin,
 } from "../hooks/use-cohort-invite-admin";
+import { formatDayMonthTime, plural } from "../lib/admin.utils";
 import {
   buildQuotaMeter,
-  formatDayTime,
   getBatchBoundary,
   letters,
-  plural,
   readBatch,
   showsFirstSteps,
 } from "../lib/cohort-invite-view";
@@ -411,7 +410,7 @@ export const CohortInviteBroadcast = ({
               {dayIsOver ? (
                 <Callout tone="info" icon={<Clock aria-hidden />} title="Продолжи позже">
                   {quota.nextBatch
-                    ? `Партию из ${letters(quota.nextBatch.size)} можно будет отправить после ${formatDayTime(quota.nextBatch.at)}: тогда из суточного счёта выйдут письма, ушедшие сутки назад.`
+                    ? `Партию из ${letters(quota.nextBatch.size)} можно будет отправить после ${formatDayMonthTime(quota.nextBatch.at)}: тогда из суточного счёта выйдут письма, ушедшие сутки назад.`
                     : "Дневной остаток израсходован — продолжи завтра."}
                 </Callout>
               ) : (

@@ -4,7 +4,10 @@ import test from "node:test";
 import {
   formatDateTime,
   formatDateTimeInput,
+  formatDayMonth,
+  formatDayMonthTime,
   parseWarsawDateTimeInput,
+  plural,
 } from "@/app/admin/lib/admin.utils";
 
 // The admin form says «По Варшаве»: the value must not depend on the device's zone.
@@ -26,4 +29,36 @@ test("admin times read in Warsaw, across both DST switches", () => {
   assert.equal(formatDateTime("2026-07-01T16:05:00.000Z"), "01.07.2026, 18:05");
   assert.equal(formatDateTime("2026-10-25T01:30:00.000Z"), "25.10.2026, 02:30");
   assert.equal(formatDateTime("not a date"), "-");
+});
+
+test("Russian plural forms follow the last one and two digits", () => {
+  const forms = [0, 1, 2, 5, 11, 12, 14, 21, 22, 25, 101, 111, 112].map((count) =>
+    plural(count, "one", "few", "many"),
+  );
+  assert.deepEqual(forms, [
+    "many",
+    "one",
+    "few",
+    "many",
+    "many",
+    "many",
+    "many",
+    "one",
+    "few",
+    "many",
+    "one",
+    "many",
+    "many",
+  ]);
+});
+
+test("a day and time read in Warsaw", () => {
+  assert.equal(formatDayMonthTime("2026-01-05T23:30:00.000Z"), "6 января в 00:30");
+  assert.equal(formatDayMonthTime("2026-07-01T16:05:00.000Z"), "1 июля в 18:05");
+  assert.throws(() => formatDayMonthTime("not a date"), RangeError);
+});
+
+test("a day reads in Warsaw, without the time", () => {
+  assert.equal(formatDayMonth("2026-01-05T23:30:00.000Z"), "6 января");
+  assert.equal(formatDayMonth("2026-07-01T16:05:00.000Z"), "1 июля");
 });
