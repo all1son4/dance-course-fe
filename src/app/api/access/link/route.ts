@@ -11,6 +11,7 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { buildMyAccessUrl, isMyAccessLinkConfigured } from "@/lib/my-access/link";
@@ -43,10 +44,7 @@ export async function POST(request: Request) {
     windowMs: TEN_MINUTES_MS,
   });
   if (ipLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
-      status: 429,
-    });
+    return jsonRateLimited(ipLimit.retryAfterSeconds);
   }
 
   const { body, errorResponse } = await parseJsonBody<RequestLinkBody>(

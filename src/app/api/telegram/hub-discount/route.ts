@@ -16,6 +16,7 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
@@ -46,12 +47,6 @@ type MembershipCheck = { cohortId: string; checkFailed: boolean; isMember: boole
 
 const normalizeCheckoutSessionId = (value: string | null | undefined) =>
   (value ?? "").trim().slice(0, 160);
-
-const rateLimited = (retryAfterSeconds: number) =>
-  jsonErrorNoStore("rate_limited", {
-    headers: { "Retry-After": String(retryAfterSeconds) },
-    status: 429,
-  });
 
 const checkCohortMembership = async (
   cohort: { id: string; mainChatId: string },
@@ -181,7 +176,7 @@ export async function GET(request: Request) {
     windowMs: 60_000,
   });
 
-  if (rateLimit.limited) return rateLimited(rateLimit.retryAfterSeconds);
+  if (rateLimit.limited) return jsonRateLimited(rateLimit.retryAfterSeconds);
   if (!isTelegramLoginConfigured()) {
     return jsonErrorNoStore("telegram_login_not_configured", { status: 500 });
   }
@@ -239,7 +234,7 @@ export async function POST(request: Request) {
     windowMs: 60_000,
   });
 
-  if (rateLimit.limited) return rateLimited(rateLimit.retryAfterSeconds);
+  if (rateLimit.limited) return jsonRateLimited(rateLimit.retryAfterSeconds);
   if (!isTelegramLoginConfigured()) {
     return jsonErrorNoStore("telegram_login_not_configured", { status: 500 });
   }

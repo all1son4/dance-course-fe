@@ -12,6 +12,7 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { buildMyAccessCards } from "@/lib/my-access/cards";
@@ -54,10 +55,7 @@ export async function POST(request: Request) {
     windowMs: TEN_MINUTES_MS,
   });
   if (ipLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
-      status: 429,
-    });
+    return jsonRateLimited(ipLimit.retryAfterSeconds);
   }
 
   const { body, errorResponse } = await parseJsonBody<InviteBody>(
@@ -127,10 +125,7 @@ export async function POST(request: Request) {
         ? customerLimit
         : null;
     if (limited) {
-      return jsonErrorNoStore("rate_limited", {
-        headers: { "Retry-After": String(limited.retryAfterSeconds) },
-        status: 429,
-      });
+      return jsonRateLimited(limited.retryAfterSeconds);
     }
 
     const paymentRecord = owned
