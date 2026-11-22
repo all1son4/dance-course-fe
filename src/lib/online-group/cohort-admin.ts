@@ -138,7 +138,7 @@ async function findCohortRenewalLinks(
 const countCohortFacts = async (executor: DatabaseExecutor, cohortId: string) => {
   const predecessor = alias(accessEntitlements, "predecessor");
   const predecessorPurchase = alias(purchases, "predecessor_purchase");
-  // Three independent counts: one round trip to the database instead of three.
+  // Three independent counts, run in parallel.
   const [[sales], [legacyPlusHub], [continuations]] = await Promise.all([
     executor
       .select({
@@ -337,11 +337,6 @@ const sendClosurePost = async ({
 };
 
 /**
- * The closure window (section 6.2): closes the cohort with the cron-safe two-step
- * service, then publishes the post in the cohort chat if asked. A failed post never
- * undoes the closure: it stays in the queue for "Повторить".
- */
-/**
  * Where a renewal link created now leads: the next cohort when the current one runs
  * and its successor is recorded, so the links exist before the closure post that
  * lists them; otherwise the current cohort, as before.
@@ -406,6 +401,11 @@ async function switchCampaignToNextCohort(closed: { id: string; mainChatId: stri
   }
 }
 
+/**
+ * The closure window (section 6.2): closes the cohort with the cron-safe two-step
+ * service, then publishes the post in the cohort chat if asked. A failed post never
+ * undoes the closure: it stays in the queue for "Повторить".
+ */
 export async function closeCohortFromAdmin({
   cohortId,
   confirmationTitle,
@@ -568,7 +568,6 @@ export async function deliverCohortChatMessage(job: ClaimedOutboxJob) {
   return { externalMessageId: String(message.message_id) };
 }
 
-/** HUB-D44: the switch «Удалять из чата прошлого потока» of one cohort. */
 export const COHORT_DURATION_WEEKS = { max: 26, min: 1 } as const;
 
 /**
@@ -685,6 +684,7 @@ export async function setCohortDurationWeeks({
   return { durationWeeks };
 }
 
+/** HUB-D44: the switch «Удалять из чата прошлого потока» of one cohort. */
 export async function setCohortPreviousChatRemoval({
   cohortId,
   enabled,
