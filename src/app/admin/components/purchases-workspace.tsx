@@ -15,7 +15,7 @@ import type {
   SelectOption,
   StatusMessage,
 } from "../lib/admin.types";
-import { formatDateTime } from "../lib/admin.utils";
+import { buildMonthComparison, formatDateTime } from "../lib/admin.utils";
 import type { AdminTone } from "../styles/tokens.styles";
 import { ConfirmDialog } from "../ui/feedback";
 import { Checkbox, Input, Select, StatusLine } from "../ui/forms";
@@ -266,14 +266,6 @@ export const PurchasesWorkspace = ({
   const isReportDisabled =
     !monthValue || isLoading || isSendingReport || isDownloadingReport;
   const isRunningMonth = monthValue === getAccountingMonthValue(new Date());
-  // A month with zero prior activity has nothing meaningful to compare against.
-  const hasPreviousData = Boolean(
-    previousSummary &&
-    (previousSummary.salesCount > 0 ||
-      previousSummary.plnTotalMinor > 0 ||
-      previousSummary.eurTotalMinor > 0),
-  );
-  const comparable = hasPreviousData && previousSummary?.stripeFinancialDataComplete;
   const maxProductSalesCount = products.reduce(
     (maxCount, product) => Math.max(maxCount, product.salesCount),
     0,
@@ -287,20 +279,10 @@ export const PurchasesWorkspace = ({
   const financialDataIncomplete = Boolean(
     summary && !summary.stripeFinancialDataComplete,
   );
-  const grossDelta =
-    comparable &&
-    previousSummary?.grossTotalMinor != null &&
-    summary?.grossTotalMinor != null
-      ? summary.grossTotalMinor - previousSummary.grossTotalMinor
-      : null;
-  const netDelta =
-    comparable && previousSummary?.netTotalMinor != null && summary?.netTotalMinor != null
-      ? summary.netTotalMinor - previousSummary.netTotalMinor
-      : null;
-  const countDelta =
-    hasPreviousData && previousSummary && summary
-      ? summary.salesCount - previousSummary.salesCount
-      : null;
+  const { countDelta, grossDelta, netDelta } = buildMonthComparison({
+    previousSummary,
+    summary,
+  });
 
   return (
     <Stack $gap={16}>

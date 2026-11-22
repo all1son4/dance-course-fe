@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildMonthComparison,
   formatDateTime,
   formatDateTimeInput,
   formatDayMonth,
@@ -61,4 +62,59 @@ test("a day and time read in Warsaw", () => {
 test("a day reads in Warsaw, without the time", () => {
   assert.equal(formatDayMonth("2026-01-05T23:30:00.000Z"), "6 января");
   assert.equal(formatDayMonth("2026-07-01T16:05:00.000Z"), "1 июля");
+});
+
+test("a month compares money only when both months have Stripe fees", () => {
+  const month = {
+    eurTotalLabel: "",
+    eurTotalMinor: 0,
+    failedAttempts: 0,
+    feeTotalLabel: "",
+    feeTotalMinor: 300,
+    grossTotalLabel: "",
+    grossTotalMinor: 10_000,
+    monthValue: "2026-02",
+    netTotalLabel: "",
+    netTotalMinor: 9_700,
+    plnTotalLabel: "",
+    plnTotalMinor: 10_000,
+    salesCount: 5,
+    settledCount: 5,
+    stripeFinancialDataComplete: true,
+    unconfirmedSalesCount: 0,
+  };
+  const previous = {
+    eurTotalMinor: 0,
+    grossTotalMinor: 8_000,
+    monthValue: "2026-01",
+    netTotalMinor: 7_800,
+    plnTotalMinor: 8_000,
+    salesCount: 3,
+    stripeFinancialDataComplete: true,
+  };
+
+  assert.deepEqual(buildMonthComparison({ previousSummary: previous, summary: month }), {
+    countDelta: 2,
+    grossDelta: 2_000,
+    netDelta: 1_900,
+  });
+  assert.deepEqual(
+    buildMonthComparison({
+      previousSummary: { ...previous, stripeFinancialDataComplete: false },
+      summary: month,
+    }),
+    { countDelta: 2, grossDelta: null, netDelta: null },
+  );
+  assert.deepEqual(
+    buildMonthComparison({
+      previousSummary: { ...previous, plnTotalMinor: 0, salesCount: 0 },
+      summary: month,
+    }),
+    { countDelta: null, grossDelta: null, netDelta: null },
+  );
+  assert.deepEqual(buildMonthComparison({ previousSummary: null, summary: month }), {
+    countDelta: null,
+    grossDelta: null,
+    netDelta: null,
+  });
 });

@@ -5,7 +5,13 @@ import {
   OFFER_TYPE_LABELS,
   RATE_LIMITED_STATUS_TEXT,
 } from "./admin.constants";
-import type { ChoreoSelection, LessonLanguage, LinkState } from "./admin.types";
+import type {
+  AdminPurchasesPreviousSummary,
+  AdminPurchasesSummary,
+  ChoreoSelection,
+  LessonLanguage,
+  LinkState,
+} from "./admin.types";
 
 // Anna works from Warsaw: every time in the admin is Warsaw time.
 export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
@@ -156,3 +162,40 @@ export const resolveGeneratorErrorMessage = (errorCode: string, reason: string) 
   GENERATOR_ERROR_MESSAGES[errorCode] ??
   GENERATOR_REASON_MESSAGES[reason] ??
   "Ссылка не создалась. Попробуй ещё раз; если повторится — напиши разработчику.";
+
+/**
+ * «Покупки»: a month against the previous one. Money compares only when both months
+ * have their Stripe fees; nothing compares against a month without any activity.
+ */
+export const buildMonthComparison = ({
+  previousSummary,
+  summary,
+}: {
+  previousSummary: AdminPurchasesPreviousSummary | null;
+  summary: AdminPurchasesSummary | null;
+}) => {
+  // A month with zero prior activity has nothing meaningful to compare against.
+  const hasPreviousData = Boolean(
+    previousSummary &&
+    (previousSummary.salesCount > 0 ||
+      previousSummary.plnTotalMinor > 0 ||
+      previousSummary.eurTotalMinor > 0),
+  );
+  const comparable = hasPreviousData && previousSummary?.stripeFinancialDataComplete;
+  const grossDelta =
+    comparable &&
+    previousSummary?.grossTotalMinor != null &&
+    summary?.grossTotalMinor != null
+      ? summary.grossTotalMinor - previousSummary.grossTotalMinor
+      : null;
+  const netDelta =
+    comparable && previousSummary?.netTotalMinor != null && summary?.netTotalMinor != null
+      ? summary.netTotalMinor - previousSummary.netTotalMinor
+      : null;
+  const countDelta =
+    hasPreviousData && previousSummary && summary
+      ? summary.salesCount - previousSummary.salesCount
+      : null;
+
+  return { countDelta, grossDelta, netDelta };
+};
