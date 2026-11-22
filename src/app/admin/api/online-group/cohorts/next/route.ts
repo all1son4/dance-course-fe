@@ -4,6 +4,7 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
 import { createNextCohortFromAdmin } from "@/lib/online-group/cohort-admin";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
@@ -39,15 +40,8 @@ export async function POST(request: Request) {
     request,
     windowMs: 60_000,
   });
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-  if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      status: 429,
-    });
-  }
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse } = await parseJsonBody<{

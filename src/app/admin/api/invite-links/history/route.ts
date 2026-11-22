@@ -5,6 +5,7 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
@@ -173,12 +174,7 @@ export async function GET(request: Request) {
       });
     }
 
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   try {
