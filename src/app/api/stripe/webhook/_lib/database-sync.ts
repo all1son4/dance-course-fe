@@ -13,7 +13,11 @@ import {
 } from "@/db/record-values";
 import { purchases } from "@/db/schema";
 import type { DatabaseTransaction } from "@/db/transaction";
-import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import {
+  getExternalTargetType,
+  normalizeAccessStatus,
+  type PaymentRecordSnapshot,
+} from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
 
 export type StripeSettlementSnapshot = {
@@ -73,48 +77,6 @@ const normalizeLessonLanguage = (value: string): "ru" | "en" | null => {
   return null;
 };
 
-const normalizeAccessStatus = (
-  value: string,
-  paymentRecord: PaymentRecordSnapshot,
-):
-  | "pending"
-  | "not_required"
-  | "token_issued"
-  | "activated"
-  | "expired"
-  | "revoked"
-  | "left_channel"
-  | "link_failed"
-  | "manual_pending"
-  | "manual_done" => {
-  const normalizedValue = trim(value);
-
-  if (
-    normalizedValue === "pending" ||
-    normalizedValue === "not_required" ||
-    normalizedValue === "token_issued" ||
-    normalizedValue === "activated" ||
-    normalizedValue === "expired" ||
-    normalizedValue === "revoked" ||
-    normalizedValue === "left_channel" ||
-    normalizedValue === "link_failed" ||
-    normalizedValue === "manual_pending" ||
-    normalizedValue === "manual_done"
-  ) {
-    return normalizedValue;
-  }
-
-  if (paymentRecord.delivery_channel.trim() === "manual") {
-    return "manual_pending";
-  }
-
-  if (!paymentRecord.delivery_channel.trim() && !paymentRecord.access_workflow.trim()) {
-    return "not_required";
-  }
-
-  return "pending";
-};
-
 const getSaleTimestamp = ({
   event,
   paymentRecord,
@@ -134,25 +96,6 @@ const getSaleTimestamp = ({
 
 const getPurchaseSource = (paymentIntentId: string) =>
   paymentIntentId.startsWith("adm_offer_pi_") ? "admin_offer_link" : "stripe";
-
-const getExternalTargetType = (paymentRecord: PaymentRecordSnapshot) => {
-  const workflow = paymentRecord.access_workflow.trim();
-  const deliveryChannel = paymentRecord.delivery_channel.trim();
-
-  if (deliveryChannel === "manual" || workflow === "manual-admin") {
-    return "manual" as const;
-  }
-
-  if (workflow === "telegram-bot") {
-    return "telegram_bot" as const;
-  }
-
-  if (deliveryChannel === "telegram" || workflow.startsWith("telegram")) {
-    return "telegram_chat" as const;
-  }
-
-  return null;
-};
 
 const parseInvoiceNumber = (invoiceNumber: string) => {
   const match = /^FV\/(\d{4})\/(\d{2})\/(\d+)$/u.exec(invoiceNumber.trim());
