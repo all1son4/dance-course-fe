@@ -202,7 +202,6 @@ export const OnlineGroupTab = ({
             onFormToggle={settings.toggleForm}
             onLibraryChatChange={settings.changeLibraryChat}
             onMainChatChange={settings.changeMainChat}
-            onRefresh={settings.load}
             onStartsAtChange={settings.changeStartsAt}
             onSubmit={submit(async () => {
               await settings.saveSettings();

@@ -121,7 +121,6 @@ type ActiveOnlineGroupCardProps = {
   onFormToggle: () => void;
   onLibraryChatChange: (value: string) => void;
   onMainChatChange: (value: string) => void;
-  onRefresh: () => void | Promise<void>;
   onStartsAtChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>;
   onTitleChange: (value: string) => void;
