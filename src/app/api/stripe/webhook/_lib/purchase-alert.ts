@@ -5,6 +5,7 @@ import {
   isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
+import { getRussianPlural } from "@/lib/email/dates";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import {
   formatPurchaseLine,
@@ -122,21 +123,6 @@ const getLanguageLine = ({
     ];
 
   return `${siteLanguage} · материалы ${materialsLanguage}`;
-};
-
-const getRussianPlural = (count: number, [one, few, many]: [string, string, string]) => {
-  const lastTwoDigits = Math.abs(count) % 100;
-  const lastDigit = lastTwoDigits % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-    return many;
-  }
-
-  if (lastDigit === 1) {
-    return one;
-  }
-
-  return lastDigit >= 2 && lastDigit <= 4 ? few : many;
 };
 
 /** In days, the way the site and the purchase email state the term. */
