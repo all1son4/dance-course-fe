@@ -1,4 +1,3 @@
-import { getResolvedCheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
 import {
   INSTAGRAM_PROFILE_HANDLE,
   PERSONAL_TELEGRAM_HANDLE,
@@ -8,6 +7,7 @@ import {
 import { formatPrice } from "@/constants/sellable-products";
 import { formatEmailDate, getRussianPlural } from "@/lib/email/dates";
 import { buildMyAccessEmailBlock, escapeEmailHtml } from "@/lib/email/my-access";
+import { getResolvedCheckoutLocale } from "@/lib/stripe-checkout";
 
 /** HUB-D43: the Plus Hub of a cohort that has not started opens on its start day. */
 const PLUS_HUB_SCHEDULED_COPY = {

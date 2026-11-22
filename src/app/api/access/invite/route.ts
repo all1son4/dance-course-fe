@@ -1,4 +1,3 @@
-import { getStripeServer } from "@/app/api/stripe/payment-intent/lib";
 import { deliverPurchaseSuccessEmailFromOutbox } from "@/app/api/stripe/webhook/_lib/side-effects/purchase-email";
 import { findVerifiedSucceededStripeEvent } from "@/db/admin-operations";
 import { getDatabase } from "@/db/client";
@@ -16,6 +15,7 @@ import { buildMyAccessCards } from "@/lib/my-access/cards";
 import { isMyAccessLinkConfigured, verifyMyAccessToken } from "@/lib/my-access/link";
 import { consumeRateLimit, consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 import {
   ensureTelegramAccessLinkForPayment,
   isStandardTelegramLinkPayment,

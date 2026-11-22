@@ -10,7 +10,7 @@ import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 test("the payment API rejects unknown product and tariff IDs before contacting Stripe", async (t) => {
   process.env.STRIPE_SECRET_KEY = "sk_test_selection_fixture";
   const { POST } = await import("@/app/api/stripe/payment-intent/route");
-  const { getStripeServer } = await import("@/app/api/stripe/payment-intent/lib");
+  const { getStripeServer } = await import("@/lib/stripe-checkout");
   const stripe = getStripeServer();
   assert.ok(stripe);
   const create = t.mock.method(stripe.paymentIntents, "create", async () => {

@@ -2,8 +2,8 @@ import { after } from "next/server";
 
 import { processNextOutboxJob } from "@/db/transactional-outbox";
 import { logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 
-import { getStripeServer } from "../../payment-intent/lib";
 import { processNextStripeWebhookInboxJob } from "./inbox-worker";
 import { deliverStripeOutboxJob, STRIPE_OUTBOX_KINDS } from "./outbox-delivery";
 

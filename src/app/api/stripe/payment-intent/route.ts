@@ -56,15 +56,14 @@ import {
   getLocalizedSellableProductShortTitle,
   getLocalizedSellableProductTitle,
 } from "@/lib/sellable-products-localization";
-import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
-
 import {
   createPaymentIntentIdempotencyKey,
   getResolvedCheckoutLocale,
   getStripeServer,
   normalizePaymentIntentCustomerData,
   type PaymentIntentCustomerData,
-} from "./lib";
+} from "@/lib/stripe-checkout";
+import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
 
 type CreatePaymentIntentBody = {
   agreements?: unknown;

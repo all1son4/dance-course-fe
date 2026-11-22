@@ -1,4 +1,3 @@
-import { getStripeServer } from "@/app/api/stripe/payment-intent/lib";
 import { deliverPurchaseSuccessEmailFromOutbox } from "@/app/api/stripe/webhook/_lib/side-effects/purchase-email";
 import { findVerifiedSucceededStripeEvent } from "@/db/admin-operations";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
@@ -12,6 +11,7 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 
 export const runtime = "nodejs";
 

@@ -7,12 +7,11 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-
 import {
   getCheckoutOwnedPaymentIntent,
   getManagedPaymentIntentSnapshot,
   getStripeServer,
-} from "../lib";
+} from "@/lib/stripe-checkout";
 
 export const runtime = "nodejs";
 const MAX_PAYMENT_CANCEL_BODY_BYTES = 8 * 1024;

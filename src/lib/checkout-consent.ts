@@ -5,8 +5,8 @@ import {
   type PaymentCustomerData,
 } from "@/app/[locale]/payment/payment.constants";
 import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
-import type { CheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
 import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
+import type { CheckoutLocale } from "@/lib/stripe-checkout";
 
 // These identifiers are historical evidence. Bump the affected version when its
 // visible agreement or linked policy meaning changes; never reuse a prior identifier.

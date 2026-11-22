@@ -13,17 +13,16 @@ import {
   getLocalizedOfferMetadataByOfferId,
 } from "@/lib/sellable-products-localization";
 import {
+  getResolvedCheckoutLessonLanguage,
+  getResolvedCheckoutLocale,
+} from "@/lib/stripe-checkout";
+import {
   getOfferAccessDurationDaysByOfferId,
   isOnlineGroupAccessOfferId,
   isWithMentorOfferId,
 } from "@/lib/telegram/offer-access";
 import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access";
 import { UTC_TIME_ZONE_LABEL } from "@/lib/time";
-
-import {
-  getResolvedCheckoutLessonLanguage,
-  getResolvedCheckoutLocale,
-} from "../../payment-intent/lib";
 
 const STRIPE_DASHBOARD_URL = "https://dashboard.stripe.com";
 // A leased side effect is stored as "<status>:<lease token>", so the bare and

@@ -1,4 +1,4 @@
-import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-intent/lib";
+import type { ManagedPaymentIntentOutcome } from "@/lib/stripe-checkout";
 
 export type SuccessPageOutcomeAction =
   "redirect_failed" | "show_pending" | "show_success" | "verification_unavailable";

@@ -1,4 +1,3 @@
-import { normalizePaymentIntentId } from "@/app/api/stripe/payment-intent/lib";
 import { getDatabase } from "@/db/client";
 import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import {
@@ -13,6 +12,7 @@ import { buildMyAccessPath } from "@/lib/my-access/link";
 import { findPaymentAccessRecord } from "@/lib/payment-read-runtime";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { normalizePaymentIntentId } from "@/lib/stripe-checkout";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
