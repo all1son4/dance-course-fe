@@ -97,11 +97,9 @@ const loadDeliveryContext = async (job: ClaimedOutboxJob) => {
   }
 
   const handledEvent: StripeWebhookSyncResult = {
-    duplicate: false,
     eventId: event.id,
     eventType: event.type,
     paymentRecord,
-    received: true,
     skipped: false,
   };
 

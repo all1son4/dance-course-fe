@@ -112,11 +112,9 @@ const CHECKOUT_CUSTOM_FIELD_KEYS = {
 } as const;
 
 export type StripePaymentWebhookResult = {
-  duplicate: boolean;
   eventId: string;
   eventType: string;
   paymentRecord: PaymentRecordSnapshot;
-  received: true;
   skipped: boolean;
 };
 
@@ -831,11 +829,9 @@ export const prepareStripePaymentEventForDatabase = async (
   );
 
   return {
-    duplicate: false,
     eventId: event.id,
     eventType: event.type,
     paymentRecord,
-    received: true,
     skipped: event.type === "payment_intent.canceled" && !existingPaymentRecord,
   };
 };
