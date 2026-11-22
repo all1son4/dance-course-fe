@@ -374,43 +374,20 @@ const syncTelegramMembershipProviders = async ({
   telegramUserId: string;
   telegramUsername: string;
 }): Promise<void> => {
-  if (membershipStatus === "joined") {
-    const inviteLink = chatMemberUpdate.invite_link?.invite_link ?? "";
-    const handledByOnlineGroup = await syncOnlineGroupMembership({
-      chatId,
-      inviteLink,
-      membershipStatus,
-      telegramUserId,
-      telegramUsername,
-    });
-
-    if (!handledByOnlineGroup) {
-      await syncTelegramChannelMembership({
-        chatId,
-        inviteLink,
-        membershipStatus,
-        telegramUserId,
-        telegramUsername,
-      });
-    }
-
-    return;
-  }
-
-  const handledByOnlineGroup = await syncOnlineGroupMembership({
+  // Only a join carries the invite link that tells whose access it was.
+  const membership = {
     chatId,
+    inviteLink:
+      membershipStatus === "joined"
+        ? (chatMemberUpdate.invite_link?.invite_link ?? "")
+        : undefined,
     membershipStatus,
     telegramUserId,
     telegramUsername,
-  });
+  };
 
-  if (!handledByOnlineGroup) {
-    await syncTelegramChannelMembership({
-      chatId,
-      membershipStatus,
-      telegramUserId,
-      telegramUsername,
-    });
+  if (!(await syncOnlineGroupMembership(membership))) {
+    await syncTelegramChannelMembership(membership);
   }
 };
 
