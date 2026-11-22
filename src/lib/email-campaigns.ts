@@ -19,6 +19,7 @@ import {
 import { listEmailCampaignLeadReadRecords } from "@/lib/business-operation-read-runtime";
 import { escapeEmailHtml } from "@/lib/email/my-access";
 import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 
 export const FIRST_TOUCH_SALES_START_CAMPAIGN_KEY = "first_touch_sales_start";
 
@@ -90,7 +91,6 @@ const SITE_HOME_URL =
   process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
   DEFAULT_SITE_HOME_URL;
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const pendingEmailCampaignLeadCreates = new Map<
   string,
   Promise<CreateEmailCampaignLeadResult>
@@ -102,7 +102,7 @@ export const normalizeEmailCampaignEmail = (value: string) =>
   value.trim().toLowerCase().slice(0, 254);
 
 export const isValidEmailCampaignEmail = (value: string) =>
-  EMAIL_RE.test(normalizeEmailCampaignEmail(value));
+  EMAIL_PATTERN.test(normalizeEmailCampaignEmail(value));
 
 const getEmailCampaignLeadDedupeKey = ({
   campaignKey,

@@ -11,6 +11,8 @@ import {
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
+
 import type { AdminInvitationEntry } from "../api/access-invitations/route";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { StatusMessage } from "../lib/admin.types";
@@ -47,8 +49,6 @@ type Target =
   | { ready: true; cohortTitle: string | null; chatTitle: string }
   | { ready: false; problem: string };
 type Duplicate = "cohort" | "hub";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 const LOCALE_NAMES_PREPOSITIONAL: Record<Locale, string> = {
   ru: "русском",

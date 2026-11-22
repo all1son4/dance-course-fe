@@ -7,6 +7,7 @@ import { findMyAccessCustomerIdByEmail } from "@/db/my-access";
 import { normalizeEmail } from "@/db/record-values";
 import { buildMyAccessLinkEmail } from "@/lib/email/my-access";
 import { isResendConfigured, sendResendEmail } from "@/lib/email/resend";
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
@@ -22,7 +23,6 @@ import { HOUR_MS } from "@/lib/time";
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 2 * 1024;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 
 type RequestLinkBody = { email?: unknown; locale?: unknown };

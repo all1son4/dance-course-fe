@@ -49,6 +49,7 @@ import {
   type InvitationEmailProduct,
 } from "@/lib/email/access-invitation";
 import { sendResendEmail } from "@/lib/email/resend";
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 import { getFirstName } from "@/lib/my-access/greeting";
 import { buildMyAccessPath, buildMyAccessUrl } from "@/lib/my-access/link";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -91,7 +92,6 @@ const OFFER_IDS: Record<InvitationProduct, Record<InvitationKind, string>> = {
   },
 };
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const NAME_MAX = 80;
 const NOTE_MAX = 500;
 

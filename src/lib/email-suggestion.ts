@@ -1,3 +1,6 @@
+/** The address shape every email field checks: name@domain.tld, no spaces. */
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+
 /**
  * Mail providers our buyers actually use. A typo in the domain is the one
  * email mistake that silently loses the access link, so the checkout offers
