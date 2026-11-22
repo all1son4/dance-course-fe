@@ -1,8 +1,10 @@
 import { and, desc, eq, gt, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
 
+import { logSafeError } from "@/lib/safe-error-log";
 import type { TelegramAccessTokenRecord } from "@/lib/telegram/access-records";
 
 import { getDatabase } from "./client";
+import { getDatabaseErrorCode } from "./database-read-retry";
 import {
   getEntitlementByPurchaseId,
   getPurchaseByIds,
@@ -367,25 +369,51 @@ export const upsertTelegramAccessTokenRecordToDatabase = async (
   );
 };
 
+const isSpentTokenValue = (now: Date) =>
+  and(
+    isNotNull(telegramAccessTokens.tokenValue),
+    or(
+      ne(telegramAccessTokens.status, "issued"),
+      lte(telegramAccessTokens.expiresAt, now),
+    ),
+  );
+
 /**
  * HARD-03: erases the clear link of every token that can no longer be used: any
  * status other than `issued`, or an issued token past its expiry. Covers writers
  * that change the status directly, and old rows. Run daily; repeating it is a no-op.
+ *
+ * One row at a time: a legacy row that fails a check constraint (SQLSTATE class 23)
+ * keeps its link and is counted in the event log, while all the others are erased.
  */
 export const eraseSpentTelegramAccessTokenValues = async (now = new Date()) => {
-  const erasedRows = await getDatabase()
-    .update(telegramAccessTokens)
-    .set({ tokenValue: null })
-    .where(
-      and(
-        isNotNull(telegramAccessTokens.tokenValue),
-        or(
-          ne(telegramAccessTokens.status, "issued"),
-          lte(telegramAccessTokens.expiresAt, now),
-        ),
-      ),
-    )
-    .returning({ id: telegramAccessTokens.id });
+  const database = getDatabase();
+  const spentTokens = await database
+    .select({ id: telegramAccessTokens.id, purchaseId: telegramAccessTokens.purchaseId })
+    .from(telegramAccessTokens)
+    .where(isSpentTokenValue(now));
+  let erasedCount = 0;
+  let notErasedCount = 0;
 
-  return { erasedCount: erasedRows.length };
+  for (const token of spentTokens) {
+    try {
+      const erased = await database
+        .update(telegramAccessTokens)
+        .set({ tokenValue: null })
+        .where(and(eq(telegramAccessTokens.id, token.id), isSpentTokenValue(now)))
+        .returning({ id: telegramAccessTokens.id });
+
+      erasedCount += erased.length;
+    } catch (error) {
+      if (!getDatabaseErrorCode(error)?.startsWith("23")) throw error;
+
+      notErasedCount += 1;
+      logSafeError("Daily maintenance: an invite link could not be erased", error, {
+        reference: token.purchaseId,
+        severity: "warning",
+      });
+    }
+  }
+
+  return { erasedCount, notErasedCount };
 };
