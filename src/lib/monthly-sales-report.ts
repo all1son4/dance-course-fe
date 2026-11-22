@@ -654,11 +654,6 @@ export const getScheduledMonthlySalesReportPeriod = (
   });
 };
 
-export const getMonthlySalesReportPeriodForNow = (date: Date = new Date()) =>
-  getMonthlySalesReportPeriod({
-    referenceDate: date,
-  });
-
 const listSucceededSaleRecordsFromDatabaseInUtcRange = async ({
   endUtcIsoExclusive,
   startUtcIso,
