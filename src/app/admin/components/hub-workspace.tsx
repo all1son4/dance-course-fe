@@ -19,6 +19,7 @@ import type {
 } from "@/lib/admin/hub-admin";
 
 import type { ReissuedLink, ReissueOutcome } from "../hooks/use-hub-admin";
+import { formatDayMonthTime } from "../lib/admin.utils";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { TextField, useToast } from "../ui/feedback";
@@ -122,15 +123,6 @@ const formatDate = (iso: string | null) =>
         timeZone: "Europe/Warsaw",
       }).format(new Date(iso))
     : "";
-
-const formatDateTime = (iso: string) =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Warsaw",
-  }).format(new Date(iso));
 
 const toDateInput = (iso: string) => iso.slice(0, 10);
 
@@ -381,7 +373,7 @@ export const HubWorkspace = ({
 
         <Panel
           title="Кого бот уберёт из библиотеки ночью"
-          description={`Это предпросмотр — он никого не удаляет. Ближайшая проверка: ${formatDateTime(hub.nextCronAt)}. Можно выбрать другую дату.`}
+          description={`Это предпросмотр — он никого не удаляет. Ближайшая проверка: ${formatDayMonthTime(hub.nextCronAt)}. Можно выбрать другую дату.`}
           actions={
             <Row $gap={6}>
               <TextField
@@ -417,7 +409,7 @@ export const HubWorkspace = ({
           {hub.preview.removals.length === 0 ? (
             <EmptyState
               title="Никого"
-              text={`На ${formatDateTime(hub.preview.at)} никто не будет удалён.`}
+              text={`На ${formatDayMonthTime(hub.preview.at)} никто не будет удалён.`}
             />
           ) : (
             <RemovalList>

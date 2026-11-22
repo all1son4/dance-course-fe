@@ -24,7 +24,7 @@ import type {
   CohortInviteTestInput,
   useCohortInviteAdmin,
 } from "../hooks/use-cohort-invite-admin";
-import { formatDayMonthTime, plural } from "../lib/admin.utils";
+import { formatDayMonth, formatDayMonthTime, plural } from "../lib/admin.utils";
 import {
   buildQuotaMeter,
   getBatchBoundary,
@@ -72,13 +72,6 @@ import {
 } from "../ui/primitives";
 import { CellPrimary, CellSecondary, TableScroller } from "../ui/table";
 import { SHOWN_ROWS, summarizeAddresses, useShownRows } from "./shown-rows";
-
-const formatDay = (value: string) =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    timeZone: "Europe/Warsaw",
-  }).format(new Date(value));
 
 const ADDRESS_STATUS: Record<
   CohortInviteAddressStatus,
@@ -273,7 +266,7 @@ export const CohortInviteBroadcast = ({
     <Stack $gap={16}>
       <Panel
         title={`Приглашение в поток: ${snapshot.cohort.title}`}
-        description={`Старт ${formatDay(snapshot.cohort.startsAt)}, ${snapshot.cohort.durationWeeks} нед. Письмо получают все, кто что-либо покупал, кроме уже оплативших этот поток или отдельный Hub.`}
+        description={`Старт ${formatDayMonth(snapshot.cohort.startsAt)}, ${snapshot.cohort.durationWeeks} нед. Письмо получают все, кто что-либо покупал, кроме уже оплативших этот поток или отдельный Hub.`}
         actions={refresh}
       >
         <Stack $gap={14}>
