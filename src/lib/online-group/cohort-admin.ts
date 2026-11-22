@@ -35,6 +35,7 @@ import { areNotificationsEnabled } from "@/lib/deployment";
 import {
   addWarsawCalendarDays,
   getStartOfNextWarsawDay,
+  toWarsawDay,
 } from "@/lib/inspiration-hub/calendar";
 import { logSafeError } from "@/lib/safe-error-log";
 import { normalizedSiteUrl } from "@/lib/seo";
@@ -53,7 +54,6 @@ import {
   type CohortRenewalLinks,
   getGraceReminderDay,
   getPlusHubLastDay,
-  toWarsawDay,
 } from "./cohort-messages";
 
 type Cohort = typeof onlineGroupCohorts.$inferSelect;

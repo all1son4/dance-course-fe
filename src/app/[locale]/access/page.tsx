@@ -10,6 +10,7 @@ import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
 import { Link } from "@/i18n/navigation";
 import { buildInvitationUrl } from "@/lib/access-invitations/link";
+import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import {
   getMyAccessActionAnalytics,
   getMyAccessAnalyticsProperties,
@@ -30,7 +31,6 @@ import {
   getMyAccessCardDetail,
   getMyAccessCardNote,
   type MyAccessCount,
-  warsawDaysBetween,
 } from "@/lib/my-access/count";
 import {
   getDaypart,

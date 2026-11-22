@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { toWarsawDay } from "@/lib/inspiration-hub/calendar";
 import {
   buildCohortClosurePost,
   buildCohortGraceReminder,
   cohortPostButtons,
   getGraceReminderDay,
   getPlusHubLastDay,
-  toWarsawDay,
 } from "@/lib/online-group/cohort-messages";
 import {
   parseTelegramPost,

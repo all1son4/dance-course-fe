@@ -1,3 +1,4 @@
+import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import { DAY_MS } from "@/lib/time";
 
 import type { MyAccessCard, MyAccessLine } from "./cards";
@@ -8,13 +9,6 @@ import type { MyAccessCard, MyAccessLine } from "./cards";
  * left. Every number comes from the card the rules built, so the count never
  * knows more than the card. Dates are days only, never hours. Pure.
  */
-
-const WARSAW_DAY = new Intl.DateTimeFormat("en-CA", {
-  day: "2-digit",
-  month: "2-digit",
-  timeZone: "Europe/Warsaw",
-  year: "numeric",
-});
 
 export type MyAccessCount =
   /** Days to a start; 0 is the start day itself. */
@@ -39,16 +33,6 @@ export type MyAccessCount =
   /** Open now with no date to count to: the Hub that comes with Plus. */
   | { kind: "openNow" }
   | { kind: "lifetime" };
-
-/** Calendar days between two instants by the Warsaw calendar (the page's dates). */
-export const warsawDaysBetween = (from: Date, to: Date) => {
-  const dayNumber = (date: Date) => {
-    const [year, month, day] = WARSAW_DAY.format(date).split("-").map(Number);
-    return Date.UTC(year, month - 1, day) / DAY_MS;
-  };
-
-  return dayNumber(to) - dayNumber(from);
-};
 
 /** Whole days still ahead of an end, as «Осталось N дней» counts them. */
 const daysLeft = (end: Date, now: Date) =>
