@@ -21,8 +21,7 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-import { getTelegramChatMember } from "@/lib/telegram/bot-api";
-import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
+import { checkChatMembership } from "@/lib/telegram/chat-membership";
 import {
   createTelegramLoginNonce,
   getTelegramLoginClientId,
@@ -51,22 +50,14 @@ const normalizeCheckoutSessionId = (value: string | null | undefined) =>
 const checkCohortMembership = async (
   cohort: { id: string; mainChatId: string },
   telegramUserId: string,
-): Promise<MembershipCheck> => {
-  try {
-    const member = await getTelegramChatMember({
-      chatId: cohort.mainChatId,
-      userId: telegramUserId,
-    });
-    return {
-      cohortId: cohort.id,
-      checkFailed: false,
-      isMember: isActiveTelegramMember(member),
-    };
-  } catch (error) {
-    logSafeError("Failed to check Hub discount cohort membership", error);
-    return { cohortId: cohort.id, checkFailed: true, isMember: false };
-  }
-};
+): Promise<MembershipCheck> => ({
+  cohortId: cohort.id,
+  ...(await checkChatMembership({
+    chatId: cohort.mainChatId,
+    failureEvent: "Failed to check Hub discount cohort membership",
+    userId: telegramUserId,
+  })),
+});
 
 /**
  * HUB-D17/D36 in their order: an active paid Hub of this account, then the chat of
