@@ -1411,6 +1411,12 @@
       "unit": "{count, plural, one {cykl} few {cykle} many {cykli} other {cyklu}}",
       "text": "Cykle od 1.0 do {last}.0 — bez ani jednej przerwy. Pieczęć zostaje, dopóki jesteś w każdym nowym cyklu."
     },
+    "inARow": {
+      "name": "Z rzędu",
+      "label": "Pieczęć „Z rzędu”: {count, plural, one {# cykl} few {# cykle} many {# cykli} other {# cyklu}} z rzędu, od {first}.0 do {last}.0",
+      "unit": "{count, plural, one {cykl} few {cykle} many {cykli} other {cyklu}}",
+      "text": "Cykle od {first}.0 do {last}.0 — z rzędu, bez przerwy. Seria rośnie z każdym kolejnym cyklem."
+    },
     "zones": {
       "action": "Czeka na Ciebie",
       "active": "Twoje dostępy",

@@ -74,18 +74,53 @@ export const collectCompletedCohortIds = (facts: CycleFacts): string[] => {
   return collectMemberCohortIds(facts).filter((id) => closed.has(id));
 };
 
+/** A cycle, listed in the order the cycles start; `started` once its start is behind. */
+export type StampCohort = { id: string; started: boolean };
+
 /**
- * «Легенда группы» (owner, 2026-11-19): in every cycle there is, from the very
- * first to the newest — the newest one paid, whether it has started or not. The
- * medal shows how many; one cycle missed, or the newest not bought, and it is
- * gone. Null below two cycles: one is not a streak.
+ * The customer's unbroken run of cycles up to now, as positions in `cohorts`:
+ * from the newest cycle bought back to the last one missed. A cycle that has not
+ * started breaks nothing, and once bought it already counts (owner, 2026-11-22:
+ * a stamp goes only when a new cycle starts without the customer). Null when the
+ * newest started cycle went without them.
+ */
+const findCurrentRun = (
+  cohorts: readonly StampCohort[],
+  memberCohortIds: readonly string[],
+): { first: number; last: number } | null => {
+  const member = new Set(memberCohortIds);
+  let last = cohorts.length - 1;
+  while (last >= 0 && !cohorts[last]!.started && !member.has(cohorts[last]!.id)) last--;
+  let first = last;
+  while (first >= 0 && member.has(cohorts[first]!.id)) first--;
+  return last > first ? { first: first + 1, last } : null;
+};
+
+/**
+ * «Легенда группы» (owner, 2026-11-19): in every cycle from the very first one up
+ * to now. The stamp shows how many; one cycle missed and it is gone. Null below
+ * two cycles: one is not a streak.
  */
 export const countLegendCycles = (
-  cohortIds: readonly string[],
+  cohorts: readonly StampCohort[],
   memberCohortIds: readonly string[],
 ): number | null => {
-  const member = new Set(memberCohortIds);
-  return cohortIds.length >= 2 && cohortIds.every((id) => member.has(id))
-    ? cohortIds.length
+  const run = findCurrentRun(cohorts, memberCohortIds);
+  return run && run.first === 0 && run.last >= 1 ? run.last + 1 : null;
+};
+
+/**
+ * «Подряд» (owner, 2026-11-22): at least two cycles in a row up to now, for
+ * those who joined after the first one — a run from the first is «Легенда группы».
+ * It grows with every next cycle and starts over after a missed one. `first` and
+ * `last` are the cycle numbers: the N-th cycle is N.0.
+ */
+export const findCycleStreak = (
+  cohorts: readonly StampCohort[],
+  memberCohortIds: readonly string[],
+): { count: number; first: number; last: number } | null => {
+  const run = findCurrentRun(cohorts, memberCohortIds);
+  return run && run.first > 0 && run.last > run.first
+    ? { count: run.last - run.first + 1, first: run.first + 1, last: run.last + 1 }
     : null;
 };
