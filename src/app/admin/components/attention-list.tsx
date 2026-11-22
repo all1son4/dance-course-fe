@@ -65,23 +65,13 @@ const AttentionRow = styled.li<{ $danger: boolean }>`
 `;
 
 type AttentionListProps = {
-  /** The section showing the list: items of that section lose their "Открыть". */
-  currentView?: AdminFeatureId;
   items: AttentionItem[];
   onFixed: () => void;
   onNavigate: (view: AdminFeatureId) => void;
 };
 
-/**
- * Problems the system could not solve by itself. The overview shows all of them;
- * each section shows its own, so a problem is solved where it is seen.
- */
-export const AttentionList = ({
-  currentView,
-  items,
-  onFixed,
-  onNavigate,
-}: AttentionListProps) => {
+/** Problems the system could not solve by itself, as the overview lists them. */
+export const AttentionList = ({ items, onFixed, onNavigate }: AttentionListProps) => {
   const toast = useToast();
   const [fixingId, setFixingId] = useState("");
 
@@ -127,13 +117,9 @@ export const AttentionList = ({
             <div>
               <strong>{item.title}</strong>
               <p>
-                {!currentView && (
-                  <>
-                    <Badge $tone={danger ? "danger" : "warning"}>
-                      {VIEW_LABELS[item.view]}
-                    </Badge>{" "}
-                  </>
-                )}
+                <Badge $tone={danger ? "danger" : "warning"}>
+                  {VIEW_LABELS[item.view]}
+                </Badge>{" "}
                 {item.detail}
               </p>
             </div>
@@ -147,7 +133,7 @@ export const AttentionList = ({
                 >
                   {item.fix.label}
                 </AdminButton>
-              ) : item.view !== currentView ? (
+              ) : (
                 <AdminButton
                   size="sm"
                   icon={<ArrowRight aria-hidden />}
@@ -155,7 +141,7 @@ export const AttentionList = ({
                 >
                   Открыть
                 </AdminButton>
-              ) : null}
+              )}
             </div>
           </AttentionRow>
         );
