@@ -130,7 +130,7 @@ export async function POST(request: Request) {
     ]);
 
     if (clientErrors.has(errorCode)) {
-      return jsonNoStore({ errorCode }, { status: 400 });
+      return jsonErrorNoStore(errorCode, { status: 400 });
     }
 
     logSafeError("Failed to save Online Group settings", error);

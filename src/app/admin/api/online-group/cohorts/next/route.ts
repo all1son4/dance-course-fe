@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const errorCode = error instanceof Error ? error.message : "";
     if (CLIENT_ERRORS.has(errorCode)) {
-      return jsonNoStore({ errorCode }, { status: 409 });
+      return jsonErrorNoStore(errorCode, { status: 409 });
     }
     logSafeError("Failed to create the next cohort", error);
     return jsonErrorNoStore("next_cohort_create_failed", { status: 500 });
