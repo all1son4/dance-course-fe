@@ -3,9 +3,7 @@ import { and, eq, gt, gte, inArray, isNotNull, isNull, lt, ne, sql } from "drizz
 import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
 import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
 
-import { getDatabase } from "./client";
 import { lockHubPeriodOwner } from "./hub-period-chain-resolution";
-import { retryHubPeriodChainTransaction } from "./hub-period-chain-retry";
 import { accessEntitlements, onlineGroupCohorts, purchases } from "./schema";
 import type { DatabaseTransaction } from "./transaction";
 
@@ -193,19 +191,6 @@ export async function ensurePlusHubBridgeInTransaction(
     .returning();
 
   return bridge;
-}
-
-/** Runs the bridge service in its own Read Committed transaction with retries. */
-export function ensurePlusHubBridgeInDatabase(
-  command: EnsurePlusHubBridgeCommand,
-): Promise<Entitlement | null> {
-  const db = getDatabase();
-
-  return retryHubPeriodChainTransaction(() =>
-    db.transaction((tx) => ensurePlusHubBridgeInTransaction(tx, command), {
-      isolationLevel: "read committed",
-    }),
-  );
 }
 
 export type MoveCohortStartCommand = {
