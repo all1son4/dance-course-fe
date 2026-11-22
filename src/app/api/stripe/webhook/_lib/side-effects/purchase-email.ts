@@ -13,7 +13,7 @@ import {
 } from "@/lib/sellable-products-localization";
 import {
   ensureTelegramAccessLinkForPayment,
-  isOfferEligibleForTelegramAccessLink,
+  isStandardTelegramLinkPayment,
 } from "@/lib/telegram/access";
 import {
   getOfferAccessDurationDaysByOfferId,
@@ -121,9 +121,7 @@ const preparePurchaseEmailAccess = async (
 ): Promise<PurchaseEmailAccess> => {
   const onlineGroupAccess = await ensureOnlineGroupAccessForPayment(paymentRecord);
   const telegramAccessLink =
-    !onlineGroupAccess &&
-    paymentRecord.access_workflow.trim() !== "manual-admin" &&
-    isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)
+    !onlineGroupAccess && isStandardTelegramLinkPayment(paymentRecord)
       ? await ensureTelegramAccessLinkForPayment(paymentRecord)
       : null;
 

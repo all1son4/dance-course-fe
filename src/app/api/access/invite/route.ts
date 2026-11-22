@@ -21,7 +21,7 @@ import { consumeRateLimit, consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import {
   ensureTelegramAccessLinkForPayment,
-  isOfferEligibleForTelegramAccessLink,
+  isStandardTelegramLinkPayment,
 } from "@/lib/telegram/access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 import { DAY_MS } from "@/lib/time";
@@ -140,8 +140,7 @@ export async function POST(request: Request) {
     });
     const hasLink = onlineGroupAccess
       ? onlineGroupAccess.some((access) => access.accessUrl)
-      : paymentRecord.access_workflow.trim() !== "manual-admin" &&
-        isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id) &&
+      : isStandardTelegramLinkPayment(paymentRecord) &&
         (await ensureTelegramAccessLinkForPayment(paymentRecord)).status === "ready";
     if (!hasLink) return jsonErrorNoStore("no_link", { status: 409 });
 

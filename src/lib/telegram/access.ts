@@ -413,6 +413,11 @@ export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
   isFirstTouchOfferId(offerId) ||
   isLifetimeChannelOfferId(offerId);
 
+/** A purchase that gets the ordinary Telegram link: an eligible offer not handed out by hand. */
+export const isStandardTelegramLinkPayment = (paymentRecord: PaymentRecordSnapshot) =>
+  paymentRecord.access_workflow.trim() !== "manual-admin" &&
+  isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id);
+
 /**
  * Who gets an access window that can run out. Lifetime offers must stay out of
  * this list - it is what the revocation sweep keys off.
