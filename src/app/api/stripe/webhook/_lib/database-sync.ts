@@ -4,6 +4,14 @@ import type Stripe from "stripe";
 import { isInspirationHubOfferId } from "@/constants/sellable-products";
 import { getDatabase } from "@/db/client";
 import { type PaymentProjectionCommand } from "@/db/payment-projection";
+import {
+  normalizeEmail,
+  nullIfEmpty,
+  parseDate,
+  parseInteger,
+  parseRequiredDate,
+  trim,
+} from "@/db/record-values";
 import { purchases } from "@/db/schema";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -20,27 +28,6 @@ export type StripeSettlementSnapshot = {
 type DatabaseTransaction = Parameters<
   Parameters<ReturnType<typeof getDatabase>["transaction"]>[0]
 >[0];
-
-const trim = (value: string | null | undefined) => value?.trim() ?? "";
-const nullIfEmpty = (value: string | null | undefined) => trim(value) || null;
-const normalizeEmail = (value: string | null | undefined) => trim(value).toLowerCase();
-
-const parseInteger = (value: string | null | undefined, fallback = 0) => {
-  const parsedValue = Number.parseInt(trim(value), 10);
-
-  return Number.isFinite(parsedValue) ? parsedValue : fallback;
-};
-
-const parseDate = (value: string | null | undefined) => {
-  const timestamp = Date.parse(trim(value));
-
-  return Number.isFinite(timestamp) ? new Date(timestamp) : null;
-};
-
-const parseRequiredDate = (
-  value: string | null | undefined,
-  fallback: Date = new Date(),
-) => parseDate(value) ?? fallback;
 
 const normalizeOutcome = (
   value: string,
