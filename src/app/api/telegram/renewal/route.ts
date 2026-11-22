@@ -245,17 +245,15 @@ const checkRenewalSourceChatMemberships = (
   );
 
 const findRenewalCustomerProfileSafely = async ({
-  campaign,
   matchedMembership,
   telegramUserId,
 }: {
-  campaign: RenewalCampaign;
   matchedMembership: RenewalMembership;
   telegramUserId: string;
 }) => {
   try {
     return await findRenewalCustomerProfile({
-      sourceChatId: matchedMembership.chatId ?? campaign.sourceChatId,
+      sourceChatId: matchedMembership.chatId,
       telegramUserId,
     });
   } catch (error) {
@@ -332,7 +330,6 @@ const verifyRenewalAccess = async (body: RenewalVerifyBody): Promise<RenewalResp
   }
 
   const customerProfile = await findRenewalCustomerProfileSafely({
-    campaign,
     matchedMembership,
     telegramUserId,
   });
