@@ -7,13 +7,13 @@ import postgres from "postgres";
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { getDatabase, getDatabaseClient } from "@/db/client";
 import { listStartedPlusHubsWithoutInvite } from "@/db/hub-period-start";
-import { upsertPaymentRecordToDatabase } from "@/db/payment-records";
 import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,
 } from "@/lib/payment-record";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
+import { upsertPaymentRecordToDatabase } from "../helpers/legacy-payment-writer";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 const databaseUrl = getRequiredTestDatabaseUrl();
