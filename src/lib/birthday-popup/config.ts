@@ -5,6 +5,7 @@
  */
 
 import { BIRTHDAY_DROP_OFFER_ID } from "@/constants/sellable-products";
+import { HOUR_MS } from "@/lib/time";
 
 export const BIRTHDAY_POPUP_STORAGE_KEY = "birthday-popup:v1";
 export const BIRTHDAY_POPUP_UPDATED_EVENT = "birthday-popup-updated";
@@ -31,8 +32,6 @@ export const BIRTHDAY_POPUP_DWELL_MS = 2_500;
 
 /** Extra beat after the consent banner leaves the corner, so nothing jumps. */
 export const BIRTHDAY_POPUP_CONSENT_SETTLE_MS = 1_500;
-
-const HOUR_MS = 3_600_000;
 
 /**
  * How long it keeps quiet after an explicit reaction: closing it, opening the

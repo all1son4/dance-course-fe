@@ -16,12 +16,12 @@ import {
   getOnlineGroupSale,
   ONLINE_GROUP_SALE_REFUSAL_LABELS,
 } from "@/lib/online-group-sale";
+import { DAY_MS } from "@/lib/time";
 
 import { countRunningHubPeriods, getHubAdminOverview } from "./hub-admin";
 import { getUrgentPulseItems } from "./pulse-attention";
 import { getSystemPulse } from "./system-pulse";
 
-const DAY_MS = 24 * 3600_000;
 const EVENT_WINDOW_DAYS = 21;
 
 /** The admin sections an attention item or event leads to. */

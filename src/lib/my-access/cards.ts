@@ -16,6 +16,7 @@ import {
   isLifetimeChannelOfferId,
   isOnlineGroupAccessOfferId,
 } from "@/lib/telegram/offer-access";
+import { DAY_MS } from "@/lib/time";
 
 /*
  * «Мой доступ» (HUB-D28): one card per current access, each product family by its
@@ -23,7 +24,6 @@ import {
  * Telegram IDs or invite links ever reach a card.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 /** A standalone Hub this close to its end offers the renewal (section 11). */
 export const HUB_RENEWAL_WINDOW_DAYS = 7;
 

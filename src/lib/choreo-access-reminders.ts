@@ -6,8 +6,8 @@ import {
   isFirstTouchOfferId,
   isLifetimeChannelOfferId,
 } from "@/lib/telegram/offer-access";
+import { DAY_MS } from "@/lib/time";
 
-const DAY_MS = 86_400_000;
 export const CHOREO_REMINDER_DAYS = 14;
 
 export type ChoreoReminderBinding = {

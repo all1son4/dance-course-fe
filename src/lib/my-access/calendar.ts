@@ -4,13 +4,14 @@
  * access) is an all-day event in Warsaw, where every date on the page is shown.
  */
 
+import { HOUR_MS } from "@/lib/time";
+
 const WARSAW_DAY = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
   month: "2-digit",
   timeZone: "Europe/Warsaw",
   year: "numeric",
 });
-const HOUR_MS = 60 * 60 * 1000;
 
 /** The calendar event id of «Дальше»; any other id is a card's. */
 export const NEXT_CYCLE_EVENT = "next";

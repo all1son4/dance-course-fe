@@ -16,13 +16,13 @@ import {
 import { buildMyAccessUrl, isMyAccessLinkConfigured } from "@/lib/my-access/link";
 import { consumeRateLimit, consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { HOUR_MS } from "@/lib/time";
 
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 2 * 1024;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const TEN_MINUTES_MS = 10 * 60 * 1000;
-const HOUR_MS = 60 * 60 * 1000;
 
 type RequestLinkBody = { email?: unknown; locale?: unknown };
 

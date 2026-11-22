@@ -1,6 +1,7 @@
 import { getDatabaseClient } from "@/db/client";
 import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { getTelegramWebhookInfo } from "@/lib/telegram/bot-api";
+import { HOUR_MS } from "@/lib/time";
 
 /**
  * The live signals of the shop, read-only: are payments arriving, is anything
@@ -24,7 +25,6 @@ export type SystemPulse = {
   signals: PulseSignal[];
 };
 
-const HOUR_MS = 3600_000;
 const TELEGRAM_CHECK_TIMEOUT_MS = 3000;
 
 const formatAgo = (from: Date | null, now: Date) => {

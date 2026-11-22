@@ -18,8 +18,8 @@ import {
 import { logSafeError } from "@/lib/safe-error-log";
 import { getTelegramChatMemberCount } from "@/lib/telegram/bot-api";
 import { previewHubExpiry } from "@/lib/telegram/hub-expiry-preview";
+import { DAY_MS } from "@/lib/time";
 
-const DAY_MS = 24 * 3600_000;
 const ENDING_SOON_DAYS = 7;
 const PERIOD_LIST_LIMIT = 300;
 const FINISHED_STATUSES: ("expired" | "revoked")[] = ["expired", "revoked"];

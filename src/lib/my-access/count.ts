@@ -1,3 +1,5 @@
+import { DAY_MS } from "@/lib/time";
+
 import type { MyAccessCard, MyAccessLine } from "./cards";
 
 /*
@@ -7,7 +9,6 @@ import type { MyAccessCard, MyAccessLine } from "./cards";
  * knows more than the card. Dates are days only, never hours. Pure.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const WARSAW_DAY = new Intl.DateTimeFormat("en-CA", {
   day: "2-digit",
   month: "2-digit",
