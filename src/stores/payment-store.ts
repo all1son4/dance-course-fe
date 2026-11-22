@@ -27,6 +27,7 @@ import {
   isOfferSaleOpen,
   SELLABLE_PRODUCTS_LIST,
   type SellableProduct,
+  type SellableProductOffer,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
 import { trackApiError } from "@/lib/mixpanel-analytics";
@@ -283,6 +284,15 @@ export class PaymentStore {
     return this.catalogStatus === "ready" || this.catalogStatus === "closed";
   }
 
+  /** The product a checkout falls back to: the default one, else the first in the catalogue. */
+  get defaultProduct() {
+    return (
+      this.getSellableProductById(DEFAULT_CHECKOUT_PRODUCT.id) ??
+      this.sellableProducts[0] ??
+      DEFAULT_CHECKOUT_PRODUCT
+    );
+  }
+
   get selectedProduct() {
     return (
       this.getSellableProductById(this.selectedProductId) ??
@@ -439,9 +449,7 @@ export class PaymentStore {
 
     this.customerErrors = {};
     this.touchedFields = {};
-    if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
-      this.catalogStatus = isOfferSaleOpen(nextProduct, nextOffer) ? "ready" : "closed";
-    }
+    this.syncCatalogStatus(nextProduct, nextOffer);
     this.clearStripeIntentState(false);
   }
 
@@ -452,11 +460,7 @@ export class PaymentStore {
     offerId?: string | null;
     productId?: string | null;
   }) {
-    const nextProduct =
-      this.getSellableProductById(productId) ??
-      this.getSellableProductById(DEFAULT_CHECKOUT_PRODUCT.id) ??
-      this.sellableProducts[0] ??
-      DEFAULT_CHECKOUT_PRODUCT;
+    const nextProduct = this.getSellableProductById(productId) ?? this.defaultProduct;
     const nextOffer =
       this.getSellableProductOfferById(nextProduct, offerId) ??
       getDefaultProductOffer(nextProduct);
@@ -469,9 +473,7 @@ export class PaymentStore {
 
     this.selectedProductId = nextProduct.id;
     this.selectedOfferId = nextOffer.id;
-    if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
-      this.catalogStatus = isOfferSaleOpen(nextProduct, nextOffer) ? "ready" : "closed";
-    }
+    this.syncCatalogStatus(nextProduct, nextOffer);
     this.clearStripeIntentState(true);
   }
 
@@ -548,6 +550,13 @@ export class PaymentStore {
     this.validationLocale = nextLocale;
     this.applyDefaultLessonLanguage();
     this.revalidateTouchedFields();
+  }
+
+  /** A known catalogue follows the chosen offer; "loading"/"unavailable" stay as they are. */
+  private syncCatalogStatus(product: SellableProduct, offer: SellableProductOffer) {
+    if (this.catalogStatus === "closed" || this.catalogStatus === "ready") {
+      this.catalogStatus = isOfferSaleOpen(product, offer) ? "ready" : "closed";
+    }
   }
 
   private applyDefaultLessonLanguage() {
@@ -909,10 +918,7 @@ export class PaymentStore {
 
   resetCheckoutForm({ cancelActiveIntents = true } = {}) {
     const previousCheckoutSessionId = this.checkoutSessionId;
-    const defaultProduct =
-      this.getSellableProductById(DEFAULT_CHECKOUT_PRODUCT.id) ??
-      this.sellableProducts[0] ??
-      DEFAULT_CHECKOUT_PRODUCT;
+    const defaultProduct = this.defaultProduct;
     const defaultOffer = getDefaultProductOffer(defaultProduct);
 
     this.clearStripeIntentState(cancelActiveIntents, previousCheckoutSessionId);
