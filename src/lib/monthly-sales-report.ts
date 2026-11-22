@@ -23,7 +23,6 @@ import {
 import { findMonthlyReportRunRecord } from "@/lib/business-operation-read-runtime";
 import { escapeSpreadsheetCsvCell } from "@/lib/csv";
 import { formatEmailDate } from "@/lib/email/dates";
-import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import { getAdminPurchaseLine } from "@/lib/sellable-products-localization";
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
@@ -478,60 +477,6 @@ const buildEmailPayload = ({
   };
 };
 
-const buildMonthlySalesReportRunRecord = ({
-  csvSha256,
-  deliveredAtUtc,
-  deliveredTo,
-  generatedAtUtc,
-  period,
-  rowCount,
-  status,
-}: {
-  csvSha256: string;
-  deliveredAtUtc: string;
-  deliveredTo: string;
-  generatedAtUtc: string;
-  period: MonthlySalesReportPeriod;
-  rowCount: number;
-  status: "sent" | "skipped" | "failed";
-}): MonthlySalesReportRunRecord => ({
-  csv_sha256: csvSha256,
-  delivered_at_utc: deliveredAtUtc,
-  delivered_to: deliveredTo,
-  delivery_status: status,
-  generated_at_utc: generatedAtUtc,
-  period_end_utc: period.endUtcIso,
-  period_start_utc: period.startUtcIso,
-  report_family: MONTHLY_SALES_REPORT_FAMILY,
-  report_key: period.key,
-  row_count: String(rowCount),
-});
-
-const recordMonthlySalesReportRun = async (record: MonthlySalesReportRunRecord) => {
-  const deliveryStatus = record.delivery_status;
-
-  if (
-    deliveryStatus !== "failed" &&
-    deliveryStatus !== "sent" &&
-    deliveryStatus !== "skipped"
-  ) {
-    throw new Error("monthly_sales_report_delivery_status_invalid");
-  }
-
-  return recordMonthlyReportRunInDatabase({
-    csvSha256: record.csv_sha256,
-    deliveredAtUtc: record.delivered_at_utc ? new Date(record.delivered_at_utc) : null,
-    deliveredTo: record.delivered_to,
-    deliveryStatus,
-    generatedAtUtc: new Date(record.generated_at_utc),
-    periodEndUtc: new Date(record.period_end_utc),
-    periodStartUtc: new Date(record.period_start_utc),
-    reportFamily: record.report_family,
-    reportKey: record.report_key,
-    rowCount: Number.parseInt(record.row_count, 10) || 0,
-  });
-};
-
 export const generateMonthlySalesReportContent = (
   saleRecords: MonthlySalesReportSaleRecord[],
 ) => {
@@ -805,17 +750,18 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
   const { csv, rowCount, sha256 } = generateMonthlySalesReportContent(saleRecords);
 
   if (rowCount === 0) {
-    await recordMonthlySalesReportRun(
-      buildMonthlySalesReportRunRecord({
-        csvSha256: sha256,
-        deliveredAtUtc: "",
-        deliveredTo: reportRecipient,
-        generatedAtUtc,
-        period,
-        rowCount,
-        status: "skipped",
-      }),
-    );
+    await recordMonthlyReportRunInDatabase({
+      csvSha256: sha256,
+      deliveredAtUtc: null,
+      deliveredTo: reportRecipient,
+      deliveryStatus: "skipped",
+      generatedAtUtc: new Date(generatedAtUtc),
+      periodEndUtc: new Date(period.endUtcIso),
+      periodStartUtc: new Date(period.startUtcIso),
+      reportFamily: MONTHLY_SALES_REPORT_FAMILY,
+      reportKey: period.key,
+      rowCount,
+    });
 
     return buildEmptyMonthlySalesReportResult({
       csv,
