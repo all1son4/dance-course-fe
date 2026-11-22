@@ -13,6 +13,7 @@ import {
 
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
 import {
+  collectCompletedCohortIds,
   collectMemberCohortIds,
   countLegendCycles,
   findCycleStreak,
@@ -174,7 +175,7 @@ async function readCustomerCycles(
     id: cohort.id,
     mainChatId: cohort.mainChatId,
   }));
-  const memberCohortIds = collectMemberCohortIds({
+  const facts = {
     cohorts,
     purchases: cyclePurchases.flatMap((purchase) =>
       purchase.cohortId
@@ -192,8 +193,8 @@ async function readCustomerCycles(
       targetChatId: campaign.targetChatId,
     })),
     verifiedChatIds: verifications.flatMap((row) => (row.chatId ? [row.chatId] : [])),
-  });
-  const closed = new Set(cohorts.filter((c) => c.closed).map((c) => c.id));
+  };
+  const memberCohortIds = collectMemberCohortIds(facts);
   const now = Date.now();
   const stampCohorts = cohortRows.map((cohort) => ({
     id: cohort.id,
@@ -201,7 +202,7 @@ async function readCustomerCycles(
   }));
 
   return {
-    completedCohortIds: memberCohortIds.filter((id) => closed.has(id)),
+    completedCohortIds: collectCompletedCohortIds(facts),
     cycleStreak: findCycleStreak(stampCohorts, memberCohortIds),
     legendCycles: countLegendCycles(stampCohorts, memberCohortIds),
   };
