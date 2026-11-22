@@ -17,6 +17,7 @@ import { Fragment, useState } from "react";
 
 import type {
   CohortInviteAddressStatus,
+  CohortInviteAdminRecipient,
   CohortInviteLinks,
 } from "@/lib/cohort-invite-broadcast";
 
@@ -174,6 +175,132 @@ const RulesButton = ({
       </ol>
     </RulesPopover>
   </>
+);
+
+/** The next recipients, with the line after this batch and the per-address exclusions. */
+const NextRecipientsTable = ({
+  boundary,
+  confirmingGlobal,
+  isLocked,
+  onConfirmGlobal,
+  onExclude,
+  rows,
+  updatingEmail,
+}: {
+  boundary: number | null;
+  confirmingGlobal: string;
+  isLocked: boolean;
+  onConfirmGlobal: (email: string) => void;
+  onExclude: ReturnType<typeof useCohortInviteAdmin>["exclude"];
+  rows: readonly CohortInviteAdminRecipient[];
+  updatingEmail: string;
+}) => (
+  <TableScroller>
+    <RecipientsTable aria-label="Следующие адресаты приглашения">
+      <thead>
+        <tr>
+          <th>Имя</th>
+          <th>Язык</th>
+          <th>{LINKS_COLUMN}</th>
+          <th aria-label="Действия" />
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((recipient, index) => {
+          const isUpdating = updatingEmail === recipient.email;
+          const isConfirming = confirmingGlobal === recipient.email;
+
+          return (
+            <Fragment key={recipient.email}>
+              {index === boundary && (
+                <BatchDivider data-divider>
+                  <td colSpan={4}>
+                    <span>{`Выше — эта партия, ниже — следующие`}</span>
+                  </td>
+                </BatchDivider>
+              )}
+              <tr>
+                <td data-label="Имя" data-cell="name">
+                  <span>
+                    <CellPrimary>{recipient.fullName || "Без имени"}</CellPrimary>
+                    <CellSecondary>{recipient.email}</CellSecondary>
+                    {recipient.retry && (
+                      <CellBadges>
+                        <Badge $tone="danger">Прошлая попытка не дошла</Badge>
+                      </CellBadges>
+                    )}
+                  </span>
+                </td>
+                <td data-label="Язык" data-cell="locale">
+                  {recipient.locale.toUpperCase()}
+                </td>
+                <td data-label="Кнопки ведут" data-cell="links">
+                  <LinksCell
+                    hubSpecialPrice={recipient.hubSpecialPrice}
+                    links={recipient.links}
+                  />
+                </td>
+                <td data-label="Действия" data-actions>
+                  <AudienceActions>
+                    {isConfirming ? (
+                      <>
+                        <AdminButton
+                          size="sm"
+                          variant="danger"
+                          icon={<Check aria-hidden />}
+                          loading={isUpdating}
+                          disabled={isLocked}
+                          onClick={() =>
+                            void onExclude(recipient.email, "global").then(() =>
+                              onConfirmGlobal(""),
+                            )
+                          }
+                        >
+                          Да, исключить везде
+                        </AdminButton>
+                        <AdminButton
+                          size="sm"
+                          variant="ghost"
+                          icon={<X aria-hidden />}
+                          disabled={Boolean(updatingEmail)}
+                          onClick={() => onConfirmGlobal("")}
+                        >
+                          Отмена
+                        </AdminButton>
+                      </>
+                    ) : (
+                      <>
+                        <AdminButton
+                          size="sm"
+                          icon={<MailX aria-hidden />}
+                          loading={isUpdating}
+                          disabled={isLocked}
+                          onClick={() => void onExclude(recipient.email, "campaign")}
+                          title="Не отправлять письмо в этой рассылке"
+                        >
+                          Не отправлять
+                        </AdminButton>
+                        <AdminButton
+                          size="sm"
+                          variant="ghost"
+                          icon={<Ban aria-hidden />}
+                          disabled={isLocked}
+                          onClick={() => onConfirmGlobal(recipient.email)}
+                          title="Не включать этот адрес ни в одну рассылку"
+                        >
+                          Исключить везде
+                        </AdminButton>
+                      </>
+                    )}
+                  </AudienceActions>
+                </td>
+              </tr>
+            </Fragment>
+          );
+        })}
+      </tbody>
+    </RecipientsTable>
+  </TableScroller>
 );
 
 export const CohortInviteBroadcast = ({
@@ -460,116 +587,15 @@ export const CohortInviteBroadcast = ({
           <StatusLine status={invite.tableStatus} />
 
           {!isDone && (
-            <TableScroller>
-              <RecipientsTable aria-label="Следующие адресаты приглашения">
-                <thead>
-                  <tr>
-                    <th>Имя</th>
-                    <th>Язык</th>
-                    <th>{LINKS_COLUMN}</th>
-                    <th aria-label="Действия" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {nextRecipients.rows.map((recipient, index) => {
-                    const isUpdating = invite.updatingEmail === recipient.email;
-                    const isConfirming = confirmingGlobal === recipient.email;
-
-                    return (
-                      <Fragment key={recipient.email}>
-                        {index === boundary && (
-                          <BatchDivider data-divider>
-                            <td colSpan={4}>
-                              <span>{`Выше — эта партия, ниже — следующие`}</span>
-                            </td>
-                          </BatchDivider>
-                        )}
-                        <tr>
-                          <td data-label="Имя" data-cell="name">
-                            <span>
-                              <CellPrimary>
-                                {recipient.fullName || "Без имени"}
-                              </CellPrimary>
-                              <CellSecondary>{recipient.email}</CellSecondary>
-                              {recipient.retry && (
-                                <CellBadges>
-                                  <Badge $tone="danger">Прошлая попытка не дошла</Badge>
-                                </CellBadges>
-                              )}
-                            </span>
-                          </td>
-                          <td data-label="Язык" data-cell="locale">
-                            {recipient.locale.toUpperCase()}
-                          </td>
-                          <td data-label="Кнопки ведут" data-cell="links">
-                            <LinksCell
-                              hubSpecialPrice={recipient.hubSpecialPrice}
-                              links={recipient.links}
-                            />
-                          </td>
-                          <td data-label="Действия" data-actions>
-                            <AudienceActions>
-                              {isConfirming ? (
-                                <>
-                                  <AdminButton
-                                    size="sm"
-                                    variant="danger"
-                                    icon={<Check aria-hidden />}
-                                    loading={isUpdating}
-                                    disabled={isLocked}
-                                    onClick={() =>
-                                      void invite
-                                        .exclude(recipient.email, "global")
-                                        .then(() => setConfirmingGlobal(""))
-                                    }
-                                  >
-                                    Да, исключить везде
-                                  </AdminButton>
-                                  <AdminButton
-                                    size="sm"
-                                    variant="ghost"
-                                    icon={<X aria-hidden />}
-                                    disabled={Boolean(invite.updatingEmail)}
-                                    onClick={() => setConfirmingGlobal("")}
-                                  >
-                                    Отмена
-                                  </AdminButton>
-                                </>
-                              ) : (
-                                <>
-                                  <AdminButton
-                                    size="sm"
-                                    icon={<MailX aria-hidden />}
-                                    loading={isUpdating}
-                                    disabled={isLocked}
-                                    onClick={() =>
-                                      void invite.exclude(recipient.email, "campaign")
-                                    }
-                                    title="Не отправлять письмо в этой рассылке"
-                                  >
-                                    Не отправлять
-                                  </AdminButton>
-                                  <AdminButton
-                                    size="sm"
-                                    variant="ghost"
-                                    icon={<Ban aria-hidden />}
-                                    disabled={isLocked}
-                                    onClick={() => setConfirmingGlobal(recipient.email)}
-                                    title="Не включать этот адрес ни в одну рассылку"
-                                  >
-                                    Исключить везде
-                                  </AdminButton>
-                                </>
-                              )}
-                            </AudienceActions>
-                          </td>
-                        </tr>
-                      </Fragment>
-                    );
-                  })}
-                </tbody>
-              </RecipientsTable>
-            </TableScroller>
+            <NextRecipientsTable
+              boundary={boundary}
+              confirmingGlobal={confirmingGlobal}
+              isLocked={isLocked}
+              onConfirmGlobal={setConfirmingGlobal}
+              onExclude={invite.exclude}
+              rows={nextRecipients.rows}
+              updatingEmail={invite.updatingEmail}
+            />
           )}
           {!isDone && nextRecipients.toggle}
         </Stack>
