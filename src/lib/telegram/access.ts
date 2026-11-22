@@ -19,8 +19,8 @@ import {
   upsertTelegramUserBindingRecord,
 } from "./access-persistence";
 import {
-  banTelegramChatMember,
   createTelegramChatInviteLink,
+  kickUnexpectedMember,
   shouldIgnoreKickFailure,
 } from "./bot-api";
 import { getTelegramChannelTargetByOfferId } from "./config";
@@ -120,9 +120,6 @@ type TelegramJoinAccessContext = {
 
 const DEFAULT_TELEGRAM_ACCESS_LINK_TTL_DAYS = 30;
 const DEFAULT_TELEGRAM_CHOREO_ACCESS_DAYS = 60;
-// К15, as in online-group-access: a ban shorter than 30 seconds is permanent in
-// Telegram, and the call may retry for ~31 seconds; 90 keeps the kick temporary.
-const TELEGRAM_TEMP_KICK_SECONDS = 90;
 const pendingTelegramAccessLinkEnsures = new Map<
   string,
   Promise<TelegramAccessLinkResult>
@@ -358,22 +355,6 @@ const updatePaymentAccessWindow = async (paymentRecord: PaymentRecordSnapshot) =
     accessExpiresAt: computedAccessExpiresAt,
     paymentRecord: nextPaymentRecord,
   };
-};
-
-const tryKickTelegramMember = async ({
-  chatId,
-  telegramUserId,
-}: {
-  chatId: string;
-  telegramUserId: string;
-}) => {
-  const untilDateUnix = Math.floor(Date.now() / 1000) + TELEGRAM_TEMP_KICK_SECONDS;
-
-  await banTelegramChatMember({
-    chatId,
-    untilDateUnix,
-    userId: telegramUserId,
-  });
 };
 
 const trySyncPaymentByExistingActiveBinding = async ({
@@ -1081,10 +1062,7 @@ const tryRemoveRejectedTelegramMember = async ({
   ignoreMissingMember?: boolean;
 }): Promise<void> => {
   try {
-    await tryKickTelegramMember({
-      chatId: normalizedChatId,
-      telegramUserId: normalizedUserId,
-    });
+    await kickUnexpectedMember(normalizedChatId, normalizedUserId);
   } catch (error) {
     if (ignoreMissingMember && shouldIgnoreKickFailure(error)) {
       return;
@@ -1482,10 +1460,7 @@ export const revokeExpiredTelegramChannelAccess =
       let canProceedWithRevocation = false;
 
       try {
-        await tryKickTelegramMember({
-          chatId: group.chatId,
-          telegramUserId: group.telegramUserId,
-        });
+        await kickUnexpectedMember(group.chatId, group.telegramUserId);
         canProceedWithRevocation = true;
       } catch (error) {
         if (shouldIgnoreKickFailure(error)) {
