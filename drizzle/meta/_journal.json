@@ -225,6 +225,13 @@
       "when": 1795184082417,
       "tag": "0031_operational_events",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795343008978,
+      "tag": "0032_erase_legacy_used_token_links",
+      "breakpoints": true
     }
   ]
 }

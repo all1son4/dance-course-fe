@@ -8,6 +8,8 @@ const TITLES: Record<string, string> = {
     "Пост в чате потока отправлен, но не закреплён",
   "Daily maintenance: Stripe background recovery failed":
     "Ночная задача: не удалось дообработать оплаты Stripe",
+  "Daily maintenance: an invite link could not be erased":
+    "Ночная задача: одну из ссылок не удалось стереть (остальные стёрты)",
   "Daily maintenance: business outbox recovery failed":
     "Ночная задача: не удалось дообработать очередь писем и Telegram",
   "Daily maintenance: failed to delete old operational events":
