@@ -62,7 +62,7 @@ const indexEntitlementsByPurchaseId = (
   for (const entitlement of entitlementRows) {
     const currentEntitlement = entitlementByPurchaseId.get(entitlement.purchaseId);
 
-    // A purchase can also hold hub access; sheet-compatible fields describe primary access.
+    // A purchase can also hold hub access; the flat record fields describe primary access.
     if (
       !currentEntitlement ||
       (entitlement.accessKey === "primary" && currentEntitlement.accessKey !== "primary")

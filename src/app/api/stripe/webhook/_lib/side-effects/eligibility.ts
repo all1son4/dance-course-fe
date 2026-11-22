@@ -30,8 +30,8 @@ export const shouldRunPurchaseSuccessSideEffects = (event: Stripe.Event) => {
   }
 
   // Payment Links emit checkout.session.completed and payment_intent.succeeded
-  // for the same payment. Sheets still uses both events; email/Telegram should
-  // run once, on the PaymentIntent event that represents the final payment state.
+  // for the same payment. Email/Telegram should run once, on the PaymentIntent
+  // event that represents the final payment state.
   return !getCheckoutSessionPaymentIntentId(event);
 };
 

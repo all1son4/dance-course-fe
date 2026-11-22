@@ -25,8 +25,8 @@ import {
 } from "./telegram-user-binding-records";
 
 // This is the database-facing composition root for the domains introduced during
-// the DB phase. Runtime provider access stays outside this boundary. Some payment and
-// Telegram callers still retain flattened compatibility projections until DROP-04.
+// the DB phase. Runtime provider access stays outside this boundary. Payment and
+// Telegram reads return the flat record shapes their callers were written against.
 export const domainRepositories = Object.freeze({
   adminInviteLinkHistory: Object.freeze({
     list: listAdminInviteLinkHistoryRecordsFromDatabase,
