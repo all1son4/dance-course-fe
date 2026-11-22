@@ -5,13 +5,7 @@ import {
   OFFER_TYPE_LABELS,
   RATE_LIMITED_STATUS_TEXT,
 } from "./admin.constants";
-import type {
-  ChoreoSelection,
-  LessonLanguage,
-  LinkState,
-  OnlineGroupAdminAccess,
-  OnlineGroupAdminAccessState,
-} from "./admin.types";
+import type { ChoreoSelection, LessonLanguage, LinkState } from "./admin.types";
 
 // Anna works from Warsaw: every time in the admin is Warsaw time.
 export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
@@ -95,22 +89,6 @@ export const resolveLinkStateLabel = (state: LinkState) =>
     : state === "expired"
       ? "Истекла"
       : "Ещё не использована";
-
-export const resolveOnlineGroupAccessStateLabel = (
-  state: OnlineGroupAdminAccessState,
-) => {
-  if (state === "issued") return "Ещё не использована";
-  if (state === "used") return "Использована";
-  if (state === "expired") return "Истекла";
-  if (state === "revoked") return "Отозвана";
-  if (state === "left") return "Вышли из чата";
-  if (state === "failed") return "Ссылка не создалась";
-  return "Подготавливается";
-};
-
-export const resolveOnlineGroupAccessTitle = (
-  accessKey: OnlineGroupAdminAccess["accessKey"],
-) => (accessKey === "inspiration-hub" ? "Библиотека Inspiration Hub" : "Чат потока");
 
 export const getChoreoSelections = () =>
   SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo")

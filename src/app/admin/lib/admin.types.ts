@@ -102,19 +102,6 @@ export type OnlineGroupCampaignEntry = {
   title: string;
 };
 
-export type OnlineGroupAdminAccessState =
-  "expired" | "failed" | "issued" | "left" | "pending" | "revoked" | "used";
-
-export type OnlineGroupAdminAccess = {
-  accessExpiresAt: string;
-  accessKey: "inspiration-hub" | "main-group";
-  accessUrl: string;
-  chatId: string;
-  chatTitle: string;
-  state: OnlineGroupAdminAccessState;
-  tokenExpiresAt: string;
-};
-
 export type AuthResponse = {
   authorized?: boolean;
   errorCode?: string;
