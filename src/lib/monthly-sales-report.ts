@@ -134,7 +134,7 @@ export const formatReportMonthLabel = (monthValue: string) => {
   return capitalizeFirstLetter(label);
 };
 
-const getMonthlySalesReportPeriod = ({
+export const getMonthlySalesReportPeriod = ({
   referenceDate,
   reportMonth,
 }: {
