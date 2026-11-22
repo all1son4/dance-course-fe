@@ -381,25 +381,19 @@ export function SavePageLink({
   );
 }
 
-/** The beaded ring of the stamp, open at the bottom for «FRAME UP · ANNA STROK». */
-const STAMP_DOTS = Array.from({ length: 36 }, (_, index) => index * 10)
-  .filter((angle) => angle <= 60 || angle >= 120)
-  .map((angle) => [
-    (50 + 40.6 * Math.cos((angle * Math.PI) / 180)).toFixed(2),
-    (50 + 40.6 * Math.sin((angle * Math.PI) / 180)).toFixed(2),
-  ]);
-
 /**
- * «Легенда группы» in the header: a pilgrim's stamp in the site's wine ink — the
- * name around the top, «FRAME UP · ANNA STROK» below, the number of cycles in the
- * middle on a ribbon, a little uneven like a real print. The description shows on
- * hover, on keyboard focus and on a tap.
+ * A stamp in the header — «Легенда группы» in the site's wine ink, «Подряд» in
+ * black: a pilgrim's stamp with the name around the top, «FRAME UP · ANNA STROK»
+ * below, the number of cycles in the middle on a ribbon, a little uneven like a
+ * real print. The description shows on hover, on keyboard focus and on a tap.
  */
-export function LegendMedal({
+export function CycleStamp({
   count,
+  ink,
   texts,
 }: {
   count: number;
+  ink: "wine" | "black";
   texts: { label: string; name: string; text: string; unit: string };
 }) {
   const [open, setOpen] = useState(false);
@@ -424,7 +418,7 @@ export function LegendMedal({
         onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
         type="button"
       >
-        <LegendStamp aria-hidden viewBox="0 0 100 100">
+        <LegendStamp aria-hidden data-ink={ink} viewBox="0 0 100 100">
           <defs>
             {/* The ink: a few unprinted specks and slightly wavering edges. */}
             <filter height="110%" id={`${id}-ink`} width="110%" x="-5%" y="-5%">
@@ -465,9 +459,6 @@ export function LegendMedal({
             <circle className="line" cx="50" cy="50" r="44" />
             <circle className="inner" cx="50" cy="50" r="26.5" />
             <circle className="line thin" cx="50" cy="50" r="24.6" />
-            {STAMP_DOTS.map(([x, y]) => (
-              <circle cx={x} cy={y} key={`${x}-${y}`} r="0.85" />
-            ))}
             <text className="name">
               <textPath href={`#${id}-top`} startOffset="50%">
                 {texts.name.toLocaleUpperCase()}

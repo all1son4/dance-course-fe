@@ -12,7 +12,11 @@ import {
 } from "drizzle-orm";
 
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
-import { collectMemberCohortIds, countLegendCycles } from "@/lib/my-access/cycles";
+import {
+  collectMemberCohortIds,
+  countLegendCycles,
+  findCycleStreak,
+} from "@/lib/my-access/cycles";
 import type { MyAccessNextCohort } from "@/lib/my-access/next-step";
 
 import { listHubDiscountCohorts } from "./hub-discount";
@@ -98,8 +102,8 @@ export async function findMyAccessCustomerIdForPaymentIntent(
 
 /**
  * The Online Group cycles of a customer, from purchase data only (see
- * `collectMemberCohortIds`): the closed ones behind, and «Легенда группы» over all
- * of them. Five small reads; cohorts and renewal campaigns are a handful of rows.
+ * `collectMemberCohortIds`): the closed ones behind, and the stamps over all of
+ * them — «Легенда группы» or «Подряд». Five small reads; cohorts and renewal campaigns are a handful of rows.
  */
 async function readCustomerCycles(
   database: DatabaseExecutor,
@@ -159,8 +163,10 @@ async function readCustomerCycles(
           closedAt: onlineGroupCohorts.closedAt,
           id: onlineGroupCohorts.id,
           mainChatId: onlineGroupCohorts.mainChatId,
+          startsAt: onlineGroupCohorts.startsAt,
         })
-        .from(onlineGroupCohorts),
+        .from(onlineGroupCohorts)
+        .orderBy(onlineGroupCohorts.startsAt),
     ]);
 
   const cohorts = cohortRows.map((cohort) => ({
@@ -188,13 +194,16 @@ async function readCustomerCycles(
     verifiedChatIds: verifications.flatMap((row) => (row.chatId ? [row.chatId] : [])),
   });
   const closed = new Set(cohorts.filter((c) => c.closed).map((c) => c.id));
+  const now = Date.now();
+  const stampCohorts = cohortRows.map((cohort) => ({
+    id: cohort.id,
+    started: cohort.startsAt.getTime() <= now,
+  }));
 
   return {
     completedCohortIds: memberCohortIds.filter((id) => closed.has(id)),
-    legendCycles: countLegendCycles(
-      cohorts.map((cohort) => cohort.id),
-      memberCohortIds,
-    ),
+    cycleStreak: findCycleStreak(stampCohorts, memberCohortIds),
+    legendCycles: countLegendCycles(stampCohorts, memberCohortIds),
   };
 }
 
@@ -312,6 +321,7 @@ export async function readMyAccessSnapshot(
   return {
     cohorts,
     completedCohortIds: cycles.completedCohortIds,
+    cycleStreak: cycles.cycleStreak,
     legendCycles: cycles.legendCycles,
     customerFullName: customer.fullName,
     hubDiscountCohortIds: discountCohorts.map((cohort) => cohort.id),

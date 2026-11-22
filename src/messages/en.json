@@ -1411,6 +1411,12 @@
       "unit": "{count, plural, one {cycle} other {cycles}}",
       "text": "Cycles 1.0 to {last}.0, not one missed. The stamp stays while you’re in every new cycle."
     },
+    "inARow": {
+      "name": "In a row",
+      "label": "Stamp “In a row”: {count, plural, one {# cycle} other {# cycles}} in a row, {first}.0 to {last}.0",
+      "unit": "{count, plural, one {cycle} other {cycles}}",
+      "text": "Cycles {first}.0 to {last}.0, back to back. The streak grows with every next cycle."
+    },
     "zones": {
       "action": "Waiting for you",
       "active": "Your access",

@@ -157,7 +157,7 @@ export const AccessHeader = styled.header`
   gap: 12px;
   margin-bottom: 32px;
 
-  /* «Легенда группы» stands in the top corner; the words keep clear of it and the
+  /* The stamp stands in the top corner; the words keep clear of it and the
      header never ends above it. */
   &:has(> [data-medal]) {
     position: relative;
@@ -1340,8 +1340,8 @@ export const SaveTip = styled.span`
 `;
 
 /*
- * «Легенда группы»: a pilgrim's stamp in the site's wine ink in the header's top
- * corner. It lands with a short press when the page opens.
+ * The stamp («Легенда группы» in wine ink, «Подряд» in black): a pilgrim's stamp
+ * in the header's top corner. It lands with a short press when the page opens.
  */
 const stampLanding = keyframes`
   from {
@@ -1402,8 +1402,14 @@ export const LegendStamp = styled.svg`
   transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
   animation: ${stampLanding} 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 
+  --stamp-ink: var(--brand);
+
+  &[data-ink="black"] {
+    --stamp-ink: var(--ink);
+  }
+
   & * {
-    fill: var(--brand);
+    fill: var(--stamp-ink);
     stroke: none;
   }
 
@@ -1411,7 +1417,7 @@ export const LegendStamp = styled.svg`
   & circle.line,
   & circle.inner {
     fill: none;
-    stroke: var(--brand);
+    stroke: var(--stamp-ink);
   }
 
   & circle.rim {
