@@ -30,7 +30,8 @@ export default async function ChoreoCatalogueSection() {
     catalogProducts,
     isBlackFridayActive()
       ? {
-          badge: blackFridayT("cards.choreoLabel"),
+          badge: blackFridayT("ribbon.title"),
+          highlight: blackFridayT("choreo.badge"),
           priceLabel: blackFridayT("checkout.priceLabel"),
           regularPriceLabel: blackFridayT("choreo.regularPrice"),
         }

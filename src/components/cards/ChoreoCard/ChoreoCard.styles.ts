@@ -3,6 +3,7 @@ import { css, styled } from "styled-components";
 import { visuallyHidden } from "@/styles/mixins/a11y";
 import {
   blackFridayCardEdge,
+  blackFridayHighlight,
   blackFridayLabel,
   blackFridayPill,
 } from "@/styles/mixins/blackFriday";
@@ -74,6 +75,12 @@ export const CampaignBadge = styled.span`
   pointer-events: none;
   ${blackFridayPill}
   ${blackFridayLabel}
+  display: inline-flex;
+  align-items: center;
+
+  & b {
+    ${blackFridayHighlight}
+  }
 `;
 
 export const IconBox = styled.div`

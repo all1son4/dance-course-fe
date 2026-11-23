@@ -94,3 +94,14 @@ export const applyBlackFridayToProducts = (
 
 export const isBlackFridayOffer = (offer: Pick<SellableProductOffer, "campaign">) =>
   offer.campaign === BLACK_FRIDAY_CAMPAIGN;
+
+/**
+ * A purchase made on the campaign's terms: one of its offers, bought inside the
+ * window. A fact of the purchase, so «Мой доступ» keeps the mark after the end,
+ * for as long as the access runs, whatever the master switch says later.
+ */
+export const isBlackFridayPurchase = (offerId: string, boughtAt: Date) =>
+  (offerId in BLACK_FRIDAY_CHOREO_PRICES ||
+    offerId === INSPIRATION_HUB_ACCESS_OFFER_ID) &&
+  boughtAt.getTime() >= BLACK_FRIDAY_STARTS_AT.getTime() &&
+  boughtAt.getTime() < BLACK_FRIDAY_ENDS_AT.getTime();

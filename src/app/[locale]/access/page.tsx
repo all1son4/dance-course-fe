@@ -78,6 +78,7 @@ import {
   AccessAside,
   AccessLayout,
   CalendarLink,
+  CampaignMark,
   CardActions,
   CardDetail,
   CardHead,
@@ -171,11 +172,12 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     notFound();
   }
 
-  const [params, locale, t, productT, requestHeaders] = await Promise.all([
+  const [params, locale, t, productT, blackFridayT, requestHeaders] = await Promise.all([
     searchParams,
     getLocale(),
     getTranslations("MyAccessPage"),
     getTranslations("SellableProducts"),
+    getTranslations("BlackFriday"),
     headers(),
   ]);
   const rawToken = Array.isArray(params.k) ? params.k[0] : params.k;
@@ -296,6 +298,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
 
     return (
       <FoldingCard
+        campaign={card.campaign === "black-friday"}
         // What waits on the reader stays open: its button must be in sight.
         defaultOpen={zone === "action"}
         detailsId={detailsId}
@@ -312,6 +315,9 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
               </span>
             )}
           </CardTitle>
+          {card.campaign === "black-friday" && (
+            <CampaignMark>{blackFridayT("myAccess.chip")}</CampaignMark>
+          )}
           {ATTENTION_CHIPS.has(card.chip) && (
             <StatusChip
               $tone={

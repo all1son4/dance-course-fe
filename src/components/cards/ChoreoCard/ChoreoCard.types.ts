@@ -44,6 +44,8 @@ export type ChoreoCardProps = {
   priceAnchor?: ChoreoCardPriceAnchor;
   /** A campaign label over the media, e.g. "Black Friday −33%". */
   campaignBadge?: string;
+  /** The figure after the campaign label, as a chip: "−33%". */
+  campaignHighlight?: string;
   specialOffer?: boolean;
   icon?: ReactNode;
 };

@@ -2,6 +2,7 @@ import { css, styled } from "styled-components";
 
 import {
   blackFridayCardEdge,
+  blackFridayHighlight,
   blackFridayLabel,
   blackFridayPill,
 } from "@/styles/mixins/blackFriday";
@@ -75,6 +76,13 @@ export const OccasionPhotoBadge = styled.span`
   border-radius: var(--radius-pill);
   ${blackFridayPill}
   ${blackFridayLabel}
+
+  display: inline-flex;
+  align-items: center;
+
+  & b {
+    ${blackFridayHighlight}
+  }
 
   @media (max-width: 550px) {
     top: 16px;

@@ -116,7 +116,12 @@ function HalloweenBackgroundArtwork() {
 function BlackFridayHeaderBadge() {
   const occasion = useContext(CardOccasionContext);
 
-  return occasion ? <OccasionPhotoBadge>{occasion.label}</OccasionPhotoBadge> : null;
+  return occasion ? (
+    <OccasionPhotoBadge>
+      {occasion.label}
+      {occasion.highlight ? <b>{occasion.highlight}</b> : null}
+    </OccasionPhotoBadge>
+  ) : null;
 }
 
 type OccasionArtworkSet = {

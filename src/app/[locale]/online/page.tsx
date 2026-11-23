@@ -80,13 +80,16 @@ export default async function Online() {
     hubSaleState,
     isBlackFridayActive()
       ? {
-          choreoLabel: blackFridayT("cards.choreoLabel"),
+          label: blackFridayT("ribbon.title"),
+          choreoCta: blackFridayT("choreo.cta"),
+          choreoHighlight: blackFridayT("choreo.badge"),
+          hubCta: blackFridayT("hub.cta"),
+          hubHighlight: blackFridayT("hub.badge"),
           choreoFactLabel: blackFridayT("checkout.priceLabel"),
           choreoPrice: choreoOffer ? formatOfferPrice(choreoOffer.prices) : "",
           choreoRegularPrice: choreoOffer?.compareAtPrices
             ? formatOfferPrice(choreoOffer.compareAtPrices)
             : undefined,
-          hubLabel: blackFridayT("cards.hubLabel"),
           hubFactLabel: blackFridayT("cards.hubFactLabel"),
           hubFactValue: blackFridayT("cards.hubPlate"),
         }

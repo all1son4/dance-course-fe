@@ -7,6 +7,7 @@ import {
   isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
+import { isBlackFridayPurchase } from "@/lib/black-friday";
 import { addWarsawCalendarDays, isStartDayReached } from "@/lib/inspiration-hub/calendar";
 import { getPlusHubLastDay } from "@/lib/online-group/cohort-messages";
 import {
@@ -167,6 +168,8 @@ export type MyAccessCard = {
     href: string;
     purchaseId?: string;
   };
+  /** Bought on Black Friday terms (`isBlackFridayPurchase`): the card wears the mark. */
+  campaign?: "black-friday";
   /** How many identical purchases this one card stands for (folded duplicates). */
   count: number;
   /** 0 — needs action, 1 — running, 2 — later, 3 — ended. Sort key. */
@@ -720,6 +723,7 @@ export const buildMyAccessCards = (
 
   const cards: BaseCard[] = [];
   const hubGroups = new Map<string, MyAccessRight[]>();
+  const hubCampaignGroups = new Set<string>();
   const plusHubIdentities = new Set<string>();
   const hubIdentity = new Map<BaseCard, string>();
   const boughtOf = new Map<BaseCard, number>();
@@ -778,6 +782,8 @@ export const buildMyAccessCards = (
         groupId,
         Math.max(hubBoughtAt.get(groupId) ?? 0, purchase.boughtAt.getTime()),
       );
+      if (isBlackFridayPurchase(offerId, purchase.boughtAt))
+        hubCampaignGroups.add(groupId);
       continue;
     }
 
@@ -815,7 +821,14 @@ export const buildMyAccessCards = (
 
     if (isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId)) {
       const card = buildTimedChannelCard({ now, primary, purchase });
-      if (card) add(card, purchase);
+      if (card) {
+        add(
+          isBlackFridayPurchase(offerId, purchase.boughtAt)
+            ? { ...card, campaign: "black-friday" }
+            : card,
+          purchase,
+        );
+      }
       continue;
     }
 
@@ -848,9 +861,12 @@ export const buildMyAccessCards = (
       sales,
     });
     if (card) {
-      cards.push(card);
-      boughtOf.set(card, hubBoughtAt.get(groupId) ?? 0);
-      hubIdentity.set(card, groupId);
+      const marked: BaseCard = hubCampaignGroups.has(groupId)
+        ? { ...card, campaign: "black-friday" }
+        : card;
+      cards.push(marked);
+      boughtOf.set(marked, hubBoughtAt.get(groupId) ?? 0);
+      hubIdentity.set(marked, groupId);
     }
   }
 

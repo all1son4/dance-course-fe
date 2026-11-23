@@ -57,3 +57,14 @@ export const blackFridayCardEdge = css`
     border: 2px solid CanvasText;
   }
 `;
+
+/** The discount inside a label pill ("−33%", "×2"): a small red chip. */
+export const blackFridayHighlight = css`
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--ink-inverse);
+  background: linear-gradient(135deg, #b3141a, var(--brand));
+`;

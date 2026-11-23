@@ -1,5 +1,11 @@
 import styled from "styled-components";
 
+import {
+  blackFridayCardEdge,
+  blackFridayLabel,
+  blackFridayPill,
+} from "@/styles/mixins/blackFriday";
+
 import { porcelain, quietAction } from "./page.styles";
 
 /* Zones on the left; the rail beside them from 1024px, below them on a phone. */
@@ -108,6 +114,11 @@ export const AccessCard = styled.li`
   gap: 14px;
   padding: 20px 24px 22px;
   transition: transform var(--motion-fast, 160ms) ease;
+
+  /* Bought on Black Friday: the campaign edge, as on the storefront cards. */
+  &[data-campaign] {
+    ${blackFridayCardEdge}
+  }
 
   /* A tap on a phone's folding card presses it in a touch. */
   &:has(> button:active) {
@@ -499,4 +510,14 @@ export const ActionResult = styled.p<{ $tone: "ok" | "error" }>`
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+`;
+
+/* The Black Friday mark next to the title, the same pill as on the storefront. */
+export const CampaignMark = styled.span`
+  ${blackFridayPill}
+  ${blackFridayLabel}
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
 `;

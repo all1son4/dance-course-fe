@@ -3,6 +3,7 @@ import { keyframes, styled } from "styled-components";
 import { Link } from "@/i18n/navigation";
 import {
   BLACK_FRIDAY_INK,
+  blackFridayHighlight,
   blackFridayLabel,
   blackFridayPill,
   blackFridaySurface,
@@ -498,6 +499,10 @@ export const CampaignBadge = styled.span`
   align-items: center;
   padding: 8px 14px;
   border-radius: var(--radius-pill);
+
+  & b {
+    ${blackFridayHighlight}
+  }
 `;
 
 /** The campaign price or term on a dark plate, so it reads as the offer. */

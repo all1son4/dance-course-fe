@@ -140,6 +140,7 @@ const getBundleCompareAtPrices = (
 /** Black Friday copy for the cards; present only while the campaign runs. */
 export type ChoreoCampaignCopy = {
   badge: string;
+  highlight: string;
   priceLabel: string;
   regularPriceLabel: string;
 };
@@ -327,6 +328,8 @@ export const getChoreos = (
         ),
         campaignBadge:
           campaign && anchorOffer.compareAtPrices ? campaign.badge : undefined,
+        campaignHighlight:
+          campaign && anchorOffer.compareAtPrices ? campaign.highlight : undefined,
         ...presentation,
         ...copy,
         firstButtonOptions: buildChoreoButtonOptions(product, t, withoutMentorOffer),

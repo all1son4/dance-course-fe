@@ -578,12 +578,15 @@ const FOLD_AFTER_DONE_MS = 2600;
  * server, so nothing moves on load.
  */
 export function FoldingCard({
+  campaign = false,
   children,
   defaultOpen,
   detailsId,
   foldable,
   label,
 }: {
+  /** Bought on Black Friday: the card wears the campaign edge. */
+  campaign?: boolean;
   children: ReactNode;
   defaultOpen: boolean;
   detailsId: string;
@@ -596,7 +599,7 @@ export function FoldingCard({
   }, [foldable]);
 
   return (
-    <AccessCard data-open={open ? "true" : "false"}>
+    <AccessCard data-campaign={campaign || undefined} data-open={open ? "true" : "false"}>
       {foldable && (
         <CardToggle
           aria-controls={detailsId}

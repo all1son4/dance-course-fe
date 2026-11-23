@@ -33,6 +33,7 @@ import type { ChoreoCardProps } from "./ChoreoCard.types";
 export default function ChoreoCard({
   analyticsId,
   campaignBadge,
+  campaignHighlight,
   firstButtonOptions,
   highlights,
   icon,
@@ -66,7 +67,12 @@ export default function ChoreoCard({
         $isCampaign={Boolean(campaignBadge)}
         $isSpecialOffer={specialOffer}
       >
-        {campaignBadge && <CampaignBadge>{campaignBadge}</CampaignBadge>}
+        {campaignBadge && (
+          <CampaignBadge>
+            {campaignBadge}
+            {campaignHighlight ? <b>{campaignHighlight}</b> : null}
+          </CampaignBadge>
+        )}
         {videoSrc && (
           <VideoPlayer
             analyticsId={analyticsId}

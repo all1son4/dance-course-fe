@@ -158,7 +158,10 @@ export default async function InspirationHubPage() {
       >
         {isCampaign ? (
           <CampaignBadgeRow>
-            <CampaignBadge>{blackFridayT("cards.hubLabel")}</CampaignBadge>
+            <CampaignBadge>
+              {blackFridayT("ribbon.title")}
+              <b>{blackFridayT("hub.badge")}</b>
+            </CampaignBadge>
           </CampaignBadgeRow>
         ) : null}
         <Title>{t("hero.title")}</Title>

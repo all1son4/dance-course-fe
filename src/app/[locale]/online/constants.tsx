@@ -17,11 +17,14 @@ type InteractiveCourseCard = InteractiveCardProps & {
 
 /** Black Friday copy; present only while the campaign runs. */
 export type OnlineBlackFridayCopy = {
-  choreoLabel: string;
+  label: string;
+  choreoCta: string;
+  choreoHighlight: string;
+  hubCta: string;
+  hubHighlight: string;
   choreoFactLabel: string;
   choreoPrice: string;
   choreoRegularPrice?: string;
-  hubLabel: string;
   hubFactLabel: string;
   hubFactValue: string;
 };
@@ -107,7 +110,11 @@ export const getOnlineCoursesArray = (
     headerPhoto: "/images/photos/card_inspiration_hub.webp",
     occasion:
       blackFriday && hubSaleState === "open"
-        ? { theme: "black-friday", label: blackFriday.hubLabel }
+        ? {
+            theme: "black-friday",
+            label: blackFriday.label,
+            highlight: blackFriday.hubHighlight,
+          }
         : undefined,
     topRowContent: (
       <ContentStack $gap="16px">
@@ -128,7 +135,8 @@ export const getOnlineCoursesArray = (
         </ContentStack>
       ),
     // Like every card here, it leads to the course page, where the buy button is.
-    buttonText: commonT("details"),
+    buttonText:
+      blackFriday && hubSaleState === "open" ? blackFriday.hubCta : commonT("details"),
     buttonHref: "/online/inspiration-hub",
     buttonPrefetch: false,
   },
@@ -138,7 +146,11 @@ export const getOnlineCoursesArray = (
     headerPhoto: "/images/photos/card_choreo.webp",
     occasion:
       blackFriday && choreoSaleState === "open"
-        ? { theme: "black-friday", label: blackFriday.choreoLabel }
+        ? {
+            theme: "black-friday",
+            label: blackFriday.label,
+            highlight: blackFriday.choreoHighlight,
+          }
         : undefined,
     topRowContent: (
       <ContentStack $gap="16px">
@@ -169,7 +181,10 @@ export const getOnlineCoursesArray = (
           </DetailFactText>
         </ContentStack>
       ),
-    buttonText: commonT("details"),
+    buttonText:
+      blackFriday && choreoSaleState === "open"
+        ? blackFriday.choreoCta
+        : commonT("details"),
     buttonHref: "/online/choreo",
   },
   {
