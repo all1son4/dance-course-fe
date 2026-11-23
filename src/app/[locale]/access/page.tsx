@@ -57,6 +57,7 @@ import { normalizedSiteUrl } from "@/lib/seo";
 
 import {
   CalendarSubscribe,
+  CampaignMarkStamp,
   CycleStamp,
   FoldingCard,
   ReissueInvite,
@@ -78,7 +79,6 @@ import {
   AccessAside,
   AccessLayout,
   CalendarLink,
-  CampaignMark,
   CardActions,
   CardDetail,
   CardHead,
@@ -316,7 +316,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
             )}
           </CardTitle>
           {card.campaign === "black-friday" && (
-            <CampaignMark>{blackFridayT("myAccess.chip")}</CampaignMark>
+            <CampaignMarkStamp>{blackFridayT("myAccess.chip")}</CampaignMarkStamp>
           )}
           {ATTENTION_CHIPS.has(card.chip) && (
             <StatusChip

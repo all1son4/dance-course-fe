@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-import { PriceDrop, StrikeDraw } from "@/components/other/BlackFriday/BlackFridayMotion";
 import {
   formatCheckoutPrice,
   type SellableProductPrices,
@@ -177,18 +176,12 @@ const SummaryPrice = ({
             {campaign?.prices ? (
               <>
                 <RegularPrice>
-                  <StrikeDraw>
-                    {formatCheckoutPrice(
-                      campaign.prices.from[selectedCurrency],
-                      selectedCurrency,
-                    )}
-                  </StrikeDraw>
+                  {formatCheckoutPrice(
+                    campaign.prices.from[selectedCurrency],
+                    selectedCurrency,
+                  )}
                 </RegularPrice>{" "}
-                <PriceDrop
-                  currency={selectedCurrency}
-                  from={campaign.prices.from}
-                  to={campaign.prices.to}
-                />
+                {formattedPrice}
               </>
             ) : (
               formattedPrice

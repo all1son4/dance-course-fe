@@ -6,6 +6,7 @@ import {
   blackFridayHighlight,
   blackFridayLabel,
   blackFridayPill,
+  blackFridayStampIn,
   blackFridaySurface,
 } from "@/styles/mixins/blackFriday";
 
@@ -146,6 +147,11 @@ export const CountdownUnit = styled.span`
 
 /* ---------- Ribbon under the header ---------- */
 
+const ribbonIn = keyframes`
+  from { opacity: 0; transform: translate(-50%, -12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+`;
+
 export const Ribbon = styled.div`
   position: fixed;
   z-index: 49;
@@ -167,6 +173,11 @@ export const Ribbon = styled.div`
     opacity var(--motion-base) var(--ease-standard),
     visibility 0s linear 0s;
 
+  /* It slides out from under the header when it appears. */
+  &:not([data-hidden]) {
+    animation: ${ribbonIn} 560ms var(--ease-emphasized) 300ms backwards;
+  }
+
   /* While the home section is on screen the ribbon fades out of the way. */
   &[data-hidden] {
     opacity: 0;
@@ -180,7 +191,9 @@ export const Ribbon = styled.div`
   @media (prefers-reduced-motion: reduce) {
     transition: none;
 
+    &:not([data-hidden]),
     &[data-hidden] {
+      animation: none;
       transition: none;
     }
   }
@@ -648,6 +661,8 @@ export const CampaignBadge = styled.span`
   & b {
     ${blackFridayHighlight}
   }
+
+  ${blackFridayStampIn}
 `;
 
 /** The campaign price or term on a dark plate, so it reads as the offer. */

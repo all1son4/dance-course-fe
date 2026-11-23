@@ -1689,14 +1689,14 @@
     "cards": {
       "choreoLabel": "Black Friday −33%",
       "hubLabel": "Black Friday ×2",
-      "hubPlate": "16 weeks for the price of 8",
+      "hubPlate": "<n>16</n> weeks for the price of 8",
       "hubFactLabel": "Black Friday · access"
     },
     "hubPage": {
       "badge": "Black Friday",
-      "accessValue": "16 weeks",
+      "accessValue": "<n>16</n> weeks",
       "regularAccess": "8 weeks",
-      "priceLabel": "16 weeks of access",
+      "priceLabel": "<n>16</n> weeks of access",
       "note": "Buy by 30 November and get 16 weeks for the price of 8. Access counts from payment."
     },
     "checkout": {

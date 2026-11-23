@@ -4,7 +4,11 @@ import { getTranslations } from "next-intl/server";
 import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
-import { CampaignBadge, StrikeDraw } from "@/components/other/BlackFriday";
+import {
+  CountUp,
+  StampedCampaignBadge,
+  StrikeDraw,
+} from "@/components/other/BlackFriday";
 import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import ProgramRoadmap from "@/components/other/ProgramRoadmap";
@@ -159,10 +163,10 @@ export default async function InspirationHubPage() {
       >
         {isCampaign ? (
           <CampaignBadgeRow>
-            <CampaignBadge>
+            <StampedCampaignBadge>
               {blackFridayT("ribbon.title")}
               <b>{blackFridayT("hub.badge")}</b>
-            </CampaignBadge>
+            </StampedCampaignBadge>
           </CampaignBadgeRow>
         ) : null}
         <Title>{t("hero.title")}</Title>
@@ -176,7 +180,11 @@ export default async function InspirationHubPage() {
             value={
               isCampaign ? (
                 <>
-                  <CampaignAccent>{blackFridayT("hubPage.accessValue")}</CampaignAccent>{" "}
+                  <CampaignAccent>
+                    {blackFridayT.rich("hubPage.accessValue", {
+                      n: () => <CountUp from={8} to={16} />,
+                    })}
+                  </CampaignAccent>{" "}
                   <CampaignFactRegular>
                     <StrikeDraw>{blackFridayT("hubPage.regularAccess")}</StrikeDraw>
                   </CampaignFactRegular>
@@ -311,7 +319,11 @@ export default async function InspirationHubPage() {
           <FinalCtaOffer>
             <OfferPrice>
               <small>
-                {isCampaign ? blackFridayT("hubPage.priceLabel") : t("cta.priceLabel")}
+                {isCampaign
+                  ? blackFridayT.rich("hubPage.priceLabel", {
+                      n: () => <CountUp from={8} to={16} />,
+                    })
+                  : t("cta.priceLabel")}
               </small>
               <strong>{price}</strong>
             </OfferPrice>

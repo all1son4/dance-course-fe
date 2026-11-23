@@ -5,6 +5,7 @@ import {
   blackFridayHighlight,
   blackFridayLabel,
   blackFridayPill,
+  blackFridayStampIn,
 } from "@/styles/mixins/blackFriday";
 
 import type { InteractiveCardOccasionTheme } from "./InteractiveCard.types";
@@ -88,6 +89,8 @@ export const OccasionPhotoBadge = styled.span`
     top: 16px;
     left: 16px;
   }
+
+  ${blackFridayStampIn}
 `;
 
 export const OccasionInlineLabel = styled.span`

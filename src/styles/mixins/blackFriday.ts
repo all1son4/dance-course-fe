@@ -1,4 +1,4 @@
-import { css } from "styled-components";
+import { css, keyframes } from "styled-components";
 
 /*
  * The one Black Friday look, shared by every campaign element on the site: the
@@ -67,4 +67,32 @@ export const blackFridayHighlight = css`
   letter-spacing: 0.02em;
   color: var(--ink-inverse);
   background: linear-gradient(135deg, #b3141a, var(--brand));
+`;
+
+const badgeStamp = keyframes`
+  0% { opacity: 0; transform: scale(1.6) rotate(-8deg); }
+  60% { opacity: 1; transform: scale(0.95) rotate(1deg); }
+  100% { opacity: 1; transform: none; }
+`;
+
+/**
+ * A campaign label lands like a stamp the first time it is seen (StampIn sets
+ * `data-stamp` and holds `data-pending` until then). Without script or with
+ * reduced motion it is simply there.
+ */
+export const blackFridayStampIn = css`
+  &[data-stamp]:not([data-pending]) {
+    animation: ${badgeStamp} 600ms cubic-bezier(0.2, 0.9, 0.3, 1.2)
+      var(--bf-badge-delay, 250ms) both;
+  }
+
+  &[data-pending] {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &[data-stamp] {
+      animation: none !important;
+    }
+  }
 `;

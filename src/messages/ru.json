@@ -1703,14 +1703,14 @@
     "cards": {
       "choreoLabel": "Black Friday −33%",
       "hubLabel": "Black Friday ×2",
-      "hubPlate": "16 недель по цене 8",
+      "hubPlate": "<n>16</n> недель по цене 8",
       "hubFactLabel": "Black Friday · доступ"
     },
     "hubPage": {
       "badge": "Black Friday",
-      "accessValue": "16 недель",
+      "accessValue": "<n>16</n> недель",
       "regularAccess": "8 недель",
-      "priceLabel": "16 недель доступа",
+      "priceLabel": "<n>16</n> недель доступа",
       "note": "Купи до 30 ноября — получи 16 недель по цене 8. Срок считается от оплаты."
     },
     "checkout": {

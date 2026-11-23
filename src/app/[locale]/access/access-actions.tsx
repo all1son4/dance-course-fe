@@ -12,6 +12,7 @@ import {
 } from "react";
 
 import Button from "@/components/common/Button";
+import { StampIn } from "@/components/other/BlackFriday/BlackFridayMotion";
 
 import {
   LegendButton,
@@ -32,6 +33,7 @@ import {
 import {
   AccessCard,
   ActionResult,
+  CampaignMark,
   CardToggle,
   QuietButton,
   QuietLink,
@@ -614,4 +616,9 @@ export function FoldingCard({
       <FoldContext.Provider value={fold}>{children}</FoldContext.Provider>
     </AccessCard>
   );
+}
+
+/** The Black Friday mark of a card, landing like a stamp when first seen. */
+export function CampaignMarkStamp({ children }: { children: ReactNode }) {
+  return <StampIn as={CampaignMark}>{children}</StampIn>;
 }

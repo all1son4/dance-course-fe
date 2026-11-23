@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
 import { PriceDrop, StrikeDraw } from "@/components/other/BlackFriday";
 import {
@@ -31,7 +33,7 @@ export type OnlineBlackFridayCopy = {
   /** The tutorials' campaign price and the regular one, for the price drop. */
   choreoPrices: { from: SellableProductPrices; to: SellableProductPrices } | null;
   hubFactLabel: string;
-  hubFactValue: string;
+  hubFactValue: ReactNode;
 };
 
 /**
@@ -45,7 +47,7 @@ const CampaignFact = ({
 }: {
   label: string;
   prices?: { from: SellableProductPrices; to: SellableProductPrices } | null;
-  value?: string;
+  value?: ReactNode;
 }) => (
   <ContentStack>
     <CampaignFactLabel>{label}</CampaignFactLabel>

@@ -1,5 +1,7 @@
 import { type ComponentType, useContext } from "react";
 
+import { StampIn } from "@/components/other/BlackFriday/BlackFridayMotion";
+
 import {
   OccasionArtwork,
   OccasionBackgroundArtwork,
@@ -117,10 +119,10 @@ function BlackFridayHeaderBadge() {
   const occasion = useContext(CardOccasionContext);
 
   return occasion ? (
-    <OccasionPhotoBadge>
+    <StampIn as={OccasionPhotoBadge}>
       {occasion.label}
       {occasion.highlight ? <b>{occasion.highlight}</b> : null}
-    </OccasionPhotoBadge>
+    </StampIn>
   ) : null;
 }
 

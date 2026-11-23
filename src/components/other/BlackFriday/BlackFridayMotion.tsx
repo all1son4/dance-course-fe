@@ -2,6 +2,7 @@
 
 import {
   type ComponentPropsWithoutRef,
+  type ElementType,
   type ReactNode,
   useEffect,
   useRef,
@@ -15,7 +16,7 @@ import {
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
 
-import { RevealLine, StampMark, StrikeLine } from "./BlackFriday.styles";
+import { CampaignBadge, RevealLine, StampMark, StrikeLine } from "./BlackFriday.styles";
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 /* Timing shared with the CSS in BlackFriday.styles: strike, then price, then the gift line. */
@@ -30,7 +31,7 @@ const prefersReducedMotion = () => window.matchMedia(REDUCED_MOTION).matches;
  * is first seen, then lets its CSS play. The server HTML has no flag, so without
  * script or with reduced motion the element simply shows its final state.
  */
-function usePendingUntilSeen<T extends HTMLElement>() {
+export function usePendingUntilSeen<T extends HTMLElement>() {
   const ref = useRef<T>(null);
 
   useEffect(() => {
@@ -180,4 +181,71 @@ export function CampaignReveal({
       {children}
     </RevealLine>
   );
+}
+
+/** Renders a campaign label (any styled pill) that lands like a stamp when seen. */
+export function StampIn({
+  as: Component,
+  ...props
+}: { as: ElementType } & ComponentPropsWithoutRef<"span">) {
+  const ref = usePendingUntilSeen<HTMLElement>();
+
+  return <Component ref={ref} data-stamp="" {...props} />;
+}
+
+const COUNT_DELAY_MS = 500;
+const COUNT_MS = 900;
+
+/**
+ * A number that counts up when first seen: the Hub's 8 weeks becoming 16. The
+ * server renders the final number, so the text reads right without the motion.
+ */
+export function CountUp({ from, to }: { from: number; to: number }) {
+  const [shown, setShown] = useState(to);
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || prefersReducedMotion()) return;
+
+    let frame = 0;
+    let timeout = 0;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        observer.disconnect();
+        setShown(from);
+        let begin = 0;
+        const step = (time: number) => {
+          begin ||= time;
+          const progress = Math.min(1, (time - begin) / COUNT_MS);
+          const eased = 1 - (1 - progress) ** 3;
+          setShown(Math.round(from + (to - from) * eased));
+          if (progress < 1) frame = requestAnimationFrame(step);
+        };
+        timeout = window.setTimeout(() => {
+          frame = requestAnimationFrame(step);
+        }, COUNT_DELAY_MS);
+      },
+      { threshold: 0.6 },
+    );
+    observer.observe(element);
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(timeout);
+      cancelAnimationFrame(frame);
+    };
+  }, [from, to]);
+
+  return (
+    <span ref={ref} style={{ fontVariantNumeric: "tabular-nums" }}>
+      {shown}
+    </span>
+  );
+}
+
+/** The campaign label pill, landing like a stamp: for server-rendered pages. */
+export function StampedCampaignBadge(props: ComponentPropsWithoutRef<"span">) {
+  return <StampIn as={CampaignBadge} {...props} />;
 }

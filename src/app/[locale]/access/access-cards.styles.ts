@@ -4,6 +4,7 @@ import {
   blackFridayCardEdge,
   blackFridayLabel,
   blackFridayPill,
+  blackFridayStampIn,
 } from "@/styles/mixins/blackFriday";
 
 import { porcelain, quietAction } from "./page.styles";
@@ -520,4 +521,6 @@ export const CampaignMark = styled.span`
   align-items: center;
   padding: 7px 12px;
   border-radius: var(--radius-pill);
+
+  ${blackFridayStampIn}
 `;

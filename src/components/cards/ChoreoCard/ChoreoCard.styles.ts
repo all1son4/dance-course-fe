@@ -6,6 +6,7 @@ import {
   blackFridayHighlight,
   blackFridayLabel,
   blackFridayPill,
+  blackFridayStampIn,
 } from "@/styles/mixins/blackFriday";
 import { glass, raisedGlassEdge } from "@/styles/mixins/glass";
 
@@ -81,6 +82,8 @@ export const CampaignBadge = styled.span`
   & b {
     ${blackFridayHighlight}
   }
+
+  ${blackFridayStampIn}
 `;
 
 export const IconBox = styled.div`

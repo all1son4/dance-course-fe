@@ -4,6 +4,7 @@ import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
+import { CountUp } from "@/components/other/BlackFriday";
 import Contacts from "@/components/other/Contacts";
 import { HERO_MEDIA } from "@/constants/hero-media";
 import {
@@ -89,7 +90,9 @@ export default async function Online() {
             ? { from: choreoOffer.compareAtPrices, to: choreoOffer.prices }
             : null,
           hubFactLabel: blackFridayT("cards.hubFactLabel"),
-          hubFactValue: blackFridayT("cards.hubPlate"),
+          hubFactValue: blackFridayT.rich("cards.hubPlate", {
+            n: () => <CountUp from={8} to={16} />,
+          }),
         }
       : null,
   );

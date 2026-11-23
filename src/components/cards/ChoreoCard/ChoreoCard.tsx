@@ -5,9 +5,9 @@ import PreviewClip from "@/components/other/PreviewClip";
 import VideoPlayer from "@/components/other/VideoPlayer/VideoPlayer";
 import { previewClipRootProps } from "@/lib/preview-clip";
 
+import ChoreoCampaignBadge from "./ChoreoCampaignBadge";
 import {
   ButtonBox,
-  CampaignBadge,
   CARD_MEDIA_RADIUS,
   CardContainer,
   CardFooter,
@@ -74,10 +74,10 @@ export default function ChoreoCard({
         $isSpecialOffer={specialOffer}
       >
         {campaignBadge && (
-          <CampaignBadge>
+          <ChoreoCampaignBadge>
             {campaignBadge}
             {campaignHighlight ? <b>{campaignHighlight}</b> : null}
-          </CampaignBadge>
+          </ChoreoCampaignBadge>
         )}
         {videoSrc && (
           <VideoPlayer
