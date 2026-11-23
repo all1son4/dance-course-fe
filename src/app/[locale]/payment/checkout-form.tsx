@@ -44,7 +44,7 @@ import {
   TelegramInputControl,
   TelegramInputStatus,
   TelegramVerifyButton,
-} from "./page.styles";
+} from "./checkout-form.styles";
 import {
   type CheckoutAgreement,
   type CheckoutInputField,
