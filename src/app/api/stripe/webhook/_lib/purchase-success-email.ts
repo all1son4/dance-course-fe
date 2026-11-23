@@ -19,15 +19,6 @@ const PLUS_HUB_SCHEDULED_COPY = {
 
 const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
 
-const getPolishWeeks = (weeks: number) => {
-  if (weeks === 1) return "tydzień";
-  const lastTwoDigits = weeks % 100;
-  const lastDigit = weeks % 10;
-  return lastDigit >= 2 && lastDigit <= 4 && !(lastTwoDigits >= 12 && lastTwoDigits <= 14)
-    ? "tygodnie"
-    : "tygodni";
-};
-
 const EMAIL_COPY = {
   en: {
     accessLabel: "Access",
@@ -150,7 +141,8 @@ const EMAIL_COPY = {
       privateLesson: "termin do ustalenia",
     },
     formatDays: (days: number) => `${days} ${days === 1 ? "dzień" : "dni"}`,
-    formatWeeks: (weeks: number) => `${weeks} ${getPolishWeeks(weeks)}`,
+    formatWeeks: (weeks: number) =>
+      `${weeks} ${pluralize("pl", weeks, ["tydzień", "tygodnie", "tygodni"])}`,
     inspirationHubAccessUntil: "Dostęp do Inspiration Hub ważny do {date}",
     amountLabel: "Kwota",
     autoReplyNote:

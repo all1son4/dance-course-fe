@@ -82,6 +82,9 @@ test("Polish and Russian week counts follow their plural forms", () => {
   assert.ok(weeks("pl", 4).includes("4 tygodnie"));
   assert.ok(weeks("pl", 8).includes("8 tygodni"));
   assert.ok(weeks("pl", 12).includes("12 tygodni"));
+  // Polish 21 is many, not one as in Russian (21 неделю).
+  assert.ok(weeks("pl", 21).includes("21 tygodni"));
+  assert.ok(weeks("ru", 21).includes("21 неделю"));
 });
 
 test("the option names shorten the cohort title the way Anna writes it", () => {
