@@ -1214,42 +1214,43 @@ const PaymentPage = observer(function PaymentPage({
             onInputChange={handleInputChange}
             onInputFocus={handleInputFocus}
             onSubmit={handleSubmit}
-            onVerify={verifyTelegramRenewal}
             paymentLockedCopy={{
               text: t("paymentLocked.text"),
               title: t("paymentLocked.title"),
             }}
-            renewalClientId={renewalClientId}
-            renewalNonce={renewalNonce}
-            renewalStatus={renewalStatus}
-            renewalStatusText={
-              isHubDiscountCheckout && renewalStatus === "not_member" ? (
-                // П17: the same Hub at full price, in the currency already chosen.
-                <>
-                  {t("hubDiscount.notEligible")}{" "}
-                  <AgreementLink
-                    href={hubFullPriceHref}
-                    onClick={() => {
-                      void trackCtaClick(
-                        {
-                          id: "hub_discount_full_price",
-                          placement: "hub_discount_not_eligible",
-                          currency: paymentStore.selectedCurrency,
-                          offer_id: INSPIRATION_HUB_ACCESS_OFFER_ID,
-                          product_id: paymentStore.selectedProduct.id,
-                        },
-                        hubFullPriceHref,
-                      );
-                    }}
-                  >
-                    {t("hubDiscount.fullPriceLink")}
-                  </AgreementLink>
-                </>
-              ) : (
-                renewalStatusText
-              )
-            }
-            renewalStatusTone={renewalStatusTone}
+            renewal={{
+              clientId: renewalClientId,
+              nonce: renewalNonce,
+              onVerify: verifyTelegramRenewal,
+              status: renewalStatus,
+              statusText:
+                isHubDiscountCheckout && renewalStatus === "not_member" ? (
+                  // П17: the same Hub at full price, in the currency already chosen.
+                  <>
+                    {t("hubDiscount.notEligible")}{" "}
+                    <AgreementLink
+                      href={hubFullPriceHref}
+                      onClick={() => {
+                        void trackCtaClick(
+                          {
+                            id: "hub_discount_full_price",
+                            placement: "hub_discount_not_eligible",
+                            currency: paymentStore.selectedCurrency,
+                            offer_id: INSPIRATION_HUB_ACCESS_OFFER_ID,
+                            product_id: paymentStore.selectedProduct.id,
+                          },
+                          hubFullPriceHref,
+                        );
+                      }}
+                    >
+                      {t("hubDiscount.fullPriceLink")}
+                    </AgreementLink>
+                  </>
+                ) : (
+                  renewalStatusText
+                ),
+              statusTone: renewalStatusTone,
+            }}
             onRetryPaymentPreparation={
               paymentStore.stripeIntentError ? handleRetryPaymentPreparation : undefined
             }
