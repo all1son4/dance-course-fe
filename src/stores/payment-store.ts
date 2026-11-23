@@ -18,6 +18,7 @@ import {
   type PaymentValidationLocale,
   resolvePaymentValidationLocale,
 } from "@/app/[locale]/payment/payment.validation";
+import { cancelPaymentIntents } from "@/components/other/StripePaymentTabs/StripePaymentTabs.completion";
 import {
   DEFAULT_CHECKOUT_CURRENCY,
   DEFAULT_CHECKOUT_PRODUCT,
@@ -1063,20 +1064,6 @@ export class PaymentStore {
       return;
     }
 
-    const uniquePaymentIntentIds = [...new Set(paymentIntentIds)];
-
-    uniquePaymentIntentIds.forEach((paymentIntentId) => {
-      void fetch("/api/stripe/payment-intent/cancel", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          checkoutSessionId,
-          paymentIntentId,
-        }),
-        keepalive: true,
-      }).catch(() => undefined);
-    });
+    cancelPaymentIntents([...new Set(paymentIntentIds)], checkoutSessionId);
   }
 }
