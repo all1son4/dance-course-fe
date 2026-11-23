@@ -996,7 +996,7 @@
       "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
       "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration HUB opens right away and lasts for the whole cycle.",
       "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever.",
-      "inspirationHub": "The link is valid for up to 30 days. Inspiration Hub access lasts 8 weeks."
+      "inspirationHub": "The link is valid for up to 30 days. Inspiration Hub access lasts {weeks} weeks."
     },
     "telegram": {
       "active": "access is already active",
@@ -1009,7 +1009,7 @@
       "contactSupport": "Support",
       "nameMainGroup": "Online Group",
       "nameInspiration": "Inspiration Hub",
-      "scheduled": "Your paid 8 weeks of Inspiration Hub begin on {date}. On that day your personal invite will arrive by email.",
+      "scheduled": "Your paid {weeks} weeks of Inspiration Hub begin on {date}. On that day your personal invite will arrive by email.",
       "scheduledPlus": "Inspiration Hub opens when your cycle starts, on {date}. That day a personal link to join will arrive in your email.",
       "scheduledAfterCohort": "Your paid 8 weeks of Inspiration Hub begin right after your cohort ends. On that day your personal invite will arrive by email."
     },

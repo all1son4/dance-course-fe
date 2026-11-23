@@ -996,7 +996,7 @@
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
       "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Inspiration HUB jest otwarty od razu i działa przez cały cykl.",
       "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze.",
-      "inspirationHub": "Link jest ważny do 30 dni. Dostęp do Inspiration Hub trwa 8 tygodni."
+      "inspirationHub": "Link jest ważny do 30 dni. Dostęp do Inspiration Hub trwa {weeks} tygodni."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
@@ -1009,7 +1009,7 @@
       "contactSupport": "Pomoc",
       "nameMainGroup": "Grupa online",
       "nameInspiration": "Inspiration Hub",
-      "scheduled": "Opłacone 8 tygodni w Inspiration Hub zaczyna się {date}. Tego dnia osobisty link przyjdzie na Twój e-mail.",
+      "scheduled": "Opłacone {weeks} tygodni w Inspiration Hub zaczyna się {date}. Tego dnia osobisty link przyjdzie na Twój e-mail.",
       "scheduledPlus": "Inspiration Hub otworzy się wraz ze startem cyklu, {date}. Tego dnia na Twój email przyjdzie osobisty link do wejścia.",
       "scheduledAfterCohort": "Opłacone 8 tygodni w Inspiration Hub zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia osobisty link przyjdzie na Twój e-mail."
     },

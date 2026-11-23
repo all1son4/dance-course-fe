@@ -8,6 +8,7 @@ import type { DatabaseTransaction } from "./transaction";
 export type InsertHubDependentPeriodCommand = {
   purchase: typeof purchases.$inferSelect;
   predecessor: HubDependentPeriodInput["predecessor"];
+  paidDurationDays?: HubDependentPeriodInput["paidDurationDays"];
   updatedAt: Date;
 };
 
@@ -46,6 +47,7 @@ export async function insertHubDependentPeriodInTransaction(
   const values = buildHubDependentPeriodValues({
     purchase: command.purchase,
     predecessor: command.predecessor,
+    paidDurationDays: command.paidDurationDays,
   });
 
   try {

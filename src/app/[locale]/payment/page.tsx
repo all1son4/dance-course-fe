@@ -7,6 +7,7 @@ import {
   type SellableProduct,
 } from "@/constants/sellable-products";
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
+import { applyBlackFridayToProducts } from "@/lib/black-friday";
 import { logSafeError } from "@/lib/safe-error-log";
 
 import { getCheckoutSelectionFromSearch } from "./payment.helpers";
@@ -47,7 +48,7 @@ const loadAuthoritativeCheckoutCatalog = async (): Promise<SellableProduct[] | n
     const products = await getSellableProductsWithDatabaseCommercialData();
 
     if (products.length > 0) {
-      return products;
+      return applyBlackFridayToProducts(products);
     }
 
     console.error("Authoritative sellable product catalog is empty in checkout");

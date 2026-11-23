@@ -23,6 +23,7 @@ const makeInput = (
     entitlementId,
     startsAfterEntitlementId,
     paidAt: new Date(paidAt),
+    paidDurationDays: 56,
     startsAt: null,
     expiresAt: null,
   })),
@@ -287,3 +288,43 @@ for (const { name, entries } of invalidChains) {
     });
   }
 }
+
+test("each period in a chain keeps its own length: 112 days, then 56", () => {
+  const input = freezeInput({
+    predecessor: { entitlementId: "O", expiresAt: new Date(PREDECESSOR_END) },
+    periods: [
+      {
+        entitlementId: "A",
+        startsAfterEntitlementId: "O",
+        paidAt: new Date("2026-11-10T12:00:00+01:00"),
+        paidDurationDays: 112,
+        startsAt: null,
+        expiresAt: null,
+      },
+      {
+        entitlementId: "B",
+        startsAfterEntitlementId: "A",
+        paidAt: new Date("2026-11-12T12:00:00+01:00"),
+        paidDurationDays: 56,
+        startsAt: null,
+        expiresAt: null,
+      },
+    ],
+  });
+
+  assert.deepEqual(planPendingHubPeriodChain(input), {
+    updates: [
+      {
+        entitlementId: "A",
+        startsAt: new Date("2026-11-16T00:00:00+01:00"),
+        expiresAt: new Date("2027-03-08T00:00:00+01:00"),
+      },
+      {
+        entitlementId: "B",
+        startsAt: new Date("2027-03-08T00:00:00+01:00"),
+        expiresAt: new Date("2027-05-03T00:00:00+02:00"),
+      },
+    ],
+    waitingEntitlementIds: [],
+  });
+});

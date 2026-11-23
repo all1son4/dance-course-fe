@@ -110,15 +110,15 @@ const EMAIL_COPY = {
       telegramInspirationHub: {
         title: "Join Inspiration Hub",
         ready:
-          "Use the button below to join Inspiration Hub. The personal invite works once and is valid for up to 30 days. Your 8 weeks count from payment, not from joining the library.",
+          "Use the button below to join Inspiration Hub. The personal invite works once and is valid for up to 30 days. Your {weeks} count from payment, not from joining the library.",
         active:
           "You're already in Inspiration Hub — your access is extended, nothing to do.",
         pending:
           "Your personal Inspiration Hub invite is being prepared. If the button is missing, contact support and we will send access manually.",
         scheduled:
-          "Your paid 8 weeks begin on {date}. On that day your personal Inspiration Hub invite will arrive at this address.",
+          "Your paid {weeks} begin on {date}. On that day your personal Inspiration Hub invite will arrive at this address.",
         scheduledAfterCohort:
-          "Your paid 8 weeks begin right after your cohort ends. On that day your personal Inspiration Hub invite will arrive at this address.",
+          "Your paid {weeks} begin right after your cohort ends. On that day your personal Inspiration Hub invite will arrive at this address.",
         cta: "Open Inspiration Hub",
       },
       telegramRenewal: {
@@ -226,15 +226,15 @@ const EMAIL_COPY = {
       telegramInspirationHub: {
         title: "Dostęp do Inspiration Hub",
         ready:
-          "Użyj przycisku poniżej, aby dołączyć do Inspiration Hub. Osobisty link działa jeden raz i jest ważny do 30 dni. 8 tygodni liczy się od płatności, a nie od wejścia do biblioteki.",
+          "Użyj przycisku poniżej, aby dołączyć do Inspiration Hub. Osobisty link działa jeden raz i jest ważny do 30 dni. {weeks} liczy się od płatności, a nie od wejścia do biblioteki.",
         active:
           "Jesteś już w Inspiration Hub — dostęp został przedłużony, nic nie musisz robić.",
         pending:
           "Twój osobisty link do Inspiration Hub jest przygotowywany. Jeśli nie widzisz przycisku, skontaktuj się ze wsparciem, a wyślemy dostęp ręcznie.",
         scheduled:
-          "Opłacone 8 tygodni zaczyna się {date}. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
+          "Opłacone {weeks} zaczyna się {date}. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
         scheduledAfterCohort:
-          "Opłacone 8 tygodni zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
+          "Opłacone {weeks} zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia na ten adres przyjdzie osobisty link do Inspiration Hub.",
         cta: "Otwórz Inspiration Hub",
       },
       telegramRenewal: {
@@ -342,14 +342,14 @@ const EMAIL_COPY = {
       telegramInspirationHub: {
         title: "Доступ в Inspiration Hub",
         ready:
-          "Нажми кнопку ниже, чтобы войти в Inspiration Hub. Персональная ссылка одноразовая и действует до 30 дней. 8 недель считаются с момента оплаты, а не со входа в библиотеку.",
+          "Нажми кнопку ниже, чтобы войти в Inspiration Hub. Персональная ссылка одноразовая и действует до 30 дней. {weeks} считаются с момента оплаты, а не со входа в библиотеку.",
         active: "Ты уже в Inspiration Hub — доступ продлён, ничего делать не нужно.",
         pending:
           "Персональная ссылка в Inspiration Hub готовится. Если кнопки нет, напиши в поддержку — пришлём доступ вручную.",
         scheduled:
-          "Оплаченные 8 недель начнутся {date}. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
+          "Оплаченные {weeks} начнутся {date}. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
         scheduledAfterCohort:
-          "Оплаченные 8 недель начнутся сразу после окончания твоего потока. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
+          "Оплаченные {weeks} начнутся сразу после окончания твоего потока. В этот день на этот адрес придёт персональная ссылка для входа в Inspiration Hub.",
         cta: "Открыть Inspiration Hub",
       },
       telegramRenewal: {
@@ -831,7 +831,7 @@ const getAccessSummary = ({
     case "telegram-online-group":
     case "telegram-renewal":
       return copy.accessSummary.onlineGroup;
-    // The Hub is sold as «8 недель» everywhere, so the email says weeks too.
+    // The Hub is sold in weeks («8 недель», 16 on Black Friday), so the email says weeks.
     case "telegram-inspiration-hub":
       if (accessDurationDays <= 0) return "";
       return accessDurationDays % 7 === 0
@@ -1142,10 +1142,10 @@ export const buildPurchaseSuccessEmail = ({
   });
   const accessContent = {
     ...resolvedAccessContent,
-    description: resolvedAccessContent.description.replace(
-      "{days}",
-      copy.formatDays(resolvedAccessDurationDays),
-    ),
+    description: resolvedAccessContent.description
+      .replace("{days}", copy.formatDays(resolvedAccessDurationDays))
+      // The Hub texts name its length: 8 weeks, or 16 for a Black Friday purchase.
+      .replace("{weeks}", copy.formatWeeks(Math.round(resolvedAccessDurationDays / 7))),
   };
   const resolvedReceiptKind = resolveReceiptKind({
     receiptKind,

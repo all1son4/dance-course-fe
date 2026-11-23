@@ -1,4 +1,8 @@
-import { getStandaloneHubPeriodEnd } from "@/lib/inspiration-hub/period-end";
+import {
+  DEFAULT_HUB_PERIOD_DAYS,
+  getStandaloneHubPeriodEnd,
+  type HubPeriodDays,
+} from "@/lib/inspiration-hub/period-end";
 
 import type { purchases } from "./schema";
 
@@ -12,7 +16,7 @@ export type HubPaymentPeriodValues = {
   accessKey: "inspiration-hub";
   sourceKind: "standalone_hub";
   periodStartMode: "payment";
-  paidDurationDays: 56;
+  paidDurationDays: HubPeriodDays;
   startsAfterEntitlementId: null;
   startsAt: Date;
   expiresAt: Date;
@@ -24,6 +28,7 @@ export type HubPaymentPeriodValues = {
  */
 export const buildHubPaymentPeriodValues = (
   purchase: HubPaymentPeriodPurchase,
+  paidDurationDays: HubPeriodDays = DEFAULT_HUB_PERIOD_DAYS,
 ): HubPaymentPeriodValues => {
   if (
     purchase.outcome !== "succeeded" ||
@@ -35,14 +40,17 @@ export const buildHubPaymentPeriodValues = (
   }
 
   try {
-    const expiresAt = getStandaloneHubPeriodEnd({ startsAt: purchase.succeededAt });
+    const expiresAt = getStandaloneHubPeriodEnd({
+      startsAt: purchase.succeededAt,
+      days: paidDurationDays,
+    });
 
     return {
       purchaseId: purchase.id,
       accessKey: "inspiration-hub",
       sourceKind: "standalone_hub",
       periodStartMode: "payment",
-      paidDurationDays: 56,
+      paidDurationDays,
       startsAfterEntitlementId: null,
       startsAt: purchase.succeededAt,
       expiresAt,
