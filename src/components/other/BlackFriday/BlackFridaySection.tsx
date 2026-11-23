@@ -34,7 +34,6 @@ import {
   Terms,
   Title,
   TitleWrap,
-  Watermark,
 } from "./BlackFriday.styles";
 import BlackFridayCountdown from "./BlackFridayCountdown";
 import {
@@ -70,7 +69,6 @@ export default async function BlackFridaySection() {
   return (
     <Section id={BLACK_FRIDAY_SECTION_ID} aria-labelledby="black-friday-title">
       <BlackFridaySpotlight />
-      <Watermark aria-hidden="true">−33%</Watermark>
       <Intro>
         <Eyebrow>{t("section.eyebrow")}</Eyebrow>
         <TitleWrap>

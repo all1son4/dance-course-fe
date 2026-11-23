@@ -357,32 +357,6 @@ export const Section = styled.section`
   }
 `;
 
-/* A huge outlined word behind the content: the "sale" mood without an image. */
-export const Watermark = styled.span`
-  position: absolute;
-  z-index: -1;
-  right: -40px;
-  bottom: -60px;
-  font-size: 260px;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: -0.05em;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.07);
-  pointer-events: none;
-  user-select: none;
-
-  @media (max-width: 880px) {
-    font-size: 150px;
-    right: -24px;
-    bottom: -36px;
-  }
-
-  @media (forced-colors: active) {
-    display: none;
-  }
-`;
-
 export const Intro = styled.div`
   display: flex;
   flex-direction: column;
