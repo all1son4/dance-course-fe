@@ -8,9 +8,9 @@ import {
   Count,
   CountText,
   CountValue,
-  VisuallyHidden,
   WeekCounts,
-} from "./page.styles";
+} from "./access-cards.styles";
+import { VisuallyHidden } from "./page.styles";
 
 const weekState = (week: number, current: number) =>
   week < current ? "done" : week === current ? "now" : "ahead";

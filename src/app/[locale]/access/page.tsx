@@ -64,14 +64,9 @@ import {
   ShareCourse,
 } from "./access-actions";
 import AccessAnalytics from "./access-analytics";
-import { AccessCount } from "./access-count";
 import {
-  ACCESS_APPEAR_CSS,
-  ACCESS_CANVAS_CSS,
   AccessAside,
-  AccessHeader,
   AccessLayout,
-  AccessSection,
   CalendarLink,
   CardActions,
   CardDetail,
@@ -81,6 +76,19 @@ import {
   CardNote,
   CardSummary,
   CardTitle,
+  QuietLink,
+  StatusChip,
+  Zone,
+  ZoneHeader,
+  ZoneList,
+  ZoneTray,
+} from "./access-cards.styles";
+import { AccessCount } from "./access-count";
+import {
+  ACCESS_APPEAR_CSS,
+  ACCESS_CANVAS_CSS,
+  AccessHeader,
+  AccessSection,
   EmptyCard,
   Eyebrow,
   Facts,
@@ -89,17 +97,11 @@ import {
   Intro,
   JourneyList,
   JourneyStep,
-  QuietLink,
   RequestCard,
   SideCard,
   SideText,
   SideTitle,
-  StatusChip,
   VisuallyHidden,
-  Zone,
-  ZoneHeader,
-  ZoneList,
-  ZoneTray,
 } from "./page.styles";
 import RequestLinkForm from "./request-link-form";
 

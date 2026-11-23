@@ -14,8 +14,8 @@ import {
   CardNote,
   CardTitle,
   QuietLink,
-  RequestCard,
-} from "../access/page.styles";
+} from "../access/access-cards.styles";
+import { RequestCard } from "../access/page.styles";
 import {
   loadTelegramLoginScript,
   requestTelegramIdToken,

@@ -16,16 +16,18 @@ import Button from "@/components/common/Button";
 import {
   AccessCard,
   ActionResult,
+  CardToggle,
+  QuietButton,
+  QuietLink,
+} from "./access-cards.styles";
+import {
   CalendarApp,
   CalendarApps,
   CalendarHint,
-  CardToggle,
   LegendButton,
   LegendSpot,
   LegendStamp,
   LegendTip,
-  QuietButton,
-  QuietLink,
   SaveSpot,
   SaveTip,
   ShareButton,
