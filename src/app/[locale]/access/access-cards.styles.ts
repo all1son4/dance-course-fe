@@ -1,6 +1,6 @@
 import styled, { keyframes } from "styled-components";
 
-import { blackFridayBackdrop, blackFridayCardEdge } from "@/styles/mixins/blackFriday";
+import { BLACK_FRIDAY_INK } from "@/styles/mixins/blackFriday";
 
 import { porcelain, quietAction } from "./page.styles";
 
@@ -112,12 +112,31 @@ export const AccessCard = styled.li`
   transition: transform var(--motion-fast, 160ms) ease;
 
   /* Bought on Black Friday: the campaign edge, as on the storefront cards. */
+  /* Bought on Black Friday: an elegant black card. The page's colour tokens are
+     redefined inside it, so every line and chip follows without its own rule. */
   &[data-campaign] {
-    position: relative;
-    ${blackFridayCardEdge}
+    --ink: rgba(255, 255, 255, 0.96);
+    --ink-muted: rgba(255, 255, 255, 0.62);
+    --brand: #ff9d97;
 
-    @media (max-width: 550px) {
-      padding-right: 84px;
+    position: relative;
+    isolation: isolate;
+    color: var(--ink);
+    background:
+      radial-gradient(120% 140% at 100% 100%, rgba(124, 0, 2, 0.35), transparent 55%),
+      ${BLACK_FRIDAY_INK};
+    box-shadow:
+      0 14px 34px rgba(12, 11, 13, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+    &::before,
+    &::after {
+      opacity: 0.12;
+    }
+
+    @media (forced-colors: active) {
+      border: 1px solid CanvasText;
     }
   }
 
@@ -367,11 +386,6 @@ export const CountValue = styled.span`
   @media (max-width: 550px) {
     font-size: 34px;
   }
-
-  /* Bought on Black Friday: the term in the brand red. */
-  [data-campaign] & {
-    color: var(--brand);
-  }
 `;
 
 export const CountText = styled.span`
@@ -519,72 +533,42 @@ export const ActionResult = styled.p<{ $tone: "ok" | "error" }>`
 `;
 
 const inkStamp = keyframes`
-  0% { opacity: 0; transform: rotate(-24deg) scale(1.8); }
-  60% { opacity: 0.92; transform: rotate(-10deg) scale(0.95); }
-  100% { opacity: 0.92; transform: rotate(-12deg) scale(1); }
+  0% { opacity: 0; transform: rotate(-22deg) scale(1.7); }
+  60% { opacity: 1; transform: rotate(-8deg) scale(0.96); }
+  100% { opacity: 1; transform: rotate(-10deg) scale(1); }
 `;
 
 /*
- * The round red-ink Black Friday stamp on a card bought on its terms (see
- * CampaignInkStamp). It lands once, the first time the card is seen.
+ * The Black Friday mark of the black card: a rectangular stamp in the corner,
+ * faint and behind the text — «BLACK FRIDAY» over the figure (×2, −33%).
  */
 export const InkStamp = styled.span`
   position: absolute;
-  right: 18px;
-  bottom: 12px;
-  z-index: 1;
-  width: 92px;
-  height: 92px;
-  transform: rotate(-12deg);
-  opacity: 0.92;
+  right: 20px;
+  bottom: 16px;
+  z-index: -1;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 8px 14px 7px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.24);
+  transform: rotate(-10deg);
   pointer-events: none;
-  mix-blend-mode: multiply;
 
-  & svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-  }
-
-  & svg circle {
-    fill: none;
-    stroke: rgb(158, 14, 20);
-  }
-
-  & svg .rim {
-    stroke-width: 2.6;
-  }
-
-  & svg .line {
-    stroke-width: 1;
-  }
-
-  & svg .thin {
-    stroke-width: 0.8;
-    stroke-dasharray: 1.6 2.2;
-  }
-
-  & svg text {
-    fill: rgb(158, 14, 20);
-    text-anchor: middle;
-    font-family: var(--font-sans);
+  & small {
+    font-size: 9px;
     font-weight: 800;
-  }
-
-  & svg .arc {
-    font-size: 10.5px;
     letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
 
-  & svg .arc.small {
-    font-size: 7.5px;
-    letter-spacing: 0.2em;
-  }
-
-  & svg .figure {
-    font-size: 25px;
-    letter-spacing: -0.03em;
+  & b {
+    font-size: 30px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
 
   &:not([data-pending]) {
@@ -599,24 +583,16 @@ export const InkStamp = styled.span`
     animation: none !important;
   }
 
-  /* Phones: smaller, in the top corner under the fold mark; the card keeps a
-     right margin for it (AccessCard), so no line runs under the stamp. */
   @media (max-width: 550px) {
-    top: 54px;
-    right: 10px;
-    bottom: auto;
-    width: 66px;
-    height: 66px;
+    right: 14px;
+    bottom: 12px;
+
+    & b {
+      font-size: 24px;
+    }
   }
 
   @media (forced-colors: active) {
     display: none;
   }
-`;
-
-/* The same backdrop texture as the storefront cards on sale. */
-export const CampaignBackdrop = styled.span`
-  ${blackFridayBackdrop}
-  z-index: 0;
-  border-radius: inherit;
 `;

@@ -618,72 +618,14 @@ export function FoldingCard({
   );
 }
 
-/**
- * The Black Friday stamp of a card bought on its terms: a round red-ink stamp in
- * the family of the page's «Легенда группы» — «BLACK FRIDAY» over the arc, the
- * year under it, the figure (×2, −33%) in the middle. It lands once when seen.
- */
+/** The faint Black Friday stamp in the corner of a black card (see InkStamp). */
 export function CampaignInkStamp({ figure, label }: { figure: string; label: string }) {
   const ref = usePendingUntilSeen<HTMLSpanElement>();
-  const id = useId();
 
   return (
     <InkStamp ref={ref} aria-hidden="true">
-      <svg viewBox="0 0 100 100">
-        <defs>
-          {/* The same ink as the legend stamp: unprinted specks, wavering edges. */}
-          <filter height="110%" id={`${id}-ink`} width="110%" x="-5%" y="-5%">
-            <feTurbulence
-              baseFrequency="1.3"
-              numOctaves={1}
-              result="grain"
-              seed={7}
-              type="fractalNoise"
-            />
-            <feColorMatrix
-              in="grain"
-              result="specks"
-              type="matrix"
-              values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 -11 7.6"
-            />
-            <feComposite in="SourceGraphic" in2="specks" operator="in" result="print" />
-            <feTurbulence
-              baseFrequency="0.07"
-              numOctaves={1}
-              result="wave"
-              seed={5}
-              type="fractalNoise"
-            />
-            <feDisplacementMap
-              in="print"
-              in2="wave"
-              scale="0.45"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
-          </filter>
-          <path d="M17.5,50 A32.5,32.5 0 0,1 82.5,50" id={`${id}-top`} />
-          <path d="M14,50 A36,36 0 0,0 86,50" id={`${id}-bottom`} />
-        </defs>
-        <g filter={`url(#${id}-ink)`}>
-          <circle className="rim" cx="50" cy="50" r="47" />
-          <circle className="line" cx="50" cy="50" r="44" />
-          <circle className="line thin" cx="50" cy="50" r="27" />
-          <text className="arc">
-            <textPath href={`#${id}-top`} startOffset="50%">
-              {label.toLocaleUpperCase()}
-            </textPath>
-          </text>
-          <text className="arc small">
-            <textPath href={`#${id}-bottom`} startOffset="50%">
-              ★ 2026 ★
-            </textPath>
-          </text>
-          <text className="figure" x="50" y="58">
-            {figure}
-          </text>
-        </g>
-      </svg>
+      <small>{label}</small>
+      <b>{figure}</b>
     </InkStamp>
   );
 }
