@@ -9,6 +9,7 @@ import {
 } from "@/lib/my-access/access.helpers";
 import { buildCalendarFile, NEXT_CYCLE_EVENT } from "@/lib/my-access/calendar";
 import { isMyAccessLinkConfigured, verifyMyAccessToken } from "@/lib/my-access/link";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -23,6 +24,20 @@ const notFound = () =>
  * and only for a date one of its cards (or «Дальше») shows right now.
  */
 export async function GET(request: Request) {
+  try {
+    return await respond(request);
+  } catch (error) {
+    // A database or message failure: a plain, logged 503 instead of a bare 500,
+    // so the calendar app tries again later.
+    logSafeError("Failed to answer the «В календарь» file", error);
+    return new Response("Temporarily unavailable", {
+      headers: { "Cache-Control": "no-store", "Retry-After": "300" },
+      status: 503,
+    });
+  }
+}
+
+async function respond(request: Request) {
   if (!isMyAccessLinkConfigured()) return notFound();
 
   const params = new URL(request.url).searchParams;
