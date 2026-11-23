@@ -14,7 +14,11 @@ import * as schema from "@/db/schema";
 import { accessEntitlements, purchases } from "@/db/schema";
 import type { DatabaseTransaction } from "@/db/transaction";
 
-import { waitForPostgresBlock } from "../helpers/postgres-locks";
+import {
+  pauseSharedTableDdl,
+  waitForPostgresBlock,
+  waitForPostgresRowLock,
+} from "../helpers/postgres-locks";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 const client = postgres(getRequiredTestDatabaseUrl(), {
@@ -236,6 +240,9 @@ const lockEntitlement = async (tx: DatabaseTransaction, id: string) => {
   assert.equal(rows.length, 1);
 };
 
+// Each caller asserts which of the loader's reads saw the holder's change, so the
+// loader must be waiting for the holder's row itself, never queued behind another
+// file's DDL that waits for the holder.
 const runBlockedLoad = async (
   ids: readonly string[],
   acquireLock: (tx: DatabaseTransaction) => Promise<void>,
@@ -247,6 +254,7 @@ const runBlockedLoad = async (
 
   const holder = db.transaction(async (tx) => {
     const pid = await prepareObservedTransaction(tx);
+    await pauseSharedTableDdl(tx);
     await acquireLock(tx);
     holderReady.resolve(pid);
     await releaseHolder.promise;
@@ -266,7 +274,7 @@ const runBlockedLoad = async (
       holderReady.promise,
       loaderReady.promise,
     ]);
-    await waitForPostgresBlock(client, loaderPid, holderPid);
+    await waitForPostgresRowLock(client, loaderPid, holderPid);
   } finally {
     releaseHolder.resolve();
     await outcomes;
@@ -537,6 +545,7 @@ for (const target of ["purchase", "entitlement"] as const) {
 
         const loader = db.transaction(async (tx) => {
           const pid = await prepareObservedTransaction(tx);
+          await pauseSharedTableDdl(tx);
           await loadHubPeriodNodesForUpdate(tx, [fixture.mainId]);
           loaderReady.resolve(pid);
           await releaseLoader.promise;
@@ -644,6 +653,7 @@ test(
       const releaseHolder = Promise.withResolvers<void>();
       const holder = db.transaction(async (tx) => {
         const pid = await prepareObservedTransaction(tx);
+        await pauseSharedTableDdl(tx);
         await lockPurchase(tx, fixture.highPurchaseId);
         holderReady.resolve(pid);
         await releaseHolder.promise;
