@@ -1,4 +1,5 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { plural } from "@/lib/plural";
 
 import { formatEmailDate } from "./dates";
 import { buildMyAccessEmailBlock, escapeEmailHtml } from "./my-access";
@@ -115,7 +116,7 @@ const COPY = {
     open: (title: string, date: string) =>
       `Открыта запись в ${title} — стартуем ${date}!`,
     weeks: (weeks: number, round: string) =>
-      `В этот раз мы проведём вместе ${weeks} ${pickPlural(weeks, "неделю", "недели", "недель")}${round}.`,
+      `В этот раз мы проведём вместе ${weeks} ${plural(weeks, "неделю", "недели", "недель")}${round}.`,
     choose: "Выбери свой вариант:",
     hubName: "Только Inspiration Hub",
     hub: (title: string) =>
