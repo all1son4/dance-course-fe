@@ -12,7 +12,10 @@ import {
 } from "@/constants/sellable-products";
 import { getDatabase } from "@/db/client";
 import { readMyAccessNextCohort } from "@/db/my-access";
-import { shouldNameOfferAtCheckout } from "@/lib/choreo-offer-presentation";
+import {
+  getCompactSummaryTitle,
+  shouldNameOfferAtCheckout,
+} from "@/lib/choreo-offer-presentation";
 import {
   lastAccessDay,
   type MyAccessCalendarEvent,
@@ -34,8 +37,6 @@ import {
   getProductsSaleState,
   getStorefrontSellableProducts,
 } from "@/lib/sales-availability";
-
-import { getCompactSummaryTitle } from "../payment/payment.helpers";
 
 /* Shared by the page and its calendar files, so both name things the same way. */
 

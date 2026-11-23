@@ -3,9 +3,10 @@ import {
   type SellableProduct,
   type SellableProductOffer,
 } from "@/constants/sellable-products";
-import { shouldNameOfferAtCheckout } from "@/lib/choreo-offer-presentation";
-
-import { getCompactSummaryTitle } from "./payment.helpers";
+import {
+  getCompactSummaryTitle,
+  shouldNameOfferAtCheckout,
+} from "@/lib/choreo-offer-presentation";
 
 export type ResultReceiptLine = { amount: string; title: string };
 

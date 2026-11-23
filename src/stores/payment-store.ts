@@ -1,7 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { ValidationError } from "yup";
 
-import { cancelPaymentIntents } from "@/components/other/StripePaymentTabs/StripePaymentTabs.completion";
 import {
   DEFAULT_CHECKOUT_CURRENCY,
   DEFAULT_CHECKOUT_PRODUCT,
@@ -14,6 +13,7 @@ import {
   type SellableProductOffer,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import { cancelPaymentIntents } from "@/lib/checkout/cancel-payment-intents";
 import {
   INITIAL_AGREEMENTS,
   INITIAL_CUSTOMER_DATA,

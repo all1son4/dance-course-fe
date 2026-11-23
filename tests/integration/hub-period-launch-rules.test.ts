@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test, { after, type TestContext } from "node:test";
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -22,6 +22,7 @@ import {
   revokeExpiredOnlineGroupHubAccess,
 } from "@/lib/telegram/online-group-hub-expiry";
 
+import { lockHubSettingsForTest } from "../helpers/hub-settings-lock";
 import { createTestTelegramUserId } from "../helpers/telegram-user-id";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -393,22 +394,28 @@ test("К5: a running Hub purchase without an owner is reported after three days"
 
 test("К6: without the shared Hub setting the cron marks no standalone right and reports it", async (t) => {
   stubTelegram(t);
-  await withTransaction(async (tx) => {
-    // Other files commit the shared row while this runs; when it is already absent
-    // the delete locks nothing, so the table lock keeps it absent until rollback.
-    await tx.execute(sql`LOCK TABLE ${inspirationHubSettings} IN EXCLUSIVE MODE`);
-    await tx.delete(inspirationHubSettings);
-    const ended = await insertStandaloneRight(tx, {
-      telegramUserId: createTestTelegramUserId(),
-      paidAt: new Date("2026-11-10T11:00:00.000Z"),
-      startsAt: new Date("2026-11-10T11:00:00.000Z"),
-      expiresAt: PAST,
+  // Files that commit the shared row hold this lock while it is theirs, so the row stays
+  // absent until rollback. A table lock would also do that, but it makes every other
+  // file's chat cleanup wait (the row's foreign key) while this cron locks their rights:
+  // a deadlock.
+  const unlock = await lockHubSettingsForTest(client);
+  try {
+    await withTransaction(async (tx) => {
+      await tx.delete(inspirationHubSettings);
+      const ended = await insertStandaloneRight(tx, {
+        telegramUserId: createTestTelegramUserId(),
+        paidAt: new Date("2026-11-10T11:00:00.000Z"),
+        startsAt: new Date("2026-11-10T11:00:00.000Z"),
+        expiresAt: PAST,
+      });
+
+      const { reports, result } = await runCron(tx);
+
+      assert.equal(result.problems.hubSettingsMissing, true);
+      assert.equal(reports[0]?.hubSettingsMissing, true);
+      assert.equal(await readStatus(tx, ended.rightId), "pending");
     });
-
-    const { reports, result } = await runCron(tx);
-
-    assert.equal(result.problems.hubSettingsMissing, true);
-    assert.equal(reports[0]?.hubSettingsMissing, true);
-    assert.equal(await readStatus(tx, ended.rightId), "pending");
-  });
+  } finally {
+    await unlock();
+  }
 });

@@ -1,7 +1,7 @@
 import {
   confirmAccessInvitation,
   retryInvitationLinks,
-} from "@/lib/access-invitations/service";
+} from "@/lib/access-invitations/page";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,

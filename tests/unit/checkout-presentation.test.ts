@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getCompactSummaryTitle } from "@/app/[locale]/payment/payment.helpers";
 import { getResultReceipt } from "@/app/[locale]/payment/result-receipt";
 import { formatCheckoutPrice, SELLABLE_PRODUCTS } from "@/constants/sellable-products";
+import { getCompactSummaryTitle } from "@/lib/choreo-offer-presentation";
 
 const translate = (key: string) => key;
 const byCode = (code: string) =>

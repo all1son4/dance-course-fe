@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import TrackedAnchor from "@/components/common/TrackedAnchor";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
-import { readInvitationPage } from "@/lib/access-invitations/service";
+import { readInvitationPage } from "@/lib/access-invitations/page";
 
 import { HelpCard } from "../access/access-aside.styles";
 import {
