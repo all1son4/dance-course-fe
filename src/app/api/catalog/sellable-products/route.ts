@@ -1,5 +1,5 @@
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
-import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import { jsonErrorNoStore, jsonNoStore, jsonRateLimited } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 
@@ -21,12 +21,7 @@ export async function GET(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   try {

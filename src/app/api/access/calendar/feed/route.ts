@@ -1,17 +1,18 @@
 import { createTranslator, hasLocale } from "next-intl";
 
-import {
-  buildMyAccessCalendarEvents,
-  readMyAccessNextStep,
-} from "@/app/[locale]/access/access.helpers";
 import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
 import { routing } from "@/i18n/routing";
+import {
+  buildMyAccessCalendarEvents,
+  readMyAccessNextStep,
+} from "@/lib/my-access/access.helpers";
 import { buildCalendarFeed } from "@/lib/my-access/calendar";
 import {
   isMyAccessLinkConfigured,
   verifyMyAccessCalendarToken,
 } from "@/lib/my-access/link";
+import { logSafeError } from "@/lib/safe-error-log";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,20 @@ const notFound = () =>
  * by the calendar app. Behind its own key, which opens these dates and nothing else.
  */
 export async function GET(request: Request) {
+  try {
+    return await respond(request);
+  } catch (error) {
+    // A database or message failure: a plain, logged 503 instead of a bare 500,
+    // so the calendar app tries again later.
+    logSafeError("Failed to answer the calendar subscription", error);
+    return new Response("Temporarily unavailable", {
+      headers: { "Cache-Control": "no-store", "Retry-After": "300" },
+      status: 503,
+    });
+  }
+}
+
+async function respond(request: Request) {
   if (!isMyAccessLinkConfigured()) return notFound();
 
   const params = new URL(request.url).searchParams;

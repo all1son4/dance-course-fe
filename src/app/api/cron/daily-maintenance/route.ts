@@ -7,7 +7,11 @@ import {
   runBusinessOperationOutboxJobs,
 } from "@/lib/business-operation-outbox";
 import { enqueueDueChoreoAccessReminders } from "@/lib/choreo-access-reminder-delivery";
-import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
+import {
+  areEqualInTimingSafeWay,
+  jsonErrorNoStore,
+  jsonNoStore,
+} from "@/lib/http-security";
 import { enqueueDueHubExpiryReminders } from "@/lib/hub-expiry-reminder-delivery";
 import { enqueueStartedHubPeriodInvites } from "@/lib/hub-period-start-invite-delivery";
 import {
@@ -34,7 +38,7 @@ const isAuthorizedCronRequest = (request: Request) => {
 
   const receivedAuthorization = request.headers.get("authorization")?.trim() ?? "";
 
-  return receivedAuthorization === `Bearer ${configuredSecret}`;
+  return areEqualInTimingSafeWay(receivedAuthorization, `Bearer ${configuredSecret}`);
 };
 
 export async function GET(request: Request) {

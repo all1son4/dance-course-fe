@@ -17,8 +17,10 @@ import type {
   HubChatMembers,
   HubPeriodState,
 } from "@/lib/admin/hub-admin";
+import { DAY_MS } from "@/lib/time";
 
 import type { ReissuedLink, ReissueOutcome } from "../hooks/use-hub-admin";
+import { formatDayMonthTime } from "../lib/admin.utils";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { TextField, useToast } from "../ui/feedback";
@@ -52,7 +54,7 @@ const STATE_LABELS: Record<HubPeriodState, { label: string; tone: AdminTone }> =
 type Filter = "all" | "active" | "endingSoon" | "upcoming" | "ended";
 
 /** The same 7-day window as the overview counts (ENDING_SOON_DAYS in hub-admin.ts). */
-const ENDING_SOON_MS = 7 * 24 * 60 * 60 * 1000;
+const ENDING_SOON_MS = 7 * DAY_MS;
 
 const Columns = styled.div`
   display: grid;
@@ -122,15 +124,6 @@ const formatDate = (iso: string | null) =>
         timeZone: "Europe/Warsaw",
       }).format(new Date(iso))
     : "";
-
-const formatDateTime = (iso: string) =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Europe/Warsaw",
-  }).format(new Date(iso));
 
 const toDateInput = (iso: string) => iso.slice(0, 10);
 
@@ -381,7 +374,7 @@ export const HubWorkspace = ({
 
         <Panel
           title="Кого бот уберёт из библиотеки ночью"
-          description={`Это предпросмотр — он никого не удаляет. Ближайшая проверка: ${formatDateTime(hub.nextCronAt)}. Можно выбрать другую дату.`}
+          description={`Это предпросмотр — он никого не удаляет. Ближайшая проверка: ${formatDayMonthTime(hub.nextCronAt)}. Можно выбрать другую дату.`}
           actions={
             <Row $gap={6}>
               <TextField
@@ -390,9 +383,7 @@ export const HubWorkspace = ({
                 // The server previews at most 120 days ahead.
                 min={toDateInput(hub.nextCronAt)}
                 max={toDateInput(
-                  new Date(
-                    Date.parse(hub.nextCronAt) + 120 * 24 * 60 * 60 * 1000,
-                  ).toISOString(),
+                  new Date(Date.parse(hub.nextCronAt) + 120 * DAY_MS).toISOString(),
                 )}
                 value={previewAt ? toDateInput(previewAt) : toDateInput(hub.nextCronAt)}
                 onChange={(event) =>
@@ -417,7 +408,7 @@ export const HubWorkspace = ({
           {hub.preview.removals.length === 0 ? (
             <EmptyState
               title="Никого"
-              text={`На ${formatDateTime(hub.preview.at)} никто не будет удалён.`}
+              text={`На ${formatDayMonthTime(hub.preview.at)} никто не будет удалён.`}
             />
           ) : (
             <RemovalList>

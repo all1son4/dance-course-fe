@@ -1,4 +1,5 @@
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+import { REDUCED_MOTION_QUERY } from "@/lib/reveal";
+
 const DEFAULT_ANCHOR_OFFSET_PX = 8;
 
 const getAnchorScrollBehavior = (): ScrollBehavior => {

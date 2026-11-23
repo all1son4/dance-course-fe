@@ -3,27 +3,13 @@ import test from "node:test";
 
 import type { EmailCampaignLeadRecord } from "@/lib/email-campaign-record";
 import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
-import {
-  createEmptyPaymentRecord,
-  type PaymentRecordSnapshot,
-} from "@/lib/payment-record";
 
 import {
   type BusinessOperationReadDependencies,
   type BusinessOperationReadSource,
-  findEmailCampaignLeadRecord,
-  findInvoicePaymentRecordByIntentId,
   findMonthlyReportRunRecord,
   listEmailCampaignLeadReadRecords,
-  listInvoicePaymentRecords,
 } from "./business-operation-read-runtime";
-
-const createInvoicePayment = (): PaymentRecordSnapshot => ({
-  ...createEmptyPaymentRecord(),
-  invoice_issued_at: "2026-08-13T10:00:00.000Z",
-  invoice_number: "FV/2026/08/001",
-  payment_intent_id: "pi_invoice",
-});
 
 const createMonthlyReport = (): MonthlySalesReportRunRecord => ({
   csv_sha256: "",
@@ -55,11 +41,8 @@ const createCampaignLead = (): EmailCampaignLeadRecord => ({
 const createSource = (
   overrides: Partial<BusinessOperationReadSource> = {},
 ): BusinessOperationReadSource => ({
-  findCampaignLead: async () => null,
-  findInvoicePaymentByIntentId: async () => null,
   findMonthlyReportRun: async () => null,
   listCampaignLeads: async () => [],
-  listInvoicePayments: async () => [],
   ...overrides,
 });
 
@@ -68,67 +51,28 @@ const createDependencies = (
 ): BusinessOperationReadDependencies => ({ database: createSource(database) });
 
 test("always serves every business-operation read from PostgreSQL", async () => {
-  const invoice = createInvoicePayment();
   const report = createMonthlyReport();
   const lead = createCampaignLead();
-  const received = {
-    campaign: null as { campaignKey: string; email: string } | null,
-    invoiceIntent: "",
-    reportKey: "",
-  };
+  const received = { reportKey: "" };
   const options = {
     dependencies: createDependencies({
-      findCampaignLead: async (input) => {
-        received.campaign = input;
-        return lead;
-      },
-      findInvoicePaymentByIntentId: async (paymentIntentId) => {
-        received.invoiceIntent = paymentIntentId;
-        return invoice;
-      },
       findMonthlyReportRun: async (reportKey) => {
         received.reportKey = reportKey;
         return report;
       },
       listCampaignLeads: async () => [lead],
-      listInvoicePayments: async () => [invoice],
     }),
   };
 
-  assert.equal(
-    await findInvoicePaymentRecordByIntentId(invoice.payment_intent_id, options),
-    invoice,
-  );
-  assert.deepEqual(await listInvoicePaymentRecords(options), [invoice]);
   assert.equal(await findMonthlyReportRunRecord(report.report_key, options), report);
-  assert.equal(
-    await findEmailCampaignLeadRecord(
-      { campaignKey: lead.campaign_key, email: lead.email },
-      options,
-    ),
-    lead,
-  );
   assert.deepEqual(await listEmailCampaignLeadReadRecords(options), [lead]);
-  assert.deepEqual(received, {
-    campaign: { campaignKey: lead.campaign_key, email: lead.email },
-    invoiceIntent: invoice.payment_intent_id,
-    reportKey: report.report_key,
-  });
+  assert.deepEqual(received, { reportKey: report.report_key });
 });
 
 test("keeps missing PostgreSQL business records missing", async () => {
   const options = { dependencies: createDependencies() };
 
-  assert.equal(await findInvoicePaymentRecordByIntentId("pi_missing", options), null);
   assert.equal(await findMonthlyReportRunRecord("report_missing", options), null);
-  assert.equal(
-    await findEmailCampaignLeadRecord(
-      { campaignKey: "campaign", email: "missing@example.com" },
-      options,
-    ),
-    null,
-  );
-  assert.deepEqual(await listInvoicePaymentRecords(options), []);
   assert.deepEqual(await listEmailCampaignLeadReadRecords(options), []);
 });
 
@@ -153,17 +97,9 @@ test("campaign reads fail closed without an empty audience fallback", async () =
   };
   const options = {
     dependencies: createDependencies({
-      findCampaignLead: fail,
       listCampaignLeads: fail,
     }),
   };
-  await assert.rejects(
-    findEmailCampaignLeadRecord(
-      { campaignKey: "campaign", email: "fixture@example.test" },
-      options,
-    ),
-    /database unavailable/u,
-  );
   await assert.rejects(
     listEmailCampaignLeadReadRecords(options),
     /database unavailable/u,

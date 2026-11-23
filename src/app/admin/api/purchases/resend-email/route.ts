@@ -1,4 +1,3 @@
-import { getStripeServer } from "@/app/api/stripe/payment-intent/lib";
 import { deliverPurchaseSuccessEmailFromOutbox } from "@/app/api/stripe/webhook/_lib/side-effects/purchase-email";
 import { findVerifiedSucceededStripeEvent } from "@/db/admin-operations";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
@@ -8,9 +7,11 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 
 export const runtime = "nodejs";
 
@@ -42,16 +43,8 @@ export async function POST(request: Request) {
     windowMs: 60_000,
   });
 
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-
-  if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      status: 429,
-    });
-  }
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse: bodyErrorResponse } =

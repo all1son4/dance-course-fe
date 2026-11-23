@@ -1,19 +1,18 @@
-import {
-  normalizeCheckoutSessionId,
-  normalizePaymentIntentId,
-} from "@/app/api/stripe/payment-intent/lib";
 import { getDatabase } from "@/db/client";
 import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { buildMyAccessPath } from "@/lib/my-access/link";
 import { findPaymentAccessRecord } from "@/lib/payment-read-runtime";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { normalizePaymentIntentId } from "@/lib/stripe-checkout";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
@@ -152,12 +151,7 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   try {

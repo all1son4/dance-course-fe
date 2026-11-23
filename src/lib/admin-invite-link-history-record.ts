@@ -1,7 +1,7 @@
 /**
  * Independent invite-link history projection shared by the PostgreSQL reader and the
- * admin history route. Independent of the archive source shape; all ten values retain
- * their string representation. Missing timestamps stay empty strings, never null, so
+ * admin history route. Independent of the archive source shape; every value keeps
+ * its string representation. Missing timestamps stay empty strings, never null, so
  * `tokenUsedAt` keeps distinguishing an active link from a used one.
  */
 export type AdminInviteLinkHistoryRecord = {

@@ -1,6 +1,6 @@
 export const PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY = "payment-checkout-draft:v1";
 
-const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
+export const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
 
 /** The checkout form itself, in any locale: `/payment`, `/en/payment`, ... */
 export const isCheckoutPaymentPathname = (pathname: string) => {

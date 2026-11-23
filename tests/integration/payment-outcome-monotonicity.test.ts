@@ -5,12 +5,12 @@ import test, { after } from "node:test";
 import postgres from "postgres";
 
 import { getDatabaseClient } from "@/db/client";
-import { upsertPaymentRecordToDatabase } from "@/db/payment-records";
 import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,
 } from "@/lib/payment-record";
 
+import { upsertPaymentRecordToDatabase } from "../helpers/legacy-payment-writer";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 const databaseUrl = getRequiredTestDatabaseUrl();

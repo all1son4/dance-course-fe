@@ -6,9 +6,10 @@ import Button from "@/components/common/Button";
 import EmailSuggestion from "@/components/common/EmailSuggestion";
 import Input from "@/components/common/Input";
 import { getEmailSuggestion } from "@/lib/email-suggestion";
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
-import { RequestForm, RequestMessage, RequestRow } from "./page.styles";
+import { RequestForm, RequestMessage, RequestRow } from "./access-aside.styles";
 
 type RequestLinkFormProps = {
   locale: string;
@@ -21,8 +22,6 @@ type RequestLinkFormProps = {
     submit: string;
   };
 };
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 /**
  * «Прислать ссылку» (HUB-D30): one field, one answer for every address, so the page

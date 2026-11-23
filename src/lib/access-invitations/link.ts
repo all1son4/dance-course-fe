@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { getAccessLinkSecret } from "@/lib/my-access/link";
 import { normalizedSiteUrl } from "@/lib/seo";
+import { DAY_MS } from "@/lib/time";
 
 /*
  * The page of a renewal invitation opens by a signed link, nothing stored (as «Мой
@@ -11,7 +12,7 @@ import { normalizedSiteUrl } from "@/lib/seo";
  */
 
 const TOKEN_PURPOSE = "access-invitation:v1";
-export const INVITATION_LINK_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+export const INVITATION_LINK_TTL_MS = 30 * DAY_MS;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u;
 
 const sign = (secret: string, purchaseId: string, issuedAt: number) =>

@@ -17,6 +17,7 @@ import {
   isHubAccessRightActive,
 } from "@/lib/inspiration-hub/access-state";
 import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
+import { DAY_MS } from "@/lib/time";
 
 import {
   accessEntitlements,
@@ -54,7 +55,7 @@ export type EndedHubAccessRight = {
 };
 
 // К5: a Hub purchase whose owner is still unknown after this long needs a person.
-const OWNERLESS_PURCHASE_REPORT_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
+const OWNERLESS_PURCHASE_REPORT_AFTER_MS = 3 * DAY_MS;
 
 // A paid, unrevoked Hub right of the period model. Legacy rows (no source_kind)
 // keep their binding-based expiry and never match here.

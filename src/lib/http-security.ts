@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 export const API_NO_STORE_HEADERS = {
@@ -80,7 +82,7 @@ export const isPayloadTooLarge = (request: Request, maxBytes: number) => {
   return Number.isFinite(contentLength) && contentLength > maxBytes;
 };
 
-export const hasJsonContentType = (request: Request) => {
+const hasJsonContentType = (request: Request) => {
   const contentType = request.headers.get("content-type")?.toLowerCase() ?? "";
   return contentType.includes("application/json");
 };
@@ -98,6 +100,29 @@ export const jsonErrorNoStore = (
     },
     init,
   );
+
+/** «rate_limited» with the seconds the caller should wait. */
+export const jsonRateLimited = (retryAfterSeconds: number) =>
+  jsonErrorNoStore("rate_limited", {
+    headers: { "Retry-After": String(retryAfterSeconds) },
+    status: 429,
+  });
+
+/**
+ * The answer to a spent rate limit, or to a limit store that is down for a route that
+ * denies then; null when the request may go on.
+ */
+export const rateLimitErrorResponse = (rateLimit: {
+  backendUnavailable: boolean;
+  limited: boolean;
+  retryAfterSeconds: number;
+}) => {
+  if (rateLimit.backendUnavailable) {
+    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
+  }
+
+  return rateLimit.limited ? jsonRateLimited(rateLimit.retryAfterSeconds) : null;
+};
 
 export const getBrowserJsonRequestErrorResponse = (
   request: Request,
@@ -205,3 +230,19 @@ export const jsonNoStore = (
       ...(init?.headers ?? {}),
     },
   });
+
+/** The checkout session id a browser sent: letters, digits, _ and -, at most 96. */
+export const normalizeCheckoutSessionId = (value: string | null | undefined) =>
+  (value?.trim() ?? "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 96);
+
+/** Secret comparison that takes the same time wherever the strings differ. */
+export const areEqualInTimingSafeWay = (left: string, right: string) => {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+};

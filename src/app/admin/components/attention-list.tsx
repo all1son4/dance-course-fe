@@ -65,22 +65,18 @@ const AttentionRow = styled.li<{ $danger: boolean }>`
 `;
 
 type AttentionListProps = {
-  /** The section showing the list: items of that section lose their "Открыть". */
-  currentView?: AdminFeatureId;
   items: AttentionItem[];
   onFixed: () => void;
   onNavigate: (view: AdminFeatureId) => void;
+  onUnauthorized: () => void;
 };
 
-/**
- * Problems the system could not solve by itself. The overview shows all of them;
- * each section shows its own, so a problem is solved where it is seen.
- */
+/** Problems the system could not solve by itself, as the overview lists them. */
 export const AttentionList = ({
-  currentView,
   items,
   onFixed,
   onNavigate,
+  onUnauthorized,
 }: AttentionListProps) => {
   const toast = useToast();
   const [fixingId, setFixingId] = useState("");
@@ -93,12 +89,9 @@ export const AttentionList = ({
       { body: { cohortId: item.fix.cohortId }, method: "POST" },
     );
     setFixingId("");
+    // The same answer as every other admin action: back to the password screen.
     if (result.unauthorized) {
-      toast({
-        tone: "warning",
-        title: "Сессия закончилась",
-        description: "Войди заново и повтори.",
-      });
+      onUnauthorized();
       return;
     }
     if (result.ok && result.data.status === "sent") {
@@ -127,13 +120,9 @@ export const AttentionList = ({
             <div>
               <strong>{item.title}</strong>
               <p>
-                {!currentView && (
-                  <>
-                    <Badge $tone={danger ? "danger" : "warning"}>
-                      {VIEW_LABELS[item.view]}
-                    </Badge>{" "}
-                  </>
-                )}
+                <Badge $tone={danger ? "danger" : "warning"}>
+                  {VIEW_LABELS[item.view]}
+                </Badge>{" "}
                 {item.detail}
               </p>
             </div>
@@ -147,7 +136,7 @@ export const AttentionList = ({
                 >
                   {item.fix.label}
                 </AdminButton>
-              ) : item.view !== currentView ? (
+              ) : (
                 <AdminButton
                   size="sm"
                   icon={<ArrowRight aria-hidden />}
@@ -155,7 +144,7 @@ export const AttentionList = ({
                 >
                   Открыть
                 </AdminButton>
-              ) : null}
+              )}
             </div>
           </AttentionRow>
         );

@@ -5,9 +5,10 @@ import {
   createTelegramBindingFixture,
   createTelegramTokenFixture,
 } from "../../../tests/helpers/telegram-records";
-import type {
-  TelegramAccessTokenRecord,
-  TelegramUserBindingRecord,
+import {
+  hashAccessToken,
+  type TelegramAccessTokenRecord,
+  type TelegramUserBindingRecord,
 } from "./access-records";
 
 const TELEGRAM_TOKEN_FIELDS = [
@@ -87,4 +88,11 @@ test("Telegram binding contract preserves all 14 fields and string values", () =
   assert.deepEqual(restored, record);
   assert.equal(record.access_expires_at, "");
   assert.equal(record.invite_link, "https://t.me/+fixture_only");
+});
+
+test("a token is stored as its SHA-256 hex fingerprint", () => {
+  assert.equal(
+    hashAccessToken("abc"),
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+  );
 });

@@ -133,13 +133,6 @@ export const ItemHead = styled.div`
   }
 `;
 
-export const ItemMeta = styled.p`
-  margin: 0;
-  color: var(--a-ink-2);
-  font-size: var(--a-text-sm);
-  overflow-wrap: anywhere;
-`;
-
 export const LinkCaption = styled.p`
   margin: 2px 0 0;
   color: var(--a-ink-2);

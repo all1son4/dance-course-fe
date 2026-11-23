@@ -1,4 +1,4 @@
-import { DEFAULT_SITE_HOME_URL } from "@/constants/links";
+import { SITE_HOME_URL } from "@/constants/links";
 import {
   claimEmailCampaignLeadForDelivery,
   findMonthlyReportRunInDatabase,
@@ -11,6 +11,7 @@ import { countOutstandingPolishTerminalSales } from "@/db/polish-terminal-sales"
 import {
   type ClaimedOutboxJob,
   enqueueOutboxJob,
+  nonRetryable,
   processNextOutboxJob,
   processOutboxJobByDeduplicationKey,
   replayOutboxJob,
@@ -73,19 +74,12 @@ type PolishTerminalReminderPayload = {
   monthValue: string;
 };
 
-const SITE_HOME_URL =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  DEFAULT_SITE_HOME_URL;
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
 const requireString = (value: unknown, field: string) => {
   if (typeof value !== "string" || !value.trim()) {
-    throw Object.assign(new Error(`business_outbox_${field}_invalid`), {
-      retryable: false,
-    });
+    throw nonRetryable(`business_outbox_${field}_invalid`);
   }
 
   return value;
@@ -95,22 +89,15 @@ const requireDate = (value: unknown, field: string) => {
   const date = new Date(requireString(value, field));
 
   if (Number.isNaN(date.getTime())) {
-    throw Object.assign(new Error(`business_outbox_${field}_invalid`), {
-      retryable: false,
-    });
+    throw nonRetryable(`business_outbox_${field}_invalid`);
   }
 
   return date;
 };
 
-const createNonRetryableError = (message: string) =>
-  Object.assign(new Error(message), { retryable: false });
-
 const parseEmailPayload = (value: unknown): SendResendEmailInput => {
   if (!isRecord(value)) {
-    throw Object.assign(new Error("business_outbox_email_invalid"), {
-      retryable: false,
-    });
+    throw nonRetryable("business_outbox_email_invalid");
   }
 
   const attachments = value.attachments;
@@ -125,9 +112,7 @@ const parseEmailPayload = (value: unknown): SendResendEmailInput => {
           typeof attachment.filename !== "string",
       ))
   ) {
-    throw Object.assign(new Error("business_outbox_attachments_invalid"), {
-      retryable: false,
-    });
+    throw nonRetryable("business_outbox_attachments_invalid");
   }
 
   const headers = value.headers;
@@ -137,9 +122,7 @@ const parseEmailPayload = (value: unknown): SendResendEmailInput => {
     (!isRecord(headers) ||
       Object.values(headers).some((header) => typeof header !== "string"))
   ) {
-    throw Object.assign(new Error("business_outbox_headers_invalid"), {
-      retryable: false,
-    });
+    throw nonRetryable("business_outbox_headers_invalid");
   }
 
   return {
@@ -164,17 +147,13 @@ const parseMonthlyReportDeliveryPayload = (
   payload: Record<string, unknown>,
 ): MonthlyReportDeliveryPayload => {
   if (!isRecord(payload.report)) {
-    throw Object.assign(new Error("business_outbox_report_invalid"), {
-      retryable: false,
-    });
+    throw nonRetryable("business_outbox_report_invalid");
   }
 
   const rowCount = payload.report.rowCount;
 
   if (!Number.isInteger(rowCount) || Number(rowCount) <= 0) {
-    throw Object.assign(new Error("business_outbox_report_row_count_invalid"), {
-      retryable: false,
-    });
+    throw nonRetryable("business_outbox_report_row_count_invalid");
   }
 
   return {
@@ -200,7 +179,7 @@ const parsePolishTerminalReminderPayload = (
   const monthValue = requireString(payload.monthValue, "terminal_reminder_month");
 
   if (!/^\d{4}-(0[1-9]|1[0-2])$/u.test(monthValue)) {
-    throw createNonRetryableError("business_outbox_terminal_reminder_month_invalid");
+    throw nonRetryable("business_outbox_terminal_reminder_month_invalid");
   }
 
   return { monthValue };
@@ -210,7 +189,7 @@ const deliverCampaignEmail = async (job: ClaimedOutboxJob) => {
   const payload = parseCampaignEmailDeliveryPayload(job.payload);
 
   if (job.recipient?.trim().toLowerCase() !== payload.email.to.trim().toLowerCase()) {
-    throw createNonRetryableError("business_outbox_job_recipient_mismatch");
+    throw nonRetryable("business_outbox_job_recipient_mismatch");
   }
 
   const claim = await claimEmailCampaignLeadForDelivery({
@@ -227,7 +206,7 @@ const deliverCampaignEmail = async (job: ClaimedOutboxJob) => {
   }
 
   if (claim.lead.normalizedEmail !== payload.email.to.trim().toLowerCase()) {
-    const error = createNonRetryableError("business_outbox_campaign_recipient_mismatch");
+    const error = nonRetryable("business_outbox_campaign_recipient_mismatch");
 
     await markEmailCampaignLeadFailed({
       error,
@@ -291,7 +270,7 @@ const deliverMonthlyReport = async (job: ClaimedOutboxJob) => {
     job.recipient?.trim().toLowerCase() !== normalizedRecipient ||
     payload.report.deliveredTo.trim().toLowerCase() !== normalizedRecipient
   ) {
-    throw createNonRetryableError("business_outbox_report_recipient_mismatch");
+    throw nonRetryable("business_outbox_report_recipient_mismatch");
   }
 
   if (!payload.force) {
@@ -373,13 +352,13 @@ const deliverPolishTerminalReminder = async (job: ClaimedOutboxJob) => {
   } catch {
     // sendMessage has no idempotency key. An uncertain provider response must
     // not be retried automatically and risk showing the same reminder twice.
-    throw createNonRetryableError(
+    throw nonRetryable(
       "telegram_terminal_reminder_delivery_uncertain_manual_review_required",
     );
   }
 };
 
-export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
+const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
   if (job.kind === "choreo_access_expiry_reminder")
     return deliverChoreoAccessReminder(job);
   if (job.kind === "hub_period_start_invite") return deliverHubPeriodStartInvite(job);
@@ -403,9 +382,7 @@ export const deliverBusinessOperationOutboxJob = (job: ClaimedOutboxJob) => {
     return deliverPolishTerminalReminder(job);
   }
 
-  throw Object.assign(new Error(`unsupported_business_outbox_kind:${job.kind}`), {
-    retryable: false,
-  });
+  throw nonRetryable(`unsupported_business_outbox_kind:${job.kind}`);
 };
 
 const enqueueRecoverableBusinessJob = async (

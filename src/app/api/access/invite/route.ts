@@ -1,35 +1,33 @@
-import { eq } from "drizzle-orm";
-
-import { getStripeServer } from "@/app/api/stripe/payment-intent/lib";
 import { deliverPurchaseSuccessEmailFromOutbox } from "@/app/api/stripe/webhook/_lib/side-effects/purchase-email";
 import { findVerifiedSucceededStripeEvent } from "@/db/admin-operations";
 import { getDatabase } from "@/db/client";
-import { readMyAccessSnapshot } from "@/db/my-access";
+import { findMyAccessPurchase, readMyAccessSnapshot } from "@/db/my-access";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
-import { purchases } from "@/db/schema";
 import { sendInvitationLinks } from "@/lib/access-invitations/service";
 import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { buildMyAccessCards } from "@/lib/my-access/cards";
 import { isMyAccessLinkConfigured, verifyMyAccessToken } from "@/lib/my-access/link";
 import { consumeRateLimit, consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 import {
   ensureTelegramAccessLinkForPayment,
-  isOfferEligibleForTelegramAccessLink,
+  isStandardTelegramLinkPayment,
 } from "@/lib/telegram/access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
+import { DAY_MS } from "@/lib/time";
 
 export const runtime = "nodejs";
 
 const MAX_BODY_BYTES = 2 * 1024;
 const MAX_CARD_ID_LENGTH = 128;
 const TEN_MINUTES_MS = 10 * 60 * 1000;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 type InviteBody = { card?: unknown; k?: unknown };
 
@@ -54,10 +52,7 @@ export async function POST(request: Request) {
     windowMs: TEN_MINUTES_MS,
   });
   if (ipLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(ipLimit.retryAfterSeconds) },
-      status: 429,
-    });
+    return jsonRateLimited(ipLimit.retryAfterSeconds);
   }
 
   const { body, errorResponse } = await parseJsonBody<InviteBody>(
@@ -84,14 +79,7 @@ export async function POST(request: Request) {
       card?.action?.key === "reissue" ? card.action.purchaseId : undefined;
     if (!purchaseId) return jsonErrorNoStore("not_needed", { status: 409 });
 
-    const [owned] = await database
-      .select({
-        invitationKind: purchases.invitationKind,
-        paymentIntentId: purchases.paymentIntentId,
-      })
-      .from(purchases)
-      .where(eq(purchases.id, purchaseId))
-      .limit(1);
+    const owned = await findMyAccessPurchase(database, purchaseId);
 
     // An invitation has no payment email: its own links email, limited by the emails
     // it actually sent, so a failed attempt never uses up the person's tries.
@@ -101,7 +89,7 @@ export async function POST(request: Request) {
         return jsonNoStore({ status: "sent" });
       }
       if (result.status === "limited") {
-        return jsonErrorNoStore("rate_limited", { status: 429 });
+        return jsonRateLimited(result.retryAfterSeconds);
       }
       return result.status === "no_links"
         ? jsonErrorNoStore("no_link", { status: 409 })
@@ -127,10 +115,7 @@ export async function POST(request: Request) {
         ? customerLimit
         : null;
     if (limited) {
-      return jsonErrorNoStore("rate_limited", {
-        headers: { "Retry-After": String(limited.retryAfterSeconds) },
-        status: 429,
-      });
+      return jsonRateLimited(limited.retryAfterSeconds);
     }
 
     const paymentRecord = owned
@@ -145,8 +130,7 @@ export async function POST(request: Request) {
     });
     const hasLink = onlineGroupAccess
       ? onlineGroupAccess.some((access) => access.accessUrl)
-      : paymentRecord.access_workflow.trim() !== "manual-admin" &&
-        isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id) &&
+      : isStandardTelegramLinkPayment(paymentRecord) &&
         (await ensureTelegramAccessLinkForPayment(paymentRecord)).status === "ready";
     if (!hasLink) return jsonErrorNoStore("no_link", { status: 409 });
 

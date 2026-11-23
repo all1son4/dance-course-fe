@@ -44,6 +44,8 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
@@ -54,16 +56,14 @@ import {
   getLocalizedSellableProductShortTitle,
   getLocalizedSellableProductTitle,
 } from "@/lib/sellable-products-localization";
-import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
-
 import {
   createPaymentIntentIdempotencyKey,
   getResolvedCheckoutLocale,
   getStripeServer,
-  normalizeCheckoutSessionId,
   normalizePaymentIntentCustomerData,
   type PaymentIntentCustomerData,
-} from "./lib";
+} from "@/lib/stripe-checkout";
+import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
 
 type CreatePaymentIntentBody = {
   agreements?: unknown;
@@ -588,12 +588,7 @@ export async function POST(request: Request): Promise<Response> {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   const stripe = getStripeServer();

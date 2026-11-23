@@ -5,7 +5,7 @@ import {
   INITIAL_AGREEMENTS,
   INITIAL_CUSTOMER_DATA,
   type PaymentAgreementState,
-} from "@/app/[locale]/payment/payment.constants";
+} from "@/lib/checkout/payment.constants";
 import {
   CHECKOUT_AGREEMENT_VERSIONS,
   CHECKOUT_CONSENT_METADATA_KEYS,

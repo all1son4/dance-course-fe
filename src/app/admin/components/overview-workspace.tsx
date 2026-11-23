@@ -113,6 +113,7 @@ type OverviewWorkspaceProps = {
   isLoading: boolean;
   onNavigate: (view: AdminFeatureId) => void;
   onRefresh: () => void | Promise<void>;
+  onUnauthorized: () => void;
   overview: AdminOverview | null;
 };
 
@@ -121,6 +122,7 @@ export const OverviewWorkspace = ({
   isLoading,
   onNavigate,
   onRefresh,
+  onUnauthorized,
   overview,
 }: OverviewWorkspaceProps) => {
   const metrics = overview?.metrics;
@@ -255,6 +257,7 @@ export const OverviewWorkspace = ({
             <AttentionList
               items={overview.attention}
               onFixed={() => void onRefresh()}
+              onUnauthorized={onUnauthorized}
               onNavigate={onNavigate}
             />
           )}

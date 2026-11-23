@@ -1,16 +1,21 @@
 import { normalizeCountryCode } from "@/constants/countries";
-import { DEFAULT_SITE_HOME_URL } from "@/constants/links";
+import { SITE_HOME_URL } from "@/constants/links";
 import {
   formatPrice,
   isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import { pluralize } from "@/lib/plural";
 import {
   formatPurchaseLine,
   getAdminPurchaseLine,
   getLocalizedOfferMetadataByOfferId,
 } from "@/lib/sellable-products-localization";
+import {
+  getResolvedCheckoutLessonLanguage,
+  getResolvedCheckoutLocale,
+} from "@/lib/stripe-checkout";
 import {
   getOfferAccessDurationDaysByOfferId,
   isOnlineGroupAccessOfferId,
@@ -19,15 +24,6 @@ import {
 import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access";
 import { UTC_TIME_ZONE_LABEL } from "@/lib/time";
 
-import {
-  getResolvedCheckoutLessonLanguage,
-  getResolvedCheckoutLocale,
-} from "../../payment-intent/lib";
-
-const SITE_HOME_URL =
-  process.env.SITE_URL?.trim() ||
-  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-  DEFAULT_SITE_HOME_URL;
 const STRIPE_DASHBOARD_URL = "https://dashboard.stripe.com";
 // A leased side effect is stored as "<status>:<lease token>", so the bare and
 // the leased spelling of the same status mean the same thing.
@@ -128,21 +124,6 @@ const getLanguageLine = ({
   return `${siteLanguage} · материалы ${materialsLanguage}`;
 };
 
-const getRussianPlural = (count: number, [one, few, many]: [string, string, string]) => {
-  const lastTwoDigits = Math.abs(count) % 100;
-  const lastDigit = lastTwoDigits % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-    return many;
-  }
-
-  if (lastDigit === 1) {
-    return one;
-  }
-
-  return lastDigit >= 2 && lastDigit <= 4 ? few : many;
-};
-
 /** In days, the way the site and the purchase email state the term. */
 const getAccessDurationLabel = (offerId: string) => {
   const durationDays = getOfferAccessDurationDaysByOfferId(offerId);
@@ -151,7 +132,7 @@ const getAccessDurationLabel = (offerId: string) => {
     return "";
   }
 
-  return `${durationDays} ${getRussianPlural(durationDays, ["день", "дня", "дней"])}`;
+  return `${durationDays} ${pluralize("ru", durationDays, ["день", "дня", "дней"])}`;
 };
 
 const getFormattedCountryLabel = (customerCountry: string) => {

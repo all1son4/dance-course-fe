@@ -398,7 +398,7 @@ test("a passed check opens the discounted price and hands the access job its own
   const check = await checkDiscount(userId);
   assert.equal(check.row?.status, "verified");
 
-  const { getStripeServer } = await import("@/app/api/stripe/payment-intent/lib");
+  const { getStripeServer } = await import("@/lib/stripe-checkout");
   const stripe = getStripeServer();
   assert.ok(stripe);
   const created: { metadata: Record<string, string> }[] = [];

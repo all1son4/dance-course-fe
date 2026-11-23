@@ -5,12 +5,13 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import {
   ensureTelegramAccessLinkForPayment,
-  isOfferEligibleForTelegramAccessLink,
+  isStandardTelegramLinkPayment,
 } from "@/lib/telegram/access";
 import {
   ensureOnlineGroupAccessForPayment,
@@ -54,16 +55,8 @@ export async function POST(request: Request) {
     windowMs: 60_000,
   });
 
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-
-  if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      status: 429,
-    });
-  }
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse: bodyErrorResponse } =
@@ -115,10 +108,7 @@ export async function POST(request: Request) {
       return jsonNoStore({ links, status });
     }
 
-    if (
-      paymentRecord.access_workflow.trim() === "manual-admin" ||
-      !isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id)
-    ) {
+    if (!isStandardTelegramLinkPayment(paymentRecord)) {
       return jsonNoStore({ links: [], status: "not_applicable" });
     }
 

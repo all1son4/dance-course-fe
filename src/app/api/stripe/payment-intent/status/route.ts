@@ -2,17 +2,18 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-
-import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
 import {
   getCheckoutOwnedPaymentIntent,
   getManagedPaymentIntentSnapshot,
   getStripeServer,
-} from "../lib";
+} from "@/lib/stripe-checkout";
+
+import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -41,12 +42,7 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   const stripe = getStripeServer();
@@ -85,11 +81,8 @@ export async function POST(request: Request) {
     const snapshot = getManagedPaymentIntentSnapshot(paymentIntentResult.paymentIntent);
 
     if (snapshot.outcome === "succeeded") {
-      try {
-        scheduleStripeBackgroundJobs();
-      } catch (error) {
-        logSafeError("Failed to schedule payment background recovery", error);
-      }
+      // Never throws: a scheduling failure is logged inside and the inbox row stays durable.
+      scheduleStripeBackgroundJobs();
     }
 
     return jsonNoStore(snapshot);

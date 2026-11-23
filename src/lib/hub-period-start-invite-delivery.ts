@@ -6,38 +6,39 @@ import {
 } from "@/db/hub-period-start";
 import { findMyAccessCustomerIdForPaymentIntent } from "@/db/my-access";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
-import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
+import {
+  type ClaimedOutboxJob,
+  enqueueOutboxJob,
+  nonRetryable,
+} from "@/db/transactional-outbox";
+import { areNotificationsEnabled, isProductionDeployment } from "@/lib/deployment";
 import { buildHubPeriodStartInviteEmail } from "@/lib/email/hub-period-start-invite";
 import { sendResendEmail } from "@/lib/email/resend";
 import { buildMyAccessUrl } from "@/lib/my-access/link";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
-
-const isProduction = () =>
-  process.env.VERCEL_ENV === "production" ||
-  (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
-const isEnabled = () =>
-  isProduction() || process.env.ALLOW_TEST_MODE_NOTIFICATIONS === "1";
-
-const nonRetryable = (message: string) =>
-  Object.assign(new Error(message), { retryable: false });
 
 /**
  * HUB-D37, run daily: one job per paid Hub period that began without an invite. The
  * key names the start, so a period whose start moved gets its own job.
  */
 export const enqueueStartedHubPeriodInvites = async (now = new Date()) => {
-  const result = { due: 0, enqueued: 0, duplicates: 0, disabled: !isEnabled() };
+  const result = {
+    due: 0,
+    enqueued: 0,
+    duplicates: 0,
+    disabled: !areNotificationsEnabled(),
+  };
   if (result.disabled) return result;
 
   const periods = await listStartedHubPeriodsWithoutInvite(getDatabase(), {
-    livemode: isProduction(),
+    livemode: isProductionDeployment(),
     now,
   });
   result.due = periods.length;
 
   // HUB-D43: Plus buyers outside the Hub get their invite on the cohort start day.
   const plusHubs = await listStartedPlusHubsWithoutInvite(getDatabase(), {
-    livemode: isProduction(),
+    livemode: isProductionDeployment(),
     now,
   });
   result.due += plusHubs.length;
@@ -72,7 +73,7 @@ export const enqueueStartedHubPeriodInvites = async (now = new Date()) => {
 
 /** Creates the invite through the ordinary delivery and mails it to the buyer. */
 export const deliverHubPeriodStartInvite = async (job: ClaimedOutboxJob) => {
-  if (!isEnabled()) return { skipped: true };
+  if (!areNotificationsEnabled()) return { skipped: true };
 
   const paymentIntentId =
     typeof job.payload.paymentIntentId === "string" ? job.payload.paymentIntentId : "";

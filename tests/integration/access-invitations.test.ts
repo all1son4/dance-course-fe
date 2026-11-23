@@ -38,19 +38,19 @@ const PLUS_RENEWAL_OFFER = "off_online_group_anna_strok_renewal_library_access";
 const run = randomUUID().replaceAll("-", "").slice(0, 12);
 const HUB_PRODUCT = `prd_inv_hub_${run}`;
 const HUB_OFFER = `off_inv_hub_${run}`;
-let seededGroupCatalog = false;
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const jwk = { ...publicKey.export({ format: "jwk" }), alg: "RS256", kid: `inv-${run}` };
 
 before(async () => {
-  const [product] = await client<{ id: string }[]>`
+  // The real Online Group rows are shared: other files read and seed them at the same
+  // time, so they stay after this file (the test database is thrown away).
+  await client`
     INSERT INTO products (code, external_product_id, slug, type, title, description,
       description_keys)
     VALUES ('online-group-anna-strok', ${GROUP_PRODUCT}, 'online-group-anna-strok', 'course',
       'Онлайн-группа by Anna Strok', '[]'::jsonb, '[]'::jsonb)
-    ON CONFLICT DO NOTHING RETURNING id`;
-  seededGroupCatalog = Boolean(product);
+    ON CONFLICT DO NOTHING`;
   const [group] = await client<{ id: string }[]>`
     SELECT id FROM products WHERE external_product_id = ${GROUP_PRODUCT}`;
   await client`
@@ -95,11 +95,6 @@ after(async () => {
   await client`DELETE FROM telegram_chats WHERE chat_id LIKE ${`inv_${run}%`}`;
   await client`DELETE FROM product_offers WHERE external_offer_id = ${HUB_OFFER}`;
   await client`DELETE FROM products WHERE external_product_id = ${HUB_PRODUCT}`;
-  if (seededGroupCatalog) {
-    await client`DELETE FROM product_offers WHERE external_offer_id IN
-      (${STANDARD_OFFER}, ${RENEWAL_OFFER}, ${PLUS_RENEWAL_OFFER})`;
-    await client`DELETE FROM products WHERE external_product_id = ${GROUP_PRODUCT}`;
-  }
   await Promise.all([client.end(), applicationClient.end()]);
 });
 
@@ -465,7 +460,7 @@ test("a group renewal: page, Telegram check, links once, one email", async (t) =
 
   const { createInvitationToken } = await import("@/lib/access-invitations/link");
   const { confirmAccessInvitation, readInvitationPage } =
-    await import("@/lib/access-invitations/service");
+    await import("@/lib/access-invitations/page");
   const token = createInvitationToken(purchaseId)!;
   const page = await readInvitationPage(token);
   assert.equal(page.status, "ready");
@@ -539,7 +534,7 @@ test("an account already in the chat sees that instead of a link", async (t) => 
   });
   const { createInvitationToken } = await import("@/lib/access-invitations/link");
   const { confirmAccessInvitation, readInvitationPage } =
-    await import("@/lib/access-invitations/service");
+    await import("@/lib/access-invitations/page");
   const token = createInvitationToken(purchaseId)!;
   const page = await readInvitationPage(token);
   assert.ok(page.status === "ready");
@@ -633,7 +628,7 @@ const renewalOf = async (
 const confirmWith = async (purchaseId: string, telegramUserId: string) => {
   const { createInvitationToken } = await import("@/lib/access-invitations/link");
   const { confirmAccessInvitation, readInvitationPage } =
-    await import("@/lib/access-invitations/service");
+    await import("@/lib/access-invitations/page");
   const token = createInvitationToken(purchaseId)!;
   const page = await readInvitationPage(token);
   assert.ok(page.status === "ready");
@@ -733,7 +728,7 @@ test("a failed link is visible in the journal and the page retry delivers it", a
 
   // Telegram answers again: «Попробовать ещё раз» on the page.
   providers.control.failInvites = false;
-  const { retryInvitationLinks } = await import("@/lib/access-invitations/service");
+  const { retryInvitationLinks } = await import("@/lib/access-invitations/page");
   const retry = await retryInvitationLinks(token);
   assert.ok(retry.status === "verified");
   assert.equal(retry.lines[0]?.state, "link");
@@ -937,5 +932,9 @@ test("«Прислать новую ссылку» for a joining invitation send
   assert.equal(sent.status, "sent");
   assert.equal(providers.emails.length, 1);
   assert.match(providers.emails[0]!.subject, /Twoje linki/u);
-  assert.equal((await sendInvitationLinks(purchaseId)).status, "limited");
+  // One links email per ten minutes: the answer says when trying again can work.
+  assert.deepEqual(await sendInvitationLinks(purchaseId), {
+    retryAfterSeconds: 600,
+    status: "limited",
+  });
 });

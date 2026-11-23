@@ -8,13 +8,14 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
+  normalizeCheckoutSessionId,
   parseJsonBody,
 } from "@/lib/http-security";
 import { getOnlineGroupSale } from "@/lib/online-group-sale";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-import { getTelegramChatMember } from "@/lib/telegram/bot-api";
-import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
+import { checkChatMembership } from "@/lib/telegram/chat-membership";
 import {
   createTelegramLoginNonce,
   getTelegramLoginClientId,
@@ -61,9 +62,6 @@ type RenewalMembership = {
   checkFailed: boolean;
   isMember: boolean;
 };
-
-const normalizeCheckoutSessionId = (value: string | null | undefined) =>
-  (value ?? "").trim().slice(0, 160);
 
 const normalizeSlug = (value: string | null | undefined) =>
   (value ?? "").trim().slice(0, 80);
@@ -208,28 +206,14 @@ const checkRenewalSourceChatMembership = async ({
 }: {
   chatId: string;
   telegramUserId: string;
-}): Promise<RenewalMembership> => {
-  try {
-    const member = await getTelegramChatMember({
-      chatId,
-      userId: telegramUserId,
-    });
-
-    return {
-      chatId,
-      checkFailed: false,
-      isMember: isActiveTelegramMember(member),
-    };
-  } catch (error) {
-    logSafeError("Failed to check renewal source chat membership", error);
-
-    return {
-      chatId,
-      checkFailed: true,
-      isMember: false,
-    };
-  }
-};
+}): Promise<RenewalMembership> => ({
+  chatId,
+  ...(await checkChatMembership({
+    chatId,
+    failureEvent: "Failed to check renewal source chat membership",
+    userId: telegramUserId,
+  })),
+});
 
 const checkRenewalSourceChatMemberships = (
   campaign: RenewalCampaign,
@@ -245,17 +229,15 @@ const checkRenewalSourceChatMemberships = (
   );
 
 const findRenewalCustomerProfileSafely = async ({
-  campaign,
   matchedMembership,
   telegramUserId,
 }: {
-  campaign: RenewalCampaign;
   matchedMembership: RenewalMembership;
   telegramUserId: string;
 }) => {
   try {
     return await findRenewalCustomerProfile({
-      sourceChatId: matchedMembership.chatId ?? campaign.sourceChatId,
+      sourceChatId: matchedMembership.chatId,
       telegramUserId,
     });
   } catch (error) {
@@ -332,7 +314,6 @@ const verifyRenewalAccess = async (body: RenewalVerifyBody): Promise<RenewalResp
   }
 
   const customerProfile = await findRenewalCustomerProfileSafely({
-    campaign,
     matchedMembership,
     telegramUserId,
   });
@@ -357,12 +338,7 @@ export async function GET(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   if (!isTelegramLoginConfigured()) {
@@ -407,12 +383,7 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   if (!isTelegramLoginConfigured()) {

@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { trackAnalyticsEvent, trackCtaClick } from "@/lib/mixpanel-analytics";
+import { REDUCED_MOTION_QUERY } from "@/lib/reveal";
 
 import {
   createElementsOptions,
@@ -416,7 +417,7 @@ const StripePaymentForm = (props: StripePaymentFormProps): ReactElement => {
           type="button"
           onClick={() =>
             paymentElementShellRef.current?.scrollIntoView({
-              behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+              behavior: window.matchMedia(REDUCED_MOTION_QUERY).matches
                 ? "auto"
                 : "smooth",
               block: "start",

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 
 import {
   DEFAULT_CHECKOUT_CURRENCY,
@@ -466,6 +466,8 @@ for (const errorCode of [
   "sales_closed",
   "catalog_unavailable",
   "online_group_campaign_not_configured",
+  // A tab opened before the cohort closed: the next cohort is not on sale yet.
+  "online_group_cohort_unavailable",
   "missing_secret_key",
 ] as const) {
   test(`withholds checkout when the server reports ${errorCode} during payment preparation`, async (t) => {
@@ -483,6 +485,56 @@ for (const errorCode of [
     assert.deepEqual(store.customerData, customerData);
   });
 }
+
+/** A gateway (502/504) answers with an HTML page, not JSON. */
+const installGatewayPageThen = (
+  t: TestContext,
+  replies: ("gateway" | { clientSecret: string; paymentIntentId: string })[],
+) => {
+  const originalFetch = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = (async () => {
+    const reply = replies[calls];
+    calls += 1;
+    if (!reply) throw new Error("unexpected_fetch_call");
+    return reply === "gateway"
+      ? new Response("<html><body>502 Bad Gateway</body></html>", {
+          headers: { "Content-Type": "text/html" },
+          status: 502,
+        })
+      : Response.json(reply);
+  }) as typeof fetch;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+  return () => calls;
+};
+
+test("a gateway page instead of JSON is retried like a network failure", async (t) => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  const calls = installGatewayPageThen(t, [
+    "gateway",
+    { clientSecret: "secret_after_gateway", paymentIntentId: "pi_after_gateway" },
+  ]);
+
+  await store.ensureStripePaymentIntent("pln");
+
+  assert.equal(calls(), 2);
+  assert.equal(store.stripeClientSecrets.pln, "secret_after_gateway");
+});
+
+test("a gateway page on every attempt ends as a failed request, not as page text", async (t) => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  const calls = installGatewayPageThen(t, ["gateway", "gateway", "gateway"]);
+
+  await store.ensureStripePaymentIntent("pln");
+
+  assert.equal(calls(), 3);
+  assert.equal(store.stripeIntentErrors.pln, "payment_intent_request_failed");
+  assert.equal(store.stripeClientSecret, "");
+});
 
 test("checkout currency initializes once and only accepts supported values", () => {
   const store = new PaymentStore();
@@ -510,6 +562,48 @@ test("resetCheckoutForm starts a fresh session with default state", () => {
   assert.equal(store.customerData.email, "");
   assert.equal(store.areAllAgreementsAccepted, false);
   assert.equal(store.renewalCampaignSlug, "");
+});
+
+const cancelCallsOf = (calls: ReturnType<typeof installJsonFetchFixture>) =>
+  calls.map((call) => ({
+    body: JSON.parse(call.body),
+    contentType: call.headers.get("content-type"),
+    method: call.method,
+    url: call.url,
+  }));
+
+test("a reset cancels each live intent of the old session, in order", async (t) => {
+  const store = new PaymentStore();
+  const previousSessionId = store.checkoutSessionId;
+  store.stripePaymentIntentIds = { pln: "pi_pln", eur: "pi_eur" };
+  const calls = installJsonFetchFixture(t, [{ body: {} }, { body: {} }]);
+
+  store.resetCheckoutForm();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(
+    cancelCallsOf(calls),
+    ["pi_pln", "pi_eur"].map((paymentIntentId) => ({
+      body: { checkoutSessionId: previousSessionId, paymentIntentId },
+      contentType: "application/json",
+      method: "POST",
+      url: "/api/stripe/payment-intent/cancel",
+    })),
+  );
+});
+
+test("an intent shared by both currencies is cancelled once", async (t) => {
+  const store = new PaymentStore();
+  store.stripePaymentIntentIds = { pln: "pi_same", eur: "pi_same" };
+  const calls = installJsonFetchFixture(t, [{ body: {} }]);
+
+  store.setSalesClosed();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(
+    cancelCallsOf(calls).map((call) => call.body.paymentIntentId),
+    ["pi_same"],
+  );
 });
 
 test("[BEH-REN-01] setting a renewal slug invalidates intents minted without it", () => {

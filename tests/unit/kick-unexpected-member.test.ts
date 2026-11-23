@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  kickUnexpectedMember,
-  TEMP_KICK_SECONDS,
-} from "@/lib/telegram/online-group-access";
+import { kickUnexpectedMember, TEMP_KICK_SECONDS } from "@/lib/telegram/bot-api";
 
 test("К15: a kick stays a temporary ban even after every API retry", async (t) => {
   process.env.TELEGRAM_BOT_TOKEN ||= "kick-test-token";

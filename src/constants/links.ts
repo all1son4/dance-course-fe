@@ -1,5 +1,11 @@
 export const DEFAULT_SITE_HOME_URL = "https://annastrok.com";
 
+/** The site address our emails and alerts link to; server-side env first. */
+export const SITE_HOME_URL =
+  process.env.SITE_URL?.trim() ||
+  process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+  DEFAULT_SITE_HOME_URL;
+
 export const PERSONAL_TELEGRAM_HANDLE = "@annastrok_dance";
 export const PERSONAL_TELEGRAM_URL = "https://t.me/annastrok_dance";
 

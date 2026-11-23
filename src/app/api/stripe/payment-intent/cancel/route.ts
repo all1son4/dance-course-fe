@@ -2,16 +2,16 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-
 import {
   getCheckoutOwnedPaymentIntent,
   getManagedPaymentIntentSnapshot,
   getStripeServer,
-} from "../lib";
+} from "@/lib/stripe-checkout";
 
 export const runtime = "nodejs";
 const MAX_PAYMENT_CANCEL_BODY_BYTES = 8 * 1024;
@@ -47,12 +47,7 @@ export async function POST(request: Request) {
   });
 
   if (rateLimit.limited) {
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   const stripe = getStripeServer();

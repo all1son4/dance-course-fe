@@ -1,6 +1,8 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 
 import type { NextRequest } from "next/server";
+
+import { areEqualInTimingSafeWay } from "@/lib/http-security";
 
 export const ADMIN_INVITE_LINKS_SESSION_COOKIE_NAME = "admin_invite_links_session";
 export const ADMIN_INVITE_LINKS_SESSION_TTL_SECONDS = 30 * 24 * 60 * 60;
@@ -16,17 +18,6 @@ const signSessionExpiry = ({
   expiresAtUnix: number;
   password: string;
 }) => createHmac("sha256", password).update(String(expiresAtUnix)).digest("base64url");
-
-const areEqualInTimingSafeWay = (left: string, right: string) => {
-  const leftBuffer = Buffer.from(left);
-  const rightBuffer = Buffer.from(right);
-
-  if (leftBuffer.length !== rightBuffer.length) {
-    return false;
-  }
-
-  return timingSafeEqual(leftBuffer, rightBuffer);
-};
 
 const getCookieValueFromHeader = ({
   cookieHeader,

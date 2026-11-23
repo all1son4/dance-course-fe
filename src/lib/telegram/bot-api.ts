@@ -44,6 +44,11 @@ export const shouldIgnoreKickFailure = (error: unknown) =>
   (error.message.includes("USER_NOT_PARTICIPANT") ||
     error.message.includes("user not found"));
 
+// Telegram's answer for an account it has never seen in this chat (2026-11-20): such
+// an account has no ban to lift and no membership to read.
+export const isUnknownChatParticipantError = (error: unknown) =>
+  error instanceof Error && error.message.includes("PARTICIPANT_ID_INVALID");
+
 const getRetryDelayMs = ({
   attempt,
   retryAfterSeconds,
@@ -345,6 +350,23 @@ export const banTelegramChatMember = async ({
       botToken,
     },
   );
+
+// К15: Telegram treats a ban shorter than 30 seconds as permanent. The ban end is
+// computed once, and the API call may retry for about 31 seconds (three 10-second
+// timeouts plus backoff), so the end must leave 30+ seconds after the last attempt.
+export const TEMP_KICK_SECONDS = 90;
+
+/** Removes a member with a short ban so the same person can rejoin later. */
+export const kickUnexpectedMember = async (
+  chatId: string,
+  telegramUserId: string,
+): Promise<void> => {
+  await banTelegramChatMember({
+    chatId,
+    untilDateUnix: Math.floor(Date.now() / 1000) + TEMP_KICK_SECONDS,
+    userId: telegramUserId,
+  });
+};
 
 export const unbanTelegramChatMember = async ({
   botToken,

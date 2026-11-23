@@ -141,6 +141,7 @@ function AdminApp() {
           isLoading={overview.isLoading}
           onNavigate={setActiveId}
           onRefresh={overview.load}
+          onUnauthorized={onUnauthorized}
           overview={overview.overview}
         />
       ) : activeFeature.id === "online-group" ? (

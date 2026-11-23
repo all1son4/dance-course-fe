@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 /*
  * The invitation page wears «Мой доступ»: the same porcelain canvas, header and
- * cards (imported from ../access/page.styles). Only the three steps and the
+ * cards (imported from ../access/*.styles). Only the three steps and the
  * status line under the Telegram button are its own.
  */
 

@@ -1,13 +1,12 @@
 import { createHash } from "node:crypto";
 
+import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import {
-  getOfferAccessDurationDaysByOfferId,
+  getTelegramChannelAccessDurationMs,
   isChoreoChannelOfferId,
-  isFirstTouchOfferId,
   isLifetimeChannelOfferId,
 } from "@/lib/telegram/offer-access";
 
-const DAY_MS = 86_400_000;
 export const CHOREO_REMINDER_DAYS = 14;
 
 export type ChoreoReminderBinding = {
@@ -39,26 +38,11 @@ export type ChoreoAccessReminder = {
   deduplicationKey: string;
 };
 
-const calendarDay = (date: Date) =>
-  new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Warsaw",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(date);
-
+// The rule that removes the member from the channel, so the email names that day.
 const getEffectiveExpiry = (binding: ChoreoReminderBinding) => {
   if (binding.expiresAt) return binding.expiresAt;
-  const offerId = binding.offerId ?? "";
-  if (!isChoreoChannelOfferId(offerId) && !isFirstTouchOfferId(offerId)) return null;
-  const override = isChoreoChannelOfferId(offerId)
-    ? Number(process.env.TELEGRAM_CHOREO_ACCESS_DAYS)
-    : 0;
-  const days =
-    override > 0 && Number.isFinite(override)
-      ? override
-      : getOfferAccessDurationDaysByOfferId(offerId);
-  return days ? new Date(binding.boundAt.getTime() + days * DAY_MS) : null;
+  const durationMs = getTelegramChannelAccessDurationMs(binding.offerId ?? "");
+  return durationMs ? new Date(binding.boundAt.getTime() + durationMs) : null;
 };
 
 /** Match channel revocation: the longest active binding controls actual access. */
@@ -87,8 +71,7 @@ export const planChoreoAccessReminders = ({
     if (expiries.some((expiry) => !expiry || !Number.isFinite(expiry.getTime())))
       continue;
     const expiresAt = new Date(Math.max(...expiries.map((expiry) => expiry!.getTime())));
-    const daysLeft =
-      (Date.parse(calendarDay(expiresAt)) - Date.parse(calendarDay(now))) / DAY_MS;
+    const daysLeft = warsawDaysBetween(now, expiresAt);
     if (expiresAt <= now || daysLeft > CHOREO_REMINDER_DAYS) continue;
 
     const recipients = new Set<string>();

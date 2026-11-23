@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildHubExpiryReminderEmail } from "@/lib/email/hub-expiry-reminder";
+import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import {
   type HubReminderPeriod,
   planHubExpiryReminders,
-  warsawDaysUntil,
 } from "@/lib/inspiration-hub/expiry-reminders";
 
 // Plan, example 17: Olya's Hub ends on 5 January 2027 at 12:00 Warsaw time.
@@ -28,10 +28,11 @@ const period = (overrides: Partial<HubReminderPeriod> = {}): HubReminderPeriod =
 const plan = (now: Date, periods = [period()], plusRights = []) =>
   planHubExpiryReminders({ now, periods, plusRights });
 
+// Whole Warsaw calendar days to the end: 5 January seen on 29 December is 7.
 test("Warsaw calendar days count dates, not hours", () => {
-  assert.equal(warsawDaysUntil(END, at("2026-12-29T04:00:00.000Z")), 7);
-  assert.equal(warsawDaysUntil(END, at("2027-01-02T04:00:00.000Z")), 3);
-  assert.equal(warsawDaysUntil(END, at("2026-12-28T23:30:00.000Z")), 7);
+  assert.equal(warsawDaysBetween(at("2026-12-29T04:00:00.000Z"), END), 7);
+  assert.equal(warsawDaysBetween(at("2027-01-02T04:00:00.000Z"), END), 3);
+  assert.equal(warsawDaysBetween(at("2026-12-28T23:30:00.000Z"), END), 7);
 });
 
 test("example 17: letters on 29 December and 2 January", () => {

@@ -6,11 +6,11 @@ import {
   RATE_LIMITED_STATUS_TEXT,
 } from "./admin.constants";
 import type {
+  AdminPurchasesPreviousSummary,
+  AdminPurchasesSummary,
   ChoreoSelection,
   LessonLanguage,
   LinkState,
-  OnlineGroupAdminAccess,
-  OnlineGroupAdminAccessState,
 } from "./admin.types";
 
 // Anna works from Warsaw: every time in the admin is Warsaw time.
@@ -31,6 +31,27 @@ export const formatDateTime = (value: string, timeZone = "Europe/Warsaw") => {
     year: "numeric",
   }).format(date);
 };
+
+/** «19 ноября» in Warsaw time. */
+export const formatDayMonth = (value: string) =>
+  new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Warsaw",
+  }).format(new Date(value));
+
+/** «19 ноября, 14:35» in Warsaw time, like every admin time. */
+export const formatDayMonthTime = (value: string) =>
+  new Intl.DateTimeFormat("ru-RU", {
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "long",
+    timeZone: "Europe/Warsaw",
+  }).format(new Date(value));
+
+/** Russian plural: 1 письмо, 2 письма, 5 писем (one helper for the whole site). */
+export { plural } from "@/lib/plural";
 
 /** The Warsaw wall-clock parts of a moment, whatever the device's time zone. */
 const warsawParts = (date: Date) =>
@@ -96,22 +117,6 @@ export const resolveLinkStateLabel = (state: LinkState) =>
       ? "Истекла"
       : "Ещё не использована";
 
-export const resolveOnlineGroupAccessStateLabel = (
-  state: OnlineGroupAdminAccessState,
-) => {
-  if (state === "issued") return "Ещё не использована";
-  if (state === "used") return "Использована";
-  if (state === "expired") return "Истекла";
-  if (state === "revoked") return "Отозвана";
-  if (state === "left") return "Вышли из чата";
-  if (state === "failed") return "Ссылка не создалась";
-  return "Подготавливается";
-};
-
-export const resolveOnlineGroupAccessTitle = (
-  accessKey: OnlineGroupAdminAccess["accessKey"],
-) => (accessKey === "inspiration-hub" ? "Библиотека Inspiration Hub" : "Чат потока");
-
 export const getChoreoSelections = () =>
   SELLABLE_PRODUCTS_LIST.filter((product) => product.type === "choreo")
     .flatMap((product) =>
@@ -151,3 +156,40 @@ export const resolveGeneratorErrorMessage = (errorCode: string, reason: string) 
   GENERATOR_ERROR_MESSAGES[errorCode] ??
   GENERATOR_REASON_MESSAGES[reason] ??
   "Ссылка не создалась. Попробуй ещё раз; если повторится — напиши разработчику.";
+
+/**
+ * «Покупки»: a month against the previous one. Money compares only when both months
+ * have their Stripe fees; nothing compares against a month without any activity.
+ */
+export const buildMonthComparison = ({
+  previousSummary,
+  summary,
+}: {
+  previousSummary: AdminPurchasesPreviousSummary | null;
+  summary: AdminPurchasesSummary | null;
+}) => {
+  // A month with zero prior activity has nothing meaningful to compare against.
+  const hasPreviousData = Boolean(
+    previousSummary &&
+    (previousSummary.salesCount > 0 ||
+      previousSummary.plnTotalMinor > 0 ||
+      previousSummary.eurTotalMinor > 0),
+  );
+  const comparable = hasPreviousData && previousSummary?.stripeFinancialDataComplete;
+  const grossDelta =
+    comparable &&
+    previousSummary?.grossTotalMinor != null &&
+    summary?.grossTotalMinor != null
+      ? summary.grossTotalMinor - previousSummary.grossTotalMinor
+      : null;
+  const netDelta =
+    comparable && previousSummary?.netTotalMinor != null && summary?.netTotalMinor != null
+      ? summary.netTotalMinor - previousSummary.netTotalMinor
+      : null;
+  const countDelta =
+    hasPreviousData && previousSummary && summary
+      ? summary.salesCount - previousSummary.salesCount
+      : null;
+
+  return { countDelta, grossDelta, netDelta };
+};

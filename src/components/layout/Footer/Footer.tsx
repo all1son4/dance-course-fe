@@ -7,6 +7,7 @@ import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { COOKIE_CONSENT_OPEN_SETTINGS_EVENT } from "@/lib/cookie-consent";
 import { trackCtaClick } from "@/lib/mixpanel-analytics";
+import { trimTrailingSlash } from "@/lib/payment-draft";
 import { Logo, SmallMail, SmallPhone } from "@/svg";
 
 import {
@@ -41,7 +42,6 @@ const SITE_LINKS = [
   { key: "inspirationHub", href: "/online/inspiration-hub" },
   { key: "offline", href: "/offline" },
 ] as const;
-const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
 const isPaymentResultPathname = (pathname: string) => {
   const normalizedPathname = trimTrailingSlash(pathname);
 

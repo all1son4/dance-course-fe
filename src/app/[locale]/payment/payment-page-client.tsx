@@ -3,19 +3,11 @@
 import { observer } from "mobx-react-lite";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent, ReactNode } from "react";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
 import EmailSuggestion from "@/components/common/EmailSuggestion";
-import type { StripePaymentTabsProps } from "@/components/other/StripePaymentTabs";
 import type { CountryOption } from "@/constants/countries";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
@@ -36,21 +28,30 @@ import {
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
 import {
+  PAYMENT_CHECKBOXES,
+  PAYMENT_INPUTS,
+  PAYMENT_LESSON_LANGUAGE_OPTIONS,
+  PAYMENT_STEPS,
+  type PaymentAgreementFieldName,
+  type PaymentCustomerFieldName,
+  type PaymentStep,
+} from "@/lib/checkout/payment.constants";
+import {
+  getCompactSummaryTitle,
   isChoreoTutorialProduct,
   shouldNameOfferAtCheckout,
 } from "@/lib/choreo-offer-presentation";
-import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { getEmailSuggestion } from "@/lib/email-suggestion";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
-import { trackAnalyticsEvent, trackCtaClick } from "@/lib/mixpanel-analytics";
-import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
+import {
+  type ButtonAnalyticsMetadata,
+  trackAnalyticsEvent,
+  trackCtaClick,
+} from "@/lib/mixpanel-analytics";
 import { getAlternativeTariffHref } from "@/lib/public-sales";
 import { prefersReducedMotion } from "@/lib/reveal";
 import { StoreProvider, usePaymentStore } from "@/stores";
-import type {
-  PaymentCheckoutDraft,
-  PaymentStoreInitialization,
-} from "@/stores/payment-store";
+import type { PaymentStoreInitialization } from "@/stores/payment-store";
 
 import {
   CHECKOUT_CONSENT_ID,
@@ -83,31 +84,23 @@ import {
   TextBox,
 } from "./page.styles";
 import {
-  PAYMENT_CHECKBOXES,
-  PAYMENT_INPUTS,
-  PAYMENT_LESSON_LANGUAGE_OPTIONS,
-  PAYMENT_STEPS,
-  type PaymentAgreementFieldName,
-  type PaymentCustomerFieldName,
-  type PaymentStep,
-} from "./payment.constants";
-import {
   bringIntoViewIfNeeded,
   type CheckoutAgreement,
+  type CheckoutBlockReason,
   type CheckoutIntent,
+  getCheckoutBlockReason,
   getCheckoutEnterKeyHint,
   getCheckoutSelectionFromSearch,
-  getCompactSummaryTitle,
   getVisiblePaymentInputs,
   isCheckoutLinkStale,
-  isReloadNavigation,
-  PAYMENT_DRAFT_SAVE_DEBOUNCE_MS,
   PAYMENT_INTENT_CREATION_DELAY_MS,
   pointCheckoutField,
   shouldMoveCheckoutFocus,
   STRIPE_INTENT_ERROR_TRANSLATION_KEYS,
 } from "./payment.helpers";
-import { resolvePaymentValidationLocale } from "./payment.validation";
+import type { StripePaymentTabsProps } from "./StripePaymentTabs";
+import { useCheckoutAnalytics } from "./use-checkout-analytics";
+import { useCheckoutDraft } from "./use-checkout-draft";
 import { useTelegramRenewal } from "./use-telegram-renewal";
 
 type PaymentPageProps = {
@@ -117,6 +110,116 @@ type PaymentPageProps = {
 
 /** --motion-slow, the fold of a step body, plus a frame to settle. */
 const STEP_FOLD_DURATION_MS = 340;
+
+/** What the checkout shows instead of the form, one notice per block reason. */
+const CheckoutBlockedNotice = ({
+  alternativeTariffHref,
+  analyticsCommerceProperties,
+  reason,
+  selectedProductCompactTitle,
+}: {
+  alternativeTariffHref: string | null;
+  analyticsCommerceProperties: Omit<ButtonAnalyticsMetadata, "id" | "placement">;
+  reason: CheckoutBlockReason;
+  selectedProductCompactTitle: string;
+}) => {
+  const t = useTranslations("PaymentPage");
+  const commonT = useTranslations("Common");
+
+  switch (reason) {
+    case "catalog_unavailable":
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{t("catalogUnavailable.title")}</SalesClosedTitle>
+          <SalesClosedDescription>
+            {t("catalogUnavailable.description")}
+          </SalesClosedDescription>
+          <SalesClosedActions>
+            {/* Re-read availability on the server without exposing technical details. */}
+            <Button
+              size="sm"
+              buttonText={commonT("refresh")}
+              analytics={{
+                id: "checkout_retry_catalog",
+                placement: "catalog_unavailable",
+                ...analyticsCommerceProperties,
+              }}
+              onClick={() => window.location.reload()}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              buttonText={t("staleLink.catalogButton")}
+              href="/online"
+              analytics={{
+                id: "checkout_back_to_catalog",
+                placement: "catalog_unavailable",
+                ...analyticsCommerceProperties,
+              }}
+            />
+          </SalesClosedActions>
+        </SalesClosedNotice>
+      );
+    case "stale_link":
+      // Before the closed-sales notice: when the link itself is dead, "sales
+      // are closed" would be about the fallback product, not the one asked for.
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
+          <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
+          <Button
+            size="sm"
+            buttonText={t("staleLink.catalogButton")}
+            href="/online"
+            analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
+          />
+        </SalesClosedNotice>
+      );
+    case "sales_closed":
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{selectedProductCompactTitle}</SalesClosedTitle>
+          <SalesClosedDescription>
+            {t(alternativeTariffHref ? "offerUnavailable.title" : "salesClosed.title")}
+          </SalesClosedDescription>
+          <Button
+            size="sm"
+            buttonText={t(
+              alternativeTariffHref
+                ? "offerUnavailable.selectButton"
+                : "staleLink.catalogButton",
+            )}
+            href={alternativeTariffHref ?? "/online"}
+            analytics={{
+              id: "checkout_back_to_catalog",
+              placement: alternativeTariffHref ? "offer_unavailable" : "sales_closed",
+              ...analyticsCommerceProperties,
+            }}
+          />
+        </SalesClosedNotice>
+      );
+    case "renewal_unavailable":
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{t("renewal.unavailable.title")}</SalesClosedTitle>
+          <SalesClosedDescription>
+            {t("renewal.unavailable.description")}
+          </SalesClosedDescription>
+          <Button
+            size="sm"
+            buttonText={t("salesClosed.contactButton")}
+            href={SUPPORT_TELEGRAM_URL}
+            target="_blank"
+            analytics={{
+              id: "checkout_contact_support",
+              placement: "renewal_unavailable",
+              ...analyticsCommerceProperties,
+            }}
+          />
+        </SalesClosedNotice>
+      );
+  }
+};
 
 const PaymentPage = observer(function PaymentPage({
   countryOptions,
@@ -136,12 +239,6 @@ const PaymentPage = observer(function PaymentPage({
   const [openedStep, setOpenedStep] = useState<PaymentStep | null>(null);
   // The email hint holds back an ending still being typed ("gmail.co").
   const [isTypingEmail, setIsTypingEmail] = useState(false);
-  const hasHydratedCheckoutDraftRef = useRef(false);
-  const lastTrackedCheckoutRef = useRef<string | null>(null);
-  const lastTrackedBlockedStateRef = useRef<string | null>(null);
-  const lastTrackedPaymentRevealRef = useRef<string | null>(null);
-  const trackedCompletedFieldsRef = useRef(new Set<string>());
-  const trackedStartedFieldsRef = useRef(new Set<string>());
   const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
   // The drop ships one Telegram channel with both languages inside, so a
   // language choice on its checkout would be meaningless noise.
@@ -207,11 +304,13 @@ const PaymentPage = observer(function PaymentPage({
       productId: requestedSelection.get("product") ?? "",
       offerId: requestedSelection.get("offer") ?? "",
     });
-  const isCheckoutBlocked =
-    paymentStore.isCatalogUnavailable ||
-    isStaleCheckoutLink ||
-    paymentStore.isSalesClosed ||
-    isRenewalUnavailable;
+  const checkoutBlockReason = getCheckoutBlockReason({
+    isCatalogUnavailable: paymentStore.isCatalogUnavailable,
+    isRenewalUnavailable,
+    isSalesClosed: paymentStore.isSalesClosed,
+    isStaleCheckoutLink,
+  });
+  const isCheckoutBlocked = checkoutBlockReason !== null;
   const alternativeTariffHref = paymentStore.isSalesClosed
     ? getAlternativeTariffHref(
         paymentStore.selectedProduct,
@@ -220,27 +319,6 @@ const PaymentPage = observer(function PaymentPage({
     : null;
   const canRevealStripe =
     paymentStore.canShowStripe && isRenewalVerified && !isCheckoutBlocked;
-  const analyticsCommerceProperties = useMemo(
-    () =>
-      ({
-        currency: paymentStore.selectedCurrency,
-        is_renewal: isRenewalCheckout,
-        offer_code: paymentStore.selectedOffer.code,
-        offer_id: paymentStore.selectedOffer.id,
-        product_code: paymentStore.selectedProduct.code,
-        product_id: paymentStore.selectedProduct.id,
-        value: paymentStore.selectedPrice,
-      }) as const,
-    [
-      isRenewalCheckout,
-      paymentStore.selectedCurrency,
-      paymentStore.selectedOffer.code,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedPrice,
-      paymentStore.selectedProduct.code,
-      paymentStore.selectedProduct.id,
-    ],
-  );
   const stripeIntentErrorText = paymentStore.isCatalogUnavailable
     ? stripeT("errors.catalogUnavailable")
     : paymentStore.stripeIntentError
@@ -249,18 +327,6 @@ const PaymentPage = observer(function PaymentPage({
             "errors.paymentIntentRequestFailed",
         )
       : "";
-  const persistCheckoutDraftNow = useCallback(() => {
-    if (typeof window === "undefined" || !canUseFunctionalStorage) {
-      return;
-    }
-
-    const checkoutDraft = paymentStore.getCheckoutDraftSnapshot();
-    sessionStorage.setItem(
-      PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY,
-      JSON.stringify(checkoutDraft),
-    );
-  }, [canUseFunctionalStorage, paymentStore]);
-
   useEffect(() => {
     paymentStore.setValidationLocale(locale);
     paymentStore.initializeCheckoutCurrency(getDefaultCheckoutCurrencyByLocale(locale));
@@ -292,97 +358,15 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.setRenewalCampaignSlug(searchParams.get("renewal"));
   }, [paymentStore, searchKey]);
 
-  useEffect(() => {
-    if (
-      !canUseAnalytics ||
-      paymentStore.catalogStatus !== "ready" ||
-      isStaleCheckoutLink ||
-      isRenewalUnavailable
-    ) {
-      return;
-    }
-
-    const checkoutKey = [
-      paymentStore.selectedProduct.id,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedCurrency,
-      isRenewalCheckout ? "renewal" : "new",
-    ].join(":");
-
-    if (lastTrackedCheckoutRef.current === checkoutKey) {
-      return;
-    }
-
-    lastTrackedCheckoutRef.current = checkoutKey;
-    void trackAnalyticsEvent("checkout_viewed", analyticsCommerceProperties);
-  }, [
-    analyticsCommerceProperties,
-    canUseAnalytics,
-    isRenewalCheckout,
-    isRenewalUnavailable,
-    isStaleCheckoutLink,
-    paymentStore.catalogStatus,
-    paymentStore.selectedCurrency,
-    paymentStore.selectedOffer.id,
-    paymentStore.selectedProduct.id,
-  ]);
-
-  useEffect(() => {
-    // Mirrors the notice priority in the render below, so the tracked reason is
-    // the notice the visitor actually saw.
-    const reason = paymentStore.isCatalogUnavailable
-      ? "catalog_unavailable"
-      : isStaleCheckoutLink
-        ? "stale_link"
-        : paymentStore.isSalesClosed
-          ? "sales_closed"
-          : isRenewalUnavailable
-            ? "renewal_unavailable"
-            : null;
-
-    if (!canUseAnalytics || !reason || lastTrackedBlockedStateRef.current === reason) {
-      return;
-    }
-
-    lastTrackedBlockedStateRef.current = reason;
-    void trackAnalyticsEvent("checkout_blocked", {
-      ...analyticsCommerceProperties,
-      reason,
+  const { analyticsCommerceProperties, trackFieldCompleted, trackFieldStarted } =
+    useCheckoutAnalytics({
+      canRevealStripe,
+      canUseAnalytics,
+      isRenewalCheckout,
+      isRenewalUnavailable,
+      isStaleCheckoutLink,
+      paymentStore,
     });
-  }, [
-    analyticsCommerceProperties,
-    canUseAnalytics,
-    isRenewalUnavailable,
-    isStaleCheckoutLink,
-    paymentStore.isCatalogUnavailable,
-    paymentStore.isSalesClosed,
-  ]);
-
-  useEffect(() => {
-    if (!canUseAnalytics || !canRevealStripe) {
-      return;
-    }
-
-    const revealKey = [
-      paymentStore.selectedProduct.id,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedCurrency,
-    ].join(":");
-
-    if (lastTrackedPaymentRevealRef.current === revealKey) {
-      return;
-    }
-
-    lastTrackedPaymentRevealRef.current = revealKey;
-    void trackAnalyticsEvent("payment_form_revealed", analyticsCommerceProperties);
-  }, [
-    analyticsCommerceProperties,
-    canUseAnalytics,
-    canRevealStripe,
-    paymentStore.selectedCurrency,
-    paymentStore.selectedOffer.id,
-    paymentStore.selectedProduct.id,
-  ]);
 
   // Reaching checkout for the campaign offer counts as "thinking about it": the
   // birthday popup observes the reaction cooldown even if the payment is dropped.
@@ -411,104 +395,7 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.setSelectedCurrency(nextCurrency);
   }, [paymentStore, searchKey]);
 
-  const restoreCheckoutDraft = useCallback(() => {
-    if (hasHydratedCheckoutDraftRef.current || typeof window === "undefined") {
-      return;
-    }
-
-    hasHydratedCheckoutDraftRef.current = true;
-
-    // Drafts survive a reload and the "back to payment" return from a failed
-    // attempt (marked with resume=1). Any other fresh visit starts a clean
-    // checkout session.
-    const isResumeNavigation =
-      new URLSearchParams(window.location.search).get("resume") === "1";
-
-    if (!isReloadNavigation() && !isResumeNavigation) {
-      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-      return;
-    }
-
-    const serializedDraft = sessionStorage.getItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-
-    if (!serializedDraft) {
-      return;
-    }
-
-    try {
-      const parsedDraft = JSON.parse(serializedDraft) as Partial<PaymentCheckoutDraft>;
-      const searchParams = new URLSearchParams(window.location.search);
-      const queryOfferId = searchParams.get("offer");
-      const queryProductId = searchParams.get("product");
-      const queryCurrency = searchParams.get("currency");
-
-      paymentStore.applyCheckoutDraft({
-        ...parsedDraft,
-        selectedCurrency: queryCurrency
-          ? getResolvedCheckoutCurrency(queryCurrency)
-          : parsedDraft.selectedCurrency,
-        selectedOfferId: queryOfferId ?? parsedDraft.selectedOfferId,
-        selectedProductId: queryProductId ?? parsedDraft.selectedProductId,
-        validationLocale: resolvePaymentValidationLocale(locale),
-      });
-    } catch {
-      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-    }
-  }, [locale, paymentStore]);
-
-  // The draft is applied in the hydration commit itself, reading consent
-  // straight from storage rather than waiting for the consent provider's
-  // mount effect. The store update it makes is flushed before the browser
-  // paints, so the first client frame already shows the filled form and the
-  // Stripe reveal then opens exactly once - no empty frame, no second pop.
-  // (The server HTML stays the empty form: hydration matches it, the fields'
-  // values are applied on top.)
-  useLayoutEffect(() => {
-    if (hasCookieConsentFor(getStoredCookieConsent(), "functional")) {
-      restoreCheckoutDraft();
-    }
-  }, [restoreCheckoutDraft]);
-
-  // Consent given only later in this visit (banner answered after the load).
-  useEffect(() => {
-    if (canUseFunctionalStorage) {
-      restoreCheckoutDraft();
-    }
-  }, [canUseFunctionalStorage, restoreCheckoutDraft]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !canUseFunctionalStorage) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      persistCheckoutDraftNow();
-    }, PAYMENT_DRAFT_SAVE_DEBOUNCE_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [
-    canUseFunctionalStorage,
-    persistCheckoutDraftNow,
-    paymentStore.agreements.digitalContentAgreement,
-    paymentStore.agreements.immediateAccessConsent,
-    paymentStore.agreements.privacyPolicyAcknowledgement,
-    paymentStore.agreements.withdrawalNoticeAcknowledgement,
-    paymentStore.checkoutSessionId,
-    paymentStore.customerData.country,
-    paymentStore.customerData.address,
-    paymentStore.customerData.city,
-    paymentStore.customerData.email,
-    paymentStore.customerData.fullName,
-    paymentStore.customerData.lessonLanguage,
-    paymentStore.customerData.nickname,
-    paymentStore.customerData.postalCode,
-    paymentStore.selectedCurrency,
-    paymentStore.selectedOfferId,
-    paymentStore.selectedProductId,
-    paymentStore.validationLocale,
-  ]);
+  useCheckoutDraft({ canUseFunctionalStorage, locale, paymentStore });
 
   useEffect(() => {
     if (!paymentStore.canShowStripe || !isRenewalVerified) {
@@ -593,15 +480,6 @@ const PaymentPage = observer(function PaymentPage({
     }
   };
 
-  const getCheckoutFieldInteractionKey = (fieldName: PaymentCustomerFieldName) =>
-    [
-      paymentStore.selectedProduct.id,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedCurrency,
-      isRenewalCheckout ? "renewal" : "new",
-      fieldName,
-    ].join(":");
-
   const handleInputFocus = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const fieldName = event.currentTarget.name as PaymentCustomerFieldName;
     if (fieldName === "email") setIsTypingEmail(true);
@@ -612,21 +490,7 @@ const PaymentPage = observer(function PaymentPage({
       setOpenedStep(fieldStep);
     }
 
-    if (!canUseAnalytics) {
-      return;
-    }
-
-    const interactionKey = getCheckoutFieldInteractionKey(fieldName);
-
-    if (trackedStartedFieldsRef.current.has(interactionKey)) {
-      return;
-    }
-
-    trackedStartedFieldsRef.current.add(interactionKey);
-    void trackAnalyticsEvent("checkout_field_started", {
-      ...analyticsCommerceProperties,
-      field_name: fieldName,
-    });
+    trackFieldStarted(fieldName);
   };
 
   const handleInputBlur = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -635,21 +499,7 @@ const PaymentPage = observer(function PaymentPage({
     // Settles the value into its normalized form and validates it.
     paymentStore.touchCustomerField(fieldName);
 
-    if (!canUseAnalytics || !event.currentTarget.value.trim()) {
-      return;
-    }
-
-    const interactionKey = getCheckoutFieldInteractionKey(fieldName);
-
-    if (trackedCompletedFieldsRef.current.has(interactionKey)) {
-      return;
-    }
-
-    trackedCompletedFieldsRef.current.add(interactionKey);
-    void trackAnalyticsEvent("checkout_field_completed", {
-      ...analyticsCommerceProperties,
-      field_name: fieldName,
-    });
+    trackFieldCompleted(fieldName, event.currentTarget.value);
   };
 
   const handleAgreementChange = (
@@ -1055,12 +905,11 @@ const PaymentPage = observer(function PaymentPage({
     billingName: paymentStore.customerData.fullName.trim(),
     billingPostalCode: paymentStore.customerData.postalCode,
     checkoutSessionId: paymentStore.checkoutSessionId,
-    clientSecret: paymentStore.stripeClientSecrets?.[paymentStore.selectedCurrency] ?? "",
+    clientSecret: paymentStore.stripeClientSecret,
     hasIntentError: Boolean(paymentStore.stripeIntentError),
     isUpdating: paymentStore.isStripeIntentUpdating,
     onSubmittingChange: setIsPaymentSubmitting,
-    paymentIntentId:
-      paymentStore.stripePaymentIntentIds?.[paymentStore.selectedCurrency] ?? "",
+    paymentIntentId: paymentStore.stripePaymentIntentId,
     resultCurrency: paymentStore.selectedCurrency,
     resultOfferId: paymentStore.selectedOfferId,
     resultOfferCode: paymentStore.selectedOffer.code,
@@ -1117,89 +966,13 @@ const PaymentPage = observer(function PaymentPage({
             />
           </SummaryBoxMobile>
         )}
-        {paymentStore.isCatalogUnavailable ? (
-          <SalesClosedNotice>
-            <SalesClosedTitle>{t("catalogUnavailable.title")}</SalesClosedTitle>
-            <SalesClosedDescription>
-              {t("catalogUnavailable.description")}
-            </SalesClosedDescription>
-            <SalesClosedActions>
-              {/* Re-read availability on the server without exposing technical details. */}
-              <Button
-                size="sm"
-                buttonText={commonT("refresh")}
-                analytics={{
-                  id: "checkout_retry_catalog",
-                  placement: "catalog_unavailable",
-                  ...analyticsCommerceProperties,
-                }}
-                onClick={() => window.location.reload()}
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                buttonText={t("staleLink.catalogButton")}
-                href="/online"
-                analytics={{
-                  id: "checkout_back_to_catalog",
-                  placement: "catalog_unavailable",
-                  ...analyticsCommerceProperties,
-                }}
-              />
-            </SalesClosedActions>
-          </SalesClosedNotice>
-        ) : isStaleCheckoutLink ? (
-          // Before the closed-sales notice: when the link itself is dead, "sales
-          // are closed" would be about the fallback product, not the one asked for.
-          <SalesClosedNotice>
-            <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
-            <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
-            <Button
-              size="sm"
-              buttonText={t("staleLink.catalogButton")}
-              href="/online"
-              analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
-            />
-          </SalesClosedNotice>
-        ) : paymentStore.isSalesClosed ? (
-          <SalesClosedNotice>
-            <SalesClosedTitle>{selectedProductCompactTitle}</SalesClosedTitle>
-            <SalesClosedDescription>
-              {t(alternativeTariffHref ? "offerUnavailable.title" : "salesClosed.title")}
-            </SalesClosedDescription>
-            <Button
-              size="sm"
-              buttonText={t(
-                alternativeTariffHref
-                  ? "offerUnavailable.selectButton"
-                  : "staleLink.catalogButton",
-              )}
-              href={alternativeTariffHref ?? "/online"}
-              analytics={{
-                id: "checkout_back_to_catalog",
-                placement: alternativeTariffHref ? "offer_unavailable" : "sales_closed",
-                ...analyticsCommerceProperties,
-              }}
-            />
-          </SalesClosedNotice>
-        ) : isRenewalUnavailable ? (
-          <SalesClosedNotice>
-            <SalesClosedTitle>{t("renewal.unavailable.title")}</SalesClosedTitle>
-            <SalesClosedDescription>
-              {t("renewal.unavailable.description")}
-            </SalesClosedDescription>
-            <Button
-              size="sm"
-              buttonText={t("salesClosed.contactButton")}
-              href={SUPPORT_TELEGRAM_URL}
-              target="_blank"
-              analytics={{
-                id: "checkout_contact_support",
-                placement: "renewal_unavailable",
-                ...analyticsCommerceProperties,
-              }}
-            />
-          </SalesClosedNotice>
+        {checkoutBlockReason ? (
+          <CheckoutBlockedNotice
+            alternativeTariffHref={alternativeTariffHref}
+            analyticsCommerceProperties={analyticsCommerceProperties}
+            reason={checkoutBlockReason}
+            selectedProductCompactTitle={selectedProductCompactTitle}
+          />
         ) : (
           <CheckoutForm
             agreements={checkoutAgreements}
@@ -1215,42 +988,43 @@ const PaymentPage = observer(function PaymentPage({
             onInputChange={handleInputChange}
             onInputFocus={handleInputFocus}
             onSubmit={handleSubmit}
-            onVerify={verifyTelegramRenewal}
             paymentLockedCopy={{
               text: t("paymentLocked.text"),
               title: t("paymentLocked.title"),
             }}
-            renewalClientId={renewalClientId}
-            renewalNonce={renewalNonce}
-            renewalStatus={renewalStatus}
-            renewalStatusText={
-              isHubDiscountCheckout && renewalStatus === "not_member" ? (
-                // П17: the same Hub at full price, in the currency already chosen.
-                <>
-                  {t("hubDiscount.notEligible")}{" "}
-                  <AgreementLink
-                    href={hubFullPriceHref}
-                    onClick={() => {
-                      void trackCtaClick(
-                        {
-                          id: "hub_discount_full_price",
-                          placement: "hub_discount_not_eligible",
-                          currency: paymentStore.selectedCurrency,
-                          offer_id: INSPIRATION_HUB_ACCESS_OFFER_ID,
-                          product_id: paymentStore.selectedProduct.id,
-                        },
-                        hubFullPriceHref,
-                      );
-                    }}
-                  >
-                    {t("hubDiscount.fullPriceLink")}
-                  </AgreementLink>
-                </>
-              ) : (
-                renewalStatusText
-              )
-            }
-            renewalStatusTone={renewalStatusTone}
+            renewal={{
+              clientId: renewalClientId,
+              nonce: renewalNonce,
+              onVerify: verifyTelegramRenewal,
+              status: renewalStatus,
+              statusText:
+                isHubDiscountCheckout && renewalStatus === "not_member" ? (
+                  // П17: the same Hub at full price, in the currency already chosen.
+                  <>
+                    {t("hubDiscount.notEligible")}{" "}
+                    <AgreementLink
+                      href={hubFullPriceHref}
+                      onClick={() => {
+                        void trackCtaClick(
+                          {
+                            id: "hub_discount_full_price",
+                            placement: "hub_discount_not_eligible",
+                            currency: paymentStore.selectedCurrency,
+                            offer_id: INSPIRATION_HUB_ACCESS_OFFER_ID,
+                            product_id: paymentStore.selectedProduct.id,
+                          },
+                          hubFullPriceHref,
+                        );
+                      }}
+                    >
+                      {t("hubDiscount.fullPriceLink")}
+                    </AgreementLink>
+                  </>
+                ) : (
+                  renewalStatusText
+                ),
+              statusTone: renewalStatusTone,
+            }}
             onRetryPaymentPreparation={
               paymentStore.stripeIntentError ? handleRetryPaymentPreparation : undefined
             }

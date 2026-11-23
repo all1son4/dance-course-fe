@@ -2,6 +2,7 @@ import type {
   InvitationJournalAccess,
   InvitationJournalEntry,
 } from "@/db/access-invitations";
+import { DAY_MS } from "@/lib/time";
 
 /*
  * What the admin journal says about one invitation, from what the invitation gives:
@@ -52,7 +53,6 @@ type Entry = Pick<
     inviteEmailStatus: string | null;
   };
 
-const DAY_MS = 86_400_000;
 const ALL_RECEIVED_ARCHIVE_DAYS = 7;
 const EXPIRED_LINK_ARCHIVE_DAYS = 30;
 

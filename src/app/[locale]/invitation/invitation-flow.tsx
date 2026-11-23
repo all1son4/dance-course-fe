@@ -7,6 +7,7 @@ import Button from "@/components/common/Button";
 import type { InvitationAccessLine } from "@/lib/access-invitations/service";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
+import { RequestCard } from "../access/access-aside.styles";
 import {
   AccessCard,
   CardHead,
@@ -14,8 +15,7 @@ import {
   CardNote,
   CardTitle,
   QuietLink,
-  RequestCard,
-} from "../access/page.styles";
+} from "../access/access-cards.styles";
 import {
   loadTelegramLoginScript,
   requestTelegramIdToken,

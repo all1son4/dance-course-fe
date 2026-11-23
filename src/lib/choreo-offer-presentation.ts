@@ -27,3 +27,18 @@ export const shouldShowOfferLabel = (product: SellableProduct, offerId: string) 
 export const shouldNameOfferAtCheckout = (product: SellableProduct, offerId: string) =>
   product.code === "online-group-anna-strok" ||
   (isChoreoTutorialProduct(product) && shouldShowOfferLabel(product, offerId));
+
+/**
+ * The short product name: what the title puts in quotes, every name of a
+ * bundle included ("Still Alive + Her Lies"), or else its first line.
+ */
+export const getCompactSummaryTitle = (fullTitle: string) => {
+  const quotedNames = Array.from(
+    fullTitle.matchAll(/["“”«»„]([^"“”«»„]+)["“”«»„]/gu),
+    (match) => match[1].trim(),
+  ).filter(Boolean);
+
+  return quotedNames.length > 0
+    ? quotedNames.join(" + ")
+    : (fullTitle.split("\n")[0] ?? fullTitle).trim();
+};

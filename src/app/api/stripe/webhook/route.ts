@@ -3,8 +3,8 @@ import type Stripe from "stripe";
 import { getDatabaseEnvSelection } from "@/db/env";
 import { isPayloadTooLarge, jsonNoStore, readBoundedTextBody } from "@/lib/http-security";
 import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 
-import { getStripeServer } from "../payment-intent/lib";
 import { scheduleStripeBackgroundJobs } from "./_lib/background-jobs";
 import { persistVerifiedStripeWebhookEvent } from "./_lib/inbox-ingress";
 
@@ -34,8 +34,6 @@ type VerifiedStripeEvent =
       response: Response;
     };
 
-const getSafeErrorName = (error: unknown): string => getSafeErrorCategory(error);
-
 const createWebhookErrorResponse = (
   errorCode: WebhookErrorCode,
   status: 400 | 413 | 500,
@@ -62,7 +60,7 @@ const verifyStripeWebhookEvent = ({
     };
   } catch (error) {
     console.error("Failed to verify Stripe webhook signature", {
-      errorName: getSafeErrorName(error),
+      errorName: getSafeErrorCategory(error),
     });
 
     return {
@@ -83,7 +81,7 @@ const persistVerifiedStripeEventBeforeProcessing = async (
   } catch (error) {
     console.error("Failed to persist verified Stripe event to inbox", {
       databaseEnv,
-      errorName: getSafeErrorName(error),
+      errorName: getSafeErrorCategory(error),
       eventId: event.id,
       eventType: event.type,
     });

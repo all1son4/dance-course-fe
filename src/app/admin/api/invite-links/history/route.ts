@@ -5,19 +5,25 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
-import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
+import {
+  consumeRateLimit,
+  consumeRequestRateLimit,
+  getRequestIp,
+} from "@/lib/rate-limit";
 import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 import {
   formatPurchaseLine,
   getAdminPurchaseLine,
 } from "@/lib/sellable-products-localization";
 import { ADMIN_TELEGRAM_OFFER_ACCESS_WORKFLOW } from "@/lib/telegram/admin-offer-access";
+import { DAY_MS } from "@/lib/time";
 
 export const runtime = "nodejs";
 const HISTORY_CACHE_TTL_MS = 30_000;
-const DAY_MS = 86_400_000;
 const STALE_HISTORY_CACHE_TTL_MS = 5 * 60_000;
 
 type LinkState = "active" | "expired" | "used";
@@ -173,12 +179,7 @@ export async function GET(request: Request) {
       });
     }
 
-    return jsonErrorNoStore("rate_limited", {
-      headers: {
-        "Retry-After": String(rateLimit.retryAfterSeconds),
-      },
-      status: 429,
-    });
+    return jsonRateLimited(rateLimit.retryAfterSeconds);
   }
 
   try {
@@ -213,12 +214,15 @@ export async function POST(request: Request) {
   const requestError = getBrowserJsonRequestErrorResponse(request, 1024);
   if (requestError) return requestError;
 
-  const rateLimit = await consumeRateLimit({
-    key: `admin:invite-links:archive:${getRequestIp(request)}`,
+  const rateLimit = await consumeRequestRateLimit({
+    keyPrefix: "admin:invite-links:archive",
     limit: 30,
+    onBackendUnavailable: "deny",
+    request,
     windowMs: 60_000,
   });
-  if (rateLimit.limited) return jsonErrorNoStore("rate_limited", { status: 429 });
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse } = await parseJsonBody<{

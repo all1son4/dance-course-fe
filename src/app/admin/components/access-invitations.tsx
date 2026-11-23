@@ -11,6 +11,8 @@ import {
 import { type FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 
+import { EMAIL_PATTERN } from "@/lib/email-suggestion";
+
 import type { AdminInvitationEntry } from "../api/access-invitations/route";
 import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
 import type { StatusMessage } from "../lib/admin.types";
@@ -26,6 +28,7 @@ import {
   Disclosure,
   EmptyState,
   FieldNote,
+  Meta,
   Panel,
   Skeleton,
   Stack,
@@ -47,8 +50,6 @@ type Target =
   | { ready: true; cohortTitle: string | null; chatTitle: string }
   | { ready: false; problem: string };
 type Duplicate = "cohort" | "hub";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
 const LOCALE_NAMES_PREPOSITIONAL: Record<Locale, string> = {
   ru: "русском",
@@ -155,13 +156,6 @@ const ChoiceField = styled.div`
   @container admin-content (max-width: 520px) {
     flex: 1 1 100%;
   }
-`;
-
-const Meta = styled.p`
-  margin: 0;
-  color: var(--a-ink-2);
-  font-size: var(--a-text-sm);
-  overflow-wrap: anywhere;
 `;
 
 /* «КОМУ», «ДОСТУПЫ»: the same small caption over each block of an open entry. */
@@ -469,6 +463,159 @@ const emptyForm = (scope: Scope) => ({
   note: "",
 });
 
+type InvitationFormState = ReturnType<typeof emptyForm>;
+
+/** Кому and Доступ of a new invitation; the parent owns the state and the sending. */
+const InvitationForm = ({
+  canSend,
+  emailHint,
+  form,
+  isSending,
+  onEmailBlur,
+  onLocaleChange,
+  onSubmit,
+  scope,
+  update,
+}: {
+  canSend: boolean;
+  emailHint: { email: string; text: string } | null;
+  form: InvitationFormState;
+  isSending: boolean;
+  onEmailBlur: () => void;
+  onLocaleChange: (value: Locale) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  scope: Scope;
+  update: <Key extends keyof InvitationFormState>(
+    key: Key,
+    value: InvitationFormState[Key],
+  ) => void;
+}) => (
+  <Form onSubmit={onSubmit} noValidate>
+    <Group>
+      <legend>Кому</legend>
+      <PeopleGrid>
+        <Field label="Имя *" htmlFor={`${scope}-invite-first`}>
+          <Input
+            id={`${scope}-invite-first`}
+            autoComplete="off"
+            maxLength={80}
+            value={form.firstName}
+            onChange={(event) => update("firstName", event.target.value)}
+          />
+        </Field>
+        <Field label="Фамилия" htmlFor={`${scope}-invite-last`}>
+          <Input
+            id={`${scope}-invite-last`}
+            autoComplete="off"
+            maxLength={80}
+            value={form.lastName}
+            onChange={(event) => update("lastName", event.target.value)}
+          />
+        </Field>
+        <Field
+          label="Почта *"
+          htmlFor={`${scope}-invite-email`}
+          hint={
+            emailHint?.email === form.email.trim().toLowerCase()
+              ? emailHint.text
+              : "Сюда придёт письмо со ссылками."
+          }
+        >
+          <Input
+            id={`${scope}-invite-email`}
+            type="email"
+            inputMode="email"
+            autoComplete="off"
+            spellCheck={false}
+            maxLength={254}
+            value={form.email}
+            onBlur={onEmailBlur}
+            onChange={(event) => update("email", event.target.value)}
+          />
+        </Field>
+      </PeopleGrid>
+    </Group>
+
+    <Group>
+      <legend>Доступ</legend>
+      <ChoiceRow>
+        <ChoiceField>
+          <span>Язык письма и страницы</span>
+          <SegmentedChoice<Locale>
+            label="Язык письма и страницы"
+            name={`${scope}-invite-locale`}
+            value={form.locale}
+            options={[
+              { label: "RU", value: "ru" },
+              { label: "PL", value: "pl" },
+              { label: "EN", value: "en" },
+            ]}
+            onChange={onLocaleChange}
+          />
+        </ChoiceField>
+        {scope === "group" && (
+          <ChoiceField>
+            <span>Тариф</span>
+            <SegmentedChoice<Product>
+              label="Тариф"
+              name="group-invite-product"
+              value={form.product}
+              options={[
+                { label: "Standard", value: "standard" },
+                { label: "Plus", value: "plus" },
+              ]}
+              onChange={(value) => update("product", value)}
+            />
+          </ChoiceField>
+        )}
+        <ChoiceField>
+          <span>Как человек войдёт</span>
+          <SegmentedChoice<Kind>
+            label="Как человек войдёт"
+            name={`${scope}-invite-kind`}
+            value={form.kind}
+            options={[
+              { label: "Вступление", value: "join" },
+              { label: "Продление", value: "renewal" },
+            ]}
+            onChange={(value) => update("kind", value)}
+          />
+        </ChoiceField>
+      </ChoiceRow>
+      <FieldNote>
+        {form.product === "hub"
+          ? KIND_HINTS[scope][form.kind]
+          : `${PRODUCT_HINTS[form.product]} ${KIND_HINTS[scope][form.kind]}`}
+      </FieldNote>
+    </Group>
+
+    <Field
+      label="Заметка"
+      htmlFor={`${scope}-invite-note`}
+      hint="Видна только в админке: например, «оплата наличными» или «подарок»."
+    >
+      <Input
+        id={`${scope}-invite-note`}
+        autoComplete="off"
+        maxLength={500}
+        value={form.note}
+        onChange={(event) => update("note", event.target.value)}
+      />
+    </Field>
+
+    <FormActions>
+      <AdminButton
+        type="submit"
+        variant="primary"
+        disabled={!canSend}
+        loading={isSending}
+      >
+        Отправить приглашение
+      </AdminButton>
+    </FormActions>
+  </Form>
+);
+
 /**
  * The form and the journal of one place: the Online Group tab (Standard/Plus into
  * the current cohort) or the Hub tab (the Hub on its own).
@@ -507,12 +654,17 @@ export const AccessInvitations = ({
 
   const endpoint = `${ADMIN_API_ENDPOINTS.accessInvitations}?scope=${scope}`;
 
+  // Every action reloads the journal: only the latest answer may land.
+  const sequence = useRef(0);
+
   const load = useCallback(async () => {
+    const current = ++sequence.current;
     setIsLoading(true);
     const result = await requestAdminJson<{
       target?: Target;
       entries?: AdminInvitationEntry[];
     }>(endpoint);
+    if (current !== sequence.current) return;
     setIsLoading(false);
     if (result.unauthorized) return onUnauthorized();
     if (!result.ok) {
@@ -807,133 +959,20 @@ export const AccessInvitations = ({
         {target && !target.ready ? (
           <Callout tone="warning">{target.problem}</Callout>
         ) : (
-          <Form onSubmit={submit} noValidate>
-            <Group>
-              <legend>Кому</legend>
-              <PeopleGrid>
-                <Field label="Имя *" htmlFor={`${scope}-invite-first`}>
-                  <Input
-                    id={`${scope}-invite-first`}
-                    autoComplete="off"
-                    maxLength={80}
-                    value={form.firstName}
-                    onChange={(event) => update("firstName", event.target.value)}
-                  />
-                </Field>
-                <Field label="Фамилия" htmlFor={`${scope}-invite-last`}>
-                  <Input
-                    id={`${scope}-invite-last`}
-                    autoComplete="off"
-                    maxLength={80}
-                    value={form.lastName}
-                    onChange={(event) => update("lastName", event.target.value)}
-                  />
-                </Field>
-                <Field
-                  label="Почта *"
-                  htmlFor={`${scope}-invite-email`}
-                  hint={
-                    emailHint?.email === form.email.trim().toLowerCase()
-                      ? emailHint.text
-                      : "Сюда придёт письмо со ссылками."
-                  }
-                >
-                  <Input
-                    id={`${scope}-invite-email`}
-                    type="email"
-                    inputMode="email"
-                    autoComplete="off"
-                    spellCheck={false}
-                    maxLength={254}
-                    value={form.email}
-                    onBlur={() => void lookUpEmail()}
-                    onChange={(event) => update("email", event.target.value)}
-                  />
-                </Field>
-              </PeopleGrid>
-            </Group>
-
-            <Group>
-              <legend>Доступ</legend>
-              <ChoiceRow>
-                <ChoiceField>
-                  <span>Язык письма и страницы</span>
-                  <SegmentedChoice<Locale>
-                    label="Язык письма и страницы"
-                    name={`${scope}-invite-locale`}
-                    value={form.locale}
-                    options={[
-                      { label: "RU", value: "ru" },
-                      { label: "PL", value: "pl" },
-                      { label: "EN", value: "en" },
-                    ]}
-                    onChange={(value) => {
-                      localeTouched.current = true;
-                      update("locale", value);
-                    }}
-                  />
-                </ChoiceField>
-                {scope === "group" && (
-                  <ChoiceField>
-                    <span>Тариф</span>
-                    <SegmentedChoice<Product>
-                      label="Тариф"
-                      name="group-invite-product"
-                      value={form.product}
-                      options={[
-                        { label: "Standard", value: "standard" },
-                        { label: "Plus", value: "plus" },
-                      ]}
-                      onChange={(value) => update("product", value)}
-                    />
-                  </ChoiceField>
-                )}
-                <ChoiceField>
-                  <span>Как человек войдёт</span>
-                  <SegmentedChoice<Kind>
-                    label="Как человек войдёт"
-                    name={`${scope}-invite-kind`}
-                    value={form.kind}
-                    options={[
-                      { label: "Вступление", value: "join" },
-                      { label: "Продление", value: "renewal" },
-                    ]}
-                    onChange={(value) => update("kind", value)}
-                  />
-                </ChoiceField>
-              </ChoiceRow>
-              <FieldNote>
-                {form.product === "hub"
-                  ? KIND_HINTS[scope][form.kind]
-                  : `${PRODUCT_HINTS[form.product]} ${KIND_HINTS[scope][form.kind]}`}
-              </FieldNote>
-            </Group>
-
-            <Field
-              label="Заметка"
-              htmlFor={`${scope}-invite-note`}
-              hint="Видна только в админке: например, «оплата наличными» или «подарок»."
-            >
-              <Input
-                id={`${scope}-invite-note`}
-                autoComplete="off"
-                maxLength={500}
-                value={form.note}
-                onChange={(event) => update("note", event.target.value)}
-              />
-            </Field>
-
-            <FormActions>
-              <AdminButton
-                type="submit"
-                variant="primary"
-                disabled={!canSend}
-                loading={isSending}
-              >
-                Отправить приглашение
-              </AdminButton>
-            </FormActions>
-          </Form>
+          <InvitationForm
+            canSend={canSend}
+            emailHint={emailHint}
+            form={form}
+            isSending={isSending}
+            onEmailBlur={() => void lookUpEmail()}
+            onLocaleChange={(value) => {
+              localeTouched.current = true;
+              update("locale", value);
+            }}
+            onSubmit={submit}
+            scope={scope}
+            update={update}
+          />
         )}
         <StatusLine status={status} />
       </Panel>

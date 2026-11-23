@@ -13,6 +13,7 @@ import {
 
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
 import {
+  collectCompletedCohortIds,
   collectMemberCohortIds,
   countLegendCycles,
   findCycleStreak,
@@ -174,7 +175,7 @@ async function readCustomerCycles(
     id: cohort.id,
     mainChatId: cohort.mainChatId,
   }));
-  const memberCohortIds = collectMemberCohortIds({
+  const facts = {
     cohorts,
     purchases: cyclePurchases.flatMap((purchase) =>
       purchase.cohortId
@@ -192,8 +193,8 @@ async function readCustomerCycles(
       targetChatId: campaign.targetChatId,
     })),
     verifiedChatIds: verifications.flatMap((row) => (row.chatId ? [row.chatId] : [])),
-  });
-  const closed = new Set(cohorts.filter((c) => c.closed).map((c) => c.id));
+  };
+  const memberCohortIds = collectMemberCohortIds(facts);
   const now = Date.now();
   const stampCohorts = cohortRows.map((cohort) => ({
     id: cohort.id,
@@ -201,10 +202,27 @@ async function readCustomerCycles(
   }));
 
   return {
-    completedCohortIds: memberCohortIds.filter((id) => closed.has(id)),
+    completedCohortIds: collectCompletedCohortIds(facts),
     cycleStreak: findCycleStreak(stampCohorts, memberCohortIds),
     legendCycles: countLegendCycles(stampCohorts, memberCohortIds),
   };
+}
+
+/** The purchase a «Мой доступ» card asks to re-send: its invitation kind and payment. */
+export async function findMyAccessPurchase(
+  database: DatabaseExecutor,
+  purchaseId: string,
+) {
+  const [owned] = await database
+    .select({
+      invitationKind: purchases.invitationKind,
+      paymentIntentId: purchases.paymentIntentId,
+    })
+    .from(purchases)
+    .where(eq(purchases.id, purchaseId))
+    .limit(1);
+
+  return owned;
 }
 
 /** Everything the cards need, or null when the customer no longer exists. */

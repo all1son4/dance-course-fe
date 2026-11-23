@@ -25,7 +25,9 @@ import {
   getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
+  jsonRateLimited,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -49,12 +51,6 @@ type InvitationBody = {
 };
 
 const readScope = (value: string | null): Scope => (value === "hub" ? "hub" : "group");
-
-const rateLimited = (retryAfterSeconds: number) =>
-  jsonErrorNoStore("rate_limited", {
-    headers: { "Retry-After": String(retryAfterSeconds) },
-    status: 429,
-  });
 
 const iso = (value: Date | null) => value?.toISOString() ?? null;
 
@@ -150,7 +146,7 @@ export async function GET(request: Request) {
     request,
     windowMs: 60_000,
   });
-  if (rateLimit.limited) return rateLimited(rateLimit.retryAfterSeconds);
+  if (rateLimit.limited) return jsonRateLimited(rateLimit.retryAfterSeconds);
 
   const url = new URL(request.url);
   const scope = readScope(url.searchParams.get("scope"));
@@ -199,10 +195,8 @@ export async function POST(request: Request) {
     request,
     windowMs: 60_000,
   });
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-  if (rateLimit.limited) return rateLimited(rateLimit.retryAfterSeconds);
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse } = await parseJsonBody<InvitationBody>(

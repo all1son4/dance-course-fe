@@ -1,6 +1,7 @@
 import { getDatabaseClient } from "@/db/client";
 import { readOperationalDatabaseStatus } from "@/db/operational-status";
 import { getTelegramWebhookInfo } from "@/lib/telegram/bot-api";
+import { HOUR_MS } from "@/lib/time";
 
 /**
  * The live signals of the shop, read-only: are payments arriving, is anything
@@ -24,7 +25,6 @@ export type SystemPulse = {
   signals: PulseSignal[];
 };
 
-const HOUR_MS = 3600_000;
 const TELEGRAM_CHECK_TIMEOUT_MS = 3000;
 
 const formatAgo = (from: Date | null, now: Date) => {
@@ -139,13 +139,17 @@ const telegramSignal = async (now: Date): Promise<PulseSignal> => {
 
 /**
  * Queue figures come from the same reading as the «Системы» block below, so the two
- * never disagree: only jobs that are due count, not ones scheduled for later.
+ * never disagree: only jobs that are due count, not ones scheduled for later. A caller
+ * that already reads them passes that reading in instead of reading the queues twice.
  */
-export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
+export async function getSystemPulse(
+  now = new Date(),
+  statusRead?: ReturnType<typeof readOperationalDatabaseStatus>,
+): Promise<SystemPulse> {
   const [db, telegram, status] = await Promise.all([
     readDatabaseSignals(now),
     telegramSignal(now),
-    readOperationalDatabaseStatus(),
+    statusRead ?? readOperationalDatabaseStatus(),
   ]);
   const failRate = db.attempts24h > 0 ? db.failed24h / db.attempts24h : 0;
   const stripeBacklog = status.inbox.ready + status.inbox.working;

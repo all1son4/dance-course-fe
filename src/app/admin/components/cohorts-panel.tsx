@@ -5,6 +5,7 @@ import styled, { css } from "styled-components";
 import type { CohortOverview } from "@/lib/online-group/cohort-admin";
 
 import type { CloseCohortInput, CloseCohortResult } from "../hooks/use-cohorts-admin";
+import { formatDayMonth, formatDayMonthTime, plural } from "../lib/admin.utils";
 import type { AdminTone } from "../styles/tokens.styles";
 import { CopyField } from "../ui/copy";
 import { ConfirmDialog, SheetDialog, useToast } from "../ui/feedback";
@@ -33,28 +34,12 @@ import {
 } from "./cohort-transition-guide";
 import { TelegramPostPreview } from "./telegram-post-preview";
 
-const formatDate = (iso: string, withTime = false) =>
-  new Intl.DateTimeFormat("ru-RU", {
-    day: "numeric",
-    month: "long",
-    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
-    timeZone: "Europe/Warsaw",
-  }).format(new Date(iso));
-
 const formatWarsawDay = (day: string) =>
   new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
     month: "long",
     timeZone: "UTC",
   }).format(new Date(`${day}T12:00:00Z`));
-
-const weeksWord = (weeks: number) => {
-  const lastTwo = weeks % 100;
-  const last = weeks % 10;
-  if (lastTwo >= 11 && lastTwo <= 14) return "недель";
-  if (last === 1) return "неделя";
-  return last >= 2 && last <= 4 ? "недели" : "недель";
-};
 
 const DurationEditor = styled.div`
   display: flex;
@@ -82,7 +67,7 @@ const cohortStatus = (
   if (cohort.closedAt) {
     // A closure can be set ahead (the launch transfer does): say when, not "closed".
     return Date.parse(cohort.closedAt) > now
-      ? { label: `Закроется ${formatDate(cohort.closedAt)}`, tone: "warning" }
+      ? { label: `Закроется ${formatDayMonth(cohort.closedAt)}`, tone: "warning" }
       : { label: "Закрыт", tone: "neutral" };
   }
   const started = Date.parse(cohort.startsAt) <= now;
@@ -282,6 +267,14 @@ const SectionCaption = styled.p`
 `;
 
 /** Current cohort first, then what comes next, then history. */
+/** A cohort that has started and is not closed yet. */
+const isRunning = (cohort: CohortOverview, now: number) =>
+  !cohort.closedAt && Date.parse(cohort.startsAt) <= now;
+
+/** The cohort this one follows, when the list has it. */
+const findPreviousCohort = (cohorts: CohortOverview[] | null, cohort: CohortOverview) =>
+  cohorts?.find((candidate) => candidate.id === cohort.previousCohortId);
+
 const orderCohorts = (cohorts: CohortOverview[], now: number) => {
   const rank = (cohort: CohortOverview) =>
     cohort.closedAt ? 2 : Date.parse(cohort.startsAt) <= now ? 0 : 1;
@@ -404,7 +397,10 @@ export const CohortsPanel = ({
         delete rest[cohort.id];
         return rest;
       });
-      toast({ tone: "success", title: `Длительность: ${weeks} ${weeksWord(weeks)}.` });
+      toast({
+        tone: "success",
+        title: `Длительность: ${weeks} ${plural(weeks, "неделя", "недели", "недель")}.`,
+      });
     } else {
       toast({ tone: "danger", title: "Не получилось сохранить. Попробуй ещё раз." });
     }
@@ -437,9 +433,7 @@ export const CohortsPanel = ({
 
   const ordered = orderCohorts(cohorts ?? [], loadedAt);
   // The running cohort: the transition guide walks it into the next one.
-  const running = ordered.find(
-    (cohort) => !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt,
-  );
+  const running = ordered.find((cohort) => isRunning(cohort, loadedAt));
   const [creatingKind, setCreatingKind] = useState<RenewalLinkKind | "">("");
   const [transitionOpen, setTransitionOpen] = useState(false);
   // The newest cohort record: the one a «следующий поток» would follow.
@@ -594,7 +588,8 @@ export const CohortsPanel = ({
           />
           {ordered.map((cohort) => {
             const status = cohortStatus(cohort, ordered, loadedAt);
-            const isCurrent = !cohort.closedAt && Date.parse(cohort.startsAt) <= loadedAt;
+            const isCurrent = isRunning(cohort, loadedAt);
+            const previous = findPreviousCohort(cohorts, cohort);
             // A queued post is on its way; only a failed one can be retried.
             const postFailed =
               cohort.post && ["failed", "dead_letter"].includes(cohort.post.status);
@@ -622,11 +617,12 @@ export const CohortsPanel = ({
                   <Stack $gap={12}>
                     <dl>
                       <dt>Старт</dt>
-                      <dd>{formatDate(cohort.startsAt, true)}</dd>
+                      <dd>{formatDayMonthTime(cohort.startsAt)}</dd>
                       <dt>Длительность</dt>
                       <dd>
-                        {cohort.durationWeeks} {weeksWord(cohort.durationWeeks)} · по
-                        плану до {formatDate(cohort.plannedEndsAt)}
+                        {cohort.durationWeeks}{" "}
+                        {plural(cohort.durationWeeks, "неделя", "недели", "недель")} · по
+                        плану до {formatDayMonth(cohort.plannedEndsAt)}
                       </dd>
                       {cohort.closedAt && (
                         <>
@@ -635,7 +631,7 @@ export const CohortsPanel = ({
                               ? "Закроется"
                               : "Закрыт"}
                           </dt>
-                          <dd>{formatDate(cohort.closedAt, true)}</dd>
+                          <dd>{formatDayMonthTime(cohort.closedAt)}</dd>
                         </>
                       )}
                       {cohort.accessEndsAt && (
@@ -722,8 +718,8 @@ export const CohortsPanel = ({
                           <small>
                             Кто вошёл в чат этого потока по своей покупке, удаляется из
                             чата
-                            {cohorts?.find((c) => c.id === cohort.previousCohortId)
-                              ? ` «${cohorts.find((c) => c.id === cohort.previousCohortId)!.mainChatTitle}»`
+                            {previous
+                              ? ` «${previous.mainChatTitle}»`
                               : " прошлого потока"}
                             . Админов и создателя бот не трогает.
                           </small>
@@ -813,8 +809,8 @@ export const CohortsPanel = ({
         description={
           removalConfirm
             ? `Каждый, кто войдёт в «${removalConfirm.mainChatTitle}» по своей покупке, будет удалён из «${
-                cohorts?.find((c) => c.id === removalConfirm.previousCohortId)
-                  ?.mainChatTitle ?? "чата прошлого потока"
+                findPreviousCohort(cohorts, removalConfirm)?.mainChatTitle ??
+                "чата прошлого потока"
               }». Админов и создателя чата бот не трогает.`
             : ""
         }
@@ -856,7 +852,7 @@ export const CohortsPanel = ({
             {closing.facts.legacyPlusHubRights > 0 && (
               <Callout tone="info" icon={<CircleAlert aria-hidden />}>
                 {closing.next
-                  ? `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта «${closing.next.title}» (${formatDate(closing.next.startsAt)}). Дата поставится сама при закрытии.`
+                  ? `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта «${closing.next.title}» (${formatDayMonth(closing.next.startsAt)}). Дата поставится сама при закрытии.`
                   : `У ${closing.facts.legacyPlusHubRights} покупок Plus по старым условиям библиотека открыта до старта следующего потока, а его пока нет. Сначала заведи следующий поток.`}
               </Callout>
             )}
@@ -867,9 +863,11 @@ export const CohortsPanel = ({
             )}
             {loadedAt < Date.parse(closing.plannedEndsAt) && (
               <Callout tone="warning" icon={<CircleAlert aria-hidden />}>
-                По плану поток идёт до {formatDate(closing.plannedEndsAt)} (
-                {closing.durationWeeks} {weeksWord(closing.durationWeeks)}). Если закрыть
-                сейчас, библиотека у Plus закончится раньше — через 7 дней после закрытия.
+                По плану поток идёт до {formatDayMonth(closing.plannedEndsAt)} (
+                {closing.durationWeeks}{" "}
+                {plural(closing.durationWeeks, "неделя", "недели", "недель")}). Если
+                закрыть сейчас, библиотека у Plus закончится раньше — через 7 дней после
+                закрытия.
               </Callout>
             )}
             <Check>
@@ -897,7 +895,7 @@ export const CohortsPanel = ({
                 />
                 <span>
                   Открыть продажи «{closing.next.title}»
-                  <small>Старт {formatDate(closing.next.startsAt)}.</small>
+                  <small>Старт {formatDayMonth(closing.next.startsAt)}.</small>
                 </span>
               </Check>
             )}

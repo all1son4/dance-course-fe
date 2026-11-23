@@ -57,7 +57,7 @@ export const parseGroupStagger = (value: string | null): number => {
     : REVEAL_STAGGER_MS;
 };
 
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+export const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 export const prefersReducedMotion = (): boolean =>
   typeof window !== "undefined" &&

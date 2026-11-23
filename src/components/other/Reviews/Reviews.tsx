@@ -12,6 +12,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 
 import Button from "@/components/common/Button";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
+import { REDUCED_MOTION_QUERY } from "@/lib/reveal";
 
 import ReviewBody from "./ReviewBody";
 import { REVIEW_SLIDER_LAYOUT, REVIEWS } from "./Reviews.constants";
@@ -30,7 +31,6 @@ import {
 
 const AUTOPLAY_DELAY_MS = 7000;
 const SLIDE_SPEED_MS = 900;
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 /**
  * Everything that keeps the carousel still. Autoplay runs only while none of

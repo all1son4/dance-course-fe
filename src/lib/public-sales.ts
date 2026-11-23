@@ -4,7 +4,7 @@ import {
 } from "@/constants/sellable-products";
 
 /** Renewal offers have their own verified links and cannot open public sales. */
-export const getPublicProductOffers = (product: SellableProduct) =>
+const getPublicProductOffers = (product: SellableProduct) =>
   product.offers.filter((offer) => {
     if (product.code === "online-group-anna-strok") {
       return offer.code === "standard" || offer.code === "library-access";

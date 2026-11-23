@@ -2,7 +2,12 @@ import {
   findCurrentChoreoAccessReminder,
   listDueChoreoAccessReminders,
 } from "@/db/choreo-access-reminders";
-import { type ClaimedOutboxJob, enqueueOutboxJob } from "@/db/transactional-outbox";
+import {
+  type ClaimedOutboxJob,
+  enqueueOutboxJob,
+  nonRetryable,
+} from "@/db/transactional-outbox";
+import { areNotificationsEnabled, isProductionDeployment } from "@/lib/deployment";
 import { buildChoreoAccessReminderEmail } from "@/lib/email/choreo-access-reminder";
 import { sendResendEmail } from "@/lib/email/resend";
 import {
@@ -11,16 +16,15 @@ import {
 } from "@/lib/sellable-products-localization";
 import { getTelegramChannelTargetByOfferId } from "@/lib/telegram/config";
 
-const isProduction = () =>
-  process.env.VERCEL_ENV === "production" ||
-  (!process.env.VERCEL_ENV && process.env.NODE_ENV === "production");
-const isEnabled = () =>
-  isProduction() || process.env.ALLOW_TEST_MODE_NOTIFICATIONS === "1";
-
 export const enqueueDueChoreoAccessReminders = async (now = new Date()) => {
-  const result = { due: 0, enqueued: 0, duplicates: 0, disabled: !isEnabled() };
+  const result = {
+    due: 0,
+    enqueued: 0,
+    duplicates: 0,
+    disabled: !areNotificationsEnabled(),
+  };
   if (result.disabled) return result;
-  const reminders = await listDueChoreoAccessReminders(now, isProduction());
+  const reminders = await listDueChoreoAccessReminders(now, isProductionDeployment());
   result.due = reminders.length;
   for (const reminder of reminders) {
     const queued = await enqueueOutboxJob({
@@ -38,28 +42,24 @@ export const enqueueDueChoreoAccessReminders = async (now = new Date()) => {
 };
 
 export const deliverChoreoAccessReminder = async (job: ClaimedOutboxJob) => {
-  if (!isEnabled()) return { skipped: true };
+  if (!areNotificationsEnabled()) return { skipped: true };
   if (
     typeof job.payload.bindingId !== "string" ||
     !/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu.test(
       job.payload.bindingId,
     )
   ) {
-    throw Object.assign(new Error("choreo_reminder_binding_invalid"), {
-      retryable: false,
-    });
+    throw nonRetryable("choreo_reminder_binding_invalid");
   }
   const reminder = await findCurrentChoreoAccessReminder({
     bindingId: job.payload.bindingId,
     deduplicationKey: job.deduplicationKey,
     now: new Date(),
-    livemode: isProduction(),
+    livemode: isProductionDeployment(),
   });
   if (!reminder) return { skipped: true };
   if (job.recipient?.trim().toLowerCase() !== reminder.email) {
-    throw Object.assign(new Error("choreo_reminder_recipient_mismatch"), {
-      retryable: false,
-    });
+    throw nonRetryable("choreo_reminder_recipient_mismatch");
   }
   const purchaseLine =
     getBuyerPurchaseLine({

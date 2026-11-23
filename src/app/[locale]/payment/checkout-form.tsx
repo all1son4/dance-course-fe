@@ -4,9 +4,11 @@ import { useId, useState } from "react";
 import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import Input from "@/components/common/Input";
-import StripePaymentTabs, {
-  type StripePaymentTabsProps,
-} from "@/components/other/StripePaymentTabs";
+import {
+  type PaymentAgreementFieldName,
+  type PaymentFieldStep,
+  type PaymentStep,
+} from "@/lib/checkout/payment.constants";
 
 import {
   Checkboxes,
@@ -39,12 +41,7 @@ import {
   TelegramInputControl,
   TelegramInputStatus,
   TelegramVerifyButton,
-} from "./page.styles";
-import {
-  type PaymentAgreementFieldName,
-  type PaymentFieldStep,
-  type PaymentStep,
-} from "./payment.constants";
+} from "./checkout-form.styles";
 import {
   type CheckoutAgreement,
   type CheckoutInputField,
@@ -53,10 +50,11 @@ import {
   type RenewalStatus,
   type RenewalStatusTone,
 } from "./payment.helpers";
+import StripePaymentTabs, { type StripePaymentTabsProps } from "./StripePaymentTabs";
 
 /** Anchors the step buttons move the buyer to. */
 export const CHECKOUT_CONSENT_ID = "checkout-accept-all";
-export const CHECKOUT_PAYMENT_ID = "checkout-payment";
+const CHECKOUT_PAYMENT_ID = "checkout-payment";
 export const getCheckoutStepId = (stepId: PaymentStep) => `checkout-step-${stepId}`;
 
 const TelegramPlaneIcon = () => (
@@ -164,6 +162,16 @@ export type CheckoutFormField = CheckoutInputField & {
   step: PaymentFieldStep;
 };
 
+/** The renewal's Telegram check: what the handle field shows and how it starts. */
+export type CheckoutRenewal = {
+  clientId: string;
+  nonce: string;
+  onVerify: () => void | Promise<void>;
+  status: RenewalStatus;
+  statusText: ReactNode;
+  statusTone: RenewalStatusTone;
+};
+
 type CheckoutInputProps = {
   field: CheckoutFormField;
   isRenewalCheckout: boolean;
@@ -171,12 +179,7 @@ type CheckoutInputProps = {
   onBlur: (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onFocus: (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  onVerify: () => void | Promise<void>;
-  renewalClientId: string;
-  renewalNonce: string;
-  renewalStatus: RenewalStatus;
-  renewalStatusText: ReactNode;
-  renewalStatusTone: RenewalStatusTone;
+  renewal: CheckoutRenewal;
   verifyLabel: string;
 };
 
@@ -187,12 +190,14 @@ const CheckoutInput = ({
   onBlur,
   onChange,
   onFocus,
-  onVerify,
-  renewalClientId,
-  renewalNonce,
-  renewalStatus,
-  renewalStatusText,
-  renewalStatusTone,
+  renewal: {
+    clientId: renewalClientId,
+    nonce: renewalNonce,
+    onVerify,
+    status: renewalStatus,
+    statusText: renewalStatusText,
+    statusTone: renewalStatusTone,
+  },
   verifyLabel,
 }: CheckoutInputProps) => {
   const isNickname = field.name === "nickname";
@@ -291,13 +296,8 @@ export type CheckoutFormProps = {
   onInputChange: (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onInputFocus: (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  onVerify: () => void | Promise<void>;
   paymentLockedCopy: CheckoutPaymentLockedCopy;
-  renewalClientId: string;
-  renewalNonce: string;
-  renewalStatus: RenewalStatus;
-  renewalStatusText: ReactNode;
-  renewalStatusTone: RenewalStatusTone;
+  renewal: CheckoutRenewal;
   /** Re-asks for the payment intent after a failure; absent when there is nothing to retry. */
   onRetryPaymentPreparation?: () => void;
   retryLabel: string;
@@ -325,13 +325,8 @@ export const CheckoutForm = ({
   onInputChange,
   onInputFocus,
   onSubmit,
-  onVerify,
   paymentLockedCopy,
-  renewalClientId,
-  renewalNonce,
-  renewalStatus,
-  renewalStatusText,
-  renewalStatusTone,
+  renewal,
   onRetryPaymentPreparation,
   retryLabel,
   onStepContinue,
@@ -360,12 +355,7 @@ export const CheckoutForm = ({
       onBlur={onInputBlur}
       onChange={onInputChange}
       onFocus={onInputFocus}
-      onVerify={onVerify}
-      renewalClientId={renewalClientId}
-      renewalNonce={renewalNonce}
-      renewalStatus={renewalStatus}
-      renewalStatusText={renewalStatusText}
-      renewalStatusTone={renewalStatusTone}
+      renewal={renewal}
       verifyLabel={verifyLabel}
     />
   );
@@ -391,7 +381,7 @@ export const CheckoutForm = ({
 
     // The handle is all there is to answer before the check: Enter starts it.
     if (isRenewalCheckout && !isRenewalVerified && target.id === "nickname") {
-      void onVerify();
+      void renewal.onVerify();
       return;
     }
 

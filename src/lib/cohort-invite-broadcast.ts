@@ -41,6 +41,7 @@ import {
 import { buildMyAccessUrl } from "@/lib/my-access/link";
 import { getProductSaleState, type ProductSaleState } from "@/lib/sales-availability";
 import { normalizedSiteUrl } from "@/lib/seo";
+import { DAY_MS } from "@/lib/time";
 
 /*
  * «Приглашение в поток»: one email to every past buyer about the cohort on sale.
@@ -59,7 +60,6 @@ export const PURCHASE_EMAIL_RESERVE = 40;
 export const DEFAULT_BATCH_SIZE = 15;
 /** Between two sends: stays under Resend's per-second rate limit. */
 const SEND_PAUSE_MS = 600;
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export const COHORT_INVITE_CAMPAIGN_PREFIX = "cohort_invite:";
 /** Rows of this key only carry the global block of an unsubscribed address. */

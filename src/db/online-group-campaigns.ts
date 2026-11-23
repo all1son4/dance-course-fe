@@ -28,6 +28,7 @@ import {
   telegramChats,
   telegramUserBindings,
 } from "./schema";
+import type { DatabaseTransaction } from "./transaction";
 
 const normalizeTitle = (value: string | null | undefined) =>
   (value ?? "").replace(/\s+/g, " ").trim();
@@ -43,7 +44,6 @@ const parseStartDate = (value: string | Date) => {
 };
 
 type DatabaseClient = ReturnType<typeof getDatabase>;
-type DatabaseTransaction = Parameters<Parameters<DatabaseClient["transaction"]>[0]>[0];
 type OnlineGroupCampaign = typeof onlineGroupCampaigns.$inferSelect;
 type TelegramChat = typeof telegramChats.$inferSelect;
 

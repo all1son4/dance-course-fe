@@ -5,6 +5,7 @@ import {
   ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
 } from "@/constants/sellable-products";
 import { getStartOfNextWarsawDay } from "@/lib/inspiration-hub/calendar";
+import { DAY_MS } from "@/lib/time";
 
 import {
   accessEntitlements,
@@ -96,9 +97,7 @@ export async function listStartedPlusHubsWithoutInvite(
   database: DatabaseExecutor,
   { livemode, now }: { livemode: boolean; now: Date },
 ): Promise<StartedPlusHubWithoutInvite[]> {
-  const windowStart = new Date(
-    now.getTime() - PLUS_HUB_INVITE_CATCH_UP_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const windowStart = new Date(now.getTime() - PLUS_HUB_INVITE_CATCH_UP_DAYS * DAY_MS);
   const rows = await database
     .select({
       email: purchases.customerEmailSnapshot,

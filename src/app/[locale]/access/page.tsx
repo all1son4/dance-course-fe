@@ -10,6 +10,14 @@ import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
 import { Link } from "@/i18n/navigation";
 import { buildInvitationUrl } from "@/lib/access-invitations/link";
+import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
+import {
+  getAccessCardTitle,
+  getAccessProductPagePath,
+  getAccessProductTitle,
+  readMyAccessNextStep,
+  readMyAccessSales,
+} from "@/lib/my-access/access.helpers";
 import {
   getMyAccessActionAnalytics,
   getMyAccessAnalyticsProperties,
@@ -29,9 +37,8 @@ import {
   buildMyAccessCount,
   getMyAccessCardDetail,
   getMyAccessCardNote,
-  type MyAccessCount,
-  warsawDaysBetween,
 } from "@/lib/my-access/count";
+import { createAccessDates } from "@/lib/my-access/dates";
 import {
   getDaypart,
   getFirstName,
@@ -49,13 +56,6 @@ import { groupMyAccessCards, type MyAccessZone } from "@/lib/my-access/zones";
 import { normalizedSiteUrl } from "@/lib/seo";
 
 import {
-  getAccessCardTitle,
-  getAccessProductPagePath,
-  getAccessProductTitle,
-  readMyAccessNextStep,
-  readMyAccessSales,
-} from "./access.helpers";
-import {
   CalendarSubscribe,
   CycleStamp,
   FoldingCard,
@@ -65,13 +65,18 @@ import {
 } from "./access-actions";
 import AccessAnalytics from "./access-analytics";
 import {
-  ACCESS_APPEAR_CSS,
-  ACCESS_CANVAS_CSS,
+  EmptyCard,
+  HelpCard,
+  JourneyList,
+  JourneyStep,
+  RequestCard,
+  SideCard,
+  SideText,
+  SideTitle,
+} from "./access-aside.styles";
+import {
   AccessAside,
-  AccessHeader,
   AccessLayout,
-  AccessSection,
-  CalendarLeaf,
   CalendarLink,
   CardActions,
   CardDetail,
@@ -81,29 +86,24 @@ import {
   CardNote,
   CardSummary,
   CardTitle,
-  Count,
-  CountText,
-  CountValue,
-  EmptyCard,
-  Eyebrow,
-  Facts,
-  Greeting,
-  HelpCard,
-  Intro,
-  JourneyList,
-  JourneyStep,
   QuietLink,
-  RequestCard,
-  SideCard,
-  SideText,
-  SideTitle,
   StatusChip,
-  VisuallyHidden,
-  WeekCounts,
   Zone,
   ZoneHeader,
   ZoneList,
   ZoneTray,
+} from "./access-cards.styles";
+import { AccessCount } from "./access-count";
+import {
+  ACCESS_APPEAR_CSS,
+  ACCESS_CANVAS_CSS,
+  AccessHeader,
+  AccessSection,
+  Eyebrow,
+  Facts,
+  Greeting,
+  Intro,
+  VisuallyHidden,
 } from "./page.styles";
 import RequestLinkForm from "./request-link-form";
 
@@ -130,7 +130,6 @@ type AccessPageProps = {
 };
 
 const DATE_VALUE_KEYS = new Set(["date", "start", "end"]);
-const WARSAW = "Europe/Warsaw";
 /** The chips that ask for something; the count already tells how the time goes. */
 const ATTENTION_CHIPS = new Set([
   "linkExpired",
@@ -138,9 +137,6 @@ const ATTENTION_CHIPS = new Set([
   "confirmTelegram",
   "endsSoon",
 ]);
-
-const weekState = (week: number, current: number) =>
-  week < current ? "done" : week === current ? "now" : "ahead";
 
 const AccessCanvas = ({
   children,
@@ -240,61 +236,9 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     return title ? [{ ...step, title }] : [];
   });
 
-  const formatDate = new Intl.DateTimeFormat(locale, {
-    dateStyle: "long",
-    timeZone: WARSAW,
-  });
-  const formatShortDate = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    timeZone: WARSAW,
-    year: "numeric",
-  });
-  const formatDayMonth = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "long",
-    timeZone: WARSAW,
-  });
-  const formatMonthShort = new Intl.DateTimeFormat(locale, {
-    month: "short",
-    timeZone: WARSAW,
-  });
-  const formatDayNumber = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    timeZone: WARSAW,
-  });
-  const formatWeekday = new Intl.DateTimeFormat(locale, {
-    timeZone: WARSAW,
-    weekday: "long",
-  });
-  const formatYear = new Intl.DateTimeFormat(locale, {
-    timeZone: WARSAW,
-    year: "numeric",
-  });
-  /** Dates never break between their words ("23 ноября" stays on one line). */
-  const keepTogether = (text: string) => text.replace(/ /gu, "\u00a0");
-  /**
-   * The day of a purchase with a three-letter month, «18 ноя 2026», «Nov 18,
-   * 2026», «18 lis 2026»: no dot, no «г.» after the year.
-   */
-  const purchaseDay = (iso: string) =>
-    keepTogether(
-      formatShortDate
-        .formatToParts(new Date(iso))
-        .map((part) =>
-          part.type === "month"
-            ? part.value.replace(/\./gu, "").slice(0, 3)
-            : part.type === "literal"
-              ? part.value.replace(/\s?г\.$/u, "")
-              : part.value,
-        )
-        .join("")
-        .trim(),
-    );
-  const dayMonth = (iso: string) => keepTogether(formatDayMonth.format(new Date(iso)));
-  /** The month as it reads after a day ("марта", "listopada"). */
-  const monthAfterDay = (date: Date) =>
-    formatDayMonth.formatToParts(date).find((part) => part.type === "month")?.value ?? "";
+  const dates = createAccessDates(locale);
+  const { dayMonth, formatDate, formatYear, keepTogether, monthAfterDay, purchaseDay } =
+    dates;
   const translateLine = ({ key, values }: MyAccessLine) =>
     t(
       `cards.${key}`,
@@ -323,106 +267,6 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           buildMyAccessCalendarFeedPath(calendarToken, locale),
         )
       : null;
-
-  /** A date as a calendar leaf; the text next to it names the date for screen readers. */
-  const calendarLeaf = (iso: string) => (
-    <CalendarLeaf aria-hidden>
-      <small>{formatMonthShort.format(new Date(iso)).replace(/\.$/u, "")}</small>
-      <b>{formatDayNumber.format(new Date(iso))}</b>
-    </CalendarLeaf>
-  );
-
-  /** The count of a card: the number, what it counts, the date. */
-  const renderCount = (count: MyAccessCount) => {
-    switch (count.kind) {
-      case "startsIn":
-        return (
-          <Count>
-            {calendarLeaf(count.at)}
-            <CountText>
-              <b>
-                {count.days === 0
-                  ? t("count.startsToday")
-                  : `${count.days} ${t("count.startsIn", { days: count.days })}`}
-              </b>
-              <span>
-                {formatWeekday.format(new Date(count.at))}
-                <VisuallyHidden>, {dayMonth(count.at)}</VisuallyHidden>
-              </span>
-            </CountText>
-          </Count>
-        );
-      case "left":
-        return (
-          <Count $tone={count.urgent ? "urgent" : "plain"}>
-            <CountValue>{count.days}</CountValue>
-            <CountText>
-              <b>{t("count.left", { days: count.days })}</b>
-              <span>{t("count.until", { date: dayMonth(count.until) })}</span>
-            </CountText>
-          </Count>
-        );
-      case "week":
-        return (
-          <Count>
-            <WeekCounts
-              aria-label={t("count.weekOf", {
-                current: count.current,
-                total: count.total,
-              })}
-              role="img"
-            >
-              {Array.from({ length: count.total }, (_, index) => (
-                <i data-state={weekState(index + 1, count.current)} key={index}>
-                  {index + 1}
-                </i>
-              ))}
-            </WeekCounts>
-            <CountText>
-              <b>{t("count.week")}</b>
-            </CountText>
-          </Count>
-        );
-      case "paidDays":
-        return (
-          <Count>
-            <CountValue>{count.days}</CountValue>
-            <CountText>
-              <b>{t("count.paidDays", { days: count.days })}</b>
-              <span>{t("count.fromJoin")}</span>
-            </CountText>
-          </Count>
-        );
-      case "ended":
-        return (
-          <Count $tone="muted">
-            {calendarLeaf(count.at)}
-            <CountText>
-              <b>{t("count.ended")}</b>
-              <VisuallyHidden>{dayMonth(count.at)}</VisuallyHidden>
-            </CountText>
-          </Count>
-        );
-      case "openNow":
-        return (
-          <Count>
-            <CountText>
-              <b>{t("count.openNow")}</b>
-              <span>{t("count.openNowNote")}</span>
-            </CountText>
-          </Count>
-        );
-      case "lifetime":
-        return (
-          <Count>
-            <CountValue aria-hidden>∞</CountValue>
-            <CountText>
-              <b>{t("count.lifetime")}</b>
-            </CountText>
-          </Count>
-        );
-    }
-  };
 
   /**
    * The chip in a card's corner, short but saying what is wrong: which link
@@ -479,7 +323,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           )}
         </CardHead>
         {summary && <CardSummary>{translateLine(summary)}</CardSummary>}
-        {counted && renderCount(counted)}
+        {counted && <AccessCount count={counted} dates={dates} t={t} />}
         <CardMore id={detailsId}>
           {detail && <CardDetail>{translateLine(detail)}</CardDetail>}
           {note && <CardNote>{translateLine(note)}</CardNote>}
@@ -542,13 +386,17 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
   const firstShare = sharePaths.findIndex(Boolean);
 
   const nextTerm =
-    nextStep && !nextStep.started
-      ? renderCount({
+    nextStep && !nextStep.started ? (
+      <AccessCount
+        count={{
           at: nextStep.startsAt,
           days: Math.max(0, warsawDaysBetween(now, new Date(nextStep.startsAt))),
           kind: "startsIn",
-        })
-      : null;
+        }}
+        dates={dates}
+        t={t}
+      />
+    ) : null;
 
   return (
     <AccessCanvas daypart={daypart}>

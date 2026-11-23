@@ -12,6 +12,7 @@ import {
   jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -42,18 +43,7 @@ const getRateLimitResponse = async ({
     windowMs: 60_000,
   });
 
-  if (rateLimit.backendUnavailable) {
-    return jsonErrorNoStore("rate_limit_unavailable", { status: 503 });
-  }
-
-  if (!rateLimit.limited) {
-    return null;
-  }
-
-  return jsonErrorNoStore("rate_limited", {
-    headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-    status: 429,
-  });
+  return rateLimitErrorResponse(rateLimit);
 };
 
 export async function GET(request: Request) {

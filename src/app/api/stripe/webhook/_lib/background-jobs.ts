@@ -2,8 +2,8 @@ import { after } from "next/server";
 
 import { processNextOutboxJob } from "@/db/transactional-outbox";
 import { logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 
-import { getStripeServer } from "../../payment-intent/lib";
 import { processNextStripeWebhookInboxJob } from "./inbox-worker";
 import { deliverStripeOutboxJob, STRIPE_OUTBOX_KINDS } from "./outbox-delivery";
 
@@ -87,14 +87,12 @@ export const scheduleStripeBackgroundJobs = ({
   try {
     schedule(async () => {
       try {
-        const passes = [await run()];
-
-        if (hasRetry(passes[0])) {
+        if (hasRetry(await run())) {
           // The first repository backoff is five seconds. One bounded second pass
           // handles ordinary transient failures while staying inside the route's
           // 60-second after() budget; later webhooks and daily recovery handle more.
           await wait(5_500);
-          passes.push(await run());
+          await run();
         }
       } catch (error) {
         logSafeError("Stripe background jobs failed", error);

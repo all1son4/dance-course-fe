@@ -33,7 +33,6 @@ export const previewClipRootProps = { [PREVIEW_CLIP_ROOT_ATTRIBUTE]: "" } as con
 
 /** The media query that tells a mouse/trackpad apart from a touch screen. */
 export const PREVIEW_CLIP_HOVER_QUERY = "(hover: hover) and (pointer: fine)";
-export const PREVIEW_CLIP_REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 
 /**
  * How close to the viewport a card must come before the clip's `src` is set.

@@ -1,26 +1,9 @@
 import { listAdminInviteLinkHistoryRecordsFromDatabase } from "./admin-invite-link-history";
-import { createAdminOfferGrantInDatabase } from "./admin-offer-grants";
-import {
-  claimEmailCampaignLeadForDelivery,
-  createEmailCampaignLeadInDatabase,
-  excludeEmailCampaignLeadInDatabase,
-  findMonthlyReportRunInDatabase,
-  listEmailCampaignLeadsFromDatabase,
-  markEmailCampaignLeadFailed,
-  markEmailCampaignLeadSent,
-  recordMonthlyReportRunInDatabase,
-} from "./business-operation-jobs";
-import {
-  findEmailCampaignLeadByCampaignAndEmailFromDatabase,
-  listEmailCampaignLeadRecordsFromDatabase,
-} from "./email-campaign-lead-records";
-import { allocateInvoice, allocateInvoiceForPaymentIntent } from "./invoice-repository";
+import { listEmailCampaignLeadRecordsFromDatabase } from "./email-campaign-lead-records";
 import { findMonthlySalesReportRunByKeyFromDatabase } from "./monthly-report-run-records";
-import { projectPaymentStateInTransaction } from "./payment-projection";
 import {
   findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
   findPaymentRecordByIntentIdFromDatabase,
-  listPaymentRecordsFromDatabase,
 } from "./payment-records";
 import {
   claimNextStripeInboxEvent,
@@ -29,7 +12,6 @@ import {
   recordVerifiedStripeEvent,
   replayStripeInboxEvent,
 } from "./stripe-event-inbox";
-import { updateTelegramAccessInDatabase } from "./telegram-access";
 import {
   findLatestTelegramAccessTokenRecordByPaymentIntentIdFromDatabase,
   findTelegramAccessTokenRecordByTokenHashFromDatabase,
@@ -41,57 +23,17 @@ import {
   findTelegramUserBindingsByTelegramUserIdAndChatIdFromDatabase,
   findTelegramUserBindingsByTelegramUserIdFromDatabase,
 } from "./telegram-user-binding-records";
-import {
-  claimNextOutboxJob,
-  claimOutboxJobByDeduplicationKey,
-  enqueueOutboxJob,
-  enqueueOutboxJobInTransaction,
-  processNextOutboxJob,
-  processOutboxJobByDeduplicationKey,
-  replayOutboxJob,
-} from "./transactional-outbox";
 
 // This is the database-facing composition root for the domains introduced during
-// the DB phase. Runtime provider access stays outside this boundary. Some payment and
-// Telegram callers still retain flattened compatibility projections until DROP-04.
+// the DB phase. Runtime provider access stays outside this boundary. Payment and
+// Telegram reads return the flat record shapes their callers were written against.
 export const domainRepositories = Object.freeze({
   adminInviteLinkHistory: Object.freeze({
     list: listAdminInviteLinkHistoryRecordsFromDatabase,
   }),
-  adminOfferGrants: Object.freeze({ create: createAdminOfferGrantInDatabase }),
   businessOperationReads: Object.freeze({
-    findCampaignLead: findEmailCampaignLeadByCampaignAndEmailFromDatabase,
     findMonthlyReportRun: findMonthlySalesReportRunByKeyFromDatabase,
     listCampaignLeads: listEmailCampaignLeadRecordsFromDatabase,
-    listInvoicePayments: listPaymentRecordsFromDatabase,
-  }),
-  emailCampaigns: Object.freeze({
-    claimLeadForDelivery: claimEmailCampaignLeadForDelivery,
-    createLead: createEmailCampaignLeadInDatabase,
-    excludeLead: excludeEmailCampaignLeadInDatabase,
-    listLeads: listEmailCampaignLeadsFromDatabase,
-    markLeadFailed: markEmailCampaignLeadFailed,
-    markLeadSent: markEmailCampaignLeadSent,
-  }),
-  invoices: Object.freeze({
-    allocate: allocateInvoice,
-    allocateForPaymentIntent: allocateInvoiceForPaymentIntent,
-  }),
-  monthlyReports: Object.freeze({
-    findRun: findMonthlyReportRunInDatabase,
-    recordRun: recordMonthlyReportRunInDatabase,
-  }),
-  outbox: Object.freeze({
-    claimByDeduplicationKey: claimOutboxJobByDeduplicationKey,
-    claimNext: claimNextOutboxJob,
-    enqueue: enqueueOutboxJob,
-    enqueueInTransaction: enqueueOutboxJobInTransaction,
-    processByDeduplicationKey: processOutboxJobByDeduplicationKey,
-    processNext: processNextOutboxJob,
-    replay: replayOutboxJob,
-  }),
-  paymentProjection: Object.freeze({
-    projectInTransaction: projectPaymentStateInTransaction,
   }),
   paymentReads: Object.freeze({
     findByCheckoutSessionId: findLatestPaymentRecordByCheckoutSessionIdFromDatabase,
@@ -103,9 +45,6 @@ export const domainRepositories = Object.freeze({
     processNext: processNextStripeInboxEvent,
     recordVerified: recordVerifiedStripeEvent,
     replay: replayStripeInboxEvent,
-  }),
-  telegramAccess: Object.freeze({
-    update: updateTelegramAccessInDatabase,
   }),
   telegramAccessReads: Object.freeze({
     findActiveBindings: findActiveTelegramUserBindingsFromDatabase,

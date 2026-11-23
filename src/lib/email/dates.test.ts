@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { pluralize } from "../plural";
 import { formatEmailDate } from "./dates";
 
 test("email dates use local month names instead of machine timestamps", () => {
@@ -43,5 +44,29 @@ test("a date without the year reads as day and month", () => {
   assert.equal(
     formatEmailDate("2026-11-23T17:00:00Z", "pl", { includeYear: false }),
     "23 listopada",
+  );
+});
+
+test("Russian counts take one, few or many by their last digits", () => {
+  const days = ["день", "дня", "дней"] as [string, string, string];
+  assert.deepEqual(
+    [1, 2, 4, 5, 11, 12, 14, 21, 22, 25, 60, 111, 120].map((count) =>
+      pluralize("ru", count, days),
+    ),
+    [
+      "день",
+      "дня",
+      "дня",
+      "дней",
+      "дней",
+      "дней",
+      "дней",
+      "день",
+      "дня",
+      "дней",
+      "дней",
+      "дней",
+      "дней",
+    ],
   );
 });

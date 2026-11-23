@@ -193,7 +193,7 @@ export const PAYMENT_CHECKBOXES: PaymentCheckboxConfig[] = [
   },
 ];
 
-export const normalizeTelegramNickname = (value: string) => {
+const normalizeTelegramNickname = (value: string) => {
   if (!value) {
     return "";
   }

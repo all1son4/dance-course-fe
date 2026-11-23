@@ -4,6 +4,8 @@
  * No storage and no browser APIs live here.
  */
 
+import { DAY_MS } from "@/lib/time";
+
 import { MAX_CAMPAIGN_DAYS, REACTED_COOLDOWN_MS } from "./config";
 
 export type BirthdayPopupState = {
@@ -60,8 +62,7 @@ const parseDate = (value: string | null): Date | null => {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-const daysBetween = (from: Date, to: Date) =>
-  (to.getTime() - from.getTime()) / 86_400_000;
+const daysBetween = (from: Date, to: Date) => (to.getTime() - from.getTime()) / DAY_MS;
 
 const getLastReactionAt = (state: BirthdayPopupState): Date | null => {
   const reactions = [state.dismissedAt, state.clickedAt, state.checkoutStartedAt]

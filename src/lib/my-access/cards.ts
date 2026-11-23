@@ -16,6 +16,9 @@ import {
   isLifetimeChannelOfferId,
   isOnlineGroupAccessOfferId,
 } from "@/lib/telegram/offer-access";
+import { DAY_MS } from "@/lib/time";
+
+import { daysLeft } from "./count";
 
 /*
  * «Мой доступ» (HUB-D28): one card per current access, each product family by its
@@ -23,9 +26,10 @@ import {
  * Telegram IDs or invite links ever reach a card.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 /** A standalone Hub this close to its end offers the renewal (section 11). */
 export const HUB_RENEWAL_WINDOW_DAYS = 7;
+/** A choreography channel is "ending soon" in its last week, like the Hub. */
+const CHANNEL_ENDS_SOON_DAYS = 7;
 
 export const HUB_RENEWAL_HREF = `/payment?renewal=${INSPIRATION_HUB_DISCOUNT_SLUG}`;
 /** The Hub at its full price, for someone the renewal price no longer covers. */
@@ -85,7 +89,7 @@ export type MyAccessCohort = {
 };
 
 /** How a cycle is named on its cards: the cohort's own name. */
-export const cohortNameOf = (cohort: MyAccessCohort | null | undefined) =>
+const cohortNameOf = (cohort: MyAccessCohort | null | undefined) =>
   cohort?.title?.trim() || undefined;
 
 export type MyAccessSnapshot = {
@@ -215,8 +219,6 @@ const isRevoked = (right: MyAccessRight) =>
   right.revokedAt !== null || right.status === "revoked";
 const isJoined = (right: MyAccessRight) =>
   right.status === "activated" || right.status === "left_channel";
-const daysLeft = (end: Date, now: Date) =>
-  Math.max(0, Math.ceil((end.getTime() - now.getTime()) / DAY_MS));
 const iso = (date: Date) => date.toISOString();
 
 const hubPeriodEnd = (right: MyAccessRight) => right.expiresAt;
@@ -655,7 +657,7 @@ const chipOf = (card: BaseCard, now: Date): MyAccessChip => {
   if (
     key === "channel.until" &&
     card.period &&
-    daysLeft(new Date(card.period.end), now) <= HUB_RENEWAL_WINDOW_DAYS
+    daysLeft(new Date(card.period.end), now) <= CHANNEL_ENDS_SOON_DAYS
   ) {
     return "endsSoon";
   }

@@ -115,3 +115,19 @@ test("keeps independently purchased channels separate and supports historical ex
     fixture().expiresAt!.toISOString(),
   );
 });
+
+test("a reminder without a stored end uses the channel's own access rule", (t) => {
+  const saved = process.env.TELEGRAM_CHOREO_ACCESS_DAYS;
+  t.after(() => {
+    if (saved === undefined) delete process.env.TELEGRAM_CHOREO_ACCESS_DAYS;
+    else process.env.TELEGRAM_CHOREO_ACCESS_DAYS = saved;
+  });
+  // The channel reads "45 days" as 45 (parseFloat); the reminder now does the same.
+  process.env.TELEGRAM_CHOREO_ACCESS_DAYS = "45 days";
+
+  const [reminder] = plan(
+    [fixture({ expiresAt: null })],
+    new Date("2026-10-21T03:00:00Z"),
+  );
+  assert.equal(reminder?.expiresAt.toISOString(), "2026-11-03T18:00:00.000Z");
+});
