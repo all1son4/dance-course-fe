@@ -180,21 +180,6 @@ export const getCheckoutBlockReason = ({
           ? "renewal_unavailable"
           : null;
 
-/**
- * The short product name: what the title puts in quotes, every name of a
- * bundle included ("Still Alive + Her Lies"), or else its first line.
- */
-export const getCompactSummaryTitle = (fullTitle: string) => {
-  const quotedNames = Array.from(
-    fullTitle.matchAll(/["“”«»„]([^"“”«»„]+)["“”«»„]/gu),
-    (match) => match[1].trim(),
-  ).filter(Boolean);
-
-  return quotedNames.length > 0
-    ? quotedNames.join(" + ")
-    : (fullTitle.split("\n")[0] ?? fullTitle).trim();
-};
-
 export const formatTelegramUsernameInput = (value: string) => {
   const normalizedUsername = value.trim().replace(/^@/, "");
 

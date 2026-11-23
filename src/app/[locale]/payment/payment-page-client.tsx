@@ -38,6 +38,7 @@ import {
   type PaymentStep,
 } from "@/lib/checkout/payment.constants";
 import {
+  getCompactSummaryTitle,
   isChoreoTutorialProduct,
   shouldNameOfferAtCheckout,
 } from "@/lib/choreo-offer-presentation";
@@ -91,7 +92,6 @@ import {
   getCheckoutBlockReason,
   getCheckoutEnterKeyHint,
   getCheckoutSelectionFromSearch,
-  getCompactSummaryTitle,
   getVisiblePaymentInputs,
   isCheckoutLinkStale,
   PAYMENT_INTENT_CREATION_DELAY_MS,
