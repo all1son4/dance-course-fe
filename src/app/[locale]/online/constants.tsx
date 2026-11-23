@@ -1,4 +1,9 @@
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
+import { PriceDrop, StrikeDraw } from "@/components/other/BlackFriday";
+import {
+  formatOfferPrice,
+  type SellableProductPrices,
+} from "@/constants/sellable-products";
 import type { ProductSaleState } from "@/lib/sales-availability";
 
 import {
@@ -23,8 +28,8 @@ export type OnlineBlackFridayCopy = {
   hubCta: string;
   hubHighlight: string;
   choreoFactLabel: string;
-  choreoPrice: string;
-  choreoRegularPrice?: string;
+  /** The tutorials' campaign price and the regular one, for the price drop. */
+  choreoPrices: { from: SellableProductPrices; to: SellableProductPrices } | null;
   hubFactLabel: string;
   hubFactValue: string;
 };
@@ -35,23 +40,26 @@ export type OnlineBlackFridayCopy = {
  */
 const CampaignFact = ({
   label,
-  price,
-  regularPrice,
+  prices,
+  value,
 }: {
   label: string;
-  price: string;
-  regularPrice?: string;
+  prices?: { from: SellableProductPrices; to: SellableProductPrices } | null;
+  value?: string;
 }) => (
   <ContentStack>
     <CampaignFactLabel>{label}</CampaignFactLabel>
     <CampaignFactValue>
-      {price}
-      {regularPrice ? (
+      {prices ? (
         <>
-          {" "}
-          <CampaignFactRegular>{regularPrice}</CampaignFactRegular>
+          <PriceDrop from={prices.from} to={prices.to} />{" "}
+          <CampaignFactRegular>
+            <StrikeDraw>{formatOfferPrice(prices.from)}</StrikeDraw>
+          </CampaignFactRegular>
         </>
-      ) : null}
+      ) : (
+        value
+      )}
     </CampaignFactValue>
   </ContentStack>
 );
@@ -123,7 +131,7 @@ export const getOnlineCoursesArray = (
     ),
     bottomRowContent:
       blackFriday && hubSaleState === "open" ? (
-        <CampaignFact label={blackFriday.hubFactLabel} price={blackFriday.hubFactValue} />
+        <CampaignFact label={blackFriday.hubFactLabel} value={blackFriday.hubFactValue} />
       ) : (
         <ContentStack>
           <DetailText>{t("cards.inspirationHub.accessLabel")}</DetailText>
@@ -162,8 +170,7 @@ export const getOnlineCoursesArray = (
       blackFriday && choreoSaleState === "open" ? (
         <CampaignFact
           label={blackFriday.choreoFactLabel}
-          price={blackFriday.choreoPrice}
-          regularPrice={blackFriday.choreoRegularPrice}
+          prices={blackFriday.choreoPrices}
         />
       ) : (
         <ContentStack>

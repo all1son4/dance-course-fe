@@ -59,11 +59,20 @@ const flapLand = keyframes`
 `;
 
 export const FlipCard = styled.span`
+  [data-final] & {
+    color: #ff6b64;
+  }
+
   position: relative;
   display: block;
   width: 100%;
   height: 64px;
   perspective: 320px;
+  /* Each card on its own layer: a flip next door never re-rasterises this one's
+     digits, which otherwise seem to shimmer every second. */
+  isolation: isolate;
+  contain: layout paint;
+  transform: translateZ(0);
   font-size: 40px;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
@@ -81,8 +90,9 @@ export const FlipHalf = styled.span<{ $half: "top" | "bottom"; $flap?: boolean }
   height: 50%;
   overflow: hidden;
   backface-visibility: hidden;
-  background: ${({ $half }) =>
-    $half === "top" ? "rgba(255, 255, 255, 0.09)" : "rgba(255, 255, 255, 0.06)"};
+  transform: translateZ(0);
+  /* Opaque on purpose: a see-through flap would show the next number early. */
+  background: ${({ $half }) => ($half === "top" ? "#262326" : "#1e1b1e")};
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   border-radius: ${({ $half }) =>
     $half === "top"
@@ -334,29 +344,6 @@ export const Section = styled.section`
   }
 `;
 
-/* The pointer's light over the dark slab (BlackFridaySpotlight sets the position). */
-export const Spotlight = styled.span`
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0;
-  background: radial-gradient(
-    420px circle at var(--spot-x, 50%) var(--spot-y, 50%),
-    rgba(196, 20, 24, 0.28),
-    transparent 65%
-  );
-  transition: opacity var(--motion-slow) var(--ease-standard);
-
-  &[data-active] {
-    opacity: 1;
-  }
-
-  @media (forced-colors: active) {
-    display: none;
-  }
-`;
-
 /* A huge outlined word behind the content: the "sale" mood without an image. */
 export const Watermark = styled.span`
   position: absolute;
@@ -438,6 +425,26 @@ export const Title = styled.h2`
   }
 `;
 
+/* The title and the stamp that lands next to it. */
+export const TitleWrap = styled.div`
+  position: relative;
+
+  & > span[aria-hidden] {
+    left: calc(min(100%, 340px) + 12px);
+    top: 14px;
+
+    @media (max-width: 1240px) {
+      left: 290px;
+    }
+
+    @media (max-width: 550px) {
+      left: auto;
+      right: 0;
+      top: 6px;
+    }
+  }
+`;
+
 export const Lead = styled.p`
   margin: 0;
   max-width: 460px;
@@ -469,6 +476,22 @@ export const Offers = styled.div`
 `;
 
 export const OfferCard = styled.article`
+  /* The offers play in turn after the stamp: the first, then the second. */
+  --bf-delay: 1100ms;
+
+  & + & {
+    --bf-delay: 2400ms;
+  }
+
+  /* One column: each offer plays when it is scrolled to, without waiting. */
+  @media (max-width: 1100px) {
+    --bf-delay: 400ms;
+
+    & + & {
+      --bf-delay: 400ms;
+    }
+  }
+
   position: relative;
   display: flex;
   flex-direction: column;
@@ -659,4 +682,157 @@ export const CampaignPlateValue = styled.span`
     color: rgba(255, 255, 255, 0.56);
     white-space: nowrap;
   }
+`;
+
+/* ---------- Motion pieces (BlackFridayMotion) ---------- */
+
+/* The regular price with a red marker line instead of the plain strike. */
+export const StrikeLine = styled.s`
+  position: relative;
+  text-decoration: none;
+  white-space: nowrap;
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 52%;
+    height: 2px;
+    border-radius: 2px;
+    background: #e0242b;
+    transform: rotate(-4deg) scaleX(1);
+    transform-origin: 0 50%;
+    /* A beat of stillness (--bf-delay, set per offer in the home section), then
+       a slow marker stroke. */
+    transition: transform 700ms cubic-bezier(0.65, 0, 0.35, 1) var(--bf-delay, 300ms);
+  }
+
+  &[data-pending]::after {
+    transform: rotate(-4deg) scaleX(0);
+    transition: none;
+  }
+
+  @media (forced-colors: active) {
+    text-decoration: line-through;
+
+    &::after {
+      display: none;
+    }
+  }
+`;
+
+const stampIn = keyframes`
+  0% { opacity: 0; transform: rotate(-24deg) scale(1.9); }
+  60% { opacity: 1; transform: rotate(-10deg) scale(0.94); }
+  100% { opacity: 1; transform: rotate(-12deg) scale(1); }
+`;
+
+/* A rubber stamp: a ring and the figure in the brand's brighter red. */
+export const StampMark = styled.span`
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 10px 16px;
+  border: 3px solid rgba(255, 92, 84, 0.9);
+  border-radius: 18px;
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: rgba(255, 92, 84, 0.95);
+  transform: rotate(-12deg);
+  pointer-events: none;
+  mix-blend-mode: screen;
+
+  /* Lands first; the offers' strikes and prices follow it in turn. */
+  &:not([data-pending]) {
+    animation: ${stampIn} 700ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 300ms both;
+  }
+
+  &[data-pending] {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+  }
+
+  @media (max-width: 550px) {
+    font-size: 28px;
+    padding: 8px 12px;
+    border-width: 2px;
+    border-radius: 14px;
+  }
+
+  @media (forced-colors: active) {
+    display: none;
+  }
+`;
+
+const revealIn = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+`;
+
+/* The gift or saving line: after its offer's strike and price fall. */
+export const RevealLine = styled.span`
+  display: inline-block;
+
+  &:not([data-pending]) {
+    animation: ${revealIn} 600ms var(--ease-emphasized)
+      calc(var(--bf-delay, 300ms) + 1200ms) both;
+  }
+
+  &[data-pending] {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+  }
+`;
+
+/* The pointer's soft light over the dark slab (BlackFridaySpotlight sets it). */
+export const Spotlight = styled.span`
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    280px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(196, 20, 24, 0.18),
+    transparent 70%
+  );
+  transition: opacity var(--motion-slow) var(--ease-standard);
+
+  &[data-active] {
+    opacity: 1;
+  }
+
+  @media (forced-colors: active) {
+    display: none;
+  }
+`;
+
+/* ---------- The last 24 hours ---------- */
+
+export const CountdownCaption = styled.span`
+  font-size: var(--text-caption);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+
+  &[data-final] {
+    font-weight: 700;
+    color: #ff6b64;
+  }
+`;
+
+export const FinalMark = styled.span`
+  margin-right: 8px;
+  font-weight: 700;
+  color: #ff6b64;
 `;

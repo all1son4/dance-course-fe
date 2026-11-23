@@ -31,12 +31,18 @@ import {
   OfferText,
   OfferTitle,
   Section,
-  SmallCaption,
   Terms,
   Title,
+  TitleWrap,
   Watermark,
 } from "./BlackFriday.styles";
 import BlackFridayCountdown from "./BlackFridayCountdown";
+import {
+  CampaignReveal,
+  CampaignStamp,
+  PriceDrop,
+  StrikeDraw,
+} from "./BlackFridayMotion";
 import BlackFridaySpotlight from "./BlackFridaySpotlight";
 
 export const BLACK_FRIDAY_SECTION_ID = "black-friday";
@@ -67,13 +73,17 @@ export default async function BlackFridaySection() {
       <Watermark aria-hidden="true">−33%</Watermark>
       <Intro>
         <Eyebrow>{t("section.eyebrow")}</Eyebrow>
-        <Title id="black-friday-title">
-          {t("section.titleTop")} <span>{t("section.titleBottom")}</span>
-        </Title>
+        <TitleWrap>
+          <Title id="black-friday-title">
+            {t("section.titleTop")} <span>{t("section.titleBottom")}</span>
+          </Title>
+          <CampaignStamp>{t("choreo.badge")}</CampaignStamp>
+        </TitleWrap>
         <Lead>{t("section.lead")}</Lead>
         <CountdownBox>
-          <SmallCaption>{t("countdown.label")}</SmallCaption>
           <BlackFridayCountdown
+            caption={t("countdown.label")}
+            finalLabel={t("countdown.finalLabel")}
             endsAt={BLACK_FRIDAY_ENDS_AT.toISOString()}
             label={t("countdown.label")}
             labels={{
@@ -102,13 +112,21 @@ export default async function BlackFridaySection() {
                 {choreo.compareAtPrices ? (
                   <OfferPriceNote>
                     <span>{t("choreo.regularPrice")}</span>
-                    <s>{formatOfferPrice(choreo.compareAtPrices)}</s>
+                    <StrikeDraw>{formatOfferPrice(choreo.compareAtPrices)}</StrikeDraw>
                   </OfferPriceNote>
                 ) : null}
-                <strong>{formatOfferPrice(choreo.prices)}</strong>
+                <strong>
+                  {choreo.compareAtPrices ? (
+                    <PriceDrop from={choreo.compareAtPrices} to={choreo.prices} />
+                  ) : (
+                    formatOfferPrice(choreo.prices)
+                  )}
+                </strong>
                 {choreoSavings ? (
                   <OfferSavings>
-                    {t("choreo.savings", { amount: formatOfferPrice(choreoSavings) })}
+                    <CampaignReveal>
+                      {t("choreo.savings", { amount: formatOfferPrice(choreoSavings) })}
+                    </CampaignReveal>
                   </OfferSavings>
                 ) : null}
               </OfferPrice>
@@ -138,10 +156,12 @@ export default async function BlackFridaySection() {
               <OfferPrice>
                 <OfferPriceNote>
                   <span>{t("hub.priceLabel")}</span>
-                  <s>{t("hub.regularTerm")}</s>
+                  <StrikeDraw>{t("hub.regularTerm")}</StrikeDraw>
                 </OfferPriceNote>
                 <strong>{formatOfferPrice(hub.prices)}</strong>
-                <OfferSavings>{t("hub.gift")}</OfferSavings>
+                <OfferSavings>
+                  <CampaignReveal>{t("hub.gift")}</CampaignReveal>
+                </OfferSavings>
               </OfferPrice>
             ) : null}
             <OfferAction>

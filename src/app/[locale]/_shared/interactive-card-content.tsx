@@ -121,7 +121,7 @@ export const CampaignFactLabel = styled(DetailText)`
   }
 `;
 
-export const CampaignFactRegular = styled.s`
+export const CampaignFactRegular = styled.span`
   font-size: var(--text-body-sm);
   color: var(--ink-muted);
   white-space: nowrap;

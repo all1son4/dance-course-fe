@@ -1,5 +1,6 @@
 import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
+import { PriceDrop, StrikeDraw } from "@/components/other/BlackFriday";
 import PreviewClip from "@/components/other/PreviewClip";
 import VideoPlayer from "@/components/other/VideoPlayer/VideoPlayer";
 import { previewClipRootProps } from "@/lib/preview-clip";
@@ -42,6 +43,7 @@ export default function ChoreoCard({
   previewSrc,
   price,
   priceAnchor,
+  priceDrop,
   priceLabel,
   secondButtonOptions,
   specialOffer,
@@ -55,7 +57,11 @@ export default function ChoreoCard({
   const compareAt = priceAnchor && (
     <CompareAtPrice>
       <PriceAnchorLabel>{priceAnchor.label}</PriceAnchorLabel>
-      <s>{priceAnchor.compareAt}</s>
+      {priceDrop ? (
+        <StrikeDraw>{priceAnchor.compareAt}</StrikeDraw>
+      ) : (
+        <s>{priceAnchor.compareAt}</s>
+      )}
     </CompareAtPrice>
   );
 
@@ -124,7 +130,13 @@ export default function ChoreoCard({
                 <CardPriceFact $isCampaign={Boolean(campaignBadge)}>
                   {priceLabel && <CardPriceLabel>{priceLabel}</CardPriceLabel>}
                   <CardPriceLine>
-                    <CardPrice>{price}</CardPrice>
+                    <CardPrice>
+                      {priceDrop ? (
+                        <PriceDrop from={priceDrop.from} to={priceDrop.to} />
+                      ) : (
+                        price
+                      )}
+                    </CardPrice>
                     {compareAt}
                   </CardPriceLine>
                 </CardPriceFact>

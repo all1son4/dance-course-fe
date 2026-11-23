@@ -18,6 +18,7 @@ export type BlackFridayRibbonProps = {
   ariaLabel: string;
   countdownLabel: string;
   cta: string;
+  finalLabel: string;
   endsAt: string;
   labels: CountdownLabels;
   /** The home section; while it is on screen the ribbon steps aside. */
@@ -32,7 +33,10 @@ const isCheckoutPath = (pathname: string) =>
 
 /** True while the Black Friday section of the home page is in the viewport. */
 function useSectionInView(sectionId: string, pathname: string) {
-  const [inView, setInView] = useState(false);
+  // The section lives on the home page only. There the ribbon starts hidden and
+  // fades in once the section is known to be off screen, so a reload with the
+  // section in view never flashes the ribbon first.
+  const [inView, setInView] = useState(() => trimTrailingSlash(pathname) === "");
 
   useEffect(() => {
     const section = document.getElementById(sectionId);
@@ -60,6 +64,7 @@ export default function BlackFridayRibbon({
   ariaLabel,
   countdownLabel,
   cta,
+  finalLabel,
   endsAt,
   labels,
   sectionId,
@@ -83,6 +88,7 @@ export default function BlackFridayRibbon({
       <RibbonTimer>
         <BlackFridayCountdown
           endsAt={endsAt}
+          finalLabel={finalLabel}
           label={countdownLabel}
           labels={labels}
           serverNow={serverNow}

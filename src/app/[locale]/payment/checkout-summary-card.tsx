@@ -1,8 +1,14 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
+import { PriceDrop, StrikeDraw } from "@/components/other/BlackFriday/BlackFridayMotion";
+import {
+  formatCheckoutPrice,
+  type SellableProductPrices,
+  type SupportedCheckoutCurrency,
+} from "@/constants/sellable-products";
 
 import {
+  CampaignIncludeLine,
   CurrencyBox,
   MoneyTitle,
   Price,
@@ -33,8 +39,15 @@ import { CheckoutProgressFill, CheckoutProgressTrack } from "./page.styles";
 
 export type CheckoutSummaryCardProps = {
   amountLabel: string;
-  /** Black Friday: the label in the brand red and the regular price, struck. */
-  campaign?: { label: string; regularPrice: string | null } | null;
+  /**
+   * Black Friday: the label in the brand red, the price dropping from the regular
+   * one (struck), and the saving as the first line of the order.
+   */
+  campaign?: {
+    label: string;
+    note: string;
+    prices: { from: SellableProductPrices; to: SellableProductPrices } | null;
+  } | null;
   currencyLabel: string;
   descriptionParagraphs: Array<{
     key: string;
@@ -70,6 +83,7 @@ const TelegramIcon = () => (
 
 /** Description, the "what you get" list and the support line: shared by the card and the phone bar. */
 const SummaryDetails = ({
+  campaign,
   descriptionParagraphs,
   includes,
   isLoading,
@@ -78,6 +92,7 @@ const SummaryDetails = ({
   renewalDescription,
 }: Pick<
   CheckoutSummaryCardProps,
+  | "campaign"
   | "descriptionParagraphs"
   | "includes"
   | "isLoading"
@@ -102,6 +117,9 @@ const SummaryDetails = ({
         </li>
       ) : offerSummary ? (
         <li>{offerSummary}</li>
+      ) : null}
+      {campaign && !isLoading ? (
+        <CampaignIncludeLine>{campaign.note}</CampaignIncludeLine>
       ) : null}
       {includes.map((line) => (
         <li key={line}>{line}</li>
@@ -156,12 +174,25 @@ const SummaryPrice = ({
           </Price>
         ) : (
           <Price key={selectedCurrency} $isSwapped={hasSwitchedCurrency}>
-            {campaign?.regularPrice ? (
+            {campaign?.prices ? (
               <>
-                <RegularPrice>{campaign.regularPrice}</RegularPrice>{" "}
+                <RegularPrice>
+                  <StrikeDraw>
+                    {formatCheckoutPrice(
+                      campaign.prices.from[selectedCurrency],
+                      selectedCurrency,
+                    )}
+                  </StrikeDraw>
+                </RegularPrice>{" "}
+                <PriceDrop
+                  currency={selectedCurrency}
+                  from={campaign.prices.from}
+                  to={campaign.prices.to}
+                />
               </>
-            ) : null}
-            {formattedPrice}
+            ) : (
+              formattedPrice
+            )}
           </Price>
         )}
       </PriceBox>

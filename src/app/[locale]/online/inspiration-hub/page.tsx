@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
-import { CampaignBadge } from "@/components/other/BlackFriday";
+import { CampaignBadge, StrikeDraw } from "@/components/other/BlackFriday";
 import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import ProgramRoadmap from "@/components/other/ProgramRoadmap";
@@ -178,7 +178,7 @@ export default async function InspirationHubPage() {
                 <>
                   <CampaignAccent>{blackFridayT("hubPage.accessValue")}</CampaignAccent>{" "}
                   <CampaignFactRegular>
-                    {blackFridayT("hubPage.regularAccess")}
+                    <StrikeDraw>{blackFridayT("hubPage.regularAccess")}</StrikeDraw>
                   </CampaignFactRegular>
                 </>
               ) : (

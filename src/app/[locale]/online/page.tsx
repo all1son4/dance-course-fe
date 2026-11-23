@@ -8,7 +8,6 @@ import Contacts from "@/components/other/Contacts";
 import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   CHOREO_CATALOGUE_PRODUCT_CODES,
-  formatOfferPrice,
   LOVE_ME_IN_THE_MORNING_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
@@ -86,10 +85,9 @@ export default async function Online() {
           hubCta: blackFridayT("hub.cta"),
           hubHighlight: blackFridayT("hub.badge"),
           choreoFactLabel: blackFridayT("checkout.priceLabel"),
-          choreoPrice: choreoOffer ? formatOfferPrice(choreoOffer.prices) : "",
-          choreoRegularPrice: choreoOffer?.compareAtPrices
-            ? formatOfferPrice(choreoOffer.compareAtPrices)
-            : undefined,
+          choreoPrices: choreoOffer?.compareAtPrices
+            ? { from: choreoOffer.compareAtPrices, to: choreoOffer.prices }
+            : null,
           hubFactLabel: blackFridayT("cards.hubFactLabel"),
           hubFactValue: blackFridayT("cards.hubPlate"),
         }

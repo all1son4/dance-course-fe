@@ -28,7 +28,7 @@ import {
   isBirthdayOfferId,
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
-import { isBlackFridayOffer } from "@/lib/black-friday";
+import { getCampaignSavings, isBlackFridayOffer } from "@/lib/black-friday";
 import {
   PAYMENT_CHECKBOXES,
   PAYMENT_INPUTS,
@@ -860,15 +860,22 @@ const PaymentPage = observer(function PaymentPage({
   const campaignOffer = isBlackFridayOffer(paymentStore.selectedOffer)
     ? paymentStore.selectedOffer
     : null;
-  const campaignRegularPrice =
-    campaignOffer?.compareAtPrices?.[paymentStore.selectedCurrency];
+  const campaignSavings = campaignOffer ? getCampaignSavings(campaignOffer) : null;
   const summaryProps: Omit<CheckoutSummaryCardProps, "title"> = {
     amountLabel: t("summary.amountLabel"),
     campaign: campaignOffer
       ? {
           label: blackFridayT("priceLabel"),
-          regularPrice: campaignRegularPrice
-            ? formatCheckoutPrice(campaignRegularPrice, paymentStore.selectedCurrency)
+          note: campaignSavings
+            ? blackFridayT("savings", {
+                amount: formatCheckoutPrice(
+                  campaignSavings[paymentStore.selectedCurrency],
+                  paymentStore.selectedCurrency,
+                ),
+              })
+            : blackFridayT("hubGift"),
+          prices: campaignOffer.compareAtPrices
+            ? { from: campaignOffer.compareAtPrices, to: campaignOffer.prices }
             : null,
         }
       : null,

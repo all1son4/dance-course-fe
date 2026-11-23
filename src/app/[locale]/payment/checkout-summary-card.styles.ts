@@ -342,7 +342,7 @@ export const MoneyTitle = styled.p<{ $isCampaign?: boolean }>`
 `;
 
 /* Black Friday: the regular price, struck, before the campaign one. */
-export const RegularPrice = styled.s`
+export const RegularPrice = styled.span`
   font-size: var(--text-body-sm);
   color: var(--ink-muted);
   white-space: nowrap;
@@ -452,5 +452,21 @@ export const Price = styled.p<{ $isSwapped?: boolean }>`
 
   @media (max-width: 767px) {
     font-size: var(--text-card);
+  }
+`;
+
+const campaignLineIn = keyframes`
+  from { opacity: 0; transform: translateY(4px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+`;
+
+/* Black Friday: what the buyer keeps, first in the order list, in the brand red. */
+export const CampaignIncludeLine = styled.li`
+  font-weight: 600;
+  color: var(--brand);
+  animation: ${campaignLineIn} 600ms var(--ease-emphasized) 1500ms both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;

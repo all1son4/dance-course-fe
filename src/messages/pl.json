@@ -1657,13 +1657,14 @@
       "days": "dni",
       "hours": "godz.",
       "minutes": "min",
-      "seconds": "sek."
+      "seconds": "sek.",
+      "finalLabel": "Ostatnie godziny"
     },
     "section": {
       "eyebrow": "Tylko do 30 listopada",
       "titleTop": "Black",
       "titleBottom": "Friday",
-      "lead": "Tydzień najlepszych cen na formaty online: tutoriale choreografii o jedną trzecią taniej, a biblioteka Inspiration HUB — 16 tygodni w cenie 8.",
+      "lead": "Tydzień korzystnych cen na formaty online: tutoriale choreografii o jedną trzecią taniej, a biblioteka Inspiration HUB — 16 tygodni w cenie 8.",
       "terms": "Ceny obowiązują do 30 listopada, 23:59 czasu warszawskiego."
     },
     "choreo": {
@@ -1700,7 +1701,9 @@
     },
     "checkout": {
       "priceLabel": "Cena Black Friday",
-      "hubSummary": "Inspiration Hub na 16 tygodni w cenie 8 — oferta Black Friday."
+      "hubSummary": "Inspiration Hub na 16 tygodni w cenie 8 — oferta Black Friday.",
+      "savings": "Black Friday: oszczędzasz {amount}",
+      "hubGift": "Black Friday: +8 tygodni w prezencie"
     },
     "myAccess": {
       "chip": "Black Friday"

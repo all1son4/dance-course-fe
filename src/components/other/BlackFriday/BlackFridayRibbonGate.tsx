@@ -21,6 +21,7 @@ export default async function BlackFridayRibbonGate() {
       countdownLabel={t("countdown.label")}
       cta={t("ribbon.cta")}
       endsAt={BLACK_FRIDAY_ENDS_AT.toISOString()}
+      finalLabel={t("countdown.finalLabel")}
       labels={{
         days: t("countdown.shortDays"),
         hours: t("countdown.hours"),

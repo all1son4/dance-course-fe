@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 
 import {
+  CountdownCaption,
   CountdownInline,
   CountdownTile,
   CountdownTiles,
   CountdownUnit,
+  FinalMark,
   FlipCard,
   FlipHalf,
 } from "./BlackFriday.styles";
@@ -21,6 +23,10 @@ export type CountdownLabels = {
 };
 
 type BlackFridayCountdownProps = {
+  /** Shown above the tiles; replaced by `finalLabel` in the last 24 hours. */
+  caption?: string;
+  /** «Последние часы»: the last day says so, and the tiles turn red. */
+  finalLabel: string;
   /** ISO end of the campaign. */
   endsAt: string;
   /** The server's clock at render: the first client render shows the same digits. */
@@ -94,8 +100,12 @@ function FlipDigits({ value }: { value: string }) {
  * ticking never moves the layout. At zero the page is refreshed once: the server
  * then renders it without the campaign and with the regular prices.
  */
+const FINAL_HOURS_MS = 24 * 60 * 60 * 1000;
+
 export default function BlackFridayCountdown({
+  caption,
   endsAt,
+  finalLabel,
   label,
   labels,
   serverNow,
@@ -132,6 +142,7 @@ export default function BlackFridayCountdown({
   }, [endsAtMs, now, router]);
 
   const { days, hours, minutes, seconds } = split(endsAtMs - now);
+  const isFinal = endsAtMs - now < FINAL_HOURS_MS;
   // Screen readers get one sentence instead of four ticking numbers.
   const spoken = `${label}: ${days} ${labels.days} ${hours} ${labels.hours} ${minutes} ${labels.minutes}`;
 
@@ -139,6 +150,7 @@ export default function BlackFridayCountdown({
     return (
       <CountdownInline role="timer" aria-label={spoken}>
         <span aria-hidden="true">
+          {isFinal ? <FinalMark>{finalLabel}</FinalMark> : null}
           {days > 0 ? `${days}${labels.days} ` : ""}
           {pad(hours)}:{pad(minutes)}:{pad(seconds)}
         </span>
@@ -154,13 +166,20 @@ export default function BlackFridayCountdown({
   ] as const;
 
   return (
-    <CountdownTiles role="timer" aria-label={spoken}>
-      {units.map(([value, unit]) => (
-        <CountdownTile key={unit} aria-hidden="true">
-          <FlipDigits value={pad(value)} />
-          <CountdownUnit>{unit}</CountdownUnit>
-        </CountdownTile>
-      ))}
-    </CountdownTiles>
+    <>
+      {caption ? (
+        <CountdownCaption data-final={isFinal || undefined}>
+          {isFinal ? finalLabel : caption}
+        </CountdownCaption>
+      ) : null}
+      <CountdownTiles role="timer" aria-label={spoken} data-final={isFinal || undefined}>
+        {units.map(([value, unit]) => (
+          <CountdownTile key={unit} aria-hidden="true">
+            <FlipDigits value={pad(value)} />
+            <CountdownUnit>{unit}</CountdownUnit>
+          </CountdownTile>
+        ))}
+      </CountdownTiles>
+    </>
   );
 }

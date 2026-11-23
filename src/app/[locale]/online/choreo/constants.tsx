@@ -330,6 +330,10 @@ export const getChoreos = (
           campaign && anchorOffer.compareAtPrices ? campaign.badge : undefined,
         campaignHighlight:
           campaign && anchorOffer.compareAtPrices ? campaign.highlight : undefined,
+        priceDrop:
+          campaign && singleOffer?.compareAtPrices
+            ? { from: singleOffer.compareAtPrices, to: singleOffer.prices }
+            : undefined,
         ...presentation,
         ...copy,
         firstButtonOptions: buildChoreoButtonOptions(product, t, withoutMentorOffer),

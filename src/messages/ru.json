@@ -1671,13 +1671,14 @@
       "days": "дней",
       "hours": "часов",
       "minutes": "минут",
-      "seconds": "секунд"
+      "seconds": "секунд",
+      "finalLabel": "Последние часы"
     },
     "section": {
       "eyebrow": "Только до 30 ноября",
       "titleTop": "Black",
       "titleBottom": "Friday",
-      "lead": "Неделя самых выгодных цен на онлайн-форматы: разборы хореографий на треть дешевле, а библиотека Inspiration HUB — на 16 недель по цене 8.",
+      "lead": "Неделя выгодных цен на онлайн-форматы: разборы хореографий на треть дешевле, а библиотека Inspiration HUB — на 16 недель по цене 8.",
       "terms": "Цены действуют до 30 ноября, 23:59 по варшавскому времени."
     },
     "choreo": {
@@ -1714,7 +1715,9 @@
     },
     "checkout": {
       "priceLabel": "Цена Black Friday",
-      "hubSummary": "Inspiration Hub на 16 недель по цене 8 — предложение Black Friday."
+      "hubSummary": "Inspiration Hub на 16 недель по цене 8 — предложение Black Friday.",
+      "savings": "Black Friday: ты экономишь {amount}",
+      "hubGift": "Black Friday: +8 недель в подарок"
     },
     "myAccess": {
       "chip": "Black Friday"

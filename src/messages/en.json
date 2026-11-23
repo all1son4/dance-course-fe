@@ -1657,13 +1657,14 @@
       "days": "days",
       "hours": "hours",
       "minutes": "min",
-      "seconds": "sec"
+      "seconds": "sec",
+      "finalLabel": "Final hours"
     },
     "section": {
       "eyebrow": "Until 30 November only",
       "titleTop": "Black",
       "titleBottom": "Friday",
-      "lead": "A week of the best prices on online formats: choreography tutorials a third cheaper, and the Inspiration HUB library for 16 weeks at the price of 8.",
+      "lead": "A week of great prices on online formats: choreography tutorials a third cheaper, and the Inspiration HUB library for 16 weeks at the price of 8.",
       "terms": "Prices valid until 30 November, 23:59 Warsaw time."
     },
     "choreo": {
@@ -1700,7 +1701,9 @@
     },
     "checkout": {
       "priceLabel": "Black Friday price",
-      "hubSummary": "Inspiration Hub for 16 weeks at the price of 8 — a Black Friday offer."
+      "hubSummary": "Inspiration Hub for 16 weeks at the price of 8 — a Black Friday offer.",
+      "savings": "Black Friday: you save {amount}",
+      "hubGift": "Black Friday: +8 weeks as a gift"
     },
     "myAccess": {
       "chip": "Black Friday"
