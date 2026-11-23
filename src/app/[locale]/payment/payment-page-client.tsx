@@ -96,6 +96,7 @@ import {
   bringIntoViewIfNeeded,
   type CheckoutAgreement,
   type CheckoutIntent,
+  getCheckoutBlockReason,
   getCheckoutEnterKeyHint,
   getCheckoutSelectionFromSearch,
   getCompactSummaryTitle,
@@ -207,11 +208,13 @@ const PaymentPage = observer(function PaymentPage({
       productId: requestedSelection.get("product") ?? "",
       offerId: requestedSelection.get("offer") ?? "",
     });
-  const isCheckoutBlocked =
-    paymentStore.isCatalogUnavailable ||
-    isStaleCheckoutLink ||
-    paymentStore.isSalesClosed ||
-    isRenewalUnavailable;
+  const checkoutBlockReason = getCheckoutBlockReason({
+    isCatalogUnavailable: paymentStore.isCatalogUnavailable,
+    isRenewalUnavailable,
+    isSalesClosed: paymentStore.isSalesClosed,
+    isStaleCheckoutLink,
+  });
+  const isCheckoutBlocked = checkoutBlockReason !== null;
   const alternativeTariffHref = paymentStore.isSalesClosed
     ? getAlternativeTariffHref(
         paymentStore.selectedProduct,
@@ -328,17 +331,14 @@ const PaymentPage = observer(function PaymentPage({
   ]);
 
   useEffect(() => {
-    // Mirrors the notice priority in the render below, so the tracked reason is
-    // the notice the visitor actually saw.
-    const reason = paymentStore.isCatalogUnavailable
-      ? "catalog_unavailable"
-      : isStaleCheckoutLink
-        ? "stale_link"
-        : paymentStore.isSalesClosed
-          ? "sales_closed"
-          : isRenewalUnavailable
-            ? "renewal_unavailable"
-            : null;
+    // The notice priority of the render below, so the tracked reason is the
+    // notice the visitor actually saw.
+    const reason = getCheckoutBlockReason({
+      isCatalogUnavailable: paymentStore.isCatalogUnavailable,
+      isRenewalUnavailable,
+      isSalesClosed: paymentStore.isSalesClosed,
+      isStaleCheckoutLink,
+    });
 
     if (!canUseAnalytics || !reason || lastTrackedBlockedStateRef.current === reason) {
       return;
@@ -1116,7 +1116,7 @@ const PaymentPage = observer(function PaymentPage({
             />
           </SummaryBoxMobile>
         )}
-        {paymentStore.isCatalogUnavailable ? (
+        {checkoutBlockReason === "catalog_unavailable" ? (
           <SalesClosedNotice>
             <SalesClosedTitle>{t("catalogUnavailable.title")}</SalesClosedTitle>
             <SalesClosedDescription>
@@ -1147,7 +1147,7 @@ const PaymentPage = observer(function PaymentPage({
               />
             </SalesClosedActions>
           </SalesClosedNotice>
-        ) : isStaleCheckoutLink ? (
+        ) : checkoutBlockReason === "stale_link" ? (
           // Before the closed-sales notice: when the link itself is dead, "sales
           // are closed" would be about the fallback product, not the one asked for.
           <SalesClosedNotice>
@@ -1160,7 +1160,7 @@ const PaymentPage = observer(function PaymentPage({
               analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
             />
           </SalesClosedNotice>
-        ) : paymentStore.isSalesClosed ? (
+        ) : checkoutBlockReason === "sales_closed" ? (
           <SalesClosedNotice>
             <SalesClosedTitle>{selectedProductCompactTitle}</SalesClosedTitle>
             <SalesClosedDescription>
@@ -1181,7 +1181,7 @@ const PaymentPage = observer(function PaymentPage({
               }}
             />
           </SalesClosedNotice>
-        ) : isRenewalUnavailable ? (
+        ) : checkoutBlockReason === "renewal_unavailable" ? (
           <SalesClosedNotice>
             <SalesClosedTitle>{t("renewal.unavailable.title")}</SalesClosedTitle>
             <SalesClosedDescription>

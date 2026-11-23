@@ -151,6 +151,35 @@ export type RenewalVerificationFailure =
 
 export type PaymentStoreInstance = ReturnType<typeof usePaymentStore>;
 
+export type CheckoutBlockReason =
+  "catalog_unavailable" | "renewal_unavailable" | "sales_closed" | "stale_link";
+
+/**
+ * Why the checkout shows a notice instead of the form, or null when it does not.
+ * The order is the notices' priority: a dead link comes before closed sales,
+ * which would otherwise be about the fallback product, not the one asked for.
+ */
+export const getCheckoutBlockReason = ({
+  isCatalogUnavailable,
+  isRenewalUnavailable,
+  isSalesClosed,
+  isStaleCheckoutLink,
+}: {
+  isCatalogUnavailable: boolean;
+  isRenewalUnavailable: boolean;
+  isSalesClosed: boolean;
+  isStaleCheckoutLink: boolean;
+}): CheckoutBlockReason | null =>
+  isCatalogUnavailable
+    ? "catalog_unavailable"
+    : isStaleCheckoutLink
+      ? "stale_link"
+      : isSalesClosed
+        ? "sales_closed"
+        : isRenewalUnavailable
+          ? "renewal_unavailable"
+          : null;
+
 /**
  * The short product name: what the title puts in quotes, every name of a
  * bundle included ("Still Alive + Her Lies"), or else its first line.
