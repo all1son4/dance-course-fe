@@ -460,7 +460,7 @@ test("a group renewal: page, Telegram check, links once, one email", async (t) =
 
   const { createInvitationToken } = await import("@/lib/access-invitations/link");
   const { confirmAccessInvitation, readInvitationPage } =
-    await import("@/lib/access-invitations/service");
+    await import("@/lib/access-invitations/page");
   const token = createInvitationToken(purchaseId)!;
   const page = await readInvitationPage(token);
   assert.equal(page.status, "ready");
@@ -534,7 +534,7 @@ test("an account already in the chat sees that instead of a link", async (t) => 
   });
   const { createInvitationToken } = await import("@/lib/access-invitations/link");
   const { confirmAccessInvitation, readInvitationPage } =
-    await import("@/lib/access-invitations/service");
+    await import("@/lib/access-invitations/page");
   const token = createInvitationToken(purchaseId)!;
   const page = await readInvitationPage(token);
   assert.ok(page.status === "ready");
@@ -628,7 +628,7 @@ const renewalOf = async (
 const confirmWith = async (purchaseId: string, telegramUserId: string) => {
   const { createInvitationToken } = await import("@/lib/access-invitations/link");
   const { confirmAccessInvitation, readInvitationPage } =
-    await import("@/lib/access-invitations/service");
+    await import("@/lib/access-invitations/page");
   const token = createInvitationToken(purchaseId)!;
   const page = await readInvitationPage(token);
   assert.ok(page.status === "ready");
@@ -728,7 +728,7 @@ test("a failed link is visible in the journal and the page retry delivers it", a
 
   // Telegram answers again: «Попробовать ещё раз» on the page.
   providers.control.failInvites = false;
-  const { retryInvitationLinks } = await import("@/lib/access-invitations/service");
+  const { retryInvitationLinks } = await import("@/lib/access-invitations/page");
   const retry = await retryInvitationLinks(token);
   assert.ok(retry.status === "verified");
   assert.equal(retry.lines[0]?.state, "link");
