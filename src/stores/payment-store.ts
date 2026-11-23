@@ -152,6 +152,12 @@ const getStripeIntentErrorCode = (error: unknown): StripeIntentErrorCode => {
     return "payment_intent_request_failed";
   }
 
+  // A gateway (502/504) answers with an HTML page: the reply never reached the app,
+  // so it is a transport failure like a dropped connection, not an app error code.
+  if (error instanceof SyntaxError) {
+    return "payment_intent_request_failed";
+  }
+
   if (error instanceof Error) {
     return error.message as StripeIntentErrorCode;
   }
