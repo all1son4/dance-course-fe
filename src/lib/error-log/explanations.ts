@@ -96,6 +96,10 @@ const RULES: Rule[] = [
   { test: /^stripe: (Connection|API)/u, text: "Stripe не ответил. Повтор пройдёт сам." },
   { test: /^stripe: /u, text: "Stripe отклонил запрос." },
   { test: /^(timeout|ETIMEDOUT)$/u, text: "Внешний сервис не ответил вовремя." },
+  {
+    test: /^CONNECT(ION)?_/u,
+    text: "Не удалось подключиться к базе или соединение оборвалось. Обычно это разовый сбой.",
+  },
   { test: /^E[A-Z]+$/u, text: "Сетевой сбой при обращении к внешнему сервису." },
 ];
 

@@ -74,6 +74,18 @@ test("Stripe, timeouts, network and our own codes", () => {
     describeErrorCode(Object.assign(new Error("socket hang up"), { code: "ECONNRESET" })),
     { area: "app", code: "ECONNRESET" },
   );
+  // postgres.js wraps its own connection codes in a Drizzle error.
+  assert.deepEqual(
+    describeErrorCode(
+      Object.assign(new Error("Failed query: select ..."), {
+        cause: Object.assign(new Error("write CONNECTION_CLOSED host:5432"), {
+          code: "CONNECTION_CLOSED",
+        }),
+      }),
+    ),
+    { area: "app", code: "CONNECTION_CLOSED" },
+  );
+  assert.match(explainErrorCode("CONNECT_TIMEOUT"), /подключиться к базе/u);
   assert.deepEqual(describeErrorCode(new Error("access_invitation_links_unavailable")), {
     area: "app",
     code: "access_invitation_links_unavailable",
