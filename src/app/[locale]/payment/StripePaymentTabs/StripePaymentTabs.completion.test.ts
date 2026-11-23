@@ -3,7 +3,7 @@ import test from "node:test";
 
 import type { PaymentIntent } from "@stripe/stripe-js";
 
-import { installJsonFetchFixture } from "../../../../tests/fixtures/providers";
+import { installJsonFetchFixture } from "../../../../../tests/fixtures/providers";
 import {
   cancelUnusedPaymentIntents,
   createResultPageUrl,

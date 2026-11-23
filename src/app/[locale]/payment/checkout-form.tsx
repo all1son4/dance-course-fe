@@ -4,9 +4,6 @@ import { useId, useState } from "react";
 import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import Input from "@/components/common/Input";
-import StripePaymentTabs, {
-  type StripePaymentTabsProps,
-} from "@/components/other/StripePaymentTabs";
 import {
   type PaymentAgreementFieldName,
   type PaymentFieldStep,
@@ -53,6 +50,7 @@ import {
   type RenewalStatus,
   type RenewalStatusTone,
 } from "./payment.helpers";
+import StripePaymentTabs, { type StripePaymentTabsProps } from "./StripePaymentTabs";
 
 /** Anchors the step buttons move the buyer to. */
 export const CHECKOUT_CONSENT_ID = "checkout-accept-all";

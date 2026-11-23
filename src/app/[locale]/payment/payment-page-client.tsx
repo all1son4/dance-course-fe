@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from "react";
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
 import EmailSuggestion from "@/components/common/EmailSuggestion";
-import type { StripePaymentTabsProps } from "@/components/other/StripePaymentTabs";
 import type { CountryOption } from "@/constants/countries";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import {
@@ -99,6 +98,7 @@ import {
   shouldMoveCheckoutFocus,
   STRIPE_INTENT_ERROR_TRANSLATION_KEYS,
 } from "./payment.helpers";
+import type { StripePaymentTabsProps } from "./StripePaymentTabs";
 import { useCheckoutAnalytics } from "./use-checkout-analytics";
 import { useCheckoutDraft } from "./use-checkout-draft";
 import { useTelegramRenewal } from "./use-telegram-renewal";
