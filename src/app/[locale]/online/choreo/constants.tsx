@@ -137,13 +137,32 @@ const getBundleCompareAtPrices = (
     : undefined;
 };
 
+/** Black Friday copy for the cards; present only while the campaign runs. */
+export type ChoreoCampaignCopy = {
+  badge: string;
+  priceLabel: string;
+  regularPriceLabel: string;
+};
+
 const getChoreoPriceAnchor = (
   code: SellableProductCode,
   t: Translate,
   catalogProducts: readonly SellableProduct[],
   anchorOffer: SellableProductOffer,
   hasSingleOffer: boolean,
+  campaign: ChoreoCampaignCopy | null,
 ): ChoreoCardPriceAnchor | undefined => {
+  // A campaign price strikes the offer's own regular price.
+  if (campaign && anchorOffer.compareAtPrices) {
+    return {
+      label: campaign.regularPriceLabel,
+      compareAt: formatOfferPrice(anchorOffer.compareAtPrices),
+      current: hasSingleOffer
+        ? undefined
+        : `${t("choreoCard.priceFrom")} ${formatOfferPrice(anchorOffer.prices)}`,
+    };
+  }
+
   const compareAtPrices = getBundleCompareAtPrices(code, anchorOffer, catalogProducts);
   if (!compareAtPrices) return undefined;
 
@@ -265,6 +284,7 @@ export const getChoreoSuggestions = (
 export const getChoreos = (
   t: Translate,
   catalogProducts: readonly SellableProduct[],
+  campaign: ChoreoCampaignCopy | null = null,
 ): ChoreoCardData[] =>
   CHOREO_CATALOGUE_PRODUCT_CODES.flatMap((code): ChoreoCardData[] => {
     const product = catalogProducts.find((candidate) => candidate.code === code);
@@ -291,7 +311,11 @@ export const getChoreos = (
         id: code,
         analyticsId: code,
         price: singleOffer ? formatOfferPrice(singleOffer.prices) : undefined,
-        priceLabel: singleOffer ? t("priceLabel") : undefined,
+        priceLabel: singleOffer
+          ? campaign && singleOffer.compareAtPrices
+            ? campaign.priceLabel
+            : t("priceLabel")
+          : undefined,
         highlights: CHOREO_CARD_HIGHLIGHT_KEYS.map((key) => t(key)),
         priceAnchor: getChoreoPriceAnchor(
           code,
@@ -299,7 +323,10 @@ export const getChoreos = (
           catalogProducts,
           anchorOffer,
           Boolean(singleOffer),
+          campaign,
         ),
+        campaignBadge:
+          campaign && anchorOffer.compareAtPrices ? campaign.badge : undefined,
         ...presentation,
         ...copy,
         firstButtonOptions: buildChoreoButtonOptions(product, t, withoutMentorOffer),

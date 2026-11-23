@@ -7,7 +7,7 @@ import type { AnchorHTMLAttributes, HTMLAttributeAnchorTarget, ReactNode } from 
  */
 export type InteractiveCardFrost = "static" | "live";
 
-export type InteractiveCardOccasionTheme = "halloween";
+export type InteractiveCardOccasionTheme = "halloween" | "black-friday";
 
 export type InteractiveCardOccasion = {
   theme: InteractiveCardOccasionTheme;

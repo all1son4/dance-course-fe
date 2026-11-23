@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import ChoreoCard from "@/components/cards/ChoreoCard";
 import StructuredData from "@/components/common/StructuredData";
 import StickyCta from "@/components/other/StickyCta";
+import { isBlackFridayActive } from "@/lib/black-friday";
 import { getStorefrontSellableProducts } from "@/lib/sales-availability";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
@@ -17,13 +18,24 @@ export default async function ChoreoCatalogueSection() {
   // Every string the cards need - product titles, offer labels, the bundle's
   // heading - is catalogue copy, so the translator is bound to SellableProducts
   // rather than to this page's own namespace.
-  const [t, pageT, catalogProducts] = await Promise.all([
+  const [t, pageT, blackFridayT, catalogProducts] = await Promise.all([
     getTranslations("SellableProducts"),
     getTranslations("ChoreoPage"),
+    getTranslations("BlackFriday"),
     getStorefrontSellableProducts(),
   ]);
   const translate = (key: string) => t(key);
-  const choreos = getChoreos(translate, catalogProducts);
+  const choreos = getChoreos(
+    translate,
+    catalogProducts,
+    isBlackFridayActive()
+      ? {
+          badge: blackFridayT("cards.choreoLabel"),
+          priceLabel: blackFridayT("checkout.priceLabel"),
+          regularPriceLabel: blackFridayT("choreo.regularPrice"),
+        }
+      : null,
+  );
   if (choreos.length === 0) return null;
   const coursesStructuredData = getOpenChoreoCourses(translate, catalogProducts).map(
     ({ name, offers }) =>

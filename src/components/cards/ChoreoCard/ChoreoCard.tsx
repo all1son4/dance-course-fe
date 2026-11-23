@@ -6,6 +6,7 @@ import { previewClipRootProps } from "@/lib/preview-clip";
 
 import {
   ButtonBox,
+  CampaignBadge,
   CARD_MEDIA_RADIUS,
   CardContainer,
   CardFooter,
@@ -31,6 +32,7 @@ import type { ChoreoCardProps } from "./ChoreoCard.types";
 
 export default function ChoreoCard({
   analyticsId,
+  campaignBadge,
   firstButtonOptions,
   highlights,
   icon,
@@ -59,7 +61,12 @@ export default function ChoreoCard({
   return (
     <CardContainer {...(previewSrc ? previewClipRootProps : {})}>
       {icon && <IconBox className="choreoCardIconBox">{icon}</IconBox>}
-      <CardSurface className="choreoCardSurface" $isSpecialOffer={specialOffer}>
+      <CardSurface
+        className="choreoCardSurface"
+        $isCampaign={Boolean(campaignBadge)}
+        $isSpecialOffer={specialOffer}
+      >
+        {campaignBadge && <CampaignBadge>{campaignBadge}</CampaignBadge>}
         {videoSrc && (
           <VideoPlayer
             analyticsId={analyticsId}
@@ -108,7 +115,7 @@ export default function ChoreoCard({
           {(price || hasFirstButton || hasSecondButton) && (
             <CardFooter>
               {price && (
-                <CardPriceFact>
+                <CardPriceFact $isCampaign={Boolean(campaignBadge)}>
                   {priceLabel && <CardPriceLabel>{priceLabel}</CardPriceLabel>}
                   <CardPriceLine>
                     <CardPrice>{price}</CardPrice>

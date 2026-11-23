@@ -1679,12 +1679,16 @@
       "description": "Lekcje z poprzednich cykli grupy online i materiały bonusowe — 16 tygodni dostępu w cenie 8.",
       "priceLabel": "16 tygodni zamiast",
       "regularTerm": "8",
-      "cta": "Odbierz 16 tygodni"
+      "cta": "Odbierz 16 tygodni",
+      "cohortNote": "Lekcje cyklu 3.0 trafią do biblioteki zaraz po jego zakończeniu w styczniu — i zostaną z Tobą do końca 16 tygodni.",
+      "shortCohortNote": "W styczniu dojdą lekcje cyklu 3.0."
     },
     "cards": {
       "choreoLabel": "Black Friday −33%",
-      "hubLabel": "Black Friday · 16 tygodni w cenie 8",
-      "hubAccessValue": "Od razu po zakupie, na 16 tygodni zamiast 8"
+      "hubLabel": "Black Friday ×2",
+      "plateLabel": "Black Friday · do 30 listopada",
+      "choreoPlate": "Tutoriale o jedną trzecią taniej",
+      "hubPlate": "16 tygodni w cenie 8"
     },
     "hubPage": {
       "badge": "Black Friday",

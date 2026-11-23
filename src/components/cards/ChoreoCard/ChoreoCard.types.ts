@@ -42,6 +42,8 @@ export type ChoreoCardProps = {
   /** Two or three short facts shown as quiet chips under the title. */
   highlights?: readonly string[];
   priceAnchor?: ChoreoCardPriceAnchor;
+  /** A campaign label over the media, e.g. "Black Friday −33%". */
+  campaignBadge?: string;
   specialOffer?: boolean;
   icon?: ReactNode;
 };

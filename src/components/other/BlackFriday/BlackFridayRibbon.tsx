@@ -73,12 +73,10 @@ export default function BlackFridayRibbon({
 
   return (
     <Ribbon
-      href={`/#${sectionId}`}
-      aria-label={ariaLabel}
+      role="region"
+      aria-label={title}
       aria-hidden={isHidden || undefined}
       data-hidden={isHidden || undefined}
-      prefetch={false}
-      tabIndex={isHidden ? -1 : undefined}
     >
       <RibbonTitle>{title}</RibbonTitle>
       <RibbonDivider aria-hidden="true" />
@@ -91,7 +89,14 @@ export default function BlackFridayRibbon({
           variant="inline"
         />
       </RibbonTimer>
-      <RibbonCta aria-hidden="true">{cta}</RibbonCta>
+      <RibbonCta
+        aria-label={ariaLabel}
+        href={`/#${sectionId}`}
+        prefetch={false}
+        tabIndex={isHidden ? -1 : undefined}
+      >
+        {cta}
+      </RibbonCta>
     </Ribbon>
   );
 }

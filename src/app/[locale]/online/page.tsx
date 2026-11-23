@@ -8,11 +8,18 @@ import Contacts from "@/components/other/Contacts";
 import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   CHOREO_CATALOGUE_PRODUCT_CODES,
+  formatOfferPrice,
+  INSPIRATION_HUB_ACCESS_OFFER_ID,
+  LOVE_ME_IN_THE_MORNING_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
+import { isBlackFridayActive } from "@/lib/black-friday";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { imageFadeProps } from "@/lib/reveal";
-import { getProductsSaleState } from "@/lib/sales-availability";
+import {
+  getProductsSaleState,
+  getStorefrontSellableProducts,
+} from "@/lib/sales-availability";
 import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
 import { toPlainTitle } from "./_shared/content";
@@ -43,20 +50,51 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function Online() {
-  const [t, metadataT, commonT, choreoSaleState, hubSaleState] = await Promise.all([
+  const [
+    t,
+    metadataT,
+    commonT,
+    blackFridayT,
+    catalogProducts,
+    choreoSaleState,
+    hubSaleState,
+  ] = await Promise.all([
     getTranslations("OnlinePage"),
     getTranslations("Metadata"),
     getTranslations("Common"),
+    getTranslations("BlackFriday"),
+    getStorefrontSellableProducts(),
     getProductsSaleState(
       CHOREO_CATALOGUE_PRODUCT_CODES.map((code) => SELLABLE_PRODUCTS[code].id),
     ),
     getProductsSaleState([SELLABLE_PRODUCTS["inspiration-hub"].id]),
   ]);
+  const catalogOffers = catalogProducts.flatMap((product) => product.offers);
+  // The tutorials on sale share one campaign price; any of them names it.
+  const choreoOffer = catalogOffers.find(
+    (offer) => offer.id === LOVE_ME_IN_THE_MORNING_OFFER_ID,
+  );
+  const hubOffer = catalogOffers.find(
+    (offer) => offer.id === INSPIRATION_HUB_ACCESS_OFFER_ID,
+  );
   const onlineCoursesArray = getOnlineCoursesArray(
     (key) => t(key),
     (key) => commonT(key),
     choreoSaleState,
     hubSaleState,
+    isBlackFridayActive()
+      ? {
+          choreoLabel: blackFridayT("cards.choreoLabel"),
+          choreoPlateLabel: blackFridayT("checkout.priceLabel"),
+          choreoPrice: choreoOffer ? formatOfferPrice(choreoOffer.prices) : "",
+          choreoRegularPrice: choreoOffer?.compareAtPrices
+            ? formatOfferPrice(choreoOffer.compareAtPrices)
+            : undefined,
+          hubLabel: blackFridayT("cards.hubLabel"),
+          hubPlateLabel: blackFridayT("cards.hubPlate"),
+          hubPrice: hubOffer ? formatOfferPrice(hubOffer.prices) : "",
+        }
+      : null,
   );
   const onlineCoursesStructuredData = {
     "@context": "https://schema.org",

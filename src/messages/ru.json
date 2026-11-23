@@ -1693,12 +1693,16 @@
       "description": "Уроки прошлых потоков онлайн-группы и бонусные материалы — 16 недель доступа по цене 8.",
       "priceLabel": "16 недель вместо",
       "regularTerm": "8",
-      "cta": "Забрать 16 недель"
+      "cta": "Забрать 16 недель",
+      "cohortNote": "Уроки потока 3.0 войдут в библиотеку сразу после его окончания в январе — и будут с тобой до конца 16 недель.",
+      "shortCohortNote": "В январе добавятся уроки потока 3.0."
     },
     "cards": {
       "choreoLabel": "Black Friday −33%",
-      "hubLabel": "Black Friday · 16 недель по цене 8",
-      "hubAccessValue": "Сразу после покупки, на 16 недель вместо 8"
+      "hubLabel": "Black Friday ×2",
+      "plateLabel": "Black Friday · до 30 ноября",
+      "choreoPlate": "Разборы на треть дешевле",
+      "hubPlate": "16 недель по цене 8"
     },
     "hubPage": {
       "badge": "Black Friday",

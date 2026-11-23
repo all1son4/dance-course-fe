@@ -116,7 +116,9 @@ export default async function BlackFridaySection() {
           <OfferText>
             <OfferBadge>{t("hub.badge")}</OfferBadge>
             <OfferTitle>{t("hub.title")}</OfferTitle>
-            <OfferDescription>{t("hub.description")}</OfferDescription>
+            <OfferDescription>
+              {t("hub.description")} {t("hub.shortCohortNote")}
+            </OfferDescription>
           </OfferText>
           <OfferFooter>
             {hub ? (

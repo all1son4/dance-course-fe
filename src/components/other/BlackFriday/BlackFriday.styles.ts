@@ -1,22 +1,19 @@
-import { css, styled } from "styled-components";
+import { keyframes, styled } from "styled-components";
 
 import { Link } from "@/i18n/navigation";
+import {
+  BLACK_FRIDAY_INK,
+  blackFridayLabel,
+  blackFridayPill,
+  blackFridaySurface,
+} from "@/styles/mixins/blackFriday";
 
 /*
  * Black Friday look: the site's own brand red on near-black, the same radii and
  * glass edges as the rest of the site. One palette for the ribbon, the home
  * section and the themed cards.
  */
-export const BLACK_FRIDAY_INK = "#0c0b0d";
 const RED_GLOW = "rgba(196, 20, 24, 0.55)";
-
-const darkSurface = css`
-  color: var(--ink-inverse);
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(124, 0, 2, 0.75), transparent 52%),
-    radial-gradient(90% 120% at 100% 100%, rgba(124, 0, 2, 0.45), transparent 58%),
-    ${BLACK_FRIDAY_INK};
-`;
 
 /* ---------- Countdown ---------- */
 
@@ -73,7 +70,7 @@ export const CountdownUnit = styled.span`
 
 /* ---------- Ribbon under the header ---------- */
 
-export const Ribbon = styled(Link)`
+export const Ribbon = styled.div`
   position: fixed;
   z-index: 49;
   top: calc(var(--header-top) + var(--safe-area-top) + var(--header-height) + 10px);
@@ -81,26 +78,16 @@ export const Ribbon = styled(Link)`
   transform: translateX(-50%);
   max-width: calc(100% - 40px);
   height: 40px;
-  padding: 0 8px 0 18px;
+  padding: 0 6px 0 18px;
   display: inline-flex;
   align-items: center;
   gap: 12px;
   border-radius: var(--radius-pill);
   font-size: 14px;
   line-height: 1;
-  text-decoration: none;
   white-space: nowrap;
-  color: var(--ink-inverse);
-  background:
-    radial-gradient(140% 220% at 0% 50%, rgba(124, 0, 2, 0.85), transparent 60%),
-    rgba(12, 11, 13, 0.92);
-  box-shadow:
-    0 10px 30px rgba(12, 11, 13, 0.28),
-    0 0 24px rgba(124, 0, 2, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  ${blackFridayPill}
   transition:
-    box-shadow var(--motion-base) var(--ease-standard),
     opacity var(--motion-base) var(--ease-standard),
     visibility 0s linear 0s;
 
@@ -122,26 +109,11 @@ export const Ribbon = styled(Link)`
     }
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      box-shadow:
-        0 12px 34px rgba(12, 11, 13, 0.34),
-        0 0 32px rgba(196, 20, 24, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.12);
-    }
-  }
-
-  &:focus-visible {
-    outline: var(--focus-ring);
-    outline-offset: 3px;
-  }
-
   @media (max-width: 767px) {
     top: calc(10px + var(--safe-area-top) + 59px + 8px);
     height: 36px;
     gap: 10px;
-    padding: 0 6px 0 16px;
+    padding: 0 5px 0 16px;
     font-size: 13px;
   }
 
@@ -151,9 +123,9 @@ export const Ribbon = styled(Link)`
 `;
 
 export const RibbonTitle = styled.span`
-  font-weight: 800;
+  ${blackFridayLabel}
+  font-size: inherit;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
 `;
 
 export const RibbonDivider = styled.span`
@@ -169,30 +141,96 @@ export const RibbonTimer = styled.span`
   color: rgba(255, 255, 255, 0.7);
 `;
 
-export const RibbonCta = styled.span`
+/* A price-tag glint: a light sweep across the button. */
+const glint = keyframes`
+  from { transform: translateX(-120%) skewX(-20deg); }
+  to { transform: translateX(220%) skewX(-20deg); }
+`;
+
+/* The press: a quick squash and bounce, like stamping a sale tag. */
+const stamp = keyframes`
+  0% { transform: scale(1); }
+  35% { transform: scale(0.9); }
+  70% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+`;
+
+/* The only link in the ribbon: it leads to the Black Friday section. */
+export const RibbonCta = styled(Link)`
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   height: 28px;
   padding: 0 12px;
   border-radius: var(--radius-pill);
   font-weight: 700;
+  text-decoration: none;
   color: ${BLACK_FRIDAY_INK};
   background: var(--ink-inverse);
+  transition: transform var(--motion-fast) var(--ease-emphasized);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: -1;
+    width: 45%;
+    background: linear-gradient(90deg, transparent, rgba(196, 20, 24, 0.28), transparent);
+    transform: translateX(-120%) skewX(-20deg);
+    pointer-events: none;
+  }
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: none;
+    color: ${BLACK_FRIDAY_INK};
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      transform: translateY(-1px) scale(1.04);
+    }
+
+    &:hover::after {
+      animation: ${glint} 700ms var(--ease-standard) both;
+    }
+  }
+
+  &:active {
+    animation: ${stamp} 320ms var(--ease-emphasized);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ink-inverse);
+    outline-offset: 2px;
+  }
 
   @media (max-width: 767px) {
     height: 26px;
     padding: 0 10px;
   }
 
-  @media (max-width: 400px) {
-    display: none;
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover,
+    &:active {
+      transform: none;
+      animation: none;
+    }
+
+    &:hover::after {
+      animation: none;
+    }
   }
 `;
 
 /* ---------- Home section ---------- */
 
 export const Section = styled.section`
-  ${darkSurface}
+  ${blackFridaySurface}
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -450,29 +488,48 @@ export const Terms = styled.p`
   color: rgba(255, 255, 255, 0.56);
 `;
 
-/* ---------- Shared badge for themed cards and pages ---------- */
+/* ---------- Shared pieces for themed cards and pages ---------- */
 
+/** "BLACK FRIDAY −33%": the same pill as the ribbon. */
 export const CampaignBadge = styled.span`
+  ${blackFridayPill}
+  ${blackFridayLabel}
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 12px;
+  padding: 8px 14px;
   border-radius: var(--radius-pill);
-  font-size: 12px;
-  line-height: 1;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--ink-inverse);
-  background:
-    radial-gradient(140% 220% at 0% 50%, rgba(124, 0, 2, 0.9), transparent 62%),
-    ${BLACK_FRIDAY_INK};
-  box-shadow:
-    0 6px 18px rgba(12, 11, 13, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+`;
 
-  @media (forced-colors: active) {
-    border: 1px solid CanvasText;
+/** The campaign price or term on a dark plate, so it reads as the offer. */
+export const CampaignPlate = styled.div`
+  ${blackFridayPill}
+  box-sizing: border-box;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border-radius: var(--radius-control);
+`;
+
+export const CampaignPlateLabel = styled.span`
+  ${blackFridayLabel}
+  color: rgba(255, 255, 255, 0.72);
+`;
+
+export const CampaignPlateValue = styled.span`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  font-size: var(--text-lead);
+  line-height: 1.25;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+
+  & s {
+    font-size: var(--text-small);
+    color: rgba(255, 255, 255, 0.56);
+    white-space: nowrap;
   }
 `;

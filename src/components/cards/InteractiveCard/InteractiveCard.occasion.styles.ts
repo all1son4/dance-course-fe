@@ -1,5 +1,11 @@
 import { css, styled } from "styled-components";
 
+import {
+  blackFridayCardEdge,
+  blackFridayLabel,
+  blackFridayPill,
+} from "@/styles/mixins/blackFriday";
+
 import type { InteractiveCardOccasionTheme } from "./InteractiveCard.types";
 
 // Each occasion owns its palette. The card's layout and interactions stay shared.
@@ -50,7 +56,31 @@ export const occasionStyles: Record<
       box-shadow: none;
     }
   `,
+  // The card stays light; a near-black edge and the brand red say "campaign".
+  "black-friday": css`
+    --card-occasion-accent: var(--brand);
+
+    /* No isolation here: the glass highlight would blend into the photo. */
+    ${blackFridayCardEdge}
+  `,
 };
+
+/* The campaign label over the card photo, in the Black Friday ribbon's look. */
+export const OccasionPhotoBadge = styled.span`
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  ${blackFridayPill}
+  ${blackFridayLabel}
+
+  @media (max-width: 550px) {
+    top: 16px;
+    left: 16px;
+  }
+`;
 
 export const OccasionInlineLabel = styled.span`
   color: var(--card-occasion-accent);
