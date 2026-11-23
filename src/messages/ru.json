@@ -274,6 +274,7 @@
     "hero": {
       "title": "Frame Up",
       "titleDetail": "Strip с Анной Строк — онлайн и в Варшаве",
+      "subtitle": "Раскрой себя в стиле Frame Up",
       "description": "Учись танцевать красиво, смело и чувственно, в атмосфере полной свободы и внутренней силы",
       "hint": "Выбирай свой формат обучения",
       "buttons": {
@@ -1657,5 +1658,61 @@
       "otherAccount": "Это приглашение уже подтверждено другим аккаунтом Telegram. Войди в Telegram под тем аккаунтом, которым подтверждали раньше, или напиши нам."
     },
     "support": "Написать нам"
+  },
+  "BlackFriday": {
+    "ribbon": {
+      "title": "Black Friday",
+      "cta": "Смотреть",
+      "ariaLabel": "Black Friday до 30 ноября — смотреть предложения"
+    },
+    "countdown": {
+      "label": "До конца акции",
+      "shortDays": "д",
+      "days": "дней",
+      "hours": "часов",
+      "minutes": "минут",
+      "seconds": "секунд"
+    },
+    "section": {
+      "eyebrow": "Только до 30 ноября",
+      "titleTop": "Black",
+      "titleBottom": "Friday",
+      "lead": "Неделя самых выгодных цен на онлайн-форматы: разборы хореографий на треть дешевле, а библиотека Inspiration HUB — на 16 недель по цене 8.",
+      "terms": "Цены действуют до 30 ноября, 23:59 по варшавскому времени."
+    },
+    "choreo": {
+      "badge": "−33%",
+      "title": "Разборы хореографий",
+      "description": "«Her Lies» и «Love me in the morning»: подробный разбор в Telegram, доступ 60 дней.",
+      "cta": "Выбрать разбор",
+      "regularPrice": "Обычная цена"
+    },
+    "hub": {
+      "badge": "×2",
+      "title": "Inspiration HUB",
+      "description": "Уроки прошлых потоков онлайн-группы и бонусные материалы — 16 недель доступа по цене 8.",
+      "priceLabel": "16 недель вместо",
+      "regularTerm": "8",
+      "cta": "Забрать 16 недель"
+    },
+    "cards": {
+      "choreoLabel": "Black Friday −33%",
+      "hubLabel": "Black Friday · 16 недель по цене 8",
+      "hubAccessValue": "Сразу после покупки, на 16 недель вместо 8"
+    },
+    "hubPage": {
+      "badge": "Black Friday",
+      "accessValue": "16 недель",
+      "regularAccess": "8 недель",
+      "priceLabel": "16 недель доступа",
+      "note": "Купи до 30 ноября — получи 16 недель по цене 8. Срок считается от оплаты."
+    },
+    "checkout": {
+      "priceLabel": "Цена Black Friday",
+      "hubSummary": "Inspiration Hub на 16 недель по цене 8 — предложение Black Friday."
+    },
+    "myAccess": {
+      "chip": "Black Friday"
+    }
   }
 }

@@ -274,6 +274,7 @@
     "hero": {
       "title": "Frame Up",
       "titleDetail": "Strip z Anną Strok — online i w Warszawie",
+      "subtitle": "Odkryj siebie w stylu Frame Up",
       "description": "Ucz się tańczyć pięknie, odważnie i zmysłowo w atmosferze wolności i wewnętrznej siły.",
       "hint": "Wybierz swój format nauki",
       "buttons": {
@@ -1643,5 +1644,61 @@
       "otherAccount": "To zaproszenie jest już potwierdzone innym kontem Telegram. Zaloguj się w Telegramie na konto, którym potwierdzano wcześniej, albo napisz do nas."
     },
     "support": "Napisz do nas"
+  },
+  "BlackFriday": {
+    "ribbon": {
+      "title": "Black Friday",
+      "cta": "Zobacz",
+      "ariaLabel": "Black Friday do 30 listopada — zobacz oferty"
+    },
+    "countdown": {
+      "label": "Do końca promocji",
+      "shortDays": "d",
+      "days": "dni",
+      "hours": "godz.",
+      "minutes": "min",
+      "seconds": "sek."
+    },
+    "section": {
+      "eyebrow": "Tylko do 30 listopada",
+      "titleTop": "Black",
+      "titleBottom": "Friday",
+      "lead": "Tydzień najlepszych cen na formaty online: tutoriale choreografii o jedną trzecią taniej, a biblioteka Inspiration HUB — 16 tygodni w cenie 8.",
+      "terms": "Ceny obowiązują do 30 listopada, 23:59 czasu warszawskiego."
+    },
+    "choreo": {
+      "badge": "−33%",
+      "title": "Tutoriale choreografii",
+      "description": "„Her Lies” i „Love me in the morning”: szczegółowy rozbiór na Telegramie, dostęp na 60 dni.",
+      "cta": "Wybierz tutorial",
+      "regularPrice": "Zwykła cena"
+    },
+    "hub": {
+      "badge": "×2",
+      "title": "Inspiration HUB",
+      "description": "Lekcje z poprzednich cykli grupy online i materiały bonusowe — 16 tygodni dostępu w cenie 8.",
+      "priceLabel": "16 tygodni zamiast",
+      "regularTerm": "8",
+      "cta": "Odbierz 16 tygodni"
+    },
+    "cards": {
+      "choreoLabel": "Black Friday −33%",
+      "hubLabel": "Black Friday · 16 tygodni w cenie 8",
+      "hubAccessValue": "Od razu po zakupie, na 16 tygodni zamiast 8"
+    },
+    "hubPage": {
+      "badge": "Black Friday",
+      "accessValue": "16 tygodni",
+      "regularAccess": "8 tygodni",
+      "priceLabel": "16 tygodni dostępu",
+      "note": "Kup do 30 listopada i otrzymaj 16 tygodni w cenie 8. Dostęp liczy się od płatności."
+    },
+    "checkout": {
+      "priceLabel": "Cena Black Friday",
+      "hubSummary": "Inspiration Hub na 16 tygodni w cenie 8 — oferta Black Friday."
+    },
+    "myAccess": {
+      "chip": "Black Friday"
+    }
   }
 }
