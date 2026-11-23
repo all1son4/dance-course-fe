@@ -1,12 +1,6 @@
 import styled, { keyframes } from "styled-components";
 
-import {
-  blackFridayBackdrop,
-  blackFridayCardEdge,
-  blackFridayLabel,
-  blackFridayPill,
-  blackFridayStampIn,
-} from "@/styles/mixins/blackFriday";
+import { blackFridayBackdrop, blackFridayCardEdge } from "@/styles/mixins/blackFriday";
 
 import { porcelain, quietAction } from "./page.styles";
 
@@ -121,6 +115,10 @@ export const AccessCard = styled.li`
   &[data-campaign] {
     position: relative;
     ${blackFridayCardEdge}
+
+    @media (max-width: 550px) {
+      padding-right: 84px;
+    }
   }
 
   /* A tap on a phone's folding card presses it in a touch. */
@@ -520,68 +518,73 @@ export const ActionResult = styled.p<{ $tone: "ok" | "error" }>`
   }
 `;
 
-/* The Black Friday mark next to the title, the same pill as on the storefront. */
-export const CampaignMark = styled.span`
-  ${blackFridayPill}
-  ${blackFridayLabel}
-  display: inline-flex;
-  align-items: center;
-  margin-left: 10px;
-  padding: 6px 11px;
-  border-radius: var(--radius-pill);
-  vertical-align: 0.2em;
-  font-size: 11px;
-
-  /* The title styles its own spans muted; the mark keeps its white text. */
-  ${CardTitle} && {
-    margin-left: 10px;
-    font-weight: 800;
-    color: var(--ink-inverse);
-  }
-
-  ${blackFridayStampIn}
-`;
-
 const inkStamp = keyframes`
-  0% { opacity: 0; transform: rotate(-22deg) scale(1.8); }
-  60% { opacity: 0.9; transform: rotate(-9deg) scale(0.95); }
-  100% { opacity: 0.9; transform: rotate(-11deg) scale(1); }
+  0% { opacity: 0; transform: rotate(-24deg) scale(1.8); }
+  60% { opacity: 0.92; transform: rotate(-10deg) scale(0.95); }
+  100% { opacity: 0.92; transform: rotate(-12deg) scale(1); }
 `;
 
 /*
- * A red-ink rubber stamp on a card bought on Black Friday, in the spirit of the
- * page's other stamps: «BLACK FRIDAY» over the figure (−33%, ×2). It lands once,
- * the first time the card is seen.
+ * The round red-ink Black Friday stamp on a card bought on its terms (see
+ * CampaignInkStamp). It lands once, the first time the card is seen.
  */
 export const InkStamp = styled.span`
   position: absolute;
-  right: 22px;
-  bottom: 18px;
+  right: 18px;
+  bottom: 12px;
   z-index: 1;
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  padding: 7px 12px 6px;
-  border: 2.5px solid rgba(170, 16, 22, 0.8);
-  border-radius: 14px;
-  color: rgba(170, 16, 22, 0.85);
-  transform: rotate(-11deg);
-  opacity: 0.9;
+  width: 92px;
+  height: 92px;
+  transform: rotate(-12deg);
+  opacity: 0.92;
   pointer-events: none;
   mix-blend-mode: multiply;
 
-  & small {
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+  & svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
   }
 
-  & b {
-    font-size: 26px;
-    line-height: 1;
+  & svg circle {
+    fill: none;
+    stroke: rgb(158, 14, 20);
+  }
+
+  & svg .rim {
+    stroke-width: 2.6;
+  }
+
+  & svg .line {
+    stroke-width: 1;
+  }
+
+  & svg .thin {
+    stroke-width: 0.8;
+    stroke-dasharray: 1.6 2.2;
+  }
+
+  & svg text {
+    fill: rgb(158, 14, 20);
+    text-anchor: middle;
+    font-family: var(--font-sans);
     font-weight: 800;
-    letter-spacing: -0.02em;
+  }
+
+  & svg .arc {
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+  }
+
+  & svg .arc.small {
+    font-size: 7.5px;
+    letter-spacing: 0.2em;
+  }
+
+  & svg .figure {
+    font-size: 25px;
+    letter-spacing: -0.03em;
   }
 
   &:not([data-pending]) {
@@ -596,13 +599,14 @@ export const InkStamp = styled.span`
     animation: none !important;
   }
 
+  /* Phones: smaller, in the top corner under the fold mark; the card keeps a
+     right margin for it (AccessCard), so no line runs under the stamp. */
   @media (max-width: 550px) {
-    right: 16px;
-    bottom: 14px;
-
-    & b {
-      font-size: 22px;
-    }
+    top: 54px;
+    right: 10px;
+    bottom: auto;
+    width: 66px;
+    height: 66px;
   }
 
   @media (forced-colors: active) {

@@ -58,7 +58,6 @@ import { normalizedSiteUrl } from "@/lib/seo";
 import {
   CalendarSubscribe,
   CampaignInkStamp,
-  CampaignMarkStamp,
   CycleStamp,
   FoldingCard,
   ReissueInvite,
@@ -315,9 +314,6 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
               <span aria-label={t("cards.count", { count: card.count })}>
                 × {card.count}
               </span>
-            )}
-            {card.campaign === "black-friday" && (
-              <CampaignMarkStamp>{blackFridayT("myAccess.chip")}</CampaignMarkStamp>
             )}
           </CardTitle>
           {ATTENTION_CHIPS.has(card.chip) && (
