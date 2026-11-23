@@ -50,14 +50,8 @@ export const formatDayMonthTime = (value: string) =>
     timeZone: "Europe/Warsaw",
   }).format(new Date(value));
 
-/** Russian plural by the last one and two digits: 1 письмо, 2 письма, 5 писем. */
-export const plural = (count: number, one: string, few: string, many: string) => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
-};
+/** Russian plural: 1 письмо, 2 письма, 5 писем (one helper for the whole site). */
+export { plural } from "@/lib/plural";
 
 /** The Warsaw wall-clock parts of a moment, whatever the device's time zone. */
 const warsawParts = (date: Date) =>

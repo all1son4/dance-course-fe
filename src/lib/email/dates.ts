@@ -25,22 +25,3 @@ export const formatEmailDate = (
     .format(date)
     .replace(/\s?г\./u, "");
 };
-
-/** The Russian form for a count: 1 день, 2 дня, 5 дней (11–14 take the third). */
-export const getRussianPlural = (
-  count: number,
-  [one, few, many]: [string, string, string],
-) => {
-  const lastTwoDigits = Math.abs(count) % 100;
-  const lastDigit = lastTwoDigits % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
-    return many;
-  }
-
-  if (lastDigit === 1) {
-    return one;
-  }
-
-  return lastDigit >= 2 && lastDigit <= 4 ? few : many;
-};

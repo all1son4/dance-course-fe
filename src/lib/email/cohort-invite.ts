@@ -1,4 +1,5 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { plural, pluralize } from "@/lib/plural";
 
 import { formatEmailDate } from "./dates";
 import { buildMyAccessEmailBlock, escapeEmailHtml } from "./my-access";
@@ -53,14 +54,6 @@ const ROUND: Record<
   },
 };
 
-const pickPlural = (count: number, one: string, few: string, many: string) => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
-};
-
 const COPY = {
   en: {
     subject: (title: string) => `${title} - join the new round 🤍`,
@@ -93,7 +86,7 @@ const COPY = {
     open: (title: string, date: string) =>
       `Ruszyły zapisy do ${title} — startujemy ${date}!`,
     weeks: (weeks: number, round: string) =>
-      `Tym razem spędzimy razem ${weeks} ${pickPlural(weeks, "tydzień", "tygodnie", "tygodni")}${round}.`,
+      `Tym razem spędzimy razem ${weeks} ${pluralize("pl", weeks, ["tydzień", "tygodnie", "tygodni"])}${round}.`,
     choose: "Wybierz swoją opcję:",
     hubName: "Tylko Inspiration Hub",
     hub: (title: string) =>
@@ -115,7 +108,7 @@ const COPY = {
     open: (title: string, date: string) =>
       `Открыта запись в ${title} — стартуем ${date}!`,
     weeks: (weeks: number, round: string) =>
-      `В этот раз мы проведём вместе ${weeks} ${pickPlural(weeks, "неделю", "недели", "недель")}${round}.`,
+      `В этот раз мы проведём вместе ${weeks} ${plural(weeks, "неделю", "недели", "недель")}${round}.`,
     choose: "Выбери свой вариант:",
     hubName: "Только Inspiration Hub",
     hub: (title: string) =>

@@ -932,5 +932,9 @@ test("«Прислать новую ссылку» for a joining invitation send
   assert.equal(sent.status, "sent");
   assert.equal(providers.emails.length, 1);
   assert.match(providers.emails[0]!.subject, /Twoje linki/u);
-  assert.equal((await sendInvitationLinks(purchaseId)).status, "limited");
+  // One links email per ten minutes: the answer says when trying again can work.
+  assert.deepEqual(await sendInvitationLinks(purchaseId), {
+    retryAfterSeconds: 600,
+    status: "limited",
+  });
 });

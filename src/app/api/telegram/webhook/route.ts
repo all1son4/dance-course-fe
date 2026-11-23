@@ -1,5 +1,6 @@
 import { upsertRegisteredTelegramChat } from "@/db/renewal-campaigns";
 import {
+  areEqualInTimingSafeWay,
   isPayloadTooLarge,
   jsonErrorNoStore,
   jsonNoStore,
@@ -333,7 +334,7 @@ const validateTelegramWebhookRequest = (request: Request): Response | null => {
 
   const receivedSecret = request.headers.get("x-telegram-bot-api-secret-token") ?? "";
 
-  if (receivedSecret !== webhookSecret) {
+  if (!areEqualInTimingSafeWay(receivedSecret, webhookSecret)) {
     return jsonErrorNoStore("invalid_webhook_secret", { status: 401 });
   }
 

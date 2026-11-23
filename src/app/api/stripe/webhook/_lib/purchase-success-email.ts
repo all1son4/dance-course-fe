@@ -5,8 +5,9 @@ import {
   SUPPORT_TELEGRAM_URL,
 } from "@/constants/links";
 import { formatPrice } from "@/constants/sellable-products";
-import { formatEmailDate, getRussianPlural } from "@/lib/email/dates";
+import { formatEmailDate } from "@/lib/email/dates";
 import { buildMyAccessEmailBlock, escapeEmailHtml } from "@/lib/email/my-access";
+import { pluralize } from "@/lib/plural";
 import { getResolvedCheckoutLocale } from "@/lib/stripe-checkout";
 
 /** HUB-D43: the Plus Hub of a cohort that has not started opens on its start day. */
@@ -17,15 +18,6 @@ const PLUS_HUB_SCHEDULED_COPY = {
 } as const;
 
 const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
-
-const getPolishWeeks = (weeks: number) => {
-  if (weeks === 1) return "tydzień";
-  const lastTwoDigits = weeks % 100;
-  const lastDigit = weeks % 10;
-  return lastDigit >= 2 && lastDigit <= 4 && !(lastTwoDigits >= 12 && lastTwoDigits <= 14)
-    ? "tygodnie"
-    : "tygodni";
-};
 
 const EMAIL_COPY = {
   en: {
@@ -149,7 +141,8 @@ const EMAIL_COPY = {
       privateLesson: "termin do ustalenia",
     },
     formatDays: (days: number) => `${days} ${days === 1 ? "dzień" : "dni"}`,
-    formatWeeks: (weeks: number) => `${weeks} ${getPolishWeeks(weeks)}`,
+    formatWeeks: (weeks: number) =>
+      `${weeks} ${pluralize("pl", weeks, ["tydzień", "tygodnie", "tygodni"])}`,
     inspirationHubAccessUntil: "Dostęp do Inspiration Hub ważny do {date}",
     amountLabel: "Kwota",
     autoReplyNote:
@@ -259,15 +252,15 @@ const EMAIL_COPY = {
     accessLabel: "Доступ",
     accessSummary: {
       days: (days: number) =>
-        `${days} ${getRussianPlural(days, ["день", "дня", "дней"])} с момента вступления`,
+        `${days} ${pluralize("ru", days, ["день", "дня", "дней"])} с момента вступления`,
       lifetime: "навсегда",
       onlineGroup: "без ограничения по сроку",
       privateLesson: "дата и время — по договорённости",
     },
     formatDays: (days: number) =>
-      `${days} ${getRussianPlural(days, ["день", "дня", "дней"])}`,
+      `${days} ${pluralize("ru", days, ["день", "дня", "дней"])}`,
     formatWeeks: (weeks: number) =>
-      `${weeks} ${getRussianPlural(weeks, ["неделя", "недели", "недель"])}`,
+      `${weeks} ${pluralize("ru", weeks, ["неделя", "недели", "недель"])}`,
     inspirationHubAccessUntil: "Доступ к Inspiration Hub — до {date}",
     amountLabel: "Сумма",
     autoReplyNote:

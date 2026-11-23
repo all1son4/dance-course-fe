@@ -54,7 +54,18 @@ export const useHubAdmin = ({
   );
 
   useEffect(() => {
-    if (isActive && isAuthorized && !loaded.current) void load();
+    // A new session reads afresh: after a logout or an expired session the old data
+    // and reissued links must not come back as current; an answer on its way is dropped.
+    if (!isAuthorized) {
+      sequence.current += 1;
+      loaded.current = false;
+      setHub(null);
+      setFailed(false);
+      setIsLoading(false);
+      setReissued({});
+      return;
+    }
+    if (isActive && !loaded.current) void load();
   }, [isActive, isAuthorized, load]);
 
   const changePreviewAt = (value: string) => {

@@ -42,15 +42,22 @@ type StripeIntentErrors = Partial<
   Record<SupportedCheckoutCurrency, StripeIntentErrorCode | null>
 >;
 type SellableCatalogStatus = "closed" | "loading" | "ready" | "unavailable";
+/**
+ * The codes the checkout can meet. Request-shape codes (invalid_origin and the like)
+ * cannot come from this client and fall back to the generic message.
+ */
 type StripeIntentErrorCode =
   | "catalog_unavailable"
   | "consent_evidence_failed"
+  | "hub_discount_verification_required"
   | "invalid_customer_data"
   | "missing_client_secret"
   | "missing_secret_key"
   | "online_group_campaign_not_configured"
+  | "online_group_cohort_unavailable"
   | "payment_intent_failed"
   | "payment_intent_request_failed"
+  | "rate_limited"
   | "required_consent_missing"
   | "renewal_campaign_inactive"
   | "renewal_payment_context_mismatch"
@@ -142,6 +149,12 @@ const getStripeIntentErrorCode = (error: unknown): StripeIntentErrorCode => {
   }
 
   if (error instanceof TypeError) {
+    return "payment_intent_request_failed";
+  }
+
+  // A gateway (502/504) answers with an HTML page: the reply never reached the app,
+  // so it is a transport failure like a dropped connection, not an app error code.
+  if (error instanceof SyntaxError) {
     return "payment_intent_request_failed";
   }
 
@@ -843,6 +856,7 @@ export class PaymentStore {
       } else if (
         errorCode === "catalog_unavailable" ||
         errorCode === "online_group_campaign_not_configured" ||
+        errorCode === "online_group_cohort_unavailable" ||
         errorCode === "missing_secret_key"
       ) {
         this.setCatalogUnavailable();

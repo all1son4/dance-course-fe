@@ -16,6 +16,7 @@ import {
   getOnlineGroupSale,
   ONLINE_GROUP_SALE_REFUSAL_LABELS,
 } from "@/lib/online-group-sale";
+import { plural } from "@/lib/plural";
 import { DAY_MS } from "@/lib/time";
 
 import { countRunningHubPeriods, getHubAdminOverview } from "./hub-admin";
@@ -51,14 +52,6 @@ const getAdminEnvironment = () =>
     : process.env.VERCEL_ENV === "preview"
       ? ("preview" as const)
       : ("development" as const);
-
-const plural = (count: number, one: string, few: string, many: string) => {
-  const mod10 = count % 10;
-  const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return one;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
-  return many;
-};
 
 const formatPln = (minor: number) =>
   `${new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 }).format(Math.round(minor / 100))} PLN`;

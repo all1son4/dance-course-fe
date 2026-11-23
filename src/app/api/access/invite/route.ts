@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         return jsonNoStore({ status: "sent" });
       }
       if (result.status === "limited") {
-        return jsonErrorNoStore("rate_limited", { status: 429 });
+        return jsonRateLimited(result.retryAfterSeconds);
       }
       return result.status === "no_links"
         ? jsonErrorNoStore("no_link", { status: 409 })

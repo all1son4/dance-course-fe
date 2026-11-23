@@ -1,3 +1,5 @@
+import { timingSafeEqual } from "node:crypto";
+
 import { NextResponse } from "next/server";
 
 export const API_NO_STORE_HEADERS = {
@@ -232,3 +234,15 @@ export const jsonNoStore = (
 /** The checkout session id a browser sent: letters, digits, _ and -, at most 96. */
 export const normalizeCheckoutSessionId = (value: string | null | undefined) =>
   (value?.trim() ?? "").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 96);
+
+/** Secret comparison that takes the same time wherever the strings differ. */
+export const areEqualInTimingSafeWay = (left: string, right: string) => {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  if (leftBuffer.length !== rightBuffer.length) {
+    return false;
+  }
+
+  return timingSafeEqual(leftBuffer, rightBuffer);
+};

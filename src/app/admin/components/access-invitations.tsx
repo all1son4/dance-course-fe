@@ -654,12 +654,17 @@ export const AccessInvitations = ({
 
   const endpoint = `${ADMIN_API_ENDPOINTS.accessInvitations}?scope=${scope}`;
 
+  // Every action reloads the journal: only the latest answer may land.
+  const sequence = useRef(0);
+
   const load = useCallback(async () => {
+    const current = ++sequence.current;
     setIsLoading(true);
     const result = await requestAdminJson<{
       target?: Target;
       entries?: AdminInvitationEntry[];
     }>(endpoint);
+    if (current !== sequence.current) return;
     setIsLoading(false);
     if (result.unauthorized) return onUnauthorized();
     if (!result.ok) {

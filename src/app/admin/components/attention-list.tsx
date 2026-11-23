@@ -68,10 +68,16 @@ type AttentionListProps = {
   items: AttentionItem[];
   onFixed: () => void;
   onNavigate: (view: AdminFeatureId) => void;
+  onUnauthorized: () => void;
 };
 
 /** Problems the system could not solve by itself, as the overview lists them. */
-export const AttentionList = ({ items, onFixed, onNavigate }: AttentionListProps) => {
+export const AttentionList = ({
+  items,
+  onFixed,
+  onNavigate,
+  onUnauthorized,
+}: AttentionListProps) => {
   const toast = useToast();
   const [fixingId, setFixingId] = useState("");
 
@@ -83,12 +89,9 @@ export const AttentionList = ({ items, onFixed, onNavigate }: AttentionListProps
       { body: { cohortId: item.fix.cohortId }, method: "POST" },
     );
     setFixingId("");
+    // The same answer as every other admin action: back to the password screen.
     if (result.unauthorized) {
-      toast({
-        tone: "warning",
-        title: "Сессия закончилась",
-        description: "Войди заново и повтори.",
-      });
+      onUnauthorized();
       return;
     }
     if (result.ok && result.data.status === "sent") {

@@ -345,7 +345,9 @@ export async function resendAccessInvitation(
 export type InvitationLinksResult =
   | { status: "sent" | "queued"; lines: InvitationAccessLine[] }
   | { status: "no_links"; lines: InvitationAccessLine[] }
-  | { status: "limited" | "needs_telegram" | "not_found" | "revoked" };
+  /** The send window that is full, in seconds: when trying again can work at the latest. */
+  | { status: "limited"; retryAfterSeconds: number }
+  | { status: "needs_telegram" | "not_found" | "revoked" };
 
 /**
  * «Отправить ссылки ещё раз» (admin) and «Прислать новую ссылку» («Мой доступ», the
@@ -370,7 +372,9 @@ export async function sendInvitationLinks(
         purchaseId,
         since: new Date(now.getTime() - window.ms),
       });
-      if (sent >= window.limit) return { status: "limited" };
+      if (sent >= window.limit) {
+        return { status: "limited", retryAfterSeconds: window.ms / 1000 };
+      }
     }
   }
 

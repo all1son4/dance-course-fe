@@ -5,8 +5,8 @@ import {
   isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
-import { getRussianPlural } from "@/lib/email/dates";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
+import { pluralize } from "@/lib/plural";
 import {
   formatPurchaseLine,
   getAdminPurchaseLine,
@@ -132,7 +132,7 @@ const getAccessDurationLabel = (offerId: string) => {
     return "";
   }
 
-  return `${durationDays} ${getRussianPlural(durationDays, ["день", "дня", "дней"])}`;
+  return `${durationDays} ${pluralize("ru", durationDays, ["день", "дня", "дней"])}`;
 };
 
 const getFormattedCountryLabel = (customerCountry: string) => {
