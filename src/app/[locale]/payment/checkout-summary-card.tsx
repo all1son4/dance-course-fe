@@ -4,8 +4,6 @@ import CurrencySwitch from "@/components/other/CurrencySwitch";
 import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
 
 import {
-  CheckoutProgressFill,
-  CheckoutProgressTrack,
   CurrencyBox,
   MoneyTitle,
   Price,
@@ -29,7 +27,8 @@ import {
   SummaryLineSkeleton,
   SummarySupport,
   SummaryTitle,
-} from "./page.styles";
+} from "./checkout-summary-card.styles";
+import { CheckoutProgressFill, CheckoutProgressTrack } from "./page.styles";
 
 export type CheckoutSummaryCardProps = {
   amountLabel: string;
