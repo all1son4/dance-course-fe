@@ -1,23 +1,6 @@
 import { makeAutoObservable, runInAction } from "mobx";
 import { ValidationError } from "yup";
 
-import {
-  INITIAL_AGREEMENTS,
-  INITIAL_CUSTOMER_DATA,
-  normalizePaymentCustomerData,
-  normalizePaymentCustomerFieldValue,
-  PAYMENT_INPUTS,
-  type PaymentAgreementFieldName,
-  type PaymentAgreementState,
-  type PaymentCustomerData,
-  type PaymentCustomerFieldName,
-  type PaymentLessonLanguage,
-} from "@/app/[locale]/payment/payment.constants";
-import {
-  getPaymentCustomerSchema,
-  type PaymentValidationLocale,
-  resolvePaymentValidationLocale,
-} from "@/app/[locale]/payment/payment.validation";
 import { cancelPaymentIntents } from "@/components/other/StripePaymentTabs/StripePaymentTabs.completion";
 import {
   DEFAULT_CHECKOUT_CURRENCY,
@@ -31,6 +14,23 @@ import {
   type SellableProductOffer,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import {
+  INITIAL_AGREEMENTS,
+  INITIAL_CUSTOMER_DATA,
+  normalizePaymentCustomerData,
+  normalizePaymentCustomerFieldValue,
+  PAYMENT_INPUTS,
+  type PaymentAgreementFieldName,
+  type PaymentAgreementState,
+  type PaymentCustomerData,
+  type PaymentCustomerFieldName,
+  type PaymentLessonLanguage,
+} from "@/lib/checkout/payment.constants";
+import {
+  getPaymentCustomerSchema,
+  type PaymentValidationLocale,
+  resolvePaymentValidationLocale,
+} from "@/lib/checkout/payment.validation";
 import { trackApiError } from "@/lib/mixpanel-analytics";
 
 type PaymentCustomerErrors = Partial<Record<PaymentCustomerFieldName, string>>;

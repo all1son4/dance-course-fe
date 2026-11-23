@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
+import { getPaymentCustomerSchema } from "@/lib/checkout/payment.validation";
 
 const valid = {
   address: "ul. Testowa 1",

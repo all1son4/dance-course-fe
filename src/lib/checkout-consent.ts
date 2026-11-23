@@ -1,11 +1,11 @@
+import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
 import {
   INITIAL_AGREEMENTS,
   PAYMENT_INPUTS,
   type PaymentAgreementState,
   type PaymentCustomerData,
-} from "@/app/[locale]/payment/payment.constants";
-import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
-import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
+} from "@/lib/checkout/payment.constants";
+import { getPaymentCustomerSchema } from "@/lib/checkout/payment.validation";
 import type { CheckoutLocale } from "@/lib/stripe-checkout";
 
 // These identifiers are historical evidence. Bump the affected version when its

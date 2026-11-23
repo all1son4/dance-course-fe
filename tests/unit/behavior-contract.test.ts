@@ -4,14 +4,11 @@ import { join } from "node:path";
 import test from "node:test";
 
 import {
-  INITIAL_AGREEMENTS,
-  PAYMENT_CHECKBOXES,
-} from "@/app/[locale]/payment/payment.constants";
-import {
   buildCheckoutHref,
   getDefaultCheckoutCurrencyByLocale,
   SELLABLE_PRODUCTS_LIST,
 } from "@/constants/sellable-products";
+import { INITIAL_AGREEMENTS, PAYMENT_CHECKBOXES } from "@/lib/checkout/payment.constants";
 
 import behaviorContractCases from "../fixtures/behavior-contract-cases.json";
 

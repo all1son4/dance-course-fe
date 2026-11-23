@@ -7,15 +7,14 @@ import {
   INSPIRATION_HUB_RENEWAL_OFFER_ID,
   type SellableProduct,
 } from "@/constants/sellable-products";
-import { prefersReducedMotion } from "@/lib/reveal";
-import type { usePaymentStore } from "@/stores";
-
 import {
   PAYMENT_INPUTS,
   type PaymentAgreementFieldName,
   type PaymentCustomerFieldName,
   type PaymentInputConfig,
-} from "./payment.constants";
+} from "@/lib/checkout/payment.constants";
+import { prefersReducedMotion } from "@/lib/reveal";
+import type { usePaymentStore } from "@/stores";
 
 export const PAYMENT_DRAFT_SAVE_DEBOUNCE_MS = 240;
 export const PAYMENT_INTENT_CREATION_DELAY_MS = 420;

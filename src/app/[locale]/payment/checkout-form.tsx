@@ -7,6 +7,11 @@ import Input from "@/components/common/Input";
 import StripePaymentTabs, {
   type StripePaymentTabsProps,
 } from "@/components/other/StripePaymentTabs";
+import {
+  type PaymentAgreementFieldName,
+  type PaymentFieldStep,
+  type PaymentStep,
+} from "@/lib/checkout/payment.constants";
 
 import {
   Checkboxes,
@@ -40,11 +45,6 @@ import {
   TelegramInputStatus,
   TelegramVerifyButton,
 } from "./page.styles";
-import {
-  type PaymentAgreementFieldName,
-  type PaymentFieldStep,
-  type PaymentStep,
-} from "./payment.constants";
 import {
   type CheckoutAgreement,
   type CheckoutInputField,

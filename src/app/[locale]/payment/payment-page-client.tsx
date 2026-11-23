@@ -36,6 +36,16 @@ import {
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
 import {
+  PAYMENT_CHECKBOXES,
+  PAYMENT_INPUTS,
+  PAYMENT_LESSON_LANGUAGE_OPTIONS,
+  PAYMENT_STEPS,
+  type PaymentAgreementFieldName,
+  type PaymentCustomerFieldName,
+  type PaymentStep,
+} from "@/lib/checkout/payment.constants";
+import { resolvePaymentValidationLocale } from "@/lib/checkout/payment.validation";
+import {
   isChoreoTutorialProduct,
   shouldNameOfferAtCheckout,
 } from "@/lib/choreo-offer-presentation";
@@ -83,15 +93,6 @@ import {
   TextBox,
 } from "./page.styles";
 import {
-  PAYMENT_CHECKBOXES,
-  PAYMENT_INPUTS,
-  PAYMENT_LESSON_LANGUAGE_OPTIONS,
-  PAYMENT_STEPS,
-  type PaymentAgreementFieldName,
-  type PaymentCustomerFieldName,
-  type PaymentStep,
-} from "./payment.constants";
-import {
   bringIntoViewIfNeeded,
   type CheckoutAgreement,
   type CheckoutIntent,
@@ -107,7 +108,6 @@ import {
   shouldMoveCheckoutFocus,
   STRIPE_INTENT_ERROR_TRANSLATION_KEYS,
 } from "./payment.helpers";
-import { resolvePaymentValidationLocale } from "./payment.validation";
 import { useTelegramRenewal } from "./use-telegram-renewal";
 
 type PaymentPageProps = {

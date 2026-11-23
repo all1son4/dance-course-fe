@@ -3,8 +3,8 @@ import { ValidationError } from "yup";
 import {
   INITIAL_CUSTOMER_DATA,
   normalizePaymentCustomerFieldValue,
-} from "@/app/[locale]/payment/payment.constants";
-import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
+} from "@/lib/checkout/payment.constants";
+import { getPaymentCustomerSchema } from "@/lib/checkout/payment.validation";
 
 import type { CourseSignupFormValues } from "./CourseSignupDialog.types";
 
