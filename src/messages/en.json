@@ -1671,7 +1671,8 @@
       "title": "Choreography tutorials",
       "description": "“Her Lies” and “Love me in the morning”: a detailed breakdown on Telegram, 60 days of access.",
       "cta": "Choose a tutorial",
-      "regularPrice": "Regular price"
+      "regularPrice": "Regular price",
+      "savings": "You save {amount}"
     },
     "hub": {
       "badge": "×2",
@@ -1681,7 +1682,8 @@
       "regularTerm": "8",
       "cta": "Get 16 weeks",
       "cohortNote": "The lessons of cycle 3.0 join the library right after it ends in January — and stay with you until the end of your 16 weeks.",
-      "shortCohortNote": "Cycle 3.0 lessons join in January."
+      "shortCohortNote": "Cycle 3.0 lessons join in January.",
+      "gift": "+8 weeks as a gift"
     },
     "cards": {
       "choreoLabel": "Black Friday −33%",

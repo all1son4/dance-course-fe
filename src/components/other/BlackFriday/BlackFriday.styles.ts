@@ -1,4 +1,4 @@
-import { keyframes, styled } from "styled-components";
+import { css, keyframes, styled } from "styled-components";
 
 import { Link } from "@/i18n/navigation";
 import {
@@ -37,27 +37,92 @@ export const CountdownTile = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 14px 6px 12px;
-  border-radius: var(--radius-control);
-  background: rgba(255, 255, 255, 0.07);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.14),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-
-  @media (max-width: 550px) {
-    padding: 12px 4px 10px;
-  }
+  gap: 8px;
 `;
 
-export const CountdownValue = styled.span`
+/*
+ * Split-flap digits. A card shows the new value on its upper half and the old one
+ * on its lower half; on a change the old upper flap falls (first half of the
+ * motion) and the new lower flap lands (second half). Under reduced motion the
+ * flaps are not rendered and the halves simply change.
+ */
+const FLIP_MS = 260;
+
+const flapFall = keyframes`
+  from { transform: rotateX(0deg); }
+  to { transform: rotateX(-90deg); }
+`;
+
+const flapLand = keyframes`
+  from { transform: rotateX(90deg); }
+  to { transform: rotateX(0deg); }
+`;
+
+export const FlipCard = styled.span`
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 64px;
+  perspective: 320px;
   font-size: 40px;
-  line-height: 1;
   font-weight: 400;
   font-variant-numeric: tabular-nums;
 
   @media (max-width: 550px) {
+    height: 52px;
     font-size: 30px;
+  }
+`;
+
+export const FlipHalf = styled.span<{ $half: "top" | "bottom"; $flap?: boolean }>`
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  backface-visibility: hidden;
+  background: ${({ $half }) =>
+    $half === "top" ? "rgba(255, 255, 255, 0.09)" : "rgba(255, 255, 255, 0.06)"};
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-radius: ${({ $half }) =>
+    $half === "top"
+      ? "var(--radius-control) var(--radius-control) 0 0"
+      : "0 0 var(--radius-control) var(--radius-control)"};
+  ${({ $half }) => ($half === "top" ? "top: 0;" : "bottom: 0;")}
+  transform-origin: ${({ $half }) => ($half === "top" ? "50% 100%" : "50% 0%")};
+
+  /* The hinge: a dark line between the halves. */
+  ${({ $half }) =>
+    $half === "top" ? "border-bottom: 1px solid rgba(0, 0, 0, 0.45);" : ""}
+
+  ${({ $flap, $half }) =>
+    $flap
+      ? $half === "top"
+        ? css`
+            z-index: 2;
+            animation: ${flapFall} ${FLIP_MS}ms cubic-bezier(0.55, 0, 1, 0.45) both;
+          `
+        : css`
+            z-index: 2;
+            animation: ${flapLand} ${FLIP_MS}ms cubic-bezier(0, 0.55, 0.45, 1)
+              ${FLIP_MS}ms both;
+          `
+      : ""}
+
+  & > span {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 200%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    ${({ $half }) => ($half === "top" ? "top: 0;" : "top: -100%;")}
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 `;
 
@@ -269,6 +334,29 @@ export const Section = styled.section`
   }
 `;
 
+/* The pointer's light over the dark slab (BlackFridaySpotlight sets the position). */
+export const Spotlight = styled.span`
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    420px circle at var(--spot-x, 50%) var(--spot-y, 50%),
+    rgba(196, 20, 24, 0.28),
+    transparent 65%
+  );
+  transition: opacity var(--motion-slow) var(--ease-standard);
+
+  &[data-active] {
+    opacity: 1;
+  }
+
+  @media (forced-colors: active) {
+    display: none;
+  }
+`;
+
 /* A huge outlined word behind the content: the "sale" mood without an image. */
 export const Watermark = styled.span`
   position: absolute;
@@ -392,6 +480,30 @@ export const OfferCard = styled.article`
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(6px);
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    background-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+
+  /* The offer under the pointer steps forward a little. */
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.09);
+      box-shadow:
+        0 18px 40px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+
+    &:hover {
+      transform: none;
+    }
+  }
 
   @media (max-width: 550px) {
     padding: 24px 20px 20px;
@@ -416,6 +528,13 @@ export const OfferText = styled.div`
 
 export const OfferBadge = styled.span`
   align-self: flex-start;
+  transition: transform var(--motion-base) var(--ease-emphasized);
+
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    ${OfferCard}:hover & {
+      transform: scale(1.08) rotate(-3deg);
+    }
+  }
   padding: 6px 12px;
   border-radius: var(--radius-pill);
   font-size: 13px;
@@ -468,6 +587,15 @@ export const OfferPriceNote = styled.span`
   font-size: var(--text-small);
   line-height: 1.3;
   color: rgba(255, 255, 255, 0.74);
+`;
+
+/* What the buyer keeps: «Экономия 20 PLN / 5 €», «+8 недель в подарок». */
+export const OfferSavings = styled.span`
+  align-self: flex-start;
+  font-size: var(--text-small);
+  font-weight: 600;
+  line-height: 1.3;
+  color: #ff8b85;
 `;
 
 export const OfferAction = styled.div`

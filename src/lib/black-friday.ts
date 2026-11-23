@@ -92,6 +92,17 @@ export const applyBlackFridayToProducts = (
       }))
     : products;
 
+/** How much a campaign price saves against the regular one, per currency. */
+export const getCampaignSavings = (
+  offer: Pick<SellableProductOffer, "compareAtPrices" | "prices">,
+): SellableProductPrices | null =>
+  offer.compareAtPrices
+    ? {
+        eur: offer.compareAtPrices.eur - offer.prices.eur,
+        pln: offer.compareAtPrices.pln - offer.prices.pln,
+      }
+    : null;
+
 export const isBlackFridayOffer = (offer: Pick<SellableProductOffer, "campaign">) =>
   offer.campaign === BLACK_FRIDAY_CAMPAIGN;
 

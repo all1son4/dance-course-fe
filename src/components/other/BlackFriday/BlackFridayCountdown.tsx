@@ -9,7 +9,8 @@ import {
   CountdownTile,
   CountdownTiles,
   CountdownUnit,
-  CountdownValue,
+  FlipCard,
+  FlipHalf,
 } from "./BlackFriday.styles";
 
 export type CountdownLabels = {
@@ -44,6 +45,47 @@ const split = (remainingMs: number) => {
 };
 
 const pad = (value: number) => String(value).padStart(2, "0");
+
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+/**
+ * One split-flap card. On a new value the previous one is kept for the flaps; the
+ * flap pair is keyed by the flip count, so each change plays the motion once.
+ */
+function FlipDigits({ value }: { value: string }) {
+  const [state, setState] = useState({ flips: 0, previous: value, value });
+
+  // Adjusting state to a new prop during render (React's own pattern for it).
+  if (state.value !== value) {
+    setState({ flips: state.flips + 1, previous: state.value, value });
+  }
+
+  const animate =
+    state.flips > 0 &&
+    typeof window !== "undefined" &&
+    !window.matchMedia(REDUCED_MOTION).matches;
+
+  return (
+    <FlipCard>
+      <FlipHalf $half="top">
+        <span>{state.value}</span>
+      </FlipHalf>
+      <FlipHalf $half="bottom">
+        <span>{animate ? state.previous : state.value}</span>
+      </FlipHalf>
+      {animate ? (
+        <span key={state.flips}>
+          <FlipHalf $flap $half="top">
+            <span>{state.previous}</span>
+          </FlipHalf>
+          <FlipHalf $flap $half="bottom">
+            <span>{state.value}</span>
+          </FlipHalf>
+        </span>
+      ) : null}
+    </FlipCard>
+  );
+}
 
 /**
  * Time left until the end of Black Friday. The digits have a fixed width, so the
@@ -113,7 +155,7 @@ export default function BlackFridayCountdown({
     <CountdownTiles role="timer" aria-label={spoken}>
       {units.map(([value, unit]) => (
         <CountdownTile key={unit} aria-hidden="true">
-          <CountdownValue>{pad(value)}</CountdownValue>
+          <FlipDigits value={pad(value)} />
           <CountdownUnit>{unit}</CountdownUnit>
         </CountdownTile>
       ))}

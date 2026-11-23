@@ -7,7 +7,11 @@ import {
   INSPIRATION_HUB_ACCESS_OFFER_ID,
   LOVE_ME_IN_THE_MORNING_OFFER_ID,
 } from "@/constants/sellable-products";
-import { BLACK_FRIDAY_ENDS_AT, isBlackFridayActive } from "@/lib/black-friday";
+import {
+  BLACK_FRIDAY_ENDS_AT,
+  getCampaignSavings,
+  isBlackFridayActive,
+} from "@/lib/black-friday";
 import { getStorefrontSellableProducts } from "@/lib/sales-availability";
 
 import {
@@ -23,6 +27,7 @@ import {
   OfferPrice,
   OfferPriceNote,
   Offers,
+  OfferSavings,
   OfferText,
   OfferTitle,
   Section,
@@ -32,6 +37,7 @@ import {
   Watermark,
 } from "./BlackFriday.styles";
 import BlackFridayCountdown from "./BlackFridayCountdown";
+import BlackFridaySpotlight from "./BlackFridaySpotlight";
 
 export const BLACK_FRIDAY_SECTION_ID = "black-friday";
 
@@ -53,9 +59,11 @@ export default async function BlackFridaySection() {
   const offers = products.flatMap((product) => product.offers);
   const choreo = offers.find((offer) => offer.id === LOVE_ME_IN_THE_MORNING_OFFER_ID);
   const hub = offers.find((offer) => offer.id === INSPIRATION_HUB_ACCESS_OFFER_ID);
+  const choreoSavings = choreo ? getCampaignSavings(choreo) : null;
 
   return (
     <Section id={BLACK_FRIDAY_SECTION_ID} aria-labelledby="black-friday-title">
+      <BlackFridaySpotlight />
       <Watermark aria-hidden="true">−33%</Watermark>
       <Intro>
         <Eyebrow>{t("section.eyebrow")}</Eyebrow>
@@ -98,6 +106,11 @@ export default async function BlackFridaySection() {
                   </OfferPriceNote>
                 ) : null}
                 <strong>{formatOfferPrice(choreo.prices)}</strong>
+                {choreoSavings ? (
+                  <OfferSavings>
+                    {t("choreo.savings", { amount: formatOfferPrice(choreoSavings) })}
+                  </OfferSavings>
+                ) : null}
               </OfferPrice>
             ) : null}
             <OfferAction>
@@ -128,6 +141,7 @@ export default async function BlackFridaySection() {
                   <s>{t("hub.regularTerm")}</s>
                 </OfferPriceNote>
                 <strong>{formatOfferPrice(hub.prices)}</strong>
+                <OfferSavings>{t("hub.gift")}</OfferSavings>
               </OfferPrice>
             ) : null}
             <OfferAction>

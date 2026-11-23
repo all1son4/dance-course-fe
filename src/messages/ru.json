@@ -1685,7 +1685,8 @@
       "title": "Разборы хореографий",
       "description": "«Her Lies» и «Love me in the morning»: подробный разбор в Telegram, доступ 60 дней.",
       "cta": "Выбрать разбор",
-      "regularPrice": "Обычная цена"
+      "regularPrice": "Обычная цена",
+      "savings": "Экономия {amount}"
     },
     "hub": {
       "badge": "×2",
@@ -1695,7 +1696,8 @@
       "regularTerm": "8",
       "cta": "Забрать 16 недель",
       "cohortNote": "Уроки потока 3.0 войдут в библиотеку сразу после его окончания в январе — и будут с тобой до конца 16 недель.",
-      "shortCohortNote": "В январе добавятся уроки потока 3.0."
+      "shortCohortNote": "В январе добавятся уроки потока 3.0.",
+      "gift": "+8 недель в подарок"
     },
     "cards": {
       "choreoLabel": "Black Friday −33%",

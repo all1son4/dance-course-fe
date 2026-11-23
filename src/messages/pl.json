@@ -1671,7 +1671,8 @@
       "title": "Tutoriale choreografii",
       "description": "„Her Lies” i „Love me in the morning”: szczegółowy rozbiór na Telegramie, dostęp na 60 dni.",
       "cta": "Wybierz tutorial",
-      "regularPrice": "Zwykła cena"
+      "regularPrice": "Zwykła cena",
+      "savings": "Oszczędzasz {amount}"
     },
     "hub": {
       "badge": "×2",
@@ -1681,7 +1682,8 @@
       "regularTerm": "8",
       "cta": "Odbierz 16 tygodni",
       "cohortNote": "Lekcje cyklu 3.0 trafią do biblioteki zaraz po jego zakończeniu w styczniu — i zostaną z Tobą do końca 16 tygodni.",
-      "shortCohortNote": "W styczniu dojdą lekcje cyklu 3.0."
+      "shortCohortNote": "W styczniu dojdą lekcje cyklu 3.0.",
+      "gift": "+8 tygodni w prezencie"
     },
     "cards": {
       "choreoLabel": "Black Friday −33%",

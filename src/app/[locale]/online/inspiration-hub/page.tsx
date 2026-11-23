@@ -110,6 +110,7 @@ export default async function InspirationHubPage() {
   const canBuy = saleState === "open" && offer.salesEnabled;
   // Black Friday 2026: the full price buys 16 weeks instead of 8.
   const isCampaign = canBuy && isBlackFridayOffer(offer);
+  const buyLabel = isCampaign ? blackFridayT("hub.cta") : t("hero.buyButton");
   const checkoutHref = buildCheckoutHref({ offerId: offer.id, productId: product.id });
   const buyAnalytics = {
     id: "buy_inspiration_hub",
@@ -198,7 +199,7 @@ export default async function InspirationHubPage() {
           {canBuy ? (
             <>
               <Button
-                buttonText={t("hero.buyButton")}
+                buttonText={buyLabel}
                 href={checkoutHref}
                 prefetch={false}
                 rel="nofollow"
@@ -207,7 +208,7 @@ export default async function InspirationHubPage() {
               />
               <StickyCta
                 analytics={{ ...buyAnalytics, placement: "inspiration_hub_sticky" }}
-                label={t("hero.buyButton")}
+                label={buyLabel}
                 href={checkoutHref}
                 prefetch={false}
                 title={t("hero.titlePlain")}
@@ -316,7 +317,7 @@ export default async function InspirationHubPage() {
             </OfferPrice>
             {canBuy ? (
               <Button
-                buttonText={t("hero.buyButton")}
+                buttonText={buyLabel}
                 href={checkoutHref}
                 prefetch={false}
                 rel="nofollow"
@@ -331,7 +332,8 @@ export default async function InspirationHubPage() {
               </OfferClosed>
             )}
             <OfferNotes>
-              {isCampaign ? <li data-accent>{blackFridayT("hub.cohortNote")}</li> : null}
+              {isCampaign ? <li data-accent>{blackFridayT("hub.gift")}</li> : null}
+              {isCampaign ? <li>{blackFridayT("hub.cohortNote")}</li> : null}
               <li>{t("cta.notes.1")}</li>
               <li data-accent>{t("cta.notes.2")}</li>
             </OfferNotes>
