@@ -75,7 +75,10 @@ export default async function BlackFridaySection() {
           <Title id="black-friday-title">
             {t("section.titleTop")} <span>{t("section.titleBottom")}</span>
           </Title>
-          <CampaignStamp>{t("choreo.badge")}</CampaignStamp>
+          <CampaignStamp>
+            <b>{t("choreo.badge")}</b>
+            <small>{t("hub.badge")} HUB</small>
+          </CampaignStamp>
         </TitleWrap>
         <Lead>{t("section.lead")}</Lead>
         <CountdownBox>

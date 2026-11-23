@@ -723,15 +723,30 @@ export const StampMark = styled.span`
   position: absolute;
   z-index: 1;
   display: grid;
-  place-items: center;
-  padding: 10px 16px;
-  border: 3px solid rgba(255, 92, 84, 0.9);
-  border-radius: 18px;
-  font-size: 40px;
+  justify-items: center;
+  gap: 4px;
+  padding: 7px 11px 6px;
+  border: 2px solid rgba(255, 92, 84, 0.75);
+  border-radius: 12px;
   line-height: 1;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  color: rgba(255, 92, 84, 0.95);
+
+  /* Two lines of one stamp: the tutorials' discount, a hairline, the Hub's ×2. */
+  & b {
+    font-size: 27px;
+    letter-spacing: -0.02em;
+  }
+
+  & small {
+    width: 100%;
+    padding-top: 4px;
+    border-top: 1px solid currentColor;
+    font-size: 9.5px;
+    letter-spacing: 0.14em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  color: rgba(255, 92, 84, 0.82);
   transform: rotate(-12deg);
   pointer-events: none;
   mix-blend-mode: screen;
@@ -750,10 +765,16 @@ export const StampMark = styled.span`
   }
 
   @media (max-width: 550px) {
-    font-size: 28px;
-    padding: 8px 12px;
-    border-width: 2px;
-    border-radius: 14px;
+    & b {
+      font-size: 22px;
+    }
+
+    & small {
+      font-size: 8.5px;
+    }
+
+    padding: 6px 9px 5px;
+    border-radius: 10px;
   }
 
   @media (forced-colors: active) {
