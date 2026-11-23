@@ -3,7 +3,7 @@
 import { observer } from "mobx-react-lite";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent, ReactNode } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
@@ -99,6 +99,7 @@ import {
   shouldMoveCheckoutFocus,
   STRIPE_INTENT_ERROR_TRANSLATION_KEYS,
 } from "./payment.helpers";
+import { useCheckoutAnalytics } from "./use-checkout-analytics";
 import { useCheckoutDraft } from "./use-checkout-draft";
 import { useTelegramRenewal } from "./use-telegram-renewal";
 
@@ -238,11 +239,6 @@ const PaymentPage = observer(function PaymentPage({
   const [openedStep, setOpenedStep] = useState<PaymentStep | null>(null);
   // The email hint holds back an ending still being typed ("gmail.co").
   const [isTypingEmail, setIsTypingEmail] = useState(false);
-  const lastTrackedCheckoutRef = useRef<string | null>(null);
-  const lastTrackedBlockedStateRef = useRef<string | null>(null);
-  const lastTrackedPaymentRevealRef = useRef<string | null>(null);
-  const trackedCompletedFieldsRef = useRef(new Set<string>());
-  const trackedStartedFieldsRef = useRef(new Set<string>());
   const isChoreoProduct = paymentStore.selectedProduct.type === "choreo";
   // The drop ships one Telegram channel with both languages inside, so a
   // language choice on its checkout would be meaningless noise.
@@ -323,27 +319,6 @@ const PaymentPage = observer(function PaymentPage({
     : null;
   const canRevealStripe =
     paymentStore.canShowStripe && isRenewalVerified && !isCheckoutBlocked;
-  const analyticsCommerceProperties = useMemo(
-    () =>
-      ({
-        currency: paymentStore.selectedCurrency,
-        is_renewal: isRenewalCheckout,
-        offer_code: paymentStore.selectedOffer.code,
-        offer_id: paymentStore.selectedOffer.id,
-        product_code: paymentStore.selectedProduct.code,
-        product_id: paymentStore.selectedProduct.id,
-        value: paymentStore.selectedPrice,
-      }) as const,
-    [
-      isRenewalCheckout,
-      paymentStore.selectedCurrency,
-      paymentStore.selectedOffer.code,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedPrice,
-      paymentStore.selectedProduct.code,
-      paymentStore.selectedProduct.id,
-    ],
-  );
   const stripeIntentErrorText = paymentStore.isCatalogUnavailable
     ? stripeT("errors.catalogUnavailable")
     : paymentStore.stripeIntentError
@@ -383,94 +358,15 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.setRenewalCampaignSlug(searchParams.get("renewal"));
   }, [paymentStore, searchKey]);
 
-  useEffect(() => {
-    if (
-      !canUseAnalytics ||
-      paymentStore.catalogStatus !== "ready" ||
-      isStaleCheckoutLink ||
-      isRenewalUnavailable
-    ) {
-      return;
-    }
-
-    const checkoutKey = [
-      paymentStore.selectedProduct.id,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedCurrency,
-      isRenewalCheckout ? "renewal" : "new",
-    ].join(":");
-
-    if (lastTrackedCheckoutRef.current === checkoutKey) {
-      return;
-    }
-
-    lastTrackedCheckoutRef.current = checkoutKey;
-    void trackAnalyticsEvent("checkout_viewed", analyticsCommerceProperties);
-  }, [
-    analyticsCommerceProperties,
-    canUseAnalytics,
-    isRenewalCheckout,
-    isRenewalUnavailable,
-    isStaleCheckoutLink,
-    paymentStore.catalogStatus,
-    paymentStore.selectedCurrency,
-    paymentStore.selectedOffer.id,
-    paymentStore.selectedProduct.id,
-  ]);
-
-  useEffect(() => {
-    // The notice priority of the render below, so the tracked reason is the
-    // notice the visitor actually saw.
-    const reason = getCheckoutBlockReason({
-      isCatalogUnavailable: paymentStore.isCatalogUnavailable,
+  const { analyticsCommerceProperties, trackFieldCompleted, trackFieldStarted } =
+    useCheckoutAnalytics({
+      canRevealStripe,
+      canUseAnalytics,
+      isRenewalCheckout,
       isRenewalUnavailable,
-      isSalesClosed: paymentStore.isSalesClosed,
       isStaleCheckoutLink,
+      paymentStore,
     });
-
-    if (!canUseAnalytics || !reason || lastTrackedBlockedStateRef.current === reason) {
-      return;
-    }
-
-    lastTrackedBlockedStateRef.current = reason;
-    void trackAnalyticsEvent("checkout_blocked", {
-      ...analyticsCommerceProperties,
-      reason,
-    });
-  }, [
-    analyticsCommerceProperties,
-    canUseAnalytics,
-    isRenewalUnavailable,
-    isStaleCheckoutLink,
-    paymentStore.isCatalogUnavailable,
-    paymentStore.isSalesClosed,
-  ]);
-
-  useEffect(() => {
-    if (!canUseAnalytics || !canRevealStripe) {
-      return;
-    }
-
-    const revealKey = [
-      paymentStore.selectedProduct.id,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedCurrency,
-    ].join(":");
-
-    if (lastTrackedPaymentRevealRef.current === revealKey) {
-      return;
-    }
-
-    lastTrackedPaymentRevealRef.current = revealKey;
-    void trackAnalyticsEvent("payment_form_revealed", analyticsCommerceProperties);
-  }, [
-    analyticsCommerceProperties,
-    canUseAnalytics,
-    canRevealStripe,
-    paymentStore.selectedCurrency,
-    paymentStore.selectedOffer.id,
-    paymentStore.selectedProduct.id,
-  ]);
 
   // Reaching checkout for the campaign offer counts as "thinking about it": the
   // birthday popup observes the reaction cooldown even if the payment is dropped.
@@ -584,15 +480,6 @@ const PaymentPage = observer(function PaymentPage({
     }
   };
 
-  const getCheckoutFieldInteractionKey = (fieldName: PaymentCustomerFieldName) =>
-    [
-      paymentStore.selectedProduct.id,
-      paymentStore.selectedOffer.id,
-      paymentStore.selectedCurrency,
-      isRenewalCheckout ? "renewal" : "new",
-      fieldName,
-    ].join(":");
-
   const handleInputFocus = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
     const fieldName = event.currentTarget.name as PaymentCustomerFieldName;
     if (fieldName === "email") setIsTypingEmail(true);
@@ -603,21 +490,7 @@ const PaymentPage = observer(function PaymentPage({
       setOpenedStep(fieldStep);
     }
 
-    if (!canUseAnalytics) {
-      return;
-    }
-
-    const interactionKey = getCheckoutFieldInteractionKey(fieldName);
-
-    if (trackedStartedFieldsRef.current.has(interactionKey)) {
-      return;
-    }
-
-    trackedStartedFieldsRef.current.add(interactionKey);
-    void trackAnalyticsEvent("checkout_field_started", {
-      ...analyticsCommerceProperties,
-      field_name: fieldName,
-    });
+    trackFieldStarted(fieldName);
   };
 
   const handleInputBlur = (event: FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -626,21 +499,7 @@ const PaymentPage = observer(function PaymentPage({
     // Settles the value into its normalized form and validates it.
     paymentStore.touchCustomerField(fieldName);
 
-    if (!canUseAnalytics || !event.currentTarget.value.trim()) {
-      return;
-    }
-
-    const interactionKey = getCheckoutFieldInteractionKey(fieldName);
-
-    if (trackedCompletedFieldsRef.current.has(interactionKey)) {
-      return;
-    }
-
-    trackedCompletedFieldsRef.current.add(interactionKey);
-    void trackAnalyticsEvent("checkout_field_completed", {
-      ...analyticsCommerceProperties,
-      field_name: fieldName,
-    });
+    trackFieldCompleted(fieldName, event.currentTarget.value);
   };
 
   const handleAgreementChange = (
