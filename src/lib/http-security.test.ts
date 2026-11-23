@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  areEqualInTimingSafeWay,
   jsonRateLimited,
   parseJsonBody,
   rateLimitErrorResponse,
@@ -98,4 +99,19 @@ test("a limit store that is down answers 503 before the limit itself is read", a
     }),
     null,
   );
+});
+
+test("timing-safe comparison answers exactly like string equality", () => {
+  const secret = "Bearer s3cr3t-Ünïcode_token";
+  for (const [candidate, expected] of [
+    [secret, true],
+    ["Bearer s3cr3t-Ünïcode_tokeN", false],
+    ["Bearer s3cr3t-Ünïcode_toke", false],
+    [`${secret} `, false],
+    ["", false],
+  ] as const) {
+    assert.equal(areEqualInTimingSafeWay(candidate, secret), expected);
+    assert.equal(areEqualInTimingSafeWay(candidate, secret), candidate === secret);
+  }
+  assert.equal(areEqualInTimingSafeWay("", ""), true);
 });
