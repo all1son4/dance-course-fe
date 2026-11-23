@@ -1,12 +1,12 @@
 import { createTranslator, hasLocale } from "next-intl";
 
-import {
-  buildMyAccessCalendarEvents,
-  readMyAccessNextStep,
-} from "@/app/[locale]/access/access.helpers";
 import { getDatabase } from "@/db/client";
 import { readMyAccessSnapshot } from "@/db/my-access";
 import { routing } from "@/i18n/routing";
+import {
+  buildMyAccessCalendarEvents,
+  readMyAccessNextStep,
+} from "@/lib/my-access/access.helpers";
 import { buildCalendarFile, NEXT_CYCLE_EVENT } from "@/lib/my-access/calendar";
 import { isMyAccessLinkConfigured, verifyMyAccessToken } from "@/lib/my-access/link";
 

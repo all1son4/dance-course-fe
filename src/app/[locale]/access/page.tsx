@@ -12,6 +12,13 @@ import { Link } from "@/i18n/navigation";
 import { buildInvitationUrl } from "@/lib/access-invitations/link";
 import { warsawDaysBetween } from "@/lib/inspiration-hub/calendar";
 import {
+  getAccessCardTitle,
+  getAccessProductPagePath,
+  getAccessProductTitle,
+  readMyAccessNextStep,
+  readMyAccessSales,
+} from "@/lib/my-access/access.helpers";
+import {
   getMyAccessActionAnalytics,
   getMyAccessAnalyticsProperties,
 } from "@/lib/my-access/analytics";
@@ -48,13 +55,6 @@ import {
 import { groupMyAccessCards, type MyAccessZone } from "@/lib/my-access/zones";
 import { normalizedSiteUrl } from "@/lib/seo";
 
-import {
-  getAccessCardTitle,
-  getAccessProductPagePath,
-  getAccessProductTitle,
-  readMyAccessNextStep,
-  readMyAccessSales,
-} from "./access.helpers";
 import {
   CalendarSubscribe,
   CycleStamp,
