@@ -2,6 +2,7 @@ import { css, styled } from "styled-components";
 
 import { visuallyHidden } from "@/styles/mixins/a11y";
 import {
+  blackFridayBackdrop,
   blackFridayCardEdge,
   blackFridayHighlight,
   blackFridayLabel,
@@ -309,4 +310,10 @@ export const ButtonBox = styled.div`
       padding-inline: 16px;
     }
   }
+`;
+
+/* Black Friday: the card's backdrop texture, under its content. */
+export const CampaignBackdrop = styled.span`
+  ${blackFridayBackdrop}
+  border-radius: inherit;
 `;

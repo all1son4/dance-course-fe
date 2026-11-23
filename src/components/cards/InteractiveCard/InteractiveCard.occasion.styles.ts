@@ -1,6 +1,7 @@
 import { css, styled } from "styled-components";
 
 import {
+  blackFridayBackdrop,
   blackFridayCardEdge,
   blackFridayHighlight,
   blackFridayLabel,
@@ -171,4 +172,11 @@ export const OccasionBackgroundArtwork = styled.svg`
   @media (forced-colors: active), (prefers-contrast: more) {
     display: none;
   }
+`;
+
+/* Black Friday: the card's backdrop texture, under its content. */
+export const OccasionBackdrop = styled.span`
+  ${blackFridayBackdrop}
+  z-index: 0;
+  border-radius: inherit;
 `;

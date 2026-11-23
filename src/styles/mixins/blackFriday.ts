@@ -96,3 +96,29 @@ export const blackFridayStampIn = css`
     }
   }
 `;
+
+/**
+ * The backdrop of a card on sale: fine diagonal pinstripes, like a gift ribbon,
+ * over a soft wine-dark wash, rising from the card's bottom and fading out by its
+ * middle. Texture only, no message: the label and the price say what it is.
+ */
+export const blackFridayBackdrop = css`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(135deg, rgba(124, 0, 2, 0.09) 0 1px, transparent 1px 9px),
+    linear-gradient(180deg, rgba(124, 0, 2, 0) 30%, rgba(124, 0, 2, 0.1) 100%);
+  -webkit-mask-image: linear-gradient(
+    0deg,
+    #000 0%,
+    rgba(0, 0, 0, 0.5) 30%,
+    transparent 62%
+  );
+  mask-image: linear-gradient(0deg, #000 0%, rgba(0, 0, 0, 0.5) 30%, transparent 62%);
+  mix-blend-mode: multiply;
+
+  @media (forced-colors: active), (prefers-contrast: more) {
+    display: none;
+  }
+`;

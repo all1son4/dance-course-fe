@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
 
 import {
   blackFridayCardEdge,
@@ -118,6 +118,7 @@ export const AccessCard = styled.li`
 
   /* Bought on Black Friday: the campaign edge, as on the storefront cards. */
   &[data-campaign] {
+    position: relative;
     ${blackFridayCardEdge}
   }
 
@@ -367,6 +368,11 @@ export const CountValue = styled.span`
   @media (max-width: 550px) {
     font-size: 34px;
   }
+
+  /* Bought on Black Friday: the term in the brand red. */
+  [data-campaign] & {
+    color: var(--brand);
+  }
 `;
 
 export const CountText = styled.span`
@@ -519,8 +525,86 @@ export const CampaignMark = styled.span`
   ${blackFridayLabel}
   display: inline-flex;
   align-items: center;
-  padding: 7px 12px;
+  margin-left: 10px;
+  padding: 6px 11px;
   border-radius: var(--radius-pill);
+  vertical-align: 0.2em;
+  font-size: 11px;
+
+  /* The title styles its own spans muted; the mark keeps its white text. */
+  ${CardTitle} && {
+    margin-left: 10px;
+    font-weight: 800;
+    color: var(--ink-inverse);
+  }
 
   ${blackFridayStampIn}
+`;
+
+const inkStamp = keyframes`
+  0% { opacity: 0; transform: rotate(-22deg) scale(1.8); }
+  60% { opacity: 0.9; transform: rotate(-9deg) scale(0.95); }
+  100% { opacity: 0.9; transform: rotate(-11deg) scale(1); }
+`;
+
+/*
+ * A red-ink rubber stamp on a card bought on Black Friday, in the spirit of the
+ * page's other stamps: «BLACK FRIDAY» over the figure (−33%, ×2). It lands once,
+ * the first time the card is seen.
+ */
+export const InkStamp = styled.span`
+  position: absolute;
+  right: 22px;
+  bottom: 18px;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 7px 12px 6px;
+  border: 2.5px solid rgba(170, 16, 22, 0.8);
+  border-radius: 14px;
+  color: rgba(170, 16, 22, 0.85);
+  transform: rotate(-11deg);
+  opacity: 0.9;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+
+  & small {
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  & b {
+    font-size: 26px;
+    line-height: 1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  &:not([data-pending]) {
+    animation: ${inkStamp} 650ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 350ms both;
+  }
+
+  &[data-pending] {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none !important;
+  }
+
+  @media (max-width: 550px) {
+    right: 16px;
+    bottom: 14px;
+
+    & b {
+      font-size: 22px;
+    }
+  }
+
+  @media (forced-colors: active) {
+    display: none;
+  }
 `;

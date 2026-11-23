@@ -4,6 +4,7 @@ import { StampIn } from "@/components/other/BlackFriday/BlackFridayMotion";
 
 import {
   OccasionArtwork,
+  OccasionBackdrop,
   OccasionBackgroundArtwork,
   OccasionEdgeArtwork,
   OccasionPhotoBadge,
@@ -126,6 +127,11 @@ function BlackFridayHeaderBadge() {
   ) : null;
 }
 
+/** Black Friday: pinstripes rising from the card's bottom (blackFridayBackdrop). */
+function BlackFridayBackgroundArtwork() {
+  return <OccasionBackdrop aria-hidden="true" />;
+}
+
 type OccasionArtworkSet = {
   header: ComponentType;
   background?: ComponentType;
@@ -141,6 +147,7 @@ export const occasionArtwork: Record<InteractiveCardOccasionTheme, OccasionArtwo
   },
   "black-friday": {
     header: BlackFridayHeaderBadge,
+    background: BlackFridayBackgroundArtwork,
     insetsTitle: false,
   },
 };

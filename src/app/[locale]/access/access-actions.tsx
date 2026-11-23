@@ -12,7 +12,10 @@ import {
 } from "react";
 
 import Button from "@/components/common/Button";
-import { StampIn } from "@/components/other/BlackFriday/BlackFridayMotion";
+import {
+  StampIn,
+  usePendingUntilSeen,
+} from "@/components/other/BlackFriday/BlackFridayMotion";
 
 import {
   LegendButton,
@@ -35,6 +38,7 @@ import {
   ActionResult,
   CampaignMark,
   CardToggle,
+  InkStamp,
   QuietButton,
   QuietLink,
 } from "./access-cards.styles";
@@ -621,4 +625,16 @@ export function FoldingCard({
 /** The Black Friday mark of a card, landing like a stamp when first seen. */
 export function CampaignMarkStamp({ children }: { children: ReactNode }) {
   return <StampIn as={CampaignMark}>{children}</StampIn>;
+}
+
+/** The red-ink Black Friday stamp of a card (see InkStamp). */
+export function CampaignInkStamp({ figure, label }: { figure: string; label: string }) {
+  const ref = usePendingUntilSeen<HTMLSpanElement>();
+
+  return (
+    <InkStamp ref={ref} aria-hidden="true">
+      <small>{label}</small>
+      <b>{figure}</b>
+    </InkStamp>
+  );
 }

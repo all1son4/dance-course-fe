@@ -8,6 +8,7 @@ import { previewClipRootProps } from "@/lib/preview-clip";
 import ChoreoCampaignBadge from "./ChoreoCampaignBadge";
 import {
   ButtonBox,
+  CampaignBackdrop,
   CARD_MEDIA_RADIUS,
   CardContainer,
   CardFooter,
@@ -73,6 +74,7 @@ export default function ChoreoCard({
         $isCampaign={Boolean(campaignBadge)}
         $isSpecialOffer={specialOffer}
       >
+        {campaignBadge && <CampaignBackdrop aria-hidden="true" />}
         {campaignBadge && (
           <ChoreoCampaignBadge>
             {campaignBadge}

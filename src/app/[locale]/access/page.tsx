@@ -57,6 +57,7 @@ import { normalizedSiteUrl } from "@/lib/seo";
 
 import {
   CalendarSubscribe,
+  CampaignInkStamp,
   CampaignMarkStamp,
   CycleStamp,
   FoldingCard,
@@ -314,10 +315,10 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
                 × {card.count}
               </span>
             )}
+            {card.campaign === "black-friday" && (
+              <CampaignMarkStamp>{blackFridayT("myAccess.chip")}</CampaignMarkStamp>
+            )}
           </CardTitle>
-          {card.campaign === "black-friday" && (
-            <CampaignMarkStamp>{blackFridayT("myAccess.chip")}</CampaignMarkStamp>
-          )}
           {ATTENTION_CHIPS.has(card.chip) && (
             <StatusChip
               $tone={
@@ -330,6 +331,12 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
         </CardHead>
         {summary && <CardSummary>{translateLine(summary)}</CardSummary>}
         {counted && <AccessCount count={counted} dates={dates} t={t} />}
+        {card.campaign === "black-friday" && (
+          <CampaignInkStamp
+            figure={blackFridayT(card.kind === "hub" ? "hub.badge" : "choreo.badge")}
+            label={blackFridayT("ribbon.title")}
+          />
+        )}
         <CardMore id={detailsId}>
           {detail && <CardDetail>{translateLine(detail)}</CardDetail>}
           {note && <CardNote>{translateLine(note)}</CardNote>}
