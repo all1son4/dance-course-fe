@@ -30,7 +30,6 @@ import {
   buildMyAccessCount,
   getMyAccessCardDetail,
   getMyAccessCardNote,
-  type MyAccessCount,
 } from "@/lib/my-access/count";
 import { createAccessDates } from "@/lib/my-access/dates";
 import {
@@ -65,6 +64,7 @@ import {
   ShareCourse,
 } from "./access-actions";
 import AccessAnalytics from "./access-analytics";
+import { AccessCount } from "./access-count";
 import {
   ACCESS_APPEAR_CSS,
   ACCESS_CANVAS_CSS,
@@ -72,7 +72,6 @@ import {
   AccessHeader,
   AccessLayout,
   AccessSection,
-  CalendarLeaf,
   CalendarLink,
   CardActions,
   CardDetail,
@@ -82,9 +81,6 @@ import {
   CardNote,
   CardSummary,
   CardTitle,
-  Count,
-  CountText,
-  CountValue,
   EmptyCard,
   Eyebrow,
   Facts,
@@ -100,7 +96,6 @@ import {
   SideTitle,
   StatusChip,
   VisuallyHidden,
-  WeekCounts,
   Zone,
   ZoneHeader,
   ZoneList,
@@ -138,9 +133,6 @@ const ATTENTION_CHIPS = new Set([
   "confirmTelegram",
   "endsSoon",
 ]);
-
-const weekState = (week: number, current: number) =>
-  week < current ? "done" : week === current ? "now" : "ahead";
 
 const AccessCanvas = ({
   children,
@@ -240,17 +232,9 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     return title ? [{ ...step, title }] : [];
   });
 
-  const {
-    dayMonth,
-    formatDate,
-    formatDayNumber,
-    formatMonthShort,
-    formatWeekday,
-    formatYear,
-    keepTogether,
-    monthAfterDay,
-    purchaseDay,
-  } = createAccessDates(locale);
+  const dates = createAccessDates(locale);
+  const { dayMonth, formatDate, formatYear, keepTogether, monthAfterDay, purchaseDay } =
+    dates;
   const translateLine = ({ key, values }: MyAccessLine) =>
     t(
       `cards.${key}`,
@@ -279,106 +263,6 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           buildMyAccessCalendarFeedPath(calendarToken, locale),
         )
       : null;
-
-  /** A date as a calendar leaf; the text next to it names the date for screen readers. */
-  const calendarLeaf = (iso: string) => (
-    <CalendarLeaf aria-hidden>
-      <small>{formatMonthShort.format(new Date(iso)).replace(/\.$/u, "")}</small>
-      <b>{formatDayNumber.format(new Date(iso))}</b>
-    </CalendarLeaf>
-  );
-
-  /** The count of a card: the number, what it counts, the date. */
-  const renderCount = (count: MyAccessCount) => {
-    switch (count.kind) {
-      case "startsIn":
-        return (
-          <Count>
-            {calendarLeaf(count.at)}
-            <CountText>
-              <b>
-                {count.days === 0
-                  ? t("count.startsToday")
-                  : `${count.days} ${t("count.startsIn", { days: count.days })}`}
-              </b>
-              <span>
-                {formatWeekday.format(new Date(count.at))}
-                <VisuallyHidden>, {dayMonth(count.at)}</VisuallyHidden>
-              </span>
-            </CountText>
-          </Count>
-        );
-      case "left":
-        return (
-          <Count $tone={count.urgent ? "urgent" : "plain"}>
-            <CountValue>{count.days}</CountValue>
-            <CountText>
-              <b>{t("count.left", { days: count.days })}</b>
-              <span>{t("count.until", { date: dayMonth(count.until) })}</span>
-            </CountText>
-          </Count>
-        );
-      case "week":
-        return (
-          <Count>
-            <WeekCounts
-              aria-label={t("count.weekOf", {
-                current: count.current,
-                total: count.total,
-              })}
-              role="img"
-            >
-              {Array.from({ length: count.total }, (_, index) => (
-                <i data-state={weekState(index + 1, count.current)} key={index}>
-                  {index + 1}
-                </i>
-              ))}
-            </WeekCounts>
-            <CountText>
-              <b>{t("count.week")}</b>
-            </CountText>
-          </Count>
-        );
-      case "paidDays":
-        return (
-          <Count>
-            <CountValue>{count.days}</CountValue>
-            <CountText>
-              <b>{t("count.paidDays", { days: count.days })}</b>
-              <span>{t("count.fromJoin")}</span>
-            </CountText>
-          </Count>
-        );
-      case "ended":
-        return (
-          <Count $tone="muted">
-            {calendarLeaf(count.at)}
-            <CountText>
-              <b>{t("count.ended")}</b>
-              <VisuallyHidden>{dayMonth(count.at)}</VisuallyHidden>
-            </CountText>
-          </Count>
-        );
-      case "openNow":
-        return (
-          <Count>
-            <CountText>
-              <b>{t("count.openNow")}</b>
-              <span>{t("count.openNowNote")}</span>
-            </CountText>
-          </Count>
-        );
-      case "lifetime":
-        return (
-          <Count>
-            <CountValue aria-hidden>∞</CountValue>
-            <CountText>
-              <b>{t("count.lifetime")}</b>
-            </CountText>
-          </Count>
-        );
-    }
-  };
 
   /**
    * The chip in a card's corner, short but saying what is wrong: which link
@@ -435,7 +319,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
           )}
         </CardHead>
         {summary && <CardSummary>{translateLine(summary)}</CardSummary>}
-        {counted && renderCount(counted)}
+        {counted && <AccessCount count={counted} dates={dates} t={t} />}
         <CardMore id={detailsId}>
           {detail && <CardDetail>{translateLine(detail)}</CardDetail>}
           {note && <CardNote>{translateLine(note)}</CardNote>}
@@ -498,13 +382,17 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
   const firstShare = sharePaths.findIndex(Boolean);
 
   const nextTerm =
-    nextStep && !nextStep.started
-      ? renderCount({
+    nextStep && !nextStep.started ? (
+      <AccessCount
+        count={{
           at: nextStep.startsAt,
           days: Math.max(0, warsawDaysBetween(now, new Date(nextStep.startsAt))),
           kind: "startsIn",
-        })
-      : null;
+        }}
+        dates={dates}
+        t={t}
+      />
+    ) : null;
 
   return (
     <AccessCanvas daypart={daypart}>
