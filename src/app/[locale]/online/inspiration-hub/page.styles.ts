@@ -79,3 +79,28 @@ export const MobileImagesBox = styled(GroupMobileImagesBox)`
     }
   }
 `;
+
+/* ---------- Black Friday (only while the campaign runs) ---------- */
+
+export const CampaignBadgeRow = styled.div`
+  margin-bottom: 16px;
+
+  @media (max-width: 767px) {
+    margin-bottom: 12px;
+  }
+`;
+
+/* What the campaign gives, right under the facts, in the hero's running text. */
+export const CampaignNote = styled.p`
+  margin: -8px 0 28px;
+  max-width: 470px;
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+  font-weight: var(--weight-text);
+  color: var(--ink-muted);
+
+  & strong {
+    font-weight: 600;
+    color: var(--brand);
+  }
+`;

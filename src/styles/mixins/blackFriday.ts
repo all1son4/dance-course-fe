@@ -35,7 +35,7 @@ export const blackFridayPill = css`
 
 /** The label text inside a pill: "BLACK FRIDAY −33%". */
 export const blackFridayLabel = css`
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -43,13 +43,14 @@ export const blackFridayLabel = css`
   white-space: nowrap;
 `;
 
-/** A light card that takes part in the campaign: a near-black edge and a red glow. */
+/** A light card that takes part in the campaign: a brand-red edge and glow. */
 export const blackFridayCardEdge = css`
   box-shadow:
     0 14px 34px rgba(12, 11, 13, 0.14),
-    0 0 34px rgba(124, 0, 2, 0.24),
+    0 0 0 4px rgba(124, 0, 2, 0.08),
+    0 0 40px rgba(124, 0, 2, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 0 0 1px rgba(12, 11, 13, 0.5);
+    inset 0 0 0 1.5px rgba(124, 0, 2, 0.65);
 
   @media (forced-colors: active) {
     box-shadow: none;

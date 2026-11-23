@@ -330,15 +330,22 @@ export const CurrencyBox = styled.div`
   }
 `;
 /* Sits right above its value even when the neighbour wraps on a narrow phone. */
-export const MoneyTitle = styled.p`
+export const MoneyTitle = styled.p<{ $isCampaign?: boolean }>`
   align-self: end;
-  font-weight: 500;
+  font-weight: ${({ $isCampaign }) => ($isCampaign ? 600 : 500)};
   font-style: normal;
   font-size: var(--text-small);
   line-height: 1.1;
   letter-spacing: 0;
   margin: 0;
+  color: ${({ $isCampaign }) => ($isCampaign ? "var(--brand)" : "var(--ink-muted)")};
+`;
+
+/* Black Friday: the regular price, struck, before the campaign one. */
+export const RegularPrice = styled.s`
+  font-size: var(--text-body-sm);
   color: var(--ink-muted);
+  white-space: nowrap;
 `;
 
 export const PriceBox = styled.div`

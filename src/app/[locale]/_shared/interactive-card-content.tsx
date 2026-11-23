@@ -126,3 +126,15 @@ export const CampaignFactRegular = styled.s`
   color: var(--ink-muted);
   white-space: nowrap;
 `;
+
+/* The campaign price itself, in the brand red so it reads before anything else. */
+export const CampaignFactValue = styled(DetailFactText)`
+  && {
+    color: var(--brand);
+  }
+`;
+
+/* The campaign value inside a regular fact (e.g. «16 недель» in a hero). */
+export const CampaignAccent = styled.span`
+  color: var(--brand);
+`;

@@ -18,6 +18,7 @@ import {
   getResolvedCheckoutCurrency,
   INSPIRATION_HUB_ACCESS_OFFER_ID,
   INSPIRATION_HUB_DISCOUNT_SLUG,
+  isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
@@ -27,6 +28,7 @@ import {
   isBirthdayOfferId,
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
+import { isBlackFridayOffer } from "@/lib/black-friday";
 import {
   PAYMENT_CHECKBOXES,
   PAYMENT_INPUTS,
@@ -231,6 +233,7 @@ const PaymentPage = observer(function PaymentPage({
   const t = useTranslations("PaymentPage");
   const commonT = useTranslations("Common");
   const stripeT = useTranslations("StripePaymentTabs");
+  const blackFridayT = useTranslations("BlackFriday.checkout");
   const productT = useTranslations("SellableProducts");
   const [searchKey, setSearchKey] = useState(initialSearchKey);
   // Stripe is confirming: the customer data it was minted for must not move.
@@ -853,8 +856,22 @@ const PaymentPage = observer(function PaymentPage({
   )
     ? productT(paymentStore.selectedOffer.labelKey)
     : "";
+  // Black Friday 2026: the storefront catalogue marks the offers on sale.
+  const campaignOffer = isBlackFridayOffer(paymentStore.selectedOffer)
+    ? paymentStore.selectedOffer
+    : null;
+  const campaignRegularPrice =
+    campaignOffer?.compareAtPrices?.[paymentStore.selectedCurrency];
   const summaryProps: Omit<CheckoutSummaryCardProps, "title"> = {
     amountLabel: t("summary.amountLabel"),
+    campaign: campaignOffer
+      ? {
+          label: blackFridayT("priceLabel"),
+          regularPrice: campaignRegularPrice
+            ? formatCheckoutPrice(campaignRegularPrice, paymentStore.selectedCurrency)
+            : null,
+        }
+      : null,
     currencyLabel: t("summary.currencyLabel"),
     // Format/choice copy belongs to the selected offer, not the shared tutorial description.
     descriptionParagraphs: paymentStore.selectedProduct.descriptionKeys
@@ -865,7 +882,11 @@ const PaymentPage = observer(function PaymentPage({
       )
       .map((paragraphKey) => ({
         key: paragraphKey,
-        text: productT(paragraphKey),
+        // A Black Friday Hub runs 16 weeks: its one line says so instead of 8.
+        text:
+          campaignOffer && isInspirationHubOfferId(campaignOffer.id)
+            ? blackFridayT("hubSummary")
+            : productT(paragraphKey),
       })),
     eyebrow: t(isRenewalCheckout ? "summary.eyebrowRenewal" : "summary.eyebrow"),
     formattedPrice: formatCheckoutPrice(

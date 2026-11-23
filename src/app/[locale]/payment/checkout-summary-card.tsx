@@ -8,6 +8,7 @@ import {
   Price,
   PriceBox,
   PriceSkeleton,
+  RegularPrice,
   SummaryBar,
   SummaryBarChevron,
   SummaryBarDropdown,
@@ -32,6 +33,8 @@ import { CheckoutProgressFill, CheckoutProgressTrack } from "./page.styles";
 
 export type CheckoutSummaryCardProps = {
   amountLabel: string;
+  /** Black Friday: the label in the brand red and the regular price, struck. */
+  campaign?: { label: string; regularPrice: string | null } | null;
   currencyLabel: string;
   descriptionParagraphs: Array<{
     key: string;
@@ -109,6 +112,7 @@ const SummaryDetails = ({
 
 const SummaryPrice = ({
   amountLabel,
+  campaign,
   currencyLabel,
   formattedPrice,
   isCurrencyLocked,
@@ -118,6 +122,7 @@ const SummaryPrice = ({
 }: Pick<
   CheckoutSummaryCardProps,
   | "amountLabel"
+  | "campaign"
   | "currencyLabel"
   | "formattedPrice"
   | "isCurrencyLocked"
@@ -142,13 +147,20 @@ const SummaryPrice = ({
         />
       </CurrencyBox>
       <PriceBox>
-        <MoneyTitle>{amountLabel}</MoneyTitle>
+        <MoneyTitle $isCampaign={Boolean(campaign)}>
+          {campaign?.label ?? amountLabel}
+        </MoneyTitle>
         {isLoading ? (
           <Price aria-busy="true">
             <PriceSkeleton aria-hidden />
           </Price>
         ) : (
           <Price key={selectedCurrency} $isSwapped={hasSwitchedCurrency}>
+            {campaign?.regularPrice ? (
+              <>
+                <RegularPrice>{campaign.regularPrice}</RegularPrice>{" "}
+              </>
+            ) : null}
             {formattedPrice}
           </Price>
         )}

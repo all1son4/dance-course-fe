@@ -4,6 +4,7 @@ import type { ProductSaleState } from "@/lib/sales-availability";
 import {
   CampaignFactLabel,
   CampaignFactRegular,
+  CampaignFactValue,
   ContentStack,
   DetailFactText,
   DetailText,
@@ -40,7 +41,7 @@ const CampaignFact = ({
 }) => (
   <ContentStack>
     <CampaignFactLabel>{label}</CampaignFactLabel>
-    <DetailFactText>
+    <CampaignFactValue>
       {price}
       {regularPrice ? (
         <>
@@ -48,7 +49,7 @@ const CampaignFact = ({
           <CampaignFactRegular>{regularPrice}</CampaignFactRegular>
         </>
       ) : null}
-    </DetailFactText>
+    </CampaignFactValue>
   </ContentStack>
 );
 
