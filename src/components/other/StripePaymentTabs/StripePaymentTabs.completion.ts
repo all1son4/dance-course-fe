@@ -1,5 +1,6 @@
 import type { PaymentIntent } from "@stripe/stripe-js";
 
+import { cancelPaymentIntents } from "@/lib/checkout/cancel-payment-intents";
 import { trackApiError } from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 
@@ -7,7 +8,6 @@ import type { StripePaymentFormProps } from "./StripePaymentTabs.helpers";
 import type { StripePaymentTabsProps } from "./StripePaymentTabs.types";
 
 const PAYMENT_API_ENDPOINTS = {
-  cancelIntent: "/api/stripe/payment-intent/cancel",
   getIntentStatus: "/api/stripe/payment-intent/status",
 } as const;
 export const PAYMENT_RESULT_PATHS = {
@@ -242,26 +242,6 @@ export const redirectToResultPage = (
   window.location.assign(
     createResultPageUrl(pathname, resultPageContext, nextPaymentIntentId),
   );
-};
-
-/** One cancel request per intent, fire-and-forget; `keepalive` lets it outlive the page. */
-export const cancelPaymentIntents = (
-  paymentIntentIds: string[],
-  checkoutSessionId: string,
-): void => {
-  paymentIntentIds.forEach((paymentIntentId) => {
-    void fetch(PAYMENT_API_ENDPOINTS.cancelIntent, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        checkoutSessionId,
-        paymentIntentId,
-      }),
-      keepalive: true,
-    }).catch(() => undefined);
-  });
 };
 
 export const cancelUnusedPaymentIntents = ({
