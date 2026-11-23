@@ -1,6 +1,6 @@
 import type { FC } from "react";
 
-import { PlaceholderBox } from "./Placeholder.styled";
+import { PlaceholderBox } from "./Placeholder.styles";
 import { TInputPlaceholder } from "./Placeholder.types";
 
 export const Placeholder: FC<TInputPlaceholder> = ({ text }) => (

@@ -11,6 +11,7 @@ import {
   getLocalizedOfferMetadataByOfferId,
   shouldShowOfferToBuyer,
 } from "@/lib/sellable-products-localization";
+import { getResolvedCheckoutLocale } from "@/lib/stripe-checkout";
 import {
   ensureTelegramAccessLinkForPayment,
   isStandardTelegramLinkPayment,
@@ -24,7 +25,6 @@ import {
 } from "@/lib/telegram/offer-access";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 
-import { getResolvedCheckoutLocale } from "../../../payment-intent/lib";
 import {
   buildPurchaseSuccessEmail,
   type PurchaseSuccessEmailAccessKind,

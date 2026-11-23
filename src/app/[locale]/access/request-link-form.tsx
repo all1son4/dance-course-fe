@@ -9,7 +9,7 @@ import { getEmailSuggestion } from "@/lib/email-suggestion";
 import { EMAIL_PATTERN } from "@/lib/email-suggestion";
 import { trackAnalyticsEvent } from "@/lib/mixpanel-analytics";
 
-import { RequestForm, RequestMessage, RequestRow } from "./page.styles";
+import { RequestForm, RequestMessage, RequestRow } from "./access-aside.styles";
 
 type RequestLinkFormProps = {
   locale: string;

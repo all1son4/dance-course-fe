@@ -31,10 +31,7 @@ type GlassOptions = {
   bgParam?: string;
   frostPx?: number;
   depth?: number;
-  borderWidthPx?: number;
   borderOpacity?: number;
-  sparkleAngleDeg?: number;
-  sparkleBoost?: number;
   shadowStrength?: number;
   /**
    * Scales how far the drop shadow reaches without darkening it. Large floating
@@ -60,9 +57,6 @@ type GlassOptions = {
    */
   fillPercent?: number;
   hoverEffect?: boolean;
-  bgParamFallback?: string;
-  bgParamReducedTransparency?: string;
-  bgParamHighContrast?: string;
 };
 
 type GlassPreset = {
@@ -283,19 +277,13 @@ export const glass = ({
   bgParam,
   frostPx,
   depth,
-  borderWidthPx,
   borderOpacity,
-  sparkleAngleDeg,
-  sparkleBoost,
   shadowStrength,
   elevation,
   saturatePercent,
   contrastPercent,
   fillPercent,
   hoverEffect = true,
-  bgParamFallback,
-  bgParamReducedTransparency,
-  bgParamHighContrast,
 }: GlassOptions = {}) => {
   const preset = GLASS_VARIANTS[variant];
   const toneBase = GLASS_TONES[tone];
@@ -304,10 +292,10 @@ export const glass = ({
   const resolvedBgParam = bgParam ?? preset.bgParam;
   const resolvedFrostPx = clamp(frostPx ?? preset.frostPx, 0, 64);
   const resolvedDepth = clamp(depth ?? preset.depth, 0, 100);
-  const resolvedBorderWidthPx = clamp(borderWidthPx ?? preset.borderWidthPx, 0, 4);
+  const resolvedBorderWidthPx = preset.borderWidthPx;
   const resolvedBorderOpacity = clamp(borderOpacity ?? preset.borderOpacity, 0, 1);
-  const resolvedSparkleAngleDeg = sparkleAngleDeg ?? preset.sparkleAngleDeg;
-  const resolvedSparkleBoost = clamp(sparkleBoost ?? preset.sparkleBoost, 0.4, 1.6);
+  const resolvedSparkleAngleDeg = preset.sparkleAngleDeg;
+  const resolvedSparkleBoost = preset.sparkleBoost;
   const resolvedShadowStrength = clamp(shadowStrength ?? 1, 0, 1.5);
   const resolvedElevation = clamp(elevation ?? 1, 0.5, 4);
   const resolvedSaturate = clamp(saturatePercent ?? 180, 100, 240);
@@ -352,15 +340,9 @@ export const glass = ({
   const highContrastMixPercent = clamp(50 + k * 8 + (hasSolidTint ? 4 : 0), 48, 76);
 
   const resolvedFillColor = `color-mix(in srgb, ${resolvedBgParam} ${fillMixPercent}%, transparent)`;
-  const fallbackBg =
-    bgParamFallback ??
-    `color-mix(in srgb, ${resolvedBgParam} ${fallbackMixPercent}%, ${toneBase.fallback})`;
-  const reducedBg =
-    bgParamReducedTransparency ??
-    `color-mix(in srgb, ${resolvedBgParam} ${reducedMixPercent}%, ${toneBase.reduced})`;
-  const highContrastBg =
-    bgParamHighContrast ??
-    `color-mix(in srgb, ${resolvedBgParam} ${highContrastMixPercent}%, ${toneBase.highContrast})`;
+  const fallbackBg = `color-mix(in srgb, ${resolvedBgParam} ${fallbackMixPercent}%, ${toneBase.fallback})`;
+  const reducedBg = `color-mix(in srgb, ${resolvedBgParam} ${reducedMixPercent}%, ${toneBase.reduced})`;
+  const highContrastBg = `color-mix(in srgb, ${resolvedBgParam} ${highContrastMixPercent}%, ${toneBase.highContrast})`;
   const materialOpacity = clamp(0.88 + k * 0.08, 0.88, 0.94);
   const materialRed = parsedBg
     ? Math.round(parsedBg.red * parsedBg.alpha + toneBase.channel * (1 - parsedBg.alpha))
@@ -376,17 +358,13 @@ export const glass = ({
   const materialFill = parsedBg
     ? `rgba(${materialRed}, ${materialGreen}, ${materialBlue}, ${materialOpacity})`
     : fallbackBg;
-  const unsupportedSurfaceFill = bgParamFallback ?? materialFill;
-  const reducedSurfaceFill =
-    bgParamReducedTransparency ??
-    (parsedBg
-      ? `rgba(${materialRed}, ${materialGreen}, ${materialBlue}, 0.98)`
-      : reducedBg);
-  const highContrastSurfaceFill =
-    bgParamHighContrast ??
-    (parsedBg
-      ? `rgb(${materialRed}, ${materialGreen}, ${materialBlue})`
-      : highContrastBg);
+  const unsupportedSurfaceFill = materialFill;
+  const reducedSurfaceFill = parsedBg
+    ? `rgba(${materialRed}, ${materialGreen}, ${materialBlue}, 0.98)`
+    : reducedBg;
+  const highContrastSurfaceFill = parsedBg
+    ? `rgb(${materialRed}, ${materialGreen}, ${materialBlue})`
+    : highContrastBg;
   const baseDropShadowOpacity =
     (hasSolidTint ? 0.05 : 0.065) + k * (hasSolidTint ? 0.035 : 0.04);
   const baseDropShadowY = (hasSolidTint ? 3 : 4) + k * (hasSolidTint ? 5 : 6);

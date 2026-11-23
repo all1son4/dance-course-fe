@@ -1,4 +1,3 @@
-import { getStripeServer } from "@/app/api/stripe/payment-intent/lib";
 import { runStripeBackgroundJobs } from "@/app/api/stripe/webhook/_lib/background-jobs";
 import {
   deliverStripeOutboxJob,
@@ -28,6 +27,7 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 
 export const runtime = "nodejs";
 

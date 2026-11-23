@@ -1,4 +1,3 @@
-import { getResolvedCheckoutLocale } from "@/app/api/stripe/payment-intent/lib";
 import {
   INSTAGRAM_PROFILE_HANDLE,
   PERSONAL_TELEGRAM_HANDLE,
@@ -6,8 +5,9 @@ import {
   SUPPORT_TELEGRAM_URL,
 } from "@/constants/links";
 import { formatPrice } from "@/constants/sellable-products";
-import { formatEmailDate } from "@/lib/email/dates";
+import { formatEmailDate, getRussianPlural } from "@/lib/email/dates";
 import { buildMyAccessEmailBlock, escapeEmailHtml } from "@/lib/email/my-access";
+import { getResolvedCheckoutLocale } from "@/lib/stripe-checkout";
 
 /** HUB-D43: the Plus Hub of a cohort that has not started opens on its start day. */
 const PLUS_HUB_SCHEDULED_COPY = {
@@ -17,24 +17,6 @@ const PLUS_HUB_SCHEDULED_COPY = {
 } as const;
 
 const PDF_RECEIPT_LINK_PATTERN = /\.pdf(?:[?#].*)?$/i;
-
-const getRussianDays = (days: number) => {
-  const lastTwoDigits = days % 100;
-  const lastDigit = days % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "дней";
-  if (lastDigit === 1) return "день";
-  return lastDigit >= 2 && lastDigit <= 4 ? "дня" : "дней";
-};
-
-const getRussianWeeks = (weeks: number) => {
-  const lastTwoDigits = weeks % 100;
-  const lastDigit = weeks % 10;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return "недель";
-  if (lastDigit === 1) return "неделя";
-  return lastDigit >= 2 && lastDigit <= 4 ? "недели" : "недель";
-};
 
 const getPolishWeeks = (weeks: number) => {
   if (weeks === 1) return "tydzień";
@@ -276,13 +258,16 @@ const EMAIL_COPY = {
   ru: {
     accessLabel: "Доступ",
     accessSummary: {
-      days: (days: number) => `${days} ${getRussianDays(days)} с момента вступления`,
+      days: (days: number) =>
+        `${days} ${getRussianPlural(days, ["день", "дня", "дней"])} с момента вступления`,
       lifetime: "навсегда",
       onlineGroup: "без ограничения по сроку",
       privateLesson: "дата и время — по договорённости",
     },
-    formatDays: (days: number) => `${days} ${getRussianDays(days)}`,
-    formatWeeks: (weeks: number) => `${weeks} ${getRussianWeeks(weeks)}`,
+    formatDays: (days: number) =>
+      `${days} ${getRussianPlural(days, ["день", "дня", "дней"])}`,
+    formatWeeks: (weeks: number) =>
+      `${weeks} ${getRussianPlural(weeks, ["неделя", "недели", "недель"])}`,
     inspirationHubAccessUntil: "Доступ к Inspiration Hub — до {date}",
     amountLabel: "Сумма",
     autoReplyNote:

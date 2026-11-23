@@ -512,6 +512,48 @@ test("resetCheckoutForm starts a fresh session with default state", () => {
   assert.equal(store.renewalCampaignSlug, "");
 });
 
+const cancelCallsOf = (calls: ReturnType<typeof installJsonFetchFixture>) =>
+  calls.map((call) => ({
+    body: JSON.parse(call.body),
+    contentType: call.headers.get("content-type"),
+    method: call.method,
+    url: call.url,
+  }));
+
+test("a reset cancels each live intent of the old session, in order", async (t) => {
+  const store = new PaymentStore();
+  const previousSessionId = store.checkoutSessionId;
+  store.stripePaymentIntentIds = { pln: "pi_pln", eur: "pi_eur" };
+  const calls = installJsonFetchFixture(t, [{ body: {} }, { body: {} }]);
+
+  store.resetCheckoutForm();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(
+    cancelCallsOf(calls),
+    ["pi_pln", "pi_eur"].map((paymentIntentId) => ({
+      body: { checkoutSessionId: previousSessionId, paymentIntentId },
+      contentType: "application/json",
+      method: "POST",
+      url: "/api/stripe/payment-intent/cancel",
+    })),
+  );
+});
+
+test("an intent shared by both currencies is cancelled once", async (t) => {
+  const store = new PaymentStore();
+  store.stripePaymentIntentIds = { pln: "pi_same", eur: "pi_same" };
+  const calls = installJsonFetchFixture(t, [{ body: {} }]);
+
+  store.setSalesClosed();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(
+    cancelCallsOf(calls).map((call) => call.body.paymentIntentId),
+    ["pi_same"],
+  );
+});
+
 test("[BEH-REN-01] setting a renewal slug invalidates intents minted without it", () => {
   const store = new PaymentStore();
   store.stripeClientSecrets = { pln: "secret_pln" };

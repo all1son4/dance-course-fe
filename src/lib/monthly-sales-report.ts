@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 
 import { and, asc, eq, sql } from "drizzle-orm";
 
@@ -9,7 +9,6 @@ import { getCanonicalSucceededStripeEvents } from "@/db/stripe-sales";
 import {
   ACCOUNTING_TIME_ZONE,
   getAccountingCalendarDateValue,
-  getAccountingDateTimeValue,
   getAccountingMonthRange,
   getAccountingMonthValue,
   getPreviousAccountingMonthValue,
@@ -21,10 +20,14 @@ import {
   processBusinessOperationOutboxJob,
 } from "@/lib/business-operation-outbox";
 import { findMonthlyReportRunRecord } from "@/lib/business-operation-read-runtime";
-import { escapeSpreadsheetCsvCell } from "@/lib/csv";
 import { formatEmailDate } from "@/lib/email/dates";
-import type { MonthlySalesReportRunRecord } from "@/lib/monthly-sales-report-record";
 import { getAdminPurchaseLine } from "@/lib/sellable-products-localization";
+
+import {
+  compareSaleRecords,
+  generateMonthlySalesReportContent,
+  type MonthlySalesReportSaleRecord,
+} from "./monthly-sales-report-csv";
 
 const MONTHLY_SALES_REPORT_FAMILY = "monthly_sales";
 const MONTHLY_SALES_REPORT_RECIPIENT = process.env.RESEND_REPLY_TO?.trim() ?? "";
@@ -55,62 +58,12 @@ export type MonthlySalesReportRunResult = {
   status: "sent" | "skipped" | "failed";
 };
 export type MonthlySalesReportDeliveryResponse = Omit<MonthlySalesReportRunResult, "csv">;
-export type MonthlySalesReportSaleRecord = {
-  amountMinor: string;
-  currency: string;
-  customerCountry: string;
-  customerEmail: string;
-  customerFullName: string;
-  invoiceNumber: string;
-  paymentIntentId: string;
-  purchaseItem: string;
-  saleTimestampIso: string;
-  settlementAmountMinor: string;
-  settlementCurrency: string;
-  stripeBalanceTransactionId: string;
-  stripeFeeAmountMinor: string;
-  stripeNetAmountMinor: string;
-};
-
 type ExistingMonthlySalesReportRun = NonNullable<
   Awaited<ReturnType<typeof findMonthlyReportRunRecord>>
 >;
 
 const capitalizeFirstLetter = (value: string) =>
   `${value[0]?.toUpperCase() ?? ""}${value.slice(1)}`;
-
-const parseMinorAmount = (amountMinor: string) => {
-  const normalizedAmountMinor = amountMinor.trim();
-
-  if (!/^-?\d+$/u.test(normalizedAmountMinor)) {
-    throw new Error("monthly_sales_report_stripe_data_incomplete");
-  }
-
-  return BigInt(normalizedAmountMinor);
-};
-
-const formatAmount = (amountMinor: string | bigint, currency: string) => {
-  const parsedAmountMinor =
-    typeof amountMinor === "bigint" ? amountMinor : parseMinorAmount(amountMinor);
-  const normalizedCurrency = currency.trim().toUpperCase();
-
-  if (!normalizedCurrency) {
-    throw new Error("monthly_sales_report_stripe_data_incomplete");
-  }
-
-  const zero = BigInt(0);
-  const minorUnitsPerMajor = BigInt(100);
-  const sign = parsedAmountMinor < zero ? "-" : "";
-  const absoluteAmountMinor =
-    parsedAmountMinor < zero ? -parsedAmountMinor : parsedAmountMinor;
-  const majorAmount = absoluteAmountMinor / minorUnitsPerMajor;
-  const fractionalAmount = String(absoluteAmountMinor % minorUnitsPerMajor).padStart(
-    2,
-    "0",
-  );
-
-  return `${sign}${majorAmount}.${fractionalAmount} ${normalizedCurrency}`;
-};
 
 export const parseReportMonth = parseAccountingMonthValue;
 
@@ -175,204 +128,6 @@ export const getMonthlySalesReportPeriod = ({
     month: selectedMonthValue,
     startUtcIso: monthRange.start.toISOString(),
   } satisfies MonthlySalesReportPeriod;
-};
-
-const buildCsv = (rows: string[][]) => {
-  const headerRow = [
-    `Sale date (${ACCOUNTING_TIME_ZONE})`,
-    "Invoice number",
-    "Name / Email",
-    "Country of purchase",
-    "Item",
-    "Original amount (before Stripe conversion)",
-    "Sale amount (after Stripe conversion)",
-    "Stripe fee",
-    "Net amount (after Stripe fee)",
-  ];
-  const csvRows = [headerRow, ...rows];
-
-  return csvRows
-    .map((row) => row.map((cell) => escapeSpreadsheetCsvCell(cell ?? "")).join(","))
-    .join("\n");
-};
-
-const formatCustomerIdentity = ({
-  customerEmail,
-  customerFullName,
-}: {
-  customerEmail: string;
-  customerFullName: string;
-}) => [customerFullName.trim(), customerEmail.trim()].filter(Boolean).join(" / ");
-
-const formatAccountingSaleTimestamp = (saleTimestampIso: string) => {
-  const saleDate = new Date(saleTimestampIso);
-
-  return Number.isNaN(saleDate.getTime())
-    ? saleTimestampIso
-    : getAccountingDateTimeValue(saleDate);
-};
-
-// The CSV goes to accounting and is always in English.
-const COUNTRY_NOT_SPECIFIED = "Not specified";
-
-const formatCountry = (country: string) =>
-  country.trim().toLocaleUpperCase("en-US") || COUNTRY_NOT_SPECIFIED;
-
-const formatCountryName = (country: string) => {
-  if (!/^[A-Z]{2}$/u.test(country)) {
-    return country;
-  }
-
-  try {
-    return new Intl.DisplayNames(["en"], { type: "region" }).of(country) ?? country;
-  } catch {
-    return country;
-  }
-};
-
-const compareCountrySaleRecords = (
-  left: MonthlySalesReportSaleRecord,
-  right: MonthlySalesReportSaleRecord,
-) => {
-  const leftCountry = formatCountry(left.customerCountry);
-  const rightCountry = formatCountry(right.customerCountry);
-
-  if (leftCountry === COUNTRY_NOT_SPECIFIED && rightCountry !== COUNTRY_NOT_SPECIFIED) {
-    return 1;
-  }
-
-  if (rightCountry === COUNTRY_NOT_SPECIFIED && leftCountry !== COUNTRY_NOT_SPECIFIED) {
-    return -1;
-  }
-
-  const countryDiff = leftCountry.localeCompare(rightCountry, "en-US");
-
-  return countryDiff || compareSaleRecords(left, right);
-};
-
-const formatSaleCsvRow = (saleRecord: MonthlySalesReportSaleRecord) => [
-  formatAccountingSaleTimestamp(saleRecord.saleTimestampIso),
-  saleRecord.invoiceNumber.trim(),
-  formatCustomerIdentity(saleRecord),
-  formatCountry(saleRecord.customerCountry),
-  saleRecord.purchaseItem.trim(),
-  formatAmount(saleRecord.amountMinor, saleRecord.currency),
-  formatAmount(saleRecord.settlementAmountMinor, saleRecord.settlementCurrency),
-  formatAmount(saleRecord.stripeFeeAmountMinor, saleRecord.settlementCurrency),
-  formatAmount(saleRecord.stripeNetAmountMinor, saleRecord.settlementCurrency),
-];
-
-const formatSaleCount = (count: number) => `${count} ${count === 1 ? "sale" : "sales"}`;
-
-const buildCountryTotalCsvRow = (
-  country: string,
-  saleRecords: MonthlySalesReportSaleRecord[],
-) => {
-  const countryName = formatCountryName(country);
-  const totals = saleRecords.reduce(
-    (result, saleRecord) => ({
-      feeMinor: result.feeMinor + parseMinorAmount(saleRecord.stripeFeeAmountMinor),
-      grossMinor: result.grossMinor + parseMinorAmount(saleRecord.settlementAmountMinor),
-      netMinor: result.netMinor + parseMinorAmount(saleRecord.stripeNetAmountMinor),
-    }),
-    {
-      feeMinor: BigInt(0),
-      grossMinor: BigInt(0),
-      netMinor: BigInt(0),
-    },
-  );
-
-  return [
-    "",
-    "",
-    "",
-    country,
-    `Total for ${countryName} (${formatSaleCount(saleRecords.length)})`,
-    "",
-    formatAmount(totals.grossMinor, "pln"),
-    formatAmount(totals.feeMinor, "pln"),
-    formatAmount(totals.netMinor, "pln"),
-  ];
-};
-
-const validateStripeFinancialData = (saleRecords: MonthlySalesReportSaleRecord[]) => {
-  const invalidPaymentIntentIds: string[] = [];
-
-  for (const saleRecord of saleRecords) {
-    const paymentIntentId = saleRecord.paymentIntentId.trim();
-    const balanceTransactionId = saleRecord.stripeBalanceTransactionId.trim();
-
-    try {
-      const originalAmountMinor = parseMinorAmount(saleRecord.amountMinor);
-      const settlementAmountMinor = parseMinorAmount(saleRecord.settlementAmountMinor);
-      const feeAmountMinor = parseMinorAmount(saleRecord.stripeFeeAmountMinor);
-      const netAmountMinor = parseMinorAmount(saleRecord.stripeNetAmountMinor);
-      const originalCurrency = saleRecord.currency.trim().toLowerCase();
-      const settlementCurrency = saleRecord.settlementCurrency.trim().toLowerCase();
-
-      if (
-        !paymentIntentId.startsWith("pi_") ||
-        !balanceTransactionId.startsWith("txn_") ||
-        !["eur", "pln"].includes(originalCurrency) ||
-        settlementCurrency !== "pln" ||
-        originalAmountMinor < BigInt(0) ||
-        settlementAmountMinor < BigInt(0) ||
-        feeAmountMinor < BigInt(0) ||
-        netAmountMinor < BigInt(0) ||
-        (originalCurrency === "pln" && originalAmountMinor !== settlementAmountMinor) ||
-        settlementAmountMinor !== feeAmountMinor + netAmountMinor
-      ) {
-        invalidPaymentIntentIds.push(paymentIntentId || "missing_payment_intent_id");
-      }
-    } catch {
-      invalidPaymentIntentIds.push(paymentIntentId || "missing_payment_intent_id");
-    }
-  }
-
-  if (invalidPaymentIntentIds.length > 0) {
-    console.error("Monthly sales report rejected incomplete Stripe financial data", {
-      affectedCount: invalidPaymentIntentIds.length,
-    });
-    throw new Error("monthly_sales_report_stripe_data_incomplete");
-  }
-};
-
-const buildCsvRows = (saleRecords: MonthlySalesReportSaleRecord[]) => {
-  const rows: string[][] = [];
-  let currentCountry = "";
-  let currentCountrySaleRecords: MonthlySalesReportSaleRecord[] = [];
-
-  for (const saleRecord of [...saleRecords].sort(compareCountrySaleRecords)) {
-    const country = formatCountry(saleRecord.customerCountry);
-
-    if (currentCountry && country !== currentCountry) {
-      rows.push(buildCountryTotalCsvRow(currentCountry, currentCountrySaleRecords));
-      currentCountrySaleRecords = [];
-    }
-
-    currentCountry = country;
-    currentCountrySaleRecords.push(saleRecord);
-    rows.push(formatSaleCsvRow(saleRecord));
-  }
-
-  if (currentCountry) {
-    rows.push(buildCountryTotalCsvRow(currentCountry, currentCountrySaleRecords));
-  }
-
-  return rows;
-};
-
-const compareSaleRecords = (
-  left: MonthlySalesReportSaleRecord,
-  right: MonthlySalesReportSaleRecord,
-) => {
-  const leftTimestamp = Date.parse(left.saleTimestampIso);
-  const rightTimestamp = Date.parse(right.saleTimestampIso);
-  const timestampDiff =
-    (Number.isFinite(leftTimestamp) ? leftTimestamp : 0) -
-    (Number.isFinite(rightTimestamp) ? rightTimestamp : 0);
-
-  return timestampDiff || left.paymentIntentId.localeCompare(right.paymentIntentId);
 };
 
 const formatReportMonthForSubject = (monthValue: string) =>
@@ -475,76 +230,6 @@ const buildEmailPayload = ({
       periodLabel,
       rowCount,
     }),
-  };
-};
-
-const buildMonthlySalesReportRunRecord = ({
-  csvSha256,
-  deliveredAtUtc,
-  deliveredTo,
-  generatedAtUtc,
-  period,
-  rowCount,
-  status,
-}: {
-  csvSha256: string;
-  deliveredAtUtc: string;
-  deliveredTo: string;
-  generatedAtUtc: string;
-  period: MonthlySalesReportPeriod;
-  rowCount: number;
-  status: "sent" | "skipped" | "failed";
-}): MonthlySalesReportRunRecord => ({
-  csv_sha256: csvSha256,
-  delivered_at_utc: deliveredAtUtc,
-  delivered_to: deliveredTo,
-  delivery_status: status,
-  generated_at_utc: generatedAtUtc,
-  period_end_utc: period.endUtcIso,
-  period_start_utc: period.startUtcIso,
-  report_family: MONTHLY_SALES_REPORT_FAMILY,
-  report_key: period.key,
-  row_count: String(rowCount),
-});
-
-const recordMonthlySalesReportRun = async (record: MonthlySalesReportRunRecord) => {
-  const deliveryStatus = record.delivery_status;
-
-  if (
-    deliveryStatus !== "failed" &&
-    deliveryStatus !== "sent" &&
-    deliveryStatus !== "skipped"
-  ) {
-    throw new Error("monthly_sales_report_delivery_status_invalid");
-  }
-
-  return recordMonthlyReportRunInDatabase({
-    csvSha256: record.csv_sha256,
-    deliveredAtUtc: record.delivered_at_utc ? new Date(record.delivered_at_utc) : null,
-    deliveredTo: record.delivered_to,
-    deliveryStatus,
-    generatedAtUtc: new Date(record.generated_at_utc),
-    periodEndUtc: new Date(record.period_end_utc),
-    periodStartUtc: new Date(record.period_start_utc),
-    reportFamily: record.report_family,
-    reportKey: record.report_key,
-    rowCount: Number.parseInt(record.row_count, 10) || 0,
-  });
-};
-
-export const generateMonthlySalesReportContent = (
-  saleRecords: MonthlySalesReportSaleRecord[],
-) => {
-  validateStripeFinancialData(saleRecords);
-  const csvRows = buildCsvRows(saleRecords);
-  const csv = buildCsv(csvRows);
-  const sha256 = createHash("sha256").update(csv).digest("hex");
-  const rowCount = saleRecords.length;
-
-  return {
-    csv,
-    rowCount,
-    sha256,
   };
 };
 
@@ -805,17 +490,18 @@ const generateAndDeliverMonthlySalesReportInternal = async ({
   const { csv, rowCount, sha256 } = generateMonthlySalesReportContent(saleRecords);
 
   if (rowCount === 0) {
-    await recordMonthlySalesReportRun(
-      buildMonthlySalesReportRunRecord({
-        csvSha256: sha256,
-        deliveredAtUtc: "",
-        deliveredTo: reportRecipient,
-        generatedAtUtc,
-        period,
-        rowCount,
-        status: "skipped",
-      }),
-    );
+    await recordMonthlyReportRunInDatabase({
+      csvSha256: sha256,
+      deliveredAtUtc: null,
+      deliveredTo: reportRecipient,
+      deliveryStatus: "skipped",
+      generatedAtUtc: new Date(generatedAtUtc),
+      periodEndUtc: new Date(period.endUtcIso),
+      periodStartUtc: new Date(period.startUtcIso),
+      reportFamily: MONTHLY_SALES_REPORT_FAMILY,
+      reportKey: period.key,
+      rowCount,
+    });
 
     return buildEmptyMonthlySalesReportResult({
       csv,
@@ -926,3 +612,8 @@ export const generateAndDeliverMonthlySalesReport = async ({
 
   return reportRunPromise;
 };
+
+export {
+  generateMonthlySalesReportContent,
+  type MonthlySalesReportSaleRecord,
+} from "./monthly-sales-report-csv";

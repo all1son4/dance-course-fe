@@ -3,8 +3,8 @@ import type Stripe from "stripe";
 import { getDatabaseEnvSelection } from "@/db/env";
 import { isPayloadTooLarge, jsonNoStore, readBoundedTextBody } from "@/lib/http-security";
 import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
+import { getStripeServer } from "@/lib/stripe-checkout";
 
-import { getStripeServer } from "../payment-intent/lib";
 import { scheduleStripeBackgroundJobs } from "./_lib/background-jobs";
 import { persistVerifiedStripeWebhookEvent } from "./_lib/inbox-ingress";
 

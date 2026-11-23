@@ -7,13 +7,13 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-
-import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
 import {
   getCheckoutOwnedPaymentIntent,
   getManagedPaymentIntentSnapshot,
   getStripeServer,
-} from "../lib";
+} from "@/lib/stripe-checkout";
+
+import { scheduleStripeBackgroundJobs } from "../../webhook/_lib/background-jobs";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;

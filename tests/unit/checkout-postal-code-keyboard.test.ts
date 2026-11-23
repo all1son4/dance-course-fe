@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { PAYMENT_INPUTS } from "@/app/[locale]/payment/payment.constants";
+import { PAYMENT_INPUTS } from "@/lib/checkout/payment.constants";
 
 test("postal code opens a keyboard that can type hyphens and letters", () => {
   const postalCode = PAYMENT_INPUTS.find((input) => input.name === "postalCode");

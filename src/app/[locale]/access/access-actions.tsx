@@ -14,24 +14,28 @@ import {
 import Button from "@/components/common/Button";
 
 import {
-  AccessCard,
-  ActionResult,
-  CalendarApp,
-  CalendarApps,
-  CalendarHint,
-  CardToggle,
   LegendButton,
   LegendSpot,
   LegendStamp,
   LegendTip,
-  QuietButton,
-  QuietLink,
   SaveSpot,
   SaveTip,
+} from "./access-actions.styles";
+import {
+  CalendarApp,
+  CalendarApps,
+  CalendarHint,
   ShareButton,
   ShareHint,
   ShareSpot,
-} from "./page.styles";
+} from "./access-aside.styles";
+import {
+  AccessCard,
+  ActionResult,
+  CardToggle,
+  QuietButton,
+  QuietLink,
+} from "./access-cards.styles";
 
 /*
  * The few interactive parts of «Мой доступ». Everything else is rendered on the

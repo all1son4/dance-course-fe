@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { normalizeCheckoutSessionId } from "@/lib/http-security";
 import {
   getCheckoutOwnedPaymentIntent,
   getManagedPaymentIntentOutcome,
   normalizePaymentIntentCustomerData,
-} from "@/app/api/stripe/payment-intent/lib";
-import { normalizeCheckoutSessionId } from "@/lib/http-security";
+} from "@/lib/stripe-checkout";
 
 import { createStripeFake, createStripePaymentIntent } from "../fixtures/providers";
 

@@ -7,8 +7,13 @@ import {
   jsonNoStore,
   jsonRateLimited,
   parseJsonBody,
+  rateLimitErrorResponse,
 } from "@/lib/http-security";
-import { consumeRateLimit, getRequestIp } from "@/lib/rate-limit";
+import {
+  consumeRateLimit,
+  consumeRequestRateLimit,
+  getRequestIp,
+} from "@/lib/rate-limit";
 import { getSafeErrorCategory, logSafeError } from "@/lib/safe-error-log";
 import {
   formatPurchaseLine,
@@ -209,12 +214,15 @@ export async function POST(request: Request) {
   const requestError = getBrowserJsonRequestErrorResponse(request, 1024);
   if (requestError) return requestError;
 
-  const rateLimit = await consumeRateLimit({
-    key: `admin:invite-links:archive:${getRequestIp(request)}`,
+  const rateLimit = await consumeRequestRateLimit({
+    keyPrefix: "admin:invite-links:archive",
     limit: 30,
+    onBackendUnavailable: "deny",
+    request,
     windowMs: 60_000,
   });
-  if (rateLimit.limited) return jsonErrorNoStore("rate_limited", { status: 429 });
+  const rateLimitError = rateLimitErrorResponse(rateLimit);
+  if (rateLimitError) return rateLimitError;
 
   try {
     const { body, errorResponse } = await parseJsonBody<{

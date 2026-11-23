@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { SELLABLE_PRODUCTS, SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import {
   INITIAL_AGREEMENTS,
   INITIAL_CUSTOMER_DATA,
-} from "@/app/[locale]/payment/payment.constants";
-import { SELLABLE_PRODUCTS, SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
+} from "@/lib/checkout/payment.constants";
 import { PaymentStore } from "@/stores/payment-store";
 
 test("blocks Stripe until the authoritative catalog is ready", () => {

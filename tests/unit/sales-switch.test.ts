@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { buildPurchaseAlertText } from "@/app/api/stripe/webhook/_lib/purchase-alert";
+import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import {
   INITIAL_AGREEMENTS,
   INITIAL_CUSTOMER_DATA,
-} from "@/app/[locale]/payment/payment.constants";
-import { buildPurchaseAlertText } from "@/app/api/stripe/webhook/_lib/purchase-alert";
-import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
+} from "@/lib/checkout/payment.constants";
 import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,

@@ -244,6 +244,26 @@ export const redirectToResultPage = (
   );
 };
 
+/** One cancel request per intent, fire-and-forget; `keepalive` lets it outlive the page. */
+export const cancelPaymentIntents = (
+  paymentIntentIds: string[],
+  checkoutSessionId: string,
+): void => {
+  paymentIntentIds.forEach((paymentIntentId) => {
+    void fetch(PAYMENT_API_ENDPOINTS.cancelIntent, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        checkoutSessionId,
+        paymentIntentId,
+      }),
+      keepalive: true,
+    }).catch(() => undefined);
+  });
+};
+
 export const cancelUnusedPaymentIntents = ({
   allPaymentIntentIds,
   checkoutSessionId,
@@ -260,19 +280,7 @@ export const cancelUnusedPaymentIntents = ({
   ].filter((id) => id !== usedPaymentIntentId);
 
   // Cancellation is intentionally fire-and-forget so it cannot delay navigation.
-  unusedPaymentIntentIds.forEach((paymentIntentId) => {
-    void fetch(PAYMENT_API_ENDPOINTS.cancelIntent, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        checkoutSessionId,
-        paymentIntentId,
-      }),
-      keepalive: true,
-    }).catch(() => undefined);
-  });
+  cancelPaymentIntents(unusedPaymentIntentIds, checkoutSessionId);
 };
 
 const resolveServerPaymentCompletion = (

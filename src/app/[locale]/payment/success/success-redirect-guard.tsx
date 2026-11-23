@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useState } from "react";
 
-import type { ManagedPaymentIntentOutcome } from "@/app/api/stripe/payment-intent/lib";
 import Button from "@/components/common/Button";
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
 import { prefersReducedMotion } from "@/lib/reveal";
+import type { ManagedPaymentIntentOutcome } from "@/lib/stripe-checkout";
 
 import {
   ResultActions,

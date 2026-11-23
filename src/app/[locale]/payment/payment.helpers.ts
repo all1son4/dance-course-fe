@@ -7,15 +7,14 @@ import {
   INSPIRATION_HUB_RENEWAL_OFFER_ID,
   type SellableProduct,
 } from "@/constants/sellable-products";
-import { prefersReducedMotion } from "@/lib/reveal";
-import type { usePaymentStore } from "@/stores";
-
 import {
   PAYMENT_INPUTS,
   type PaymentAgreementFieldName,
   type PaymentCustomerFieldName,
   type PaymentInputConfig,
-} from "./payment.constants";
+} from "@/lib/checkout/payment.constants";
+import { prefersReducedMotion } from "@/lib/reveal";
+import type { usePaymentStore } from "@/stores";
 
 export const PAYMENT_DRAFT_SAVE_DEBOUNCE_MS = 240;
 export const PAYMENT_INTENT_CREATION_DELAY_MS = 420;
@@ -151,6 +150,35 @@ export type RenewalVerificationFailure =
     };
 
 export type PaymentStoreInstance = ReturnType<typeof usePaymentStore>;
+
+export type CheckoutBlockReason =
+  "catalog_unavailable" | "renewal_unavailable" | "sales_closed" | "stale_link";
+
+/**
+ * Why the checkout shows a notice instead of the form, or null when it does not.
+ * The order is the notices' priority: a dead link comes before closed sales,
+ * which would otherwise be about the fallback product, not the one asked for.
+ */
+export const getCheckoutBlockReason = ({
+  isCatalogUnavailable,
+  isRenewalUnavailable,
+  isSalesClosed,
+  isStaleCheckoutLink,
+}: {
+  isCatalogUnavailable: boolean;
+  isRenewalUnavailable: boolean;
+  isSalesClosed: boolean;
+  isStaleCheckoutLink: boolean;
+}): CheckoutBlockReason | null =>
+  isCatalogUnavailable
+    ? "catalog_unavailable"
+    : isStaleCheckoutLink
+      ? "stale_link"
+      : isSalesClosed
+        ? "sales_closed"
+        : isRenewalUnavailable
+          ? "renewal_unavailable"
+          : null;
 
 /**
  * The short product name: what the title puts in quotes, every name of a
