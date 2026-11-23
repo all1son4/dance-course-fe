@@ -466,6 +466,8 @@ for (const errorCode of [
   "sales_closed",
   "catalog_unavailable",
   "online_group_campaign_not_configured",
+  // A tab opened before the cohort closed: the next cohort is not on sale yet.
+  "online_group_cohort_unavailable",
   "missing_secret_key",
 ] as const) {
   test(`withholds checkout when the server reports ${errorCode} during payment preparation`, async (t) => {

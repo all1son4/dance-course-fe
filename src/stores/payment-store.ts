@@ -850,6 +850,7 @@ export class PaymentStore {
       } else if (
         errorCode === "catalog_unavailable" ||
         errorCode === "online_group_campaign_not_configured" ||
+        errorCode === "online_group_cohort_unavailable" ||
         errorCode === "missing_secret_key"
       ) {
         this.setCatalogUnavailable();
