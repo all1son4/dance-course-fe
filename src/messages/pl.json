@@ -366,8 +366,8 @@
           "1": "Format regularnych treningów dla osób, które chcą dalej się rozwijać, utrzymywać formę i pracować z ciałem.",
           "2": "Jeśli nie możesz uczestniczyć w moich zajęciach offline, możesz zdobywać nową wiedzę, ćwiczyć w domu i pozostawać ze mną w kontakcie, gdziekolwiek jesteś."
         },
-        "startLabel": "Start kolejnego cyklu",
-        "startValue": "23 listopada"
+        "startLabel": "Cykl już trwa",
+        "startValue": "Od 23 listopada"
       },
       "choreo": {
         "title": "Tutoriale moich choreografii",
@@ -572,8 +572,9 @@
         "1": "W grupie online trenujemy w wygodnym formacie, pracujemy nad techniką, plastyką, siłą, improwizacją i muzykalnością oraz uczymy się choreografii. Pozostajesz w procesie, dostajesz nowe zadania, ćwiczysz w domu i czujesz ze mną więź, gdziekolwiek jesteś.",
         "2": "Dla poziomu średniozaawansowanego i zaawansowanego."
       },
-      "startLabel": "Start kolejnej grupy",
-      "startDate": "23 listopada",
+      "startLabel": "Cykl już trwa",
+      "startDate": "Od 23 listopada",
+      "joinNote": "Wciąż możesz dołączyć.",
       "priceLabel": "Cena dla nowych uczestników",
       "buyButton": "Kup swoje miejsce",
       "offers": {
@@ -1418,6 +1419,12 @@
       "unit": "{count, plural, one {cykl} few {cykle} many {cykli} other {cyklu}}",
       "text": "Cykle od {first}.0 do {last}.0 — z rzędu, bez przerwy. Seria rośnie z każdym kolejnym cyklem."
     },
+    "freshman": {
+      "name": "Debiut",
+      "label": "Pieczęć „Debiut”",
+      "unit": "Pierwszy krok",
+      "text": "Od Twojego pierwszego zakupu minęły najwyżej trzy miesiące. Miło Cię tu widzieć!"
+    },
     "zones": {
       "action": "Czeka na Ciebie",
       "active": "Twoje dostępy",
@@ -1658,7 +1665,8 @@
       "hours": "godz.",
       "minutes": "min",
       "seconds": "sek.",
-      "finalLabel": "Ostatnie godziny"
+      "finalLabel": "Ostatnie godziny",
+      "sound": "Dźwięk odliczania"
     },
     "section": {
       "eyebrow": "Tylko do 30 listopada",

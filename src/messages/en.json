@@ -366,8 +366,8 @@
           "1": "A regular training format for anyone who wants to keep progressing, stay in shape and work with their body.",
           "2": "If you can't come to my studio classes, you can still learn new things, practise at home and stay in touch with me wherever you are."
         },
-        "startLabel": "Next cycle starts",
-        "startValue": "November 23"
+        "startLabel": "Cycle in progress",
+        "startValue": "Since November 23"
       },
       "choreo": {
         "title": "Online tutorials of my choreographies",
@@ -572,8 +572,9 @@
         "1": "In the Online Group, we train in a convenient format, work on technique, fluidity, strength, improvisation and musicality, and learn choreography. It's a way to keep training, get new assignments, practise at home and stay connected with me wherever you are.",
         "2": "Suitable for intermediate and advanced dancers."
       },
-      "startLabel": "Next cycle starts",
-      "startDate": "November 23",
+      "startLabel": "Cycle in progress",
+      "startDate": "Since November 23",
+      "joinNote": "You can still join.",
       "priceLabel": "Price for new participants",
       "buyButton": "Buy your place",
       "offers": {
@@ -1418,6 +1419,12 @@
       "unit": "{count, plural, one {cycle} other {cycles}}",
       "text": "Cycles {first}.0 to {last}.0, back to back. The streak grows with every next cycle."
     },
+    "freshman": {
+      "name": "Debut",
+      "label": "Stamp “Debut”",
+      "unit": "First step",
+      "text": "You made your first purchase within the past three months. Glad you’re here!"
+    },
     "zones": {
       "action": "Waiting for you",
       "active": "Your access",
@@ -1658,7 +1665,8 @@
       "hours": "hours",
       "minutes": "min",
       "seconds": "sec",
-      "finalLabel": "Final hours"
+      "finalLabel": "Final hours",
+      "sound": "Countdown sound"
     },
     "section": {
       "eyebrow": "Until 30 November only",

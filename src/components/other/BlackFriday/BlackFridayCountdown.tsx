@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Volume2, VolumeX } from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { useRouter } from "@/i18n/navigation";
 
 import {
   CountdownCaption,
+  CountdownHeading,
   CountdownInline,
+  CountdownSoundButton,
   CountdownTile,
   CountdownTiles,
   CountdownUnit,
@@ -14,6 +17,13 @@ import {
   FlipCard,
   FlipHalf,
 } from "./BlackFriday.styles";
+import {
+  getCountdownSoundEnabled,
+  getServerCountdownSoundEnabled,
+  playCountdownTick,
+  subscribeCountdownSound,
+  toggleCountdownSound,
+} from "./countdown-sound";
 
 export type CountdownLabels = {
   days: string;
@@ -34,6 +44,10 @@ type BlackFridayCountdownProps = {
   labels: CountdownLabels;
   /** Accessible sentence before the time, e.g. "Until the end of the offer". */
   label: string;
+  soundLabel: string;
+  /** The campaign surface whose viewport visibility drives the sound. */
+  soundTargetId: string;
+  soundHidden?: boolean;
   variant: "tiles" | "inline";
 };
 
@@ -53,6 +67,29 @@ const split = (remainingMs: number) => {
 const pad = (value: number) => String(value).padStart(2, "0");
 
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+function CountdownSoundToggle({ hidden, label }: { hidden: boolean; label: string }) {
+  const enabled = useSyncExternalStore(
+    subscribeCountdownSound,
+    getCountdownSoundEnabled,
+    getServerCountdownSoundEnabled,
+  );
+  const Icon = enabled ? Volume2 : VolumeX;
+
+  return (
+    <CountdownSoundButton
+      aria-label={label}
+      aria-pressed={enabled}
+      data-countdown-sound=""
+      onClick={toggleCountdownSound}
+      tabIndex={hidden ? -1 : undefined}
+      title={label}
+      type="button"
+    >
+      <Icon aria-hidden="true" size={14} strokeWidth={1.75} />
+    </CountdownSoundButton>
+  );
+}
 
 /**
  * One split-flap card. On a new value the old one is kept for the flaps; when the
@@ -109,16 +146,43 @@ export default function BlackFridayCountdown({
   label,
   labels,
   serverNow,
+  soundHidden = false,
+  soundLabel,
+  soundTargetId,
   variant,
 }: BlackFridayCountdownProps) {
   const router = useRouter();
   const endsAtMs = Date.parse(endsAt);
   const [now, setNow] = useState(serverNow);
   const refreshed = useRef(false);
+  const visibleSurface = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (soundHidden) return;
+    const surface = document.getElementById(soundTargetId);
+    if (!surface) return;
+
+    const observer = new IntersectionObserver(([entry]) => {
+      const { height, width } = entry.intersectionRect;
+      visibleSurface.current =
+        entry.isIntersecting && height > 0 && width > 0 ? surface : null;
+    });
+    observer.observe(surface);
+    return () => {
+      observer.disconnect();
+      visibleSurface.current = null;
+    };
+  }, [soundHidden, soundTargetId]);
 
   useEffect(() => {
     let interval: number | undefined;
-    const tick = () => setNow(Date.now());
+    const tick = () => {
+      const at = Date.now();
+      setNow(at);
+      if (!soundHidden && at < endsAtMs && visibleSurface.current) {
+        playCountdownTick(visibleSurface.current, at);
+      }
+    };
     // Line the ticks up with whole seconds of the real clock.
     const timeout = window.setTimeout(
       () => {
@@ -132,7 +196,7 @@ export default function BlackFridayCountdown({
       window.clearTimeout(timeout);
       window.clearInterval(interval);
     };
-  }, []);
+  }, [endsAtMs, soundHidden]);
 
   useEffect(() => {
     if (now >= endsAtMs && !refreshed.current) {
@@ -148,13 +212,16 @@ export default function BlackFridayCountdown({
 
   if (variant === "inline") {
     return (
-      <CountdownInline role="timer" aria-label={spoken}>
-        <span aria-hidden="true">
-          {isFinal ? <FinalMark>{finalLabel}</FinalMark> : null}
-          {days > 0 ? `${days}${labels.days} ` : ""}
-          {pad(hours)}:{pad(minutes)}:{pad(seconds)}
-        </span>
-      </CountdownInline>
+      <>
+        <CountdownInline role="timer" aria-label={spoken}>
+          <span aria-hidden="true">
+            {isFinal ? <FinalMark>{finalLabel}</FinalMark> : null}
+            {days > 0 ? `${days}${labels.days} ` : ""}
+            {pad(hours)}:{pad(minutes)}:{pad(seconds)}
+          </span>
+        </CountdownInline>
+        <CountdownSoundToggle hidden={soundHidden} label={soundLabel} />
+      </>
     );
   }
 
@@ -167,11 +234,14 @@ export default function BlackFridayCountdown({
 
   return (
     <>
-      {caption ? (
-        <CountdownCaption data-final={isFinal || undefined}>
-          {isFinal ? finalLabel : caption}
-        </CountdownCaption>
-      ) : null}
+      <CountdownHeading>
+        {caption ? (
+          <CountdownCaption data-final={isFinal || undefined}>
+            {isFinal ? finalLabel : caption}
+          </CountdownCaption>
+        ) : null}
+        <CountdownSoundToggle hidden={soundHidden} label={soundLabel} />
+      </CountdownHeading>
       <CountdownTiles role="timer" aria-label={spoken} data-final={isFinal || undefined}>
         {units.map(([value, unit]) => (
           <CountdownTile key={unit} aria-hidden="true">

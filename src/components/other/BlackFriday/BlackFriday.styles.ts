@@ -19,6 +19,44 @@ const RED_GLOW = "rgba(196, 20, 24, 0.55)";
 
 /* ---------- Countdown ---------- */
 
+export const CountdownHeading = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const CountdownSoundButton = styled.button`
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.055);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &[aria-pressed="true"] {
+    color: var(--ink-inverse);
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: var(--ink-inverse);
+      border-color: rgba(255, 255, 255, 0.48);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ink-inverse);
+    outline-offset: 2px;
+  }
+`;
+
 export const CountdownInline = styled.span`
   font-variant-numeric: tabular-nums;
   font-weight: 700;
@@ -206,6 +244,17 @@ export const Ribbon = styled.div`
     font-size: 13px;
   }
 
+  @media (max-width: 390px) {
+    max-width: calc(100% - 20px);
+    gap: 6px;
+    padding: 0 4px 0 10px;
+    font-size: 12px;
+  }
+
+  @media (max-width: 350px) {
+    font-size: 11px;
+  }
+
   @media (forced-colors: active) {
     border: 1px solid CanvasText;
   }
@@ -228,6 +277,10 @@ export const RibbonTimer = styled.span`
   align-items: center;
   gap: 6px;
   color: rgba(255, 255, 255, 0.7);
+
+  @media (max-width: 390px) {
+    gap: 4px;
+  }
 `;
 
 /* A price-tag glint: a light sweep across the button. */
@@ -846,4 +899,11 @@ export const FinalMark = styled.span`
   margin-right: 8px;
   font-weight: 700;
   color: #ff6b64;
+
+  @media (max-width: 560px) {
+    display: block;
+    margin: 0;
+    font-size: 0.7em;
+    line-height: 1.1;
+  }
 `;

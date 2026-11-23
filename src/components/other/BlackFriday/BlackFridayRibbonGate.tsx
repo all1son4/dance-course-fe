@@ -30,6 +30,7 @@ export default async function BlackFridayRibbonGate() {
       }}
       sectionId={BLACK_FRIDAY_SECTION_ID}
       serverNow={now.getTime()}
+      soundLabel={t("countdown.sound")}
       title={t("ribbon.title")}
     />
   );

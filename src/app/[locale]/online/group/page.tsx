@@ -180,7 +180,11 @@ export default async function OnlineGroupPage() {
       </Description>
 
       <InfoBoxGroup>
-        <ProductFact label={t("hero.startLabel")} value={t("hero.startDate")} />
+        <ProductFact label={t("hero.startLabel")} value={t("hero.startDate")}>
+          {saleState === "open" && availableOffers.length > 0 && (
+            <DescriptionParagraph>{t("hero.joinNote")}</DescriptionParagraph>
+          )}
+        </ProductFact>
       </InfoBoxGroup>
 
       {/* Every plan card always carries an action (buy, or sign up through
