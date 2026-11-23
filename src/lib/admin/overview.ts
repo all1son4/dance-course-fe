@@ -157,6 +157,8 @@ export async function getAdminOverview(now = new Date()) {
   const previousMonthValue = monthValue
     ? getPreviousAccountingMonthValue(monthValue)
     : null;
+  // One reading of the queues serves both the system items below and the pulse.
+  const operationsRead = readOperationalDatabaseStatus();
   const [
     operations,
     cohorts,
@@ -168,7 +170,7 @@ export async function getAdminOverview(now = new Date()) {
     polishPrevious,
     pulse,
   ] = await Promise.all([
-    readOperationalDatabaseStatus(),
+    operationsRead,
     getCohortsOverview(now),
     getHubAdminOverview({ now }),
     getOnlineGroupSale(),
@@ -178,7 +180,7 @@ export async function getAdminOverview(now = new Date()) {
     previousMonthValue
       ? countOutstandingPolishTerminalSales(previousMonthValue)
       : Promise.resolve(0),
-    getSystemPulse(now),
+    getSystemPulse(now, operationsRead),
   ]);
 
   const attention: AttentionItem[] = [];

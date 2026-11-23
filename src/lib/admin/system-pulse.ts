@@ -139,13 +139,17 @@ const telegramSignal = async (now: Date): Promise<PulseSignal> => {
 
 /**
  * Queue figures come from the same reading as the «Системы» block below, so the two
- * never disagree: only jobs that are due count, not ones scheduled for later.
+ * never disagree: only jobs that are due count, not ones scheduled for later. A caller
+ * that already reads them passes that reading in instead of reading the queues twice.
  */
-export async function getSystemPulse(now = new Date()): Promise<SystemPulse> {
+export async function getSystemPulse(
+  now = new Date(),
+  statusRead?: ReturnType<typeof readOperationalDatabaseStatus>,
+): Promise<SystemPulse> {
   const [db, telegram, status] = await Promise.all([
     readDatabaseSignals(now),
     telegramSignal(now),
-    readOperationalDatabaseStatus(),
+    statusRead ?? readOperationalDatabaseStatus(),
   ]);
   const failRate = db.attempts24h > 0 ? db.failed24h / db.attempts24h : 0;
   const stripeBacklog = status.inbox.ready + status.inbox.working;
