@@ -49,8 +49,9 @@ const pad = (value: number) => String(value).padStart(2, "0");
 const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
 
 /**
- * One split-flap card. On a new value the previous one is kept for the flaps; the
- * flap pair is keyed by the flip count, so each change plays the motion once.
+ * One split-flap card. On a new value the old one is kept for the flaps; when the
+ * lower flap has landed the card settles, the flaps go away and both halves show
+ * the same number again, so a card at rest never mixes two values.
  */
 function FlipDigits({ value }: { value: string }) {
   const [state, setState] = useState({ flips: 0, previous: value, value });
@@ -60,10 +61,11 @@ function FlipDigits({ value }: { value: string }) {
     setState({ flips: state.flips + 1, previous: state.value, value });
   }
 
-  const animate =
-    state.flips > 0 &&
+  const isFlipping =
+    state.previous !== state.value &&
     typeof window !== "undefined" &&
     !window.matchMedia(REDUCED_MOTION).matches;
+  const settle = () => setState((current) => ({ ...current, previous: current.value }));
 
   return (
     <FlipCard>
@@ -71,14 +73,14 @@ function FlipDigits({ value }: { value: string }) {
         <span>{state.value}</span>
       </FlipHalf>
       <FlipHalf $half="bottom">
-        <span>{animate ? state.previous : state.value}</span>
+        <span>{isFlipping ? state.previous : state.value}</span>
       </FlipHalf>
-      {animate ? (
+      {isFlipping ? (
         <span key={state.flips}>
           <FlipHalf $flap $half="top">
             <span>{state.previous}</span>
           </FlipHalf>
-          <FlipHalf $flap $half="bottom">
+          <FlipHalf $flap $half="bottom" onAnimationEnd={settle}>
             <span>{state.value}</span>
           </FlipHalf>
         </span>

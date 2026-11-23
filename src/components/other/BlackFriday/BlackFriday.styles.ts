@@ -481,14 +481,12 @@ export const OfferCard = styled.article`
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(6px);
   transition:
-    transform var(--motion-base) var(--ease-emphasized),
     background-color var(--motion-base) var(--ease-standard),
     box-shadow var(--motion-base) var(--ease-standard);
 
-  /* The offer under the pointer steps forward a little. */
+  /* The offer under the pointer lights up a little; it does not move. */
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      transform: translateY(-3px);
       background: rgba(255, 255, 255, 0.09);
       box-shadow:
         0 18px 40px rgba(0, 0, 0, 0.28),
@@ -499,10 +497,6 @@ export const OfferCard = styled.article`
 
   @media (prefers-reduced-motion: reduce) {
     transition: none;
-
-    &:hover {
-      transform: none;
-    }
   }
 
   @media (max-width: 550px) {
