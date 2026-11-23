@@ -3,13 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FormEvent } from "react";
 import { useId, useRef, useState } from "react";
-import { ValidationError } from "yup";
 
-import {
-  INITIAL_CUSTOMER_DATA,
-  normalizePaymentCustomerFieldValue,
-} from "@/app/[locale]/payment/payment.constants";
-import { getPaymentCustomerSchema } from "@/app/[locale]/payment/payment.validation";
 import Button from "@/components/common/Button";
 import Checkbox from "@/components/common/Checkbox";
 import Dialog from "@/components/common/Dialog";
@@ -22,6 +16,18 @@ import { prefersReducedMotion } from "@/lib/reveal";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 import { Success } from "@/svg";
 
+import {
+  buildCourseSignupRequestBody,
+  type CourseSignupTouchedFields,
+  getAllTouchedSignupFields,
+  getSubmitFailureReason,
+  settleSignupField,
+  settleSignupValues,
+  SIGNUP_FIELD_NAMES,
+  type SignupTextFieldName,
+  type SubmitFailureReason,
+  validatePaymentSignupField,
+} from "./CourseSignupDialog.helpers";
 import {
   DescriptionSteps,
   ResultIconBox,
@@ -36,10 +42,7 @@ import type {
 } from "./CourseSignupDialog.types";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
-type SubmitFailureReason =
-  "network" | "rateLimited" | "server" | "unknown" | "validation";
 type CourseSignupFormErrors = Partial<Record<keyof CourseSignupFormValues, string>>;
-type CourseSignupTouchedFields = Partial<Record<keyof CourseSignupFormValues, boolean>>;
 type CourseSignupErrorResponse = {
   errorCode?: string;
 };
@@ -56,13 +59,6 @@ const INITIAL_SIGNUP_VALUES: CourseSignupFormValues = {
   socialContact: "",
 };
 
-const SIGNUP_FIELD_NAMES = [
-  "fullName",
-  "socialContact",
-  "email",
-  "consentAccepted",
-] as const satisfies Array<keyof CourseSignupFormValues>;
-type SignupTextFieldName = Exclude<keyof CourseSignupFormValues, "consentAccepted">;
 /** The `name` each field's control carries in the DOM, for focusing it. */
 const SIGNUP_FIELD_CONTROL_NAMES: Record<keyof CourseSignupFormValues, string> = {
   consentAccepted: "first-touch-email-consent",
@@ -70,107 +66,6 @@ const SIGNUP_FIELD_CONTROL_NAMES: Record<keyof CourseSignupFormValues, string> =
   fullName: "fullName",
   socialContact: "socialContact",
 };
-
-const getAllTouchedSignupFields = () =>
-  SIGNUP_FIELD_NAMES.reduce<CourseSignupTouchedFields>((nextTouchedFields, field) => {
-    nextTouchedFields[field] = true;
-    return nextTouchedFields;
-  }, {});
-
-const normalizeSignupTextFieldValue = (fieldName: SignupTextFieldName, value: string) => {
-  if (fieldName === "fullName" || fieldName === "email") {
-    return normalizePaymentCustomerFieldValue(fieldName, value);
-  }
-
-  return value.replace(/\s+/g, " ").trimStart();
-};
-
-/**
- * Values are kept as typed (normalising on every keystroke throws the caret
- * to the end of the field); this is the form they settle into on blur, on
- * submit and in the request. Validation always looks at the settled form, so
- * a field mid-edit reads exactly like the value it is about to become.
- */
-const settleSignupField = (
-  fieldName: keyof CourseSignupFormValues,
-  currentValues: CourseSignupFormValues,
-): CourseSignupFormValues =>
-  fieldName === "consentAccepted"
-    ? currentValues
-    : {
-        ...currentValues,
-        [fieldName]: normalizeSignupTextFieldValue(fieldName, currentValues[fieldName]),
-      };
-
-const settleSignupValues = (currentValues: CourseSignupFormValues) =>
-  SIGNUP_FIELD_NAMES.reduce<CourseSignupFormValues>(
-    (settledValues, fieldName) => settleSignupField(fieldName, settledValues),
-    currentValues,
-  );
-
-const getSubmitFailureReason = (
-  errorCode: string | undefined,
-  status: number,
-): SubmitFailureReason => {
-  if (errorCode === "rate_limited" || status === 429) {
-    return "rateLimited";
-  }
-
-  if (errorCode === "course_signup_failed" || status >= 500) {
-    return "server";
-  }
-
-  if (
-    errorCode === "invalid_email" ||
-    errorCode === "invalid_request_body" ||
-    errorCode === "missing_consent" ||
-    errorCode === "missing_required_fields"
-  ) {
-    return "validation";
-  }
-
-  return "unknown";
-};
-
-const validatePaymentSignupField = ({
-  fieldName,
-  locale,
-  values,
-}: {
-  fieldName: "email" | "fullName";
-  locale: string;
-  values: CourseSignupFormValues;
-}): string => {
-  try {
-    getPaymentCustomerSchema(locale).validateSyncAt(fieldName, {
-      ...INITIAL_CUSTOMER_DATA,
-      email: values.email,
-      fullName: values.fullName,
-    });
-
-    return "";
-  } catch (error) {
-    if (error instanceof ValidationError) {
-      return error.message;
-    }
-
-    throw error;
-  }
-};
-
-const buildCourseSignupRequestBody = ({
-  locale,
-  values,
-}: {
-  locale: string;
-  values: CourseSignupFormValues;
-}) => ({
-  consentAccepted: values.consentAccepted,
-  email: values.email.trim(),
-  fullName: values.fullName.trim(),
-  locale,
-  socialContact: values.socialContact.trim(),
-});
 
 export default function CourseSignupDialog({
   stickyCta,
