@@ -10,11 +10,12 @@ import { titleOfEvent } from "@/lib/error-log/event-titles";
 import { explainErrorCode } from "@/lib/error-log/explanations";
 import { jsonErrorNoStore, jsonNoStore } from "@/lib/http-security";
 import { logSafeError } from "@/lib/safe-error-log";
+import { DAY_MS } from "@/lib/time";
 
 export const runtime = "nodejs";
 
 /** The event journal of «Система» shows the last 30 days. */
-const EVENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const EVENTS_WINDOW_MS = 30 * DAY_MS;
 
 export async function GET(request: Request) {
   if (!isAdminInviteLinksRequestAuthenticated(request)) {

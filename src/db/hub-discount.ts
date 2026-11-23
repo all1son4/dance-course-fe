@@ -6,6 +6,7 @@ import {
 } from "@/constants/sellable-products";
 import { isHubAccessRightActive } from "@/lib/inspiration-hub/access-state";
 import { addWarsawCalendarDays } from "@/lib/inspiration-hub/calendar";
+import { DAY_MS } from "@/lib/time";
 
 import { getDatabase } from "./client";
 import {
@@ -86,7 +87,7 @@ export async function listHubDiscountCohorts(
     .limit(1);
   // A generous lower bound; the calendar rule below decides.
   const searchFrom = new Date(
-    checkedAt.getTime() - (ENDED_COHORT_DISCOUNT_DAYS + 2) * 24 * 60 * 60 * 1000,
+    checkedAt.getTime() - (ENDED_COHORT_DISCOUNT_DAYS + 2) * DAY_MS,
   );
   const recentlyEnded = await executor
     .select({

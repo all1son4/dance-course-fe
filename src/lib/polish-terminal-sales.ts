@@ -3,12 +3,11 @@ import {
   getAccountingMonthRange,
   getAccountingMonthValue,
 } from "@/lib/accounting-month";
-
-const CALENDAR_DAY_MS = 24 * 60 * 60 * 1000;
+import { DAY_MS } from "@/lib/time";
 
 const shiftCalendarDate = (dateValue: string, days: number) => {
   const [year, month, day] = dateValue.split("-").map(Number);
-  const shifted = new Date(Date.UTC(year, month - 1, day) + days * CALENDAR_DAY_MS);
+  const shifted = new Date(Date.UTC(year, month - 1, day) + days * DAY_MS);
 
   return shifted.toISOString().slice(0, 10);
 };

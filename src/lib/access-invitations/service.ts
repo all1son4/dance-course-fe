@@ -62,6 +62,7 @@ import {
   recordOnlineGroupMemberPresent,
   syncOnlineGroupMembership,
 } from "@/lib/telegram/online-group-access";
+import { DAY_MS } from "@/lib/time";
 
 import { buildInvitationUrl } from "./link";
 
@@ -217,7 +218,7 @@ export const linksEmailKey = (purchaseId: string, sendId?: string) =>
 /** «Send the links again» at most once in 10 minutes and 3 times a day per invitation. */
 const LINKS_RESEND_WINDOWS = [
   { limit: 1, ms: 10 * 60 * 1000 },
-  { limit: 3, ms: 24 * 60 * 60 * 1000 },
+  { limit: 3, ms: DAY_MS },
 ] as const;
 
 export const enqueueInvitationEmail = async ({

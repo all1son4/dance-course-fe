@@ -17,6 +17,7 @@ import type {
   HubChatMembers,
   HubPeriodState,
 } from "@/lib/admin/hub-admin";
+import { DAY_MS } from "@/lib/time";
 
 import type { ReissuedLink, ReissueOutcome } from "../hooks/use-hub-admin";
 import { formatDayMonthTime } from "../lib/admin.utils";
@@ -53,7 +54,7 @@ const STATE_LABELS: Record<HubPeriodState, { label: string; tone: AdminTone }> =
 type Filter = "all" | "active" | "endingSoon" | "upcoming" | "ended";
 
 /** The same 7-day window as the overview counts (ENDING_SOON_DAYS in hub-admin.ts). */
-const ENDING_SOON_MS = 7 * 24 * 60 * 60 * 1000;
+const ENDING_SOON_MS = 7 * DAY_MS;
 
 const Columns = styled.div`
   display: grid;
@@ -382,9 +383,7 @@ export const HubWorkspace = ({
                 // The server previews at most 120 days ahead.
                 min={toDateInput(hub.nextCronAt)}
                 max={toDateInput(
-                  new Date(
-                    Date.parse(hub.nextCronAt) + 120 * 24 * 60 * 60 * 1000,
-                  ).toISOString(),
+                  new Date(Date.parse(hub.nextCronAt) + 120 * DAY_MS).toISOString(),
                 )}
                 value={previewAt ? toDateInput(previewAt) : toDateInput(hub.nextCronAt)}
                 onChange={(event) =>

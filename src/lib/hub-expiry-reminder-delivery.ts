@@ -21,8 +21,9 @@ import { buildMyAccessUrl } from "@/lib/my-access/link";
 import { getOnlineGroupSale } from "@/lib/online-group-sale";
 import { logSafeError } from "@/lib/safe-error-log";
 import { getProductSaleState } from "@/lib/sales-availability";
+import { DAY_MS } from "@/lib/time";
 
-const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
 
 const planReminders = async (now: Date, telegramUserId?: string) => {
   const database = getDatabase();

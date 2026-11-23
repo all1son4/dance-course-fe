@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 
 import type { ErrorArea } from "@/lib/error-log/error-code";
+import { DAY_MS } from "@/lib/time";
 
 import { getDatabase } from "./client";
 import { operationalEvents } from "./schema";
@@ -142,7 +143,7 @@ export async function archiveOperationalEventGroup(
 
 /** The daily cleanup: groups not seen for the retention period are deleted. */
 export async function deleteOldOperationalEvents(now = new Date()): Promise<number> {
-  const before = new Date(now.getTime() - OPERATIONAL_EVENTS_RETENTION_DAYS * 86_400_000);
+  const before = new Date(now.getTime() - OPERATIONAL_EVENTS_RETENTION_DAYS * DAY_MS);
   const deleted = await getDatabase()
     .delete(operationalEvents)
     .where(lt(operationalEvents.lastSeenAt, before))
