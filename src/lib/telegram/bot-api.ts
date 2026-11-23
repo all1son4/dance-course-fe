@@ -44,6 +44,11 @@ export const shouldIgnoreKickFailure = (error: unknown) =>
   (error.message.includes("USER_NOT_PARTICIPANT") ||
     error.message.includes("user not found"));
 
+// Telegram's answer for an account it has never seen in this chat (2026-11-20): such
+// an account has no ban to lift and no membership to read.
+export const isUnknownChatParticipantError = (error: unknown) =>
+  error instanceof Error && error.message.includes("PARTICIPANT_ID_INVALID");
+
 const getRetryDelayMs = ({
   attempt,
   retryAfterSeconds,

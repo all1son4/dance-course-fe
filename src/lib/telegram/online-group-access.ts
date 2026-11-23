@@ -28,6 +28,7 @@ import { logSafeError } from "@/lib/safe-error-log";
 import { hashAccessToken } from "./access-records";
 import {
   createTelegramChatInviteLink,
+  isUnknownChatParticipantError,
   kickUnexpectedMember,
   revokeTelegramChatInviteLink,
   unbanTelegramChatMember,
@@ -496,6 +497,8 @@ const unbanKnownTelegramMember = async ({
       userId: telegramUserId,
     });
   } catch (error) {
+    // Every first invite into a chat gets this answer: not a failure (2026-11-23).
+    if (isUnknownChatParticipantError(error)) return;
     logSafeError("Failed to unban a member before an Online Group invite", error);
   }
 };
