@@ -32,4 +32,20 @@ export const getDatabaseClient = () => {
   return globalForDb.danceCoursePostgresClient;
 };
 
-export const getDatabase = () => drizzle(getDatabaseClient(), { schema });
+const createDatabase = (client: PostgresClient) => drizzle(client, { schema });
+
+let cachedDatabase: {
+  client: PostgresClient;
+  database: ReturnType<typeof createDatabase>;
+} | null = null;
+
+/** The Drizzle wrapper of the shared client, built once per client. */
+export const getDatabase = () => {
+  const client = getDatabaseClient();
+
+  if (cachedDatabase?.client !== client) {
+    cachedDatabase = { client, database: createDatabase(client) };
+  }
+
+  return cachedDatabase.database;
+};
