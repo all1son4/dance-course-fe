@@ -1,4 +1,4 @@
-import styled, { keyframes } from "styled-components";
+import styled from "styled-components";
 
 import { BLACK_FRIDAY_INK } from "@/styles/mixins/blackFriday";
 
@@ -532,64 +532,34 @@ export const ActionResult = styled.p<{ $tone: "ok" | "error" }>`
   }
 `;
 
-const inkStamp = keyframes`
-  0% { opacity: 0; transform: rotate(-22deg) scale(1.7); }
-  60% { opacity: 1; transform: rotate(-8deg) scale(0.96); }
-  100% { opacity: 1; transform: rotate(-10deg) scale(1); }
-`;
-
 /*
  * The Black Friday mark of the black card: a rectangular stamp in the corner,
- * faint and behind the text — «BLACK FRIDAY» over the figure (×2, −33%).
+ * faint and behind the text: just «BLACK FRIDAY», on two lines. It is simply
+ * there, with no entrance.
  */
 export const InkStamp = styled.span`
   position: absolute;
   right: 20px;
-  bottom: 16px;
+  bottom: 18px;
   z-index: -1;
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  padding: 8px 14px 7px;
+  max-width: 7.5em;
+  padding: 9px 14px 8px;
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 14px;
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
   color: rgba(255, 255, 255, 0.24);
   transform: rotate(-10deg);
   pointer-events: none;
 
-  & small {
-    font-size: 9px;
-    font-weight: 800;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
-
-  & b {
-    font-size: 30px;
-    line-height: 1;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-
-  &:not([data-pending]) {
-    animation: ${inkStamp} 650ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 350ms both;
-  }
-
-  &[data-pending] {
-    opacity: 0;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none !important;
-  }
-
   @media (max-width: 550px) {
     right: 14px;
-    bottom: 12px;
-
-    & b {
-      font-size: 24px;
-    }
+    bottom: 14px;
+    font-size: 13px;
   }
 
   @media (forced-colors: active) {

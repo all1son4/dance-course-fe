@@ -328,10 +328,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
         {summary && <CardSummary>{translateLine(summary)}</CardSummary>}
         {counted && <AccessCount count={counted} dates={dates} t={t} />}
         {card.campaign === "black-friday" && (
-          <CampaignInkStamp
-            figure={blackFridayT(card.kind === "hub" ? "hub.badge" : "choreo.badge")}
-            label={blackFridayT("ribbon.title")}
-          />
+          <CampaignInkStamp label={blackFridayT("ribbon.title")} />
         )}
         <CardMore id={detailsId}>
           {detail && <CardDetail>{translateLine(detail)}</CardDetail>}

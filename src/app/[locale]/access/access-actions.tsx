@@ -12,7 +12,6 @@ import {
 } from "react";
 
 import Button from "@/components/common/Button";
-import { usePendingUntilSeen } from "@/components/other/BlackFriday/BlackFridayMotion";
 
 import {
   LegendButton,
@@ -618,14 +617,7 @@ export function FoldingCard({
   );
 }
 
-/** The faint Black Friday stamp in the corner of a black card (see InkStamp). */
-export function CampaignInkStamp({ figure, label }: { figure: string; label: string }) {
-  const ref = usePendingUntilSeen<HTMLSpanElement>();
-
-  return (
-    <InkStamp ref={ref} aria-hidden="true">
-      <small>{label}</small>
-      <b>{figure}</b>
-    </InkStamp>
-  );
+/** The faint «BLACK FRIDAY» stamp in the corner of a black card (see InkStamp). */
+export function CampaignInkStamp({ label }: { label: string }) {
+  return <InkStamp aria-hidden="true">{label}</InkStamp>;
 }
