@@ -43,12 +43,12 @@ export const blackFridayLabel = css`
   white-space: nowrap;
 `;
 
-/** A light card that takes part in the campaign: a brand-red edge and glow. */
+/** A light card that takes part in the campaign: a brand-red edge, a dark glow. */
 export const blackFridayCardEdge = css`
   box-shadow:
-    0 14px 34px rgba(12, 11, 13, 0.14),
-    0 0 0 4px rgba(124, 0, 2, 0.08),
-    0 0 40px rgba(124, 0, 2, 0.3),
+    0 14px 34px rgba(12, 11, 13, 0.18),
+    0 0 0 4px rgba(12, 11, 13, 0.05),
+    0 0 44px rgba(12, 11, 13, 0.32),
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 0 0 1.5px rgba(124, 0, 2, 0.65);
 

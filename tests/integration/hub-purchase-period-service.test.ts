@@ -465,3 +465,89 @@ test(
     }
   },
 );
+
+/* ---------- Black Friday 2026: 112-day periods ---------- */
+
+const end112 = (startsAt: Date) => getStandaloneHubPeriodEnd({ startsAt, days: 112 });
+
+test("a Black Friday purchase without an owner counts 112 days from payment", async () => {
+  await withFixture(async (fixture) => {
+    const purchaseId = await insertPurchase(fixture.tx, { telegramUserId: null });
+    const right = await ensureHubPurchasePeriodInTransaction(fixture.tx, {
+      purchaseId,
+      continuationCohortId: null,
+      paidDurationDays: 112,
+      processedAt: PROCESSED_AT,
+    });
+
+    assert.deepEqual(periodOf(right), {
+      ...paymentPeriod(NEW_PAID_AT),
+      paidDurationDays: 112,
+      expiresAt: end112(NEW_PAID_AT),
+    });
+
+    // A replay of the same payment returns the stored 112-day right unchanged.
+    const replay = await ensureHubPurchasePeriodInTransaction(fixture.tx, {
+      purchaseId,
+      continuationCohortId: null,
+      paidDurationDays: 112,
+      processedAt: PROCESSED_AT,
+    });
+    assert.equal(replay.id, right.id);
+  });
+});
+
+test("a Black Friday purchase by someone in the Hub follows the running period for 112 days", async () => {
+  await withFixture(async (fixture) => {
+    const active = await insertPaymentPeriod(fixture, ACTIVE_PAID_AT);
+    const purchaseId = await insertPurchase(fixture.tx, {
+      telegramUserId: fixture.ownerId,
+    });
+    const right = await ensureHubPurchasePeriodInTransaction(fixture.tx, {
+      purchaseId,
+      continuationCohortId: null,
+      paidDurationDays: 112,
+      processedAt: PROCESSED_AT,
+    });
+    const startsAt = end56(ACTIVE_PAID_AT);
+
+    assert.deepEqual(periodOf(right), {
+      ...dependentPeriod(active.id, startsAt),
+      paidDurationDays: 112,
+      expiresAt: end112(startsAt),
+    });
+  });
+});
+
+test("a regular renewal after a Black Friday period starts at its 112-day end", async () => {
+  await withFixture(async (fixture) => {
+    const blackFridayPurchaseId = await insertPurchase(fixture.tx, {
+      telegramUserId: fixture.ownerId,
+      succeededAt: ACTIVE_PAID_AT,
+    });
+    const [blackFriday] = await fixture.tx
+      .insert(accessEntitlements)
+      .values({
+        purchaseId: blackFridayPurchaseId,
+        accessKey: "inspiration-hub",
+        sourceKind: "standalone_hub",
+        periodStartMode: "payment",
+        paidDurationDays: 112,
+        startsAt: ACTIVE_PAID_AT,
+        expiresAt: end112(ACTIVE_PAID_AT),
+        status: "activated",
+      })
+      .returning();
+    assert.ok(blackFriday);
+
+    const renewalId = await insertPurchase(fixture.tx, {
+      telegramUserId: fixture.ownerId,
+    });
+    const renewal = await ensure(fixture, renewalId);
+
+    assert.deepEqual(
+      periodOf(renewal),
+      dependentPeriod(blackFriday.id, end112(ACTIVE_PAID_AT)),
+    );
+  });
+});
