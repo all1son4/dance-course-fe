@@ -1,6 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
 
-import CurrencySwitch from "@/components/other/CurrencySwitch";
 import type { SupportedCheckoutCurrency } from "@/constants/sellable-products";
 
 import {
@@ -28,6 +27,7 @@ import {
   SummarySupport,
   SummaryTitle,
 } from "./checkout-summary-card.styles";
+import CurrencySwitch from "./CurrencySwitch";
 import { CheckoutProgressFill, CheckoutProgressTrack } from "./page.styles";
 
 export type CheckoutSummaryCardProps = {
