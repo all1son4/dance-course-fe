@@ -3,6 +3,7 @@ import { cache } from "react";
 
 import { SELLABLE_PRODUCTS, type SellableProduct } from "@/constants/sellable-products";
 import { getSellableProductsWithDatabaseCommercialData } from "@/db/sellable-products";
+import { applyBlackFridayToProducts } from "@/lib/black-friday";
 import { getOnlineGroupSale } from "@/lib/online-group-sale";
 import { getOpenPublicProductOffers } from "@/lib/public-sales";
 import { logSafeError } from "@/lib/safe-error-log";
@@ -129,9 +130,12 @@ export const hasClosedSalesAtFulfilment = async (productId: string, offerId?: st
   return offer?.salesEnabled === false;
 };
 
-/** Shares the same cached commercial rows as the product sales gates. */
+/**
+ * Shares the same cached commercial rows as the product sales gates. The campaign is
+ * applied after the cache, so its prices switch at the exact second, not 30 s late.
+ */
 export const getStorefrontSellableProducts = async () =>
-  (await loadStorefrontCatalogSalesState()).state.products;
+  applyBlackFridayToProducts((await loadStorefrontCatalogSalesState()).state.products);
 
 export const getProductSaleState = async (
   productId: string,

@@ -57,6 +57,7 @@ import { normalizedSiteUrl } from "@/lib/seo";
 
 import {
   CalendarSubscribe,
+  CampaignInkStamp,
   CycleStamp,
   FoldingCard,
   ReissueInvite,
@@ -171,11 +172,12 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
     notFound();
   }
 
-  const [params, locale, t, productT, requestHeaders] = await Promise.all([
+  const [params, locale, t, productT, blackFridayT, requestHeaders] = await Promise.all([
     searchParams,
     getLocale(),
     getTranslations("MyAccessPage"),
     getTranslations("SellableProducts"),
+    getTranslations("BlackFriday"),
     headers(),
   ]);
   const rawToken = Array.isArray(params.k) ? params.k[0] : params.k;
@@ -296,6 +298,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
 
     return (
       <FoldingCard
+        campaign={card.campaign === "black-friday"}
         // What waits on the reader stays open: its button must be in sight.
         defaultOpen={zone === "action"}
         detailsId={detailsId}
@@ -324,6 +327,9 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
         </CardHead>
         {summary && <CardSummary>{translateLine(summary)}</CardSummary>}
         {counted && <AccessCount count={counted} dates={dates} t={t} />}
+        {card.campaign === "black-friday" && (
+          <CampaignInkStamp label={blackFridayT("ribbon.title")} />
+        )}
         <CardMore id={detailsId}>
           {detail && <CardDetail>{translateLine(detail)}</CardDetail>}
           {note && <CardNote>{translateLine(note)}</CardNote>}

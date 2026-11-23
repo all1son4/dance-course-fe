@@ -4,15 +4,21 @@ import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import InteractiveCard from "@/components/cards/InteractiveCard";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
+import { CountUp } from "@/components/other/BlackFriday";
 import Contacts from "@/components/other/Contacts";
 import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   CHOREO_CATALOGUE_PRODUCT_CODES,
+  LOVE_ME_IN_THE_MORNING_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
+import { isBlackFridayActive } from "@/lib/black-friday";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { imageFadeProps } from "@/lib/reveal";
-import { getProductsSaleState } from "@/lib/sales-availability";
+import {
+  getProductsSaleState,
+  getStorefrontSellableProducts,
+} from "@/lib/sales-availability";
 import { buildBreadcrumbStructuredData, normalizedSiteUrl } from "@/lib/seo";
 
 import { toPlainTitle } from "./_shared/content";
@@ -43,20 +49,52 @@ export const generateMetadata = () =>
 export const dynamic = "force-dynamic";
 
 export default async function Online() {
-  const [t, metadataT, commonT, choreoSaleState, hubSaleState] = await Promise.all([
+  const [
+    t,
+    metadataT,
+    commonT,
+    blackFridayT,
+    catalogProducts,
+    choreoSaleState,
+    hubSaleState,
+  ] = await Promise.all([
     getTranslations("OnlinePage"),
     getTranslations("Metadata"),
     getTranslations("Common"),
+    getTranslations("BlackFriday"),
+    getStorefrontSellableProducts(),
     getProductsSaleState(
       CHOREO_CATALOGUE_PRODUCT_CODES.map((code) => SELLABLE_PRODUCTS[code].id),
     ),
     getProductsSaleState([SELLABLE_PRODUCTS["inspiration-hub"].id]),
   ]);
+  const catalogOffers = catalogProducts.flatMap((product) => product.offers);
+  // The tutorials on sale share one campaign price; any of them names it.
+  const choreoOffer = catalogOffers.find(
+    (offer) => offer.id === LOVE_ME_IN_THE_MORNING_OFFER_ID,
+  );
   const onlineCoursesArray = getOnlineCoursesArray(
     (key) => t(key),
     (key) => commonT(key),
     choreoSaleState,
     hubSaleState,
+    isBlackFridayActive()
+      ? {
+          label: blackFridayT("ribbon.title"),
+          choreoCta: blackFridayT("choreo.cta"),
+          choreoHighlight: blackFridayT("choreo.badge"),
+          hubCta: blackFridayT("hub.cta"),
+          hubHighlight: blackFridayT("hub.badge"),
+          choreoFactLabel: blackFridayT("checkout.priceLabel"),
+          choreoPrices: choreoOffer?.compareAtPrices
+            ? { from: choreoOffer.compareAtPrices, to: choreoOffer.prices }
+            : null,
+          hubFactLabel: blackFridayT("cards.hubFactLabel"),
+          hubFactValue: blackFridayT.rich("cards.hubPlate", {
+            n: () => <CountUp from={8} to={16} />,
+          }),
+        }
+      : null,
   );
   const onlineCoursesStructuredData = {
     "@context": "https://schema.org",

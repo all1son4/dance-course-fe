@@ -4,6 +4,11 @@ import { getTranslations } from "next-intl/server";
 import HeroMedia from "@/app/[locale]/_shared/hero-media";
 import Button from "@/components/common/Button";
 import StructuredData from "@/components/common/StructuredData";
+import {
+  CountUp,
+  StampedCampaignBadge,
+  StrikeDraw,
+} from "@/components/other/BlackFriday";
 import ClosedSalesNotice from "@/components/other/ClosedSalesNotice";
 import Contacts from "@/components/other/Contacts";
 import ProgramRoadmap from "@/components/other/ProgramRoadmap";
@@ -15,6 +20,7 @@ import {
   INSPIRATION_HUB_ACCESS_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
+import { isBlackFridayOffer } from "@/lib/black-friday";
 import { buildLocalizedPageMetadata } from "@/lib/page-metadata";
 import { imageFadeProps } from "@/lib/reveal";
 import {
@@ -24,6 +30,10 @@ import {
 import { buildBreadcrumbStructuredData } from "@/lib/seo";
 import { stickyCtaAnchorProps } from "@/lib/sticky-cta";
 
+import {
+  CampaignAccent,
+  CampaignFactRegular,
+} from "../../_shared/interactive-card-content";
 import ProductFact from "../_shared/product-fact";
 import ProductHero from "../_shared/product-hero";
 import {
@@ -55,6 +65,8 @@ import {
 } from "./hub-blocks.styles";
 import {
   ButtonBox,
+  CampaignBadgeRow,
+  CampaignNote,
   FactsRow,
   ImageBox,
   IntroductionSection,
@@ -80,14 +92,16 @@ export default async function InspirationHubPage() {
   const configuredProduct = SELLABLE_PRODUCTS["inspiration-hub"];
   // The buy button sits in the first viewport, so the sales state is read before
   // rendering instead of streaming in behind the shell in a Suspense boundary.
-  const [t, metadataT, onlineT, commonT, saleState, catalogProducts] = await Promise.all([
-    getTranslations("InspirationHubPage"),
-    getTranslations("Metadata"),
-    getTranslations("OnlinePage"),
-    getTranslations("Common"),
-    getProductSaleState(configuredProduct.id),
-    getStorefrontSellableProducts(),
-  ]);
+  const [t, metadataT, onlineT, commonT, blackFridayT, saleState, catalogProducts] =
+    await Promise.all([
+      getTranslations("InspirationHubPage"),
+      getTranslations("Metadata"),
+      getTranslations("OnlinePage"),
+      getTranslations("Common"),
+      getTranslations("BlackFriday"),
+      getProductSaleState(configuredProduct.id),
+      getStorefrontSellableProducts(),
+    ]);
   const product =
     catalogProducts.find((candidate) => candidate.id === configuredProduct.id) ??
     configuredProduct;
@@ -98,6 +112,9 @@ export default async function InspirationHubPage() {
     ) ?? configuredProduct.offers[0];
   const price = formatOfferPrice(offer.prices);
   const canBuy = saleState === "open" && offer.salesEnabled;
+  // Black Friday 2026: the full price buys 16 weeks instead of 8.
+  const isCampaign = canBuy && isBlackFridayOffer(offer);
+  const buyLabel = isCampaign ? blackFridayT("hub.cta") : t("hero.buyButton");
   const checkoutHref = buildCheckoutHref({ offerId: offer.id, productId: product.id });
   const buyAnalytics = {
     id: "buy_inspiration_hub",
@@ -144,21 +161,53 @@ export default async function InspirationHubPage() {
           />
         }
       >
+        {isCampaign ? (
+          <CampaignBadgeRow>
+            <StampedCampaignBadge>
+              {blackFridayT("ribbon.title")}
+              <b>{blackFridayT("hub.badge")}</b>
+            </StampedCampaignBadge>
+          </CampaignBadgeRow>
+        ) : null}
         <Title>{t("hero.title")}</Title>
         <Description>
           <DescriptionParagraph>{t("hero.lead")}</DescriptionParagraph>
         </Description>
 
         <FactsRow>
-          <ProductFact label={t("hero.accessLabel")} value={t("hero.accessValue")} />
+          <ProductFact
+            label={t("hero.accessLabel")}
+            value={
+              isCampaign ? (
+                <>
+                  <CampaignAccent>
+                    {blackFridayT.rich("hubPage.accessValue", {
+                      n: () => <CountUp from={8} to={16} />,
+                    })}
+                  </CampaignAccent>{" "}
+                  <CampaignFactRegular>
+                    <StrikeDraw>{blackFridayT("hubPage.regularAccess")}</StrikeDraw>
+                  </CampaignFactRegular>
+                </>
+              ) : (
+                t("hero.accessValue")
+              )
+            }
+          />
           <ProductFact label={t("hero.priceLabel")} value={price} />
         </FactsRow>
+        {isCampaign ? (
+          <CampaignNote>
+            <strong>{blackFridayT("hubPage.badge")}.</strong>{" "}
+            {blackFridayT("hubPage.note")} {blackFridayT("hub.cohortNote")}
+          </CampaignNote>
+        ) : null}
 
         <ButtonBox>
           {canBuy ? (
             <>
               <Button
-                buttonText={t("hero.buyButton")}
+                buttonText={buyLabel}
                 href={checkoutHref}
                 prefetch={false}
                 rel="nofollow"
@@ -167,7 +216,7 @@ export default async function InspirationHubPage() {
               />
               <StickyCta
                 analytics={{ ...buyAnalytics, placement: "inspiration_hub_sticky" }}
-                label={t("hero.buyButton")}
+                label={buyLabel}
                 href={checkoutHref}
                 prefetch={false}
                 title={t("hero.titlePlain")}
@@ -269,12 +318,18 @@ export default async function InspirationHubPage() {
           </FinalCtaText>
           <FinalCtaOffer>
             <OfferPrice>
-              <small>{t("cta.priceLabel")}</small>
+              <small>
+                {isCampaign
+                  ? blackFridayT.rich("hubPage.priceLabel", {
+                      n: () => <CountUp from={8} to={16} />,
+                    })
+                  : t("cta.priceLabel")}
+              </small>
               <strong>{price}</strong>
             </OfferPrice>
             {canBuy ? (
               <Button
-                buttonText={t("hero.buyButton")}
+                buttonText={buyLabel}
                 href={checkoutHref}
                 prefetch={false}
                 rel="nofollow"
@@ -289,6 +344,8 @@ export default async function InspirationHubPage() {
               </OfferClosed>
             )}
             <OfferNotes>
+              {isCampaign ? <li data-accent>{blackFridayT("hub.gift")}</li> : null}
+              {isCampaign ? <li>{blackFridayT("hub.cohortNote")}</li> : null}
               <li>{t("cta.notes.1")}</li>
               <li data-accent>{t("cta.notes.2")}</li>
             </OfferNotes>

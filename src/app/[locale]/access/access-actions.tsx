@@ -33,6 +33,7 @@ import {
   AccessCard,
   ActionResult,
   CardToggle,
+  InkStamp,
   QuietButton,
   QuietLink,
 } from "./access-cards.styles";
@@ -578,12 +579,15 @@ const FOLD_AFTER_DONE_MS = 2600;
  * server, so nothing moves on load.
  */
 export function FoldingCard({
+  campaign = false,
   children,
   defaultOpen,
   detailsId,
   foldable,
   label,
 }: {
+  /** Bought on Black Friday: the card wears the campaign edge. */
+  campaign?: boolean;
   children: ReactNode;
   defaultOpen: boolean;
   detailsId: string;
@@ -596,7 +600,7 @@ export function FoldingCard({
   }, [foldable]);
 
   return (
-    <AccessCard data-open={open ? "true" : "false"}>
+    <AccessCard data-campaign={campaign || undefined} data-open={open ? "true" : "false"}>
       {foldable && (
         <CardToggle
           aria-controls={detailsId}
@@ -611,4 +615,9 @@ export function FoldingCard({
       <FoldContext.Provider value={fold}>{children}</FoldContext.Provider>
     </AccessCard>
   );
+}
+
+/** The faint «BLACK FRIDAY» stamp in the corner of a black card (see InkStamp). */
+export function CampaignInkStamp({ label }: { label: string }) {
+  return <InkStamp aria-hidden="true">{label}</InkStamp>;
 }

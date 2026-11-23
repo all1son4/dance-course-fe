@@ -8,6 +8,7 @@ import type {
   SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
+import { applyBlackFridayToOffer } from "@/lib/black-friday";
 
 import { getDatabase } from "./client";
 import { retryTransientDatabaseRead } from "./database-read-retry";
@@ -236,6 +237,8 @@ const loadCheckoutSelectionFromDatabase = async ({
     );
   const pricesByOfferId = groupPricesByOfferId(priceRows);
 
+  // The price charged is the one the storefront shows right now, campaign included.
+  const now = new Date();
   const offers = activeOfferRows
     .map((offer) =>
       mapOfferFromDatabase({
@@ -243,7 +246,8 @@ const loadCheckoutSelectionFromDatabase = async ({
         prices: pricesByOfferId.get(offer.id) ?? {},
       }),
     )
-    .filter((offer): offer is SellableProductOffer => Boolean(offer));
+    .filter((offer): offer is SellableProductOffer => Boolean(offer))
+    .map((offer) => applyBlackFridayToOffer(offer, now));
 
   if (offers.length === 0) {
     return null;

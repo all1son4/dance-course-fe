@@ -6,6 +6,7 @@ import {
   getSellableProductById,
   getSellableProductOfferById,
 } from "@/constants/sellable-products";
+import { applyBlackFridayToOffer } from "@/lib/black-friday";
 
 import {
   ResultActions,
@@ -72,7 +73,7 @@ export default async function FailedPage({ searchParams }: FailedPageProps) {
   const paymentPath = `/payment?${contextParams.toString()}`;
   const receipt = getResultReceipt({
     currency,
-    offer: selectedOffer,
+    offer: selectedOffer ? applyBlackFridayToOffer(selectedOffer) : selectedOffer,
     product: selectedProduct,
     translateProduct: (key) => productT(key),
   });

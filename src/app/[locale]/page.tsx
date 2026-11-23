@@ -7,6 +7,7 @@ import HeroPicture from "@/components/common/HeroPicture";
 import StructuredData from "@/components/common/StructuredData";
 import SvgAsset from "@/components/common/SvgAsset";
 import TrackedAnchor from "@/components/common/TrackedAnchor";
+import { BlackFridaySection } from "@/components/other/BlackFriday";
 import Contacts from "@/components/other/Contacts";
 import FAQ from "@/components/other/FAQ";
 import { getQuestionsArray } from "@/components/other/FAQ/FAQ.constants";
@@ -63,6 +64,7 @@ import {
   MainTextBox,
   MainTitle,
   MainTitleDetail,
+  MainTitleHidden,
   ReviewsSection,
   StyledImage,
 } from "./page.styles";
@@ -132,9 +134,12 @@ export default function Home() {
       <MainTextBox>
         <MainHeading>
           <MainTitle>{t("hero.title")}</MainTitle>{" "}
-          <MainTitleDetail>{t("hero.titleDetail")}</MainTitleDetail>
+          {/* The slogan is what visitors see; search engines and screen readers
+              still get the full heading: "Frame Up Strip with Anna Strok - …". */}
+          <MainTitleHidden>{t("hero.titleDetail")}</MainTitleHidden>
         </MainHeading>
         <DescriptionBox>
+          <MainTitleDetail>{t("hero.subtitle")}</MainTitleDetail>
           <DescriptionText>{t("hero.description")}</DescriptionText>
         </DescriptionBox>
         <InteractiveBox>
@@ -285,6 +290,7 @@ export default function Home() {
         data={[buildWebsiteStructuredData(metadataT("siteName")), faqStructuredData]}
       />
       {renderIntroductionSection()}
+      <BlackFridaySection />
       {renderAboutMeSection()}
       {renderCourseSection()}
       <FAQSection>

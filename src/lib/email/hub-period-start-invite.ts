@@ -9,7 +9,7 @@ const COPY = {
     subject: "Твой доступ в Inspiration Hub начался",
     heading: "Доступ в Inspiration Hub начался",
     intro:
-      "Сегодня начались твои оплаченные 8 недель. Нажми кнопку ниже, чтобы войти в библиотеку в Telegram.",
+      "Сегодня начался твой оплаченный доступ. Нажми кнопку ниже, чтобы войти в библиотеку в Telegram.",
     dateLabel: "Доступ до",
     deadlineLine: (deadline: string) => `Доступ открыт до ${deadline}.`,
     linkNote:
@@ -21,7 +21,7 @@ const COPY = {
     subject: "Your Inspiration Hub access has started",
     heading: "Your Inspiration Hub access has started",
     intro:
-      "Your paid 8 weeks begin today. Use the button below to open the library on Telegram.",
+      "Your paid access begins today. Use the button below to open the library on Telegram.",
     dateLabel: "Access until",
     deadlineLine: (deadline: string) => `Access until ${deadline}.`,
     linkNote:
@@ -33,7 +33,7 @@ const COPY = {
     subject: "Twój dostęp do Inspiration Hub się rozpoczął",
     heading: "Dostęp do Inspiration Hub się rozpoczął",
     intro:
-      "Dziś zaczyna się Twoje opłacone 8 tygodni. Użyj przycisku poniżej, aby wejść do biblioteki na Telegramie.",
+      "Dziś zaczyna się Twój opłacony dostęp. Użyj przycisku poniżej, aby wejść do biblioteki na Telegramie.",
     dateLabel: "Dostęp ważny do",
     deadlineLine: (deadline: string) => `Dostęp ważny do ${deadline}.`,
     linkNote:

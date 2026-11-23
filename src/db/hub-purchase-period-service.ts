@@ -1,5 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
+import type { HubPeriodDays } from "@/lib/inspiration-hub/period-end";
+
 import { getDatabase } from "./client";
 import { insertHubDependentPeriodInTransaction } from "./hub-dependent-period-persistence";
 import { ensureHubPaymentPeriodInTransaction } from "./hub-payment-period-persistence";
@@ -18,6 +20,11 @@ export type EnsureHubPurchasePeriodCommand = {
   purchaseId: string;
   /** Cohort of the Standard/Plus continuation offer behind this purchase, if any. */
   continuationCohortId: string | null;
+  /**
+   * Length of the new period, fixed when the payment was created (Black Friday 2026:
+   * 112 days for a full-price purchase). Omitted means the regular 56 days.
+   */
+  paidDurationDays?: HubPeriodDays;
   /** Moment of processing: stamps updatedAt only. The chain is picked at payment (К11). */
   processedAt: Date;
 };
@@ -125,13 +132,16 @@ async function replayStoredRight(
   tx: DatabaseTransaction,
   purchase: Purchase,
   stored: Entitlement,
-  processedAt: Date,
+  command: EnsureHubPurchasePeriodCommand,
 ): Promise<Entitlement> {
+  const { processedAt } = command;
+
   if (stored.sourceKind !== "standalone_hub") throw new Error(PURCHASE_CONFLICT);
 
   if (stored.periodStartMode === "payment") {
     return ensureHubPaymentPeriodInTransaction(tx, {
       purchase: await lockPurchase(tx, purchase.id),
+      paidDurationDays: command.paidDurationDays,
       updatedAt: processedAt,
     });
   }
@@ -180,7 +190,7 @@ export async function ensureHubPurchasePeriodInTransaction(
   }
 
   const stored = await readHubRight(tx, purchase.id);
-  if (stored) return replayStoredRight(tx, purchase, stored, command.processedAt);
+  if (stored) return replayStoredRight(tx, purchase, stored, command);
 
   const predecessorId =
     owner === null
@@ -195,6 +205,7 @@ export async function ensureHubPurchasePeriodInTransaction(
   if (owner === null || predecessorId === null) {
     return ensureHubPaymentPeriodInTransaction(tx, {
       purchase: await lockPurchase(tx, purchase.id),
+      paidDurationDays: command.paidDurationDays,
       updatedAt: command.processedAt,
     });
   }
@@ -202,6 +213,7 @@ export async function ensureHubPurchasePeriodInTransaction(
   const inserted = await insertHubDependentPeriodInTransaction(tx, {
     purchase,
     predecessor: await loadPredecessorInput(tx, predecessorId, owner),
+    paidDurationDays: command.paidDurationDays,
     updatedAt: command.processedAt,
   });
 

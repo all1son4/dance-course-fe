@@ -274,6 +274,7 @@
     "hero": {
       "title": "Frame Up",
       "titleDetail": "Strip with Anna Strok — online and in Warsaw",
+      "subtitle": "Discover yourself in Frame Up style",
       "description": "Learn to dance beautifully, boldly and sensually in an atmosphere of freedom and inner strength.",
       "hint": "Choose your learning format",
       "buttons": {
@@ -996,7 +997,7 @@
       "onlineGroup": "Invite valid for 30 days. Group access does not expire automatically.",
       "onlineGroupPlus": "Invites valid for 30 days. Online Group access does not expire automatically. Inspiration HUB opens right away and lasts for the whole cycle.",
       "birthdayDrop": "The link is valid for 30 days. Access to the materials is yours forever.",
-      "inspirationHub": "The link is valid for up to 30 days. Inspiration Hub access lasts 8 weeks."
+      "inspirationHub": "The link is valid for up to 30 days. Inspiration Hub access lasts {weeks} weeks."
     },
     "telegram": {
       "active": "access is already active",
@@ -1009,7 +1010,7 @@
       "contactSupport": "Support",
       "nameMainGroup": "Online Group",
       "nameInspiration": "Inspiration Hub",
-      "scheduled": "Your paid 8 weeks of Inspiration Hub begin on {date}. On that day your personal invite will arrive by email.",
+      "scheduled": "Your paid {weeks} weeks of Inspiration Hub begin on {date}. On that day your personal invite will arrive by email.",
       "scheduledPlus": "Inspiration Hub opens when your cycle starts, on {date}. That day a personal link to join will arrive in your email.",
       "scheduledAfterCohort": "Your paid 8 weeks of Inspiration Hub begin right after your cohort ends. On that day your personal invite will arrive by email."
     },
@@ -1643,5 +1644,69 @@
       "otherAccount": "This invitation is already confirmed with another Telegram account. Log in to Telegram with the account used before, or message us."
     },
     "support": "Message us"
+  },
+  "BlackFriday": {
+    "ribbon": {
+      "title": "Black Friday",
+      "cta": "See offers",
+      "ariaLabel": "Black Friday until 30 November — see the offers"
+    },
+    "countdown": {
+      "label": "Offer ends in",
+      "shortDays": "d",
+      "days": "days",
+      "hours": "hours",
+      "minutes": "min",
+      "seconds": "sec",
+      "finalLabel": "Final hours"
+    },
+    "section": {
+      "eyebrow": "Until 30 November only",
+      "titleTop": "Black",
+      "titleBottom": "Friday",
+      "lead": "A week of great prices on online formats: choreography tutorials a third cheaper, and the Inspiration HUB library for 16 weeks at the price of 8.",
+      "terms": "Prices valid until 30 November, 23:59 Warsaw time."
+    },
+    "choreo": {
+      "badge": "−33%",
+      "title": "Choreography tutorials",
+      "description": "“Her Lies” and “Love me in the morning”: a detailed breakdown on Telegram, 60 days of access.",
+      "cta": "Choose a tutorial",
+      "regularPrice": "Regular price",
+      "savings": "You save {amount}"
+    },
+    "hub": {
+      "badge": "×2",
+      "title": "Inspiration HUB",
+      "description": "Lessons from past Online Group cycles and bonus materials — 16 weeks of access for the price of 8.",
+      "priceLabel": "16 weeks instead of",
+      "regularTerm": "8",
+      "cta": "Get 16 weeks",
+      "cohortNote": "The lessons of cycle 3.0 join the library right after it ends in January — and stay with you until the end of your 16 weeks.",
+      "shortCohortNote": "Cycle 3.0 lessons join in January.",
+      "gift": "+8 weeks as a gift"
+    },
+    "cards": {
+      "choreoLabel": "Black Friday −33%",
+      "hubLabel": "Black Friday ×2",
+      "hubPlate": "<n>16</n> weeks for the price of 8",
+      "hubFactLabel": "Black Friday · access"
+    },
+    "hubPage": {
+      "badge": "Black Friday",
+      "accessValue": "<n>16</n> weeks",
+      "regularAccess": "8 weeks",
+      "priceLabel": "<n>16</n> weeks of access",
+      "note": "Buy by 30 November and get 16 weeks for the price of 8. Access counts from payment."
+    },
+    "checkout": {
+      "priceLabel": "Black Friday price",
+      "hubSummary": "Inspiration Hub for 16 weeks at the price of 8 — a Black Friday offer.",
+      "savings": "Black Friday: you save {amount}",
+      "hubGift": "Black Friday: +8 weeks as a gift"
+    },
+    "myAccess": {
+      "chip": "Black Friday"
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { and, eq, isNull, ne } from "drizzle-orm";
 
 import { isOnlineGroupLibraryOfferId } from "@/constants/sellable-products";
+import type { HubPeriodDays } from "@/lib/inspiration-hub/period-end";
 import { getOnlineGroupIdentityReuseLookup } from "@/lib/telegram/identity-reuse-policy";
 
 import { getDatabase } from "./client";
@@ -37,6 +38,8 @@ export type HubPurchaseAccessCommand = {
   verifiedTelegramUserId: string | null;
   /** The cohort whose chat granted the discount; null for full price or an active Hub. */
   continuationCohortId: string | null;
+  /** Length of the paid period, fixed at payment creation; omitted = 56 days. */
+  paidDurationDays?: HubPeriodDays;
   processedAt: Date;
 };
 
@@ -237,6 +240,7 @@ export async function ensureHubPurchaseAccessInTransaction(
   const right = await ensureHubPurchasePeriodInTransaction(tx, {
     purchaseId: reference.id,
     continuationCohortId: command.continuationCohortId,
+    paidDurationDays: command.paidDurationDays,
     processedAt: command.processedAt,
   });
 

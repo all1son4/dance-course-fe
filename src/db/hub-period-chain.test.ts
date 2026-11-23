@@ -97,6 +97,7 @@ function expectedPeriod(
     entitlementId,
     startsAfterEntitlementId,
     paidAt: new Date(paidAt),
+    paidDurationDays: 56,
     startsAt: null,
     expiresAt: null,
   };

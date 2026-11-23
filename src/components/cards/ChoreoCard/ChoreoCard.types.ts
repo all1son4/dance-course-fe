@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import type { SellableProductPrices } from "@/constants/sellable-products";
 import type { ButtonAnalyticsMetadata } from "@/lib/mixpanel-analytics";
 
 export type ChoreoCardButtonProps = {
@@ -42,6 +43,12 @@ export type ChoreoCardProps = {
   /** Two or three short facts shown as quiet chips under the title. */
   highlights?: readonly string[];
   priceAnchor?: ChoreoCardPriceAnchor;
+  /** A campaign label over the media, e.g. "Black Friday −33%". */
+  campaignBadge?: string;
+  /** The figure after the campaign label, as a chip: "−33%". */
+  campaignHighlight?: string;
+  /** Campaign prices: the price counts down from `from` and the old one is struck live. */
+  priceDrop?: { from: SellableProductPrices; to: SellableProductPrices };
   specialOffer?: boolean;
   icon?: ReactNode;
 };

@@ -274,6 +274,7 @@
     "hero": {
       "title": "Frame Up",
       "titleDetail": "Strip z Anną Strok — online i w Warszawie",
+      "subtitle": "Odkryj siebie w stylu Frame Up",
       "description": "Ucz się tańczyć pięknie, odważnie i zmysłowo w atmosferze wolności i wewnętrznej siły.",
       "hint": "Wybierz swój format nauki",
       "buttons": {
@@ -996,7 +997,7 @@
       "onlineGroup": "Link ważny przez 30 dni. Dostęp do grupy nie wygasa automatycznie.",
       "onlineGroupPlus": "Linki ważne przez 30 dni. Dostęp do grupy online nie wygasa automatycznie. Inspiration HUB jest otwarty od razu i działa przez cały cykl.",
       "birthdayDrop": "Link jest ważny 30 dni. Dostęp do materiałów zostaje na zawsze.",
-      "inspirationHub": "Link jest ważny do 30 dni. Dostęp do Inspiration Hub trwa 8 tygodni."
+      "inspirationHub": "Link jest ważny do 30 dni. Dostęp do Inspiration Hub trwa {weeks} tygodni."
     },
     "telegram": {
       "active": "dostęp jest już aktywny",
@@ -1009,7 +1010,7 @@
       "contactSupport": "Pomoc",
       "nameMainGroup": "Grupa online",
       "nameInspiration": "Inspiration Hub",
-      "scheduled": "Opłacone 8 tygodni w Inspiration Hub zaczyna się {date}. Tego dnia osobisty link przyjdzie na Twój e-mail.",
+      "scheduled": "Opłacone {weeks} tygodni w Inspiration Hub zaczyna się {date}. Tego dnia osobisty link przyjdzie na Twój e-mail.",
       "scheduledPlus": "Inspiration Hub otworzy się wraz ze startem cyklu, {date}. Tego dnia na Twój email przyjdzie osobisty link do wejścia.",
       "scheduledAfterCohort": "Opłacone 8 tygodni w Inspiration Hub zaczyna się zaraz po zakończeniu Twojego cyklu. Tego dnia osobisty link przyjdzie na Twój e-mail."
     },
@@ -1643,5 +1644,69 @@
       "otherAccount": "To zaproszenie jest już potwierdzone innym kontem Telegram. Zaloguj się w Telegramie na konto, którym potwierdzano wcześniej, albo napisz do nas."
     },
     "support": "Napisz do nas"
+  },
+  "BlackFriday": {
+    "ribbon": {
+      "title": "Black Friday",
+      "cta": "Zobacz",
+      "ariaLabel": "Black Friday do 30 listopada — zobacz oferty"
+    },
+    "countdown": {
+      "label": "Do końca promocji",
+      "shortDays": "d",
+      "days": "dni",
+      "hours": "godz.",
+      "minutes": "min",
+      "seconds": "sek.",
+      "finalLabel": "Ostatnie godziny"
+    },
+    "section": {
+      "eyebrow": "Tylko do 30 listopada",
+      "titleTop": "Black",
+      "titleBottom": "Friday",
+      "lead": "Tydzień korzystnych cen na formaty online: tutoriale choreografii o jedną trzecią taniej, a biblioteka Inspiration HUB — 16 tygodni w cenie 8.",
+      "terms": "Ceny obowiązują do 30 listopada, 23:59 czasu warszawskiego."
+    },
+    "choreo": {
+      "badge": "−33%",
+      "title": "Tutoriale choreografii",
+      "description": "„Her Lies” i „Love me in the morning”: szczegółowy rozbiór na Telegramie, dostęp na 60 dni.",
+      "cta": "Wybierz tutorial",
+      "regularPrice": "Zwykła cena",
+      "savings": "Oszczędzasz {amount}"
+    },
+    "hub": {
+      "badge": "×2",
+      "title": "Inspiration HUB",
+      "description": "Lekcje z poprzednich cykli grupy online i materiały bonusowe — 16 tygodni dostępu w cenie 8.",
+      "priceLabel": "16 tygodni zamiast",
+      "regularTerm": "8",
+      "cta": "Odbierz 16 tygodni",
+      "cohortNote": "Lekcje cyklu 3.0 trafią do biblioteki zaraz po jego zakończeniu w styczniu — i zostaną z Tobą do końca 16 tygodni.",
+      "shortCohortNote": "W styczniu dojdą lekcje cyklu 3.0.",
+      "gift": "+8 tygodni w prezencie"
+    },
+    "cards": {
+      "choreoLabel": "Black Friday −33%",
+      "hubLabel": "Black Friday ×2",
+      "hubPlate": "<n>16</n> tygodni w cenie 8",
+      "hubFactLabel": "Black Friday · dostęp"
+    },
+    "hubPage": {
+      "badge": "Black Friday",
+      "accessValue": "<n>16</n> tygodni",
+      "regularAccess": "8 tygodni",
+      "priceLabel": "<n>16</n> tygodni dostępu",
+      "note": "Kup do 30 listopada i otrzymaj 16 tygodni w cenie 8. Dostęp liczy się od płatności."
+    },
+    "checkout": {
+      "priceLabel": "Cena Black Friday",
+      "hubSummary": "Inspiration Hub na 16 tygodni w cenie 8 — oferta Black Friday.",
+      "savings": "Black Friday: oszczędzasz {amount}",
+      "hubGift": "Black Friday: +8 tygodni w prezencie"
+    },
+    "myAccess": {
+      "chip": "Black Friday"
+    }
   }
 }

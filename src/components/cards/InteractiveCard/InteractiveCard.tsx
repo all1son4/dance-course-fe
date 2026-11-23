@@ -88,7 +88,10 @@ export default function InteractiveCard({
         $occasion={occasion?.theme}
       >
         {OccasionBackgroundArtwork ? <OccasionBackgroundArtwork /> : null}
-        <TitleBlock $hasOccasion={Boolean(occasion)} $hasPhoto={Boolean(headerPhoto)}>
+        <TitleBlock
+          $hasOccasion={Boolean(artwork?.insetsTitle)}
+          $hasPhoto={Boolean(headerPhoto)}
+        >
           {headerPhoto ? (
             <Image
               {...imageFadeProps}

@@ -1,10 +1,15 @@
-import type { ComponentType } from "react";
+import { type ComponentType, useContext } from "react";
+
+import { StampIn } from "@/components/other/BlackFriday/BlackFridayMotion";
 
 import {
   OccasionArtwork,
+  OccasionBackdrop,
   OccasionBackgroundArtwork,
   OccasionEdgeArtwork,
+  OccasionPhotoBadge,
 } from "./InteractiveCard.occasion.styles";
+import { CardOccasionContext } from "./InteractiveCard.occasion-context";
 import type { InteractiveCardOccasionTheme } from "./InteractiveCard.types";
 
 function HalloweenArtwork() {
@@ -110,14 +115,39 @@ function HalloweenBackgroundArtwork() {
   );
 }
 
+/** Black Friday: the card's label ("Black Friday −33%") as a badge on the photo. */
+function BlackFridayHeaderBadge() {
+  const occasion = useContext(CardOccasionContext);
+
+  return occasion ? (
+    <StampIn as={OccasionPhotoBadge}>
+      {occasion.label}
+      {occasion.highlight ? <b>{occasion.highlight}</b> : null}
+    </StampIn>
+  ) : null;
+}
+
+/** Black Friday: pinstripes rising from the card's bottom (blackFridayBackdrop). */
+function BlackFridayBackgroundArtwork() {
+  return <OccasionBackdrop aria-hidden="true" />;
+}
+
 type OccasionArtworkSet = {
   header: ComponentType;
   background?: ComponentType;
+  /** The header artwork sits at the title's right: keep the title clear of it. */
+  insetsTitle: boolean;
 };
 
 export const occasionArtwork: Record<InteractiveCardOccasionTheme, OccasionArtworkSet> = {
   halloween: {
     header: HalloweenArtwork,
     background: HalloweenBackgroundArtwork,
+    insetsTitle: true,
+  },
+  "black-friday": {
+    header: BlackFridayHeaderBadge,
+    background: BlackFridayBackgroundArtwork,
+    insetsTitle: false,
   },
 };

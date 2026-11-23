@@ -11,6 +11,7 @@ import {
   type PurchaseOwnerWrite,
   recordOnlineGroupPurchaseSourceInDatabase,
 } from "@/db/purchase-access-source";
+import { type HubPeriodDays, isHubPeriodDays } from "@/lib/inspiration-hub/period-end";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 
 import {
@@ -27,6 +28,8 @@ export type PurchaseAccessPlan =
   | {
       kind: "inspiration_hub";
       continuationCohortId: string | null;
+      /** Set by the payment route during Black Friday 2026; absent = 56 days. */
+      paidDurationDays?: HubPeriodDays;
       verifiedTelegramUserId: string | null;
     }
   | { kind: "none" };
@@ -39,6 +42,14 @@ export const needsPurchaseAccessJob = (offerId: string) =>
 
 const readMetadata = (metadata: Stripe.Metadata, key: string) =>
   metadata[key]?.trim() || null;
+
+/** The Hub length the payment route fixed for a Black Friday purchase, if any. */
+export const getPaidHubPeriodDays = (
+  metadata: Stripe.Metadata,
+): HubPeriodDays | undefined => {
+  const days = Number(readMetadata(metadata, "hub_period_days"));
+  return isHubPeriodDays(days) ? days : undefined;
+};
 
 /**
  * Reads what the payment route stored at checkout. An Online payment created before
@@ -55,8 +66,11 @@ export const getPurchaseAccessPlan = ({
   const verifiedTelegramUserId = readMetadata(metadata, "telegram_user_id");
 
   if (isInspirationHubOfferId(offerId)) {
+    const paidDurationDays = getPaidHubPeriodDays(metadata);
+
     return {
       kind: "inspiration_hub",
+      ...(paidDurationDays ? { paidDurationDays } : {}),
       continuationCohortId:
         readMetadata(metadata, "hub_discount_basis") === "cohort_chat"
           ? readMetadata(metadata, "hub_discount_cohort_id")
@@ -159,6 +173,7 @@ export const deliverPurchaseAccessFromOutbox = async ({
       const access = await ensureHubPurchaseAccessInDatabase({
         purchaseId,
         continuationCohortId: plan.continuationCohortId,
+        paidDurationDays: plan.paidDurationDays,
         processedAt: new Date(),
         verifiedTelegramUserId: plan.verifiedTelegramUserId,
       });

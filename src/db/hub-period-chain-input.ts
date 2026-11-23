@@ -2,6 +2,7 @@ import type {
   HubPeriodChainInput,
   PendingHubChainPeriod,
 } from "@/lib/inspiration-hub/period-chain";
+import { isHubPeriodDays } from "@/lib/inspiration-hub/period-end";
 
 import type { HubPeriodNodeSnapshot } from "./hub-period-nodes";
 
@@ -50,7 +51,6 @@ function toPendingHubChainPeriod(
     sourceKind === "standalone_hub" &&
     accessKey === "inspiration-hub" &&
     periodStartMode === "after_entitlement" &&
-    paidDurationDays === 56 &&
     startsAfterEntitlementId !== null &&
     startsAt === null &&
     expiresAt === null &&
@@ -59,7 +59,7 @@ function toPendingHubChainPeriod(
     (entitlement.telegramUserId === null ||
       entitlement.telegramUserId === telegramUserId);
 
-  if (!isValidPurchase || !isValidEntitlement) {
+  if (!isValidPurchase || !isValidEntitlement || !isHubPeriodDays(paidDurationDays)) {
     throw new Error("hub_period_chain_invalid");
   }
 
@@ -67,6 +67,7 @@ function toPendingHubChainPeriod(
     entitlementId,
     startsAfterEntitlementId,
     paidAt,
+    paidDurationDays,
     startsAt: null,
     expiresAt: null,
   };
