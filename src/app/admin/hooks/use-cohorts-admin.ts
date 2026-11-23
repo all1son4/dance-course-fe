@@ -73,7 +73,17 @@ export const useCohortsAdmin = ({
   }, [onUnauthorized]);
 
   useEffect(() => {
-    if (isActive && isAuthorized && !loaded.current) void load();
+    // A new session reads afresh: after a logout or an expired session the old list
+    // must not come back as current, and an answer still on its way is dropped.
+    if (!isAuthorized) {
+      sequence.current += 1;
+      loaded.current = false;
+      setCohorts(null);
+      setFailed(false);
+      setIsLoading(false);
+      return;
+    }
+    if (isActive && !loaded.current) void load();
   }, [isActive, isAuthorized, load]);
 
   const close = async (
