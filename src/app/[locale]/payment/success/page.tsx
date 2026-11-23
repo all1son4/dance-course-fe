@@ -9,6 +9,11 @@ import {
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
 import {
+  applyBlackFridayToOffer,
+  BLACK_FRIDAY_HUB_WEEKS,
+  isBlackFridayHubOffer,
+} from "@/lib/black-friday";
+import {
   isChoreoChannelOfferId,
   isFirstTouchOfferId,
   isLifetimeChannelOfferId,
@@ -117,10 +122,12 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
             : isWithoutMentorPurchase
               ? "withoutMentor"
               : "withMentor";
+  // A full-price Hub bought during Black Friday 2026 runs 16 weeks instead of 8.
+  const hubWeeks = isBlackFridayHubOffer(offerId) ? BLACK_FRIDAY_HUB_WEEKS : 8;
   const accessNotice = isFirstTouchPurchase
     ? t("accessNotice.firstTouch")
     : isHubPurchase
-      ? t("accessNotice.inspirationHub")
+      ? t("accessNotice.inspirationHub", { weeks: hubWeeks })
       : isLifetimeChannelPurchase
         ? t("accessNotice.birthdayDrop")
         : isChoreoChannelOfferId(offerId)
@@ -137,7 +144,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     currencyParam === "eur" || currencyParam === "pln" ? currencyParam : undefined;
   const receipt = getResultReceipt({
     currency: purchaseCurrency,
-    offer: selectedOffer,
+    offer: selectedOffer ? applyBlackFridayToOffer(selectedOffer) : selectedOffer,
     product: selectedProduct,
     translateProduct: (key) => productT(key),
   });
@@ -197,9 +204,12 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
               telegramOpenLinkText={t("telegram.openLink")}
               telegramPendingText={t("telegram.pending")}
               telegramScheduledAfterCohortText={t("telegram.scheduledAfterCohort")}
-              telegramScheduledText={t(
-                isOnlineGroupPurchase ? "telegram.scheduledPlus" : "telegram.scheduled",
-              )}
+              telegramScheduledText={
+                isOnlineGroupPurchase
+                  ? t("telegram.scheduledPlus")
+                  : // {date} stays a placeholder: the client fills it in.
+                    t("telegram.scheduled", { date: "{date}", weeks: hubWeeks })
+              }
               telegramUnavailableText={t("telegram.unavailable")}
               title={t("title")}
             />

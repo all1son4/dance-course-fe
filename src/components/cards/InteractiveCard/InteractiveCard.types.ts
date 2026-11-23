@@ -7,11 +7,13 @@ import type { AnchorHTMLAttributes, HTMLAttributeAnchorTarget, ReactNode } from 
  */
 export type InteractiveCardFrost = "static" | "live";
 
-export type InteractiveCardOccasionTheme = "halloween";
+export type InteractiveCardOccasionTheme = "halloween" | "black-friday";
 
 export type InteractiveCardOccasion = {
   theme: InteractiveCardOccasionTheme;
   label: string;
+  /** A short figure shown as a chip after the label: "−33%". */
+  highlight?: string;
 };
 
 export type InteractiveCardProps = {

@@ -1,5 +1,7 @@
 import { and, eq } from "drizzle-orm";
 
+import type { HubPeriodDays } from "@/lib/inspiration-hub/period-end";
+
 import {
   buildHubPaymentPeriodValues,
   type HubPaymentPeriodValues,
@@ -9,6 +11,8 @@ import type { DatabaseTransaction } from "./transaction";
 
 export type EnsureHubPaymentPeriodCommand = {
   purchase: typeof purchases.$inferSelect;
+  /** Fixed at payment creation; omitted means the regular 56 days. */
+  paidDurationDays?: HubPeriodDays;
   updatedAt: Date;
 };
 
@@ -44,7 +48,10 @@ export const ensureHubPaymentPeriodInTransaction = async (
   tx: DatabaseTransaction,
   command: EnsureHubPaymentPeriodCommand,
 ): Promise<typeof accessEntitlements.$inferSelect> => {
-  const expected = buildHubPaymentPeriodValues(command.purchase);
+  const expected = buildHubPaymentPeriodValues(
+    command.purchase,
+    command.paidDurationDays,
+  );
 
   const [insertedEntitlement] = await tx
     .insert(accessEntitlements)

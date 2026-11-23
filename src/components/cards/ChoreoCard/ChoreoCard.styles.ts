@@ -1,9 +1,18 @@
 import { css, styled } from "styled-components";
 
 import { visuallyHidden } from "@/styles/mixins/a11y";
+import {
+  blackFridayBackdrop,
+  blackFridayCardEdge,
+  blackFridayHighlight,
+  blackFridayLabel,
+  blackFridayPill,
+  blackFridayStampIn,
+} from "@/styles/mixins/blackFriday";
 import { glass, raisedGlassEdge } from "@/styles/mixins/glass";
 
 type CardSurfaceProps = {
+  $isCampaign?: boolean;
   $isSpecialOffer?: boolean;
 };
 
@@ -48,6 +57,34 @@ export const CardSurface = styled.div<CardSurfaceProps>`
   ${raisedGlassEdge}
 
   ${({ $isSpecialOffer }) => $isSpecialOffer && specialOfferStyles}
+  ${({ $isCampaign }) => $isCampaign && campaignStyles}
+`;
+
+/* Black Friday: the same light card with a near-black edge and a label on the media. */
+const campaignStyles = css`
+  position: relative;
+  ${blackFridayCardEdge}
+`;
+
+export const CampaignBadge = styled.span`
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  /* Above the video player's own layers (its play button sits at 20). */
+  z-index: 30;
+  padding: 9px 16px;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  ${blackFridayPill}
+  ${blackFridayLabel}
+  display: inline-flex;
+  align-items: center;
+
+  & b {
+    ${blackFridayHighlight}
+  }
+
+  ${blackFridayStampIn}
 `;
 
 export const IconBox = styled.div`
@@ -211,12 +248,6 @@ export const CardFooter = styled.div`
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 `;
 
-export const CardPriceFact = styled.div`
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-`;
-
 export const CardPriceLabel = styled.p`
   margin: 0;
   color: var(--ink-muted);
@@ -236,6 +267,35 @@ export const CardPrice = styled.p`
   font-variant-numeric: tabular-nums;
 `;
 
+/* During a campaign the price sits on the shared Black Friday plate. */
+const campaignPriceStyles = css`
+  ${blackFridayPill}
+  gap: 4px;
+  padding: 14px 18px;
+  border-radius: var(--radius-control);
+
+  & ${CardPriceLabel} {
+    ${blackFridayLabel}
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  & ${CardPrice} {
+    color: var(--ink-inverse);
+  }
+
+  & ${CompareAtPrice} {
+    color: rgba(255, 255, 255, 0.56);
+  }
+`;
+
+export const CardPriceFact = styled.div<{ $isCampaign?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+
+  ${({ $isCampaign }) => $isCampaign && campaignPriceStyles}
+`;
+
 export const ButtonBox = styled.div`
   display: flex;
   width: 100%;
@@ -250,4 +310,10 @@ export const ButtonBox = styled.div`
       padding-inline: 16px;
     }
   }
+`;
+
+/* Black Friday: the card's backdrop texture, under its content. */
+export const CampaignBackdrop = styled.span`
+  ${blackFridayBackdrop}
+  border-radius: inherit;
 `;

@@ -1,4 +1,9 @@
 import {
+  DEFAULT_HUB_PERIOD_DAYS,
+  type HubPeriodDays,
+} from "@/lib/inspiration-hub/period-end";
+
+import {
   buildHubPeriodPredecessor,
   type HubPeriodPredecessorInput,
 } from "./hub-period-predecessor";
@@ -10,6 +15,8 @@ export type HubDependentPeriodInput = {
     "id" | "outcome" | "succeededAt" | "onlineGroupCohortId" | "telegramUserId"
   >;
   predecessor: HubPeriodPredecessorInput;
+  /** Fixed at payment creation; omitted means the regular 56 days. */
+  paidDurationDays?: HubPeriodDays;
 };
 
 export type HubDependentPeriodValues = {
@@ -17,7 +24,7 @@ export type HubDependentPeriodValues = {
   accessKey: "inspiration-hub";
   sourceKind: "standalone_hub";
   periodStartMode: "after_entitlement";
-  paidDurationDays: 56;
+  paidDurationDays: HubPeriodDays;
   startsAfterEntitlementId: string;
   startsAt: null;
   expiresAt: null;
@@ -51,7 +58,7 @@ export const buildHubDependentPeriodValues = (
     accessKey: "inspiration-hub",
     sourceKind: "standalone_hub",
     periodStartMode: "after_entitlement",
-    paidDurationDays: 56,
+    paidDurationDays: input.paidDurationDays ?? DEFAULT_HUB_PERIOD_DAYS,
     startsAfterEntitlementId: validatedPredecessor.entitlementId,
     startsAt: null,
     expiresAt: null,

@@ -1,11 +1,14 @@
 import Button from "@/components/common/Button";
 import SvgAsset from "@/components/common/SvgAsset";
+import { PriceDrop, StrikeDraw } from "@/components/other/BlackFriday";
 import PreviewClip from "@/components/other/PreviewClip";
 import VideoPlayer from "@/components/other/VideoPlayer/VideoPlayer";
 import { previewClipRootProps } from "@/lib/preview-clip";
 
+import ChoreoCampaignBadge from "./ChoreoCampaignBadge";
 import {
   ButtonBox,
+  CampaignBackdrop,
   CARD_MEDIA_RADIUS,
   CardContainer,
   CardFooter,
@@ -31,6 +34,8 @@ import type { ChoreoCardProps } from "./ChoreoCard.types";
 
 export default function ChoreoCard({
   analyticsId,
+  campaignBadge,
+  campaignHighlight,
   firstButtonOptions,
   highlights,
   icon,
@@ -39,6 +44,7 @@ export default function ChoreoCard({
   previewSrc,
   price,
   priceAnchor,
+  priceDrop,
   priceLabel,
   secondButtonOptions,
   specialOffer,
@@ -52,14 +58,29 @@ export default function ChoreoCard({
   const compareAt = priceAnchor && (
     <CompareAtPrice>
       <PriceAnchorLabel>{priceAnchor.label}</PriceAnchorLabel>
-      <s>{priceAnchor.compareAt}</s>
+      {priceDrop ? (
+        <StrikeDraw>{priceAnchor.compareAt}</StrikeDraw>
+      ) : (
+        <s>{priceAnchor.compareAt}</s>
+      )}
     </CompareAtPrice>
   );
 
   return (
     <CardContainer {...(previewSrc ? previewClipRootProps : {})}>
       {icon && <IconBox className="choreoCardIconBox">{icon}</IconBox>}
-      <CardSurface className="choreoCardSurface" $isSpecialOffer={specialOffer}>
+      <CardSurface
+        className="choreoCardSurface"
+        $isCampaign={Boolean(campaignBadge)}
+        $isSpecialOffer={specialOffer}
+      >
+        {campaignBadge && <CampaignBackdrop aria-hidden="true" />}
+        {campaignBadge && (
+          <ChoreoCampaignBadge>
+            {campaignBadge}
+            {campaignHighlight ? <b>{campaignHighlight}</b> : null}
+          </ChoreoCampaignBadge>
+        )}
         {videoSrc && (
           <VideoPlayer
             analyticsId={analyticsId}
@@ -108,10 +129,16 @@ export default function ChoreoCard({
           {(price || hasFirstButton || hasSecondButton) && (
             <CardFooter>
               {price && (
-                <CardPriceFact>
+                <CardPriceFact $isCampaign={Boolean(campaignBadge)}>
                   {priceLabel && <CardPriceLabel>{priceLabel}</CardPriceLabel>}
                   <CardPriceLine>
-                    <CardPrice>{price}</CardPrice>
+                    <CardPrice>
+                      {priceDrop ? (
+                        <PriceDrop from={priceDrop.from} to={priceDrop.to} />
+                      ) : (
+                        price
+                      )}
+                    </CardPrice>
                     {compareAt}
                   </CardPriceLine>
                 </CardPriceFact>

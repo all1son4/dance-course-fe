@@ -31,6 +31,7 @@ import {
 } from "../purchase-success-email";
 import type { StripePaymentWebhookResult } from "../sync";
 import { getPurchaseSideEffectPaymentIntent } from "./eligibility";
+import { getPaidHubPeriodDays } from "./purchase-access";
 import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
 import { getReceiptData } from "./stripe-receipt";
 
@@ -215,7 +216,10 @@ const buildPreparedPurchaseSuccessEmail = ({
   );
 
   return buildPurchaseSuccessEmail({
-    accessDurationDays: getOfferAccessDurationDaysByOfferId(paymentRecord.offer_id) ?? 0,
+    accessDurationDays:
+      getPaidHubPeriodDays(paymentIntent.metadata) ??
+      getOfferAccessDurationDaysByOfferId(paymentRecord.offer_id) ??
+      0,
     accessKind: getPurchaseSuccessEmailAccessKind({
       accessWorkflow: paymentRecord.access_workflow,
       offerId: paymentRecord.offer_id,

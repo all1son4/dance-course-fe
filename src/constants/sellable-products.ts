@@ -24,6 +24,10 @@ export type SellableProductPrices = Record<SupportedCheckoutCurrency, number>;
 
 export type SellableProductOffer = {
   accessWorkflow?: string;
+  /** Set only while a campaign changes this offer (see src/lib/black-friday.ts). */
+  campaign?: string;
+  /** The regular price, struck through, while a campaign price applies. */
+  compareAtPrices?: SellableProductPrices;
   code: SellableProductOfferCode;
   deliveryChannel?: string;
   id: string;
@@ -73,6 +77,8 @@ export const INSPIRATION_HUB_RENEWAL_OFFER_ID = "off_inspiration_hub_renewal";
 
 export const BIRTHDAY_DROP_PRODUCT_ID = "prd_choreo_birthday_drop";
 export const BIRTHDAY_DROP_OFFER_ID = "off_choreo_birthday_drop_standard";
+
+export const HER_LIES_WITHOUT_MENTOR_OFFER_ID = "off_3HbC8xP2mV6q";
 
 export const LOVE_ME_IN_THE_MORNING_PRODUCT_ID = "prd_choreo_love_me_in_the_morning";
 export const LOVE_ME_IN_THE_MORNING_OFFER_ID =
@@ -222,11 +228,11 @@ export const SELLABLE_PRODUCTS: Record<SellableProductCode, SellableProduct> = {
     title: "Онлайн-разбор хореографии «Her Lies»",
     titleKey: "choreoHerLies.title",
     type: "choreo",
-    defaultOfferId: "off_3HbC8xP2mV6q",
+    defaultOfferId: HER_LIES_WITHOUT_MENTOR_OFFER_ID,
     offers: [
       {
         code: "without-mentor",
-        id: "off_3HbC8xP2mV6q",
+        id: HER_LIES_WITHOUT_MENTOR_OFFER_ID,
         label: "Без куратора",
         labelKey: "choreoHerLies.offers.withoutMentor",
         salesEnabled: true,

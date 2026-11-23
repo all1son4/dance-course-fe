@@ -41,15 +41,9 @@ export const DetailFactText = styled.p`
   margin: 0;
   color: var(--ink);
 
-  /* Cards stand side by side above 1100px: the same room for a long value in
-     each of them keeps the divider, the label and the value on one line. */
-  @media (min-width: 1101px) {
-    min-height: calc(3 * 1.2em);
-  }
-
-  @media (min-width: 1400px) {
-    min-height: calc(2 * 1.2em);
-  }
+  /* No reserved height: the value sits right above the button in every card.
+     The cards' buttons line up at the bottom; a short value leaves its room
+     above the divider instead of under itself. */
 
   @media (max-width: 550px) {
     font-size: var(--text-lead);
@@ -110,4 +104,31 @@ export const PriceFrequency = styled.p`
   letter-spacing: 0;
   margin: 0;
   color: var(--ink-muted);
+`;
+
+/* Black Friday: the fact label in the brand red, the regular price struck. */
+export const CampaignFactLabel = styled(DetailText)`
+  /* The card's fact rows set their own ink; the campaign label wins over it. */
+  && {
+    color: var(--brand);
+    font-weight: 600;
+  }
+`;
+
+export const CampaignFactRegular = styled.span`
+  font-size: var(--text-body-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+`;
+
+/* The campaign price itself, in the brand red so it reads before anything else. */
+export const CampaignFactValue = styled(DetailFactText)`
+  && {
+    color: var(--brand);
+  }
+`;
+
+/* The campaign value inside a regular fact (e.g. «16 недель» in a hero). */
+export const CampaignAccent = styled.span`
+  color: var(--brand);
 `;

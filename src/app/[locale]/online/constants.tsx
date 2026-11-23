@@ -1,7 +1,17 @@
+import type { ReactNode } from "react";
+
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
+import { PriceDrop, StrikeDraw } from "@/components/other/BlackFriday";
+import {
+  formatOfferPrice,
+  type SellableProductPrices,
+} from "@/constants/sellable-products";
 import type { ProductSaleState } from "@/lib/sales-availability";
 
 import {
+  CampaignFactLabel,
+  CampaignFactRegular,
+  CampaignFactValue,
   ContentStack,
   DetailFactText,
   DetailText,
@@ -12,11 +22,56 @@ type InteractiveCourseCard = InteractiveCardProps & {
   id: string;
 };
 
+/** Black Friday copy; present only while the campaign runs. */
+export type OnlineBlackFridayCopy = {
+  label: string;
+  choreoCta: string;
+  choreoHighlight: string;
+  hubCta: string;
+  hubHighlight: string;
+  choreoFactLabel: string;
+  /** The tutorials' campaign price and the regular one, for the price drop. */
+  choreoPrices: { from: SellableProductPrices; to: SellableProductPrices } | null;
+  hubFactLabel: string;
+  hubFactValue: ReactNode;
+};
+
+/**
+ * While the campaign runs the card's key fact is the offer itself, in the card's
+ * own fact layout: the label in the brand red, the old price struck after the new.
+ */
+const CampaignFact = ({
+  label,
+  prices,
+  value,
+}: {
+  label: string;
+  prices?: { from: SellableProductPrices; to: SellableProductPrices } | null;
+  value?: ReactNode;
+}) => (
+  <ContentStack>
+    <CampaignFactLabel>{label}</CampaignFactLabel>
+    <CampaignFactValue>
+      {prices ? (
+        <>
+          <PriceDrop from={prices.from} to={prices.to} />{" "}
+          <CampaignFactRegular>
+            <StrikeDraw>{formatOfferPrice(prices.from)}</StrikeDraw>
+          </CampaignFactRegular>
+        </>
+      ) : (
+        value
+      )}
+    </CampaignFactValue>
+  </ContentStack>
+);
+
 export const getOnlineCoursesArray = (
   t: Translate,
   commonT: Translate,
   choreoSaleState: ProductSaleState = "closed",
   hubSaleState: ProductSaleState = "closed",
+  blackFriday: OnlineBlackFridayCopy | null = null,
 ): InteractiveCourseCard[] => [
   // The Birthday Drop is retired (see BIRTHDAY_CAMPAIGN_ENABLED); its page
   // answers 404, so the card stays out until the campaign returns.
@@ -63,23 +118,35 @@ export const getOnlineCoursesArray = (
     id: "inspiration-hub",
     title: t("cards.inspirationHub.title"),
     headerPhoto: "/images/photos/card_inspiration_hub.webp",
+    occasion:
+      blackFriday && hubSaleState === "open"
+        ? {
+            theme: "black-friday",
+            label: blackFriday.label,
+            highlight: blackFriday.hubHighlight,
+          }
+        : undefined,
     topRowContent: (
       <ContentStack $gap="16px">
         <DetailText>{t("cards.inspirationHub.description.1")}</DetailText>
       </ContentStack>
     ),
-    bottomRowContent: (
-      <ContentStack>
-        <DetailText>{t("cards.inspirationHub.accessLabel")}</DetailText>
-        <DetailFactText>
-          {hubSaleState === "open"
-            ? t("cards.inspirationHub.accessValue")
-            : commonT("salesUnavailable")}
-        </DetailFactText>
-      </ContentStack>
-    ),
+    bottomRowContent:
+      blackFriday && hubSaleState === "open" ? (
+        <CampaignFact label={blackFriday.hubFactLabel} value={blackFriday.hubFactValue} />
+      ) : (
+        <ContentStack>
+          <DetailText>{t("cards.inspirationHub.accessLabel")}</DetailText>
+          <DetailFactText>
+            {hubSaleState === "open"
+              ? t("cards.inspirationHub.accessValue")
+              : commonT("salesUnavailable")}
+          </DetailFactText>
+        </ContentStack>
+      ),
     // Like every card here, it leads to the course page, where the buy button is.
-    buttonText: commonT("details"),
+    buttonText:
+      blackFriday && hubSaleState === "open" ? blackFriday.hubCta : commonT("details"),
     buttonHref: "/online/inspiration-hub",
     buttonPrefetch: false,
   },
@@ -87,29 +154,46 @@ export const getOnlineCoursesArray = (
     id: "choreo",
     title: t("cards.choreo.title"),
     headerPhoto: "/images/photos/card_choreo.webp",
+    occasion:
+      blackFriday && choreoSaleState === "open"
+        ? {
+            theme: "black-friday",
+            label: blackFriday.label,
+            highlight: blackFriday.choreoHighlight,
+          }
+        : undefined,
     topRowContent: (
       <ContentStack $gap="16px">
         <DetailText>{t("cards.choreo.description.1")}</DetailText>
         <DetailText>{t("cards.choreo.description.2")}</DetailText>
       </ContentStack>
     ),
-    bottomRowContent: (
-      <ContentStack>
-        <DetailText>
-          {t(
-            choreoSaleState === "open"
-              ? "cards.choreo.startLabel"
-              : "cards.choreo.salesLabel",
-          )}
-        </DetailText>
-        <DetailFactText>
-          {choreoSaleState === "open"
-            ? t("cards.choreo.startValue")
-            : commonT("salesUnavailable")}
-        </DetailFactText>
-      </ContentStack>
-    ),
-    buttonText: commonT("details"),
+    bottomRowContent:
+      blackFriday && choreoSaleState === "open" ? (
+        <CampaignFact
+          label={blackFriday.choreoFactLabel}
+          prices={blackFriday.choreoPrices}
+        />
+      ) : (
+        <ContentStack>
+          <DetailText>
+            {t(
+              choreoSaleState === "open"
+                ? "cards.choreo.startLabel"
+                : "cards.choreo.salesLabel",
+            )}
+          </DetailText>
+          <DetailFactText>
+            {choreoSaleState === "open"
+              ? t("cards.choreo.startValue")
+              : commonT("salesUnavailable")}
+          </DetailFactText>
+        </ContentStack>
+      ),
+    buttonText:
+      blackFriday && choreoSaleState === "open"
+        ? blackFriday.choreoCta
+        : commonT("details"),
     buttonHref: "/online/choreo",
   },
   {

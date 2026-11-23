@@ -994,7 +994,7 @@ export const accessEntitlements = pgTable(
           ELSE ${table.sourceKind} IS NOT NULL
             AND ${table.sourceKind} = 'standalone_hub'
             AND ${table.paidDurationDays} IS NOT NULL
-            AND ${table.paidDurationDays} = 56
+            AND ${table.paidDurationDays} IN (56, 112)
         END
       `,
     ),

@@ -11,6 +11,7 @@ import Header from "@/components/layout/Header";
 import PageContainer from "@/components/layout/PageContainer";
 import SkipLink, { MAIN_CONTENT_ID } from "@/components/layout/SkipLink";
 import BirthdayPopup from "@/components/other/BirthdayPopup";
+import { BlackFridayRibbonGate } from "@/components/other/BlackFriday";
 import { GLOBAL_CLIENT_NAMESPACES, pickMessages } from "@/i18n/client-messages";
 import { routing } from "@/i18n/routing";
 import {
@@ -122,6 +123,7 @@ export default async function RootLayout({ children, params }: LocaleLayoutProps
       <LogoSymbol />
       <SkipLink />
       <Header />
+      <BlackFridayRibbonGate />
       {/* tabIndex={-1} lets the skip link move focus here. */}
       <main id={MAIN_CONTENT_ID} lang={locale} tabIndex={-1}>
         <PageContainer>{children}</PageContainer>

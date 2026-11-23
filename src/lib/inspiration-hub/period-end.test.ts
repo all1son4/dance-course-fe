@@ -48,3 +48,13 @@ test("calculating standalone Hub expiry does not change its start", () => {
   assert.deepEqual(result, new Date("2027-01-05T12:00:00+01:00"));
   assert.deepEqual(startsAt, new Date("2026-11-10T12:00:00+01:00"));
 });
+
+test("a Black Friday Hub period lasts 112 calendar days in Warsaw", () => {
+  assert.deepEqual(
+    getStandaloneHubPeriodEnd({
+      startsAt: new Date("2026-11-27T20:00:00+01:00"),
+      days: 112,
+    }),
+    new Date("2027-03-19T20:00:00+01:00"),
+  );
+});

@@ -1,4 +1,8 @@
-import { getStandaloneHubPeriodEnd } from "@/lib/inspiration-hub/period-end";
+import {
+  getStandaloneHubPeriodEnd,
+  type HubPeriodDays,
+  isHubPeriodDays,
+} from "@/lib/inspiration-hub/period-end";
 
 import type { PendingHubChainSnapshotInput } from "./hub-period-chain-input";
 import type { HubPeriodNodeSnapshot } from "./hub-period-nodes";
@@ -83,11 +87,17 @@ function getOnlinePredecessorEnd(
   return endsAt.getTime() >= nextCohortStartsAt.getTime() ? endsAt : nextCohortStartsAt;
 }
 
-function isExactStandalonePeriod(startsAt: Date, expiresAt: Date): boolean {
+function isExactStandalonePeriod(
+  startsAt: Date,
+  expiresAt: Date,
+  days: HubPeriodDays,
+): boolean {
   try {
-    return getStandaloneHubPeriodEnd({ startsAt }).getTime() === expiresAt.getTime();
+    return (
+      getStandaloneHubPeriodEnd({ startsAt, days }).getTime() === expiresAt.getTime()
+    );
   } catch (error) {
-    // Finite dates can still overflow when 56 calendar days are added.
+    // Finite dates can still overflow when the period's days are added.
     if (error instanceof RangeError) return false;
     throw error;
   }
@@ -97,7 +107,13 @@ function getStandalonePredecessorEnd(
   { entitlement, purchase }: HubPeriodNodeSnapshot,
   cohort: HubPeriodPredecessorInput["cohort"],
 ): Date | null {
-  const { periodStartMode, startsAfterEntitlementId, startsAt, expiresAt } = entitlement;
+  const {
+    paidDurationDays,
+    periodStartMode,
+    startsAfterEntitlementId,
+    startsAt,
+    expiresAt,
+  } = entitlement;
   const paidAt = purchase.succeededAt;
 
   if (
@@ -105,7 +121,7 @@ function getStandalonePredecessorEnd(
     cohort !== null ||
     purchase.onlineGroupCohortId !== null ||
     entitlement.accessKey !== "inspiration-hub" ||
-    entitlement.paidDurationDays !== 56
+    !isHubPeriodDays(paidDurationDays)
   ) {
     throw new Error(INVALID_PREDECESSOR);
   }
@@ -132,7 +148,7 @@ function getStandalonePredecessorEnd(
     expiresAt.getTime() <= startsAt.getTime() ||
     startsAt.getTime() < paidAt.getTime() ||
     (periodStartMode === "payment" && startsAt.getTime() !== paidAt.getTime()) ||
-    !isExactStandalonePeriod(startsAt, expiresAt)
+    !isExactStandalonePeriod(startsAt, expiresAt, paidDurationDays)
   ) {
     throw new Error(INVALID_PREDECESSOR);
   }

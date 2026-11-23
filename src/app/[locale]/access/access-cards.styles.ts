@@ -1,5 +1,7 @@
 import styled from "styled-components";
 
+import { BLACK_FRIDAY_INK } from "@/styles/mixins/blackFriday";
+
 import { porcelain, quietAction } from "./page.styles";
 
 /* Zones on the left; the rail beside them from 1024px, below them on a phone. */
@@ -108,6 +110,35 @@ export const AccessCard = styled.li`
   gap: 14px;
   padding: 20px 24px 22px;
   transition: transform var(--motion-fast, 160ms) ease;
+
+  /* Bought on Black Friday: the campaign edge, as on the storefront cards. */
+  /* Bought on Black Friday: an elegant black card. The page's colour tokens are
+     redefined inside it, so every line and chip follows without its own rule. */
+  &[data-campaign] {
+    --ink: rgba(255, 255, 255, 0.96);
+    --ink-muted: rgba(255, 255, 255, 0.62);
+    --brand: #ff9d97;
+
+    position: relative;
+    isolation: isolate;
+    color: var(--ink);
+    background:
+      radial-gradient(120% 140% at 100% 100%, rgba(124, 0, 2, 0.35), transparent 55%),
+      ${BLACK_FRIDAY_INK};
+    box-shadow:
+      0 14px 34px rgba(12, 11, 13, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+
+    &::before,
+    &::after {
+      opacity: 0.12;
+    }
+
+    @media (forced-colors: active) {
+      border: 1px solid CanvasText;
+    }
+  }
 
   /* A tap on a phone's folding card presses it in a touch. */
   &:has(> button:active) {
@@ -498,5 +529,40 @@ export const ActionResult = styled.p<{ $tone: "ok" | "error" }>`
     color: var(--brand);
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+`;
+
+/*
+ * The Black Friday mark of the black card: a rectangular stamp in the corner,
+ * faint and behind the text: just «BLACK FRIDAY», on two lines. It is simply
+ * there, with no entrance.
+ */
+export const InkStamp = styled.span`
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  z-index: -1;
+  max-width: 7.5em;
+  padding: 9px 14px 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-size: 15px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.24);
+  transform: rotate(-10deg);
+  pointer-events: none;
+
+  @media (max-width: 550px) {
+    right: 14px;
+    bottom: 14px;
+    font-size: 13px;
+  }
+
+  @media (forced-colors: active) {
+    display: none;
   }
 `;

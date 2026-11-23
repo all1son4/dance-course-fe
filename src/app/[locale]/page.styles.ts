@@ -2,6 +2,7 @@ import Image from "next/image";
 import styled from "styled-components";
 
 import { SectionTitleBase } from "@/components/common/SectionTitle/SectionTitle.styles";
+import { visuallyHidden } from "@/styles/mixins/a11y";
 import { glass } from "@/styles/mixins/glass";
 import { hitArea } from "@/styles/mixins/hitArea";
 
@@ -177,7 +178,12 @@ export const DescriptionBox = styled.div`
   }
 `;
 
-export const MainTitleDetail = styled.span`
+export const MainTitleHidden = styled.span`
+  ${visuallyHidden}
+`;
+
+/* The slogan under the big "Frame Up". */
+export const MainTitleDetail = styled.p`
   display: block;
   /* Wraps on phones; even lines instead of a lone last word. */
   text-wrap: balance;

@@ -38,6 +38,7 @@ const CHECKOUT_CLIENT_NAMESPACES = [
   "StripePaymentTabs",
   "SellableProducts",
   "CurrencySwitch",
+  "BlackFriday.checkout",
 ] as const;
 
 export default async function PaymentLayout({ children }: PaymentLayoutProps) {

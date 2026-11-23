@@ -1,10 +1,11 @@
-import { getStandaloneHubPeriodEnd } from "./period-end";
+import { getStandaloneHubPeriodEnd, type HubPeriodDays } from "./period-end";
 import { getStandaloneHubPeriodStart } from "./period-start";
 
 export type PendingHubChainPeriod = {
   entitlementId: string;
   startsAfterEntitlementId: string;
   paidAt: Date;
+  paidDurationDays: HubPeriodDays;
   startsAt: null;
   expiresAt: null;
 };
@@ -66,7 +67,10 @@ export function planPendingHubPeriodChain(
       paidAt: period.paidAt,
       currentAccessEndsAt: previousExpiresAt,
     });
-    const expiresAt = getStandaloneHubPeriodEnd({ startsAt });
+    const expiresAt = getStandaloneHubPeriodEnd({
+      startsAt,
+      days: period.paidDurationDays,
+    });
 
     updates.push({
       entitlementId: period.entitlementId,

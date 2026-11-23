@@ -127,3 +127,34 @@ test("a rejected access job is named in the purchase alert", () => {
 
   assert.match(alertText, /Срок доступа: не записан: hub_purchase_period_invalid/u);
 });
+
+test("a Black Friday Hub payment carries its 112 days to the access job", () => {
+  assert.deepEqual(
+    getPurchaseAccessPlan({
+      offerId: INSPIRATION_HUB_ACCESS_OFFER_ID,
+      metadata: { campaign: "black-friday-2026", hub_period_days: "112" },
+    }),
+    {
+      kind: "inspiration_hub",
+      continuationCohortId: null,
+      paidDurationDays: 112,
+      verifiedTelegramUserId: null,
+    },
+  );
+});
+
+test("an unknown Hub length in the metadata falls back to the regular period", () => {
+  for (const value of ["", "30", "112.5", "abc"]) {
+    assert.deepEqual(
+      getPurchaseAccessPlan({
+        offerId: INSPIRATION_HUB_ACCESS_OFFER_ID,
+        metadata: { hub_period_days: value },
+      }),
+      {
+        kind: "inspiration_hub",
+        continuationCohortId: null,
+        verifiedTelegramUserId: null,
+      },
+    );
+  }
+});

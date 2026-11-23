@@ -232,6 +232,13 @@
       "when": 1795343008978,
       "tag": "0032_erase_legacy_used_token_links",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795451904221,
+      "tag": "0033_hub_period_days_black_friday",
+      "breakpoints": true
     }
   ]
 }
