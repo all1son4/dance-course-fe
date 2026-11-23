@@ -1,6 +1,6 @@
 import { isAdminInviteLinksRequestAuthenticated } from "@/lib/admin-invite-links-auth";
 import {
-  isTrustedBrowserOrigin,
+  getBrowserJsonRequestErrorResponse,
   jsonErrorNoStore,
   jsonNoStore,
   parseJsonBody,
@@ -25,9 +25,9 @@ export async function POST(request: Request) {
     return jsonErrorNoStore("unauthorized", { status: 401 });
   }
 
-  if (!isTrustedBrowserOrigin(request)) {
-    return jsonErrorNoStore("invalid_origin", { status: 403 });
-  }
+  // Origin, size and JSON type, like every other admin route that takes a body.
+  const requestError = getBrowserJsonRequestErrorResponse(request, MAX_REPORT_BODY_BYTES);
+  if (requestError) return requestError;
 
   const rateLimit = await consumeRequestRateLimit({
     keyPrefix: "admin:monthly-sales-report:send",
