@@ -110,6 +110,8 @@ export type MyAccessSnapshot = {
   legendCycles?: number | null;
   /** «Подряд»: two or more cycles in a row up to now, after the first (`findCycleStreak`). */
   cycleStreak?: { count: number; first: number; last: number } | null;
+  /** «Дебют»: the customer's first paid purchase was within the last three months. */
+  freshman?: boolean;
   /** The name given at checkout, for the greeting only; never on a card. */
   customerFullName?: string | null;
   purchases: MyAccessPurchase[];
