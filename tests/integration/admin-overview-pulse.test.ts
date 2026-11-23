@@ -201,3 +201,22 @@ test("pulse flags payments stuck at the bank and a failing day", async () => {
     await client`DELETE FROM purchases WHERE payment_intent_id IN ${client(ids)}`;
   }
 });
+
+test("pulse takes the queues from a status reading it is given", async () => {
+  // The overview reads the queues for its own items and hands that reading over.
+  const status = await readOperationalDatabaseStatus();
+  const pulse = await getSystemPulse(
+    new Date(),
+    Promise.resolve({
+      ...status,
+      inbox: { ...status.inbox, ready: 2, working: 1, oldestReadyAgeSeconds: 20 * 60 },
+      outbox: { ...status.outbox, ready: 4, oldestReadyAgeSeconds: 3 * 60 * 60 },
+    }),
+  );
+  const signal = (id: string) => pulse.signals.find((entry) => entry.id === id);
+
+  assert.equal(signal("stripe-backlog")?.value, "3");
+  assert.equal(signal("stripe-backlog")?.tone, "danger");
+  assert.equal(signal("queue")?.value, "Ждут отправки: 4");
+  assert.equal(signal("queue")?.tone, "danger");
+});
