@@ -24,6 +24,7 @@ import { isStartDayReached } from "@/lib/inspiration-hub/calendar";
 import { previousChatRemovalKey } from "@/lib/online-group/previous-chat-removal-key";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
+import { DAY_MS } from "@/lib/time";
 
 import { hashAccessToken } from "./access-records";
 import {
@@ -36,7 +37,7 @@ import {
 import { getOnlineGroupIdentityReuseLookup } from "./identity-reuse-policy";
 import { getOfferMetadataById, isOnlineGroupAccessOfferId } from "./offer-access";
 
-const INVITE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const INVITE_TTL_MS = 30 * DAY_MS;
 
 export type OnlineGroupAccessKey = "inspiration-hub" | "main-group";
 export type OnlineGroupAccessState = {

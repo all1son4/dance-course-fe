@@ -1,5 +1,6 @@
+import { DAY_MS } from "@/lib/time";
+
 const HUB_TIME_ZONE = "Europe/Warsaw";
-const CALENDAR_DAY_MS = 24 * 60 * 60 * 1000;
 
 const calendarFormatter = new Intl.DateTimeFormat("en-GB", {
   day: "2-digit",
@@ -51,7 +52,7 @@ const toWarsawInstant = (targetCalendarTimestamp: number): Date => {
   // the target collects the offsets needed to resolve a skipped/repeated hour.
   const offsets = new Set<number>();
   for (const dayOffset of [-1, 0, 1]) {
-    const sample = new Date(targetCalendarTimestamp + dayOffset * CALENDAR_DAY_MS);
+    const sample = new Date(targetCalendarTimestamp + dayOffset * DAY_MS);
     if (Number.isFinite(sample.getTime())) {
       offsets.add(getCalendarTimestamp(sample) - sample.getTime());
     }
@@ -90,7 +91,7 @@ export const addWarsawCalendarDays = (date: Date, days: number): Date => {
 
   if (days === 0) return new Date(date.getTime());
 
-  return toWarsawInstant(getCalendarTimestamp(date) + days * CALENDAR_DAY_MS);
+  return toWarsawInstant(getCalendarTimestamp(date) + days * DAY_MS);
 };
 
 /**
@@ -104,9 +105,9 @@ export const getStartOfNextWarsawDay = (date: Date): Date => {
   }
 
   const calendarTimestamp = getCalendarTimestamp(date);
-  const startOfDay = Math.floor(calendarTimestamp / CALENDAR_DAY_MS) * CALENDAR_DAY_MS;
+  const startOfDay = Math.floor(calendarTimestamp / DAY_MS) * DAY_MS;
 
-  return toWarsawInstant(startOfDay + CALENDAR_DAY_MS);
+  return toWarsawInstant(startOfDay + DAY_MS);
 };
 
 /**
@@ -132,7 +133,7 @@ export const toWarsawDay = (date: Date) => WARSAW_DAY.format(date);
 export const warsawDaysBetween = (from: Date, to: Date) => {
   const dayNumber = (date: Date) => {
     const [year, month, day] = WARSAW_DAY.format(date).split("-").map(Number);
-    return Date.UTC(year, month - 1, day) / CALENDAR_DAY_MS;
+    return Date.UTC(year, month - 1, day) / DAY_MS;
   };
 
   return dayNumber(to) - dayNumber(from);

@@ -2,19 +2,12 @@ import { Info, RefreshCw } from "lucide-react";
 import { type FormEvent, useState } from "react";
 
 import {
-  ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID,
-  ONLINE_GROUP_RENEWAL_OFFER_ID,
-} from "@/constants/sellable-products";
-import type { CohortOverview } from "@/lib/online-group/cohort-admin";
-
-import type { useCohortsAdmin } from "../hooks/use-cohorts-admin";
+  createCohortTransitionActions,
+  type useCohortsAdmin,
+} from "../hooks/use-cohorts-admin";
 import type { useOnlineGroupAdmin } from "../hooks/use-online-group-admin";
-import { ADMIN_API_ENDPOINTS } from "../lib/admin.constants";
-import { parseWarsawDateTimeInput } from "../lib/admin.utils";
-import { requestAdminJson } from "../lib/admin-request";
 import { AdminButton, Callout, PageHeader, SegmentedTabs, Stack } from "../ui/primitives";
 import { AccessInvitations } from "./access-invitations";
-import type { NextCohortInput, RenewalLinkKind } from "./cohort-transition-guide";
 import { CohortsPanel } from "./cohorts-panel";
 import {
   ActiveOnlineGroupCard,
@@ -23,19 +16,6 @@ import {
 } from "./online-group-workspace";
 
 type Section = "cohorts" | "stream" | "renewals" | "manual";
-
-const NEXT_COHORT_ERRORS: Record<string, string> = {
-  cohort_duration_invalid: "Длительность — целое число недель от 1 до 26.",
-  cohort_not_found: "Предыдущий поток не найден. Обнови страницу.",
-  next_cohort_chat_is_library: "Это чат Inspiration Hub — для потока нужен свой чат.",
-  next_cohort_chat_taken: "Этот чат уже занят другим потоком.",
-  next_cohort_exists: "Следующий поток уже заведён. Обнови страницу.",
-  next_cohort_incomplete: "Заполни название, чат и дату старта.",
-  next_cohort_starts_too_early: "Старт должен быть позже старта предыдущего потока.",
-  rate_limited: "Слишком много попыток. Подожди минуту.",
-  telegram_chat_not_registered:
-    "Чат не зарегистрирован: добавь бота в чат администратором и отправь /register_chat.",
-};
 
 type OnlineGroupTabProps = {
   cohorts: ReturnType<typeof useCohortsAdmin>;
@@ -69,66 +49,11 @@ export const OnlineGroupTab = ({
     onProblemsChanged();
   };
 
-  /** «Завести следующий поток»: the record that follows the newest cohort. */
-  const createNextCohort = async (
-    previous: CohortOverview,
-    input: NextCohortInput,
-  ): Promise<{ ok: true } | { ok: false; message: string }> => {
-    const startsAt = parseWarsawDateTimeInput(input.startsAt);
-    if (!startsAt) return { ok: false, message: "Укажи дату и время старта." };
-
-    const response = await requestAdminJson<{ status?: string; errorCode?: string }>(
-      ADMIN_API_ENDPOINTS.onlineGroupNextCohort,
-      {
-        body: {
-          durationWeeks: input.durationWeeks,
-          mainChatId: input.mainChatId,
-          previousCohortId: previous.id,
-          startsAt,
-          title: input.title,
-        },
-        method: "POST",
-      },
-    );
-    if (response.unauthorized) {
-      onUnauthorized();
-      return { ok: false, message: "Сессия закончилась. Войди заново." };
-    }
-    if (response.ok && response.data.status === "created") {
-      await Promise.all([cohorts.load(), settings.load()]);
-      return { ok: true };
-    }
-    return {
-      ok: false,
-      message:
-        NEXT_COHORT_ERRORS[response.data.errorCode ?? response.errorCode] ??
-        "Не получилось завести поток. Попробуй ещё раз.",
-    };
-  };
-
-  /** One click from the transition guide: the running cohort's chat is the only source. */
-  const createRenewalLink = async (cohort: CohortOverview, kind: RenewalLinkKind) => {
-    const response = await requestAdminJson<{ status?: string }>(
-      ADMIN_API_ENDPOINTS.renewalCampaigns,
-      {
-        body: {
-          offerId:
-            kind === "plus"
-              ? ONLINE_GROUP_RENEWAL_LIBRARY_OFFER_ID
-              : ONLINE_GROUP_RENEWAL_OFFER_ID,
-          sourceChatIds: [cohort.mainChatId],
-          title: `${cohort.title} → ${cohort.next?.title ?? ""}`.trim(),
-        },
-        method: "POST",
-      },
-    );
-    if (response.unauthorized) {
-      onUnauthorized();
-      return false;
-    }
-    await Promise.all([cohorts.load(), settings.load()]);
-    return response.ok && response.data.status === "ready";
-  };
+  const { createNextCohort, createRenewalLink } = createCohortTransitionActions({
+    cohorts,
+    onUnauthorized,
+    settings,
+  });
 
   return (
     <Stack $gap={20}>
