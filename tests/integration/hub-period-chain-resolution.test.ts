@@ -24,7 +24,7 @@ import {
 import type { DatabaseTransaction } from "@/db/transaction";
 import type { HubPeriodChainPlan } from "@/lib/inspiration-hub/period-chain";
 
-import { waitForPostgresBlock } from "../helpers/postgres-locks";
+import { lockSharedTableDdl, waitForPostgresBlock } from "../helpers/postgres-locks";
 import { createTestTelegramUserIdPair } from "../helpers/telegram-user-id";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
@@ -1104,6 +1104,7 @@ async function withServiceWriteFault(
     await run();
   } finally {
     await client.begin(async (tx) => {
+      await lockSharedTableDdl(tx);
       await tx`DROP TRIGGER hub_service_test_write_failure ON access_entitlements`;
       await tx`DROP FUNCTION hub_service_test_reject_write()`;
       await tx`DROP TABLE hub_service_test_write_fault`;
