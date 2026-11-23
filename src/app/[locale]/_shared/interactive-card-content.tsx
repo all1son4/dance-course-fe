@@ -111,3 +111,18 @@ export const PriceFrequency = styled.p`
   margin: 0;
   color: var(--ink-muted);
 `;
+
+/* Black Friday: the fact label in the brand red, the regular price struck. */
+export const CampaignFactLabel = styled(DetailText)`
+  /* The card's fact rows set their own ink; the campaign label wins over it. */
+  && {
+    color: var(--brand);
+    font-weight: 600;
+  }
+`;
+
+export const CampaignFactRegular = styled.s`
+  font-size: var(--text-body-sm);
+  color: var(--ink-muted);
+  white-space: nowrap;
+`;

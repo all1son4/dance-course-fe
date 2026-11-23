@@ -1686,9 +1686,8 @@
     "cards": {
       "choreoLabel": "Black Friday −33%",
       "hubLabel": "Black Friday ×2",
-      "plateLabel": "Black Friday · do 30 listopada",
-      "choreoPlate": "Tutoriale o jedną trzecią taniej",
-      "hubPlate": "16 tygodni w cenie 8"
+      "hubPlate": "16 tygodni w cenie 8",
+      "hubFactLabel": "Black Friday · dostęp"
     },
     "hubPage": {
       "badge": "Black Friday",

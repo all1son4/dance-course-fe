@@ -1,12 +1,9 @@
 import type { InteractiveCardProps } from "@/components/cards/InteractiveCard";
-import {
-  CampaignPlate,
-  CampaignPlateLabel,
-  CampaignPlateValue,
-} from "@/components/other/BlackFriday";
 import type { ProductSaleState } from "@/lib/sales-availability";
 
 import {
+  CampaignFactLabel,
+  CampaignFactRegular,
   ContentStack,
   DetailFactText,
   DetailText,
@@ -20,17 +17,17 @@ type InteractiveCourseCard = InteractiveCardProps & {
 /** Black Friday copy; present only while the campaign runs. */
 export type OnlineBlackFridayCopy = {
   choreoLabel: string;
-  choreoPlateLabel: string;
+  choreoFactLabel: string;
   choreoPrice: string;
   choreoRegularPrice?: string;
   hubLabel: string;
-  hubPlateLabel: string;
-  hubPrice: string;
+  hubFactLabel: string;
+  hubFactValue: string;
 };
 
 /**
- * While the campaign runs the card's key fact is the offer itself: the same dark
- * price plate as on the tutorial cards.
+ * While the campaign runs the card's key fact is the offer itself, in the card's
+ * own fact layout: the label in the brand red, the old price struck after the new.
  */
 const CampaignFact = ({
   label,
@@ -41,13 +38,18 @@ const CampaignFact = ({
   price: string;
   regularPrice?: string;
 }) => (
-  <CampaignPlate>
-    <CampaignPlateLabel>{label}</CampaignPlateLabel>
-    <CampaignPlateValue>
+  <ContentStack>
+    <CampaignFactLabel>{label}</CampaignFactLabel>
+    <DetailFactText>
       {price}
-      {regularPrice ? <s>{regularPrice}</s> : null}
-    </CampaignPlateValue>
-  </CampaignPlate>
+      {regularPrice ? (
+        <>
+          {" "}
+          <CampaignFactRegular>{regularPrice}</CampaignFactRegular>
+        </>
+      ) : null}
+    </DetailFactText>
+  </ContentStack>
 );
 
 export const getOnlineCoursesArray = (
@@ -113,7 +115,7 @@ export const getOnlineCoursesArray = (
     ),
     bottomRowContent:
       blackFriday && hubSaleState === "open" ? (
-        <CampaignFact label={blackFriday.hubPlateLabel} price={blackFriday.hubPrice} />
+        <CampaignFact label={blackFriday.hubFactLabel} price={blackFriday.hubFactValue} />
       ) : (
         <ContentStack>
           <DetailText>{t("cards.inspirationHub.accessLabel")}</DetailText>
@@ -146,7 +148,7 @@ export const getOnlineCoursesArray = (
     bottomRowContent:
       blackFriday && choreoSaleState === "open" ? (
         <CampaignFact
-          label={blackFriday.choreoPlateLabel}
+          label={blackFriday.choreoFactLabel}
           price={blackFriday.choreoPrice}
           regularPrice={blackFriday.choreoRegularPrice}
         />

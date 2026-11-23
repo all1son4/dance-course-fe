@@ -9,7 +9,6 @@ import { HERO_MEDIA } from "@/constants/hero-media";
 import {
   CHOREO_CATALOGUE_PRODUCT_CODES,
   formatOfferPrice,
-  INSPIRATION_HUB_ACCESS_OFFER_ID,
   LOVE_ME_IN_THE_MORNING_OFFER_ID,
   SELLABLE_PRODUCTS,
 } from "@/constants/sellable-products";
@@ -74,9 +73,6 @@ export default async function Online() {
   const choreoOffer = catalogOffers.find(
     (offer) => offer.id === LOVE_ME_IN_THE_MORNING_OFFER_ID,
   );
-  const hubOffer = catalogOffers.find(
-    (offer) => offer.id === INSPIRATION_HUB_ACCESS_OFFER_ID,
-  );
   const onlineCoursesArray = getOnlineCoursesArray(
     (key) => t(key),
     (key) => commonT(key),
@@ -85,14 +81,14 @@ export default async function Online() {
     isBlackFridayActive()
       ? {
           choreoLabel: blackFridayT("cards.choreoLabel"),
-          choreoPlateLabel: blackFridayT("checkout.priceLabel"),
+          choreoFactLabel: blackFridayT("checkout.priceLabel"),
           choreoPrice: choreoOffer ? formatOfferPrice(choreoOffer.prices) : "",
           choreoRegularPrice: choreoOffer?.compareAtPrices
             ? formatOfferPrice(choreoOffer.compareAtPrices)
             : undefined,
           hubLabel: blackFridayT("cards.hubLabel"),
-          hubPlateLabel: blackFridayT("cards.hubPlate"),
-          hubPrice: hubOffer ? formatOfferPrice(hubOffer.prices) : "",
+          hubFactLabel: blackFridayT("cards.hubFactLabel"),
+          hubFactValue: blackFridayT("cards.hubPlate"),
         }
       : null,
   );

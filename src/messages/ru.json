@@ -1700,9 +1700,8 @@
     "cards": {
       "choreoLabel": "Black Friday −33%",
       "hubLabel": "Black Friday ×2",
-      "plateLabel": "Black Friday · до 30 ноября",
-      "choreoPlate": "Разборы на треть дешевле",
-      "hubPlate": "16 недель по цене 8"
+      "hubPlate": "16 недель по цене 8",
+      "hubFactLabel": "Black Friday · доступ"
     },
     "hubPage": {
       "badge": "Black Friday",
