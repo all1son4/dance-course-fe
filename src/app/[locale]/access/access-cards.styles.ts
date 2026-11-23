@@ -1,6 +1,7 @@
 import styled, { keyframes } from "styled-components";
 
 import {
+  blackFridayBackdrop,
   blackFridayCardEdge,
   blackFridayLabel,
   blackFridayPill,
@@ -607,4 +608,11 @@ export const InkStamp = styled.span`
   @media (forced-colors: active) {
     display: none;
   }
+`;
+
+/* The same backdrop texture as the storefront cards on sale. */
+export const CampaignBackdrop = styled.span`
+  ${blackFridayBackdrop}
+  z-index: 0;
+  border-radius: inherit;
 `;

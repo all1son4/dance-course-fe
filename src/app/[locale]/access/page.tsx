@@ -80,6 +80,7 @@ import {
   AccessAside,
   AccessLayout,
   CalendarLink,
+  CampaignBackdrop,
   CardActions,
   CardDetail,
   CardHead,
@@ -331,6 +332,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
         </CardHead>
         {summary && <CardSummary>{translateLine(summary)}</CardSummary>}
         {counted && <AccessCount count={counted} dates={dates} t={t} />}
+        {card.campaign === "black-friday" && <CampaignBackdrop aria-hidden="true" />}
         {card.campaign === "black-friday" && (
           <CampaignInkStamp
             figure={blackFridayT(card.kind === "hub" ? "hub.badge" : "choreo.badge")}

@@ -515,7 +515,8 @@ export const OfferCard = styled.article`
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.14),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
+  /* No backdrop blur: over the dark slab it shows nothing and browsers tile it,
+     which drew visible vertical seams across the offers. */
   transition:
     background-color var(--motion-base) var(--ease-standard),
     box-shadow var(--motion-base) var(--ease-standard);
