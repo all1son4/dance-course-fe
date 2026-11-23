@@ -52,7 +52,11 @@ import {
 import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { getEmailSuggestion } from "@/lib/email-suggestion";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
-import { trackAnalyticsEvent, trackCtaClick } from "@/lib/mixpanel-analytics";
+import {
+  type ButtonAnalyticsMetadata,
+  trackAnalyticsEvent,
+  trackCtaClick,
+} from "@/lib/mixpanel-analytics";
 import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 import { getAlternativeTariffHref } from "@/lib/public-sales";
 import { prefersReducedMotion } from "@/lib/reveal";
@@ -95,6 +99,7 @@ import {
 import {
   bringIntoViewIfNeeded,
   type CheckoutAgreement,
+  type CheckoutBlockReason,
   type CheckoutIntent,
   getCheckoutBlockReason,
   getCheckoutEnterKeyHint,
@@ -118,6 +123,116 @@ type PaymentPageProps = {
 
 /** --motion-slow, the fold of a step body, plus a frame to settle. */
 const STEP_FOLD_DURATION_MS = 340;
+
+/** What the checkout shows instead of the form, one notice per block reason. */
+const CheckoutBlockedNotice = ({
+  alternativeTariffHref,
+  analyticsCommerceProperties,
+  reason,
+  selectedProductCompactTitle,
+}: {
+  alternativeTariffHref: string | null;
+  analyticsCommerceProperties: Omit<ButtonAnalyticsMetadata, "id" | "placement">;
+  reason: CheckoutBlockReason;
+  selectedProductCompactTitle: string;
+}) => {
+  const t = useTranslations("PaymentPage");
+  const commonT = useTranslations("Common");
+
+  switch (reason) {
+    case "catalog_unavailable":
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{t("catalogUnavailable.title")}</SalesClosedTitle>
+          <SalesClosedDescription>
+            {t("catalogUnavailable.description")}
+          </SalesClosedDescription>
+          <SalesClosedActions>
+            {/* Re-read availability on the server without exposing technical details. */}
+            <Button
+              size="sm"
+              buttonText={commonT("refresh")}
+              analytics={{
+                id: "checkout_retry_catalog",
+                placement: "catalog_unavailable",
+                ...analyticsCommerceProperties,
+              }}
+              onClick={() => window.location.reload()}
+            />
+            <Button
+              size="sm"
+              variant="secondary"
+              buttonText={t("staleLink.catalogButton")}
+              href="/online"
+              analytics={{
+                id: "checkout_back_to_catalog",
+                placement: "catalog_unavailable",
+                ...analyticsCommerceProperties,
+              }}
+            />
+          </SalesClosedActions>
+        </SalesClosedNotice>
+      );
+    case "stale_link":
+      // Before the closed-sales notice: when the link itself is dead, "sales
+      // are closed" would be about the fallback product, not the one asked for.
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
+          <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
+          <Button
+            size="sm"
+            buttonText={t("staleLink.catalogButton")}
+            href="/online"
+            analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
+          />
+        </SalesClosedNotice>
+      );
+    case "sales_closed":
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{selectedProductCompactTitle}</SalesClosedTitle>
+          <SalesClosedDescription>
+            {t(alternativeTariffHref ? "offerUnavailable.title" : "salesClosed.title")}
+          </SalesClosedDescription>
+          <Button
+            size="sm"
+            buttonText={t(
+              alternativeTariffHref
+                ? "offerUnavailable.selectButton"
+                : "staleLink.catalogButton",
+            )}
+            href={alternativeTariffHref ?? "/online"}
+            analytics={{
+              id: "checkout_back_to_catalog",
+              placement: alternativeTariffHref ? "offer_unavailable" : "sales_closed",
+              ...analyticsCommerceProperties,
+            }}
+          />
+        </SalesClosedNotice>
+      );
+    case "renewal_unavailable":
+      return (
+        <SalesClosedNotice>
+          <SalesClosedTitle>{t("renewal.unavailable.title")}</SalesClosedTitle>
+          <SalesClosedDescription>
+            {t("renewal.unavailable.description")}
+          </SalesClosedDescription>
+          <Button
+            size="sm"
+            buttonText={t("salesClosed.contactButton")}
+            href={SUPPORT_TELEGRAM_URL}
+            target="_blank"
+            analytics={{
+              id: "checkout_contact_support",
+              placement: "renewal_unavailable",
+              ...analyticsCommerceProperties,
+            }}
+          />
+        </SalesClosedNotice>
+      );
+  }
+};
 
 const PaymentPage = observer(function PaymentPage({
   countryOptions,
@@ -1116,89 +1231,13 @@ const PaymentPage = observer(function PaymentPage({
             />
           </SummaryBoxMobile>
         )}
-        {checkoutBlockReason === "catalog_unavailable" ? (
-          <SalesClosedNotice>
-            <SalesClosedTitle>{t("catalogUnavailable.title")}</SalesClosedTitle>
-            <SalesClosedDescription>
-              {t("catalogUnavailable.description")}
-            </SalesClosedDescription>
-            <SalesClosedActions>
-              {/* Re-read availability on the server without exposing technical details. */}
-              <Button
-                size="sm"
-                buttonText={commonT("refresh")}
-                analytics={{
-                  id: "checkout_retry_catalog",
-                  placement: "catalog_unavailable",
-                  ...analyticsCommerceProperties,
-                }}
-                onClick={() => window.location.reload()}
-              />
-              <Button
-                size="sm"
-                variant="secondary"
-                buttonText={t("staleLink.catalogButton")}
-                href="/online"
-                analytics={{
-                  id: "checkout_back_to_catalog",
-                  placement: "catalog_unavailable",
-                  ...analyticsCommerceProperties,
-                }}
-              />
-            </SalesClosedActions>
-          </SalesClosedNotice>
-        ) : checkoutBlockReason === "stale_link" ? (
-          // Before the closed-sales notice: when the link itself is dead, "sales
-          // are closed" would be about the fallback product, not the one asked for.
-          <SalesClosedNotice>
-            <SalesClosedTitle>{t("staleLink.title")}</SalesClosedTitle>
-            <SalesClosedDescription>{t("staleLink.description")}</SalesClosedDescription>
-            <Button
-              size="sm"
-              buttonText={t("staleLink.catalogButton")}
-              href="/online"
-              analytics={{ id: "checkout_back_to_catalog", placement: "stale_link" }}
-            />
-          </SalesClosedNotice>
-        ) : checkoutBlockReason === "sales_closed" ? (
-          <SalesClosedNotice>
-            <SalesClosedTitle>{selectedProductCompactTitle}</SalesClosedTitle>
-            <SalesClosedDescription>
-              {t(alternativeTariffHref ? "offerUnavailable.title" : "salesClosed.title")}
-            </SalesClosedDescription>
-            <Button
-              size="sm"
-              buttonText={t(
-                alternativeTariffHref
-                  ? "offerUnavailable.selectButton"
-                  : "staleLink.catalogButton",
-              )}
-              href={alternativeTariffHref ?? "/online"}
-              analytics={{
-                id: "checkout_back_to_catalog",
-                placement: alternativeTariffHref ? "offer_unavailable" : "sales_closed",
-                ...analyticsCommerceProperties,
-              }}
-            />
-          </SalesClosedNotice>
-        ) : checkoutBlockReason === "renewal_unavailable" ? (
-          <SalesClosedNotice>
-            <SalesClosedTitle>{t("renewal.unavailable.title")}</SalesClosedTitle>
-            <SalesClosedDescription>
-              {t("renewal.unavailable.description")}
-            </SalesClosedDescription>
-            <Button
-              size="sm"
-              buttonText={t("salesClosed.contactButton")}
-              href={SUPPORT_TELEGRAM_URL}
-              target="_blank"
-              analytics={{
-                id: "checkout_contact_support",
-                placement: "renewal_unavailable",
-                ...analyticsCommerceProperties,
-              }}
-            />
-          </SalesClosedNotice>
+        {checkoutBlockReason ? (
+          <CheckoutBlockedNotice
+            alternativeTariffHref={alternativeTariffHref}
+            analyticsCommerceProperties={analyticsCommerceProperties}
+            reason={checkoutBlockReason}
+            selectedProductCompactTitle={selectedProductCompactTitle}
+          />
         ) : (
           <CheckoutForm
             agreements={checkoutAgreements}
