@@ -14,6 +14,14 @@ import {
 import Button from "@/components/common/Button";
 
 import {
+  CalendarApp,
+  CalendarApps,
+  CalendarHint,
+  ShareButton,
+  ShareHint,
+  ShareSpot,
+} from "./access-aside.styles";
+import {
   AccessCard,
   ActionResult,
   CardToggle,
@@ -21,18 +29,12 @@ import {
   QuietLink,
 } from "./access-cards.styles";
 import {
-  CalendarApp,
-  CalendarApps,
-  CalendarHint,
   LegendButton,
   LegendSpot,
   LegendStamp,
   LegendTip,
   SaveSpot,
   SaveTip,
-  ShareButton,
-  ShareHint,
-  ShareSpot,
 } from "./page.styles";
 
 /*

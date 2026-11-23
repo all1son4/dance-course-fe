@@ -65,6 +65,16 @@ import {
 } from "./access-actions";
 import AccessAnalytics from "./access-analytics";
 import {
+  EmptyCard,
+  HelpCard,
+  JourneyList,
+  JourneyStep,
+  RequestCard,
+  SideCard,
+  SideText,
+  SideTitle,
+} from "./access-aside.styles";
+import {
   AccessAside,
   AccessLayout,
   CalendarLink,
@@ -89,18 +99,10 @@ import {
   ACCESS_CANVAS_CSS,
   AccessHeader,
   AccessSection,
-  EmptyCard,
   Eyebrow,
   Facts,
   Greeting,
-  HelpCard,
   Intro,
-  JourneyList,
-  JourneyStep,
-  RequestCard,
-  SideCard,
-  SideText,
-  SideTitle,
   VisuallyHidden,
 } from "./page.styles";
 import RequestLinkForm from "./request-link-form";
