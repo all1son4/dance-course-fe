@@ -56,9 +56,10 @@ import { groupMyAccessCards, type MyAccessZone } from "@/lib/my-access/zones";
 import { normalizedSiteUrl } from "@/lib/seo";
 
 import {
+  type AchievementStampData,
+  AchievementStamps,
   CalendarSubscribe,
   CampaignInkStamp,
-  CycleStamp,
   FoldingCard,
   ReissueInvite,
   SavePageLink,
@@ -404,6 +405,42 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
       />
     ) : null;
 
+  const stamps: AchievementStampData[] = [];
+  if (snapshot.legendCycles) {
+    stamps.push({
+      count: snapshot.legendCycles,
+      ink: "wine",
+      texts: {
+        label: t("legend.label", { count: snapshot.legendCycles }),
+        name: t("legend.name"),
+        text: t("legend.text", { last: snapshot.legendCycles }),
+        unit: t("legend.unit", { count: snapshot.legendCycles }),
+      },
+    });
+  } else if (snapshot.cycleStreak) {
+    stamps.push({
+      count: snapshot.cycleStreak.count,
+      ink: "black",
+      texts: {
+        label: t("inARow.label", snapshot.cycleStreak),
+        name: t("inARow.name"),
+        text: t("inARow.text", snapshot.cycleStreak),
+        unit: t("inARow.unit", { count: snapshot.cycleStreak.count }),
+      },
+    });
+  }
+  if (snapshot.freshman) {
+    stamps.push({
+      ink: "olive",
+      texts: {
+        label: t("freshman.label"),
+        name: t("freshman.name"),
+        text: t("freshman.text"),
+        unit: t("freshman.unit"),
+      },
+    });
+  }
+
   return (
     <AccessCanvas daypart={daypart}>
       <AccessAnalytics
@@ -439,29 +476,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
             </li>
           </Facts>
         )}
-        {snapshot.legendCycles ? (
-          <CycleStamp
-            count={snapshot.legendCycles}
-            ink="wine"
-            texts={{
-              label: t("legend.label", { count: snapshot.legendCycles }),
-              name: t("legend.name"),
-              text: t("legend.text", { last: snapshot.legendCycles }),
-              unit: t("legend.unit", { count: snapshot.legendCycles }),
-            }}
-          />
-        ) : snapshot.cycleStreak ? (
-          <CycleStamp
-            count={snapshot.cycleStreak.count}
-            ink="black"
-            texts={{
-              label: t("inARow.label", snapshot.cycleStreak),
-              name: t("inARow.name"),
-              text: t("inARow.text", snapshot.cycleStreak),
-              unit: t("inARow.unit", { count: snapshot.cycleStreak.count }),
-            }}
-          />
-        ) : null}
+        {stamps.length > 0 ? <AchievementStamps stamps={stamps} /> : null}
       </AccessHeader>
 
       <AccessLayout>

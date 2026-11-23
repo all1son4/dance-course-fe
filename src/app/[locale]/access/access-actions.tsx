@@ -2,7 +2,9 @@
 
 import {
   createContext,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
   useCallback,
   useContext,
   useEffect,
@@ -37,6 +39,7 @@ import {
   QuietButton,
   QuietLink,
 } from "./access-cards.styles";
+import { AccessStamps } from "./page.styles";
 
 /*
  * The few interactive parts of «Мой доступ». Everything else is rendered on the
@@ -386,41 +389,95 @@ export function SavePageLink({
   );
 }
 
-/**
- * A stamp in the header — «Легенда группы» in the site's wine ink, «Подряд» in
- * black: a pilgrim's stamp with the name around the top, «FRAME UP · ANNA STROK»
- * below, the number of cycles in the middle on a ribbon, a little uneven like a
- * real print. The description shows on hover, on keyboard focus and on a tap.
- */
-export function CycleStamp({
-  count,
-  ink,
-  texts,
-}: {
-  count: number;
-  ink: "wine" | "black";
+const DEBUT_STAR_PATH =
+  "M0 -12 2.94 -4.05 11.41 -3.71 4.76 1.55 7.05 9.71 0 5 -7.05 9.71 -4.76 1.55 -11.41 -3.71 -2.94 -4.05Z";
+
+export type AchievementStampData = {
+  count?: number;
+  ink: "wine" | "black" | "olive";
   texts: { label: string; name: string; text: string; unit: string };
-}) {
-  const [open, setOpen] = useState(false);
-  const spot = useRef<HTMLDivElement>(null);
-  const id = useId();
+};
+
+type ActiveStamp = {
+  ink: AchievementStampData["ink"];
+  mode: "hover" | "focus" | "pinned";
+};
+
+/** A single active description for the header, whichever stamp opened it. */
+export function AchievementStamps({ stamps }: { stamps: AchievementStampData[] }) {
+  const [active, setActive] = useState<ActiveStamp | null>(null);
+  const group = useRef<HTMLDivElement>(null);
+  const hasActiveStamp = active !== null;
 
   useEffect(() => {
-    if (!open) return;
-    const close = (event: PointerEvent) => {
-      if (!spot.current?.contains(event.target as Node)) setOpen(false);
+    if (!hasActiveStamp) return;
+
+    const dismissOutside = (event: PointerEvent) => {
+      if (!group.current?.contains(event.target as Node)) setActive(null);
     };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, [open]);
+    const dismissOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActive(null);
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    document.addEventListener("keydown", dismissOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", dismissOutside);
+      document.removeEventListener("keydown", dismissOnEscape);
+    };
+  }, [hasActiveStamp]);
 
   return (
-    <LegendSpot data-medal="" ref={spot}>
+    <AccessStamps data-medal="" ref={group}>
+      {stamps.map((stamp) => (
+        <AchievementStamp
+          active={active}
+          key={stamp.ink}
+          setActive={setActive}
+          stamp={stamp}
+        />
+      ))}
+    </AccessStamps>
+  );
+}
+
+function AchievementStamp({
+  active,
+  setActive,
+  stamp: { count, ink, texts },
+}: {
+  active: ActiveStamp | null;
+  setActive: Dispatch<SetStateAction<ActiveStamp | null>>;
+  stamp: AchievementStampData;
+}) {
+  const id = useId();
+
+  return (
+    <LegendSpot
+      onPointerEnter={(event) => {
+        if (event.pointerType === "touch") return;
+        setActive((current) => (current?.ink === ink ? current : { ink, mode: "hover" }));
+      }}
+      onPointerLeave={() =>
+        setActive((current) =>
+          current?.ink === ink && current.mode === "hover" ? null : current,
+        )
+      }
+    >
       <LegendButton
         aria-describedby={`${id}-tip`}
         aria-label={texts.label}
-        onClick={() => setOpen((value) => !value)}
-        onKeyDown={(event) => event.key === "Escape" && setOpen(false)}
+        onBlur={() => setActive((current) => (current?.ink === ink ? null : current))}
+        onClick={() =>
+          setActive((current) =>
+            current?.ink === ink && current.mode === "pinned"
+              ? null
+              : { ink, mode: "pinned" },
+          )
+        }
+        onFocus={(event) => {
+          if (event.currentTarget.matches(":focus-visible"))
+            setActive({ ink, mode: "focus" });
+        }}
         type="button"
       >
         <LegendStamp aria-hidden data-ink={ink} viewBox="0 0 100 100">
@@ -474,17 +531,35 @@ export function CycleStamp({
                 FRAME UP · ANNA STROK
               </textPath>
             </text>
-            <text className="count" x="50" y="54.5">
-              {count}
-            </text>
+            {count === undefined ? (
+              <g data-debut-stars="">
+                <path d={DEBUT_STAR_PATH} transform="translate(50 46.5) scale(1.12)" />
+                <path d={DEBUT_STAR_PATH} transform="translate(34 37.5) scale(.35)" />
+                <path d={DEBUT_STAR_PATH} transform="translate(50 29) scale(.24)" />
+                <path d={DEBUT_STAR_PATH} transform="translate(66 37.5) scale(.35)" />
+              </g>
+            ) : (
+              <text className="count" x="50" y="54.5">
+                {count}
+              </text>
+            )}
             <path d="M24 60.5 H76 L72.5 64.8 L76 69.1 H24 L27.5 64.8 Z" />
-            <text className="unit" x="50" y="66.8">
+            <text
+              className="unit"
+              data-compact={count === undefined ? "" : undefined}
+              x="50"
+              y="66.8"
+            >
               {texts.unit.toLocaleUpperCase()}
             </text>
           </g>
         </LegendStamp>
       </LegendButton>
-      <LegendTip data-open={open ? "" : undefined} id={`${id}-tip`} role="tooltip">
+      <LegendTip
+        data-open={active?.ink === ink ? active.mode : undefined}
+        id={`${id}-tip`}
+        role="tooltip"
+      >
         {texts.text}
       </LegendTip>
     </LegendSpot>

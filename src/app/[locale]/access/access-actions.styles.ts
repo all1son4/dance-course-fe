@@ -61,8 +61,7 @@ export const SaveTip = styled.span`
 `;
 
 /*
- * The stamp («Легенда группы» in wine ink, «Подряд» in black): a pilgrim's stamp
- * in the header's top corner. It lands with a short press when the page opens.
+ * The achievement stamp in the header lands with a short press when the page opens.
  */
 const stampLanding = keyframes`
   from {
@@ -81,16 +80,13 @@ const stampLanding = keyframes`
 
 export const LegendSpot = styled.div`
   --stamp: 124px;
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: relative;
   width: 132px;
   display: grid;
   justify-items: center;
 
   @media (max-width: 550px) {
     --stamp: 80px;
-    position: relative;
     width: 84px;
   }
 `;
@@ -127,6 +123,10 @@ export const LegendStamp = styled.svg`
 
   &[data-ink="black"] {
     --stamp-ink: var(--ink);
+  }
+
+  &[data-ink="olive"] {
+    --stamp-ink: #4c633f;
   }
 
   & * {
@@ -187,6 +187,11 @@ export const LegendStamp = styled.svg`
     letter-spacing: 1.8px;
   }
 
+  & .unit[data-compact] {
+    font-size: 5px;
+    letter-spacing: 0.45px;
+  }
+
   @media (hover: hover) and (pointer: fine) {
     ${LegendButton}:hover & {
       transform: rotate(-4deg) scale(1.04);
@@ -215,6 +220,7 @@ export const LegendTip = styled.span`
   line-height: 1.4;
   text-align: left;
   pointer-events: none;
+  visibility: hidden;
   opacity: 0;
   transform: translateY(-4px);
   transition:
@@ -238,18 +244,31 @@ export const LegendTip = styled.span`
     }
   }
 
-  @media (hover: hover) and (pointer: fine) {
-    ${LegendSpot}:hover > & {
-      opacity: 1;
-      transform: none;
-      transition-delay: 150ms;
+  @media (max-width: 550px) {
+    ${LegendSpot}:not(:last-child) > & {
+      max-width: min(280px, calc(100vw - 128px));
     }
   }
 
-  ${LegendSpot}:has(:focus-visible) > &,
+  /* A hoverable description includes the gap to its trigger. */
+  &::after {
+    content: "";
+    position: absolute;
+    top: -8px;
+    right: 0;
+    left: 0;
+    height: 8px;
+  }
+
   &[data-open] {
     opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
     transform: none;
+  }
+
+  &[data-open="hover"] {
+    transition-delay: 150ms;
   }
 
   @media (prefers-reduced-motion: reduce) {

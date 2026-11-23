@@ -11,6 +11,7 @@ import {
   sql,
 } from "drizzle-orm";
 
+import { hasFreshmanAchievement } from "@/lib/my-access/achievements";
 import type { MyAccessSnapshot } from "@/lib/my-access/cards";
 import {
   collectCompletedCohortIds,
@@ -243,6 +244,7 @@ export async function readMyAccessSnapshot(
   const boughtAt = sql<Date>`coalesce(${purchases.succeededAt}, ${purchases.firstSeenAt})`;
   const purchaseRows = await database
     .select({
+      amountMinor: purchases.amountMinor,
       boughtAt: boughtAt.mapWith(purchases.firstSeenAt),
       cohortId: purchases.onlineGroupCohortId,
       id: purchases.id,
@@ -341,12 +343,17 @@ export async function readMyAccessSnapshot(
     completedCohortIds: cycles.completedCohortIds,
     cycleStreak: cycles.cycleStreak,
     legendCycles: cycles.legendCycles,
+    freshman: hasFreshmanAchievement(purchaseRows, new Date(now)),
     customerFullName: customer.fullName,
     hubDiscountCohortIds: discountCohorts.map((cohort) => cohort.id),
     purchases: purchaseRows.map((row) => ({
-      ...row,
+      boughtAt: row.boughtAt,
+      cohortId: row.cohortId,
+      id: row.id,
+      invitationKind: row.invitationKind,
       offerExternalId: row.offerExternalId ?? "",
       productExternalId: row.productExternalId ?? "",
+      telegramUserId: row.telegramUserId,
     })),
     rights: rights.map((right) => ({
       accessKey: right.accessKey,

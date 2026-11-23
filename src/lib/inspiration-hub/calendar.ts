@@ -94,6 +94,23 @@ export const addWarsawCalendarDays = (date: Date, days: number): Date => {
   return toWarsawInstant(getCalendarTimestamp(date) + days * DAY_MS);
 };
 
+/** Shifts by calendar months in Warsaw, clamping to the last day of a shorter month. */
+export const addWarsawCalendarMonths = (date: Date, months: number): Date => {
+  if (!Number.isFinite(date.getTime()) || !Number.isSafeInteger(months)) {
+    throw new RangeError("invalid_hub_calendar_input");
+  }
+
+  if (months === 0) return new Date(date.getTime());
+
+  const calendarDate = new Date(getCalendarTimestamp(date));
+  const day = calendarDate.getUTCDate();
+  // Day zero of the following month is the last day of the destination month.
+  calendarDate.setUTCMonth(calendarDate.getUTCMonth() + months + 1, 0);
+  calendarDate.setUTCDate(Math.min(day, calendarDate.getUTCDate()));
+
+  return toWarsawInstant(calendarDate.getTime());
+};
+
 /**
  * Returns 00:00 Europe/Warsaw of the day after date: the end of Standard/Plus
  * access for a cohort closed at date. A date exactly at midnight moves to the

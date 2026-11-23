@@ -151,18 +151,71 @@ export const AccessSection = styled.section`
   }
 `;
 
+export const AccessStamps = styled.div`
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  grid-column: 2;
+  grid-row: 1 / span 4;
+  align-self: start;
+
+  @media (max-width: 740px) {
+    &:has(> :nth-child(2)) {
+      grid-column: 1 / -1;
+      grid-row: auto;
+    }
+  }
+
+  @media (max-width: 550px) {
+    grid-row: auto;
+    align-self: end;
+  }
+
+  /* Keep wrapped groups' descriptions inside the viewport. */
+  &:has(> :nth-child(3)) > * {
+    position: static;
+  }
+
+  &:has(> :nth-child(3)) [role="tooltip"]::before {
+    display: none;
+  }
+`;
+
 /* The header runs the full width on a desktop: the greeting keeps to one line. */
 export const AccessHeader = styled.header`
   display: grid;
   gap: 12px;
   margin-bottom: 32px;
 
-  /* The stamp stands in the top corner; the words keep clear of it and the
-     header never ends above it. */
+  /* Reserve room for the stamps in the top corner. */
   &:has(> [data-medal]) {
-    position: relative;
+    grid-template-columns: minmax(0, 1fr) fit-content(45%);
+    column-gap: 16px;
     min-height: 132px;
-    padding-right: 148px;
+  }
+
+  &:has(> [data-medal]) > :not([data-medal]) {
+    grid-column: 1;
+  }
+
+  @media (max-width: 740px) {
+    &:has(> [data-medal] > :nth-child(2)) {
+      grid-template-columns: minmax(0, 1fr);
+      min-height: 0;
+    }
+  }
+
+  @media (min-width: 551px) and (max-width: 740px) {
+    /* The save-link tip opens to the right of its trigger. Give it the whole line. */
+    &:has(> [data-medal] > :nth-child(2)) > ul > li:last-child {
+      flex-basis: 100%;
+
+      &::before {
+        content: none;
+      }
+    }
   }
 
   @media (max-width: 550px) {
@@ -171,22 +224,11 @@ export const AccessHeader = styled.header`
     /* On a phone the greeting keeps its width: the stamp stands beside the facts. */
     &:has(> [data-medal]) {
       min-height: 0;
-      padding-right: 0;
-      grid-template-columns: minmax(0, 1fr) auto;
       column-gap: 12px;
     }
 
-    &:has(> [data-medal]) > * {
+    &:has(> [data-medal]) > :not(ul, [data-medal]) {
       grid-column: 1 / -1;
-    }
-
-    &:has(> [data-medal]) > ul {
-      grid-column: 1;
-    }
-
-    &:has(> [data-medal]) > [data-medal] {
-      grid-column: 2;
-      align-self: end;
     }
   }
 `;
