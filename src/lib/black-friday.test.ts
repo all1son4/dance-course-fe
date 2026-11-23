@@ -13,8 +13,10 @@ import {
   applyBlackFridayToOffer,
   applyBlackFridayToProducts,
   BLACK_FRIDAY_CAMPAIGN,
+  getCampaignSavings,
   isBlackFridayActive,
   isBlackFridayHubOffer,
+  isBlackFridayPurchase,
 } from "./black-friday";
 
 const BEFORE = new Date("2026-11-23T23:59:59+01:00");
@@ -88,4 +90,25 @@ test("inside the window every other offer stays as it is", () => {
   for (const offer of products.flatMap((product) => product.offers)) {
     if (!campaignOfferIds.has(offer.id)) assert.equal(offer, findOffer(offer.id));
   }
+});
+
+test("a purchase is marked Black Friday by its offer and moment, not by the switch", () => {
+  const inside = new Date("2026-11-27T12:00:00+01:00");
+  const after = new Date("2026-12-01T00:00:00+01:00");
+
+  assert.equal(isBlackFridayPurchase(INSPIRATION_HUB_ACCESS_OFFER_ID, inside), true);
+  assert.equal(isBlackFridayPurchase(HER_LIES_WITHOUT_MENTOR_OFFER_ID, inside), true);
+  // The special-price Hub link keeps its 8 weeks and its usual look.
+  assert.equal(isBlackFridayPurchase(INSPIRATION_HUB_RENEWAL_OFFER_ID, inside), false);
+  assert.equal(isBlackFridayPurchase(INSPIRATION_HUB_ACCESS_OFFER_ID, after), false);
+});
+
+test("the saving is the regular price minus the campaign one", () => {
+  const offer = applyBlackFridayToOffer(
+    findOffer(LOVE_ME_IN_THE_MORNING_OFFER_ID),
+    FIRST_SECOND,
+  );
+
+  assert.deepEqual(getCampaignSavings(offer), { eur: 5, pln: 20 });
+  assert.equal(getCampaignSavings(findOffer(LOVE_ME_IN_THE_MORNING_OFFER_ID)), null);
 });
