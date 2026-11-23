@@ -3,14 +3,7 @@
 import { observer } from "mobx-react-lite";
 import { useLocale, useTranslations } from "next-intl";
 import type { ChangeEvent, FocusEvent, FormEvent, ReactNode } from "react";
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import Button from "@/components/common/Button";
 import { useCookieConsent } from "@/components/common/CookieConsent/CookieConsentProvider";
@@ -44,12 +37,10 @@ import {
   type PaymentCustomerFieldName,
   type PaymentStep,
 } from "@/lib/checkout/payment.constants";
-import { resolvePaymentValidationLocale } from "@/lib/checkout/payment.validation";
 import {
   isChoreoTutorialProduct,
   shouldNameOfferAtCheckout,
 } from "@/lib/choreo-offer-presentation";
-import { getStoredCookieConsent, hasCookieConsentFor } from "@/lib/cookie-consent";
 import { getEmailSuggestion } from "@/lib/email-suggestion";
 import { ensureLocationChangeEvents, LOCATION_CHANGE_EVENT } from "@/lib/location-change";
 import {
@@ -57,14 +48,10 @@ import {
   trackAnalyticsEvent,
   trackCtaClick,
 } from "@/lib/mixpanel-analytics";
-import { PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY } from "@/lib/payment-draft";
 import { getAlternativeTariffHref } from "@/lib/public-sales";
 import { prefersReducedMotion } from "@/lib/reveal";
 import { StoreProvider, usePaymentStore } from "@/stores";
-import type {
-  PaymentCheckoutDraft,
-  PaymentStoreInitialization,
-} from "@/stores/payment-store";
+import type { PaymentStoreInitialization } from "@/stores/payment-store";
 
 import {
   CHECKOUT_CONSENT_ID,
@@ -107,13 +94,12 @@ import {
   getCompactSummaryTitle,
   getVisiblePaymentInputs,
   isCheckoutLinkStale,
-  isReloadNavigation,
-  PAYMENT_DRAFT_SAVE_DEBOUNCE_MS,
   PAYMENT_INTENT_CREATION_DELAY_MS,
   pointCheckoutField,
   shouldMoveCheckoutFocus,
   STRIPE_INTENT_ERROR_TRANSLATION_KEYS,
 } from "./payment.helpers";
+import { useCheckoutDraft } from "./use-checkout-draft";
 import { useTelegramRenewal } from "./use-telegram-renewal";
 
 type PaymentPageProps = {
@@ -252,7 +238,6 @@ const PaymentPage = observer(function PaymentPage({
   const [openedStep, setOpenedStep] = useState<PaymentStep | null>(null);
   // The email hint holds back an ending still being typed ("gmail.co").
   const [isTypingEmail, setIsTypingEmail] = useState(false);
-  const hasHydratedCheckoutDraftRef = useRef(false);
   const lastTrackedCheckoutRef = useRef<string | null>(null);
   const lastTrackedBlockedStateRef = useRef<string | null>(null);
   const lastTrackedPaymentRevealRef = useRef<string | null>(null);
@@ -367,18 +352,6 @@ const PaymentPage = observer(function PaymentPage({
             "errors.paymentIntentRequestFailed",
         )
       : "";
-  const persistCheckoutDraftNow = useCallback(() => {
-    if (typeof window === "undefined" || !canUseFunctionalStorage) {
-      return;
-    }
-
-    const checkoutDraft = paymentStore.getCheckoutDraftSnapshot();
-    sessionStorage.setItem(
-      PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY,
-      JSON.stringify(checkoutDraft),
-    );
-  }, [canUseFunctionalStorage, paymentStore]);
-
   useEffect(() => {
     paymentStore.setValidationLocale(locale);
     paymentStore.initializeCheckoutCurrency(getDefaultCheckoutCurrencyByLocale(locale));
@@ -526,104 +499,7 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.setSelectedCurrency(nextCurrency);
   }, [paymentStore, searchKey]);
 
-  const restoreCheckoutDraft = useCallback(() => {
-    if (hasHydratedCheckoutDraftRef.current || typeof window === "undefined") {
-      return;
-    }
-
-    hasHydratedCheckoutDraftRef.current = true;
-
-    // Drafts survive a reload and the "back to payment" return from a failed
-    // attempt (marked with resume=1). Any other fresh visit starts a clean
-    // checkout session.
-    const isResumeNavigation =
-      new URLSearchParams(window.location.search).get("resume") === "1";
-
-    if (!isReloadNavigation() && !isResumeNavigation) {
-      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-      return;
-    }
-
-    const serializedDraft = sessionStorage.getItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-
-    if (!serializedDraft) {
-      return;
-    }
-
-    try {
-      const parsedDraft = JSON.parse(serializedDraft) as Partial<PaymentCheckoutDraft>;
-      const searchParams = new URLSearchParams(window.location.search);
-      const queryOfferId = searchParams.get("offer");
-      const queryProductId = searchParams.get("product");
-      const queryCurrency = searchParams.get("currency");
-
-      paymentStore.applyCheckoutDraft({
-        ...parsedDraft,
-        selectedCurrency: queryCurrency
-          ? getResolvedCheckoutCurrency(queryCurrency)
-          : parsedDraft.selectedCurrency,
-        selectedOfferId: queryOfferId ?? parsedDraft.selectedOfferId,
-        selectedProductId: queryProductId ?? parsedDraft.selectedProductId,
-        validationLocale: resolvePaymentValidationLocale(locale),
-      });
-    } catch {
-      sessionStorage.removeItem(PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY);
-    }
-  }, [locale, paymentStore]);
-
-  // The draft is applied in the hydration commit itself, reading consent
-  // straight from storage rather than waiting for the consent provider's
-  // mount effect. The store update it makes is flushed before the browser
-  // paints, so the first client frame already shows the filled form and the
-  // Stripe reveal then opens exactly once - no empty frame, no second pop.
-  // (The server HTML stays the empty form: hydration matches it, the fields'
-  // values are applied on top.)
-  useLayoutEffect(() => {
-    if (hasCookieConsentFor(getStoredCookieConsent(), "functional")) {
-      restoreCheckoutDraft();
-    }
-  }, [restoreCheckoutDraft]);
-
-  // Consent given only later in this visit (banner answered after the load).
-  useEffect(() => {
-    if (canUseFunctionalStorage) {
-      restoreCheckoutDraft();
-    }
-  }, [canUseFunctionalStorage, restoreCheckoutDraft]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !canUseFunctionalStorage) {
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      persistCheckoutDraftNow();
-    }, PAYMENT_DRAFT_SAVE_DEBOUNCE_MS);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [
-    canUseFunctionalStorage,
-    persistCheckoutDraftNow,
-    paymentStore.agreements.digitalContentAgreement,
-    paymentStore.agreements.immediateAccessConsent,
-    paymentStore.agreements.privacyPolicyAcknowledgement,
-    paymentStore.agreements.withdrawalNoticeAcknowledgement,
-    paymentStore.checkoutSessionId,
-    paymentStore.customerData.country,
-    paymentStore.customerData.address,
-    paymentStore.customerData.city,
-    paymentStore.customerData.email,
-    paymentStore.customerData.fullName,
-    paymentStore.customerData.lessonLanguage,
-    paymentStore.customerData.nickname,
-    paymentStore.customerData.postalCode,
-    paymentStore.selectedCurrency,
-    paymentStore.selectedOfferId,
-    paymentStore.selectedProductId,
-    paymentStore.validationLocale,
-  ]);
+  useCheckoutDraft({ canUseFunctionalStorage, locale, paymentStore });
 
   useEffect(() => {
     if (!paymentStore.canShowStripe || !isRenewalVerified) {
