@@ -94,8 +94,6 @@ export default async function BlackFridaySection() {
               seconds: t("countdown.seconds"),
             }}
             serverNow={now.getTime()}
-            soundLabel={t("countdown.sound")}
-            soundTargetId={BLACK_FRIDAY_SECTION_ID}
             variant="tiles"
           />
         </CountdownBox>

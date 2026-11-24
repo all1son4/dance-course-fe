@@ -1665,8 +1665,7 @@
       "hours": "hours",
       "minutes": "min",
       "seconds": "sec",
-      "finalLabel": "Final hours",
-      "sound": "Countdown sound"
+      "finalLabel": "Final hours"
     },
     "section": {
       "eyebrow": "Until 30 November only",
