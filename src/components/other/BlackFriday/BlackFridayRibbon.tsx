@@ -24,11 +24,8 @@ export type BlackFridayRibbonProps = {
   /** The home section; while it is on screen the ribbon steps aside. */
   sectionId: string;
   serverNow: number;
-  soundLabel: string;
   title: string;
 };
-
-const RIBBON_ID = "black-friday-ribbon";
 
 /** The checkout and its result pages stay free of the campaign call to action. */
 const isCheckoutPath = (pathname: string) =>
@@ -75,7 +72,6 @@ export default function BlackFridayRibbon({
   labels,
   sectionId,
   serverNow,
-  soundLabel,
   title,
 }: BlackFridayRibbonProps) {
   const pathname = usePathname();
@@ -85,7 +81,6 @@ export default function BlackFridayRibbon({
 
   return (
     <Ribbon
-      id={RIBBON_ID}
       role="region"
       aria-label={title}
       aria-hidden={isHidden || undefined}
@@ -102,9 +97,6 @@ export default function BlackFridayRibbon({
           label={countdownLabel}
           labels={labels}
           serverNow={serverNow}
-          soundHidden={isHidden}
-          soundLabel={soundLabel}
-          soundTargetId={RIBBON_ID}
           variant="inline"
         />
       </RibbonTimer>

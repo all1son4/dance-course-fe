@@ -1665,8 +1665,7 @@
       "hours": "godz.",
       "minutes": "min",
       "seconds": "sek.",
-      "finalLabel": "Ostatnie godziny",
-      "sound": "Dźwięk odliczania"
+      "finalLabel": "Ostatnie godziny"
     },
     "section": {
       "eyebrow": "Tylko do 30 listopada",
