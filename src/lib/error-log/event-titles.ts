@@ -28,6 +28,12 @@ const TITLES: Record<string, string> = {
     "Ночная задача: не удалось поставить напоминание о кассе",
   "Daily maintenance: failed to schedule cohort reminders":
     "Ночная задача: не удалось поставить напоминания потока",
+  "Failed to answer the calendar subscription":
+    "Подписка на календарь из «Моего доступа» не получила даты",
+  "Failed to answer the «В календарь» file":
+    "Кнопка «В календарь» в «Моём доступе» не отдала файл",
+  "Failed to authorize checkout selection from database":
+    "Оплата не открылась: не удалось проверить товар и цену в базе",
   "Failed to check invitation chat membership":
     "Не удалось проверить, есть ли человек в чате (приглашение)",
   "Failed to check renewal source chat membership":
@@ -45,6 +51,8 @@ const TITLES: Record<string, string> = {
   "Failed to deliver an access invitation email":
     "Не удалось отправить письмо-приглашение",
   "Failed to ensure invitation accesses": "Не удалось выдать ссылку по приглашению",
+  "Failed to load authoritative checkout catalog":
+    "Страница оплаты не загрузила каталог и показала «Покупка недоступна»",
   "Failed to persist verified Stripe event to inbox":
     "Не удалось сохранить событие оплаты Stripe",
   "Failed to process Stripe webhook": "Не удалось обработать событие Stripe",

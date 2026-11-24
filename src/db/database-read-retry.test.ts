@@ -14,11 +14,26 @@ const createWrappedError = (code: string) => {
 };
 
 test("finds transient connection codes through database error wrappers", () => {
-  const error = createWrappedError("CONNECT_TIMEOUT");
+  const error = createWrappedError("CONNECTION_CLOSED");
 
-  assert.equal(getDatabaseErrorCode(error), "CONNECT_TIMEOUT");
+  assert.equal(getDatabaseErrorCode(error), "CONNECTION_CLOSED");
   assert.equal(isTransientDatabaseReadError(error), true);
   assert.equal(isTransientDatabaseReadError(createWrappedError("08006")), true);
+});
+
+test("a spent connect budget is not retried and keeps its code for the journal", async () => {
+  // The client already waited its whole connect_timeout; a retry would double it.
+  let calls = 0;
+  const error = createWrappedError("CONNECT_TIMEOUT");
+
+  await assert.rejects(
+    retryTransientDatabaseRead(async () => {
+      calls += 1;
+      throw error;
+    }),
+    (actual) => actual === error && getDatabaseErrorCode(actual) === "CONNECT_TIMEOUT",
+  );
+  assert.equal(calls, 1);
 });
 
 test("does not classify schema and authentication failures as transient", () => {

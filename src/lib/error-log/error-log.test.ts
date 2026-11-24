@@ -114,3 +114,15 @@ test("events read in Russian; patterns keep their subject", () => {
   );
   assert.equal(titleOfEvent("Some new event"), "Some new event");
 });
+
+test("the buyer's and the access page's failures have their own Russian titles", () => {
+  for (const event of [
+    "Failed to answer the calendar subscription",
+    "Failed to answer the «В календарь» file",
+    "Failed to authorize checkout selection from database",
+    "Failed to load authoritative checkout catalog",
+  ]) {
+    const title = titleOfEvent(event);
+    assert.doesNotMatch(title, /[A-Za-z]{4}/u, event);
+  }
+});
