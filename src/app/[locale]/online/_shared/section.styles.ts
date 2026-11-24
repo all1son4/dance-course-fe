@@ -80,7 +80,7 @@ export const AboutChoreoTitle = styled(SectionTitleBase)`
   letter-spacing: 0;
   max-width: 420px;
   position: sticky;
-  top: calc(var(--header-clearance) + var(--safe-area-top));
+  top: calc(var(--header-clearance) + var(--safe-area-top) + var(--ribbon-space));
   align-self: start;
 
   @media (max-width: 1240px) {
@@ -211,7 +211,7 @@ export const AboutCourseTitle = styled(SectionTitleBase)`
   letter-spacing: 0;
   max-width: 420px;
   position: sticky;
-  top: calc(var(--header-clearance) + var(--safe-area-top));
+  top: calc(var(--header-clearance) + var(--safe-area-top) + var(--ribbon-space));
   align-self: start;
 
   @media (max-width: 920px) {
