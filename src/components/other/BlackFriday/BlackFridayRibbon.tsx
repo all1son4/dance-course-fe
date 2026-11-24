@@ -34,12 +34,14 @@ const RIBBON_ID = "black-friday-ribbon";
 const isCheckoutPath = (pathname: string) =>
   trimTrailingSlash(pathname).startsWith("/payment");
 
+const isHomePath = (pathname: string) => trimTrailingSlash(pathname) === "";
+
 /** True while the Black Friday section of the home page is in the viewport. */
 function useSectionInView(sectionId: string, pathname: string) {
   // The section lives on the home page only. There the ribbon starts hidden and
   // fades in once the section is known to be off screen, so a reload with the
   // section in view never flashes the ribbon first.
-  const [inView, setInView] = useState(() => trimTrailingSlash(pathname) === "");
+  const [inView, setInView] = useState(() => isHomePath(pathname));
 
   useEffect(() => {
     const section = document.getElementById(sectionId);
@@ -60,8 +62,9 @@ function useSectionInView(sectionId: string, pathname: string) {
 
 /**
  * A slim black pill under the header on every page while Black Friday runs: the
- * name, the time left and a link to the offers. It moves with the fixed header, so
- * no page layout changes for it, and fades out while the home section is visible.
+ * name, the time left and a link to the offers. It moves with the fixed header and
+ * fades out while the home section is visible. Off the home page it is always
+ * there, so the page keeps a row free for it (`--ribbon-space`, see Ribbon).
  */
 export default function BlackFridayRibbon({
   ariaLabel,
@@ -87,6 +90,8 @@ export default function BlackFridayRibbon({
       aria-label={title}
       aria-hidden={isHidden || undefined}
       data-hidden={isHidden || undefined}
+      data-home={isHomePath(pathname) || undefined}
+      data-top-chrome=""
     >
       <RibbonTitle>{title}</RibbonTitle>
       <RibbonDivider aria-hidden="true" />

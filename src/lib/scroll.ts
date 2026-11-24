@@ -54,11 +54,15 @@ export const scrollToHashTarget = (targetId: string): boolean => {
     return false;
   }
 
-  const headerElement = document.querySelector("header");
-  const headerOffsetPx =
-    headerElement instanceof HTMLElement
-      ? Math.max(Math.round(headerElement.getBoundingClientRect().bottom), 0)
-      : 0;
+  // The fixed chrome at the top: the header pill and, while a campaign runs, the
+  // ribbon under it (it marks itself `data-top-chrome`) unless it is hidden.
+  const headerOffsetPx = Math.max(
+    0,
+    ...Array.from(
+      document.querySelectorAll("header, [data-top-chrome]:not([data-hidden])"),
+      (element) => Math.round(element.getBoundingClientRect().bottom),
+    ),
+  );
   const targetTopPx = window.scrollY + targetElement.getBoundingClientRect().top;
 
   window.scrollTo({
