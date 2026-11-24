@@ -21,8 +21,10 @@ const DEFAULT_DELAY_MS = 150;
 const DEFAULT_MAX_ATTEMPTS = 2;
 const MAX_ERROR_CAUSE_DEPTH = 8;
 
+// CONNECT_TIMEOUT is not here: it means the client's whole connect budget is spent
+// (see client.ts). Retrying it would double a visitor's wait, and after parallel
+// queries failed, postgres.js rejects the retry at once while it backs off.
 const TRANSIENT_CONNECTION_ERROR_CODES = new Set([
-  "CONNECT_TIMEOUT",
   "CONNECTION_CLOSED",
   "CONNECTION_DESTROYED",
   "CONNECTION_ENDED",
