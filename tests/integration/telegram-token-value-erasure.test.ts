@@ -265,6 +265,7 @@ const insertLegacyUsedTokenWithoutOwner = async (
   const [constraint] = await client<{ definition: string }[]>`
     SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
     WHERE conname = 'telegram_access_tokens_used_claim_check'
+      AND conrelid = 'public.telegram_access_tokens'::regclass
   `;
 
   assert.ok(constraint);
@@ -335,6 +336,7 @@ test("the 0032 repair erases the legacy link and restores the check as it was", 
     const [row] = await client<{ definition: string; validated: boolean }[]>`
       SELECT pg_get_constraintdef(oid) AS definition, convalidated AS validated
       FROM pg_constraint WHERE conname = 'telegram_access_tokens_used_claim_check'
+        AND conrelid = 'public.telegram_access_tokens'::regclass
     `;
 
     return row;
