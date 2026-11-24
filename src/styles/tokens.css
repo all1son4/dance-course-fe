@@ -48,6 +48,9 @@
   --header-clearance: 116px;
   /* Under 768px the pill is 59px tall and sits 10px from the top. */
   --header-clearance-mobile: 82px;
+  /* A campaign ribbon under the header (Black Friday) sets this to its own
+     height; sticky titles and anchor jumps add it to the clearance. */
+  --ribbon-space: 0px;
 }
 
 @media (max-width: 880px) {

@@ -64,7 +64,7 @@ export const LegalOutline = styled.nav`
   flex-direction: column;
   gap: 2px;
   position: sticky;
-  top: calc(var(--header-clearance) + var(--safe-area-top, 0px));
+  top: calc(var(--header-clearance) + var(--safe-area-top, 0px) + var(--ribbon-space));
 
   @media (max-width: 1100px) {
     position: static;

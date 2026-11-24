@@ -258,6 +258,22 @@ export const Ribbon = styled.div`
   @media (forced-colors: active) {
     border: 1px solid CanvasText;
   }
+
+  /* Off the home page the ribbon is always on screen, right where page titles
+     start: the page begins below it, and sticky titles and anchor jumps clear it
+     too (they add --ribbon-space). Its height plus the gap above it. On the home
+     page it only appears over content further down, so nothing moves there. */
+  :root:has(&:not([data-home])) {
+    --ribbon-space: 50px;
+
+    @media (max-width: 767px) {
+      --ribbon-space: 44px;
+    }
+  }
+
+  :root:has(&:not([data-home])) main {
+    padding-top: var(--ribbon-space);
+  }
 `;
 
 export const RibbonTitle = styled.span`
@@ -376,7 +392,9 @@ export const Section = styled.section`
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  scroll-margin-top: calc(var(--header-clearance) + 56px);
+  /* Added to the root's scroll-padding-top, which already clears the header:
+     the ribbon's «Смотреть» lands the section this far below the header. */
+  scroll-margin-top: 56px;
   margin-bottom: 20px;
   padding: 80px 100px;
   border-radius: var(--radius-slab);
@@ -401,7 +419,7 @@ export const Section = styled.section`
   @media (max-width: 880px) {
     padding: 40px 20px;
     border-radius: var(--radius-panel);
-    scroll-margin-top: calc(var(--header-clearance-mobile) + 52px);
+    scroll-margin-top: 52px;
     margin-bottom: 16px;
   }
 
@@ -468,6 +486,13 @@ export const Title = styled.h2`
 /* The title and the stamp that lands next to it. */
 export const TitleWrap = styled.div`
   position: relative;
+
+  /* On phones the stamp sits at the right edge of the column, beside the title:
+     the wrap spans the column (it would otherwise shrink to the title, and the
+     stamp would land on the letters). */
+  @media (max-width: 550px) {
+    align-self: stretch;
+  }
 
   & > span[aria-hidden] {
     left: calc(min(100%, 340px) + 12px);
@@ -799,10 +824,12 @@ export const StampMark = styled.span`
     text-align: center;
     text-transform: uppercase;
   }
+  /* Plain colour, no blend mode: Safari drops a blend whenever it moves the
+     stamp to its own layer (each flip of the clock does that), so a blended
+     stamp flickered every second. Over the dark slab it looks the same. */
   color: rgba(255, 92, 84, 0.82);
   transform: rotate(-12deg);
   pointer-events: none;
-  mix-blend-mode: screen;
 
   /* Lands first; the offers' strikes and prices follow it in turn. */
   &:not([data-pending]) {

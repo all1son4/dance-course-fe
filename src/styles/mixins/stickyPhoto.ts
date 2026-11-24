@@ -32,7 +32,7 @@ export const stickyPhotoPair = css`
   flex-direction: column;
   gap: 36px;
   position: sticky;
-  top: calc(var(--header-clearance) + var(--safe-area-top));
+  top: calc(var(--header-clearance) + var(--safe-area-top) + var(--ribbon-space));
 
   /* A section title may be sticky by itself; here it moves with the pair. */
   && > h2 {
@@ -54,7 +54,10 @@ export const stickyPhotoBox = css`
   aspect-ratio: 4 / 5;
   max-height: max(
     ${PHOTO_MIN_HEIGHT},
-    calc(100svh - var(--header-clearance) - var(--safe-area-top) - ${SCREEN_ALLOWANCE})
+    calc(
+      100svh - var(--header-clearance) - var(--safe-area-top) - var(--ribbon-space) -
+        ${SCREEN_ALLOWANCE}
+    )
   );
   border-radius: var(--radius-card);
   overflow: hidden;
