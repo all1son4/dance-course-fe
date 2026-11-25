@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
+import { watchDatabaseConnections } from "./connection-watch";
 import { getRequiredDatabaseUrlFromEnv } from "./env";
 import * as schema from "./schema";
 
@@ -9,10 +10,10 @@ type PostgresClient = ReturnType<typeof postgres>;
 // The whole budget for opening a connection: TCP, TLS, auth and, on Neon, waking a
 // compute that scaled to zero. A query waits in the driver's queue until then and is
 // never sent before, so waiting is safe for reads, writes and transactions alike.
-// 5 seconds was not always enough for a wake (CONNECT_TIMEOUT on 2026-11-24), and a
-// retry after it does not help: postgres.js fails the next queries fast during its
-// reconnect backoff, and a new attempt waits for the same wake. 10 seconds is the
-// value Neon's own connection examples use; a healthy wake takes well under a second.
+// 10 seconds is the value Neon's own connection examples use; a healthy wake takes
+// well under a second. The CONNECT_TIMEOUTs of 2026-11-24/25 were not slow wakes but
+// attempts frozen with a suspended instance (see connection-watch.ts), which no
+// timeout value fixes.
 const RUNTIME_DATABASE_CONNECT_TIMEOUT_SECONDS = 10;
 
 const globalForDb = globalThis as typeof globalThis & {
@@ -33,6 +34,7 @@ export const getDatabaseClient = () => {
       max: 5,
       prepare: false,
     });
+    watchDatabaseConnections(globalForDb.danceCoursePostgresClient);
   }
 
   return globalForDb.danceCoursePostgresClient;
