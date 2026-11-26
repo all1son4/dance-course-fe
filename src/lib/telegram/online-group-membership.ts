@@ -1,6 +1,7 @@
 import { and, eq, isNull, notInArray, or, sql } from "drizzle-orm";
 
 import { isInspirationHubOfferId } from "@/constants/sellable-products";
+import { rememberJoinedTelegramUsername } from "@/db/buyer-contacts";
 import { getDatabase } from "@/db/client";
 import { findInspirationHubChatId } from "@/db/hub-access-coverage";
 import { lockHubPeriodOwner } from "@/db/hub-period-chain-resolution";
@@ -393,6 +394,10 @@ const recordMemberInChatInTransaction = async ({
     inviteLink,
     purchase,
     telegramUserId: identity.telegramUserId,
+    telegramUsername: identity.telegramUsername,
+  });
+  await rememberJoinedTelegramUsername(transaction, {
+    purchaseId: purchase.id,
     telegramUsername: identity.telegramUsername,
   });
 

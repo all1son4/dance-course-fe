@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { keepClassifiedAccessPeriod } from "./classified-access";
 import {
@@ -165,13 +165,18 @@ const upsertCustomer = async (
 
   if (customerId) {
     // A checkout asks for one handle (Telegram on a renewal, Instagram otherwise), so
-    // a purchase without one keeps the handle the customer gave before.
+    // a purchase without one keeps the handle the customer gave before. The Telegram
+    // handle is refreshed by the chat join (`rememberJoinedTelegramUsername`); a
+    // checkout only fills an empty one, so a late Stripe event of an old purchase
+    // cannot bring back a handle typed long ago.
     await transaction
       .update(customers)
       .set({
         ...values,
         instagramUsername: customer.instagramUsername ?? undefined,
-        telegramUsername: customer.telegramUsername ?? undefined,
+        telegramUsername: customer.telegramUsername
+          ? sql`COALESCE(NULLIF(BTRIM(${customers.telegramUsername}), ''), ${customer.telegramUsername})`
+          : undefined,
       })
       .where(eq(customers.id, customerId));
     return customerId;
