@@ -15,7 +15,9 @@ import type { CheckoutLocale } from "@/lib/stripe-checkout";
 // names all four, with each full v1 wording one tap away under it.
 export const CHECKOUT_CONSENT_SCHEMA_VERSION = "checkout-consent-v1";
 export const CHECKOUT_CONSENT_SOURCE = "internal-checkout";
-export const CHECKOUT_PRIVACY_POLICY_VERSION = "privacy-policy-v1";
+// v2 of the privacy policy: section 3 names the Telegram account ID and username that
+// Telegram provides when the buyer joins a course chat or channel by a personal link.
+export const CHECKOUT_PRIVACY_POLICY_VERSION = "privacy-policy-v2";
 export const CHECKOUT_AGREEMENT_VERSIONS = {
   digitalContentAgreement: "digital-content-agreement-v2",
   immediateAccessConsent: "immediate-access-consent-v2",
