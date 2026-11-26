@@ -38,10 +38,8 @@ import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,
 } from "@/lib/payment-record";
-import {
-  ensureOnlineGroupAccessForPayment,
-  syncOnlineGroupMembership,
-} from "@/lib/telegram/online-group-access";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
+import { syncOnlineGroupMembership } from "@/lib/telegram/online-group-membership";
 
 import { upsertPaymentRecordToDatabase } from "../helpers/legacy-payment-writer";
 import { createTestTelegramUserIdPair } from "../helpers/telegram-user-id";

@@ -254,6 +254,63 @@ test("a price change during catalog refresh invalidates minted intents", () => {
   assert.ok(store.stripeIntentStateRevision > revisionBefore);
 });
 
+test("a campaign ending without a price change still invalidates minted intents", () => {
+  const store = new PaymentStore();
+  const campaignCatalog = cloneCatalog();
+  campaignCatalog
+    .find((product) => product.id === DEFAULT_CHECKOUT_PRODUCT.id)
+    ?.offers.forEach((offer) => {
+      offer.campaign = "black-friday-2026";
+    });
+  store.setSellableProducts(campaignCatalog);
+  store.stripeClientSecrets = { pln: "secret_campaign" };
+
+  store.setSellableProducts(cloneCatalog());
+
+  assert.deepEqual(store.stripeClientSecrets, {});
+});
+
+test("the intent request carries the offer as shown; a repriced answer reloads the catalogue, not an error", async (t) => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  const calls = installJsonFetchFixture(t, [
+    { status: 409, body: { errorCode: "offer_changed" } },
+  ]);
+
+  await store.ensureStripePaymentIntent("pln");
+
+  const body = JSON.parse(calls[0]?.body ?? "{}");
+  assert.equal(body.shownPrice, store.selectedPrice);
+  assert.equal(body.shownCampaign, "");
+  assert.equal(store.isOfferOutdated, true);
+  assert.equal(store.stripeIntentError, null);
+  assert.equal(store.stripeClientSecret, "");
+
+  const repricedCatalog = cloneCatalog();
+  repricedCatalog
+    .find((product) => product.id === store.selectedProductId)
+    ?.offers.forEach((offer) => {
+      offer.prices = { ...offer.prices, pln: offer.prices.pln + 1 };
+    });
+  store.setSellableProducts(repricedCatalog);
+
+  assert.equal(store.isOfferOutdated, false);
+  assert.equal(store.stripeIntentError, null);
+  assert.equal(store.catalogStatus, "ready");
+});
+
+test("a reloaded catalogue with the same terms ends a repriced answer as a failed preparation", async (t) => {
+  const store = new PaymentStore();
+  fillValidCheckout(store);
+  installJsonFetchFixture(t, [{ status: 409, body: { errorCode: "offer_changed" } }]);
+  await store.ensureStripePaymentIntent("pln");
+
+  store.setSellableProducts(cloneCatalog());
+
+  assert.equal(store.isOfferOutdated, false);
+  assert.equal(store.stripeIntentError, "payment_intent_request_failed");
+});
+
 test("selecting the already-selected product keeps intent state untouched", () => {
   const store = new PaymentStore();
   store.setSellableProducts(cloneCatalog());

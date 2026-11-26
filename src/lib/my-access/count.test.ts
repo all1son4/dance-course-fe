@@ -79,7 +79,7 @@ test("only a plain first name reaches the greeting", () => {
   assert.equal(getFirstName("  OLGA ivanova "), "Olga");
   assert.equal(getFirstName("anna-maria"), "Anna-Maria");
   assert.equal(getFirstName("McKenzie"), "McKenzie");
-  assert.equal(getFirstName("a.strok@gmail.com"), null);
+  assert.equal(getFirstName("a.test@example.com"), null);
   assert.equal(getFirstName("A"), null);
   assert.equal(getFirstName("12345"), null);
   assert.equal(getFirstName(null), null);

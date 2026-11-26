@@ -1,7 +1,6 @@
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { toUtcIso } from "@/lib/time";
 
-import { isIsoExpired } from "./access";
 import {
   claimTelegramAccessTokenRecord,
   findPaymentRecordByIntentId,
@@ -13,6 +12,7 @@ import {
   upsertTelegramUserBindingRecord,
 } from "./access-persistence";
 import { hashAccessToken } from "./access-records";
+import { isIsoExpired } from "./channel-access-rules";
 import { isWithoutMentorOfferId } from "./offer-access";
 
 /*

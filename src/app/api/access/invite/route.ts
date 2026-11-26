@@ -16,10 +16,8 @@ import { isMyAccessLinkConfigured, verifyMyAccessToken } from "@/lib/my-access/l
 import { consumeRateLimit, consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import { getStripeServer } from "@/lib/stripe-checkout";
-import {
-  ensureTelegramAccessLinkForPayment,
-  isStandardTelegramLinkPayment,
-} from "@/lib/telegram/access";
+import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
+import { isStandardTelegramLinkPayment } from "@/lib/telegram/channel-access-rules";
 import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 import { DAY_MS } from "@/lib/time";
 

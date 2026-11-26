@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { createEmptyPaymentRecord } from "@/lib/payment-record";
-import { isStandardTelegramLinkPayment } from "@/lib/telegram/access";
+import { isStandardTelegramLinkPayment } from "@/lib/telegram/channel-access-rules";
 
 const record = (offerId: string, accessWorkflow = "") => ({
   ...createEmptyPaymentRecord(),

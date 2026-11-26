@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, ReactNode, useContext, useState } from "react";
+import { createContext, ReactNode, useContext, useEffect, useRef, useState } from "react";
 
 import { PaymentStore, type PaymentStoreInitialization } from "./payment-store";
 
@@ -17,6 +17,20 @@ export function StoreProvider({
   // and hydration start from the same authoritative catalogue snapshot instead
   // of reusing a browser-global store left by an earlier visit.
   const [store] = useState(() => new PaymentStore(paymentInitialization));
+  // A server refresh (the campaign end, a repriced offer) brings a new catalogue.
+  const products = paymentInitialization?.sellableProducts;
+  const appliedProducts = useRef(products);
+
+  useEffect(() => {
+    if (products === appliedProducts.current) return;
+
+    appliedProducts.current = products;
+    if (products) {
+      store.setSellableProducts(products);
+    } else {
+      store.setCatalogUnavailable();
+    }
+  }, [products, store]);
 
   return <StoreContext.Provider value={store}>{children}</StoreContext.Provider>;
 }

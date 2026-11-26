@@ -16,11 +16,9 @@ import { getDatabaseClient } from "@/db/client";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
 import { ensureHubPurchaseAccessInDatabase } from "@/db/purchase-access-source";
 import * as schema from "@/db/schema";
-import {
-  ensureOnlineGroupAccessForPayment,
-  syncOnlineGroupMembership,
-} from "@/lib/telegram/online-group-access";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-hub-expiry";
+import { syncOnlineGroupMembership } from "@/lib/telegram/online-group-membership";
 
 import { lockHubSettingsForTest } from "../helpers/hub-settings-lock";
 import { createTestTelegramUserIdPair } from "../helpers/telegram-user-id";

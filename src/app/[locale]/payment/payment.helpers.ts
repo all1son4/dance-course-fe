@@ -63,6 +63,8 @@ export const STRIPE_INTENT_ERROR_TRANSLATION_KEYS = {
   invalid_customer_data: "errors.invalidCustomerData",
   missing_client_secret: "errors.missingClientSecret",
   missing_secret_key: "errors.missingSecretKey",
+  // Never stored as an error: the page reloads its catalogue instead.
+  offer_changed: "errors.paymentIntentRequestFailed",
   online_group_campaign_not_configured: "errors.onlineGroupCampaignNotConfigured",
   online_group_cohort_unavailable: "errors.onlineGroupCampaignNotConfigured",
   payment_intent_failed: "errors.paymentIntentFailed",

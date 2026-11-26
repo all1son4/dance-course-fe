@@ -11,7 +11,7 @@ import {
 
 import { sendTelegramMessage } from "./bot-api";
 import { getTelegramAlertsBotToken, getTelegramAlertsChatId } from "./config";
-import type { OnlineGroupAccessState } from "./online-group-access";
+import type { OnlineGroupAccessState } from "./online-group-access-records";
 
 loadEnvConfig(process.cwd(), true);
 
@@ -33,16 +33,16 @@ const PROCESSED_AT_ISO = "2026-09-07T17:49:20.039Z";
 const SHARED_RECORD_FIELDS: Partial<PaymentRecordSnapshot> = {
   checkout_currency: "pln",
   checkout_locale: "pl",
-  checkout_session_id: "541e0465-fefd-4c36-b458-0975a18ce6e0",
+  checkout_session_id: "00000000-0000-4000-8000-000000000000",
   customer_country: "PL",
-  customer_email: "domikrzak@gmail.com",
-  customer_full_name: "Dominika Krzak",
+  customer_email: "buyer@example.com",
+  customer_full_name: "Test Buyer",
   delivery_channel: "telegram",
   email_delivery_status: "sent",
   invoice_issued_at: "2026-09-07T17:49:18.000Z",
-  invoice_number: "FV/2026/09/002",
+  invoice_number: "FV/2026/09/000",
   outcome: "succeeded",
-  payment_intent_id: "pi_3UD6eeRuyo0v6xwT05ZULmar",
+  payment_intent_id: "pi_preview00000000000000",
   telegram_access_status: "token_issued",
 };
 
@@ -138,7 +138,7 @@ const SCENARIOS: PreviewScenario[] = [
     record: {
       access_workflow: "telegram-renewal",
       amount: "22000",
-      customer_nickname: "ej_madzik",
+      customer_nickname: "test_buyer",
       offer_id: "off_online_group_anna_strok_renewal_library_access",
       offer_label: "Plus renewal",
       product_id: "prd_L9aK3mT7qP2x",
@@ -207,7 +207,7 @@ const renderScenario = (scenario: PreviewScenario) => {
     }),
     text: buildPurchaseAlertText({
       eventCreatedAtIso: EVENT_CREATED_AT_ISO,
-      eventId: "evt_3UD6eeRuyo0v6xwT0kAepSmr",
+      eventId: "evt_preview0000000000000",
       eventType: "payment_intent.succeeded",
       hasClosedSales: scenario.hasClosedSales,
       onlineGroupAccessStates: scenario.onlineGroupAccessStates,

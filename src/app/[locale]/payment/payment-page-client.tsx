@@ -22,13 +22,18 @@ import {
   isOnlineGroupLibraryOfferId,
   type SupportedCheckoutCurrency,
 } from "@/constants/sellable-products";
+import { useRouter } from "@/i18n/navigation";
 import {
   applyBirthdayPopupSignal,
   getBirthdayPopupState,
   isBirthdayOfferId,
   saveBirthdayPopupState,
 } from "@/lib/birthday-popup";
-import { getCampaignSavings, isBlackFridayOffer } from "@/lib/black-friday";
+import {
+  BLACK_FRIDAY_ENDS_AT,
+  getCampaignSavings,
+  isBlackFridayOffer,
+} from "@/lib/black-friday";
 import {
   PAYMENT_CHECKBOXES,
   PAYMENT_INPUTS,
@@ -431,6 +436,9 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.customerData.country,
     paymentStore.customerData.lessonLanguage,
     paymentStore.renewalCampaignSlug,
+    // A reloaded catalogue with new terms has dropped the intent: mint the new one.
+    paymentStore.selectedPrice,
+    paymentStore.selectedOffer.campaign,
   ]);
 
   // Leaving the checkout resets it and cancels the intents it minted - unless
@@ -446,6 +454,38 @@ const PaymentPage = observer(function PaymentPage({
       });
     };
   }, [paymentStore]);
+
+  // The page reloads its catalogue when the server priced the offer differently,
+  // and when Black Friday ends, as the rest of the site does: the buyer sees the
+  // current price before paying. Never under a payment already under way.
+  const router = useRouter();
+  const isOnCampaignOffer = isBlackFridayOffer(paymentStore.selectedOffer);
+
+  useEffect(() => {
+    if (paymentStore.isOfferOutdated) {
+      router.refresh();
+    }
+  }, [paymentStore.isOfferOutdated, router]);
+
+  useEffect(() => {
+    if (!isOnCampaignOffer) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      if (
+        Date.now() >= BLACK_FRIDAY_ENDS_AT.getTime() &&
+        !isPaymentSubmittingRef.current
+      ) {
+        window.clearInterval(interval);
+        router.refresh();
+      }
+    }, 1_000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [isOnCampaignOffer, router]);
 
   const handleRetryPaymentPreparation = () => {
     void paymentStore.retryStripePaymentIntent();
