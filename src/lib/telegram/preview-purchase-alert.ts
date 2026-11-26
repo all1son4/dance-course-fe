@@ -55,8 +55,10 @@ const ONLINE_GROUP_WITH_HUB_READY: OnlineGroupAccessState[] = [
 ];
 
 type PreviewScenario = {
+  campaign?: string;
   hasClosedSales?: boolean;
   onlineGroupAccessStates?: OnlineGroupAccessState[];
+  paidHubPeriodDays?: number;
   record: Partial<PaymentRecordSnapshot>;
   title: string;
 };
@@ -147,6 +149,20 @@ const SCENARIOS: PreviewScenario[] = [
     title: "Продление онлайн-группы Plus",
   },
   {
+    campaign: "black-friday-2026",
+    onlineGroupAccessStates: [{ accessKey: "inspiration-hub", status: "token_issued" }],
+    paidHubPeriodDays: 112,
+    record: {
+      access_workflow: "telegram-inspiration-hub",
+      amount: "20000",
+      offer_id: "off_inspiration_hub_access",
+      offer_label: "Pełna cena",
+      product_id: "prd_inspiration_hub",
+      product_title: "Inspiration Hub",
+    },
+    title: "Inspiration Hub в Чёрную пятницу — 112 дней",
+  },
+  {
     hasClosedSales: true,
     record: {
       access_workflow: "telegram-channel-lifetime",
@@ -206,11 +222,13 @@ const renderScenario = (scenario: PreviewScenario) => {
       paymentIntentId: paymentRecord.payment_intent_id,
     }),
     text: buildPurchaseAlertText({
+      campaign: scenario.campaign,
       eventCreatedAtIso: EVENT_CREATED_AT_ISO,
       eventId: "evt_preview0000000000000",
       eventType: "payment_intent.succeeded",
       hasClosedSales: scenario.hasClosedSales,
       onlineGroupAccessStates: scenario.onlineGroupAccessStates,
+      paidHubPeriodDays: scenario.paidHubPeriodDays,
       paymentRecord,
       processedAtIso: PROCESSED_AT_ISO,
     }),
