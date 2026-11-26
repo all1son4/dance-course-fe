@@ -6,7 +6,7 @@ import postgres from "postgres";
 
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { getDatabaseClient } from "@/db/client";
-import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
+import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/channel-access-expiry";
 
 import { createTestTelegramUserId } from "../helpers/telegram-user-id";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
