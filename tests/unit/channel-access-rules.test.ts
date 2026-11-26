@@ -5,7 +5,7 @@ import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import {
   isIsoExpired,
   isOfferEligibleForTelegramAccessLink,
-} from "@/lib/telegram/access";
+} from "@/lib/telegram/channel-access-rules";
 
 test("a channel link goes to choreo, first-touch and lifetime offers only", () => {
   const eligible = [

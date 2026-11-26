@@ -9,10 +9,8 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-import {
-  ensureTelegramAccessLinkForPayment,
-  isStandardTelegramLinkPayment,
-} from "@/lib/telegram/access";
+import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
+import { isStandardTelegramLinkPayment } from "@/lib/telegram/channel-access-rules";
 import {
   ensureOnlineGroupAccessForPayment,
   type OnlineGroupAccessKey,

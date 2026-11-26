@@ -23,13 +23,18 @@ import {
   kickUnexpectedMember,
   shouldIgnoreKickFailure,
 } from "./bot-api";
+import {
+  getPaymentAccessExpiresAtIso,
+  isIsoExpired,
+  isOfferEligibleForTelegramAccessLink,
+  isPaymentTimedTelegramAccess,
+  isTimedAccessOfferId,
+  parseTimestamp,
+} from "./channel-access-rules";
 import { getTelegramChannelTargetByOfferId } from "./config";
 import { getReusableTimedAccessTelegramBindings } from "./identity-reuse-policy";
 import {
   getTelegramChannelAccessDurationMs,
-  isChoreoChannelOfferId,
-  isFirstTouchOfferId,
-  isLifetimeChannelOfferId,
   parsePositiveEnvNumber,
 } from "./offer-access";
 
@@ -139,12 +144,6 @@ const getTelegramAccessLinkTtlDays = () =>
 const getTelegramAccessLinkTtlMs = () =>
   getTelegramAccessLinkTtlDays() * 24 * 60 * 60 * 1000;
 
-const parseTimestamp = (value: string) => {
-  const timestamp = Date.parse(value);
-
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
 const createTelegramTokenId = () => `tgi_${randomBytes(8).toString("hex")}`;
 
 const getTelegramAccessLinkExpiryIso = (issuedAtIso: string) => {
@@ -153,27 +152,6 @@ const getTelegramAccessLinkExpiryIso = (issuedAtIso: string) => {
 
   return toUtcIso(new Date(expiresAt));
 };
-
-const getPaymentAccessWindowStartedAtTs = (paymentRecord: PaymentRecordSnapshot) => {
-  return parseTimestamp(paymentRecord.telegram_token_used_at);
-};
-
-const getComputedAccessExpiresAtIso = (paymentRecord: PaymentRecordSnapshot) => {
-  const accessStartedAtTs = getPaymentAccessWindowStartedAtTs(paymentRecord);
-  const accessDurationMs = getTelegramChannelAccessDurationMs(paymentRecord.offer_id);
-
-  if (accessStartedAtTs <= 0 || accessDurationMs <= 0) {
-    return "";
-  }
-
-  return toUtcIso(new Date(accessStartedAtTs + accessDurationMs));
-};
-
-const getPaymentAccessExpiresAtIso = (paymentRecord: PaymentRecordSnapshot) =>
-  paymentRecord.telegram_access_expires_at.trim() ||
-  getComputedAccessExpiresAtIso(paymentRecord);
-
-export const isIsoExpired = (value: string) => parseTimestamp(value) <= Date.now();
 
 const getUnixSeconds = (value: string) => Math.floor(parseTimestamp(value) / 1000);
 
@@ -383,30 +361,6 @@ const trySyncPaymentByExistingActiveBinding = async ({
     paymentRecord: latestPaymentRecord,
   });
 };
-
-/**
- * Who gets an invite link at all. Deliberately wider than the timed set below:
- * lifetime offers are handed a link and never given an expiry.
- */
-export const isOfferEligibleForTelegramAccessLink = (offerId: string) =>
-  isChoreoChannelOfferId(offerId) ||
-  isFirstTouchOfferId(offerId) ||
-  isLifetimeChannelOfferId(offerId);
-
-/** A purchase that gets the ordinary Telegram link: an eligible offer not handed out by hand. */
-export const isStandardTelegramLinkPayment = (paymentRecord: PaymentRecordSnapshot) =>
-  paymentRecord.access_workflow.trim() !== "manual-admin" &&
-  isOfferEligibleForTelegramAccessLink(paymentRecord.offer_id);
-
-/**
- * Who gets an access window that can run out. Lifetime offers must stay out of
- * this list - it is what the revocation sweep keys off.
- */
-const isTimedAccessOfferId = (offerId: string) =>
-  isChoreoChannelOfferId(offerId) || isFirstTouchOfferId(offerId);
-
-const isPaymentTimedTelegramAccess = (paymentRecord: PaymentRecordSnapshot) =>
-  isTimedAccessOfferId(paymentRecord.offer_id);
 
 const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentRecordSnapshot) => {
   if (!isPaymentTimedTelegramAccess(paymentRecord)) {
