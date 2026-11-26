@@ -515,7 +515,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
               <SideTitle id="access-next">{t("next.cohortTitle")}</SideTitle>
               {nextTerm ?? (
                 <SideText>
-                  {t("term.since", { date: dayMonth(nextStep.startsAt) })}
+                  {t("count.since", { date: dayMonth(nextStep.startsAt) })}
                 </SideText>
               )}
               <SideText>
