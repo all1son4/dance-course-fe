@@ -593,19 +593,22 @@ export const PurchasesWorkspace = ({
                           {purchase.customerEmail && (
                             <CellSecondary>{purchase.customerEmail}</CellSecondary>
                           )}
-                          {(purchase.customerInstagram || purchase.customerTelegram) && (
+                          {purchase.customerInstagram && (
                             <CellSecondary>
-                              {purchase.customerInstagram ? (
-                                <HandleLink
-                                  handle={purchase.customerInstagram}
-                                  network="instagram"
-                                />
-                              ) : (
-                                <HandleLink
-                                  handle={purchase.customerTelegram}
-                                  network="telegram"
-                                />
-                              )}
+                              Instagram{" "}
+                              <HandleLink
+                                handle={purchase.customerInstagram}
+                                network="instagram"
+                              />
+                            </CellSecondary>
+                          )}
+                          {purchase.customerTelegram && (
+                            <CellSecondary>
+                              Telegram{" "}
+                              <HandleLink
+                                handle={purchase.customerTelegram}
+                                network="telegram"
+                              />
                             </CellSecondary>
                           )}
                         </td>

@@ -3,6 +3,7 @@ import { and, desc, eq, gt, isNotNull, isNull, lte, ne, or } from "drizzle-orm";
 import { logSafeError } from "@/lib/safe-error-log";
 import type { TelegramAccessTokenRecord } from "@/lib/telegram/access-records";
 
+import { rememberJoinedTelegramUsername } from "./buyer-contacts";
 import { getDatabase } from "./client";
 import { getDatabaseErrorCode } from "./database-read-retry";
 import {
@@ -208,6 +209,10 @@ export const claimTelegramAccessTokenRecordInDatabase = async ({
       .returning();
 
     if (claimedToken) {
+      await rememberJoinedTelegramUsername(transaction, {
+        purchaseId: claimedToken.purchaseId,
+        telegramUsername: normalizedUsername,
+      });
       return {
         row: claimedToken,
         status: "claimed" as const,
@@ -230,6 +235,13 @@ export const claimTelegramAccessTokenRecordInDatabase = async ({
     const currentUserId = currentToken.telegramUserId?.trim() ?? "";
 
     if (currentToken.status === "used") {
+      // A return by the same account brings its current handle.
+      if (currentUserId === normalizedUserId) {
+        await rememberJoinedTelegramUsername(transaction, {
+          purchaseId: currentToken.purchaseId,
+          telegramUsername: normalizedUsername,
+        });
+      }
       return {
         row: currentToken,
         status:

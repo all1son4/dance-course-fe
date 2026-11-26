@@ -129,17 +129,18 @@ const formatDate = (iso: string | null) =>
 
 const toDateInput = (iso: string) => iso.slice(0, 10);
 
-/** «Имя Фамилия (@instagram)»; the Telegram handle only when no Instagram is known. */
+/** «Имя Фамилия (Instagram @insta, Telegram @tg)», each handle when it is known. */
 const formatRemovalPerson = ({
   fullName,
   instagram,
   telegramUsername,
 }: HubAdminOverview["preview"]["removals"][number]) => {
-  const handle = instagram
-    ? `@${instagram}`
-    : telegramUsername
-      ? `@${telegramUsername}`
-      : "";
+  const handle = [
+    instagram && `Instagram @${instagram}`,
+    telegramUsername && `Telegram @${telegramUsername}`,
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   if (fullName) return handle ? `${fullName} (${handle})` : fullName;
   return handle || "Без имени и @username";

@@ -42,7 +42,6 @@ type RenewalCustomerProfile = {
   country: string;
   email: string;
   fullName: string;
-  nickname: string;
   postalCode: string;
 };
 
@@ -78,14 +77,12 @@ export const findRenewalCustomerProfile = async ({
       customerCountry: customers.country,
       customerEmail: customers.email,
       customerFullName: customers.fullName,
-      customerNickname: customers.telegramUsername,
       customerPostalCode: customers.postalCode,
       purchaseAddress: purchases.customerAddressLineSnapshot,
       purchaseCity: purchases.customerCitySnapshot,
       purchaseCountry: purchases.customerCountrySnapshot,
       purchaseEmail: purchases.customerEmailSnapshot,
       purchaseFullName: purchases.customerFullNameSnapshot,
-      purchaseNickname: purchases.customerTelegramUsernameSnapshot,
       purchasePostalCode: purchases.customerPostalCodeSnapshot,
     })
     .from(telegramUserBindings)
@@ -111,7 +108,6 @@ export const findRenewalCustomerProfile = async ({
     country: firstNonEmpty(row.purchaseCountry, row.customerCountry),
     email: firstNonEmpty(row.purchaseEmail, row.customerEmail),
     fullName: firstNonEmpty(row.purchaseFullName, row.customerFullName),
-    nickname: firstNonEmpty(row.purchaseNickname, row.customerNickname),
     postalCode: firstNonEmpty(row.purchasePostalCode, row.customerPostalCode),
   };
 };

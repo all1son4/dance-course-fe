@@ -307,10 +307,9 @@ export const useTelegramRenewal = ({
         data.customerProfile,
       );
 
+      // The handle Telegram itself confirmed; a handle stored earlier is never filled in.
       const verifiedNickname = formatTelegramUsernameInput(
-        data.telegramUser?.username?.trim() ||
-          data.customerProfile?.nickname?.trim() ||
-          "",
+        data.telegramUser?.username?.trim() || "",
       );
 
       setRenewalStatusText(
