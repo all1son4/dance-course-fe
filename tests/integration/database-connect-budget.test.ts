@@ -5,9 +5,9 @@ import test, { after } from "node:test";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 // A database that answers only after this long, like a Neon compute that takes
-// long to wake. It is longer than the 5 seconds the runtime client used to allow,
-// which failed with CONNECT_TIMEOUT on 2026-11-24.
-const SLOW_WAKE_MS = 6_000;
+// long to wake. It is longer than the 10 seconds the runtime client used to allow,
+// which failed with CONNECT_TIMEOUT on 2026-11-25 (a 7 s compute start in Neon).
+const SLOW_WAKE_MS = 12_000;
 
 const upstream = new URL(getRequiredTestDatabaseUrl());
 const sockets = new Set<net.Socket>();

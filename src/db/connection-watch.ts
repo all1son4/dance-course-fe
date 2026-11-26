@@ -13,8 +13,11 @@ import { after } from "next/server";
  *    suspended process keeps its timers: on the next request, hours later, those
  *    attempts' connect_timeout timers fire at once and the pool rejects the new
  *    request's queries with CONNECT_TIMEOUT in a few milliseconds, the database never
- *    asked (reproduced 2026-11-25, tests/integration/database-connect-freeze.test.ts).
- *    `after(promise)` is Next's waitUntil: the instance lives until the attempt ends.
+ *    asked, and no connect budget helps (reproduced with the real driver,
+ *    tests/integration/database-connect-freeze.test.ts). `after(promise)` is Next's
+ *    waitUntil: the instance lives until the attempt ends, the same thing Vercel's
+ *    attachDatabasePool does for the drivers it supports (postgres.js is not one).
+ *    The failures of 2026-11-24/25 were slow Neon wakes instead (see client.ts).
  *
  * 2. Remember the technical facts a connection failure is judged by, for the event
  *    log (`describeDatabaseConnections`). Numbers only, never a query or a person.

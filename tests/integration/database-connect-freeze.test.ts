@@ -13,10 +13,10 @@ import {
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 /*
- * The CONNECT_TIMEOUTs of 2026-11-24/25: a request answered while some of the
- * driver's connect attempts were still in flight, the instance was suspended with
- * them, and the next request, an hour later, was rejected in milliseconds when their
- * timers fired. A proxy plays the database: it holds or drops connect attempts and
+ * A CONNECT_TIMEOUT no connect budget prevents: a request answers while some of the
+ * driver's connect attempts are still in flight, the instance is suspended with
+ * them, and the next request, an hour later, is rejected in milliseconds when their
+ * timers fire. A proxy plays the database: it holds or drops connect attempts and
  * closes open connections. The suspension is the driver's clock jumping an hour: the
  * `timers` option (internal to postgres.js, used here only) gives the test that clock.
  */
