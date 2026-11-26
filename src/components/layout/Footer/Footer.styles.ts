@@ -1,8 +1,6 @@
 import Link from "next/link";
 import styled, { css } from "styled-components";
 
-import { hitArea } from "@/styles/mixins/hitArea";
-
 /*
  * The legal links are 14px-tall caption text, 12px apart - on phones they
  * wrap onto two lines (the two policies above, cookie settings below). Their hit areas grow without moving anything: ±6px
@@ -168,67 +166,6 @@ export const SupportText = styled.p`
 
   @media (max-width: 600px) {
     text-align: left;
-  }
-`;
-
-/* One quiet row of section links under the contacts; a grid on small screens. */
-export const SiteLinks = styled.nav`
-  margin-top: 30px;
-
-  & ul {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px 32px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  & li {
-    margin: 0;
-  }
-
-  /* A wrapped row would leave one link alone on the second line. */
-  @media (max-width: 920px) {
-    & ul {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 16px 20px;
-    }
-  }
-
-  @media (max-width: 600px) {
-    margin-top: 40px;
-
-    & ul {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-  }
-`;
-
-export const SiteLink = styled(Link)`
-  position: relative;
-  display: inline-block;
-  font-weight: 400;
-  font-style: normal;
-  font-size: var(--text-caption);
-  line-height: 1.1;
-  letter-spacing: 0;
-  color: var(--ink);
-  transition: color var(--motion-base, 220ms) var(--ease-standard, ease);
-  /* Grows into half of the 16px row gap, never into a neighbour. */
-  ${hitArea({ maxHeight: "calc(100% + 16px)", maxWidth: "calc(100% + 20px)" })}
-
-  &:focus-visible {
-    outline: var(--focus-ring);
-    outline-offset: 3px;
-    border-radius: 4px;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      color: var(--brand);
-    }
   }
 `;
 
