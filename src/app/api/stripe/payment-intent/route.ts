@@ -87,6 +87,9 @@ type CreatePaymentIntentBody = {
   offerId?: string;
   productId?: string;
   renewalCampaignSlug?: string;
+  /** The offer as the checkout shows it; absent from pages opened before this check. */
+  shownCampaign?: string;
+  shownPrice?: number;
 };
 
 export const runtime = "nodejs";
@@ -129,6 +132,7 @@ type PaymentIntentContext = CheckoutSelection & {
   renewalCampaignSlug: string;
   renewalOnlineGroupSettings: OnlineGroupSettings;
   renewalVerification: RenewalVerification;
+  shownOffer: { campaign: string; price: number } | null;
 };
 
 type LocalizedCheckout = {
@@ -262,6 +266,13 @@ const resolvePaymentIntentContext = async (
     renewalCampaignSlug,
     renewalOnlineGroupSettings,
     renewalVerification,
+    shownOffer:
+      typeof body.shownPrice === "number"
+        ? {
+            campaign: typeof body.shownCampaign === "string" ? body.shownCampaign : "",
+            price: body.shownPrice,
+          }
+        : null,
   };
 };
 
@@ -357,6 +368,22 @@ const getSalesAvailabilityErrorResponse = ({
   return null;
 };
 
+/**
+ * The checkout shows the offer as it was when the page rendered, and a campaign can
+ * end before the form is done. A payment on terms other than those on screen is
+ * refused; the page then reloads its catalogue and shows the current ones.
+ */
+const getShownOfferErrorResponse = ({
+  currency,
+  offer,
+  shownOffer,
+}: PaymentIntentContext): Response | null =>
+  shownOffer &&
+  (shownOffer.price !== offer.prices[currency] ||
+    shownOffer.campaign !== (offer.campaign ?? ""))
+    ? jsonErrorNoStore("offer_changed", { status: 409 })
+    : null;
+
 const getOnlineGroupContextErrorResponse = ({
   offer,
   onlineGroupTarget,
@@ -387,6 +414,7 @@ const getPaymentIntentContextErrorResponse = (
   // Sales availability is checked first so a closed product reports "closed"
   // instead of a campaign-shaped error that reads like a misconfiguration.
   getSalesAvailabilityErrorResponse(context) ??
+  getShownOfferErrorResponse(context) ??
   getHubDiscountErrorResponse(context) ??
   getRenewalContextErrorResponse(context) ??
   getOnlineGroupContextErrorResponse(context) ??

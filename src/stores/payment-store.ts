@@ -54,6 +54,7 @@ type StripeIntentErrorCode =
   | "invalid_customer_data"
   | "missing_client_secret"
   | "missing_secret_key"
+  | "offer_changed"
   | "online_group_campaign_not_configured"
   | "online_group_cohort_unavailable"
   | "payment_intent_failed"
@@ -194,6 +195,11 @@ export class PaymentStore {
   stripeIntentStateRevision = 0;
   sellableProducts: SellableProduct[] = SELLABLE_PRODUCTS_LIST;
   renewalCampaignSlug = "";
+  /**
+   * The server priced the offer differently from the screen (a campaign has just
+   * ended): the page reloads its catalogue, which clears this.
+   */
+  isOfferOutdated = false;
 
   constructor(initialization?: PaymentStoreInitialization) {
     // Request helpers remain outside MobX instrumentation so decomposition does
@@ -365,6 +371,9 @@ export class PaymentStore {
   }
 
   setSellableProducts(products: SellableProduct[]) {
+    const wasOfferOutdated = this.isOfferOutdated;
+    this.isOfferOutdated = false;
+
     if (products.length === 0) {
       this.setCatalogUnavailable();
       return;
@@ -373,6 +382,7 @@ export class PaymentStore {
     const previousProductId = this.selectedProduct.id;
     const previousOfferId = this.selectedOffer.id;
     const previousPrice = this.selectedPrice;
+    const previousCampaign = this.selectedOffer.campaign;
     let nextProduct =
       products.find((product) => product.id === this.selectedProductId) ?? null;
     let nextOffer = nextProduct
@@ -418,9 +428,14 @@ export class PaymentStore {
     if (
       previousProductId !== nextProduct.id ||
       previousOfferId !== nextOffer.id ||
-      previousPrice !== this.selectedPrice
+      previousPrice !== this.selectedPrice ||
+      previousCampaign !== this.selectedOffer.campaign
     ) {
       this.clearStripeIntentState(true);
+    } else if (wasOfferOutdated) {
+      // The reloaded catalogue still shows the same terms: say the payment could
+      // not be prepared instead of waiting for a change that is not coming.
+      this.setStripeIntentError(this.selectedCurrency, "payment_intent_request_failed");
     }
   }
 
@@ -787,6 +802,8 @@ export class PaymentStore {
         offerId: this.selectedOffer.id,
         productId: this.selectedProduct.id,
         renewalCampaignSlug: this.renewalCampaignSlug,
+        shownCampaign: this.selectedOffer.campaign ?? "",
+        shownPrice: this.selectedPrice,
       }),
       signal,
     };
@@ -848,6 +865,13 @@ export class PaymentStore {
         ...this.stripeIntentCustomerKeys,
         [currency]: "",
       };
+
+      // Not an error for the buyer: the page shows the current price instead.
+      if (errorCode === "offer_changed") {
+        this.isOfferOutdated = true;
+        return;
+      }
+
       this.setStripeIntentError(currency, errorCode);
 
       // A tab opened before the switch was flipped still believes the catalogue

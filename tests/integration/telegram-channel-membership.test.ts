@@ -222,12 +222,11 @@ test("a choreo join starts its 60-day window at the join", async (t) => {
   const state = await readState(fixture.purchaseId);
   assert.ok(state.entitlementStartsAt);
   assert.ok(Math.abs(state.entitlementStartsAt.getTime() - Date.now()) < 60_000);
-  // The window is computed from the moment the join is first written; the final write
-  // stamps the event's own (a few ms earlier) time as the start, so the end may lie a
-  // few ms past start + 60 days.
-  const windowMs =
-    (state.entitlementExpiresAt?.getTime() ?? 0) - state.entitlementStartsAt.getTime();
-  assert.ok(windowMs >= 60 * DAY_MS && windowMs < 60 * DAY_MS + 1_000, String(windowMs));
+  // One moment per join: the window is exactly 60 days from the stamped start.
+  assert.equal(
+    (state.entitlementExpiresAt?.getTime() ?? 0) - state.entitlementStartsAt.getTime(),
+    60 * DAY_MS,
+  );
   assert.deepEqual(
     {
       bindingExpiresAt: state.bindingExpiresAt?.getTime(),

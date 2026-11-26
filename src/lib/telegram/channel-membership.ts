@@ -50,7 +50,10 @@ type TelegramJoinAccessContext = {
   paymentRecordWithWindow: PaymentRecordSnapshot;
 };
 
-const updatePaymentAccessWindow = async (paymentRecord: PaymentRecordSnapshot) => {
+const updatePaymentAccessWindow = async (
+  paymentRecord: PaymentRecordSnapshot,
+  now: string,
+) => {
   const computedAccessExpiresAt = getPaymentAccessExpiresAtIso(paymentRecord);
 
   if (!computedAccessExpiresAt) {
@@ -67,7 +70,6 @@ const updatePaymentAccessWindow = async (paymentRecord: PaymentRecordSnapshot) =
     };
   }
 
-  const now = toUtcIso();
   const nextPaymentRecord = await persistTelegramPaymentAccess({
     patch: {
       telegram_access_expires_at: computedAccessExpiresAt,
@@ -82,7 +84,10 @@ const updatePaymentAccessWindow = async (paymentRecord: PaymentRecordSnapshot) =
   };
 };
 
-const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentRecordSnapshot) => {
+const startTimedAccessWindowOnJoin = async (
+  paymentRecord: PaymentRecordSnapshot,
+  now: string,
+) => {
   if (!isPaymentTimedTelegramAccess(paymentRecord)) {
     return {
       accessExpiresAt: "",
@@ -99,7 +104,7 @@ const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentRecordSnapshot
 
   // Choreo channel access starts when the buyer actually joins, not when they pay.
   // That keeps the purchased access window fair if they open the invite later.
-  const joinedAt = paymentRecord.telegram_token_used_at.trim() || toUtcIso();
+  const joinedAt = paymentRecord.telegram_token_used_at.trim() || now;
   const paymentRecordWithJoinTimestamp = paymentRecord.telegram_token_used_at.trim()
     ? paymentRecord
     : await persistTelegramPaymentAccess({
@@ -117,7 +122,7 @@ const startTimedAccessWindowOnJoin = async (paymentRecord: PaymentRecordSnapshot
     };
   }
 
-  return updatePaymentAccessWindow(paymentRecordWithJoinTimestamp);
+  return updatePaymentAccessWindow(paymentRecordWithJoinTimestamp, now);
 };
 
 const syncTelegramMemberLeft = async ({
@@ -233,12 +238,14 @@ const resolveTelegramJoinRecords = async ({
   };
 };
 
+// One moment per join: the window starts at the same time the join is stamped with.
 const prepareTelegramJoinAccess = async (
   paymentRecord: PaymentRecordSnapshot,
+  now: string,
 ): Promise<TelegramJoinAccessContext> => {
   const hasTimedAccess = isPaymentTimedTelegramAccess(paymentRecord);
   const paymentRecordWithWindow = hasTimedAccess
-    ? (await startTimedAccessWindowOnJoin(paymentRecord)).paymentRecord
+    ? (await startTimedAccessWindowOnJoin(paymentRecord, now)).paymentRecord
     : paymentRecord;
   const accessExpiresAt = hasTimedAccess
     ? getPaymentAccessExpiresAtIso(paymentRecordWithWindow)
@@ -474,7 +481,7 @@ const syncTelegramMemberJoined = async ({
   }
 
   const { paymentRecord, tokenRecord } = joinRecords;
-  const accessContext = await prepareTelegramJoinAccess(paymentRecord);
+  const accessContext = await prepareTelegramJoinAccess(paymentRecord, identity.now);
   const rejectionContext = {
     normalizedChatId: identity.normalizedChatId,
     normalizedUserId: identity.normalizedUserId,
