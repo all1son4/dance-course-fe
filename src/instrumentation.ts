@@ -24,13 +24,16 @@ export const onRequestError: Instrumentation.onRequestError = async (
   if (!isNodeServer()) return;
 
   const { describeErrorCode } = await import("./lib/error-log/error-code");
-  const { writeOperationalEvent } = await import("./lib/error-log/server-sink");
+  const { withConnectionFacts, writeOperationalEvent } =
+    await import("./lib/error-log/server-sink");
   const { area, code } = describeErrorCode(error);
-  await writeOperationalEvent({
-    area,
-    code,
-    event: `Unhandled server error: ${context.routePath}`,
-    reference: null,
-    severity: "error",
-  });
+  await writeOperationalEvent(
+    withConnectionFacts({
+      area,
+      code,
+      event: `Unhandled server error: ${context.routePath}`,
+      reference: null,
+      severity: "error",
+    }),
+  );
 };

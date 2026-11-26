@@ -1,5 +1,9 @@
 import { after } from "next/server";
 
+import {
+  describeDatabaseConnections,
+  isDatabaseConnectionFailureCode,
+} from "@/db/connection-watch";
 import { recordOperationalEvent } from "@/db/operational-events";
 import type { OperationalEventSinkInput } from "@/lib/safe-error-log";
 
@@ -17,7 +21,20 @@ export const writeOperationalEvent = async (input: OperationalEventSinkInput) =>
   }
 };
 
-export const recordAfterResponse = (input: OperationalEventSinkInput) => {
+/**
+ * A failure to connect to the database carries the driver's state at that moment
+ * in place of a reference, so the next one can be judged from the log alone.
+ */
+export const withConnectionFacts = (
+  input: OperationalEventSinkInput,
+): OperationalEventSinkInput =>
+  input.reference === null && isDatabaseConnectionFailureCode(input.code)
+    ? { ...input, reference: describeDatabaseConnections() }
+    : input;
+
+export const recordAfterResponse = (event: OperationalEventSinkInput) => {
+  // Read now: after the response the pool has already moved on.
+  const input = withConnectionFacts(event);
   try {
     after(() => writeOperationalEvent(input));
   } catch {
