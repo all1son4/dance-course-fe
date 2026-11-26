@@ -6,8 +6,8 @@ import postgres from "postgres";
 
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { getDatabaseClient } from "@/db/client";
-import { syncTelegramChannelMembership } from "@/lib/telegram/access";
 import { upsertTelegramUserBindingRecord } from "@/lib/telegram/access-persistence";
+import { syncTelegramChannelMembership } from "@/lib/telegram/channel-membership";
 
 import { createTestTelegramUserIdPair } from "../helpers/telegram-user-id";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";

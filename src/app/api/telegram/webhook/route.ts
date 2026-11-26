@@ -11,7 +11,6 @@ import {
   getBuyerPurchaseLine,
   shouldShowOfferToBuyerByOfferId,
 } from "@/lib/sellable-products-localization";
-import { syncTelegramChannelMembership } from "@/lib/telegram/access";
 import {
   copyTelegramMessage,
   getTelegramChatMember,
@@ -22,6 +21,7 @@ import {
   activateTelegramStartToken,
   getActivatedPaymentsByTelegramUserId,
 } from "@/lib/telegram/bot-start-access";
+import { syncTelegramChannelMembership } from "@/lib/telegram/channel-membership";
 import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
 import {
   getTelegramLessonSourceByOfferId,

@@ -35,11 +35,11 @@ const client = postgres(databaseUrl, {
 });
 const applicationClient = getDatabaseClient();
 let activateTelegramStartToken: typeof import("@/lib/telegram/bot-start-access").activateTelegramStartToken;
-let syncTelegramChannelMembership: typeof import("@/lib/telegram/access").syncTelegramChannelMembership;
+let syncTelegramChannelMembership: typeof import("@/lib/telegram/channel-membership").syncTelegramChannelMembership;
 
 before(async () => {
   ({ activateTelegramStartToken } = await import("@/lib/telegram/bot-start-access"));
-  ({ syncTelegramChannelMembership } = await import("@/lib/telegram/access"));
+  ({ syncTelegramChannelMembership } = await import("@/lib/telegram/channel-membership"));
 });
 
 after(async () => {
