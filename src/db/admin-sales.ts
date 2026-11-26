@@ -76,7 +76,7 @@ export type AdminPurchaseListEntry = {
   /** Instagram without "@": asked at this checkout or known for the customer. */
   customerInstagram: string;
   customerName: string;
-  /** Telegram handle without "@" asked at this checkout (renewals, older purchases). */
+  /** Telegram without "@": from the customer's latest chat join, else typed at this checkout. */
   customerTelegram: string;
   invoiceNumber: string;
   isPolish: boolean;
@@ -138,6 +138,7 @@ const matchesPurchaseSearchWord = (word: string) => {
     ilike(purchases.customerInstagramUsernameSnapshot, pattern),
     ilike(customers.instagramUsername, pattern),
     ilike(purchases.customerTelegramUsernameSnapshot, pattern),
+    ilike(customers.telegramUsername, pattern),
     sql`EXISTS (
       SELECT 1 FROM ${telegramUserBindings}
       WHERE ${telegramUserBindings.purchaseId} = ${purchases.id}
@@ -308,7 +309,11 @@ export const getAdminPurchasesOverview = async ({
           string | null
         >`COALESCE(${purchases.customerInstagramUsernameSnapshot}, ${customers.instagramUsername})`,
         customerName: purchases.customerFullNameSnapshot,
-        customerTelegram: purchases.customerTelegramUsernameSnapshot,
+        // The customer's handle is the one Telegram reported at the latest chat join;
+        // the purchase keeps what was typed at its checkout.
+        customerTelegram: sql<
+          string | null
+        >`COALESCE(NULLIF(BTRIM(${customers.telegramUsername}), ''), ${purchases.customerTelegramUsernameSnapshot})`,
         invoiceNumber: invoices.invoiceNumber,
         isPolish: isPolishPurchaseCountry,
         offerKey: offerKeyColumn,

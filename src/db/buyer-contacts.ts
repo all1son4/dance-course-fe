@@ -38,6 +38,29 @@ const newestInstagram = (customerId: unknown, telegramUserId: unknown) => sql`(
   LIMIT 1
 )`;
 
+/**
+ * Telegram reports the handle of the account that joined by the personal link of a
+ * purchase; the buyer of that purchase keeps it, a newer one replacing the older.
+ * An account without a handle leaves the known one alone.
+ */
+export async function rememberJoinedTelegramUsername(
+  database: SqlExecutor,
+  { purchaseId, telegramUsername }: { purchaseId: string; telegramUsername: string },
+): Promise<void> {
+  const name = telegramUsername.trim().replace(/^@+/u, "");
+
+  if (!name) return;
+
+  await database.execute(sql`
+    UPDATE customers c
+    SET telegram_username = ${`@${name}`}, updated_at = now()
+    FROM purchases p
+    WHERE p.id = ${purchaseId}::uuid
+      AND c.id = p.customer_id
+      AND c.telegram_username IS DISTINCT FROM ${`@${name}`}
+  `);
+}
+
 /** The newest Instagram handle of the person behind a purchase, or null when none is known. */
 export async function findBuyerInstagramByPurchaseId(
   database: SqlExecutor,

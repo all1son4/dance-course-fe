@@ -10,6 +10,7 @@ import {
   upsertTelegramAccessTokenRecordToDatabase,
 } from "@/db/telegram-access-token-records";
 
+import { createTestTelegramUserId } from "../helpers/telegram-user-id";
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 const databaseUrl = getRequiredTestDatabaseUrl();
@@ -207,5 +208,55 @@ test("database rejects a used token without a Telegram owner", async () => {
     );
   } finally {
     await deletePurchase(purchase.id);
+  }
+});
+
+test("a claim by the personal link keeps the account's current handle on the buyer", async () => {
+  const fixture = await createPurchaseAndToken();
+  const telegramUserId = createTestTelegramUserId();
+  const email = `tg-handle-${randomUUID()}@example.test`;
+  const [customer] = await client<{ id: string }[]>`
+    INSERT INTO customers (email, normalized_email, telegram_username)
+    VALUES (${email}, ${email}, '@typed_at_checkout')
+    RETURNING id
+  `;
+  assert.ok(customer);
+  await client`UPDATE purchases SET customer_id = ${customer.id} WHERE id = ${fixture.purchaseId}`;
+  const readHandle = async () => {
+    const [row] = await client<{ telegram_username: string | null }[]>`
+      SELECT telegram_username FROM customers WHERE id = ${customer.id}`;
+    return row?.telegram_username;
+  };
+  const claim = (telegramUsername: string) =>
+    claimTelegramAccessTokenRecordInDatabase({
+      claimedAt: "2026-08-08T12:00:00.000Z",
+      telegramUserId,
+      telegramUsername,
+      tokenHash: fixture.tokenHash,
+    });
+
+  try {
+    // The handle Telegram reports replaces the one typed at checkout.
+    assert.equal((await claim("joined_handle")).status, "claimed");
+    assert.equal(await readHandle(), "@joined_handle");
+
+    // The same account back with a new handle brings it; without one it erases nothing.
+    assert.equal((await claim("renamed_handle")).status, "already_claimed_by_user");
+    assert.equal(await readHandle(), "@renamed_handle");
+    assert.equal((await claim("")).status, "already_claimed_by_user");
+    assert.equal(await readHandle(), "@renamed_handle");
+
+    // Another account is refused and leaves the buyer alone.
+    const stranger = await claimTelegramAccessTokenRecordInDatabase({
+      claimedAt: "2026-08-08T12:00:00.000Z",
+      telegramUserId: `${telegramUserId}1`,
+      telegramUsername: "stranger_handle",
+      tokenHash: fixture.tokenHash,
+    });
+    assert.equal(stranger.status, "claimed_by_another_user");
+    assert.equal(await readHandle(), "@renamed_handle");
+  } finally {
+    await deletePurchase(fixture.purchaseId);
+    await client`DELETE FROM customers WHERE id = ${customer.id}`;
   }
 });

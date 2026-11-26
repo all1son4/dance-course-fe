@@ -26,6 +26,7 @@ import {
 } from "../purchase-alert";
 import type { StripePaymentWebhookResult } from "../sync";
 import { shouldRunPurchaseSuccessSideEffects } from "./eligibility";
+import { getPaidHubPeriodDays } from "./purchase-access";
 import { shouldSendPurchaseSideEffectForEnvironment } from "./runtime";
 
 export class TelegramAlertDeliveryUncertainError extends Error {
@@ -112,7 +113,13 @@ const buildAlertTextForPayment = async ({
       getKnownInstagram(purchaseId, paymentRecord),
     ]);
 
+  // Both a PaymentIntent and a Checkout Session carry the checkout's metadata.
+  const metadata =
+    (event.data.object as { metadata?: Stripe.Metadata | null }).metadata ?? {};
+
   return buildPurchaseAlertText({
+    campaign: metadata.campaign?.trim() || null,
+    paidHubPeriodDays: getPaidHubPeriodDays(metadata) ?? null,
     rejectedAccessReason,
     eventCreatedAtIso: toUtcIso(event.created * 1000),
     eventId: handledEvent.eventId,

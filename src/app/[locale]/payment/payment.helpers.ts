@@ -128,7 +128,6 @@ export type RenewalVerificationResponse = {
     country: string;
     email: string;
     fullName: string;
-    nickname: string;
     postalCode: string;
   } | null;
   errorCode?: string;

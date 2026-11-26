@@ -240,6 +240,55 @@ test("Hub purchase → invite in email and on the success page → join → remo
   });
 });
 
+test("a join keeps the handle Telegram reports on the buyer; none erases nothing", async (t) => {
+  stubTelegram(t);
+  await withHubChat(async (hubChatId) => {
+    const runId = randomUUID();
+    const buyers: string[] = [];
+    try {
+      // One buyer joins with a handle, the other with an account that has none.
+      for (const [telegramUserId, telegramUsername] of [
+        [OWNER, "fresh_handle"],
+        [STRANGER, ""],
+      ] as const) {
+        const purchase = await buyHub(hubChatId);
+        const email = `hub-handle-${buyers.length}-${runId}@example.test`;
+        const [customer] = await client<{ id: string }[]>`
+          INSERT INTO customers (email, normalized_email, telegram_username)
+          VALUES (${email}, ${email}, '@typed_long_ago') RETURNING id`;
+        assert.ok(customer);
+        buyers.push(customer.id);
+        await client`UPDATE purchases SET customer_id = ${customer.id}
+          WHERE id = ${purchase.purchaseId}`;
+        const paymentRecord = await findPaymentRecordByIntentIdFromDatabase(
+          purchase.paymentIntentId,
+        );
+        assert.ok(paymentRecord);
+        const [access] = (await ensureOnlineGroupAccessForPayment(paymentRecord)) ?? [];
+        assert.ok(access?.accessUrl);
+        assert.equal(
+          await syncOnlineGroupMembership({
+            chatId: hubChatId,
+            inviteLink: access.accessUrl,
+            membershipStatus: "joined",
+            telegramUserId,
+            telegramUsername,
+          }),
+          true,
+        );
+      }
+
+      const handles = await client<{ id: string; telegram_username: string | null }[]>`
+        SELECT id, telegram_username FROM customers WHERE id = ANY(${buyers}::uuid[])`;
+      const handleOf = new Map(handles.map((row) => [row.id, row.telegram_username]));
+      assert.equal(handleOf.get(buyers[0]!), "@fresh_handle");
+      assert.equal(handleOf.get(buyers[1]!), "@typed_long_ago");
+    } finally {
+      await client`DELETE FROM customers WHERE id = ANY(${buyers}::uuid[])`;
+    }
+  });
+});
+
 test("a different account cannot use the Hub invite", async (t) => {
   const calls = stubTelegram(t);
   await withHubChat(async (hubChatId) => {

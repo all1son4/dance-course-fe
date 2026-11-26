@@ -52,3 +52,16 @@ test("the boundary clamps to the last day when the earlier month is shorter", ()
     false,
   );
 });
+
+test("a cycle of the group recorded at 0 is a first step, not free access", () => {
+  // Prod, 2026-11-26: cycle 1.0 paid to Anna directly, recorded at 0 by the roster,
+  // then the first standalone Hub on Black Friday. Not a debut.
+  const hubDay = new Date("2026-11-26T20:19:29.000Z");
+  const cycleOne = { ...purchase("2026-05-23T21:40:17.000Z", 0), cohortId: "cycle-1.0" };
+  const hub = purchase("2026-11-26T20:19:29.000Z", 20000);
+  assert.equal(hasFreshmanAchievement([cycleOne, hub], hubDay), false);
+  // A recent cycle still makes a debut, and a cycle alone is no paid purchase.
+  const recentCycle = { ...purchase("2026-11-19", 0), cohortId: "cycle-3.0" };
+  assert.equal(hasFreshmanAchievement([recentCycle, hub], hubDay), true);
+  assert.equal(hasFreshmanAchievement([cycleOne], hubDay), false);
+});

@@ -5,6 +5,7 @@ import {
   isInspirationHubOfferId,
   isOnlineGroupLibraryOfferId,
 } from "@/constants/sellable-products";
+import { BLACK_FRIDAY_CAMPAIGN } from "@/lib/black-friday";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { pluralize } from "@/lib/plural";
 import {
@@ -125,8 +126,8 @@ const getLanguageLine = ({
 };
 
 /** In days, the way the site and the purchase email state the term. */
-const getAccessDurationLabel = (offerId: string) => {
-  const durationDays = getOfferAccessDurationDaysByOfferId(offerId);
+const getAccessDurationLabel = (offerId: string, paidDays: number | null = null) => {
+  const durationDays = paidDays ?? getOfferAccessDurationDaysByOfferId(offerId);
 
   if (!durationDays || durationDays <= 0) {
     return "";
@@ -186,6 +187,14 @@ const getAccessWorkflowLabel = (workflow: string) => {
     return "Продление онлайн-группы";
   }
 
+  if (workflow === "telegram-inspiration-hub") {
+    return "Inspiration Hub";
+  }
+
+  if (workflow === "telegram-hub-renewal") {
+    return "Продление Inspiration Hub";
+  }
+
   if (workflow === "manual-admin") {
     return "Ручное добавление админом";
   }
@@ -197,7 +206,10 @@ const getAccessWorkflowLabel = (workflow: string) => {
   return workflow || "—";
 };
 
-const getAccessFieldValue = (paymentRecord: PaymentRecordSnapshot) => {
+const getAccessFieldValue = (
+  paymentRecord: PaymentRecordSnapshot,
+  paidHubPeriodDays: number | null,
+) => {
   const workflow = paymentRecord.access_workflow.trim();
   const workflowLabel = getAccessWorkflowLabel(workflow);
 
@@ -211,9 +223,51 @@ const getAccessFieldValue = (paymentRecord: PaymentRecordSnapshot) => {
     return lessonLength ? `${workflowLabel}, ${lessonLength}` : workflowLabel;
   }
 
+  // A Hub period runs from the payment or right after the current one, never from
+  // joining the chat; its length is the one the payment was sold with.
+  if (isInspirationHubOfferId(paymentRecord.offer_id)) {
+    const durationLabel = getAccessDurationLabel(
+      paymentRecord.offer_id,
+      paidHubPeriodDays,
+    );
+
+    return durationLabel ? `${workflowLabel}, ${durationLabel}` : workflowLabel;
+  }
+
   const durationLabel = getAccessDurationLabel(paymentRecord.offer_id);
 
   return durationLabel ? `${workflowLabel}, ${durationLabel} после входа` : workflowLabel;
+};
+
+/**
+ * What the campaign changed on this payment, from the mark the payment route put on
+ * it at checkout - so the line is there for a campaign sale whenever the alert is
+ * sent, and never for a sale made outside the window.
+ */
+const getCampaignLine = ({
+  amountLabel,
+  campaign,
+  offerId,
+  paidHubPeriodDays,
+}: {
+  amountLabel: string;
+  campaign: string | null;
+  offerId: string;
+  paidHubPeriodDays: number | null;
+}) => {
+  if (campaign !== BLACK_FRIDAY_CAMPAIGN) {
+    return null;
+  }
+
+  if (isInspirationHubOfferId(offerId)) {
+    const regularDays = getOfferAccessDurationDaysByOfferId(offerId);
+
+    return paidHubPeriodDays && regularDays && paidHubPeriodDays !== regularDays
+      ? `🏷 Чёрная пятница: ${getAccessDurationLabel(offerId, paidHubPeriodDays)} вместо ${regularDays} за полную цену`
+      : "🏷 Чёрная пятница";
+  }
+
+  return amountLabel ? `🏷 Чёрная пятница: цена акции ${amountLabel}` : "🏷 Чёрная пятница";
 };
 
 type PurchaseProcessingState =
@@ -760,6 +814,7 @@ export const buildPurchaseAlertReplyMarkup = ({
  * what was bought. The technical block is collapsed; Telegram expands it on tap.
  */
 export const buildPurchaseAlertText = ({
+  campaign = null,
   eventCreatedAtIso,
   eventId,
   eventType,
@@ -767,9 +822,12 @@ export const buildPurchaseAlertText = ({
   knownInstagram = null,
   onlineGroupAccessStates,
   processedAtIso,
+  paidHubPeriodDays = null,
   paymentRecord,
   rejectedAccessReason = null,
 }: {
+  /** The campaign mark of the payment (`metadata.campaign`), if any. */
+  campaign?: string | null;
   eventCreatedAtIso: string;
   eventId: string;
   eventType: string;
@@ -777,6 +835,8 @@ export const buildPurchaseAlertText = ({
   /** The buyer's Instagram from earlier purchases, for checkouts that did not ask (renewals). */
   knownInstagram?: string | null;
   onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
+  /** The Hub length the payment was sold with (`metadata.hub_period_days`), if set. */
+  paidHubPeriodDays?: number | null;
   processedAtIso: string;
   paymentRecord: PaymentRecordSnapshot;
   /** Set when the Hub access job of this purchase was rejected. */
@@ -811,6 +871,12 @@ export const buildPurchaseAlertText = ({
         ]
       : []),
   ];
+  const campaignLine = getCampaignLine({
+    amountLabel,
+    campaign,
+    offerId: paymentRecord.offer_id,
+    paidHubPeriodDays,
+  });
   const processingState = getWorstProcessingState(statuses);
   // A sale after sales were closed always asks for a look, even when every
   // step went through.
@@ -860,7 +926,8 @@ export const buildPurchaseAlertText = ({
         ]
       : []),
     "",
-    `🔑 ${escapeTelegramHtml(getAccessFieldValue(paymentRecord))}`,
+    `🔑 ${escapeTelegramHtml(getAccessFieldValue(paymentRecord, paidHubPeriodDays))}`,
+    ...(campaignLine ? [escapeTelegramHtml(campaignLine)] : []),
     `🌐 ${escapeTelegramHtml(
       getLanguageLine({ checkoutLocale, lessonLanguage: paymentRecord.lesson_language }),
     )}`,
