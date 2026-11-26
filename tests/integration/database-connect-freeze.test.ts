@@ -23,6 +23,9 @@ import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 
 const upstream = new URL(getRequiredTestDatabaseUrl());
 const HOUR_MS = 3_600_000;
+// Extra connections are held this long: a TLS + SCRAM handshake takes tens of ms even
+// in-region, and a slow CI runner must still finish the request before they open.
+const SLOW_HANDSHAKE_MS = 500;
 const CONNECT_TIMEOUT_SECONDS = 10;
 
 /** What the watch hands to Next's after(): the platform keeps the instance for these. */
@@ -143,8 +146,7 @@ after(async () => {
 test("a request leaves connect attempts in flight after its response", async () => {
   const proxy = await createDatabaseProxy();
   proxies.push(proxy);
-  // A new connection takes a TLS + SCRAM handshake, tens of ms even in-region.
-  proxy.setHold((index) => (index === 0 ? "pass" : 50));
+  proxy.setHold((index) => (index === 0 ? "pass" : SLOW_HANDSHAKE_MS));
   const client = createClient(proxy.url);
   try {
     await answerCalendarShapedRequest(client);
@@ -191,7 +193,7 @@ test("kept awake until its attempts settle, the instance answers the next reques
   proxies.push(proxy);
   const clock = createSuspendableClock();
   const client = createClient(proxy.url, clock.timers);
-  proxy.setHold((index) => (index === 0 ? "pass" : 50));
+  proxy.setHold((index) => (index === 0 ? "pass" : SLOW_HANDSHAKE_MS));
   kept.length = 0;
 
   try {
