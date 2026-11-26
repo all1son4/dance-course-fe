@@ -1,4 +1,4 @@
-export const PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY = "payment-checkout-draft:v1";
+export const PAYMENT_CHECKOUT_DRAFT_STORAGE_KEY = "payment-checkout-draft:v2";
 
 export const trimTrailingSlash = (value: string) => value.replace(/\/+$/u, "");
 

@@ -873,10 +873,14 @@
         "hint": "Your access link and receipt will arrive here",
         "suggestion": "Did you mean"
       },
+      "instagram": {
+        "label": "Instagram username",
+        "placeholder": "yournickname",
+        "hint": "So we can reach you. Your access arrives by email"
+      },
       "nickname": {
         "label": "Telegram username",
-        "placeholder": "yournickname",
-        "hint": "We'll use it to give you access in Telegram"
+        "placeholder": "yournickname"
       },
       "address": {
         "label": "Address",
@@ -1297,7 +1301,7 @@
       },
       "2": {
         "title": "2. Categories we use",
-        "text": "The website uses the following storage technologies:\na) Necessary (always active):\n- `NEXT_LOCALE` cookie (our website) to remember the selected interface language, up to 12 months;\n- `cookie-consent:v2` in localStorage (our website) to store your cookie choice, kept until you change the choice or clear browser data;\n- technical Stripe cookies (for example `__stripe_mid`, `__stripe_sid`) when the payment form is used.\n- the Telegram login script (telegram.org) is loaded only on the checkout page when you confirm your Telegram account; during that authorization Telegram may use its own cookies on its domain.\nb) Functional (consent-based):\n- `payment-checkout-draft:v1` in sessionStorage for checkout draft recovery, kept until the tab is closed or storage is cleared.\nc) Analytics (consent-based):\n- Mixpanel stores a pseudonymous browser identifier and consent marker in localStorage and may temporarily use IndexedDB for session replay. It measures page views, traffic source, device/browser, approximate location, scroll and selected product interactions. Session recordings mask all text and form inputs and are disabled on admin and payment pages. Analytics is processed using Mixpanel's EU data residency.\n- `analytics-event:*` entries in sessionStorage (our website) — short markers so the same event is not counted twice in one visit; kept until the tab is closed."
+        "text": "The website uses the following storage technologies:\na) Necessary (always active):\n- `NEXT_LOCALE` cookie (our website) to remember the selected interface language, up to 12 months;\n- `cookie-consent:v2` in localStorage (our website) to store your cookie choice, kept until you change the choice or clear browser data;\n- technical Stripe cookies (for example `__stripe_mid`, `__stripe_sid`) when the payment form is used.\n- the Telegram login script (telegram.org) is loaded only on the checkout page when you confirm your Telegram account; during that authorization Telegram may use its own cookies on its domain.\nb) Functional (consent-based):\n- `payment-checkout-draft:v2` in sessionStorage for checkout draft recovery, kept until the tab is closed or storage is cleared.\nc) Analytics (consent-based):\n- Mixpanel stores a pseudonymous browser identifier and consent marker in localStorage and may temporarily use IndexedDB for session replay. It measures page views, traffic source, device/browser, approximate location, scroll and selected product interactions. Session recordings mask all text and form inputs and are disabled on admin and payment pages. Analytics is processed using Mixpanel's EU data residency.\n- `analytics-event:*` entries in sessionStorage (our website) — short markers so the same event is not counted twice in one visit; kept until the tab is closed."
       },
       "3": {
         "title": "3. Legal basis",
@@ -1305,7 +1309,7 @@
       },
       "4": {
         "title": "4. Storage period",
-        "text": "Storage duration depends on the technology:\n- `NEXT_LOCALE` — up to 12 months;\n- `cookie-consent:v2` (localStorage) — until you change your choice or clear browser data;\n- `payment-checkout-draft:v1` (sessionStorage) — until the tab is closed;\n- `analytics-event:*` (sessionStorage) — until the tab is closed;\n- Telegram cookies during authorization — for the periods defined by Telegram's policy;\n- Stripe cookies and Mixpanel analytics data — according to each provider's retention policy. Withdrawing analytics consent clears the Mixpanel identifier and stops future collection on this device."
+        "text": "Storage duration depends on the technology:\n- `NEXT_LOCALE` — up to 12 months;\n- `cookie-consent:v2` (localStorage) — until you change your choice or clear browser data;\n- `payment-checkout-draft:v2` (sessionStorage) — until the tab is closed;\n- `analytics-event:*` (sessionStorage) — until the tab is closed;\n- Telegram cookies during authorization — for the periods defined by Telegram's policy;\n- Stripe cookies and Mixpanel analytics data — according to each provider's retention policy. Withdrawing analytics consent clears the Mixpanel identifier and stops future collection on this device."
       },
       "5": {
         "title": "5. How to change or withdraw consent",

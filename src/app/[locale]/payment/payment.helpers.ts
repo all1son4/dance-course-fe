@@ -193,9 +193,13 @@ export const getVisiblePaymentInputs = ({
   isRenewalCheckout: boolean;
   showsLessonLanguage: boolean;
 }): PaymentInputConfig[] => {
-  const productInputs = showsLessonLanguage
-    ? PAYMENT_INPUTS
-    : PAYMENT_INPUTS.filter((inputConfig) => inputConfig.name !== "lessonLanguage");
+  // One handle per checkout: Telegram where it is verified, Instagram otherwise.
+  const hiddenContactField = isRenewalCheckout ? "instagram" : "nickname";
+  const productInputs = PAYMENT_INPUTS.filter(
+    (inputConfig) =>
+      inputConfig.name !== hiddenContactField &&
+      (showsLessonLanguage || inputConfig.name !== "lessonLanguage"),
+  );
 
   if (!isRenewalCheckout) {
     return productInputs;

@@ -8,6 +8,7 @@ export type PaymentRecordSnapshot = {
   customer_email: string;
   customer_full_name: string;
   customer_nickname: string;
+  customer_instagram: string;
   customer_country: string;
   latest_event_id: string;
   latest_event_type: string;
@@ -58,6 +59,7 @@ export const createEmptyPaymentRecord = (): PaymentRecordSnapshot => ({
   customer_email: "",
   customer_full_name: "",
   customer_nickname: "",
+  customer_instagram: "",
   customer_country: "",
   latest_event_id: "",
   latest_event_type: "",

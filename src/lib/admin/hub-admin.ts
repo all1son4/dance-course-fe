@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 
 import { INSPIRATION_HUB_PRODUCT_ID } from "@/constants/sellable-products";
+import { findBuyerContactsByTelegramUserIds } from "@/db/buyer-contacts";
 import { getDatabase } from "@/db/client";
 import {
   findInspirationHubChatId,
@@ -77,6 +78,7 @@ export async function getHubAdminOverview({
         paymentIntentId: purchases.paymentIntentId,
         customerName: purchases.customerFullNameSnapshot,
         customerEmail: purchases.customerEmailSnapshot,
+        customerInstagram: purchases.customerInstagramUsernameSnapshot,
         offerLabel: purchases.offerLabelSnapshot,
         offerId: purchases.offerExternalId,
         amountMinor: purchases.amountMinor,
@@ -107,7 +109,7 @@ export async function getHubAdminOverview({
         .filter((id): id is string => !!id),
     ),
   ];
-  const [[chat], usernames, ended] = await Promise.all([
+  const [[chat], usernames, ended, contacts] = await Promise.all([
     hubChatId
       ? db
           .select({ title: telegramChats.title })
@@ -130,6 +132,11 @@ export async function getHubAdminOverview({
           [] as { telegramUserId: string; telegramUsername: string | null }[],
         ),
     listEndedHubAccessRights(db, { checkedAt: now, hubChatId }),
+    // Name and Instagram help the owner recognise a person the Hub only knows by Telegram.
+    findBuyerContactsByTelegramUserIds(db, [
+      ...owners,
+      ...preview.removals.map((removal) => removal.telegramUserId),
+    ]),
   ]);
   const usernameOf = new Map(
     usernames.map((row) => [row.telegramUserId, row.telegramUsername]),
@@ -141,6 +148,8 @@ export async function getHubAdminOverview({
       paymentIntentId: row.paymentIntentId,
       customerName: row.customerName ?? "",
       customerEmail: row.customerEmail ?? "",
+      instagram:
+        row.customerInstagram || (owner && contacts.get(owner)?.instagram) || null,
       offerLabel: row.offerLabel ?? "",
       amountMinor: row.amountMinor,
       currency: row.currency,
@@ -184,7 +193,11 @@ export async function getHubAdminOverview({
     nextCronAt: nextCronAt.toISOString(),
     preview: {
       at: preview.at,
-      removals: preview.removals,
+      removals: preview.removals.map((removal) => ({
+        ...removal,
+        fullName: contacts.get(removal.telegramUserId)?.fullName ?? null,
+        instagram: contacts.get(removal.telegramUserId)?.instagram ?? null,
+      })),
     },
     periods,
   };

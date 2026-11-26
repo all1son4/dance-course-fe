@@ -2,6 +2,7 @@ import type Stripe from "stripe";
 
 import { SELLABLE_PRODUCTS_LIST } from "@/constants/sellable-products";
 import { findPaymentRecordByIntentIdFromDatabase } from "@/db/payment-records";
+import { normalizeInstagramUsername } from "@/lib/checkout/payment.constants";
 import type { PaymentRecordSnapshot } from "@/lib/payment-record";
 import { logSafeError } from "@/lib/safe-error-log";
 import {
@@ -54,6 +55,7 @@ const PAYMENT_METADATA_KEYS = {
   customerCity: ["customer_city", "customerCity", "city"],
   customerCountry: ["customer_country", "customerCountry", "country"],
   customerFullName: ["customer_full_name", "customerFullName", "full_name", "fullName"],
+  customerInstagram: ["customer_instagram", "customerInstagram", "instagram"],
   customerNickname: [
     "customer_nickname",
     "customerNickname",
@@ -89,6 +91,13 @@ const PAYMENT_METADATA_KEYS = {
   telegramUsername: ["telegram_username", "telegramUsername"],
 } as const;
 const CHECKOUT_CUSTOM_FIELD_KEYS = {
+  customerInstagram: [
+    "instagram",
+    "instagramusername",
+    "instagram_username",
+    "customerinstagram",
+    "customer_instagram",
+  ],
   customerNickname: [
     "telegram",
     "telegramusername",
@@ -147,6 +156,7 @@ type ResolvedCustomerDetails = {
   country: string;
   email: string;
   fullName: string;
+  instagram: string;
   lessonLanguage: string;
   nickname: string;
   postalCode: string;
@@ -348,11 +358,15 @@ const shouldLookupCheckoutSession = (paymentIntent: Stripe.PaymentIntent) => {
     return true;
   }
 
+  // A checkout sends one handle: Telegram (renewals and older intents) or Instagram.
+  const contactHandle =
+    trimString(metadata.customer_nickname) || trimString(metadata.customer_instagram);
+
   return [
     metadata.checkout_session_id,
     metadata.customer_country,
     metadata.customer_full_name,
-    metadata.customer_nickname,
+    contactHandle,
     metadata.offer_id,
     metadata.product_id,
   ].some((value) => !trimString(value));
@@ -557,6 +571,17 @@ const resolveRecordCustomerNickname = (context: PaymentRecordMappingContext): st
   context.existingRecord?.customer_nickname ||
   "";
 
+const resolveRecordCustomerInstagram = (context: PaymentRecordMappingContext): string =>
+  normalizeInstagramUsername(
+    getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerInstagram) ||
+      getCustomFieldValue(
+        context.checkoutSession,
+        CHECKOUT_CUSTOM_FIELD_KEYS.customerInstagram,
+      ),
+  ) ||
+  context.existingRecord?.customer_instagram ||
+  "";
+
 const resolveRecordCustomerPostalCode = (context: PaymentRecordMappingContext): string =>
   getContextMetadataValue(context, PAYMENT_METADATA_KEYS.customerPostalCode) ||
   trimString(context.checkoutSession?.customer_details?.address?.postal_code) ||
@@ -580,6 +605,7 @@ const resolveCustomerDetails = (
   country: resolveRecordCustomerCountry(context),
   email: resolveRecordCustomerEmail(context),
   fullName: resolveRecordCustomerFullName(context),
+  instagram: resolveRecordCustomerInstagram(context),
   lessonLanguage: resolveRecordLessonLanguage(context),
   nickname: resolveRecordCustomerNickname(context),
   postalCode: resolveRecordCustomerPostalCode(context),
@@ -688,6 +714,7 @@ const createPaymentRecord = ({
     customer_country: customer.country,
     customer_email: customer.email,
     customer_full_name: customer.fullName,
+    customer_instagram: customer.instagram,
     customer_nickname: customer.nickname,
     customer_postal_code: customer.postalCode,
     checkout_session_id: checkout.checkoutSessionId,

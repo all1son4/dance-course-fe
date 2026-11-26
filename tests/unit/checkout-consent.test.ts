@@ -28,8 +28,8 @@ const VALID_CUSTOMER_DATA = {
   country: "pl",
   email: " Buyer@Example.com ",
   fullName: " Anna Test ",
+  instagram: "anna.test",
   lessonLanguage: "EN",
-  nickname: "@anna_test",
   postalCode: " 00-001 ",
 };
 
@@ -37,6 +37,7 @@ test("[BEH-CHECKOUT-01] validates the same customer fields and four agreements o
   const result = validateCheckoutCustomerAndConsent({
     agreements: ACCEPTED_AGREEMENTS,
     checkoutLocale: "en",
+    contactField: "instagram",
     customerData: VALID_CUSTOMER_DATA,
   });
 
@@ -53,10 +54,52 @@ test("[BEH-CHECKOUT-01] validates the same customer fields and four agreements o
     country: "PL",
     email: "Buyer@Example.com",
     fullName: "Anna Test",
+    instagram: "anna.test",
     lessonLanguage: "en",
-    nickname: "@anna_test",
+    nickname: "",
     postalCode: "00-001",
   });
+});
+
+test("a renewal is validated on its Telegram handle, a regular checkout on Instagram", () => {
+  const renewalData = { ...VALID_CUSTOMER_DATA, instagram: "", nickname: "@anna_test" };
+
+  assert.equal(
+    validateCheckoutCustomerAndConsent({
+      agreements: ACCEPTED_AGREEMENTS,
+      checkoutLocale: "en",
+      contactField: "nickname",
+      customerData: renewalData,
+    }).valid,
+    true,
+  );
+  assert.deepEqual(
+    validateCheckoutCustomerAndConsent({
+      agreements: ACCEPTED_AGREEMENTS,
+      checkoutLocale: "en",
+      contactField: "instagram",
+      customerData: renewalData,
+    }),
+    { errorCode: "invalid_customer_data", valid: false },
+  );
+});
+
+test("a page opened before the Instagram field still renews", () => {
+  const oldPageData: Record<string, unknown> = {
+    ...VALID_CUSTOMER_DATA,
+    nickname: "@anna_test",
+  };
+  delete oldPageData.instagram;
+
+  assert.equal(
+    validateCheckoutCustomerAndConsent({
+      agreements: ACCEPTED_AGREEMENTS,
+      checkoutLocale: "en",
+      contactField: "nickname",
+      customerData: oldPageData,
+    }).valid,
+    true,
+  );
 });
 
 test("rejects missing consent and invalid customer input", () => {
@@ -70,6 +113,7 @@ test("rejects missing consent and invalid customer input", () => {
           [fieldName]: false,
         },
         checkoutLocale: "en",
+        contactField: "instagram",
         customerData: VALID_CUSTOMER_DATA,
       }),
       {
@@ -83,6 +127,7 @@ test("rejects missing consent and invalid customer input", () => {
     validateCheckoutCustomerAndConsent({
       agreements: ACCEPTED_AGREEMENTS,
       checkoutLocale: "en",
+      contactField: "instagram",
       customerData: {
         ...VALID_CUSTOMER_DATA,
         email: "not-an-email",
@@ -97,6 +142,7 @@ test("rejects missing consent and invalid customer input", () => {
     validateCheckoutCustomerAndConsent({
       agreements: ACCEPTED_AGREEMENTS,
       checkoutLocale: "en",
+      contactField: "instagram",
       customerData: {
         ...VALID_CUSTOMER_DATA,
         fullName: 42,

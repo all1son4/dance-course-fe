@@ -18,7 +18,7 @@ test("blocks Stripe until the authoritative catalog is ready", () => {
     country: "PL",
     email: "buyer@example.com",
     fullName: "Anna Test",
-    nickname: "@anna_test",
+    instagram: "anna.test",
     postalCode: "00-001",
   };
   store.agreements = Object.fromEntries(

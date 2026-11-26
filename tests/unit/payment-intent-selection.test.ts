@@ -41,7 +41,7 @@ test("the payment API rejects unknown product and tariff IDs before contacting S
             country: "PL",
             email: "buyer@example.com",
             fullName: "Anna Test",
-            nickname: "@anna_test",
+            instagram: "anna.test",
             postalCode: "00-001",
           },
         }),

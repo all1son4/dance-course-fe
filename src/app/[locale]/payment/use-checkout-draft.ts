@@ -128,6 +128,7 @@ export const useCheckoutDraft = ({
     paymentStore.customerData.city,
     paymentStore.customerData.email,
     paymentStore.customerData.fullName,
+    paymentStore.customerData.instagram,
     paymentStore.customerData.lessonLanguage,
     paymentStore.customerData.nickname,
     paymentStore.customerData.postalCode,
