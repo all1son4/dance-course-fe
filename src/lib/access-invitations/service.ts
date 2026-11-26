@@ -57,11 +57,11 @@ import {
   revokeTelegramChatInviteLink,
 } from "@/lib/telegram/bot-api";
 import { isActiveTelegramMember } from "@/lib/telegram/chat-membership";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
 import {
-  ensureOnlineGroupAccessForPayment,
   recordOnlineGroupMemberPresent,
   syncOnlineGroupMembership,
-} from "@/lib/telegram/online-group-access";
+} from "@/lib/telegram/online-group-membership";
 import { DAY_MS } from "@/lib/time";
 
 import { buildInvitationUrl } from "./link";

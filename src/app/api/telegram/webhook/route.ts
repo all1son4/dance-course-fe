@@ -28,7 +28,7 @@ import {
   getTelegramWebhookSecret,
   isTelegramBotConfigured,
 } from "@/lib/telegram/config";
-import { syncOnlineGroupMembership } from "@/lib/telegram/online-group-access";
+import { syncOnlineGroupMembership } from "@/lib/telegram/online-group-membership";
 
 import {
   BOT_COPY,
