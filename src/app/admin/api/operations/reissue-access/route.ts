@@ -9,14 +9,10 @@ import {
 } from "@/lib/http-security";
 import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
-import {
-  ensureTelegramAccessLinkForPayment,
-  isStandardTelegramLinkPayment,
-} from "@/lib/telegram/access";
-import {
-  ensureOnlineGroupAccessForPayment,
-  type OnlineGroupAccessKey,
-} from "@/lib/telegram/online-group-access";
+import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
+import { isStandardTelegramLinkPayment } from "@/lib/telegram/channel-access-rules";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
+import type { OnlineGroupAccessKey } from "@/lib/telegram/online-group-access-records";
 
 export const runtime = "nodejs";
 

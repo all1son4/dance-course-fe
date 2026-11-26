@@ -12,10 +12,8 @@ import {
   shouldShowOfferToBuyer,
 } from "@/lib/sellable-products-localization";
 import { getResolvedCheckoutLocale } from "@/lib/stripe-checkout";
-import {
-  ensureTelegramAccessLinkForPayment,
-  isStandardTelegramLinkPayment,
-} from "@/lib/telegram/access";
+import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
+import { isStandardTelegramLinkPayment } from "@/lib/telegram/channel-access-rules";
 import {
   getOfferAccessDurationDaysByOfferId,
   getOfferMetadataById,

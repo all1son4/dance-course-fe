@@ -22,7 +22,7 @@ import {
 import { enqueueDueCohortGraceReminders } from "@/lib/online-group/cohort-admin";
 import { getScheduledPolishTerminalReminderPeriod } from "@/lib/polish-terminal-sales";
 import { logSafeError } from "@/lib/safe-error-log";
-import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/access";
+import { revokeExpiredTelegramChannelAccess } from "@/lib/telegram/channel-access-expiry";
 import { revokeExpiredOnlineGroupHubAccess } from "@/lib/telegram/online-group-hub-expiry";
 
 export const runtime = "nodejs";

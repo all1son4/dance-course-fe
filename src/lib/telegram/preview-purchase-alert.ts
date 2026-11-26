@@ -11,7 +11,7 @@ import {
 
 import { sendTelegramMessage } from "./bot-api";
 import { getTelegramAlertsBotToken, getTelegramAlertsChatId } from "./config";
-import type { OnlineGroupAccessState } from "./online-group-access";
+import type { OnlineGroupAccessState } from "./online-group-access-records";
 
 loadEnvConfig(process.cwd(), true);
 

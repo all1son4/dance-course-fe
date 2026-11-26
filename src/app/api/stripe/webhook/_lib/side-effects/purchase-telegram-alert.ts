@@ -16,7 +16,7 @@ import { isOnlineGroupAccessOfferId } from "@/lib/telegram/offer-access";
 import {
   listOnlineGroupAccessStatesForPayment,
   type OnlineGroupAccessState,
-} from "@/lib/telegram/online-group-access";
+} from "@/lib/telegram/online-group-access-records";
 import { toUtcIso } from "@/lib/time";
 
 import {

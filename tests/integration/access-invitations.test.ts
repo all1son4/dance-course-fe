@@ -852,7 +852,7 @@ test("leaving the chat is not «in the chat»; «Проверить в Telegram�
 
   // The join by the link, then the leave, as the bot reports them.
   const { syncOnlineGroupMembership } =
-    await import("@/lib/telegram/online-group-access");
+    await import("@/lib/telegram/online-group-membership");
   await syncOnlineGroupMembership({
     chatId: cohort.mainChatId,
     inviteLink: result.lines[0].url,
