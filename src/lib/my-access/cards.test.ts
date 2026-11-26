@@ -76,15 +76,31 @@ test("a Hub ending within 7 days offers the renewal and comes first", () => {
   assert.equal(cards[1]?.status.key, "lifetime");
 });
 
-test("a running Hub can be renewed any time; only the last week is urgent", () => {
-  const cards = cardsOf({
-    purchases: [purchase({ id: "hub" })],
-    rights: [hubPeriod("hub", "2026-12-20T11:00:00.000Z", "2027-02-14T11:00:00.000Z")],
-  });
+test("a running Hub offers the renewal from half its term; only the last week is urgent", () => {
+  const cardOf = (startsAt: string, expiresAt: string) =>
+    cardsOf({
+      purchases: [purchase({ id: "hub" })],
+      rights: [hubPeriod("hub", startsAt, expiresAt)],
+    })[0];
 
-  assert.deepEqual(cards[0]?.action, { href: HUB_RENEWAL_HREF, key: "renewHub" });
-  assert.equal(cards[0]?.urgency, 1);
-  assert.equal(cards[0]?.chip, "active");
+  // 56 days from 20.12: day 10 of 56, before half — no button, nothing urgent.
+  const early = cardOf("2026-12-20T11:00:00.000Z", "2027-02-14T11:00:00.000Z");
+  assert.equal(early?.action, undefined);
+  assert.equal(early?.urgency, 1);
+  assert.equal(early?.chip, "active");
+
+  // 56 days from 02.12: day 28 — exactly half, the button is there, still calm.
+  const half = cardOf("2026-12-02T10:00:00.000Z", "2027-01-27T10:00:00.000Z");
+  assert.deepEqual(half?.action, { href: HUB_RENEWAL_HREF, key: "renewHub" });
+  assert.equal(half?.urgency, 1);
+  assert.equal(half?.chip, "active");
+
+  // The first Black Friday Hub (112 days, 26.11 → 18.03): half is 22.01, so on
+  // 30.12 there is no button yet.
+  assert.equal(
+    cardOf("2026-11-26T20:19:29.000Z", "2027-03-18T20:19:29.000Z")?.action,
+    undefined,
+  );
 });
 
 test("a renewed Hub shows the paid end and no urgent renewal", () => {
