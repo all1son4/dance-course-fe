@@ -12,29 +12,38 @@ import {
 } from "@/lib/payment-record";
 import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access-records";
 
-// Every access workflow the webhook can persist, from the catalogue plus the
-// fallbacks the payment sync assigns by offer code. Adding one to the app
-// without teaching the alert about it must fail here.
+// Every access workflow the webhook can persist: the catalogue's own (read from it,
+// so a new offer cannot slip past) plus the fallbacks the payment sync assigns by
+// offer code. Adding one to the app without teaching the alert about it must fail here.
 const RUNTIME_ACCESS_WORKFLOWS = [
-  "manual-admin",
-  "telegram-bot",
-  "telegram-channel",
-  "telegram-channel-lifetime",
-  "telegram-chat",
-  "telegram-online-group",
-  "telegram-renewal",
-  "with-mentor",
+  ...new Set([
+    "manual-admin",
+    "telegram-bot",
+    "telegram-channel",
+    "telegram-chat",
+    "telegram-renewal",
+    "with-mentor",
+    ...SELLABLE_PRODUCTS_LIST.flatMap((product) =>
+      product.offers.flatMap((offer) => offer.accessWorkflow ?? []),
+    ),
+  ]),
 ];
 
 const PAYMENT_INTENT_ID = "pi_preview00000000000000";
 
 const renderAlert = ({
+  campaign,
   onlineGroupAccessStates,
+  paidHubPeriodDays,
   ...overrides
 }: Partial<PaymentRecordSnapshot> & {
+  campaign?: string | null;
   onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
+  paidHubPeriodDays?: number | null;
 }) =>
   buildPurchaseAlertText({
+    campaign,
+    paidHubPeriodDays,
     eventCreatedAtIso: "2026-09-07T17:49:05.000Z",
     eventId: "evt_preview0000000000000",
     eventType: "payment_intent.succeeded",
@@ -129,6 +138,69 @@ test("[BEH-TG-03] states the access term each offer actually grants", () => {
       offer_id: "off_R6vN2cH9sW4y",
     }),
     "Онлайн-группа",
+  );
+  // The Hub period starts at the payment or after the current one, not on joining.
+  assert.equal(
+    accessLine({
+      access_workflow: "telegram-hub-renewal",
+      offer_id: "off_inspiration_hub_renewal",
+    }),
+    "Продление Inspiration Hub, 56 дней",
+  );
+});
+
+// The first standalone Hub sale (2026-11-26): full price inside Black Friday, the
+// payment marked `campaign=black-friday-2026`, `hub_period_days=112`.
+const blackFridayHub = {
+  access_workflow: "telegram-inspiration-hub",
+  amount: "20000",
+  offer_id: "off_inspiration_hub_access",
+  offer_label: "Полная цена",
+  onlineGroupAccessStates: [
+    { accessKey: "inspiration-hub" as const, status: "token_issued" as const },
+  ],
+  product_id: "prd_inspiration_hub",
+  product_title: "Inspiration Hub",
+};
+const campaignLines = (alertText: string) =>
+  asPlainText(alertText).match(/^🏷 .+$/gmu) ?? [];
+
+test("a Black Friday Hub states its real length and the campaign", () => {
+  const alertText = renderAlert({
+    ...blackFridayHub,
+    campaign: "black-friday-2026",
+    paidHubPeriodDays: 112,
+  });
+
+  assert.match(asPlainText(alertText), /^🔑 Inspiration Hub, 112 дней$/mu);
+  assert.deepEqual(campaignLines(alertText), [
+    "🏷 Чёрная пятница: 112 дней вместо 56 за полную цену",
+  ]);
+});
+
+test("a Black Friday tutorial states the campaign price", () => {
+  const alertText = renderAlert({
+    amount: "4500",
+    campaign: "black-friday-2026",
+    lesson_language: "ru",
+    offer_id: "off_3HbC8xP2mV6q",
+  });
+
+  assert.deepEqual(campaignLines(alertText), [
+    "🏷 Чёрная пятница: цена акции 45\u00a0PLN",
+  ]);
+});
+
+test("the campaign line follows the payment's mark, not the date the alert is sent", () => {
+  // A sale outside the window carries no mark: the regular 56 days, no campaign line,
+  // whenever the alert goes out.
+  const regular = renderAlert(blackFridayHub);
+  assert.match(asPlainText(regular), /^🔑 Inspiration Hub, 56 дней$/mu);
+  assert.deepEqual(campaignLines(regular), []);
+  // An unknown campaign is not reported as Black Friday.
+  assert.deepEqual(
+    campaignLines(renderAlert({ ...blackFridayHub, campaign: "other" })),
+    [],
   );
 });
 
