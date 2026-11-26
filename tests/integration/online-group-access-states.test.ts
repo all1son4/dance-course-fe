@@ -6,7 +6,7 @@ import postgres from "postgres";
 
 import { SELLABLE_PRODUCTS } from "@/constants/sellable-products";
 import { getDatabaseClient } from "@/db/client";
-import { listOnlineGroupAccessStatesForPayment } from "@/lib/telegram/online-group-access";
+import { listOnlineGroupAccessStatesForPayment } from "@/lib/telegram/online-group-access-records";
 
 import { getRequiredTestDatabaseUrl } from "../helpers/test-database";
 

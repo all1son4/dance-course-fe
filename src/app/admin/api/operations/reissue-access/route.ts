@@ -11,10 +11,8 @@ import { consumeRequestRateLimit } from "@/lib/rate-limit";
 import { logSafeError } from "@/lib/safe-error-log";
 import { ensureTelegramAccessLinkForPayment } from "@/lib/telegram/access";
 import { isStandardTelegramLinkPayment } from "@/lib/telegram/channel-access-rules";
-import {
-  ensureOnlineGroupAccessForPayment,
-  type OnlineGroupAccessKey,
-} from "@/lib/telegram/online-group-access";
+import { ensureOnlineGroupAccessForPayment } from "@/lib/telegram/online-group-access";
+import type { OnlineGroupAccessKey } from "@/lib/telegram/online-group-access-records";
 
 export const runtime = "nodejs";
 

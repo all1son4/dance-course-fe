@@ -10,7 +10,7 @@ import {
   createEmptyPaymentRecord,
   type PaymentRecordSnapshot,
 } from "@/lib/payment-record";
-import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access";
+import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access-records";
 
 // Every access workflow the webhook can persist, from the catalogue plus the
 // fallbacks the payment sync assigns by offer code. Adding one to the app

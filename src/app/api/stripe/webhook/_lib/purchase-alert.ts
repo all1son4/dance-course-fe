@@ -21,7 +21,7 @@ import {
   isOnlineGroupAccessOfferId,
   isWithMentorOfferId,
 } from "@/lib/telegram/offer-access";
-import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access";
+import type { OnlineGroupAccessState } from "@/lib/telegram/online-group-access-records";
 import { UTC_TIME_ZONE_LABEL } from "@/lib/time";
 
 const STRIPE_DASHBOARD_URL = "https://dashboard.stripe.com";
