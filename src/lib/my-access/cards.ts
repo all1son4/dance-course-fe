@@ -266,9 +266,14 @@ const buildStandaloneHubCard = ({
 
   if (current && paidUntil) {
     const left = daysLeft(paidUntil, now);
-    // Renewing early loses no day, so the button is there for the whole period.
-    // A running paid Hub is itself the basis of the renewal price (HUB-D17).
-    const canRenew = later.length === 0 && !hasPlusHub && sales.hubRenewal;
+    // Renewing early loses no day, but the button waits for the second half of the
+    // period (owner, 2026-11-26): on day one of 112 days it read as a nudge to pay
+    // again. A running paid Hub is itself the basis of the renewal price (HUB-D17).
+    const halfway =
+      current.startsAt!.getTime() +
+      (paidUntil.getTime() - current.startsAt!.getTime()) / 2;
+    const canRenew =
+      later.length === 0 && !hasPlusHub && sales.hubRenewal && now.getTime() >= halfway;
     const endsSoon = canRenew && left <= HUB_RENEWAL_WINDOW_DAYS;
     const notJoined = !isJoined(current) && !hasPlusHub;
 
