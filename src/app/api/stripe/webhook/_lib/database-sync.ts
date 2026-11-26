@@ -317,6 +317,7 @@ export const createStripePaymentProjectionCommand = ({
       postalCode: nullIfEmpty(paymentRecord.customer_postal_code),
       stripeCustomerId: getStripeCustomerId(event),
       telegramUsername: nullIfEmpty(paymentRecord.customer_nickname),
+      instagramUsername: nullIfEmpty(paymentRecord.customer_instagram),
     },
     firstSeenAt,
     invoice: invoiceParts
@@ -358,6 +359,7 @@ export const createStripePaymentProjectionCommand = ({
       customerFullNameSnapshot: nullIfEmpty(paymentRecord.customer_full_name),
       customerPostalCodeSnapshot: nullIfEmpty(paymentRecord.customer_postal_code),
       customerTelegramUsernameSnapshot: nullIfEmpty(paymentRecord.customer_nickname),
+      customerInstagramUsernameSnapshot: nullIfEmpty(paymentRecord.customer_instagram),
       inspirationChatIdSnapshot: nullIfEmpty(paymentRecord.telegram_inspiration_chat_id),
       lastPaymentErrorCode: nullIfEmpty(paymentRecord.last_payment_error_code),
       lastPaymentErrorMessage: nullIfEmpty(paymentRecord.last_payment_error_message),

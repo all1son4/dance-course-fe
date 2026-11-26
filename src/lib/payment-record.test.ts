@@ -13,6 +13,7 @@ const PAYMENT_RECORD_FIELDS = [
   "customer_email",
   "customer_full_name",
   "customer_nickname",
+  "customer_instagram",
   "customer_country",
   "latest_event_id",
   "latest_event_type",

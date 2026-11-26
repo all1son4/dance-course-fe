@@ -2,7 +2,11 @@ import * as yup from "yup";
 
 import { isSupportedCountryCode } from "@/constants/countries";
 
-import type { PaymentCustomerData } from "./payment.constants";
+import {
+  INSTAGRAM_USERNAME_PATTERN,
+  type PaymentContactField,
+  type PaymentCustomerData,
+} from "./payment.constants";
 
 export type PaymentValidationLocale = "ru" | "en" | "pl";
 
@@ -18,6 +22,8 @@ type PaymentValidationMessages = {
   fullNameMax: string;
   fullNameMin: string;
   fullNameRequired: string;
+  instagramInvalid: string;
+  instagramRequired: string;
   lessonLanguageInvalid: string;
   lessonLanguageRequired: string;
   nicknameInvalid: string;
@@ -42,6 +48,8 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     fullNameMax: "Имя и фамилия: не больше 100 символов",
     fullNameMin: "Введи имя и фамилию полностью",
     fullNameRequired: "Введи имя и фамилию",
+    instagramInvalid: "Только латиница, цифры, точка и _, до 30 символов",
+    instagramRequired: "Введи ник в Instagram",
     lessonLanguageInvalid: "Выбери язык из списка",
     lessonLanguageRequired: "Выбери язык материалов",
     nicknameInvalid: "Введи корректный ник в Telegram в формате @username",
@@ -61,6 +69,8 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     fullNameMax: "Full name must be 100 characters or fewer",
     fullNameMin: "Enter your full name",
     fullNameRequired: "Enter your full name",
+    instagramInvalid: "Latin letters, numbers, dots and _ only (max 30)",
+    instagramRequired: "Enter your Instagram username",
     lessonLanguageInvalid: "Select a language from the list",
     lessonLanguageRequired: "Select the material language",
     nicknameInvalid: "Enter a valid Telegram username in the @username format",
@@ -80,6 +90,8 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
     fullNameMax: "Imię i nazwisko mogą mieć maksymalnie 100 znaków",
     fullNameMin: "Wpisz pełne imię i nazwisko",
     fullNameRequired: "Wpisz imię i nazwisko",
+    instagramInvalid: "Tylko litery łacińskie, cyfry, kropka i _, do 30 znaków",
+    instagramRequired: "Wpisz nick na Instagramie",
     lessonLanguageInvalid: "Wybierz język z listy",
     lessonLanguageRequired: "Wybierz język materiałów",
     nicknameInvalid: "Wpisz poprawny nick w Telegramie w formacie @username",
@@ -89,7 +101,7 @@ const PAYMENT_VALIDATION_MESSAGES: Record<
   },
 };
 
-const PAYMENT_CUSTOMER_SCHEMA_VERSION = "invoice-address-fields-v1";
+const PAYMENT_CUSTOMER_SCHEMA_VERSION = "contact-handle-v2";
 const schemaCache = new Map<string, yup.ObjectSchema<PaymentCustomerData>>();
 
 const trimmedRequiredText = (message: string) =>
@@ -114,11 +126,16 @@ export const resolvePaymentValidationLocale = (
   return "ru";
 };
 
+/**
+ * One handle is asked per checkout (see `getPaymentContactField`); the other one is
+ * not on the form and is accepted as it comes, normally empty.
+ */
 export const getPaymentCustomerSchema = (
   locale: string | null | undefined,
+  contactField: PaymentContactField = "instagram",
 ): yup.ObjectSchema<PaymentCustomerData> => {
   const resolvedLocale = resolvePaymentValidationLocale(locale);
-  const cacheKey = `${PAYMENT_CUSTOMER_SCHEMA_VERSION}:${resolvedLocale}`;
+  const cacheKey = `${PAYMENT_CUSTOMER_SCHEMA_VERSION}:${resolvedLocale}:${contactField}`;
   const cachedSchema = schemaCache.get(cacheKey);
 
   if (cachedSchema) {
@@ -137,10 +154,20 @@ export const getPaymentCustomerSchema = (
       // yup accepts "anna@gmailcom": the purchase email with the access link would bounce.
       .matches(/@[^@\s]+\.[^@\s.]{2,}$/u, messages.emailInvalid)
       .required(messages.emailRequired),
-    nickname: yup
-      .string()
-      .matches(/^@[A-Za-z0-9_]{1,32}$/, messages.nicknameInvalid)
-      .required(messages.nicknameRequired),
+    instagram:
+      contactField === "instagram"
+        ? yup
+            .string()
+            .required(messages.instagramRequired)
+            .matches(INSTAGRAM_USERNAME_PATTERN, messages.instagramInvalid)
+        : yup.string().default(""),
+    nickname:
+      contactField === "nickname"
+        ? yup
+            .string()
+            .matches(/^@[A-Za-z0-9_]{1,32}$/, messages.nicknameInvalid)
+            .required(messages.nicknameRequired)
+        : yup.string().default(""),
     address: trimmedRequiredText(messages.addressRequired).max(160, messages.addressMax),
     city: trimmedRequiredText(messages.cityRequired).max(80, messages.cityMax),
     postalCode: trimmedRequiredText(messages.postalCodeRequired).max(

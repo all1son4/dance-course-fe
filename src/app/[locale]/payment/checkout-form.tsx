@@ -226,7 +226,7 @@ const CheckoutInput = ({
       onFocus={onFocus}
       placeholder={field.placeholder}
       // The "@" is drawn in front of the handle, so the value shows without it.
-      prefix={isNickname ? "@" : undefined}
+      prefix={isNickname || field.name === "instagram" ? "@" : undefined}
       selectOptions={field.selectOptions}
       type={field.type}
       value={isNickname ? field.value.replace(/^@+/, "") : field.value}

@@ -17,6 +17,7 @@ import type {
   HubChatMembers,
   HubPeriodState,
 } from "@/lib/admin/hub-admin";
+import { toAdminSearchTokens } from "@/lib/admin/search-tokens";
 import { DAY_MS } from "@/lib/time";
 
 import type { ReissuedLink, ReissueOutcome } from "../hooks/use-hub-admin";
@@ -29,6 +30,7 @@ import {
   Badge,
   Callout,
   EmptyState,
+  HandleLink,
   Muted,
   PageHeader,
   Panel,
@@ -127,6 +129,22 @@ const formatDate = (iso: string | null) =>
 
 const toDateInput = (iso: string) => iso.slice(0, 10);
 
+/** «Имя Фамилия (@instagram)»; the Telegram handle only when no Instagram is known. */
+const formatRemovalPerson = ({
+  fullName,
+  instagram,
+  telegramUsername,
+}: HubAdminOverview["preview"]["removals"][number]) => {
+  const handle = instagram
+    ? `@${instagram}`
+    : telegramUsername
+      ? `@${telegramUsername}`
+      : "";
+
+  if (fullName) return handle ? `${fullName} (${handle})` : fullName;
+  return handle || "Без имени и @username";
+};
+
 const Nowrap = styled.span`
   white-space: nowrap;
 `;
@@ -163,7 +181,7 @@ export const HubWorkspace = ({
   const [search, setSearch] = useState("");
 
   const periods = useMemo(() => {
-    const needle = search.trim().toLowerCase();
+    const tokens = toAdminSearchTokens(search);
     // Counted from the moment the server built the overview, like the tile itself.
     const endingSoonBefore = Date.parse(hub?.generatedAt ?? "") + ENDING_SOON_MS;
     return (hub?.periods ?? []).filter((period) => {
@@ -177,17 +195,17 @@ export const HubWorkspace = ({
         (filter === "upcoming" &&
           (period.state === "scheduled" || period.state === "waiting")) ||
         (filter === "ended" && period.state === "ended");
-      const matchesSearch =
-        !needle ||
-        [
-          period.customerName,
-          period.customerEmail,
-          period.telegramUsername ?? "",
-          period.paymentIntentId,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(needle);
+      const haystack = [
+        period.customerName,
+        period.customerEmail,
+        period.instagram ?? "",
+        period.telegramUsername ?? "",
+        period.offerLabel,
+        period.paymentIntentId,
+      ]
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = tokens.every((token) => haystack.includes(token));
       return matchesFilter && matchesSearch;
     });
   }, [filter, hub, search]);
@@ -416,9 +434,7 @@ export const HubWorkspace = ({
                 <li key={`${removal.chatId}:${removal.telegramUserId}`}>
                   <UserMinus aria-hidden />
                   <span>
-                    {removal.telegramUsername
-                      ? `@${removal.telegramUsername}`
-                      : "Без @username"}{" "}
+                    {formatRemovalPerson(removal)}{" "}
                     <Muted>· ID {removal.telegramUserId}</Muted>
                   </span>
                 </li>
@@ -431,7 +447,7 @@ export const HubWorkspace = ({
       <Panel
         flush
         title="Покупки библиотеки"
-        description="Последние 300 периодов. Поиск по имени, email, @username или номеру платежа."
+        description="Последние 300 периодов. Поиск по имени, email, Instagram, Telegram или номеру платежа."
         actions={
           <Row $gap={8}>
             <SearchBox>
@@ -486,6 +502,11 @@ export const HubWorkspace = ({
                         <td data-label="Имя">
                           <CellPrimary>{period.customerName || "Без имени"}</CellPrimary>
                           <CellSecondary>{period.customerEmail}</CellSecondary>
+                          {period.instagram && (
+                            <CellSecondary>
+                              <HandleLink handle={period.instagram} network="instagram" />
+                            </CellSecondary>
+                          )}
                         </td>
                         <td data-label="Тариф">
                           <CellPrimary>

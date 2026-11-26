@@ -612,7 +612,7 @@ export const AdminFrame = ({
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Найти покупку: email, имя или номер платежа"
+              placeholder="Найти покупку: имя, email, Instagram, Telegram, курс"
               aria-label="Найти покупку"
               enterKeyHint="search"
             />

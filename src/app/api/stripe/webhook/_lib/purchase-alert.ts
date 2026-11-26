@@ -277,6 +277,26 @@ const buildTelegramUsernameValueHtml = (nickname: string) => {
   )}</a>`;
 };
 
+/**
+ * The buyer's handle line: their Instagram profile - asked at this checkout or known
+ * from an earlier purchase - and the Telegram handle only when no Instagram is known.
+ */
+const buildContactHandleLineHtml = (
+  paymentRecord: PaymentRecordSnapshot,
+  knownInstagram: string | null,
+) => {
+  const instagram =
+    paymentRecord.customer_instagram.trim() || knownInstagram?.trim() || "";
+
+  if (!instagram) {
+    return `💬 ${buildTelegramUsernameValueHtml(paymentRecord.customer_nickname)}`;
+  }
+
+  return `📷 <a href="https://www.instagram.com/${escapeTelegramHtmlAttribute(
+    encodeURIComponent(instagram),
+  )}/">${escapeTelegramHtml(`@${instagram}`)}</a>`;
+};
+
 const getPaymentProcessingStatus = (
   paymentRecord: PaymentRecordSnapshot,
 ): PurchaseProcessingStatus => {
@@ -744,6 +764,7 @@ export const buildPurchaseAlertText = ({
   eventId,
   eventType,
   hasClosedSales = false,
+  knownInstagram = null,
   onlineGroupAccessStates,
   processedAtIso,
   paymentRecord,
@@ -753,6 +774,8 @@ export const buildPurchaseAlertText = ({
   eventId: string;
   eventType: string;
   hasClosedSales?: boolean;
+  /** The buyer's Instagram from earlier purchases, for checkouts that did not ask (renewals). */
+  knownInstagram?: string | null;
   onlineGroupAccessStates?: OnlineGroupAccessState[] | null;
   processedAtIso: string;
   paymentRecord: PaymentRecordSnapshot;
@@ -844,7 +867,7 @@ export const buildPurchaseAlertText = ({
     "",
     `👤 ${customerLine}`,
     `✉️ ${codeHtml(paymentRecord.customer_email.toLowerCase())}`,
-    `💬 ${buildTelegramUsernameValueHtml(paymentRecord.customer_nickname)}`,
+    buildContactHandleLineHtml(paymentRecord, knownInstagram),
     "",
     ...statusLines,
     "",

@@ -7,6 +7,7 @@ import {
   getAccountingMonthValue,
   getPreviousAccountingMonthValue,
 } from "@/lib/accounting-month";
+import { toAdminSearchTokens } from "@/lib/admin/search-tokens";
 import { formatMinorAmount } from "@/lib/minor-amount";
 import { getAdminPurchaseLine } from "@/lib/sellable-products-localization";
 
@@ -16,11 +17,13 @@ import {
   POLISH_TERMINAL_RECORDED_KIND,
 } from "./polish-terminal-sales";
 import {
+  customers,
   invoices,
   productOffers,
   products,
   purchases,
   purchaseSideEffects,
+  telegramUserBindings,
 } from "./schema";
 import {
   getCanonicalSucceededStripeEvents,
@@ -70,7 +73,11 @@ type PurchaseOutcome = typeof purchases.$inferSelect.outcome;
 export type AdminPurchaseListEntry = {
   amountLabel: string;
   customerEmail: string;
+  /** Instagram without "@": asked at this checkout or known for the customer. */
+  customerInstagram: string;
   customerName: string;
+  /** Telegram handle without "@" asked at this checkout (renewals, older purchases). */
+  customerTelegram: string;
   invoiceNumber: string;
   isPolish: boolean;
   outcome: PurchaseOutcome;
@@ -116,6 +123,34 @@ export type AdminProductBreakdownEntry = {
 };
 
 const escapeLikePattern = (value: string) => value.replaceAll(/([%_\\])/g, "\\$1");
+
+/**
+ * One search word, found anywhere the owner would look a person or a purchase up:
+ * name, email, Instagram, Telegram (asked at checkout or the joined account),
+ * what was bought, the payment or the invoice number.
+ */
+const matchesPurchaseSearchWord = (word: string) => {
+  const pattern = `%${escapeLikePattern(word)}%`;
+
+  return or(
+    ilike(purchases.customerFullNameSnapshot, pattern),
+    ilike(purchases.customerEmailSnapshot, pattern),
+    ilike(purchases.customerInstagramUsernameSnapshot, pattern),
+    ilike(customers.instagramUsername, pattern),
+    ilike(purchases.customerTelegramUsernameSnapshot, pattern),
+    sql`EXISTS (
+      SELECT 1 FROM ${telegramUserBindings}
+      WHERE ${telegramUserBindings.purchaseId} = ${purchases.id}
+        AND ${telegramUserBindings.telegramUsername} ILIKE ${pattern}
+    )`,
+    ilike(products.title, pattern),
+    ilike(productOffers.label, pattern),
+    ilike(purchases.purchaseItemSnapshot, pattern),
+    ilike(purchases.productTitleSnapshot, pattern),
+    ilike(purchases.paymentIntentId, pattern),
+    ilike(invoices.invoiceNumber, pattern),
+  );
+};
 
 const parseMinorTotal = (value: string | number | null | undefined) => {
   const parsed = typeof value === "number" ? value : Number(value ?? 0);
@@ -216,20 +251,11 @@ export const getAdminPurchasesOverview = async ({
           ),
         }
       : fullPreviousMonthRange;
-  const normalizedSearch = searchQuery.trim();
-  const likePattern = normalizedSearch ? `%${escapeLikePattern(normalizedSearch)}%` : "";
+  const searchTokens = toAdminSearchTokens(searchQuery);
 
   // A search spans the whole history; without one the list shows the chosen month.
-  const listFilter = likePattern
-    ? and(
-        eq(purchases.source, "stripe"),
-        or(
-          ilike(purchases.customerEmailSnapshot, likePattern),
-          ilike(purchases.customerFullNameSnapshot, likePattern),
-          ilike(purchases.paymentIntentId, likePattern),
-          ilike(invoices.invoiceNumber, likePattern),
-        ),
-      )
+  const listFilter = searchTokens.length
+    ? and(eq(purchases.source, "stripe"), ...searchTokens.map(matchesPurchaseSearchWord))
     : and(
         eq(purchases.source, "stripe"),
         ...(monthRange
@@ -278,7 +304,11 @@ export const getAdminPurchasesOverview = async ({
         amountMinor: purchases.amountMinor,
         currency: purchases.currency,
         customerEmail: purchases.customerEmailSnapshot,
+        customerInstagram: sql<
+          string | null
+        >`COALESCE(${purchases.customerInstagramUsernameSnapshot}, ${customers.instagramUsername})`,
         customerName: purchases.customerFullNameSnapshot,
+        customerTelegram: purchases.customerTelegramUsernameSnapshot,
         invoiceNumber: invoices.invoiceNumber,
         isPolish: isPolishPurchaseCountry,
         offerKey: offerKeyColumn,
@@ -294,6 +324,7 @@ export const getAdminPurchasesOverview = async ({
         eq(canonicalSucceededEvents.paymentIntentId, purchases.paymentIntentId),
       )
       .leftJoin(invoices, eq(invoices.purchaseId, purchases.id))
+      .leftJoin(customers, eq(customers.id, purchases.customerId))
       .leftJoin(products, eq(products.id, purchases.productId))
       .leftJoin(productOffers, eq(productOffers.id, purchases.offerId))
       .leftJoin(
@@ -479,7 +510,9 @@ export const getAdminPurchasesOverview = async ({
     purchases: listRows.map((row) => ({
       amountLabel: formatMinorAmount(row.amountMinor, row.currency),
       customerEmail: row.customerEmail ?? "",
+      customerInstagram: row.customerInstagram ?? "",
       customerName: row.customerName ?? "",
+      customerTelegram: (row.customerTelegram ?? "").replace(/^@+/u, ""),
       invoiceNumber: row.invoiceNumber ?? "",
       isPolish: row.isPolish,
       outcome: row.outcome,
