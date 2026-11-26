@@ -10,6 +10,7 @@ import { getAdminPurchasesOverview } from "@/db/admin-sales";
 import {
   findBuyerContactsByTelegramUserIds,
   findBuyerInstagramByPurchaseId,
+  rememberJoinedTelegramUsername,
 } from "@/db/buyer-contacts";
 import { getDatabase, getDatabaseClient } from "@/db/client";
 import { recordVerifiedStripeEvent } from "@/db/stripe-event-inbox";
@@ -121,6 +122,10 @@ test("Instagram reaches its own columns and a later checkout keeps the other han
     eventId: `evt_ig_regular_${runId}`,
     paymentIntentId: `pi_ig_regular_${runId}`,
   };
+  const secondRenewal = {
+    eventId: `evt_ig_renewal2_${runId}`,
+    paymentIntentId: `pi_ig_renewal2_${runId}`,
+  };
 
   try {
     // A renewal sends the Telegram handle only, then a regular checkout the Instagram one.
@@ -208,11 +213,12 @@ test("Instagram reaches its own columns and a later checkout keeps the other han
         .filter((purchase) => purchase.customerEmail === email)
         .map((purchase) => purchase.paymentIntentId)
         .sort();
-      const expected =
-        searchQuery === "@anna_tg"
-          ? [renewal.paymentIntentId]
-          : [regular.paymentIntentId, renewal.paymentIntentId].sort();
-      assert.deepEqual(found, expected, searchQuery);
+      // "@anna_tg" is on the customer as well, so it finds both purchases.
+      assert.deepEqual(
+        found,
+        [regular.paymentIntentId, renewal.paymentIntentId].sort(),
+        searchQuery,
+      );
     }
     const listed = (
       await getAdminPurchasesOverview({ monthValue: "2026-08", searchQuery: email })
@@ -220,14 +226,55 @@ test("Instagram reaches its own columns and a later checkout keeps the other han
     // The renewal row shows the Instagram known for the customer.
     assert.equal(listed?.customerInstagram, "anna.insta");
     assert.equal(listed?.customerTelegram, "anna_tg");
+
+    // The chat join brings the handle Telegram reports; a later checkout of the
+    // customer only fills an empty one, so it does not bring back a typed handle.
+    await rememberJoinedTelegramUsername(database, {
+      purchaseId: renewalPurchase.id,
+      telegramUsername: "anna_joined",
+    });
+    await project(
+      createSucceededEvent({
+        email,
+        handles: { customer_nickname: "@anna_typed_again" },
+        ...secondRenewal,
+      }),
+    );
+    const [refreshed] = await client<{ telegram_username: string | null }[]>`
+      SELECT telegram_username FROM customers WHERE id = ${regularPurchase.customer_id}`;
+    assert.equal(refreshed?.telegram_username, "@anna_joined");
+
+    // Every row of the customer shows the fresh handle, and it finds all of them.
+    const byJoinedHandle = await getAdminPurchasesOverview({
+      monthValue: "2026-08",
+      searchQuery: "anna_joined",
+    });
+    const joinedRows = byJoinedHandle.purchases.filter(
+      (purchase) => purchase.customerEmail === email,
+    );
+    assert.deepEqual(
+      joinedRows.map((purchase) => purchase.paymentIntentId).sort(),
+      [
+        regular.paymentIntentId,
+        renewal.paymentIntentId,
+        secondRenewal.paymentIntentId,
+      ].sort(),
+    );
+    assert.ok(
+      joinedRows.every((purchase) => purchase.customerTelegram === "anna_joined"),
+    );
   } finally {
     await client`
       DELETE FROM stripe_events
-      WHERE stripe_event_id IN (${renewal.eventId}, ${regular.eventId})
+      WHERE stripe_event_id IN (
+        ${renewal.eventId}, ${regular.eventId}, ${secondRenewal.eventId}
+      )
     `;
     await client`
       DELETE FROM purchases
-      WHERE payment_intent_id IN (${renewal.paymentIntentId}, ${regular.paymentIntentId})
+      WHERE payment_intent_id IN (
+        ${renewal.paymentIntentId}, ${regular.paymentIntentId}, ${secondRenewal.paymentIntentId}
+      )
     `;
     await client`DELETE FROM customers WHERE normalized_email = ${email}`;
   }
