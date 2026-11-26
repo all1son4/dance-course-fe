@@ -26,7 +26,7 @@ const RUNTIME_ACCESS_WORKFLOWS = [
   "with-mentor",
 ];
 
-const PAYMENT_INTENT_ID = "pi_3UD6eeRuyo0v6xwT05ZULmar";
+const PAYMENT_INTENT_ID = "pi_preview00000000000000";
 
 const renderAlert = ({
   onlineGroupAccessStates,
@@ -36,7 +36,7 @@ const renderAlert = ({
 }) =>
   buildPurchaseAlertText({
     eventCreatedAtIso: "2026-09-07T17:49:05.000Z",
-    eventId: "evt_3UD6eeRuyo0v6xwT0kAepSmr",
+    eventId: "evt_preview0000000000000",
     eventType: "payment_intent.succeeded",
     onlineGroupAccessStates,
     paymentRecord: {
@@ -50,7 +50,7 @@ const renderAlert = ({
       delivery_channel: "telegram",
       email_delivery_status: "sent",
       invoice_issued_at: "2026-09-07T17:49:18.000Z",
-      invoice_number: "FV/2026/09/002",
+      invoice_number: "FV/2026/09/000",
       outcome: "succeeded",
       payment_intent_id: PAYMENT_INTENT_ID,
       product_title: "Тестовый продукт",
@@ -150,7 +150,7 @@ test("[BEH-OG-01] reports every step as done only when nothing is left open", ()
 
   assert.match(cleanAlert, /^<b>✅ /u);
   assert.match(cleanAlert, /^<i>Всё выполнено<\/i>$/mu);
-  assert.match(cleanAlert, /✅ Инвойс: FV\/2026\/09\/002 отправлен/u);
+  assert.match(cleanAlert, /✅ Инвойс: FV\/2026\/09\/000 отправлен/u);
   assert.match(cleanAlert, /✅ Telegram-канал: ссылка подготовлена/u);
   assert.equal(cleanAlert.includes("Учёт продажи"), false);
 
