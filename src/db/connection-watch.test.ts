@@ -23,17 +23,17 @@ test("a connection failure is logged with the driver's state, other events are n
     () => {},
   );
 
+  // The client's age moves between two reads, so each line is matched on its own.
+  const facts =
+    /^запрос — · попытка — · простой — · клиент \d+ мс · подключений 0 · пул 0\/4\/1$/u;
   const logged = withConnectionFacts(input).reference ?? "";
-  assert.match(
-    logged,
-    /^запрос — · попытка — · простой — · клиент \d+ мс · подключений 0 · пул 0\/4\/1$/u,
-  );
+  assert.match(logged, facts);
   // Fits the column the log keeps (last_reference, 120 characters).
   assert.ok(logged.length <= 120);
 
-  assert.equal(
-    withConnectionFacts({ ...input, code: "CONNECTION_CLOSED" }).reference,
-    logged,
+  assert.match(
+    withConnectionFacts({ ...input, code: "CONNECTION_CLOSED" }).reference ?? "",
+    facts,
   );
   assert.equal(
     withConnectionFacts({ ...input, code: "postgres: 23514" }).reference,
