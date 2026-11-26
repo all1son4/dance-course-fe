@@ -211,3 +211,43 @@ test("links the buttons at the payment in the matching Stripe mode", () => {
     undefined,
   );
 });
+
+test("the handle line links the buyer's Instagram, and Telegram only when no Instagram is known", () => {
+  const instagramLine = (alertText: string) =>
+    alertText.split("\n").find((line) => line.startsWith("📷 ")) ?? null;
+  const telegramLine = (alertText: string) =>
+    alertText.split("\n").find((line) => line.startsWith("💬 ")) ?? null;
+
+  const regular = renderAlert({ customer_instagram: "anna.test" });
+  assert.equal(
+    instagramLine(regular),
+    '📷 <a href="https://www.instagram.com/anna.test/">@anna.test</a>',
+  );
+  assert.equal(telegramLine(regular), null);
+
+  // A renewal asks for Telegram; an Instagram known from an earlier purchase still wins.
+  const renewal = buildPurchaseAlertText({
+    eventCreatedAtIso: "2026-09-07T17:49:05.000Z",
+    eventId: "evt_renewal",
+    eventType: "payment_intent.succeeded",
+    knownInstagram: "anna.test",
+    paymentRecord: {
+      ...createEmptyPaymentRecord(),
+      customer_nickname: "@anna_test",
+      outcome: "succeeded",
+    },
+    processedAtIso: "2026-09-07T17:49:20.039Z",
+  });
+  assert.equal(
+    instagramLine(renewal),
+    '📷 <a href="https://www.instagram.com/anna.test/">@anna.test</a>',
+  );
+  assert.equal(telegramLine(renewal), null);
+
+  const telegramOnly = renderAlert({ customer_nickname: "@anna_test" });
+  assert.equal(
+    telegramLine(telegramOnly),
+    '💬 <a href="https://t.me/anna_test">@anna_test</a>',
+  );
+  assert.equal(instagramLine(telegramOnly), null);
+});

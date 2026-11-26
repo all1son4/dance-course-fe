@@ -34,6 +34,7 @@ import {
 import { findValidRenewalVerification } from "@/db/renewal-campaigns";
 import { getCheckoutSelectionFromDatabase } from "@/db/sellable-products";
 import { BLACK_FRIDAY_CAMPAIGN, isBlackFridayOffer } from "@/lib/black-friday";
+import { getPaymentContactField } from "@/lib/checkout/payment.constants";
 import {
   CHECKOUT_CONSENT_VERSION_KEY,
   type CheckoutConsentEvidence,
@@ -78,6 +79,7 @@ type CreatePaymentIntentBody = {
     fullName?: string;
     lessonLanguage?: string;
     email?: string;
+    instagram?: string;
     nickname?: string;
     postalCode?: string;
   };
@@ -512,7 +514,9 @@ const createPaymentIntentMetadata = (
   customer_address: context.customerData.address,
   customer_city: context.customerData.city,
   customer_full_name: context.customerData.fullName,
+  // Telegram handle (renewals, and the key older events carry); kept under its name for replays.
   customer_nickname: context.customerData.nickname,
+  customer_instagram: context.customerData.instagram,
   customer_country: context.customerData.country,
   customer_postal_code: context.customerData.postalCode,
   lesson_language:
@@ -636,6 +640,7 @@ export async function POST(request: Request): Promise<Response> {
     const validatedCheckout = validateCheckoutCustomerAndConsent({
       agreements: body.agreements,
       checkoutLocale,
+      contactField: getPaymentContactField(body.renewalCampaignSlug),
       customerData: body.customerData,
     });
 

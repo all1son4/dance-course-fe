@@ -433,6 +433,7 @@ export const customers = pgTable(
     normalizedEmail: text("normalized_email"),
     fullName: text("full_name"),
     telegramUsername: text("telegram_username"),
+    instagramUsername: text("instagram_username"),
     country: text("country"),
     addressLine: text("address_line"),
     city: text("city"),
@@ -459,6 +460,7 @@ export const purchases = pgTable(
     customerEmailSnapshot: text("customer_email_snapshot"),
     customerFullNameSnapshot: text("customer_full_name_snapshot"),
     customerTelegramUsernameSnapshot: text("customer_telegram_username_snapshot"),
+    customerInstagramUsernameSnapshot: text("customer_instagram_username_snapshot"),
     inspirationChatIdSnapshot: text("inspiration_chat_id_snapshot"),
     inspirationAccessExpiresAtSnapshot: timestamp(
       "inspiration_access_expires_at_snapshot",

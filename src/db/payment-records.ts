@@ -119,6 +119,7 @@ const populatePurchaseFields = ({
   record.customer_email = purchase.customerEmailSnapshot ?? "";
   record.customer_full_name = purchase.customerFullNameSnapshot ?? "";
   record.customer_nickname = purchase.customerTelegramUsernameSnapshot ?? "";
+  record.customer_instagram = purchase.customerInstagramUsernameSnapshot ?? "";
   record.customer_country = purchase.customerCountrySnapshot ?? "";
   record.latest_event_id = purchase.latestEventId ?? "";
   record.latest_event_type = purchase.latestEventType ?? "";

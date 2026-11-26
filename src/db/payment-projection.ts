@@ -58,6 +58,7 @@ export type PaymentProjectionCommand = {
     postalCode: string | null;
     stripeCustomerId: string | null;
     telegramUsername: string | null;
+    instagramUsername: string | null;
   };
   invoice: {
     amountMinor: number;
@@ -93,6 +94,7 @@ export type PaymentProjectionCommand = {
     customerFullNameSnapshot: string | null;
     customerPostalCodeSnapshot: string | null;
     customerTelegramUsernameSnapshot: string | null;
+    customerInstagramUsernameSnapshot: string | null;
     inspirationChatIdSnapshot: string | null;
     lastPaymentErrorCode: string | null;
     lastPaymentErrorMessage: string | null;
@@ -162,7 +164,16 @@ const upsertCustomer = async (
   };
 
   if (customerId) {
-    await transaction.update(customers).set(values).where(eq(customers.id, customerId));
+    // A checkout asks for one handle (Telegram on a renewal, Instagram otherwise), so
+    // a purchase without one keeps the handle the customer gave before.
+    await transaction
+      .update(customers)
+      .set({
+        ...values,
+        instagramUsername: customer.instagramUsername ?? undefined,
+        telegramUsername: customer.telegramUsername ?? undefined,
+      })
+      .where(eq(customers.id, customerId));
     return customerId;
   }
 

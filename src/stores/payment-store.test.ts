@@ -24,8 +24,8 @@ const VALID_CUSTOMER_DATA = {
   country: "PL",
   email: "anna@example.com",
   fullName: "Анна Строк",
+  instagram: "anna.strok_dance",
   lessonLanguage: "ru",
-  nickname: "@anna_strok",
   postalCode: "00-001",
 } as const;
 
@@ -340,17 +340,73 @@ test("validateCustomerForm reports every missing field at once", () => {
 
   assert.ok(store.customerErrors.fullName);
   assert.ok(store.customerErrors.email);
-  assert.ok(store.customerErrors.nickname);
+  assert.ok(store.customerErrors.instagram);
+  // A regular checkout asks for Instagram; the Telegram handle is not on its form.
+  assert.equal(store.customerErrors.nickname, undefined);
   assert.equal(Object.values(store.touchedFields).every(Boolean), true);
+});
+
+test("a renewal asks for the Telegram handle instead of Instagram", () => {
+  const store = new PaymentStore();
+  store.setRenewalCampaignSlug("rnw_test");
+
+  store.validateCustomerForm();
+
+  assert.ok(store.customerErrors.nickname);
+  assert.equal(store.customerErrors.instagram, undefined);
+
+  store.setCustomerField("nickname", "anna_strok");
+  store.touchCustomerField("nickname");
+  assert.equal(store.customerData.nickname, "@anna_strok");
+  assert.equal(store.customerErrors.nickname, undefined);
+});
+
+test("switching to a renewal re-checks the handles already touched", () => {
+  const store = new PaymentStore();
+  store.touchCustomerField("instagram");
+  assert.ok(store.customerErrors.instagram);
+
+  store.setRenewalCampaignSlug("rnw_test");
+
+  assert.equal(store.customerErrors.instagram, undefined);
+});
+
+test("an Instagram handle settles from a pasted link or an @, and odd characters are reported", () => {
+  const store = new PaymentStore();
+
+  store.setCustomerField(
+    "instagram",
+    "https://www.instagram.com/Anna.Strok_Dance/?hl=pl",
+  );
+  store.touchCustomerField("instagram");
+  assert.equal(store.customerData.instagram, "anna.strok_dance");
+  assert.equal(store.customerErrors.instagram, undefined);
+
+  store.setCustomerField("instagram", "@anna.dance");
+  store.touchCustomerField("instagram");
+  assert.equal(store.customerData.instagram, "anna.dance");
+
+  for (const invalid of [
+    "анна",
+    "anna..dance",
+    "anna.",
+    ".anna",
+    "a".repeat(31),
+    "anna-dance",
+  ]) {
+    store.setCustomerField("instagram", invalid);
+    store.touchCustomerField("instagram");
+    assert.ok(store.customerErrors.instagram, invalid);
+  }
 });
 
 test("customer input stays as typed and settles into its normalized form on blur", () => {
   const store = new PaymentStore();
 
-  store.setCustomerField("nickname", "anna_strok");
-  assert.equal(store.customerData.nickname, "anna_strok");
-  store.touchCustomerField("nickname");
-  assert.equal(store.customerData.nickname, "@anna_strok");
+  store.setCustomerField("instagram", "Anna.Strok");
+  assert.equal(store.customerData.instagram, "Anna.Strok");
+  store.touchCustomerField("instagram");
+  assert.equal(store.customerData.instagram, "anna.strok");
 
   store.setCustomerField("country", "pl");
   store.touchCustomerField("country");
@@ -370,31 +426,34 @@ test("validation, the draft and the intent request see the normalized data while
   const store = new PaymentStore();
   fillValidCheckout(store);
 
-  // Mid-edit values: no "@" yet, stray whitespace. The form is still valid
+  // Mid-edit values: capitals, stray whitespace. The form is still valid
   // because everything downstream reads the normalized record.
-  store.setCustomerField("nickname", "anna_strok");
+  store.setCustomerField("instagram", "Anna.Strok_Dance ");
   store.setCustomerField("fullName", "  Анна   Строк ");
 
   assert.equal(store.isCustomerDataValid, true);
   assert.equal(store.canShowStripe, true);
-  assert.equal(store.normalizedCustomerData.nickname, "@anna_strok");
+  assert.equal(store.normalizedCustomerData.instagram, "anna.strok_dance");
   // Trimmed at both ends, like the server does before it builds the intent.
   assert.equal(store.normalizedCustomerData.fullName, "Анна Строк");
-  assert.equal(store.getCheckoutDraftSnapshot().customerData.nickname, "@anna_strok");
+  assert.equal(
+    store.getCheckoutDraftSnapshot().customerData.instagram,
+    "anna.strok_dance",
+  );
 
-  store.touchCustomerField("nickname");
-  assert.equal(store.customerErrors.nickname, undefined);
+  store.touchCustomerField("instagram");
+  assert.equal(store.customerErrors.instagram, undefined);
 });
 
 test("submitting normalizes every field before it is validated", () => {
   const store = new PaymentStore();
   fillValidCheckout(store);
-  store.setCustomerField("nickname", " anna_strok ");
+  store.setCustomerField("instagram", " @anna.strok_dance ");
   store.setCustomerField("city", "  Warszawa");
 
   store.validateCustomerForm();
 
-  assert.equal(store.customerData.nickname, "@anna_strok");
+  assert.equal(store.customerData.instagram, "anna.strok_dance");
   assert.equal(store.customerData.city, "Warszawa");
   assert.deepEqual(store.customerErrors, {});
 });
@@ -443,7 +502,10 @@ test("a stale intent is fresh again once a replacement is minted with the new da
   assert.equal(store.stripeClientSecrets.pln, "secret_new");
   assert.equal(store.stripePaymentIntentIds.pln, "pi_new");
   assert.equal(store.isStripeIntentUpdating, false);
-  assert.equal(JSON.parse(calls[0]?.body ?? "{}").customerData.nickname, "@anna_strok");
+  assert.equal(
+    JSON.parse(calls[0]?.body ?? "{}").customerData.instagram,
+    "anna.strok_dance",
+  );
   // The replaced intent is left open on purpose: the server mints idempotently
   // per session and form data, so an edit reverted later gets it back, and a
   // cancelled one could not be paid. Leftovers are cancelled after a payment.

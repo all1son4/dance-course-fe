@@ -24,6 +24,7 @@ import {
   Badge,
   Callout,
   EmptyState,
+  HandleLink,
   Muted,
   Panel,
   Row,
@@ -523,7 +524,7 @@ export const PurchasesWorkspace = ({
                 type="search"
                 aria-label="Поиск покупателя"
                 value={searchInput}
-                placeholder="Имя, email, номер инвойса или платежа"
+                placeholder="Имя, email, Instagram, Telegram, курс или номер"
                 disabled={isLoading}
                 onChange={(event) => onSearchInputChange(event.target.value)}
               />
@@ -591,6 +592,21 @@ export const PurchasesWorkspace = ({
                           </CellPrimary>
                           {purchase.customerEmail && (
                             <CellSecondary>{purchase.customerEmail}</CellSecondary>
+                          )}
+                          {(purchase.customerInstagram || purchase.customerTelegram) && (
+                            <CellSecondary>
+                              {purchase.customerInstagram ? (
+                                <HandleLink
+                                  handle={purchase.customerInstagram}
+                                  network="instagram"
+                                />
+                              ) : (
+                                <HandleLink
+                                  handle={purchase.customerTelegram}
+                                  network="telegram"
+                                />
+                              )}
+                            </CellSecondary>
                           )}
                         </td>
                         <td data-label="Покупка" title={purchase.paymentIntentId}>

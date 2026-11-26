@@ -15,6 +15,7 @@ import {
 } from "@/constants/sellable-products";
 import { cancelPaymentIntents } from "@/lib/checkout/cancel-payment-intents";
 import {
+  getPaymentContactField,
   INITIAL_AGREEMENTS,
   INITIAL_CUSTOMER_DATA,
   normalizePaymentCustomerData,
@@ -601,6 +602,7 @@ export class PaymentStore {
 
     this.renewalCampaignSlug = nextSlug;
     this.clearStripeIntentState(true);
+    this.revalidateTouchedFields();
   }
 
   touchCustomerField(fieldName: PaymentCustomerFieldName) {
@@ -1053,7 +1055,10 @@ export class PaymentStore {
   }
 
   private get customerSchema() {
-    return getPaymentCustomerSchema(this.validationLocale);
+    return getPaymentCustomerSchema(
+      this.validationLocale,
+      getPaymentContactField(this.renewalCampaignSlug),
+    );
   }
 
   private isStripeIntentRequestStale(requestRevision: number) {

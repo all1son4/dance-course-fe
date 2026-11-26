@@ -457,7 +457,11 @@ test("checkout sends all four accepted agreements with the existing customer fie
 
   // The checkout opens one step at a time: access contacts, then receipt details.
   await page.getByRole("textbox", { name: "Email" }).fill("buyer@example.com");
-  await page.getByRole("textbox", { name: "Telegram username" }).fill("@anna_test");
+  // A pasted profile link settles into the bare handle; Telegram is not asked here.
+  await page
+    .getByRole("textbox", { name: "Instagram username" })
+    .fill("https://www.instagram.com/Anna.Test/");
+  await expect(page.getByRole("textbox", { name: "Telegram username" })).toHaveCount(0);
   await page.getByRole("button", { name: "Continue" }).click();
 
   await page.getByRole("textbox", { name: "Full name" }).fill("Anna Test");
@@ -491,6 +495,10 @@ test("checkout sends all four accepted agreements with the existing customer fie
     immediateAccessConsent: true,
     privacyPolicyAcknowledgement: true,
     withdrawalNoticeAcknowledgement: true,
+  });
+  expect(requestBody.customerData).toMatchObject({
+    instagram: "anna.test",
+    nickname: "",
   });
   await expect(page.getByText("Could not open checkout.")).toBeVisible();
 });

@@ -921,3 +921,42 @@ export const Mono = styled.span`
   color: var(--a-ink-2);
   overflow-wrap: anywhere;
 `;
+
+const HandleAnchor = styled.a`
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--a-border-strong);
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+  ${focusVisible}
+
+  &:hover {
+    color: var(--a-accent);
+  }
+`;
+
+/** A buyer's social handle as a link to the profile: Instagram, or Telegram where that is all we have. */
+export const HandleLink = ({
+  handle,
+  network,
+}: {
+  handle: string;
+  network: "instagram" | "telegram";
+}) => {
+  const name = handle.trim().replace(/^@+/u, "");
+  const href =
+    network === "instagram"
+      ? `https://www.instagram.com/${encodeURIComponent(name)}/`
+      : `https://t.me/${encodeURIComponent(name)}`;
+
+  return (
+    <HandleAnchor
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={network === "instagram" ? "Профиль в Instagram" : "Профиль в Telegram"}
+    >
+      @{name}
+    </HandleAnchor>
+  );
+};

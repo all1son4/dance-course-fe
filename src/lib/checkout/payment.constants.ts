@@ -3,6 +3,7 @@ import { normalizeCountryCode } from "@/constants/countries";
 export type PaymentCustomerFieldName =
   | "fullName"
   | "email"
+  | "instagram"
   | "nickname"
   | "address"
   | "city"
@@ -11,6 +12,19 @@ export type PaymentCustomerFieldName =
   | "lessonLanguage";
 
 export type PaymentLessonLanguage = "ru" | "en";
+
+/**
+ * The handle a checkout asks for: Telegram where the Telegram account is verified
+ * (an Online Group renewal, the Hub at the special price), Instagram everywhere else.
+ */
+export type PaymentContactField = "instagram" | "nickname";
+
+export const getPaymentContactField = (
+  renewalCampaignSlug: string | null | undefined,
+): PaymentContactField => (renewalCampaignSlug?.trim() ? "nickname" : "instagram");
+
+/** Instagram's own rule: Latin letters, digits, "." and "_", 30 at most, no dot at an end or twice in a row. */
+export const INSTAGRAM_USERNAME_PATTERN = /^(?!\.)(?!.*\.\.)[a-z0-9._]{1,30}(?<!\.)$/u;
 
 export type PaymentCustomerData = Record<PaymentCustomerFieldName, string>;
 
@@ -58,6 +72,7 @@ export type PaymentCheckboxConfig = {
 export const INITIAL_CUSTOMER_DATA: PaymentCustomerData = {
   fullName: "",
   email: "",
+  instagram: "",
   nickname: "",
   address: "",
   city: "",
@@ -88,10 +103,19 @@ export const PAYMENT_INPUTS: PaymentInputConfig[] = [
     type: "email",
   },
   {
-    // A Telegram handle is not a browser-known identity field; keep autofill
-    // from guessing a username into it.
+    // A social handle is not a browser-known identity field; keep autofill from
+    // guessing a username into it.
     autoComplete: "off",
-    hintKey: "inputs.nickname.hint",
+    hintKey: "inputs.instagram.hint",
+    id: "instagram",
+    labelKey: "inputs.instagram.label",
+    name: "instagram",
+    placeholderKey: "inputs.instagram.placeholder",
+    step: "access",
+    type: "text",
+  },
+  {
+    autoComplete: "off",
     id: "nickname",
     labelKey: "inputs.nickname.label",
     name: "nickname",
@@ -208,12 +232,28 @@ const normalizeTelegramNickname = (value: string) => {
   return `@${nicknameBody}`;
 };
 
+/**
+ * A pasted profile link or a leading "@" becomes the bare handle; anything else
+ * stays as typed, so a wrong character is reported instead of silently dropped.
+ */
+export const normalizeInstagramUsername = (value: string) =>
+  value
+    .replace(/\s+/gu, "")
+    .replace(/^(?:https?:\/\/)?(?:www\.|m\.)?instagram\.com\//iu, "")
+    .replace(/[/?#].*$/u, "")
+    .replace(/^@+/u, "")
+    .toLowerCase();
+
 export const normalizePaymentCustomerFieldValue = (
   fieldName: PaymentCustomerFieldName,
   value: string,
 ) => {
   if (fieldName === "nickname") {
     return normalizeTelegramNickname(value);
+  }
+
+  if (fieldName === "instagram") {
+    return normalizeInstagramUsername(value);
   }
 
   if (fieldName === "country") {

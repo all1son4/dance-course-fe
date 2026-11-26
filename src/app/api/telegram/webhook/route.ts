@@ -30,7 +30,12 @@ import {
 } from "@/lib/telegram/config";
 import { syncOnlineGroupMembership } from "@/lib/telegram/online-group-access";
 
-import { BOT_COPY, type BotLocale, resolvePurchaseBotLocale } from "./_lib/bot-copy";
+import {
+  BOT_COPY,
+  type BotLocale,
+  resolveBotLocale,
+  resolvePurchaseBotLocale,
+} from "./_lib/bot-copy";
 
 export const runtime = "nodejs";
 
@@ -97,20 +102,6 @@ const BOT_COMMANDS = {
   start: "/start",
 } as const;
 
-const resolveBotLocale = (candidateLocale: string | null | undefined): BotLocale => {
-  const normalizedLocale = (candidateLocale ?? "").trim().toLowerCase();
-
-  if (normalizedLocale.startsWith("en")) {
-    return "en";
-  }
-
-  if (normalizedLocale.startsWith("pl")) {
-    return "pl";
-  }
-
-  return "ru";
-};
-
 const getBotCopy = (locale: BotLocale) => BOT_COPY[locale];
 
 const buildHelpText = (locale: BotLocale) => {
@@ -142,7 +133,6 @@ const sendPurchasedLessons = async ({
   for (const payment of payments) {
     const locale = resolvePurchaseBotLocale({
       checkoutLocale: payment.checkout_locale,
-      lessonLanguage: payment.lesson_language,
     });
     const copy = getBotCopy(locale);
     // The stored purchase line is Russian for the admin; the buyer gets her own language.
@@ -235,7 +225,6 @@ const handleStartCommand = async ({
     case "activated": {
       const locale = resolvePurchaseBotLocale({
         checkoutLocale: activationResult.paymentRecord.checkout_locale,
-        lessonLanguage: activationResult.paymentRecord.lesson_language,
       });
       const copy = getBotCopy(locale);
 
@@ -253,7 +242,6 @@ const handleStartCommand = async ({
     case "already_activated": {
       const locale = resolvePurchaseBotLocale({
         checkoutLocale: activationResult.paymentRecord.checkout_locale,
-        lessonLanguage: activationResult.paymentRecord.lesson_language,
       });
       const copy = getBotCopy(locale);
 
@@ -424,7 +412,6 @@ const handleTelegramGroupMessage = async ({
   chatType,
   message,
   normalizedCommand,
-  preferredLocale,
   telegramUserId,
   telegramUsername,
 }: TelegramMessageContext): Promise<Response> => {
@@ -443,7 +430,8 @@ const handleTelegramGroupMessage = async ({
   ) {
     await sendTelegramMessage({
       chatId,
-      text: getBotCopy(preferredLocale).groupRegistrationForbidden,
+      // Chat registration is the admins' command: its replies are always Russian.
+      text: BOT_COPY.ru.groupRegistrationForbidden,
     });
 
     return getOkWebhookResponse();
@@ -459,7 +447,7 @@ const handleTelegramGroupMessage = async ({
 
   await sendTelegramMessage({
     chatId,
-    text: `${getBotCopy(preferredLocale).groupRegistered}\n${savedChat.title}\nID: ${savedChat.chatId}`,
+    text: `${BOT_COPY.ru.groupRegistered}\n${savedChat.title}\nID: ${savedChat.chatId}`,
   });
 
   return getOkWebhookResponse();

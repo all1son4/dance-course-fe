@@ -3,6 +3,7 @@ import {
   INITIAL_AGREEMENTS,
   PAYMENT_INPUTS,
   type PaymentAgreementState,
+  type PaymentContactField,
   type PaymentCustomerData,
 } from "@/lib/checkout/payment.constants";
 import { getPaymentCustomerSchema } from "@/lib/checkout/payment.validation";
@@ -110,12 +111,20 @@ const getAcceptedAgreements = (value: unknown): PaymentAgreementState | null => 
 export const validateCheckoutCustomerAndConsent = ({
   agreements,
   checkoutLocale,
-  customerData,
+  contactField,
+  customerData: receivedCustomerData,
 }: {
   agreements: unknown;
   checkoutLocale: string | null | undefined;
+  contactField: PaymentContactField;
   customerData: unknown;
 }): CheckoutRequestValidationResult => {
+  // A page opened before the Instagram field shipped sends no such key; a renewal
+  // from that page must still go through.
+  const customerData = isRecord(receivedCustomerData)
+    ? { instagram: "", ...receivedCustomerData }
+    : receivedCustomerData;
+
   if (!hasRequiredCustomerFieldTypes(customerData)) {
     return {
       errorCode: "invalid_customer_data",
@@ -126,13 +135,13 @@ export const validateCheckoutCustomerAndConsent = ({
   let validatedCustomerData: PaymentCustomerData;
 
   try {
-    validatedCustomerData = getPaymentCustomerSchema(checkoutLocale).validateSync(
-      customerData,
-      {
-        abortEarly: false,
-        stripUnknown: true,
-      },
-    );
+    validatedCustomerData = getPaymentCustomerSchema(
+      checkoutLocale,
+      contactField,
+    ).validateSync(customerData, {
+      abortEarly: false,
+      stripUnknown: true,
+    });
   } catch {
     return {
       errorCode: "invalid_customer_data",

@@ -9,8 +9,8 @@ const valid = {
   country: "PL",
   email: "anna@gmail.com",
   fullName: "Anna Test",
+  instagram: "anna.test",
   lessonLanguage: "ru",
-  nickname: "@anna_test",
   postalCode: "00-001",
 };
 

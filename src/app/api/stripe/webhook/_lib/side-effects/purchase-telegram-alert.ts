@@ -1,6 +1,8 @@
 import type Stripe from "stripe";
 
 import { isInspirationHubOfferId } from "@/constants/sellable-products";
+import { findBuyerInstagramByPurchaseId } from "@/db/buyer-contacts";
+import { getDatabase } from "@/db/client";
 import { findPurchaseOutboxJobState } from "@/db/transactional-outbox";
 import { logSafeError } from "@/lib/safe-error-log";
 import { hasClosedSalesAtFulfilment } from "@/lib/sales-availability";
@@ -55,6 +57,21 @@ const getOnlineGroupAccessStatesForAlert = async ({
   }
 };
 
+/** The buyer's Instagram known from earlier purchases, when this checkout did not ask. */
+const getKnownInstagram = async (
+  purchaseId: string | null,
+  paymentRecord: StripePaymentWebhookResult["paymentRecord"],
+) => {
+  if (!purchaseId || paymentRecord.customer_instagram.trim()) return null;
+
+  try {
+    return await findBuyerInstagramByPurchaseId(getDatabase(), purchaseId);
+  } catch (error) {
+    logSafeError("Failed to load the buyer's Instagram for purchase alert", error);
+    return null;
+  }
+};
+
 /** The reason a rejected access job gave up; null when it did not. */
 const getRejectedAccessReason = async (purchaseId: string | null) => {
   if (!purchaseId) return null;
@@ -84,7 +101,7 @@ const buildAlertTextForPayment = async ({
   purchaseId: string | null;
 }) => {
   // Every read swallows its own failures, so none can reject the group.
-  const [onlineGroupAccessStates, hasClosedSales, rejectedAccessReason] =
+  const [onlineGroupAccessStates, hasClosedSales, rejectedAccessReason, knownInstagram] =
     await Promise.all([
       getOnlineGroupAccessStatesForAlert({
         offerId: paymentRecord.offer_id,
@@ -92,6 +109,7 @@ const buildAlertTextForPayment = async ({
       }),
       hasClosedSalesAtFulfilment(paymentRecord.product_id, paymentRecord.offer_id),
       getRejectedAccessReason(purchaseId),
+      getKnownInstagram(purchaseId, paymentRecord),
     ]);
 
   return buildPurchaseAlertText({
@@ -100,6 +118,7 @@ const buildAlertTextForPayment = async ({
     eventId: handledEvent.eventId,
     eventType: handledEvent.eventType,
     hasClosedSales,
+    knownInstagram,
     onlineGroupAccessStates,
     paymentRecord,
     processedAtIso: toUtcIso(),

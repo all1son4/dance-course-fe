@@ -1,4 +1,5 @@
 import { SUPPORT_TELEGRAM_URL } from "@/constants/links";
+import { getResolvedCheckoutLocale } from "@/lib/stripe-checkout";
 
 /** What the Telegram bot says, in the three languages, and which language a purchase reads. */
 
@@ -98,28 +99,27 @@ export const BOT_COPY = {
   },
 } as const;
 
+/**
+ * A message about a purchase speaks the language the purchase was made in - the same
+ * one as its email. Russian materials bought on the English page still get English
+ * messages; the lesson itself is chosen by the materials language, not by this.
+ */
 export const resolvePurchaseBotLocale = ({
   checkoutLocale,
-  lessonLanguage,
 }: {
   checkoutLocale: string | null | undefined;
-  lessonLanguage: string | null | undefined;
-}): BotLocale => {
-  const normalizedLessonLanguage = (lessonLanguage ?? "").trim().toLowerCase();
+}): BotLocale => getResolvedCheckoutLocale(checkoutLocale);
 
-  if (normalizedLessonLanguage.startsWith("en")) {
-    return "en";
-  }
+/**
+ * Before a purchase is known the bot answers in the person's Telegram language: Polish
+ * and Russian as they are (Ukrainian and Belarusian read Russian), English otherwise.
+ */
+export const resolveBotLocale = (
+  telegramLanguageCode: string | null | undefined,
+): BotLocale => {
+  const language = (telegramLanguageCode ?? "").trim().toLowerCase().slice(0, 2);
 
-  if (normalizedLessonLanguage.startsWith("ru")) {
-    return "ru";
-  }
-
-  const normalizedCheckoutLocale = (checkoutLocale ?? "").trim().toLowerCase();
-
-  if (normalizedCheckoutLocale.startsWith("en")) {
-    return "en";
-  }
-
-  return "ru";
+  if (language === "pl") return "pl";
+  if (language === "ru" || language === "uk" || language === "be") return "ru";
+  return "en";
 };

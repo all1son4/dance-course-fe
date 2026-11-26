@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import Stripe from "stripe";
 
+import { normalizeInstagramUsername } from "@/lib/checkout/payment.constants";
 import { normalizeCheckoutSessionId } from "@/lib/http-security";
 
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY ?? "";
@@ -84,6 +85,7 @@ export type PaymentIntentCustomerData = {
   country: string;
   email: string;
   fullName: string;
+  instagram: string;
   lessonLanguage: CheckoutLessonLanguage;
   nickname: string;
   postalCode: string;
@@ -95,6 +97,7 @@ export const normalizePaymentIntentCustomerData = (customerData: {
   country?: string;
   email?: string;
   fullName?: string;
+  instagram?: string;
   lessonLanguage?: string;
   nickname?: string;
   postalCode?: string;
@@ -109,6 +112,9 @@ export const normalizePaymentIntentCustomerData = (customerData: {
     .toLowerCase()
     .slice(0, 254);
   const normalizedFullName = trimAndCollapseSpaces(customerData.fullName).slice(0, 100);
+  const normalizedInstagram = normalizeInstagramUsername(customerData.instagram ?? "")
+    .replace(/[^a-z0-9._]/g, "")
+    .slice(0, 30);
   const normalizedNickname = trimAndCollapseSpaces(customerData.nickname)
     .replace(/\s+/g, "")
     .replace(/[^A-Za-z0-9_@]/g, "")
@@ -127,6 +133,7 @@ export const normalizePaymentIntentCustomerData = (customerData: {
     country: normalizedCountry,
     email: normalizedEmail,
     fullName: normalizedFullName,
+    instagram: normalizedInstagram,
     lessonLanguage: normalizedLessonLanguage,
     nickname: normalizedNickname,
     postalCode: normalizedPostalCode,
@@ -150,6 +157,7 @@ export const createPaymentIntentIdempotencyKey = ({
     country?: string;
     email?: string;
     fullName?: string;
+    instagram?: string;
     lessonLanguage?: string;
     nickname?: string;
     postalCode?: string;
@@ -166,6 +174,7 @@ export const createPaymentIntentIdempotencyKey = ({
         country: customerData.country?.trim().toUpperCase() ?? "",
         email: customerData.email?.trim().toLowerCase() ?? "",
         fullName: customerData.fullName?.trim() ?? "",
+        instagram: customerData.instagram?.trim() ?? "",
         lessonLanguage: getResolvedCheckoutLessonLanguage(customerData.lessonLanguage),
         nickname: customerData.nickname?.trim() ?? "",
         postalCode: customerData.postalCode?.trim() ?? "",

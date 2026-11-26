@@ -423,6 +423,7 @@ const PaymentPage = observer(function PaymentPage({
     paymentStore.selectedCurrency,
     paymentStore.customerData.email,
     paymentStore.customerData.fullName,
+    paymentStore.customerData.instagram,
     paymentStore.customerData.nickname,
     paymentStore.customerData.address,
     paymentStore.customerData.city,
@@ -460,6 +461,12 @@ const PaymentPage = observer(function PaymentPage({
       // The field draws the "@" itself and shows the handle without it.
       const handle = value.replace(/^@+/, "");
       paymentStore.setCustomerField(fieldName, handle ? `@${handle}` : "");
+      return;
+    }
+
+    if (fieldName === "instagram") {
+      // Same "@" drawn by the field; Instagram handles are stored without it.
+      paymentStore.setCustomerField(fieldName, value.replace(/^@+/, ""));
       return;
     }
 
